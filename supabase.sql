@@ -28,122 +28,65 @@ alter table public.trips enable row level security;
 alter table public.trip_members enable row level security;
 alter table public.checklist_items enable row level security;
 
--- Helper functions run as the owner and avoid recursive RLS checks.
-create or replace function public.is_trip_member(p_trip_id uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1 from public.trip_members
-    where trip_id = p_trip_id and user_id = auth.uid()
-  );
-$$;
+grant usage on schema public to authenticated;
+grant select on public.trips, public.trip_members to authenticated;
+grant select, insert, update, delete on public.checklist_items to authenticated;
 
+create or replace function public.is_trip_member(p_trip_id uuid)
+returns boolean language sql stable security definer set search_path = public
+as $$ select exists(select 1 from public.trip_members where trip_id=p_trip_id and user_id=auth.uid()); $$;
 revoke all on function public.is_trip_member(uuid) from public;
 grant execute on function public.is_trip_member(uuid) to authenticated;
 
 drop policy if exists "members can view trips" on public.trips;
-create policy "members can view trips"
-on public.trips for select to authenticated
-using (public.is_trip_member(id));
-
+create policy "members can view trips" on public.trips for select to authenticated using (public.is_trip_member(id));
 drop policy if exists "members can view memberships" on public.trip_members;
-create policy "members can view memberships"
-on public.trip_members for select to authenticated
-using (user_id = auth.uid() or public.is_trip_member(trip_id));
-
+create policy "members can view memberships" on public.trip_members for select to authenticated using (user_id=auth.uid() or public.is_trip_member(trip_id));
 drop policy if exists "members can manage checklist" on public.checklist_items;
-create policy "members can manage checklist"
-on public.checklist_items for all to authenticated
+create policy "members can manage checklist" on public.checklist_items for all to authenticated
 using (public.is_trip_member(trip_id))
-with check (public.is_trip_member(trip_id) and created_by = auth.uid());
+with check (public.is_trip_member(trip_id) and created_by=auth.uid());
 
 create or replace function public.create_trip(p_name text)
-returns table(id uuid, name text, invite_code text)
-language plpgsql
-security definer
-set search_path = public
+returns table(id uuid,name text,invite_code text)
+language plpgsql security definer set search_path=public
 as $$
-declare
-  v_trip public.trips;
+declare v_trip public.trips;
 begin
   if auth.uid() is null then raise exception 'Cal iniciar sessió'; end if;
-  if trim(coalesce(p_name, '')) = '' then raise exception 'Escriu un nom per al viatge'; end if;
-  if exists (select 1 from public.trip_members where user_id = auth.uid()) then
-    raise exception 'Ja formes part d’un viatge';
-  end if;
-
-  insert into public.trips(name, owner_id)
-  values (trim(p_name), auth.uid())
-  returning * into v_trip;
-
-  insert into public.trip_members(trip_id, user_id)
-  values (v_trip.id, auth.uid());
-
-  return query select v_trip.id, v_trip.name, v_trip.invite_code;
-end;
-$$;
+  if trim(coalesce(p_name,''))='' then raise exception 'Escriu un nom per al viatge'; end if;
+  if exists(select 1 from public.trip_members where user_id=auth.uid()) then raise exception 'Ja formes part d’un viatge'; end if;
+  insert into public.trips(name,owner_id) values(trim(p_name),auth.uid()) returning * into v_trip;
+  insert into public.trip_members(trip_id,user_id) values(v_trip.id,auth.uid());
+  return query select v_trip.id,v_trip.name,v_trip.invite_code;
+end; $$;
 
 create or replace function public.join_trip(p_invite_code text)
-returns table(id uuid, name text, invite_code text)
-language plpgsql
-security definer
-set search_path = public
+returns table(id uuid,name text,invite_code text)
+language plpgsql security definer set search_path=public
 as $$
-declare
-  v_trip public.trips;
+declare v_trip public.trips;
 begin
   if auth.uid() is null then raise exception 'Cal iniciar sessió'; end if;
-  if exists (select 1 from public.trip_members where user_id = auth.uid()) then
-    raise exception 'Ja formes part d’un viatge';
-  end if;
-
-  select * into v_trip
-  from public.trips
-  where invite_code = upper(trim(p_invite_code));
-
+  if exists(select 1 from public.trip_members where user_id=auth.uid()) then raise exception 'Ja formes part d’un viatge'; end if;
+  select * into v_trip from public.trips where invite_code=upper(trim(p_invite_code));
   if v_trip.id is null then raise exception 'Codi incorrecte'; end if;
-
-  insert into public.trip_members(trip_id, user_id)
-  values (v_trip.id, auth.uid());
-
-  return query select v_trip.id, v_trip.name, v_trip.invite_code;
-end;
-$$;
+  insert into public.trip_members(trip_id,user_id) values(v_trip.id,auth.uid());
+  return query select v_trip.id,v_trip.name,v_trip.invite_code;
+end; $$;
 
 create or replace function public.get_my_trip()
-returns table(id uuid, name text, invite_code text)
-language sql
-security definer
-set search_path = public
-as $$
-  select t.id, t.name, t.invite_code
-  from public.trips t
-  join public.trip_members m on m.trip_id = t.id
-  where m.user_id = auth.uid()
-  order by m.created_at
-  limit 1;
-$$;
+returns table(id uuid,name text,invite_code text)
+language sql security definer set search_path=public
+as $$ select t.id,t.name,t.invite_code from public.trips t join public.trip_members m on m.trip_id=t.id where m.user_id=auth.uid() order by m.created_at limit 1; $$;
 
 revoke all on function public.create_trip(text) from public;
 revoke all on function public.join_trip(text) from public;
 revoke all on function public.get_my_trip() from public;
-grant execute on function public.create_trip(text) to authenticated;
-grant execute on function public.join_trip(text) to authenticated;
-grant execute on function public.get_my_trip() to authenticated;
+grant execute on function public.create_trip(text), public.join_trip(text), public.get_my_trip() to authenticated;
 
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_publication_tables
-    where pubname = 'supabase_realtime'
-      and schemaname = 'public'
-      and tablename = 'checklist_items'
-  ) then
+do $$ begin
+  if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='checklist_items') then
     alter publication supabase_realtime add table public.checklist_items;
   end if;
 end $$;

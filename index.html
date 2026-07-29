@@ -1,13 +1,105 @@
 <!doctype html>
 <html lang="ca">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#6b4eff" />
-    <title>Freya Travel</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#6750a4" />
+  <title>Freya Travel</title>
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1f1b24;background:#f7f5fb}*{box-sizing:border-box}body{margin:0}.shell{max-width:760px;margin:auto;padding:24px 16px 70px}.hero{text-align:center;padding:42px 16px 26px}.hero.compact{padding:26px 16px}.logo{font-size:46px}.hero h1{font-size:40px;margin:8px 0}.hero p{margin:6px 0;color:#625b71}.card{background:white;border:1px solid #e7e0ec;border-radius:24px;padding:22px;margin:16px 0;box-shadow:0 8px 26px rgba(49,42,59,.07)}.stack{display:grid;gap:12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel{border:1px solid #e7e0ec;border-radius:18px;padding:16px;display:grid;gap:10px}input,button{font:inherit}input{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:13px;background:#fff}button{border:0;border-radius:14px;padding:13px 16px;background:#6750a4;color:#fff;font-weight:700;cursor:pointer}.secondary,.ghost{background:#eee8f4;color:#4f378b}.danger{background:#b3261e}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px}.topbar small{display:block;color:#625b71;margin-top:4px}.message{padding:12px 14px;border-radius:14px;background:#eee8f4;color:#3f2e63}.error{background:#ffdad6;color:#8c1d18}.add{display:flex;gap:10px}.add input{flex:1}.item{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid #eee8f4;padding:12px 0}.item label{display:flex;align-items:center;gap:10px;flex:1}.item input{width:auto}.item.done span{text-decoration:line-through;color:#79747e}.delete{width:40px;padding:8px;background:transparent;color:#b3261e;font-size:24px}.code{display:inline-block;font-size:21px;letter-spacing:2px;background:#eee8f4;border-radius:12px;padding:10px 14px}.muted{color:#79747e}.hidden{display:none!important}@media(max-width:620px){.two{grid-template-columns:1fr}.hero h1{font-size:34px}.add{flex-direction:column}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section id="loading" class="card">Carregant Freya Travel…</section>
+
+    <section id="auth" class="hidden">
+      <div class="hero"><div class="logo">✈️</div><h1>Freya Travel</h1><p>El vostre viatge, compartit de veritat.</p></div>
+      <div class="card">
+        <h2>Entrar o crear un compte</h2>
+        <form id="authForm" class="stack">
+          <input id="email" type="email" placeholder="Correu electrònic" required />
+          <input id="password" type="password" placeholder="Contrasenya (mínim 6 caràcters)" minlength="6" required />
+          <button type="submit">Iniciar sessió</button>
+          <button id="signup" type="button" class="secondary">Crear compte</button>
+        </form>
+        <p id="authMsg" class="message hidden"></p>
+      </div>
+    </section>
+
+    <section id="noTrip" class="hidden">
+      <header class="topbar"><div><strong>Freya Travel</strong><small id="userEmail1"></small></div><button class="ghost logout">Sortir</button></header>
+      <div class="card">
+        <h2>Comencem</h2>
+        <div class="two">
+          <div class="panel"><h3>Crear un viatge</h3><input id="tripName" value="Londres 2026" /><button id="createTrip">Crear viatge</button></div>
+          <div class="panel"><h3>Unir-me al viatge</h3><input id="inviteInput" placeholder="Codi d'invitació" /><button id="joinTrip">Unir-m'hi</button></div>
+        </div>
+        <p id="tripMsg" class="message hidden"></p>
+      </div>
+    </section>
+
+    <section id="tripView" class="hidden">
+      <header class="topbar"><div><strong id="tripTitleTop"></strong><small id="userEmail2"></small></div><button class="ghost logout">Sortir</button></header>
+      <div class="hero compact"><div class="logo">🧳</div><h1 id="tripTitle"></h1><p>Comparteix aquest codi amb el Xesc:</p><div id="inviteCode" class="code"></div></div>
+      <div class="card">
+        <h2>Checklist compartida</h2>
+        <form id="itemForm" class="add"><input id="newItem" placeholder="Afegeix una tasca" required /><button>Afegir</button></form>
+        <div id="items"></div>
+        <p id="itemsEmpty" class="muted">Encara no hi ha cap tasca.</p>
+        <p id="appMsg" class="message hidden"></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://otueskpksylzvkhldoft.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let session = null, trip = null, channel = null;
+    const $ = id => document.getElementById(id);
+    const show = id => $(id).classList.remove('hidden');
+    const hide = id => $(id).classList.add('hidden');
+    function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
+    function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+
+    async function renderSession(next){
+      session=next; hide('loading'); hide('auth'); hide('noTrip'); hide('tripView');
+      if(!session){show('auth');return}
+      $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';
+      const {data,error}=await db.rpc('get_my_trip');
+      if(error){show('noTrip');msg('tripMsg',error.message,true);return}
+      trip=data?.[0]||null;
+      if(!trip){show('noTrip');return}
+      show('tripView');$('tripTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;
+      await loadItems(); subscribe();
+    }
+    async function loadItems(){
+      if(!trip)return;
+      const {data,error}=await db.from('checklist_items').select('id,text,done,created_at').eq('trip_id',trip.id).order('created_at');
+      if(error){msg('appMsg',error.message,true);return}
+      const items=data||[];$('itemsEmpty').classList.toggle('hidden',items.length>0);
+      $('items').innerHTML=items.map(i=>`<div class="item ${i.done?'done':''}"><label><input type="checkbox" data-toggle="${i.id}" ${i.done?'checked':''}><span>${esc(i.text)}</span></label><button class="delete" data-delete="${i.id}" aria-label="Eliminar">×</button></div>`).join('');
+      document.querySelectorAll('[data-toggle]').forEach(el=>el.onchange=()=>toggleItem(el.dataset.toggle,el.checked));
+      document.querySelectorAll('[data-delete]').forEach(el=>el.onclick=()=>deleteItem(el.dataset.delete));
+    }
+    function subscribe(){
+      if(channel)db.removeChannel(channel);
+      channel=db.channel('checklist-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},loadItems).subscribe();
+    }
+    async function toggleItem(id,done){const {error}=await db.from('checklist_items').update({done}).eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
+    async function deleteItem(id){const {error}=await db.from('checklist_items').delete().eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
+
+    $('authForm').onsubmit=async e=>{e.preventDefault();msg('authMsg','');const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)msg('authMsg',error.message,true)};
+    $('signup').onclick=async()=>{msg('authMsg','');const {data,error}=await db.auth.signUp({email:$('email').value.trim(),password:$('password').value});if(error)msg('authMsg',error.message,true);else msg('authMsg',data.session?'Compte creat i sessió iniciada.':'Compte creat. Revisa el correu per confirmar-lo i després inicia sessió.')};
+    document.querySelectorAll('.logout').forEach(b=>b.onclick=()=>db.auth.signOut());
+    $('createTrip').onclick=async()=>{msg('tripMsg','');const {data,error}=await db.rpc('create_trip',{p_name:$('tripName').value});if(error)msg('tripMsg',error.message,true);else renderSession(session)};
+    $('joinTrip').onclick=async()=>{msg('tripMsg','');const {data,error}=await db.rpc('join_trip',{p_invite_code:$('inviteInput').value.trim().toUpperCase()});if(error)msg('tripMsg',error.message,true);else renderSession(session)};
+    $('itemForm').onsubmit=async e=>{e.preventDefault();const text=$('newItem').value.trim();if(!text)return;const {error}=await db.from('checklist_items').insert({trip_id:trip.id,text,created_by:session.user.id});if(error)msg('appMsg',error.message,true);else{$('newItem').value='';loadItems()}};
+
+    db.auth.getSession().then(({data})=>renderSession(data.session));
+    db.auth.onAuthStateChange((_event,next)=>renderSession(next));
+  </script>
+</body>
 </html>
