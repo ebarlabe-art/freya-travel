@@ -1,18 +1,20 @@
-# Freya Travel 2.0
+# Freya Travel 2.1
 
 Aplicació compartida per al viatge a Londres 2026.
 
-## Funcions
+## Inclou
+
 - autenticació i viatge compartit
 - dashboard mòbil
-- itinerari complet
+- itinerari de Londres
+- cartera de reserves
 - checklist en temps real
-- cartera d’entrades
-- despeses del compte comú
-- exportació CSV
-- PWA i GitHub Pages
+- despeses del compte comú en EUR i GBP
+- cerca, filtres, resum per categories i exportació CSV
+- desplegament automàtic a GitHub Pages
 
 ## Desplegament
-1. Executa `supabase.sql` en un projecte nou, o `supabase-expenses-v2.sql` si el projecte ja existeix.
-2. Configura els secrets `VITE_SUPABASE_URL` i `VITE_SUPABASE_PUBLISHABLE_KEY` a GitHub.
-3. El workflow `.github/workflows/deploy.yml` publica automàticament a GitHub Pages.
+
+1. Si `travel_expenses` encara no existeix, executa `supabase-expenses-v2.sql` a Supabase.
+2. Configura `VITE_SUPABASE_URL` i `VITE_SUPABASE_PUBLISHABLE_KEY` als secrets de GitHub.
+3. El workflow `.github/workflows/deploy.yml` compila i publica l'aplicació.
