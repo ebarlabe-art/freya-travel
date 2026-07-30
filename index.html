@@ -4,12 +4,19 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#6750a4" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Freya Travel" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
   <title>Freya Travel</title>
   <style>
     :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1f1b24;background:#f7f5fb;--purple:#6750a4;--soft:#eee8f4;--line:#e7e0ec;--muted:#625b71}*{box-sizing:border-box}body{margin:0}.shell{max-width:820px;margin:auto;padding:20px 16px 70px}.hero{text-align:center;padding:38px 16px 24px}.hero.compact{padding:24px 16px}.logo{font-size:46px}.hero h1{font-size:38px;margin:8px 0}.hero p{margin:6px 0;color:var(--muted)}.card{background:white;border:1px solid var(--line);border-radius:24px;padding:22px;margin:16px 0;box-shadow:0 8px 26px rgba(49,42,59,.07)}.stack{display:grid;gap:12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel{border:1px solid var(--line);border-radius:18px;padding:16px;display:grid;gap:10px}input,button{font:inherit}input{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:13px;background:#fff}button{border:0;border-radius:14px;padding:13px 16px;background:var(--purple);color:#fff;font-weight:700;cursor:pointer}.secondary,.ghost{background:var(--soft);color:#4f378b}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px}.topbar small{display:block;color:var(--muted);margin-top:4px}.message{padding:12px 14px;border-radius:14px;background:var(--soft);color:#3f2e63}.error{background:#ffdad6;color:#8c1d18}.add{display:flex;gap:10px}.add input{flex:1}.item{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--soft);padding:12px 0}.item label{display:flex;align-items:center;gap:10px;flex:1}.item input{width:auto}.item.done span{text-decoration:line-through;color:#79747e}.delete{width:40px;padding:8px;background:transparent;color:#b3261e;font-size:24px}.code{display:inline-block;font-size:21px;letter-spacing:2px;background:var(--soft);border-radius:12px;padding:10px 14px}.muted{color:#79747e}.hidden{display:none!important}
     .dashboard-head{background:linear-gradient(135deg,#6750a4,#9b72cf);color:#fff;border-radius:28px;padding:26px;margin:16px 0}.dashboard-head h1{margin:5px 0 8px}.dashboard-head p{margin:4px 0;color:#f1eaff}.countdown{font-size:1.15rem;font-weight:800;margin-top:14px}.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}.menu-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;text-align:left;color:#1f1b24;min-height:112px}.menu-card .icon{font-size:30px;display:block;margin-bottom:8px}.menu-card strong{display:block;font-size:1.06rem}.menu-card small{display:block;color:#79747e;margin-top:4px}.menu-card.disabled{opacity:.62}.back{margin-bottom:12px}.day-tabs{display:flex;gap:8px;overflow:auto;padding-bottom:8px}.day-tab{white-space:nowrap;background:#fff;color:#4f378b;border:1px solid var(--line);padding:10px 12px}.day-tab.active{background:var(--purple);color:#fff}.day{display:none}.day.active{display:block}.day-title{background:linear-gradient(135deg,#7657ad,#4f378b);color:#fff;border-radius:24px;padding:22px;margin:12px 0 16px}.day-title h2{margin:4px 0}.timeline{list-style:none;padding:0;margin:0;position:relative}.timeline:before{content:"";position:absolute;left:49px;top:12px;bottom:12px;width:2px;background:#d9cdef}.event{display:grid;grid-template-columns:70px 1fr;gap:12px;padding:8px 0;position:relative}.event time{font-weight:800;color:#6750a4;font-variant-numeric:tabular-nums}.event div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px 14px;position:relative}.event div:before{content:"";position:absolute;left:-28px;top:17px;width:10px;height:10px;border-radius:50%;background:#6750a4;border:3px solid #f7f5fb}.event strong{display:block}.event p{margin:4px 0 0;color:#625b71;font-size:.92rem}.badge{display:inline-block;background:#e7f5ec;color:#247642;border-radius:999px;padding:4px 8px;font-size:.75rem;font-weight:800;margin-top:7px}.map-link{display:inline-block;margin-top:10px;text-decoration:none;background:var(--soft);color:#4f378b;border-radius:12px;padding:10px 12px;font-weight:700}.footer{text-align:center;color:#79747e;font-size:.84rem;margin-top:28px}
     .ticket-list{display:grid;gap:16px}.ticket-card{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 8px 26px rgba(49,42,59,.06)}.ticket-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 18px 12px}.ticket-type{display:flex;align-items:center;gap:10px}.ticket-type .ticket-icon{font-size:28px}.ticket-type strong{display:block;font-size:1.05rem}.ticket-type small{display:block;color:var(--muted);margin-top:2px}.ticket-status{display:inline-block;background:#e7f5ec;color:#247642;border-radius:999px;padding:5px 9px;font-size:.75rem;font-weight:800;white-space:nowrap}.ticket-body{padding:0 18px 18px}.boarding{background:linear-gradient(135deg,#6750a4,#9b72cf);color:#fff;border-radius:18px;padding:18px}.route{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin:14px 0}.airport{text-align:left}.airport:last-child{text-align:right}.airport b{display:block;font-size:1.55rem}.airport span{font-size:.83rem;color:#efe8ff}.plane-line{font-size:1.35rem}.ticket-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.45)}.ticket-meta small{display:block;color:#efe8ff}.ticket-meta b{display:block;margin-top:3px}.ticket-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.ticket-actions button,.ticket-actions a{display:inline-block;text-decoration:none;border-radius:12px;padding:10px 12px;font-weight:700}.ticket-actions .pending{background:var(--soft);color:#6f6877;cursor:default}.ticket-actions .map-link{margin-top:0}.reservation{border-radius:18px;padding:18px;background:#faf8fd;border:1px solid var(--line)}.reservation h3{margin:0 0 8px}.reservation p{margin:4px 0;color:var(--muted)}.reservation .big-time{font-size:1.35rem;font-weight:800;color:#4f378b;margin:10px 0}.wallet-note{background:#fff4d7;border:1px solid #f0d98a;color:#6d5310;border-radius:16px;padding:14px;margin-top:16px}
     .favorite-btn{position:absolute;right:10px;top:10px;width:38px;height:38px;padding:0;border-radius:50%;background:#f3eef9;color:#6b5b79;font-size:1.25rem;line-height:1;box-shadow:none}.favorite-btn.active{background:#fff1bf;color:#9a6b00}.event>div{padding-right:58px}.ticket-card{position:relative}.ticket-card>.favorite-btn{z-index:2;right:12px;top:12px}.ticket-head{padding-right:64px}.favorites-grid{display:grid;gap:14px}.favorite-item{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 8px 24px rgba(49,42,59,.05)}.favorite-item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.favorite-item h3{margin:0}.favorite-item .when{font-weight:800;color:#6750a4;margin:6px 0}.favorite-item p{margin:5px 0;color:var(--muted)}.favorite-remove{background:#fff1bf;color:#7c5600;padding:9px 11px;white-space:nowrap}.favorite-empty{text-align:center;padding:26px 14px;color:var(--muted)}.favorite-count{display:inline-block;min-width:24px;text-align:center;background:#fff1bf;color:#7c5600;border-radius:999px;padding:3px 7px;font-size:.78rem;font-weight:800;margin-left:6px}
+    .install-card{display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(135deg,#f3eef9,#fff);border:1px solid var(--line);border-radius:20px;padding:16px;margin:14px 0}.install-card strong{display:block}.install-card small{display:block;color:var(--muted);margin-top:4px}.install-card button{white-space:nowrap}.install-help{font-size:.88rem;color:var(--muted);margin-top:8px}
+    .doc-upload{display:grid;gap:12px}.doc-upload select,.doc-upload input[type=file]{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:12px;background:#fff}.doc-progress{font-size:.9rem;color:var(--muted)}.doc-grid{display:grid;gap:14px}.doc-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px;box-shadow:0 8px 24px rgba(49,42,59,.05)}.doc-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.doc-card h3{margin:0 0 4px}.doc-card p{margin:4px 0;color:var(--muted)}.doc-chip{display:inline-block;background:#ede7f6;color:#4f378b;border-radius:999px;padding:5px 9px;font-size:.75rem;font-weight:800}.doc-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.doc-actions button{padding:10px 12px}.doc-open{background:var(--purple)}.doc-delete{background:#ffdad6;color:#8c1d18}.doc-empty{text-align:center;padding:26px 14px;color:var(--muted)}.privacy-note{background:#e7f5ec;border:1px solid #b9dfc5;color:#245c36;border-radius:16px;padding:14px;margin-top:12px}.upload-status{margin-top:10px}.doc-count{display:inline-block;min-width:24px;text-align:center;background:#ede7f6;color:#4f378b;border-radius:999px;padding:3px 7px;font-size:.78rem;font-weight:800;margin-left:6px}
     @media(max-width:620px){.two{grid-template-columns:1fr}.hero h1{font-size:32px}.add{flex-direction:column}.menu-grid{grid-template-columns:1fr 1fr}.event{grid-template-columns:60px 1fr}.timeline:before{left:40px}.event div:before{left:-25px}}
   </style>
 </head>
@@ -32,11 +39,13 @@
 
     <div id="dashboardView">
       <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div></div>
+      <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <div class="menu-grid">
         <button class="menu-card" data-open="checklistView"><span class="icon">✅</span><strong>Checklist</strong><small>Preparatius compartits</small></button>
         <button class="menu-card" data-open="itineraryView"><span class="icon">📅</span><strong>Itinerari</strong><small>Programa complet dia a dia</small></button>
         <button class="menu-card" data-open="ticketsView"><span class="icon">🎟️</span><strong>Entrades</strong><small>Cartera digital del viatge</small></button>
         <button class="menu-card" data-open="favoritesView"><span class="icon">⭐</span><strong>Preferits <span id="favoriteCount" class="favorite-count">0</span></strong><small>Els vostres imprescindibles</small></button>
+        <button class="menu-card" data-open="documentsView"><span class="icon">📄</span><strong>Documents <span id="documentCount" class="doc-count">0</span></strong><small>PDF, captures i QR privats</small></button>
         <button class="menu-card disabled"><span class="icon">💶</span><strong>Despeses</strong><small>Properament</small></button>
         <button class="menu-card disabled"><span class="icon">📸</span><strong>Fotos</strong><small>Properament</small></button>
         <button class="menu-card disabled"><span class="icon">🌦️</span><strong>Temps</strong><small>Properament</small></button>
@@ -55,6 +64,38 @@
         <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🎡</span><div><strong>London Eye</strong><small>Reserva per a 2 persones</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Diumenge 9 d’agost</h3><div class="big-time">19.30 h</div><p>Presentar-s’hi cap a les 18.30 h per a cues i controls.</p><div class="ticket-actions"><button class="pending" type="button" disabled>Entrada pendent d’afegir</button><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=London+Eye">📍 Obrir a Maps</a></div></div></div></article>
         <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🚌</span><div><strong>Oxford i els Cotswolds</strong><small>Excursió d’un dia</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Dilluns 10 d’agost</h3><div class="big-time">07.30 h</div><p><strong>Punt de trobada:</strong> Gloucester Road Station, Gloucester Rd, South Kensington, London SW7 4SF, UK.</p><div class="ticket-actions"><button class="pending" type="button" disabled>Reserva pendent d’afegir</button><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Gloucester+Road+Station+London+SW7+4SF">📍 Obrir punt de trobada</a></div></div></div></article>
         <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">✈️</span><div><strong>Vol de tornada</strong><small>Ryanair · FR9798</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="boarding"><div><strong>RYANAIR · FR9798</strong></div><div class="route"><div class="airport"><b>STN</b><span>London Stansted</span></div><div class="plane-line">✈︎</div><div class="airport"><b>GRO</b><span>Girona</span></div></div><div class="ticket-meta"><div><small>Data</small><b>11 ag. 2026</b></div><div><small>Sortida</small><b>21.30 h</b></div><div><small>Arribada</small><b>Pendent</b></div></div></div><div class="ticket-actions"><button class="pending" type="button" disabled>Document pendent</button></div></div></article>
+      </div>
+    </div>
+
+    <div id="documentsView" class="hidden">
+      <button class="ghost back" data-back>← Torna al tauler</button>
+      <div class="card">
+        <h2>📄 Documents privats</h2>
+        <p class="muted">Puja entrades, reserves, captures o PDF directament des del mòbil. Els documents són compartits només amb els membres del viatge.</p>
+        <div class="privacy-note">🔒 Els fitxers es guarden en un espai privat de Supabase. No es publiquen a GitHub.</div>
+      </div>
+      <div class="card">
+        <h3>Afegir document</h3>
+        <form id="documentForm" class="doc-upload">
+          <input id="documentTitle" placeholder="Nom del document (p. ex. Les Misérables)" required>
+          <select id="documentCategory" required>
+            <option value="Entrada">🎟️ Entrada</option>
+            <option value="Vol">✈️ Vol</option>
+            <option value="Hotel">🏨 Hotel</option>
+            <option value="Excursió">🚌 Excursió</option>
+            <option value="Museu">🏛️ Museu o monument</option>
+            <option value="Personal">🛂 Document personal</option>
+            <option value="Altres">📎 Altres</option>
+          </select>
+          <input id="documentFile" type="file" accept="image/*,.pdf,application/pdf" required>
+          <button id="uploadDocument" type="submit">Pujar document</button>
+        </form>
+        <p id="documentMsg" class="message hidden upload-status"></p>
+      </div>
+      <div class="card">
+        <h3>Documents del viatge</h3>
+        <div id="documentsList" class="doc-grid"></div>
+        <div id="documentsEmpty" class="doc-empty">Encara no hi ha cap document.</div>
       </div>
     </div>
 
@@ -84,7 +125,7 @@
 
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
-    <p class="footer">Creat amb ❤️ per Eva i ChatGPT · Versió 1.4</p>
+    <p class="footer">Creat amb ❤️ per Eva i ChatGPT · Versió 1.6</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -92,13 +133,14 @@
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let deferredInstallPrompt=null;
 let session=null,trip=null,channel=null;
 const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-function setAppView(id){['dashboardView','checklistView','ticketsView','favoritesView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));window.scrollTo(0,0)}
+function setAppView(id){['dashboardView','checklistView','ticketsView','favoritesView','documentsView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='documentsView')loadDocuments();window.scrollTo(0,0)}
 function updateCountdown(){const now=new Date(),start=new Date('2026-08-06T12:45:00+02:00'),end=new Date('2026-08-12T00:35:00+02:00');let text='';if(now<start){const d=Math.ceil((start-now)/86400000);text=d===1?'Falta 1 dia!':`Falten ${d} dies!`}else if(now<end){text='🇬🇧 Bon viatge!'}else{text='Un viatge per recordar 💜'}$('countdown').textContent=text}
-async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');setAppView('dashboardView');$('tripTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();addFavoriteButtons();renderFavorites();await loadItems();subscribe()}
+async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');setAppView('dashboardView');$('tripTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();addFavoriteButtons();renderFavorites();await loadItems();await loadDocuments(true);subscribe();subscribeDocuments()}
 async function loadItems(){if(!trip)return;const {data,error}=await db.from('checklist_items').select('id,text,done,created_at').eq('trip_id',trip.id).order('created_at');if(error){msg('appMsg',error.message,true);return}const items=data||[];$('itemsEmpty').classList.toggle('hidden',items.length>0);$('items').innerHTML=items.map(i=>`<div class="item ${i.done?'done':''}"><label><input type="checkbox" data-toggle="${i.id}" ${i.done?'checked':''}><span>${esc(i.text)}</span></label><button class="delete" data-delete="${i.id}" aria-label="Eliminar">×</button></div>`).join('');document.querySelectorAll('[data-toggle]').forEach(el=>el.onchange=()=>toggleItem(el.dataset.toggle,el.checked));document.querySelectorAll('[data-delete]').forEach(el=>el.onclick=()=>deleteItem(el.dataset.delete))}
 function subscribe(){if(channel)db.removeChannel(channel);channel=db.channel('checklist-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},loadItems).subscribe()}
 async function toggleItem(id,done){const {error}=await db.from('checklist_items').update({done}).eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
@@ -138,6 +180,59 @@ function syncFavoriteButtons(){const ids=new Set(getFavorites().map(x=>x.id));do
 function renderFavorites(){const favs=getFavorites();const list=$('favoritesList'),empty=$('favoritesEmpty');if(!list||!empty)return;empty.classList.toggle('hidden',favs.length>0);list.innerHTML=favs.map(item=>`<article class="favorite-item"><div class="favorite-item-head"><div><div>${esc(item.icon||'⭐')} ${esc(item.type||'Preferit')}</div><h3>${esc(item.title)}</h3></div><button type="button" class="favorite-remove" data-remove-favorite="${esc(item.id)}">★ Treure</button></div>${item.day||item.time?`<div class="when">${esc([item.day,item.time].filter(Boolean).join(' · '))}</div>`:''}${item.description?`<p>${esc(item.description)}</p>`:''}${item.map?`<a class="map-link" target="_blank" rel="noopener" href="${esc(item.map)}">📍 Obrir a Maps</a>`:''}</article>`).join('');list.querySelectorAll('[data-remove-favorite]').forEach(b=>b.onclick=()=>saveFavorites(favs.filter(x=>x.id!==b.dataset.removeFavorite)));const count=$('favoriteCount');if(count)count.textContent=favs.length}
 addFavoriteButtons();renderFavorites();
 
+
+let documentChannel=null;
+const DOC_BUCKET='trip-documents';
+function categoryIcon(category){return ({Entrada:'🎟️',Vol:'✈️',Hotel:'🏨',Excursió:'🚌',Museu:'🏛️',Personal:'🛂',Altres:'📎'})[category]||'📎'}
+function safeFileName(name){return name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'document'}
+async function loadDocuments(silent=false){
+  if(!trip)return;
+  const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',trip.id).order('created_at',{ascending:false});
+  if(error){if(!silent)msg('documentMsg',error.message,true);return}
+  const docs=data||[];
+  const count=$('documentCount');if(count)count.textContent=docs.length;
+  const list=$('documentsList'),empty=$('documentsEmpty');if(!list||!empty)return;
+  empty.classList.toggle('hidden',docs.length>0);
+  list.innerHTML=docs.map(d=>`<article class="doc-card"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(d.category||'Document')}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button><button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
+  list.querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>openDocument(b.dataset.openDoc,docs));
+  list.querySelectorAll('[data-delete-doc]').forEach(b=>b.onclick=()=>deleteDocument(b.dataset.deleteDoc,docs));
+}
+async function openDocument(id,docs){
+  const doc=docs.find(x=>x.id===id);if(!doc)return;
+  msg('documentMsg','Generant accés segur…');
+  const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(doc.file_path,300);
+  if(error){msg('documentMsg',error.message,true);return}
+  msg('documentMsg','');window.open(data.signedUrl,'_blank','noopener');
+}
+async function deleteDocument(id,docs){
+  const doc=docs.find(x=>x.id===id);if(!doc)return;
+  if(!confirm(`Eliminar «${doc.title}»?`))return;
+  msg('documentMsg','Eliminant…');
+  const storageResult=await db.storage.from(DOC_BUCKET).remove([doc.file_path]);
+  if(storageResult.error){msg('documentMsg',storageResult.error.message,true);return}
+  const {error}=await db.from('travel_documents').delete().eq('id',id);
+  if(error){msg('documentMsg',error.message,true);return}
+  msg('documentMsg','Document eliminat.');loadDocuments();
+}
+function subscribeDocuments(){
+  if(!trip)return;if(documentChannel)db.removeChannel(documentChannel);
+  documentChannel=db.channel('documents-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'travel_documents',filter:`trip_id=eq.${trip.id}`},()=>loadDocuments(true)).subscribe();
+}
+$('documentForm').onsubmit=async e=>{
+  e.preventDefault();if(!trip||!session)return;
+  const file=$('documentFile').files[0],title=$('documentTitle').value.trim(),category=$('documentCategory').value;
+  if(!file||!title)return;
+  if(file.size>15*1024*1024){msg('documentMsg','El fitxer supera el límit de 15 MB.',true);return}
+  $('uploadDocument').disabled=true;msg('documentMsg','Pujant document…');
+  const ext=(file.name.split('.').pop()||'bin').toLowerCase();
+  const path=`${trip.id}/${crypto.randomUUID()}-${safeFileName(title)}.${ext}`;
+  const up=await db.storage.from(DOC_BUCKET).upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false});
+  if(up.error){$('uploadDocument').disabled=false;msg('documentMsg',up.error.message,true);return}
+  const {error}=await db.from('travel_documents').insert({trip_id:trip.id,title,category,file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id});
+  if(error){await db.storage.from(DOC_BUCKET).remove([path]);$('uploadDocument').disabled=false;msg('documentMsg',error.message,true);return}
+  $('documentForm').reset();$('uploadDocument').disabled=false;msg('documentMsg','Document pujat i compartit amb el viatge.');loadDocuments();
+};
+
 $('authForm').onsubmit=async e=>{e.preventDefault();msg('authMsg','');const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)msg('authMsg',error.message,true)};
 $('signup').onclick=async()=>{msg('authMsg','');const {data,error}=await db.auth.signUp({email:$('email').value.trim(),password:$('password').value});if(error)msg('authMsg',error.message,true);else msg('authMsg',data.session?'Compte creat i sessió iniciada.':'Compte creat. Revisa el correu per confirmar-lo i després inicia sessió.')};
 document.querySelectorAll('.logout').forEach(b=>b.onclick=()=>db.auth.signOut());
@@ -145,6 +240,25 @@ $('createTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('
 $('joinTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('join_trip',{p_invite_code:$('inviteInput').value.trim().toUpperCase()});if(error)msg('tripMsg',error.message,true);else renderSession(session)};
 $('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.invite_code);msg('appMsg','Codi copiat.')}catch(_){msg('appMsg','Codi: '+trip.invite_code)}};
 $('itemForm').onsubmit=async e=>{e.preventDefault();const text=$('newItem').value.trim();if(!text)return;const {error}=await db.from('checklist_items').insert({trip_id:trip.id,text,created_by:session.user.id});if(error)msg('appMsg',error.message,true);else{$('newItem').value='';loadItems()}};
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+function isIos(){return /iphone|ipad|ipod/i.test(navigator.userAgent)}
+function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
+function updateInstallUi(){
+  const card=$('installCard'),help=$('installHelp'),button=$('installApp');
+  if(!card||isStandalone()){card?.classList.add('hidden');return}
+  if(deferredInstallPrompt){card.classList.remove('hidden');help.classList.add('hidden');button.classList.remove('hidden');return}
+  if(isIos()){
+    card.classList.remove('hidden');button.classList.add('hidden');help.textContent='A l’iPhone: toca Compartir i després «Afegir a la pantalla d’inici».';help.classList.remove('hidden');
+  }
+}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;updateInstallUi()});
+window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;updateInstallUi()});
+$('installApp').onclick=async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;updateInstallUi()};
+window.addEventListener('load',updateInstallUi);
+
 db.auth.getSession().then(({data})=>renderSession(data.session));db.auth.onAuthStateChange((_event,next)=>renderSession(next));
 </script>
 </body>
