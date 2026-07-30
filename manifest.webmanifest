@@ -1,7 +1,7 @@
 {
   "name": "Freya Travel - Londres 2026",
   "short_name": "Freya Travel",
-  "description": "El viatge compartit d'Eva i Xesc, amb itinerari, entrades, preferits i documents privats.",
+  "description": "El viatge compartit d'Eva i Xesc, amb itinerari, entrades, documents privats i despeses, gràfics i tiquets privats.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
