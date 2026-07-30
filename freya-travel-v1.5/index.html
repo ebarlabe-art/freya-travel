@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#6750a4" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Freya Travel" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <title>Freya Travel</title>
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1f1b24;background:#f7f5fb;--purple:#6750a4;--soft:#eee8f4;--line:#e7e0ec;--muted:#625b71}*{box-sizing:border-box}body{margin:0}.shell{max-width:820px;margin:auto;padding:20px 16px 70px}.hero{text-align:center;padding:38px 16px 24px}.hero.compact{padding:24px 16px}.logo{font-size:46px}.hero h1{font-size:38px;margin:8px 0}.hero p{margin:6px 0;color:var(--muted)}.card{background:white;border:1px solid var(--line);border-radius:24px;padding:22px;margin:16px 0;box-shadow:0 8px 26px rgba(49,42,59,.07)}.stack{display:grid;gap:12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel{border:1px solid var(--line);border-radius:18px;padding:16px;display:grid;gap:10px}input,button{font:inherit}input{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:13px;background:#fff}button{border:0;border-radius:14px;padding:13px 16px;background:var(--purple);color:#fff;font-weight:700;cursor:pointer}.secondary,.ghost{background:var(--soft);color:#4f378b}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px}.topbar small{display:block;color:var(--muted);margin-top:4px}.message{padding:12px 14px;border-radius:14px;background:var(--soft);color:#3f2e63}.error{background:#ffdad6;color:#8c1d18}.add{display:flex;gap:10px}.add input{flex:1}.item{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--soft);padding:12px 0}.item label{display:flex;align-items:center;gap:10px;flex:1}.item input{width:auto}.item.done span{text-decoration:line-through;color:#79747e}.delete{width:40px;padding:8px;background:transparent;color:#b3261e;font-size:24px}.code{display:inline-block;font-size:21px;letter-spacing:2px;background:var(--soft);border-radius:12px;padding:10px 14px}.muted{color:#79747e}.hidden{display:none!important}
+    .dashboard-head{background:linear-gradient(135deg,#6750a4,#9b72cf);color:#fff;border-radius:28px;padding:26px;margin:16px 0}.dashboard-head h1{margin:5px 0 8px}.dashboard-head p{margin:4px 0;color:#f1eaff}.countdown{font-size:1.15rem;font-weight:800;margin-top:14px}.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}.menu-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;text-align:left;color:#1f1b24;min-height:112px}.menu-card .icon{font-size:30px;display:block;margin-bottom:8px}.menu-card strong{display:block;font-size:1.06rem}.menu-card small{display:block;color:#79747e;margin-top:4px}.menu-card.disabled{opacity:.62}.back{margin-bottom:12px}.day-tabs{display:flex;gap:8px;overflow:auto;padding-bottom:8px}.day-tab{white-space:nowrap;background:#fff;color:#4f378b;border:1px solid var(--line);padding:10px 12px}.day-tab.active{background:var(--purple);color:#fff}.day{display:none}.day.active{display:block}.day-title{background:linear-gradient(135deg,#7657ad,#4f378b);color:#fff;border-radius:24px;padding:22px;margin:12px 0 16px}.day-title h2{margin:4px 0}.timeline{list-style:none;padding:0;margin:0;position:relative}.timeline:before{content:"";position:absolute;left:49px;top:12px;bottom:12px;width:2px;background:#d9cdef}.event{display:grid;grid-template-columns:70px 1fr;gap:12px;padding:8px 0;position:relative}.event time{font-weight:800;color:#6750a4;font-variant-numeric:tabular-nums}.event div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px 14px;position:relative}.event div:before{content:"";position:absolute;left:-28px;top:17px;width:10px;height:10px;border-radius:50%;background:#6750a4;border:3px solid #f7f5fb}.event strong{display:block}.event p{margin:4px 0 0;color:#625b71;font-size:.92rem}.badge{display:inline-block;background:#e7f5ec;color:#247642;border-radius:999px;padding:4px 8px;font-size:.75rem;font-weight:800;margin-top:7px}.map-link{display:inline-block;margin-top:10px;text-decoration:none;background:var(--soft);color:#4f378b;border-radius:12px;padding:10px 12px;font-weight:700}.footer{text-align:center;color:#79747e;font-size:.84rem;margin-top:28px}
+    .ticket-list{display:grid;gap:16px}.ticket-card{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 8px 26px rgba(49,42,59,.06)}.ticket-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 18px 12px}.ticket-type{display:flex;align-items:center;gap:10px}.ticket-type .ticket-icon{font-size:28px}.ticket-type strong{display:block;font-size:1.05rem}.ticket-type small{display:block;color:var(--muted);margin-top:2px}.ticket-status{display:inline-block;background:#e7f5ec;color:#247642;border-radius:999px;padding:5px 9px;font-size:.75rem;font-weight:800;white-space:nowrap}.ticket-body{padding:0 18px 18px}.boarding{background:linear-gradient(135deg,#6750a4,#9b72cf);color:#fff;border-radius:18px;padding:18px}.route{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin:14px 0}.airport{text-align:left}.airport:last-child{text-align:right}.airport b{display:block;font-size:1.55rem}.airport span{font-size:.83rem;color:#efe8ff}.plane-line{font-size:1.35rem}.ticket-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.45)}.ticket-meta small{display:block;color:#efe8ff}.ticket-meta b{display:block;margin-top:3px}.ticket-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.ticket-actions button,.ticket-actions a{display:inline-block;text-decoration:none;border-radius:12px;padding:10px 12px;font-weight:700}.ticket-actions .pending{background:var(--soft);color:#6f6877;cursor:default}.ticket-actions .map-link{margin-top:0}.reservation{border-radius:18px;padding:18px;background:#faf8fd;border:1px solid var(--line)}.reservation h3{margin:0 0 8px}.reservation p{margin:4px 0;color:var(--muted)}.reservation .big-time{font-size:1.35rem;font-weight:800;color:#4f378b;margin:10px 0}.wallet-note{background:#fff4d7;border:1px solid #f0d98a;color:#6d5310;border-radius:16px;padding:14px;margin-top:16px}
+    .favorite-btn{position:absolute;right:10px;top:10px;width:38px;height:38px;padding:0;border-radius:50%;background:#f3eef9;color:#6b5b79;font-size:1.25rem;line-height:1;box-shadow:none}.favorite-btn.active{background:#fff1bf;color:#9a6b00}.event>div{padding-right:58px}.ticket-card{position:relative}.ticket-card>.favorite-btn{z-index:2;right:12px;top:12px}.ticket-head{padding-right:64px}.favorites-grid{display:grid;gap:14px}.favorite-item{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 8px 24px rgba(49,42,59,.05)}.favorite-item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.favorite-item h3{margin:0}.favorite-item .when{font-weight:800;color:#6750a4;margin:6px 0}.favorite-item p{margin:5px 0;color:var(--muted)}.favorite-remove{background:#fff1bf;color:#7c5600;padding:9px 11px;white-space:nowrap}.favorite-empty{text-align:center;padding:26px 14px;color:var(--muted)}.favorite-count{display:inline-block;min-width:24px;text-align:center;background:#fff1bf;color:#7c5600;border-radius:999px;padding:3px 7px;font-size:.78rem;font-weight:800;margin-left:6px}
+    .install-card{display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(135deg,#f3eef9,#fff);border:1px solid var(--line);border-radius:20px;padding:16px;margin:14px 0}.install-card strong{display:block}.install-card small{display:block;color:var(--muted);margin-top:4px}.install-card button{white-space:nowrap}.install-help{font-size:.88rem;color:var(--muted);margin-top:8px}
+    @media(max-width:620px){.two{grid-template-columns:1fr}.hero h1{font-size:32px}.add{flex-direction:column}.menu-grid{grid-template-columns:1fr 1fr}.event{grid-template-columns:60px 1fr}.timeline:before{left:40px}.event div:before{left:-25px}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <section id="loading" class="card">Carregant Freya Travel…</section>
+
+  <section id="auth" class="hidden">
+    <div class="hero"><div class="logo">✈️</div><h1>Freya Travel</h1><p>El vostre viatge, compartit de veritat.</p></div>
+    <div class="card"><h2>Entrar o crear un compte</h2><form id="authForm" class="stack"><input id="email" type="email" placeholder="Correu electrònic" required><input id="password" type="password" placeholder="Contrasenya (mínim 6 caràcters)" minlength="6" required><button type="submit">Iniciar sessió</button><button id="signup" type="button" class="secondary">Crear compte</button></form><p id="authMsg" class="message hidden"></p></div>
+  </section>
+
+  <section id="noTrip" class="hidden">
+    <header class="topbar"><div><strong>Freya Travel</strong><small id="userEmail1"></small></div><button class="ghost logout">Sortir</button></header>
+    <div class="card"><h2>Comencem</h2><div class="two"><div class="panel"><h3>Crear un viatge</h3><input id="tripName" value="Londres 2026"><button id="createTrip">Crear viatge</button></div><div class="panel"><h3>Unir-me al viatge</h3><input id="inviteInput" placeholder="Codi d'invitació"><button id="joinTrip">Unir-m'hi</button></div></div><p id="tripMsg" class="message hidden"></p></div>
+  </section>
+
+  <section id="tripView" class="hidden">
+    <header class="topbar"><div><strong id="tripTitleTop"></strong><small id="userEmail2"></small></div><button class="ghost logout">Sortir</button></header>
+
+    <div id="dashboardView">
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div></div>
+      <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
+      <div class="menu-grid">
+        <button class="menu-card" data-open="checklistView"><span class="icon">✅</span><strong>Checklist</strong><small>Preparatius compartits</small></button>
+        <button class="menu-card" data-open="itineraryView"><span class="icon">📅</span><strong>Itinerari</strong><small>Programa complet dia a dia</small></button>
+        <button class="menu-card" data-open="ticketsView"><span class="icon">🎟️</span><strong>Entrades</strong><small>Cartera digital del viatge</small></button>
+        <button class="menu-card" data-open="favoritesView"><span class="icon">⭐</span><strong>Preferits <span id="favoriteCount" class="favorite-count">0</span></strong><small>Els vostres imprescindibles</small></button>
+        <button class="menu-card disabled"><span class="icon">💶</span><strong>Despeses</strong><small>Properament</small></button>
+        <button class="menu-card disabled"><span class="icon">📸</span><strong>Fotos</strong><small>Properament</small></button>
+        <button class="menu-card disabled"><span class="icon">🌦️</span><strong>Temps</strong><small>Properament</small></button>
+      </div>
+      <div class="card"><h2>Codi d’invitació</h2><p>Comparteix-lo amb el Xesc:</p><div id="inviteCode" class="code"></div><p><button id="copyCode" type="button" class="secondary">Copiar codi</button></p><p id="appMsg" class="message hidden"></p></div>
+    </div>
+
+    <div id="checklistView" class="hidden"><button class="ghost back" data-back>← Torna al tauler</button><div class="card"><h2>Checklist compartida</h2><form id="itemForm" class="add"><input id="newItem" placeholder="Afegeix una tasca" required><button>Afegir</button></form><div id="items"></div><p id="itemsEmpty" class="muted">Encara no hi ha cap tasca.</p></div></div>
+
+    <div id="ticketsView" class="hidden">
+      <button class="ghost back" data-back>← Torna al tauler</button>
+      <div class="card"><h2>Entrades i reserves</h2><p class="muted">La cartera digital del viatge. Aquí hi tens totes les reserves importants, ordenades cronològicament.</p><div class="wallet-note">📎 Els botons dels documents quedaran actius quan hi afegim els PDF, les captures o els codis QR.</div></div>
+      <div class="ticket-list">
+        <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">✈️</span><div><strong>Vol d’anada</strong><small>Ryanair · FR9797</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="boarding"><div><strong>RYANAIR · FR9797</strong></div><div class="route"><div class="airport"><b>GRO</b><span>Girona</span></div><div class="plane-line">✈︎</div><div class="airport"><b>STN</b><span>London Stansted</span></div></div><div class="ticket-meta"><div><small>Data</small><b>6 ag. 2026</b></div><div><small>Sortida</small><b>12.45 h</b></div><div><small>Arribada</small><b>13.55 h</b></div></div></div><div class="ticket-actions"><button class="pending" type="button" disabled>Document pendent</button></div></div></article>
+        <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🎭</span><div><strong>Les Misérables</strong><small>Musical</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Divendres 7 d’agost</h3><div class="big-time">19.30 h</div><p>Arribada recomanada amb 30–45 minuts d’antelació.</p><div class="ticket-actions"><button class="pending" type="button" disabled>Entrada pendent d’afegir</button><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Les+Miserables+London+theatre">📍 Obrir a Maps</a></div></div></div></article>
+        <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🎡</span><div><strong>London Eye</strong><small>Reserva per a 2 persones</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Diumenge 9 d’agost</h3><div class="big-time">19.30 h</div><p>Presentar-s’hi cap a les 18.30 h per a cues i controls.</p><div class="ticket-actions"><button class="pending" type="button" disabled>Entrada pendent d’afegir</button><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=London+Eye">📍 Obrir a Maps</a></div></div></div></article>
+        <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🚌</span><div><strong>Oxford i els Cotswolds</strong><small>Excursió d’un dia</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Dilluns 10 d’agost</h3><div class="big-time">07.30 h</div><p><strong>Punt de trobada:</strong> Gloucester Road Station, Gloucester Rd, South Kensington, London SW7 4SF, UK.</p><div class="ticket-actions"><button class="pending" type="button" disabled>Reserva pendent d’afegir</button><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Gloucester+Road+Station+London+SW7+4SF">📍 Obrir punt de trobada</a></div></div></div></article>
+        <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">✈️</span><div><strong>Vol de tornada</strong><small>Ryanair · FR9798</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="boarding"><div><strong>RYANAIR · FR9798</strong></div><div class="route"><div class="airport"><b>STN</b><span>London Stansted</span></div><div class="plane-line">✈︎</div><div class="airport"><b>GRO</b><span>Girona</span></div></div><div class="ticket-meta"><div><small>Data</small><b>11 ag. 2026</b></div><div><small>Sortida</small><b>21.30 h</b></div><div><small>Arribada</small><b>Pendent</b></div></div></div><div class="ticket-actions"><button class="pending" type="button" disabled>Document pendent</button></div></div></article>
+      </div>
+    </div>
+
+    <div id="favoritesView" class="hidden">
+      <button class="ghost back" data-back>← Torna al tauler</button>
+      <div class="card">
+        <h2>⭐ Els meus preferits</h2>
+        <p class="muted">Marca amb una estrella les activitats i reserves que vulguis tenir sempre a mà.</p>
+        <div id="favoritesList" class="favorites-grid"></div>
+        <div id="favoritesEmpty" class="favorite-empty">Encara no has marcat cap preferit. Ves a l’itinerari o a les entrades i toca ☆.</div>
+      </div>
+    </div>
+
+    <div id="itineraryView" class="hidden">
+      <button class="ghost back" data-back>← Torna al tauler</button>
+      <div class="card"><h2>Itinerari de Londres</h2><p class="muted">Toca un dia per consultar-ne els horaris, els trajectes i les reserves.</p><div class="day-tabs"><button class="day-tab active" data-day="d6">Dj 6</button><button class="day-tab" data-day="d7">Dv 7</button><button class="day-tab" data-day="d8">Ds 8</button><button class="day-tab" data-day="d9">Dg 9</button><button class="day-tab" data-day="d10">Dl 10</button><button class="day-tab" data-day="d11">Dt 11</button></div></div>
+
+      <section id="d6" class="day active"><div class="day-title"><small>Dijous 6 d’agost</small><h2>Arribada i Westminster</h2></div><ol class="timeline"><li class="event"><time>12.45</time><div><strong>Vol FR9797 · Ryanair</strong><p>Girona → London Stansted. Arribada prevista a les 13.55 h.</p><span class="badge">Confirmat</span></div></li><li class="event"><time>15.15</time><div><strong>Stansted Express</strong><p>Trasllat fins a Liverpool Street i metro fins a Westminster.</p></div></li><li class="event"><time>17.00</time><div><strong>Hotel i check-in</strong><p>Riu Plaza London The Westminster.</p></div></li><li class="event"><time>17.45</time><div><strong>Westminster a peu</strong><p>Westminster Abbey, Parliament Square, Big Ben, Whitehall, Downing Street, Horse Guards i Trafalgar Square.</p><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/Riu+Plaza+London+Victoria/Westminster+Abbey/Big+Ben/10+Downing+Street/Horse+Guards+Parade/Trafalgar+Square">📍 Obrir ruta a Maps</a></div></li></ol></section>
+
+      <section id="d7" class="day"><div class="day-title"><small>Divendres 7 d’agost</small><h2>Buckingham, British Museum i musical</h2></div><ol class="timeline"><li class="event"><time>09.20</time><div><strong>Sortida de l’hotel</strong><p>Passeig cap a Buckingham Palace i St James’s Park.</p></div></li><li class="event"><time>12.30</time><div><strong>British Museum</strong><p>Visita prevista d’unes dues hores.</p><span class="badge">Reserva</span></div></li><li class="event"><time>16.00</time><div><strong>Covent Garden, Soho i Chinatown</strong><p>Passeig tranquil abans de sopar.</p></div></li><li class="event"><time>19.30</time><div><strong>Les Misérables</strong><p>Sondheim Theatre, 51 Shaftesbury Avenue.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/Riu+Plaza+London+Victoria/Buckingham+Palace/British+Museum/Covent+Garden/Sondheim+Theatre">📍 Obrir ruta a Maps</a></div></li></ol></section>
+
+      <section id="d8" class="day"><div class="day-title"><small>Dissabte 8 d’agost</small><h2>Tower of London i la City</h2></div><ol class="timeline"><li class="event"><time>09.00</time><div><strong>Tower of London</strong><p>Joies de la Corona, White Tower i recorregut interior.</p><span class="badge">Reserva</span></div></li><li class="event"><time>12.05</time><div><strong>Tower Bridge</strong><p>Travessa exterior i fotografies.</p></div></li><li class="event"><time>14.00</time><div><strong>St Dunstan in the East</strong><p>Visita curta als jardins de les ruïnes.</p></div></li><li class="event"><time>14.35</time><div><strong>Leadenhall Market</strong><p>Passeig pel mercat victorià.</p></div></li><li class="event"><time>16.00</time><div><strong>Sky Garden</strong><p>Pendent de confirmació; pla alternatiu a la City si no hi ha entrada.</p><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/Tower+of+London/Tower+Bridge/St+Dunstan+in+the+East/Leadenhall+Market/Sky+Garden">📍 Obrir ruta a Maps</a></div></li></ol></section>
+
+      <section id="d9" class="day"><div class="day-title"><small>Diumenge 9 d’agost</small><h2>Greenwich, Camden i London Eye</h2></div><ol class="timeline"><li class="event"><time>09.00</time><div><strong>Vaixell cap a Greenwich</strong><p>Sortida des de Westminster Pier.</p></div></li><li class="event"><time>10.00</time><div><strong>Greenwich</strong><p>Cutty Sark, Greenwich Market i Old Royal Naval College.</p></div></li><li class="event"><time>12.00</time><div><strong>Royal Observatory</strong><p>Meridià zero i vistes sobre Londres.</p><span class="badge">Reserva</span></div></li><li class="event"><time>14.40</time><div><strong>Camden Market</strong><p>Mercat, canal i temps lliure.</p></div></li><li class="event"><time>19.30</time><div><strong>London Eye</strong><p>Arribada recomanada a les 18.30 h per a cues i controls.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/Westminster+Pier/Greenwich+Pier/Royal+Observatory+Greenwich/Camden+Market/London+Eye">📍 Obrir ruta a Maps</a></div></li></ol></section>
+
+      <section id="d10" class="day"><div class="day-title"><small>Dilluns 10 d’agost</small><h2>Oxford i els Cotswolds</h2></div><ol class="timeline"><li class="event"><time>06.30</time><div><strong>Sortida de l’hotel</strong><p>District Line des de Westminster fins a Gloucester Road.</p></div></li><li class="event"><time>07.15</time><div><strong>Arribada al punt de trobada</strong><p>Gloucester Road Station, Gloucester Rd, South Kensington, London SW7 4SF, UK.</p><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Gloucester+Road+Station+London+SW7+4SF">📍 Obrir punt de trobada</a></div></li><li class="event"><time>07.30</time><div><strong>Sortida de l’excursió</strong><p>Oxford i els Cotswolds, per a 2 adults.</p><span class="badge">Confirmat</span></div></li><li class="event"><time>10.00</time><div><strong>Burford</strong><p>Parada orientativa.</p></div></li><li class="event"><time>11.00</time><div><strong>Bourton-on-the-Water</strong><p>Passeig pel poble i el riu Windrush.</p></div></li><li class="event"><time>13.30</time><div><strong>Oxford</strong><p>Visita guiada i temps lliure.</p></div></li><li class="event"><time>18.00</time><div><strong>Retorn a Gloucester Road</strong><p>Hora orientativa.</p></div></li></ol></section>
+
+      <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
+    </div>
+    <p class="footer">Creat amb ❤️ per Eva i ChatGPT · Versió 1.5</p>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
+const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let deferredInstallPrompt=null;
+let session=null,trip=null,channel=null;
+const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
+function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
+function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function setAppView(id){['dashboardView','checklistView','ticketsView','favoritesView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));window.scrollTo(0,0)}
+function updateCountdown(){const now=new Date(),start=new Date('2026-08-06T12:45:00+02:00'),end=new Date('2026-08-12T00:35:00+02:00');let text='';if(now<start){const d=Math.ceil((start-now)/86400000);text=d===1?'Falta 1 dia!':`Falten ${d} dies!`}else if(now<end){text='🇬🇧 Bon viatge!'}else{text='Un viatge per recordar 💜'}$('countdown').textContent=text}
+async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');setAppView('dashboardView');$('tripTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();addFavoriteButtons();renderFavorites();await loadItems();subscribe()}
+async function loadItems(){if(!trip)return;const {data,error}=await db.from('checklist_items').select('id,text,done,created_at').eq('trip_id',trip.id).order('created_at');if(error){msg('appMsg',error.message,true);return}const items=data||[];$('itemsEmpty').classList.toggle('hidden',items.length>0);$('items').innerHTML=items.map(i=>`<div class="item ${i.done?'done':''}"><label><input type="checkbox" data-toggle="${i.id}" ${i.done?'checked':''}><span>${esc(i.text)}</span></label><button class="delete" data-delete="${i.id}" aria-label="Eliminar">×</button></div>`).join('');document.querySelectorAll('[data-toggle]').forEach(el=>el.onchange=()=>toggleItem(el.dataset.toggle,el.checked));document.querySelectorAll('[data-delete]').forEach(el=>el.onclick=()=>deleteItem(el.dataset.delete))}
+function subscribe(){if(channel)db.removeChannel(channel);channel=db.channel('checklist-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},loadItems).subscribe()}
+async function toggleItem(id,done){const {error}=await db.from('checklist_items').update({done}).eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
+async function deleteItem(id){const {error}=await db.from('checklist_items').delete().eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
+document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>setAppView(b.dataset.open));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView('dashboardView'));
+document.querySelectorAll('.day-tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.day-tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.day').forEach(x=>x.classList.toggle('active',x.id===b.dataset.day))});
+
+function favoriteStorageKey(){return `freya-favorites-${trip?.id||'london-2026'}-${session?.user?.id||'guest'}`}
+function getFavorites(){try{return JSON.parse(localStorage.getItem(favoriteStorageKey())||'[]')}catch(_){return[]}}
+function saveFavorites(items){localStorage.setItem(favoriteStorageKey(),JSON.stringify(items));renderFavorites();syncFavoriteButtons()}
+function slug(value){return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')}
+function sourceRecord(source,type){
+  if(type==='event'){
+    const day=source.closest('.day');
+    const dayName=day?.querySelector('.day-title small')?.textContent.trim()||'';
+    const time=source.querySelector('time')?.textContent.trim()||'';
+    const box=source.querySelector(':scope > div');
+    const title=box?.querySelector('strong')?.textContent.trim()||'Activitat';
+    const description=box?.querySelector('p')?.textContent.trim()||'';
+    const map=box?.querySelector('a.map-link')?.href||'';
+    return {id:`event-${slug(dayName+'-'+time+'-'+title)}`,type:'Activitat',icon:'📍',title,day:dayName,time,description,map};
+  }
+  const title=source.querySelector('.ticket-type strong')?.textContent.trim()||'Reserva';
+  const subtitle=source.querySelector('.ticket-type small')?.textContent.trim()||'';
+  const date=source.querySelector('.reservation h3')?.textContent.trim()||source.querySelector('.ticket-meta div:first-child b')?.textContent.trim()||'';
+  const time=source.querySelector('.big-time')?.textContent.trim()||source.querySelector('.ticket-meta div:nth-child(2) b')?.textContent.trim()||'';
+  const map=source.querySelector('a.map-link')?.href||'';
+  return {id:`ticket-${slug(title)}`,type:'Reserva',icon:'🎟️',title,day:date,time,description:subtitle,map};
+}
+function toggleFavorite(record){const favs=getFavorites();const index=favs.findIndex(x=>x.id===record.id);if(index>=0)favs.splice(index,1);else favs.push(record);saveFavorites(favs)}
+function addFavoriteButtons(){
+  document.querySelectorAll('.event').forEach(source=>{const box=source.querySelector(':scope > div');if(!box||box.querySelector('.favorite-btn'))return;const record=sourceRecord(source,'event');const b=document.createElement('button');b.type='button';b.className='favorite-btn';b.dataset.favoriteId=record.id;b.setAttribute('aria-label','Afegir als preferits');b.textContent='☆';b.onclick=()=>toggleFavorite(record);box.appendChild(b)});
+  document.querySelectorAll('.ticket-card').forEach(source=>{if(source.querySelector(':scope > .favorite-btn'))return;const record=sourceRecord(source,'ticket');const b=document.createElement('button');b.type='button';b.className='favorite-btn';b.dataset.favoriteId=record.id;b.setAttribute('aria-label','Afegir als preferits');b.textContent='☆';b.onclick=()=>toggleFavorite(record);source.appendChild(b)});
+  syncFavoriteButtons();
+}
+function syncFavoriteButtons(){const ids=new Set(getFavorites().map(x=>x.id));document.querySelectorAll('[data-favorite-id]').forEach(b=>{const active=ids.has(b.dataset.favoriteId);b.classList.toggle('active',active);b.textContent=active?'★':'☆';b.setAttribute('aria-label',active?'Treure dels preferits':'Afegir als preferits')});const count=$('favoriteCount');if(count)count.textContent=ids.size}
+function renderFavorites(){const favs=getFavorites();const list=$('favoritesList'),empty=$('favoritesEmpty');if(!list||!empty)return;empty.classList.toggle('hidden',favs.length>0);list.innerHTML=favs.map(item=>`<article class="favorite-item"><div class="favorite-item-head"><div><div>${esc(item.icon||'⭐')} ${esc(item.type||'Preferit')}</div><h3>${esc(item.title)}</h3></div><button type="button" class="favorite-remove" data-remove-favorite="${esc(item.id)}">★ Treure</button></div>${item.day||item.time?`<div class="when">${esc([item.day,item.time].filter(Boolean).join(' · '))}</div>`:''}${item.description?`<p>${esc(item.description)}</p>`:''}${item.map?`<a class="map-link" target="_blank" rel="noopener" href="${esc(item.map)}">📍 Obrir a Maps</a>`:''}</article>`).join('');list.querySelectorAll('[data-remove-favorite]').forEach(b=>b.onclick=()=>saveFavorites(favs.filter(x=>x.id!==b.dataset.removeFavorite)));const count=$('favoriteCount');if(count)count.textContent=favs.length}
+addFavoriteButtons();renderFavorites();
+
+$('authForm').onsubmit=async e=>{e.preventDefault();msg('authMsg','');const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)msg('authMsg',error.message,true)};
+$('signup').onclick=async()=>{msg('authMsg','');const {data,error}=await db.auth.signUp({email:$('email').value.trim(),password:$('password').value});if(error)msg('authMsg',error.message,true);else msg('authMsg',data.session?'Compte creat i sessió iniciada.':'Compte creat. Revisa el correu per confirmar-lo i després inicia sessió.')};
+document.querySelectorAll('.logout').forEach(b=>b.onclick=()=>db.auth.signOut());
+$('createTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('create_trip',{p_name:$('tripName').value});if(error)msg('tripMsg',error.message,true);else renderSession(session)};
+$('joinTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('join_trip',{p_invite_code:$('inviteInput').value.trim().toUpperCase()});if(error)msg('tripMsg',error.message,true);else renderSession(session)};
+$('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.invite_code);msg('appMsg','Codi copiat.')}catch(_){msg('appMsg','Codi: '+trip.invite_code)}};
+$('itemForm').onsubmit=async e=>{e.preventDefault();const text=$('newItem').value.trim();if(!text)return;const {error}=await db.from('checklist_items').insert({trip_id:trip.id,text,created_by:session.user.id});if(error)msg('appMsg',error.message,true);else{$('newItem').value='';loadItems()}};
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+function isIos(){return /iphone|ipad|ipod/i.test(navigator.userAgent)}
+function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
+function updateInstallUi(){
+  const card=$('installCard'),help=$('installHelp'),button=$('installApp');
+  if(!card||isStandalone()){card?.classList.add('hidden');return}
+  if(deferredInstallPrompt){card.classList.remove('hidden');help.classList.add('hidden');button.classList.remove('hidden');return}
+  if(isIos()){
+    card.classList.remove('hidden');button.classList.add('hidden');help.textContent='A l’iPhone: toca Compartir i després «Afegir a la pantalla d’inici».';help.classList.remove('hidden');
+  }
+}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;updateInstallUi()});
+window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;updateInstallUi()});
+$('installApp').onclick=async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;updateInstallUi()};
+window.addEventListener('load',updateInstallUi);
+
+db.auth.getSession().then(({data})=>renderSession(data.session));db.auth.onAuthStateChange((_event,next)=>renderSession(next));
+</script>
+</body>
+</html>

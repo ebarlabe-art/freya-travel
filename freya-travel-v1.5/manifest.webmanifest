@@ -1,0 +1,15 @@
+{
+  "name": "Freya Travel - Londres 2026",
+  "short_name": "Freya Travel",
+  "description": "El viatge compartit d'Eva i Xesc a Londres.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f5fb",
+  "theme_color": "#6750a4",
+  "lang": "ca",
+  "icons": [
+    {"src":"./icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"./icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}
