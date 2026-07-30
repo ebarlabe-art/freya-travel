@@ -1,8 +1,18 @@
-# Freya Travel v0.2.1
+# Freya Travel 2.0
 
-Fase 1 funcional: comptes, viatge compartit per codi i checklist sincronitzada.
+Aplicació compartida per al viatge a Londres 2026.
 
-## Configuració
-1. Executa `supabase.sql` al SQL Editor de Supabase.
-2. Publica `index.html` amb GitHub Pages.
-3. Crea dos comptes, crea el viatge amb el primer i uneix-t'hi amb el segon mitjançant el codi.
+## Funcions
+- autenticació i viatge compartit
+- dashboard mòbil
+- itinerari complet
+- checklist en temps real
+- cartera d’entrades
+- despeses del compte comú
+- exportació CSV
+- PWA i GitHub Pages
+
+## Desplegament
+1. Executa `supabase.sql` en un projecte nou, o `supabase-expenses-v2.sql` si el projecte ja existeix.
+2. Configura els secrets `VITE_SUPABASE_URL` i `VITE_SUPABASE_PUBLISHABLE_KEY` a GitHub.
+3. El workflow `.github/workflows/deploy.yml` publica automàticament a GitHub Pages.
