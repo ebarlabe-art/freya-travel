@@ -83,7 +83,7 @@
     <header class="topbar"><div><strong id="tripTitleTop"></strong><small id="userEmail2"></small></div><button class="ghost logout">Sortir</button></header>
 
     <div id="dashboardView">
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 2.5 estable</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 2.6 estable</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
         <div class="overview-card"><span>✅</span><strong id="overviewChecklist">0/0</strong><small>Checklist completada</small><div class="progress-track"><div id="overviewProgress" class="progress-bar"></div></div></div>
@@ -102,6 +102,7 @@
         <button class="menu-card" data-open="favoritesView"><span class="icon">⭐</span><strong>Preferits <span id="favoriteCount" class="favorite-count">0</span></strong><small>Els vostres imprescindibles</small></button>
         <button class="menu-card" data-open="documentsView"><span class="icon">📄</span><strong>Documents <span id="documentCount" class="doc-count">0</span></strong><small>PDF, captures i QR privats</small></button>
         <button class="menu-card" data-open="expensesView"><span class="icon">💶</span><strong>Despeses <span id="expenseCount" class="expense-count">0</span></strong><small>Registre del compte comú</small></button>
+        <button class="menu-card" data-open="transportView"><span class="icon">🚇</span><strong>Transport</strong><small>Guia pràctica de Londres</small></button>
         <button class="menu-card"><span class="icon">📸</span><strong>Fotos</strong><small>Properament</small></button>
         <button class="menu-card" data-open="weatherView">
           <span class="icon">🌦️</span>
@@ -214,6 +215,109 @@
       <button id="floatExpenseAdd" class="float-add hidden" type="button" aria-label="Afegir despesa">＋</button>
     </div>
 
+    <div id="transportView" class="hidden">
+      <button class="ghost back" data-back>← Torna al tauler</button>
+      <div class="transport-head">
+        <div>
+          <p class="transport-label">🚇 Mou-te per Londres</p>
+          <h2>Guia pràctica per arribar a tot arreu</h2>
+          <p class="transport-copy">Totes les opcions de transport per al viatge d’Eva i Xesc a Londres, del 6 a l’11 d’agost, amb ruta d’arribada i consells útils.</p>
+        </div>
+      </div>
+      <div class="transport-grid">
+        <article class="transport-card">
+          <div class="transport-card-icon">💳</div>
+          <h3>💳 Com pagar</h3>
+          <p>Contactless: paga directament amb la teva targeta bancària o el mòbil compatible.</p>
+          <p>Oyster: alternativa amb targeta recarregable per viatges múltiples.</p>
+          <div class="transport-note">Recorda: cada persona ha d’utilitzar sempre el seu propi mètode de pagament.</div>
+          <p class="transport-small">Cal tocar el lector groc a l’entrada i a la sortida del metro i del tren. Als autobusos només cal validar en pujar.</p>
+          <div class="transport-warning">No compartiu una mateixa targeta contactless entre dues persones.</div>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">🚇</div>
+          <h3>🚇 Tube</h3>
+          <p>Ràpid per travessar Londres i arribar a les principals atraccions.</p>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">🚌</div>
+          <h3>🚌 Bus</h3>
+          <p>Útil per trajectes curts i per veure la ciutat sense baixar del vehicle.</p>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">🚆</div>
+          <h3>🚆 Elizabeth line</h3>
+          <p>Connexions ràpides d’est a oest amb menys transbordaments.</p>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">🚊</div>
+          <h3>🚊 DLR</h3>
+          <p>Pràctic per Greenwich i Canary Wharf, ideal amb equipatge lleuger.</p>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">⛴️</div>
+          <h3>⛴️ Thames Clippers</h3>
+          <p>Transport fluvial pel Tàmesi, molt agradable entre atraccions del sud i nord.</p>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">🚕</div>
+          <h3>🚕 Black Cab / taxi</h3>
+          <p>Opció còmoda però més cara, útil quan aneu amb maletes pesades.</p>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">🚶</div>
+          <h3>🚶 A peu</h3>
+          <p>Recomanat quan els punts són propers i vols gaudir de Londres fent passeig.</p>
+        </article>
+      </div>
+      <div class="transport-section">
+        <div class="transport-card transport-arrival">
+          <h3>✈️ De Stansted a l’hotel</h3>
+          <p><strong>Punt de sortida:</strong> London Stansted Airport.</p>
+          <p><strong>Destinació:</strong> Riu Plaza London The Westminster, 30 John Islip Street.</p>
+          <p>Recomanació: Stansted Express fins a Liverpool Street o Tottenham Hale i després transport urbà fins a Westminster. Comprova la millor combinació el mateix dia segons incidències.</p>
+          <div class="transport-actions">
+            <a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=London+Stansted+Airport&destination=Riu+Plaza+London+The+Westminster&travelmode=transit" target="_blank" rel="noopener">Obrir ruta a Google Maps</a>
+            <a class="route-button" href="https://citymapper.com/directions?startcoord=51.8880,-0.2370&endcoord=51.4980,-0.1310&start=London+Stansted+Airport&end=Riu+Plaza+London+The+Westminster" target="_blank" rel="noopener">Obrir ruta a Citymapper</a>
+          </div>
+        </div>
+      </div>
+      <div class="transport-section">
+        <h3>🗺️ Rutes del nostre viatge</h3>
+        <div class="transport-route-list">
+          <article class="route-card"><div class="route-card-icon">🚇</div><div class="route-details"><strong>Hotel → British Museum</strong><small>Orígen: Riu Plaza London The Westminster</small><small>Destinació: British Museum</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=British+Museum&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
+          <article class="route-card"><div class="route-card-icon">🚌</div><div class="route-details"><strong>British Museum → Sondheim Theatre</strong><small>Orígen: British Museum</small><small>Destinació: Sondheim Theatre</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=British+Museum&destination=Sondheim+Theatre&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
+          <article class="route-card"><div class="route-card-icon">🚇</div><div class="route-details"><strong>Hotel → Tower of London</strong><small>Orígen: Riu Plaza London The Westminster</small><small>Destinació: Tower of London</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Tower+of+London&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
+          <article class="route-card"><div class="route-card-icon">🚶</div><div class="route-details"><strong>Tower of London → St Dunstan in the East</strong><small>Orígen: Tower of London</small><small>Destinació: St Dunstan in the East</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Tower+of+London&destination=St+Dunstan+in+the+East&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
+          <article class="route-card"><div class="route-card-icon">🚊</div><div class="route-details"><strong>Hotel → Greenwich / Royal Observatory</strong><small>Orígen: Riu Plaza London The Westminster</small><small>Destinació: Royal Observatory Greenwich</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Royal+Observatory+Greenwich&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
+          <article class="route-card"><div class="route-card-icon">⛴️</div><div class="route-details"><strong>Greenwich → London Eye</strong><small>Orígen: Greenwich</small><small>Destinació: London Eye</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Greenwich&destination=London+Eye&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
+          <article class="route-card"><div class="route-card-icon">🚇</div><div class="route-details"><strong>Hotel → Houses of Parliament</strong><small>Orígen: Riu Plaza London The Westminster</small><small>Destinació: Houses of Parliament</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Houses+of+Parliament&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
+          <article class="route-card"><div class="route-card-icon">🚆</div><div class="route-details"><strong>Hotel → estació o aeroport de tornada</strong><small>Orígen: Riu Plaza London The Westminster</small><small>Destinació: Stansted Airport o estació final</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Stansted+Airport&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
+        </div>
+      </div>
+      <div class="transport-section">
+        <h3>🔧 Consells pràctics</h3>
+        <div class="tip-list">
+          <div class="tip-item">Eviteu les hores punta quan sigui possible.</div>
+          <div class="tip-item">Deixeu baixar abans de pujar.</div>
+          <div class="tip-item">A les escales mecàniques, quedeu-vos a la dreta.</div>
+          <div class="tip-item">Tingueu el mètode de pagament preparat.</div>
+          <div class="tip-item">Comproveu incidències abans dels trajectes importants.</div>
+          <div class="tip-item">Guardeu una alternativa si hi ha talls o retards.</div>
+          <div class="tip-item">El metro pot ser calorós a l’agost: porteu aigua.</div>
+        </div>
+      </div>
+      <div class="transport-section">
+        <h3>🚀 Accessos ràpids</h3>
+        <div class="quick-links">
+          <a class="quick-link" href="https://www.google.com/maps" target="_blank" rel="noopener"><span>🗺️</span>Google Maps</a>
+          <a class="quick-link" href="https://citymapper.com" target="_blank" rel="noopener"><span>📍</span>Citymapper</a>
+          <a class="quick-link" href="https://tfl.gov.uk/maps/track/tube" target="_blank" rel="noopener"><span>🚇</span>Mapa oficial del Tube</a>
+          <a class="quick-link" href="https://tfl.gov.uk/status" target="_blank" rel="noopener"><span>⚠️</span>Estat del servei de TfL</a>
+        </div>
+      </div>
+    </div>
+
     <div id="weatherView" class="hidden">
       <button class="ghost back" data-back>← Torna al tauler</button>
       <div class="card weather-panel">
@@ -269,7 +373,7 @@
 
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 2.5</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 2.6</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -282,7 +386,7 @@ let session=null,trip=null,channel=null;
 const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-function setAppView(id){['dashboardView','checklistView','ticketsView','favoritesView','documentsView','expensesView','weatherView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
+function setAppView(id){['dashboardView','checklistView','ticketsView','transportView','favoritesView','documentsView','expensesView','weatherView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
 function updateCountdown(){const now=new Date(),start=new Date('2026-08-06T12:45:00+02:00'),end=new Date('2026-08-12T00:35:00+02:00');let text='';if(now<start){const d=Math.ceil((start-now)/86400000);text=d===1?'Falta 1 dia!':`Falten ${d} dies!`}else if(now<end){text='🇬🇧 Bon viatge!'}else{text='Un viatge per recordar 💜'}$('countdown').textContent=text}
 function updateTravelBrief(){
   const now=new Date();
