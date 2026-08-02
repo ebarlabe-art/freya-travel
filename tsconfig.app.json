@@ -16,5 +16,5 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src"]
+  "include": ["./App.tsx", "./main.tsx", "./supabase.ts", "./vite-env.d.ts"]
 }

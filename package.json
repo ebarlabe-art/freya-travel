@@ -1,7 +1,7 @@
 {
   "name": "freya-travel",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.2.0",
   "type": "module",
   "scripts": {"dev":"vite","build":"tsc -b && vite build","preview":"vite preview"},
   "dependencies": {"@supabase/supabase-js":"^2.49.4","react":"^19.0.0","react-dom":"^19.0.0"},
