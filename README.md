@@ -1,3 +1,3 @@
-# Freya Travel 2.3 Final
+# Freya Travel 2.4
 
-Versió final per al viatge a Londres 2026: itinerari, entrades, documents, despeses, favorits, fotos compartides, temps, guia històrica i transport.
+Versió amb previsió meteorològica ampliada: resum del viatge, vent, sortida i posta de sol i recomanacions diàries.
