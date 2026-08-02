@@ -51,7 +51,48 @@
     .weather-facts-grid small{display:block;color:rgba(255,255,255,.75);margin-bottom:6px}
     .weather-facts-grid strong{font-size:1rem}
     .weather-advice{padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:.96rem;line-height:1.6;opacity:.98}
-    @media(max-width:760px){.weather-hero{flex-direction:column}.weather-hero-grid,.weather-grid{grid-template-columns:1fr}.weather-panel{padding:18px 0 0}.weather-card{padding:18px}.weather-status,.weather-banner{margin-left:18px;margin-right:18px}.weather-hero-grid{margin-left:18px;margin-right:18px}.weather-grid{margin-left:18px;margin-right:18px}}
+    .transport-panel{position:relative;background:linear-gradient(180deg,#4f3290,#6b4ebd 48%,#8d79e8);color:#fff;border:0;box-shadow:0 32px 80px rgba(60,31,112,.18);overflow:hidden;border-radius:28px;margin:16px 0}
+    .transport-panel::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top right,rgba(255,255,255,.14),transparent 32%);pointer-events:none}
+    .transport-hero{display:flex;flex-direction:column;gap:14px;padding:28px 24px 24px;background:rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px)}
+    .transport-hero p{margin:0}
+    .transport-label{text-transform:uppercase;letter-spacing:.18em;font-size:.76rem;color:rgba(255,255,255,.8);margin-bottom:8px}
+    .transport-hero h2{margin:.1rem 0 .5rem;font-size:1.95rem;line-height:1.05}
+    .transport-copy{margin:0;color:rgba(255,255,255,.82);line-height:1.7;font-size:.98rem}
+    .transport-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+    .transport-card{position:relative;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:24px;padding:22px;overflow:hidden;color:#fff;box-shadow:0 22px 52px rgba(0,0,0,.16);transition:transform .24s ease,box-shadow .24s ease}
+    .transport-card:hover{transform:translateY(-2px);box-shadow:0 28px 64px rgba(0,0,0,.2)}
+    .transport-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top left,rgba(255,255,255,.14),transparent 28%);pointer-events:none}
+    .transport-card-icon{width:56px;height:56px;display:grid;place-items:center;font-size:2.1rem;background:rgba(255,255,255,.16);border-radius:18px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);margin-bottom:16px}
+    .transport-card h3{margin:.2rem 0 .8rem;font-size:1.25rem}
+    .transport-card p{margin:0 0 12px;color:rgba(255,255,255,.82);line-height:1.65}
+    .transport-note,.transport-warning{margin-top:12px;padding:12px 14px;border-radius:18px;font-size:.95rem}
+    .transport-note{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.16);color:#f4edff}
+    .transport-warning{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);color:#fff}
+    .transport-small{margin:0;color:rgba(255,255,255,.78);font-size:.94rem}
+    .transport-section{margin-top:22px}
+    .transport-arrival h3{margin:0 0 12px}
+    .transport-meta{display:grid;gap:10px;margin:14px 0 0}
+    .route-place{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:12px}
+    .route-place span:first-child{font-size:1.1rem}
+    .transport-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+    .transport-route-list{display:grid;gap:14px}
+    .route-card{background:#fff;border:1px solid var(--line);border-radius:24px;padding:20px;display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;box-shadow:0 18px 40px rgba(49,42,59,.08)}
+    .route-card-icon{font-size:2rem;display:grid;place-items:center;width:52px;height:52px;background:#f3eef9;border-radius:18px}
+    .route-details strong{display:block;font-size:1.05rem;margin-bottom:12px;color:#1f1b24}
+    .route-details .route-place{display:flex;align-items:center;gap:10px;background:#f7f5fb;border:1px solid #e7e0ec;border-radius:16px;padding:12px;margin-top:10px;color:#4f378b}
+    .route-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+    .route-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;border-radius:18px;padding:14px 16px;font-weight:700;font-size:.98rem;min-height:52px;transition:transform .18s ease,box-shadow .18s ease}
+    .route-button:hover{transform:translateY(-1px);box-shadow:0 14px 24px rgba(103,81,167,.18)}
+    .route-button:active{transform:translateY(0)}
+    .route-button.google{background:linear-gradient(135deg,#6750a4,#8d79e8);color:#fff}
+    .route-button.citymapper{background:linear-gradient(135deg,#5f4ea3,#7f6be6);color:#fff}
+    .route-button:not(.google):not(.citymapper){background:var(--purple);color:#fff}
+    .tip-list{display:grid;gap:10px;margin-top:12px}
+    .tip-item{background:#f5f0ff;border:1px solid #e8e0f6;border-radius:18px;padding:14px;color:#4a3c6d}
+    .quick-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+    .quick-link{display:inline-flex;align-items:center;gap:10px;padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:18px;color:#4f378b;text-decoration:none;font-weight:700;box-shadow:0 12px 28px rgba(103,81,167,.08)}
+    .quick-link span{font-size:1.1rem}
+    @media(max-width:760px){.weather-hero{flex-direction:column}.weather-hero-grid,.weather-grid{grid-template-columns:1fr}.weather-panel{padding:18px 0 0}.weather-card{padding:18px}.weather-status,.weather-banner{margin-left:18px;margin-right:18px}.weather-hero-grid{margin-left:18px;margin-right:18px}.weather-grid{margin-left:18px;margin-right:18px}.transport-grid{grid-template-columns:1fr}.transport-actions,.route-actions{grid-template-columns:1fr}.quick-links{grid-template-columns:1fr}.transport-panel{margin-left:0;margin-right:0}.route-card{grid-template-columns:auto 1fr}} 
     .ticket-list{display:grid;gap:16px}.ticket-card{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 8px 26px rgba(49,42,59,.06)}.ticket-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 18px 12px}.ticket-type{display:flex;align-items:center;gap:10px}.ticket-type .ticket-icon{font-size:28px}.ticket-type strong{display:block;font-size:1.05rem}.ticket-type small{display:block;color:var(--muted);margin-top:2px}.ticket-status{display:inline-block;background:#e7f5ec;color:#247642;border-radius:999px;padding:5px 9px;font-size:.75rem;font-weight:800;white-space:nowrap}.ticket-body{padding:0 18px 18px}.boarding{background:linear-gradient(135deg,#6750a4,#9b72cf);color:#fff;border-radius:18px;padding:18px}.route{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin:14px 0}.airport{text-align:left}.airport:last-child{text-align:right}.airport b{display:block;font-size:1.55rem}.airport span{font-size:.83rem;color:#efe8ff}.plane-line{font-size:1.35rem}.ticket-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.45)}.ticket-meta small{display:block;color:#efe8ff}.ticket-meta b{display:block;margin-top:3px}.ticket-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.ticket-actions button,.ticket-actions a{display:inline-block;text-decoration:none;border-radius:12px;padding:10px 12px;font-weight:700}.ticket-actions .pending{background:var(--soft);color:#6f6877;cursor:default}.ticket-actions .map-link{margin-top:0}.reservation{border-radius:18px;padding:18px;background:#faf8fd;border:1px solid var(--line)}.reservation h3{margin:0 0 8px}.reservation p{margin:4px 0;color:var(--muted)}.reservation .big-time{font-size:1.35rem;font-weight:800;color:#4f378b;margin:10px 0}.wallet-note{background:#fff4d7;border:1px solid #f0d98a;color:#6d5310;border-radius:16px;padding:14px;margin-top:16px}
     .favorite-btn{position:absolute;right:10px;top:10px;width:38px;height:38px;padding:0;border-radius:50%;background:#f3eef9;color:#6b5b79;font-size:1.25rem;line-height:1;box-shadow:none}.favorite-btn.active{background:#fff1bf;color:#9a6b00}.event>div{padding-right:58px}.ticket-card{position:relative}.ticket-card>.favorite-btn{z-index:2;right:12px;top:12px}.ticket-head{padding-right:64px}.favorites-grid{display:grid;gap:14px}.favorite-item{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 8px 24px rgba(49,42,59,.05)}.favorite-item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.favorite-item h3{margin:0}.favorite-item .when{font-weight:800;color:#6750a4;margin:6px 0}.favorite-item p{margin:5px 0;color:var(--muted)}.favorite-remove{background:#fff1bf;color:#7c5600;padding:9px 11px;white-space:nowrap}.favorite-empty{text-align:center;padding:26px 14px;color:var(--muted)}.favorite-count{display:inline-block;min-width:24px;text-align:center;background:#fff1bf;color:#7c5600;border-radius:999px;padding:3px 7px;font-size:.78rem;font-weight:800;margin-left:6px}
     .install-card{display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(135deg,#f3eef9,#fff);border:1px solid var(--line);border-radius:20px;padding:16px;margin:14px 0}.install-card strong{display:block}.install-card small{display:block;color:var(--muted);margin-top:4px}.install-card button{white-space:nowrap}.install-help{font-size:.88rem;color:var(--muted);margin-top:8px}
@@ -217,82 +258,84 @@
 
     <div id="transportView" class="hidden">
       <button class="ghost back" data-back>← Torna al tauler</button>
-      <div class="transport-head">
-        <div>
-          <p class="transport-label">🚇 Mou-te per Londres</p>
-          <h2>Guia pràctica per arribar a tot arreu</h2>
-          <p class="transport-copy">Totes les opcions de transport per al viatge d’Eva i Xesc a Londres, del 6 a l’11 d’agost, amb ruta d’arribada i consells útils.</p>
+      <div class="transport-panel">
+        <div class="transport-hero">
+          <p class="transport-label">🚇 Transport</p>
+          <h2>Mou-te per Londres</h2>
+          <p class="transport-copy">Les millors rutes del vostre viatge amb Google Maps i Citymapper.</p>
         </div>
       </div>
       <div class="transport-grid">
         <article class="transport-card">
           <div class="transport-card-icon">💳</div>
           <h3>💳 Com pagar</h3>
-          <p>Contactless: paga directament amb la teva targeta bancària o el mòbil compatible.</p>
-          <p>Oyster: alternativa amb targeta recarregable per viatges múltiples.</p>
-          <div class="transport-note">Recorda: cada persona ha d’utilitzar sempre el seu propi mètode de pagament.</div>
-          <p class="transport-small">Cal tocar el lector groc a l’entrada i a la sortida del metro i del tren. Als autobusos només cal validar en pujar.</p>
-          <div class="transport-warning">No compartiu una mateixa targeta contactless entre dues persones.</div>
+          <p>Contactless: paga amb targeta o mòbil directament al lector groc.</p>
+          <p>Oyster: una alternativa recarregable per viatges múltiples.</p>
+          <div class="transport-note">Cada persona ha de validar amb la seva pròpia targeta o dispositiu.</div>
+          <p class="transport-small">A metro i tren cal tocar a l’entrada i a la sortida. Als autobusos, només cal validar en pujar.</p>
+          <div class="transport-warning">No compartiu la mateixa targeta contactless entre diverses persones.</div>
         </article>
         <article class="transport-card">
           <div class="transport-card-icon">🚇</div>
           <h3>🚇 Tube</h3>
-          <p>Ràpid per travessar Londres i arribar a les principals atraccions.</p>
+          <p>La manera més ràpida per travessar el centre i arribar a Westminster, South Bank i la City.</p>
         </article>
         <article class="transport-card">
           <div class="transport-card-icon">🚌</div>
           <h3>🚌 Bus</h3>
-          <p>Útil per trajectes curts i per veure la ciutat sense baixar del vehicle.</p>
+          <p>Perfecte per trajectes curts i per veure la ciutat sense perdre el ritme.</p>
         </article>
         <article class="transport-card">
           <div class="transport-card-icon">🚆</div>
           <h3>🚆 Elizabeth line</h3>
-          <p>Connexions ràpides d’est a oest amb menys transbordaments.</p>
+          <p>Creua Londres sense canvis innecessaris, molt còmode per a estacions com Paddington i Canary Wharf.</p>
         </article>
         <article class="transport-card">
           <div class="transport-card-icon">🚊</div>
           <h3>🚊 DLR</h3>
-          <p>Pràctic per Greenwich i Canary Wharf, ideal amb equipatge lleuger.</p>
+          <p>Ideal per Greenwich i Canary Wharf, amb connexions lleugeres i espai per maletes petites.</p>
         </article>
         <article class="transport-card">
           <div class="transport-card-icon">⛴️</div>
           <h3>⛴️ Thames Clippers</h3>
-          <p>Transport fluvial pel Tàmesi, molt agradable entre atraccions del sud i nord.</p>
+          <p>Una alternativa agradable pel riu per arribar a South Bank i Greenwich sense estrès.</p>
         </article>
         <article class="transport-card">
           <div class="transport-card-icon">🚕</div>
           <h3>🚕 Black Cab / taxi</h3>
-          <p>Opció còmoda però més cara, útil quan aneu amb maletes pesades.</p>
+          <p>Còmode per maletes pesades o trajectes molt directes quan avança el temps.</p>
         </article>
         <article class="transport-card">
           <div class="transport-card-icon">🚶</div>
           <h3>🚶 A peu</h3>
-          <p>Recomanat quan els punts són propers i vols gaudir de Londres fent passeig.</p>
+          <p>Recomanat per distàncies curtes i per gaudir del centre a ritme tranquil.</p>
         </article>
       </div>
       <div class="transport-section">
         <div class="transport-card transport-arrival">
           <h3>✈️ De Stansted a l’hotel</h3>
-          <p><strong>Punt de sortida:</strong> London Stansted Airport.</p>
-          <p><strong>Destinació:</strong> Riu Plaza London The Westminster, 30 John Islip Street.</p>
-          <p>Recomanació: Stansted Express fins a Liverpool Street o Tottenham Hale i després transport urbà fins a Westminster. Comprova la millor combinació el mateix dia segons incidències.</p>
+          <div class="transport-meta">
+            <div class="route-place"><span>📍</span><span>London Stansted Airport</span></div>
+            <div class="route-place"><span>🎯</span><span>Riu Plaza London The Westminster</span></div>
+          </div>
+          <p>Stansted Express fins a Liverpool Street o Tottenham Hale i després transport urbà fins a Westminster. Comprova la millor combinació el mateix dia segons incidències.</p>
           <div class="transport-actions">
-            <a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=London+Stansted+Airport&destination=Riu+Plaza+London+The+Westminster&travelmode=transit" target="_blank" rel="noopener">Obrir ruta a Google Maps</a>
-            <a class="route-button" href="https://citymapper.com/directions?startcoord=51.8880,-0.2370&endcoord=51.4980,-0.1310&start=London+Stansted+Airport&end=Riu+Plaza+London+The+Westminster" target="_blank" rel="noopener">Obrir ruta a Citymapper</a>
+            <a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=London+Stansted+Airport&destination=Riu+Plaza+London+The+Westminster&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a>
+            <a class="route-button citymapper" href="https://citymapper.com/directions?startcoord=51.8880,-0.2370&endcoord=51.4980,-0.1310&start=London+Stansted+Airport&end=Riu+Plaza+London+The+Westminster" target="_blank" rel="noopener">🚇 Citymapper</a>
           </div>
         </div>
       </div>
       <div class="transport-section">
         <h3>🗺️ Rutes del nostre viatge</h3>
         <div class="transport-route-list">
-          <article class="route-card"><div class="route-card-icon">🚇</div><div class="route-details"><strong>Hotel → British Museum</strong><small>Orígen: Riu Plaza London The Westminster</small><small>Destinació: British Museum</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=British+Museum&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
-          <article class="route-card"><div class="route-card-icon">🚌</div><div class="route-details"><strong>British Museum → Sondheim Theatre</strong><small>Orígen: British Museum</small><small>Destinació: Sondheim Theatre</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=British+Museum&destination=Sondheim+Theatre&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
-          <article class="route-card"><div class="route-card-icon">🚇</div><div class="route-details"><strong>Hotel → Tower of London</strong><small>Orígen: Riu Plaza London The Westminster</small><small>Destinació: Tower of London</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Tower+of+London&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
-          <article class="route-card"><div class="route-card-icon">🚶</div><div class="route-details"><strong>Tower of London → St Dunstan in the East</strong><small>Orígen: Tower of London</small><small>Destinació: St Dunstan in the East</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Tower+of+London&destination=St+Dunstan+in+the+East&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
-          <article class="route-card"><div class="route-card-icon">🚊</div><div class="route-details"><strong>Hotel → Greenwich / Royal Observatory</strong><small>Orígen: Riu Plaza London The Westminster</small><small>Destinació: Royal Observatory Greenwich</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Royal+Observatory+Greenwich&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
-          <article class="route-card"><div class="route-card-icon">⛴️</div><div class="route-details"><strong>Greenwich → London Eye</strong><small>Orígen: Greenwich</small><small>Destinació: London Eye</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Greenwich&destination=London+Eye&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
-          <article class="route-card"><div class="route-card-icon">🚇</div><div class="route-details"><strong>Hotel → Houses of Parliament</strong><small>Orígen: Riu Plaza London The Westminster</small><small>Destinació: Houses of Parliament</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Houses+of+Parliament&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
-          <article class="route-card"><div class="route-card-icon">🚆</div><div class="route-details"><strong>Hotel → estació o aeroport de tornada</strong><small>Orígen: Riu Plaza London The Westminster</small><small>Destinació: Stansted Airport o estació final</small></div><a class="route-button" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Stansted+Airport&travelmode=transit" target="_blank" rel="noopener">Obrir ruta</a></article>
+          <article class="route-card"><div class="route-card-icon">🚇</div><div class="route-details"><strong>Hotel → British Museum</strong><div class="route-place"><span>📍</span><span>Riu Plaza London The Westminster</span></div><div class="route-place"><span>🎯</span><span>British Museum</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=British+Museum&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Riu+Plaza+London+The+Westminster&end=British+Museum" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">🚌</div><div class="route-details"><strong>British Museum → Sondheim Theatre</strong><div class="route-place"><span>📍</span><span>British Museum</span></div><div class="route-place"><span>🎯</span><span>Sondheim Theatre</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=British+Museum&destination=Sondheim+Theatre&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=British+Museum&end=Sondheim+Theatre" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">🚇</div><div class="route-details"><strong>Hotel → Tower of London</strong><div class="route-place"><span>📍</span><span>Riu Plaza London The Westminster</span></div><div class="route-place"><span>🎯</span><span>Tower of London</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Tower+of+London&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Riu+Plaza+London+The+Westminster&end=Tower+of+London" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">🚶</div><div class="route-details"><strong>Tower of London → St Dunstan in the East</strong><div class="route-place"><span>📍</span><span>Tower of London</span></div><div class="route-place"><span>🎯</span><span>St Dunstan in the East</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Tower+of+London&destination=St+Dunstan+in+the+East&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Tower+of+London&end=St+Dunstan+in+the+East" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">🚊</div><div class="route-details"><strong>Hotel → Greenwich / Royal Observatory</strong><div class="route-place"><span>📍</span><span>Riu Plaza London The Westminster</span></div><div class="route-place"><span>🎯</span><span>Royal Observatory Greenwich</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Royal+Observatory+Greenwich&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Riu+Plaza+London+The+Westminster&end=Royal+Observatory+Greenwich" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">⛴️</div><div class="route-details"><strong>Greenwich → London Eye</strong><div class="route-place"><span>📍</span><span>Greenwich</span></div><div class="route-place"><span>🎯</span><span>London Eye</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Greenwich&destination=London+Eye&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Greenwich&end=London+Eye" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">🚇</div><div class="route-details"><strong>Hotel → Houses of Parliament</strong><div class="route-place"><span>📍</span><span>Riu Plaza London The Westminster</span></div><div class="route-place"><span>🎯</span><span>Houses of Parliament</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Houses+of+Parliament&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Riu+Plaza+London+The+Westminster&end=Houses+of+Parliament" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">🚆</div><div class="route-details"><strong>Hotel → estació o aeroport de tornada</strong><div class="route-place"><span>📍</span><span>Riu Plaza London The Westminster</span></div><div class="route-place"><span>🎯</span><span>Stansted Airport</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Stansted+Airport&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Riu+Plaza+London+The+Westminster&end=Stansted+Airport" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
         </div>
       </div>
       <div class="transport-section">
