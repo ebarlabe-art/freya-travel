@@ -1,3 +1,3 @@
-# Freya Travel 3.1
+# Freya Travel 3.2
 
-Correcció definitiva de Documents: el document nou es conserva visualment, es ressalta i la pantalla hi desplaça automàticament.
+Versió amb una nova pantalla de vols: horaris, aeroports, accés als documents i recordatoris pràctics del viatge.
