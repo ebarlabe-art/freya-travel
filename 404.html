@@ -53,6 +53,10 @@
     .weather-advice{padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:.96rem;line-height:1.6;opacity:.98}
     .transport-panel{position:relative;background:linear-gradient(180deg,#4f3290,#6b4ebd 48%,#8d79e8);color:#fff;border:0;box-shadow:0 32px 80px rgba(60,31,112,.18);overflow:hidden;border-radius:28px;margin:16px 0}
     .transport-panel::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top right,rgba(255,255,255,.14),transparent 32%);pointer-events:none}
+    .transport-panel > .transport-grid,.transport-panel > .transport-section{position:relative;z-index:1;margin-left:18px;margin-right:18px}
+    .transport-panel > .transport-section:last-child{padding-bottom:22px}
+    .transport-panel > .transport-section > h3{color:#fff;margin:0 0 14px}
+    .transport-panel .transport-card,.transport-panel .transport-card h3,.transport-panel .transport-card p{color:#fff}
     .transport-hero{display:flex;flex-direction:column;gap:14px;padding:28px 24px 24px;background:rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px)}
     .transport-hero p{margin:0}
     .transport-label{text-transform:uppercase;letter-spacing:.18em;font-size:.76rem;color:rgba(255,255,255,.8);margin-bottom:8px}
@@ -124,7 +128,7 @@
     <header class="topbar"><div><strong id="tripTitleTop"></strong><small id="userEmail2"></small></div><button class="ghost logout">Sortir</button></header>
 
     <div id="dashboardView">
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 2.8 estable</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 2.9 estable</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
         <div class="overview-card"><span>✅</span><strong id="overviewChecklist">0/0</strong><small>Checklist completada</small><div class="progress-track"><div id="overviewProgress" class="progress-bar"></div></div></div>
@@ -264,7 +268,6 @@
           <h2>Mou-te per Londres</h2>
           <p class="transport-copy">Les millors rutes del vostre viatge amb Google Maps i Citymapper.</p>
         </div>
-      </div>
       <div class="transport-grid">
         <article class="transport-card">
           <div class="transport-card-icon">💳</div>
@@ -359,6 +362,7 @@
           <a class="quick-link" href="https://tfl.gov.uk/status" target="_blank" rel="noopener"><span>⚠️</span>Estat del servei de TfL</a>
         </div>
       </div>
+      </div>
     </div>
 
     <div id="weatherView" class="hidden">
@@ -416,7 +420,7 @@
 
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 2.8</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 2.9</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -635,7 +639,7 @@ function safeFileName(name){return name.normalize('NFD').replace(/[\u0300-\u036f
 async function loadDocuments(silent=false){
   if(!trip)return;
   const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',trip.id).order('created_at',{ascending:false});
-  if(error){if(!silent)msg('documentMsg',error.message,true);return}
+  if(error){if(!silent)msg('documentMsg',error.message,true);else console.error('No s’han pogut carregar els documents:',error);return []}
   const docs=data||[];
   const count=$('documentCount');if(count)count.textContent=docs.length;const overviewDocuments=$('overviewDocuments');if(overviewDocuments)overviewDocuments.textContent=String(docs.length);
   const list=$('documentsList'),empty=$('documentsEmpty');if(!list||!empty)return;
@@ -643,6 +647,7 @@ async function loadDocuments(silent=false){
   list.innerHTML=docs.map(d=>`<article class="doc-card"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(d.category||'Document')}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button><button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
   list.querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>openDocument(b.dataset.openDoc,docs));
   list.querySelectorAll('[data-delete-doc]').forEach(b=>b.onclick=()=>deleteDocument(b.dataset.deleteDoc,docs));
+  return docs;
 }
 async function openDocument(id,docs){
   const doc=docs.find(x=>x.id===id);if(!doc)return;
@@ -675,9 +680,20 @@ $('documentForm').onsubmit=async e=>{
   const path=`${trip.id}/${crypto.randomUUID()}-${safeFileName(title)}.${ext}`;
   const up=await db.storage.from(DOC_BUCKET).upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false});
   if(up.error){$('uploadDocument').disabled=false;msg('documentMsg',up.error.message,true);return}
-  const {error}=await db.from('travel_documents').insert({trip_id:trip.id,title,category,file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id});
+  const {data:inserted,error}=await db.from('travel_documents').insert({trip_id:trip.id,title,category,file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id}).select('id,title,category,file_name,file_path,mime_type,created_at,created_by').single();
   if(error){await db.storage.from(DOC_BUCKET).remove([path]);$('uploadDocument').disabled=false;msg('documentMsg',error.message,true);return}
-  $('documentForm').reset();$('uploadDocument').disabled=false;msg('documentMsg','Document pujat i compartit amb el viatge.');loadDocuments();
+  $('documentForm').reset();$('uploadDocument').disabled=false;
+  msg('documentMsg','Document pujat. Actualitzant la llista…');
+  let docs=await loadDocuments();
+  if(inserted && !docs.some(d=>d.id===inserted.id)){
+    await new Promise(resolve=>setTimeout(resolve,500));
+    docs=await loadDocuments();
+  }
+  if(inserted && !docs.some(d=>d.id===inserted.id)){
+    await new Promise(resolve=>setTimeout(resolve,1200));
+    docs=await loadDocuments();
+  }
+  msg('documentMsg',inserted && docs.some(d=>d.id===inserted.id)?'Document pujat i visible al viatge.':'Document pujat. Si encara no apareix, torna al tauler i entra de nou a Documents.');
 };
 
 
