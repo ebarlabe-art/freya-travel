@@ -1,3 +1,3 @@
-# Freya Travel 3.2
+# Freya Travel 4.0
 
-Versió amb una nova pantalla de vols: horaris, aeroports, accés als documents i recordatoris pràctics del viatge.
+Pantalla de Vols Premium amb compte enrere en temps real, cronologia del dia del vol, checklist persistent, progrés de preparació, accés a documents, aeroports i previsió meteorològica.

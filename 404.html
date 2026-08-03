@@ -112,14 +112,19 @@
 .doc-card.doc-new{outline:4px solid #f5c451;box-shadow:0 0 0 8px rgba(245,196,81,.18),0 16px 36px rgba(63,40,111,.22);animation:docNewPulse 1s ease-in-out 2}
 @keyframes docNewPulse{50%{transform:scale(1.015)}}
 
-    .flight-hero{background:linear-gradient(145deg,#58419a,#8666c2);color:#fff;border-radius:28px;padding:24px;margin-bottom:16px;box-shadow:0 18px 42px rgba(79,55,139,.25)}
-    .flight-hero small{display:block;text-transform:uppercase;letter-spacing:.14em;opacity:.78;font-weight:800}.flight-hero h2{margin:8px 0 6px;font-size:2rem}.flight-hero p{margin:0;opacity:.88}.flight-list{display:grid;gap:16px}.flight-card{background:#fff;border:1px solid var(--line);border-radius:24px;overflow:hidden;box-shadow:0 12px 30px rgba(49,42,59,.08)}
-    .flight-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 18px;background:#f7f2fc}.flight-card-head strong{font-size:1.08rem}.flight-card-head small{display:block;color:var(--muted);margin-top:3px}.flight-badge{background:#e7f5ec;color:#245c36;border-radius:999px;padding:6px 10px;font-size:.76rem;font-weight:850;white-space:nowrap}
-    .flight-route{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:24px 18px 16px;text-align:center}.flight-airport b{display:block;font-size:2rem;color:#4f378b}.flight-airport span{display:block;color:var(--muted);font-size:.88rem;margin-top:3px}.flight-path{font-size:1.7rem;color:#7655b6;position:relative}.flight-path:before,.flight-path:after{content:'';display:block;width:38px;height:1px;background:#c9b8e5;position:absolute;top:50%}.flight-path:before{right:100%;margin-right:8px}.flight-path:after{left:100%;margin-left:8px}
-    .flight-times{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 18px 18px}.flight-stat{background:#faf8fd;border:1px solid var(--line);border-radius:16px;padding:13px;text-align:center}.flight-stat small{display:block;color:var(--muted)}.flight-stat strong{display:block;margin-top:4px;color:#2f2638}
-    .flight-actions{display:flex;gap:10px;flex-wrap:wrap;padding:0 18px 18px}.flight-actions a,.flight-actions button{flex:1;min-width:160px;text-align:center;text-decoration:none;border-radius:14px;padding:12px 14px;font-weight:850}.flight-actions .flight-primary{background:var(--purple);color:#fff}.flight-actions .flight-secondary{background:#eee8f7;color:#4f378b}.flight-note{margin:0 18px 18px;background:#fff7dd;border:1px solid #f0d98b;color:#6b5200;border-radius:16px;padding:13px}
-    .airport-plan{display:grid;gap:12px;margin-top:16px}.airport-plan-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px}.airport-plan-card h3{margin:0 0 8px}.airport-plan-card p{margin:5px 0;color:var(--muted)}.airport-plan-card ul{margin:10px 0 0;padding-left:20px;color:#4e4658}.airport-plan-card li{margin:7px 0}.flight-checklist{display:grid;grid-template-columns:1fr 1fr;gap:10px}.flight-check{background:#faf8fd;border:1px solid var(--line);border-radius:15px;padding:13px;font-weight:750;color:#4e4658}
-    @media(max-width:620px){.flight-hero h2{font-size:1.65rem}.flight-times{grid-template-columns:1fr}.flight-checklist{grid-template-columns:1fr}.flight-path:before,.flight-path:after{width:20px}.flight-actions{flex-direction:column}.flight-actions a,.flight-actions button{width:100%}}
+    .flight-shell{display:grid;gap:16px}
+    .flight-hero{position:relative;overflow:hidden;background:linear-gradient(145deg,#43207e 0%,#6d3db2 52%,#b24fc4 100%);color:#fff;border-radius:30px;padding:26px 22px 22px;box-shadow:0 22px 48px rgba(71,31,122,.30)}
+    .flight-hero:before{content:'';position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.09);right:-76px;top:-90px}.flight-hero:after{content:'✈';position:absolute;right:18px;bottom:4px;font-size:6.5rem;opacity:.10;transform:rotate(-12deg)}
+    .flight-hero small{display:block;text-transform:uppercase;letter-spacing:.17em;opacity:.84;font-weight:850}.flight-hero h2{margin:9px 0 5px;font-size:2rem;line-height:1.05;max-width:490px}.flight-hero p{margin:0;opacity:.9;max-width:520px}.flight-countdown{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:20px;position:relative;z-index:1}.flight-count-unit{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(8px);border-radius:16px;padding:11px 6px;text-align:center}.flight-count-unit strong{display:block;font-size:1.35rem}.flight-count-unit span{display:block;font-size:.72rem;opacity:.82;margin-top:2px}.flight-state{margin-top:13px;font-weight:850;position:relative;z-index:1}
+    .flight-summary-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.flight-summary-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:0 12px 28px rgba(49,42,59,.07)}.flight-summary-card h3{margin:0 0 8px}.flight-summary-card p{margin:5px 0;color:var(--muted)}.flight-progress-track{height:10px;background:#eee8f7;border-radius:999px;overflow:hidden;margin-top:12px}.flight-progress-bar{height:100%;width:0;background:linear-gradient(90deg,#5c35a4,#ce57c3);border-radius:999px;transition:width .5s ease}.flight-progress-label{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:.83rem;color:var(--muted)}
+    .flight-list{display:grid;gap:16px}.flight-card{background:#fff;border:1px solid var(--line);border-radius:26px;overflow:hidden;box-shadow:0 14px 34px rgba(49,42,59,.09)}
+    .flight-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 19px;background:linear-gradient(90deg,#f8f4fc,#fff)}.flight-card-head strong{font-size:1.13rem}.flight-card-head small{display:block;color:var(--muted);margin-top:3px}.flight-badge{background:#e7f5ec;color:#245c36;border-radius:999px;padding:6px 10px;font-size:.76rem;font-weight:850;white-space:nowrap}
+    .flight-route{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:25px 18px 13px;text-align:center}.flight-airport b{display:block;font-size:2.25rem;color:#4f378b}.flight-airport span{display:block;color:var(--muted);font-size:.9rem;margin-top:3px}.flight-path{font-size:1.8rem;color:#7655b6;position:relative}.flight-path:before,.flight-path:after{content:'';display:block;width:42px;height:1px;background:#c9b8e5;position:absolute;top:50%}.flight-path:before{right:100%;margin-right:8px}.flight-path:after{left:100%;margin-left:8px}.flight-duration{text-align:center;color:var(--muted);font-size:.8rem;margin-top:-2px;padding-bottom:12px}
+    .flight-times{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 18px 18px}.flight-stat{background:#faf8fd;border:1px solid var(--line);border-radius:17px;padding:13px;text-align:center}.flight-stat small{display:block;color:var(--muted)}.flight-stat strong{display:block;margin-top:4px;color:#2f2638}
+    .flight-timeline{margin:0 18px 18px;padding:2px 0 0;list-style:none}.flight-timeline li{display:grid;grid-template-columns:64px 18px 1fr;gap:8px;align-items:start;position:relative;padding:8px 0}.flight-timeline li:not(:last-child):after{content:'';position:absolute;left:72px;top:28px;bottom:-8px;width:2px;background:#ddd1ee}.flight-timeline time{font-weight:850;color:#4f378b}.flight-timeline i{width:12px;height:12px;border-radius:50%;background:#7a55b5;margin-top:5px;position:relative;z-index:1;box-shadow:0 0 0 4px #eee7f8}.flight-timeline b{display:block}.flight-timeline span{display:block;color:var(--muted);font-size:.84rem;margin-top:2px}
+    .flight-actions{display:flex;gap:10px;flex-wrap:wrap;padding:0 18px 18px}.flight-actions a,.flight-actions button{flex:1;min-width:155px;text-align:center;text-decoration:none;border-radius:14px;padding:12px 14px;font-weight:850}.flight-actions .flight-primary{background:var(--purple);color:#fff}.flight-actions .flight-secondary{background:#eee8f7;color:#4f378b}.flight-note{margin:0 18px 18px;background:#fff7dd;border:1px solid #f0d98b;color:#6b5200;border-radius:16px;padding:13px}
+    .airport-plan{display:grid;gap:12px}.airport-plan-card{background:#fff;border:1px solid var(--line);border-radius:21px;padding:18px;box-shadow:0 10px 26px rgba(49,42,59,.06)}.airport-plan-card h3{margin:0 0 8px}.airport-plan-card p{margin:5px 0;color:var(--muted)}.airport-plan-card ul{margin:10px 0 0;padding-left:20px;color:#4e4658}.airport-plan-card li{margin:7px 0}.flight-checklist{display:grid;grid-template-columns:1fr 1fr;gap:10px}.flight-check{display:flex;align-items:center;gap:10px;background:#faf8fd;border:1px solid var(--line);border-radius:15px;padding:13px;font-weight:750;color:#4e4658;cursor:pointer;user-select:none}.flight-check input{width:20px;height:20px;accent-color:#6b42ab}.flight-check.done{background:#edf8f0;color:#2f6b40;text-decoration:line-through}.flight-weather-button{width:100%;border:0;background:linear-gradient(135deg,#eef4ff,#f7efff);color:#4f378b;border-radius:16px;padding:13px;font-weight:850;cursor:pointer}
+    @media(max-width:700px){.flight-summary-grid{grid-template-columns:1fr}.flight-hero h2{font-size:1.72rem}.flight-times{grid-template-columns:1fr}.flight-checklist{grid-template-columns:1fr}.flight-path:before,.flight-path:after{width:22px}.flight-actions{flex-direction:column}.flight-actions a,.flight-actions button{width:100%}.flight-countdown{grid-template-columns:repeat(4,1fr)}.flight-count-unit strong{font-size:1.15rem}}
 
 </style>
 </head>
@@ -141,7 +146,7 @@
     <header class="topbar"><div><strong id="tripTitleTop"></strong><small id="userEmail2"></small></div><button class="ghost logout">Sortir</button></header>
 
     <div id="dashboardView">
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 3.2 estable</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 4.0 premium</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
         <div class="overview-card"><span>✅</span><strong id="overviewChecklist">0/0</strong><small>Checklist completada</small><div class="progress-track"><div id="overviewProgress" class="progress-bar"></div></div></div>
@@ -177,34 +182,78 @@
 
     <div id="flightsView" class="hidden">
       <button class="ghost back" data-back>← Torna al tauler</button>
-      <section class="flight-hero">
-        <small>Vols · Londres 2026</small>
-        <h2>✈️ Tot a punt per enlairar-nos</h2>
-        <p>Horaris, aeroports, documents i recordatoris del viatge d’Eva i Xesc.</p>
-      </section>
+      <div class="flight-shell">
+        <section class="flight-hero">
+          <small>Vols · Londres 2026</small>
+          <h2 id="flightHeroTitle">✈️ La vostra aventura comença aquí</h2>
+          <p id="flightHeroCopy">Compte enrere, horaris, documents i tot el que necessiteu el dia del vol.</p>
+          <div id="flightCountdown" class="flight-countdown" aria-live="polite">
+            <div class="flight-count-unit"><strong id="flightDays">–</strong><span>dies</span></div>
+            <div class="flight-count-unit"><strong id="flightHours">–</strong><span>hores</span></div>
+            <div class="flight-count-unit"><strong id="flightMinutes">–</strong><span>minuts</span></div>
+            <div class="flight-count-unit"><strong id="flightSeconds">–</strong><span>segons</span></div>
+          </div>
+          <div id="flightState" class="flight-state"></div>
+        </section>
 
-      <div class="flight-list">
-        <article class="flight-card">
-          <div class="flight-card-head"><div><strong>Vol d’anada</strong><small>Ryanair · FR9797</small></div><span class="flight-badge">Confirmat</span></div>
-          <div class="flight-route"><div class="flight-airport"><b>GRO</b><span>Girona</span></div><div class="flight-path">✈︎</div><div class="flight-airport"><b>STN</b><span>London Stansted</span></div></div>
-          <div class="flight-times"><div class="flight-stat"><small>Data</small><strong>6 ag. 2026</strong></div><div class="flight-stat"><small>Sortida</small><strong>12.45 h</strong></div><div class="flight-stat"><small>Arribada</small><strong>13.55 h</strong></div></div>
-          <div class="flight-note">🕒 Recomanació: sigueu a l’aeroport amb prou marge per facturació, seguretat i porta d’embarcament.</div>
-          <div class="flight-actions"><button type="button" class="flight-primary" data-open="documentsView">📄 Obrir documents del vol</button><a class="flight-secondary" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Girona+Costa+Brava+Airport">📍 Aeroport de Girona</a></div>
-        </article>
+        <section class="flight-summary-grid">
+          <div class="flight-summary-card">
+            <h3>🧳 Preparació del vol</h3>
+            <p>Marqueu la checklist i tingueu-ho tot controlat abans de sortir.</p>
+            <div class="flight-progress-track"><div id="flightProgressBar" class="flight-progress-bar"></div></div>
+            <div class="flight-progress-label"><span id="flightProgressText">0 de 6 preparatius</span><strong id="flightProgressPercent">0%</strong></div>
+          </div>
+          <div class="flight-summary-card">
+            <h3>🌦️ Temps en arribar</h3>
+            <p>Consulteu la previsió actualitzada de Londres abans de fer la maleta.</p>
+            <button class="flight-weather-button" type="button" data-open="weatherView">Obrir la previsió →</button>
+          </div>
+        </section>
 
-        <article class="flight-card">
-          <div class="flight-card-head"><div><strong>Vol de tornada</strong><small>Ryanair · FR9798</small></div><span class="flight-badge">Confirmat</span></div>
-          <div class="flight-route"><div class="flight-airport"><b>STN</b><span>London Stansted</span></div><div class="flight-path">✈︎</div><div class="flight-airport"><b>GRO</b><span>Girona</span></div></div>
-          <div class="flight-times"><div class="flight-stat"><small>Data</small><strong>11 ag. 2026</strong></div><div class="flight-stat"><small>Sortida</small><strong>21.30 h</strong></div><div class="flight-stat"><small>Arribada</small><strong>Pendent</strong></div></div>
-          <div class="flight-note">🚆 Objectiu del dia: sortir cap a Stansted amb marge i revisar incidències del tren abans de deixar l’hotel.</div>
-          <div class="flight-actions"><button type="button" class="flight-primary" data-open="documentsView">📄 Obrir documents del vol</button><a class="flight-secondary" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=London+Stansted+Airport">📍 London Stansted</a></div>
-        </article>
+        <div class="flight-list">
+          <article class="flight-card">
+            <div class="flight-card-head"><div><strong>Vol d’anada</strong><small>Ryanair · FR9797</small></div><span class="flight-badge">Confirmat</span></div>
+            <div class="flight-route"><div class="flight-airport"><b>GRO</b><span>Girona</span></div><div class="flight-path">✈︎</div><div class="flight-airport"><b>STN</b><span>London Stansted</span></div></div>
+            <div class="flight-duration">Durada prevista: 2 h 10 min · Hora local de cada aeroport</div>
+            <div class="flight-times"><div class="flight-stat"><small>Data</small><strong>6 ag. 2026</strong></div><div class="flight-stat"><small>Sortida</small><strong>12.45 h</strong></div><div class="flight-stat"><small>Arribada</small><strong>13.55 h</strong></div></div>
+            <ol class="flight-timeline">
+              <li><time>10.45</time><i></i><div><b>Arribada recomanada a l’aeroport</b><span>Marge orientatiu de dues hores.</span></div></li>
+              <li><time>11.15</time><i></i><div><b>Facturació i equipatge</b><span>Comproveu els límits i porteu els documents a mà.</span></div></li>
+              <li><time>11.45</time><i></i><div><b>Control de seguretat</b><span>Líquids i electrònica preparats.</span></div></li>
+              <li><time>12.45</time><i></i><div><b>Enlairament</b><span>GRO → STN · FR9797</span></div></li>
+            </ol>
+            <div class="flight-note">🕒 Comproveu l’estat real del vol, el mostrador i la porta d’embarcament el mateix dia.</div>
+            <div class="flight-actions"><button type="button" class="flight-primary" data-open="documentsView">📄 Documents del vol</button><a class="flight-secondary" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Girona+Costa+Brava+Airport">📍 Aeroport de Girona</a></div>
+          </article>
+
+          <article class="flight-card">
+            <div class="flight-card-head"><div><strong>Vol de tornada</strong><small>Ryanair · FR9798</small></div><span class="flight-badge">Confirmat</span></div>
+            <div class="flight-route"><div class="flight-airport"><b>STN</b><span>London Stansted</span></div><div class="flight-path">✈︎</div><div class="flight-airport"><b>GRO</b><span>Girona</span></div></div>
+            <div class="flight-duration">Dimarts 11 d’agost · Hora d’arribada pendent de confirmar</div>
+            <div class="flight-times"><div class="flight-stat"><small>Data</small><strong>11 ag. 2026</strong></div><div class="flight-stat"><small>Sortida</small><strong>21.30 h</strong></div><div class="flight-stat"><small>Arribada</small><strong>Pendent</strong></div></div>
+            <ol class="flight-timeline">
+              <li><time>15.50</time><i></i><div><b>Recollida d’equipatge</b><span>Retorn a l’hotel amb marge.</span></div></li>
+              <li><time>17.20</time><i></i><div><b>Sortida cap a Stansted</b><span>Reviseu incidències del tren abans de marxar.</span></div></li>
+              <li><time>18.10</time><i></i><div><b>Arribada objectiu a l’aeroport</b><span>Temps per seguretat, porta i sopar.</span></div></li>
+              <li><time>21.30</time><i></i><div><b>Enlairament</b><span>STN → GRO · FR9798</span></div></li>
+            </ol>
+            <div class="flight-note">🚆 No deixeu per a l’últim moment el trajecte fins a Stansted i reviseu la terminal i la porta.</div>
+            <div class="flight-actions"><button type="button" class="flight-primary" data-open="documentsView">📄 Documents del vol</button><a class="flight-secondary" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=London+Stansted+Airport">📍 London Stansted</a></div>
+          </article>
+        </div>
+
+        <section class="airport-plan">
+          <div class="airport-plan-card"><h3>🎒 Checklist del dia del vol</h3><div class="flight-checklist">
+            <label class="flight-check"><input type="checkbox" data-flight-check="boarding"> Targetes d’embarcament</label>
+            <label class="flight-check"><input type="checkbox" data-flight-check="identity"> DNI o passaport</label>
+            <label class="flight-check"><input type="checkbox" data-flight-check="phone"> Mòbils carregats</label>
+            <label class="flight-check"><input type="checkbox" data-flight-check="battery"> Bateria externa</label>
+            <label class="flight-check"><input type="checkbox" data-flight-check="luggage"> Equipatge revisat</label>
+            <label class="flight-check"><input type="checkbox" data-flight-check="transfer"> Trasllat confirmat</label>
+          </div></div>
+          <div class="airport-plan-card"><h3>💡 Recordatoris útils</h3><ul><li>Descarregueu els documents també al mòbil per tenir-los disponibles sense connexió.</li><li>Comproveu l’estat del vol i la porta el mateix dia.</li><li>Porteu líquids i electrònica preparats per passar el control.</li><li>La terminal i els horaris operatius poden canviar: confirmeu-los amb Ryanair i l’aeroport.</li></ul></div>
+        </section>
       </div>
-
-      <section class="airport-plan">
-        <div class="airport-plan-card"><h3>🎒 Abans de sortir</h3><div class="flight-checklist"><div class="flight-check">✅ Targetes d’embarcament</div><div class="flight-check">✅ DNI o passaport</div><div class="flight-check">✅ Equipatge revisat</div><div class="flight-check">✅ Trasllat a l’aeroport</div></div></div>
-        <div class="airport-plan-card"><h3>💡 Recordatoris útils</h3><ul><li>Comproveu qualsevol canvi d’horari o porta abans de sortir.</li><li>Tingueu els documents del vol descarregats també al mòbil.</li><li>Poseu líquids i electrònica a mà per passar el control amb més agilitat.</li><li>No deixeu per a l’últim moment el trajecte fins a Stansted.</li></ul></div>
-      </section>
     </div>
 
     <div id="ticketsView" class="hidden">
@@ -467,7 +516,7 @@
 
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 3.2</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 4.0</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -481,6 +530,31 @@ const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function setAppView(id){['dashboardView','checklistView','flightsView','ticketsView','transportView','favoritesView','documentsView','expensesView','weatherView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
+const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
+function updateFlightPremium(){
+  const now=new Date();
+  const departure=new Date('2026-08-06T12:45:00+02:00');
+  const arrival=new Date('2026-08-06T13:55:00+01:00');
+  const returnFlight=new Date('2026-08-11T21:30:00+01:00');
+  const endTrip=new Date('2026-08-12T02:00:00+02:00');
+  let target=departure,state='Compte enrere per al vol d’anada';
+  let title='✈️ La vostra aventura comença aquí',copy='Compte enrere, horaris, documents i tot el que necessiteu el dia del vol.';
+  if(now>=departure && now<arrival){state='🛫 Bon vol, Eva i Xesc!';title='🛫 Ja sou en camí';copy='Gaudiu del vol. Londres us espera.';target=arrival}
+  else if(now>=arrival && now<returnFlight){state='🇬🇧 Benvinguts a Londres!';title='🇬🇧 Londres ja és vostre';copy='Teniu a mà el vol de tornada i tota la informació dels aeroports.';target=returnFlight}
+  else if(now>=returnFlight && now<endTrip){state='🏡 Tornada a casa';title='💜 Un viatge per recordar';copy='Bon retorn. Freya Travel us acompanya fins al final.';target=endTrip}
+  else if(now>=endTrip){state='✨ Viatge completat';title='💜 Londres 2026';copy='Una aventura guardada per sempre.';target=now}
+  const diff=Math.max(0,target-now),days=Math.floor(diff/86400000),hours=Math.floor(diff%86400000/3600000),minutes=Math.floor(diff%3600000/60000),seconds=Math.floor(diff%60000/1000);
+  if($('flightDays')){$('flightDays').textContent=String(days).padStart(2,'0');$('flightHours').textContent=String(hours).padStart(2,'0');$('flightMinutes').textContent=String(minutes).padStart(2,'0');$('flightSeconds').textContent=String(seconds).padStart(2,'0');$('flightState').textContent=state;$('flightHeroTitle').textContent=title;$('flightHeroCopy').textContent=copy}
+}
+function initFlightChecklist(){
+  let saved={};try{saved=JSON.parse(localStorage.getItem(FLIGHT_CHECK_KEY)||'{}')}catch{}
+  document.querySelectorAll('[data-flight-check]').forEach(input=>{input.checked=!!saved[input.dataset.flightCheck];input.closest('.flight-check').classList.toggle('done',input.checked);input.addEventListener('change',()=>{saved[input.dataset.flightCheck]=input.checked;localStorage.setItem(FLIGHT_CHECK_KEY,JSON.stringify(saved));input.closest('.flight-check').classList.toggle('done',input.checked);updateFlightProgress()})});
+  updateFlightProgress();
+}
+function updateFlightProgress(){
+  const all=[...document.querySelectorAll('[data-flight-check]')],done=all.filter(x=>x.checked).length,pct=all.length?Math.round(done/all.length*100):0;
+  if($('flightProgressBar'))$('flightProgressBar').style.width=pct+'%';if($('flightProgressText'))$('flightProgressText').textContent=`${done} de ${all.length} preparatius`;if($('flightProgressPercent'))$('flightProgressPercent').textContent=pct+'%';
+}
 function updateCountdown(){const now=new Date(),start=new Date('2026-08-06T12:45:00+02:00'),end=new Date('2026-08-12T00:35:00+02:00');let text='';if(now<start){const d=Math.ceil((start-now)/86400000);text=d===1?'Falta 1 dia!':`Falten ${d} dies!`}else if(now<end){text='🇬🇧 Bon viatge!'}else{text='Un viatge per recordar 💜'}$('countdown').textContent=text}
 function updateTravelBrief(){
   const now=new Date();
@@ -502,7 +576,10 @@ function updateTravelBrief(){
   else {day=days.at(-1);item=['💜','Londres 2026','Un viatge per recordar plegats.'];label='Record del viatge';}
   $('briefChip').textContent=day.chip||'Londres 2026';$('briefLabel').textContent=label;$('briefTime').textContent=item[0];$('briefActivity').textContent=item[1];$('briefDescription').textContent=item[2]||'';
 }
-async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');setAppView('dashboardView');$('tripTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();updateTravelBrief();addFavoriteButtons();renderFavorites();await loadItems();await loadDocuments(true);await loadExpenses(true);subscribe();subscribeDocuments();subscribeExpenses()}
+async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');setAppView('dashboardView');$('tripTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();
+updateFlightPremium();
+initFlightChecklist();
+setInterval(updateFlightPremium,1000);updateTravelBrief();addFavoriteButtons();renderFavorites();await loadItems();await loadDocuments(true);await loadExpenses(true);subscribe();subscribeDocuments();subscribeExpenses()}
 async function loadItems(){if(!trip)return;const {data,error}=await db.from('checklist_items').select('id,text,done,created_at').eq('trip_id',trip.id).order('created_at');if(error){msg('appMsg',error.message,true);return}const items=data||[];const doneCount=items.filter(i=>i.done).length;const overviewChecklist=$('overviewChecklist'),overviewProgress=$('overviewProgress');if(overviewChecklist)overviewChecklist.textContent=`${doneCount}/${items.length}`;if(overviewProgress)overviewProgress.style.width=items.length?`${Math.round(doneCount/items.length*100)}%`:'0%';$('itemsEmpty').classList.toggle('hidden',items.length>0);$('items').innerHTML=items.map(i=>`<div class="item ${i.done?'done':''}"><label><input type="checkbox" data-toggle="${i.id}" ${i.done?'checked':''}><span>${esc(i.text)}</span></label><button class="delete" data-delete="${i.id}" aria-label="Eliminar">×</button></div>`).join('');document.querySelectorAll('[data-toggle]').forEach(el=>el.onchange=()=>toggleItem(el.dataset.toggle,el.checked));document.querySelectorAll('[data-delete]').forEach(el=>el.onclick=()=>deleteItem(el.dataset.delete))}
 function subscribe(){if(channel)db.removeChannel(channel);channel=db.channel('checklist-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},loadItems).subscribe()}
 async function toggleItem(id,done){const {error}=await db.from('checklist_items').update({done}).eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
