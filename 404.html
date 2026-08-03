@@ -108,6 +108,9 @@
     @media(max-width:620px){.two{grid-template-columns:1fr}.hero h1{font-size:32px}.add{flex-direction:column}.menu-grid{grid-template-columns:1fr 1fr}.event{grid-template-columns:60px 1fr}.timeline:before{left:40px}.event div:before{left:-25px}.expense-summary{grid-template-columns:1fr}.expense-row{grid-template-columns:1fr}.expense-filters{grid-template-columns:1fr}.chart-row{grid-template-columns:90px 1fr}.chart-value{grid-column:2}}
   
     .version-pill{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.17);font-size:.78rem;font-weight:800}.trip-overview{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0 18px}.overview-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;text-align:center;box-shadow:0 6px 18px rgba(49,42,59,.05)}.overview-card span{display:block;font-size:1.35rem}.overview-card strong{display:block;font-size:1.08rem;margin-top:4px}.overview-card small{display:block;color:var(--muted);margin-top:2px}.progress-track{height:7px;border-radius:999px;background:#ebe5f2;overflow:hidden;margin-top:8px}.progress-bar{height:100%;width:0;background:linear-gradient(90deg,#6750a4,#9b72cf);transition:width .35s ease}.update-toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:30;width:min(92%,520px);display:flex;align-items:center;justify-content:space-between;gap:12px;background:#2d2438;color:#fff;border-radius:18px;padding:13px 14px;box-shadow:0 12px 34px rgba(0,0,0,.25)}.update-toast button{padding:9px 12px;background:#fff;color:#4f378b}.menu-card:active,button:active{transform:scale(.985)}@media(max-width:520px){.trip-overview{grid-template-columns:1fr}.overview-card{text-align:left;display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center}.overview-card span{grid-row:1/4}.overview-card .progress-track{grid-column:2}}
+
+.doc-card.doc-new{outline:4px solid #f5c451;box-shadow:0 0 0 8px rgba(245,196,81,.18),0 16px 36px rgba(63,40,111,.22);animation:docNewPulse 1s ease-in-out 2}
+@keyframes docNewPulse{50%{transform:scale(1.015)}}
 </style>
 </head>
 <body>
@@ -128,7 +131,7 @@
     <header class="topbar"><div><strong id="tripTitleTop"></strong><small id="userEmail2"></small></div><button class="ghost logout">Sortir</button></header>
 
     <div id="dashboardView">
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 3.0 estable</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 3.1 estable</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
         <div class="overview-card"><span>✅</span><strong id="overviewChecklist">0/0</strong><small>Checklist completada</small><div class="progress-track"><div id="overviewProgress" class="progress-bar"></div></div></div>
@@ -420,7 +423,7 @@
 
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 3.0</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 3.1</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -634,6 +637,7 @@ addFavoriteButtons();renderFavorites();
 
 let documentChannel=null;
 let documentRows=[];
+let pendingDocumentRows=[];
 const DOC_BUCKET='trip-documents';
 function categoryIcon(category){return ({Entrada:'🎟️',Vol:'✈️',Hotel:'🏨',Excursió:'🚌',Museu:'🏛️',Personal:'🛂',Altres:'📎'})[category]||'📎'}
 function safeFileName(name){return name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'document'}
@@ -641,7 +645,10 @@ async function loadDocuments(silent=false){
   if(!trip)return;
   const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',trip.id).order('created_at',{ascending:false});
   if(error){if(!silent)msg('documentMsg',error.message,true);else console.error('No s’han pogut carregar els documents:',error);return []}
-  const docs=data||[];
+  const serverDocs=data||[];
+  const serverIds=new Set(serverDocs.map(d=>d.id));
+  pendingDocumentRows=pendingDocumentRows.filter(d=>!serverIds.has(d.id) && Date.now()-(d._pendingAt||0)<60000);
+  const docs=[...pendingDocumentRows,...serverDocs.filter(d=>!pendingDocumentRows.some(p=>p.id===d.id))];
   documentRows=docs;
   renderDocuments(docs);
   return docs;
@@ -651,7 +658,7 @@ function renderDocuments(docs=documentRows){
   const count=$('documentCount');if(count)count.textContent=documentRows.length;const overviewDocuments=$('overviewDocuments');if(overviewDocuments)overviewDocuments.textContent=String(documentRows.length);
   const list=$('documentsList'),empty=$('documentsEmpty');if(!list||!empty)return;
   empty.classList.toggle('hidden',documentRows.length>0);
-  list.innerHTML=documentRows.map(d=>`<article class="doc-card"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(d.category||'Document')}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button><button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
+  list.innerHTML=documentRows.map(d=>`<article class="doc-card" data-doc-id="${esc(d.id)}"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(d.category||'Document')}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button><button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
   list.querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>openDocument(b.dataset.openDoc,documentRows));
   list.querySelectorAll('[data-delete-doc]').forEach(b=>b.onclick=()=>deleteDocument(b.dataset.deleteDoc,documentRows));
 }
@@ -689,11 +696,16 @@ $('documentForm').onsubmit=async e=>{
   const {data:inserted,error}=await db.from('travel_documents').insert({trip_id:trip.id,title,category,file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id}).select('id,title,category,file_name,file_path,mime_type,created_at,created_by').single();
   if(error){await db.storage.from(DOC_BUCKET).remove([path]);$('uploadDocument').disabled=false;msg('documentMsg',error.message,true);return}
   $('documentForm').reset();$('uploadDocument').disabled=false;
-  const visibleInserted={...inserted,title,category,file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id};
+  const visibleInserted={...inserted,title,category,file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id,_pendingAt:Date.now()};
+  pendingDocumentRows=[visibleInserted,...pendingDocumentRows.filter(d=>d.id!==visibleInserted.id)];
   renderDocuments([visibleInserted,...documentRows.filter(d=>d.id!==visibleInserted.id)]);
-  msg('documentMsg','Document pujat i visible al viatge.');
-  setTimeout(()=>loadDocuments(true),800);
-  setTimeout(()=>loadDocuments(true),2500);
+  msg('documentMsg',`Document pujat correctament. Ara hi ha ${documentRows.length} documents.`);
+  requestAnimationFrame(()=>{
+    const card=document.querySelector(`[data-doc-id="${visibleInserted.id}"]`);
+    if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('doc-new');setTimeout(()=>card.classList.remove('doc-new'),3500)}
+  });
+  setTimeout(()=>loadDocuments(true),1200);
+  setTimeout(()=>loadDocuments(true),5000);
 };
 
 

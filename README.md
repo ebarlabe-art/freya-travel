@@ -1,3 +1,3 @@
-# Freya Travel 3.0
+# Freya Travel 3.1
 
-Correcció definitiva de Documents: el fitxer nou apareix immediatament després de pujar-lo, mentre la llista es resincronitza amb Supabase. Manté la correcció visual de Transport.
+Correcció definitiva de Documents: el document nou es conserva visualment, es ressalta i la pantalla hi desplaça automàticament.
