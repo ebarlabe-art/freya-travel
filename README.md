@@ -1,3 +1,3 @@
-# Freya Travel 2.9
+# Freya Travel 3.0
 
-Correccions: Transport amb contrast correcte i Documents amb refresc verificat després de cada pujada.
+Correcció definitiva de Documents: el fitxer nou apareix immediatament després de pujar-lo, mentre la llista es resincronitza amb Supabase. Manté la correcció visual de Transport.
