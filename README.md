@@ -1,3 +1,18 @@
-# Freya Travel 2.6
+# Freya Travel 2.8
 
-Versió amb guia de transport completa per a Londres, juntament amb la previsió meteorològica i el resum del viatge. Inclou rutes pràctiques, consells de pagament i enllaços ràpids per a Google Maps, Citymapper i TfL.
+Actualització neta per pujar a GitHub.
+
+Inclou:
+- correcció visual de la pantalla Transport;
+- reforç de la pujada de Documents;
+- memòria cau renovada;
+- script opcional `supabase-documents-fix.sql` per reparar permisos o el bucket de Documents si encara fos necessari.
+
+## Fitxers per pujar
+Puja només aquests fitxers a l'arrel del repositori:
+- `index.html`
+- `404.html`
+- `sw.js`
+- `README.md`
+
+El fitxer `supabase-documents-fix.sql` és opcional i no cal executar-lo si Documents ja funciona.

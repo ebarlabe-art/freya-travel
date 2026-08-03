@@ -13,6 +13,86 @@
   <style>
     :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1f1b24;background:#f7f5fb;--purple:#6750a4;--soft:#eee8f4;--line:#e7e0ec;--muted:#625b71}*{box-sizing:border-box}body{margin:0}.shell{max-width:820px;margin:auto;padding:20px 16px 70px}.hero{text-align:center;padding:38px 16px 24px}.hero.compact{padding:24px 16px}.logo{font-size:46px}.hero h1{font-size:38px;margin:8px 0}.hero p{margin:6px 0;color:var(--muted)}.card{background:white;border:1px solid var(--line);border-radius:24px;padding:22px;margin:16px 0;box-shadow:0 8px 26px rgba(49,42,59,.07)}.stack{display:grid;gap:12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel{border:1px solid var(--line);border-radius:18px;padding:16px;display:grid;gap:10px}input,button{font:inherit}input{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:13px;background:#fff}button{border:0;border-radius:14px;padding:13px 16px;background:var(--purple);color:#fff;font-weight:700;cursor:pointer}.secondary,.ghost{background:var(--soft);color:#4f378b}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px}.topbar small{display:block;color:var(--muted);margin-top:4px}.message{padding:12px 14px;border-radius:14px;background:var(--soft);color:#3f2e63}.error{background:#ffdad6;color:#8c1d18}.add{display:flex;gap:10px}.add input{flex:1}.item{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--soft);padding:12px 0}.item label{display:flex;align-items:center;gap:10px;flex:1}.item input{width:auto}.item.done span{text-decoration:line-through;color:#79747e}.delete{width:40px;padding:8px;background:transparent;color:#b3261e;font-size:24px}.code{display:inline-block;font-size:21px;letter-spacing:2px;background:var(--soft);border-radius:12px;padding:10px 14px}.muted{color:#79747e}.hidden{display:none!important}
     .dashboard-head{background:linear-gradient(135deg,#6750a4,#9b72cf);color:#fff;border-radius:28px;padding:26px;margin:16px 0}.dashboard-head h1{margin:5px 0 8px}.dashboard-head p{margin:4px 0;color:#f1eaff}.countdown{font-size:1.15rem;font-weight:800;margin-top:14px}.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}.menu-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;text-align:left;color:#1f1b24;min-height:112px}.menu-card .icon{font-size:30px;display:block;margin-bottom:8px}.menu-card strong{display:block;font-size:1.06rem}.menu-card small{display:block;color:#79747e;margin-top:4px}.menu-card.disabled{opacity:.62}.back{margin-bottom:12px}.day-tabs{display:flex;gap:8px;overflow:auto;padding-bottom:8px}.day-tab{white-space:nowrap;background:#fff;color:#4f378b;border:1px solid var(--line);padding:10px 12px}.day-tab.active{background:var(--purple);color:#fff}.day{display:none}.day.active{display:block}.day-title{background:linear-gradient(135deg,#7657ad,#4f378b);color:#fff;border-radius:24px;padding:22px;margin:12px 0 16px}.day-title h2{margin:4px 0}.timeline{list-style:none;padding:0;margin:0;position:relative}.timeline:before{content:"";position:absolute;left:49px;top:12px;bottom:12px;width:2px;background:#d9cdef}.event{display:grid;grid-template-columns:70px 1fr;gap:12px;padding:8px 0;position:relative}.event time{font-weight:800;color:#6750a4;font-variant-numeric:tabular-nums}.event div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px 14px;position:relative}.event div:before{content:"";position:absolute;left:-28px;top:17px;width:10px;height:10px;border-radius:50%;background:#6750a4;border:3px solid #f7f5fb}.event strong{display:block}.event p{margin:4px 0 0;color:#625b71;font-size:.92rem}.badge{display:inline-block;background:#e7f5ec;color:#247642;border-radius:999px;padding:4px 8px;font-size:.75rem;font-weight:800;margin-top:7px}.map-link{display:inline-block;margin-top:10px;text-decoration:none;background:var(--soft);color:#4f378b;border-radius:12px;padding:10px 12px;font-weight:700}.footer{text-align:center;color:#79747e;font-size:.84rem;margin-top:28px}
+    .weather-panel{position:relative;background:linear-gradient(180deg,#4f3290,#6b4ebd 48%,#8d79e8);color:#fff;border:0;box-shadow:0 32px 80px rgba(60,31,112,.18);overflow:hidden}
+    .weather-panel::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top right,rgba(255,255,255,.14),transparent 32%);pointer-events:none}
+    .weather-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:28px 24px 22px;background:rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px)}
+    .weather-hero>div{max-width:66%}
+    .weather-hero-label{text-transform:uppercase;letter-spacing:.18em;font-size:.76rem;color:rgba(255,255,255,.8);margin-bottom:8px}
+    .weather-hero h2{margin:.1rem 0 .5rem;font-size:1.95rem;line-height:1.05}
+    .weather-hero-copy{margin:0;color:rgba(255,255,255,.82);line-height:1.7;font-size:.98rem}
+    .refresh-button{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.14);color:#fff;padding:14px 18px;border-radius:18px;min-width:130px;font-weight:700;box-shadow:0 14px 35px rgba(0,0,0,.14);transition:transform .22s ease,background .22s ease}
+    .refresh-button:hover{background:rgba(255,255,255,.22);transform:translateY(-1px)}
+    .refresh-button:active{transform:translateY(0)}
+    .weather-hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 24px 18px}
+    .weather-hero-card{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:24px;padding:20px;display:grid;gap:10px;min-height:112px}
+    .weather-hero-card span{font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.78)}
+    .weather-hero-card strong{font-size:1.3rem;line-height:1.1}
+    .weather-hero-card small{color:rgba(255,255,255,.78)}
+    .weather-hero-hot{background:linear-gradient(135deg,rgba(255,167,64,.16),rgba(255,112,87,.16));border-color:rgba(255,167,64,.28)}
+    .weather-hero-rain{background:linear-gradient(135deg,rgba(118,184,255,.14),rgba(124,94,255,.16));border-color:rgba(124,94,255,.28)}
+    .weather-status{padding:14px 18px;margin:0 24px 14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);border-radius:18px;color:#f4edff;font-weight:600}
+    .weather-banner{padding:14px 18px;margin:0 24px 18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:18px;color:#fff}
+    .weather-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:0 24px 24px}
+    .weather-card{position:relative;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:28px;padding:22px;overflow:hidden;color:#fff;box-shadow:0 22px 52px rgba(0,0,0,.16);transition:transform .24s ease,box-shadow .24s ease}
+    .weather-card:hover{transform:translateY(-2px);box-shadow:0 28px 64px rgba(0,0,0,.2)}
+    .weather-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top left,rgba(255,255,255,.14),transparent 28%);pointer-events:none}
+    .weather-card.hottest{border-color:rgba(255,135,34,.45);box-shadow:0 24px 58px rgba(255,111,34,.18)}
+    .weather-card.rainiest{border-color:rgba(94,187,255,.55);box-shadow:0 24px 58px rgba(58,126,255,.16)}
+    .weather-top{display:flex;align-items:center;gap:16px;position:relative;z-index:1;margin-bottom:18px}
+    .weather-icon{width:56px;height:56px;display:grid;place-items:center;font-size:2.1rem;background:rgba(255,255,255,.16);border-radius:18px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+    .weather-top strong{font-size:1.15rem;margin-bottom:6px}
+    .weather-top p{margin:0;color:rgba(255,255,255,.86)}
+    .weather-temp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+    .weather-temp-large,.weather-temp-small{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:14px;text-align:center}
+    .weather-temp-large strong,.weather-temp-small strong{font-size:1.5rem}
+    .weather-temp-large small,.weather-temp-small small{display:block;color:rgba(255,255,255,.75);margin-top:8px}
+    .weather-facts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px}
+    .weather-facts-grid div{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:12px}
+    .weather-facts-grid small{display:block;color:rgba(255,255,255,.75);margin-bottom:6px}
+    .weather-facts-grid strong{font-size:1rem}
+    .weather-advice{padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:.96rem;line-height:1.6;opacity:.98}
+    .transport-panel{position:relative;background:linear-gradient(180deg,#4f3290,#6b4ebd 48%,#8d79e8);color:#fff;border:0;box-shadow:0 32px 80px rgba(60,31,112,.18);overflow:hidden;border-radius:28px;margin:16px 0}
+    .transport-panel::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top right,rgba(255,255,255,.14),transparent 32%);pointer-events:none}
+    .transport-hero{display:flex;flex-direction:column;gap:14px;padding:28px 24px 24px;background:rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px)}
+    .transport-hero p{margin:0}
+    .transport-label{text-transform:uppercase;letter-spacing:.18em;font-size:.76rem;color:rgba(255,255,255,.8);margin-bottom:8px}
+    .transport-hero h2{margin:.1rem 0 .5rem;font-size:1.95rem;line-height:1.05}
+    .transport-copy{margin:0;color:rgba(255,255,255,.82);line-height:1.7;font-size:.98rem}
+    .transport-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+    .transport-card{position:relative;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:24px;padding:22px;overflow:hidden;color:#fff;box-shadow:0 22px 52px rgba(0,0,0,.16);transition:transform .24s ease,box-shadow .24s ease}
+    .transport-card:hover{transform:translateY(-2px);box-shadow:0 28px 64px rgba(0,0,0,.2)}
+    .transport-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top left,rgba(255,255,255,.14),transparent 28%);pointer-events:none}
+    .transport-card-icon{width:56px;height:56px;display:grid;place-items:center;font-size:2.1rem;background:rgba(255,255,255,.16);border-radius:18px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);margin-bottom:16px}
+    .transport-card h3{margin:.2rem 0 .8rem;font-size:1.25rem}
+    .transport-card p{margin:0 0 12px;color:rgba(255,255,255,.82);line-height:1.65}
+    .transport-note,.transport-warning{margin-top:12px;padding:12px 14px;border-radius:18px;font-size:.95rem}
+    .transport-note{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.16);color:#f4edff}
+    .transport-warning{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);color:#fff}
+    .transport-small{margin:0;color:rgba(255,255,255,.78);font-size:.94rem}
+    .transport-section{margin-top:22px}
+    .transport-arrival h3{margin:0 0 12px}
+    .transport-meta{display:grid;gap:10px;margin:14px 0 0}
+    .route-place{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:12px}
+    .route-place span:first-child{font-size:1.1rem}
+    .transport-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+    .transport-route-list{display:grid;gap:14px}
+    .route-card{background:#fff;border:1px solid var(--line);border-radius:24px;padding:20px;display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;box-shadow:0 18px 40px rgba(49,42,59,.08)}
+    .route-card-icon{font-size:2rem;display:grid;place-items:center;width:52px;height:52px;background:#f3eef9;border-radius:18px}
+    .route-details strong{display:block;font-size:1.05rem;margin-bottom:12px;color:#1f1b24}
+    .route-details .route-place{display:flex;align-items:center;gap:10px;background:#f7f5fb;border:1px solid #e7e0ec;border-radius:16px;padding:12px;margin-top:10px;color:#4f378b}
+    .route-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+    .route-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;border-radius:18px;padding:14px 16px;font-weight:700;font-size:.98rem;min-height:52px;transition:transform .18s ease,box-shadow .18s ease}
+    .route-button:hover{transform:translateY(-1px);box-shadow:0 14px 24px rgba(103,81,167,.18)}
+    .route-button:active{transform:translateY(0)}
+    .route-button.google{background:linear-gradient(135deg,#6750a4,#8d79e8);color:#fff}
+    .route-button.citymapper{background:linear-gradient(135deg,#5f4ea3,#7f6be6);color:#fff}
+    .route-button:not(.google):not(.citymapper){background:var(--purple);color:#fff}
+    .tip-list{display:grid;gap:10px;margin-top:12px}
+    .tip-item{background:#f5f0ff;border:1px solid #e8e0f6;border-radius:18px;padding:14px;color:#4a3c6d}
+    .quick-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+    .quick-link{display:inline-flex;align-items:center;gap:10px;padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:18px;color:#4f378b;text-decoration:none;font-weight:700;box-shadow:0 12px 28px rgba(103,81,167,.08)}
+    .quick-link span{font-size:1.1rem}
+    @media(max-width:760px){.weather-hero{flex-direction:column}.weather-hero-grid,.weather-grid{grid-template-columns:1fr}.weather-panel{padding:18px 0 0}.weather-card{padding:18px}.weather-status,.weather-banner{margin-left:18px;margin-right:18px}.weather-hero-grid{margin-left:18px;margin-right:18px}.weather-grid{margin-left:18px;margin-right:18px}.transport-grid{grid-template-columns:1fr}.transport-actions,.route-actions{grid-template-columns:1fr}.quick-links{grid-template-columns:1fr}.transport-panel{margin-left:0;margin-right:0}.route-card{grid-template-columns:auto 1fr}} 
     .ticket-list{display:grid;gap:16px}.ticket-card{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 8px 26px rgba(49,42,59,.06)}.ticket-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 18px 12px}.ticket-type{display:flex;align-items:center;gap:10px}.ticket-type .ticket-icon{font-size:28px}.ticket-type strong{display:block;font-size:1.05rem}.ticket-type small{display:block;color:var(--muted);margin-top:2px}.ticket-status{display:inline-block;background:#e7f5ec;color:#247642;border-radius:999px;padding:5px 9px;font-size:.75rem;font-weight:800;white-space:nowrap}.ticket-body{padding:0 18px 18px}.boarding{background:linear-gradient(135deg,#6750a4,#9b72cf);color:#fff;border-radius:18px;padding:18px}.route{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin:14px 0}.airport{text-align:left}.airport:last-child{text-align:right}.airport b{display:block;font-size:1.55rem}.airport span{font-size:.83rem;color:#efe8ff}.plane-line{font-size:1.35rem}.ticket-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.45)}.ticket-meta small{display:block;color:#efe8ff}.ticket-meta b{display:block;margin-top:3px}.ticket-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.ticket-actions button,.ticket-actions a{display:inline-block;text-decoration:none;border-radius:12px;padding:10px 12px;font-weight:700}.ticket-actions .pending{background:var(--soft);color:#6f6877;cursor:default}.ticket-actions .map-link{margin-top:0}.reservation{border-radius:18px;padding:18px;background:#faf8fd;border:1px solid var(--line)}.reservation h3{margin:0 0 8px}.reservation p{margin:4px 0;color:var(--muted)}.reservation .big-time{font-size:1.35rem;font-weight:800;color:#4f378b;margin:10px 0}.wallet-note{background:#fff4d7;border:1px solid #f0d98a;color:#6d5310;border-radius:16px;padding:14px;margin-top:16px}
     .favorite-btn{position:absolute;right:10px;top:10px;width:38px;height:38px;padding:0;border-radius:50%;background:#f3eef9;color:#6b5b79;font-size:1.25rem;line-height:1;box-shadow:none}.favorite-btn.active{background:#fff1bf;color:#9a6b00}.event>div{padding-right:58px}.ticket-card{position:relative}.ticket-card>.favorite-btn{z-index:2;right:12px;top:12px}.ticket-head{padding-right:64px}.favorites-grid{display:grid;gap:14px}.favorite-item{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 8px 24px rgba(49,42,59,.05)}.favorite-item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.favorite-item h3{margin:0}.favorite-item .when{font-weight:800;color:#6750a4;margin:6px 0}.favorite-item p{margin:5px 0;color:var(--muted)}.favorite-remove{background:#fff1bf;color:#7c5600;padding:9px 11px;white-space:nowrap}.favorite-empty{text-align:center;padding:26px 14px;color:var(--muted)}.favorite-count{display:inline-block;min-width:24px;text-align:center;background:#fff1bf;color:#7c5600;border-radius:999px;padding:3px 7px;font-size:.78rem;font-weight:800;margin-left:6px}
     .install-card{display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(135deg,#f3eef9,#fff);border:1px solid var(--line);border-radius:20px;padding:16px;margin:14px 0}.install-card strong{display:block}.install-card small{display:block;color:var(--muted);margin-top:4px}.install-card button{white-space:nowrap}.install-help{font-size:.88rem;color:var(--muted);margin-top:8px}
@@ -24,9 +104,7 @@
     @media(max-width:620px){.two{grid-template-columns:1fr}.hero h1{font-size:32px}.add{flex-direction:column}.menu-grid{grid-template-columns:1fr 1fr}.event{grid-template-columns:60px 1fr}.timeline:before{left:40px}.event div:before{left:-25px}.expense-summary{grid-template-columns:1fr}.expense-row{grid-template-columns:1fr}.expense-filters{grid-template-columns:1fr}.chart-row{grid-template-columns:90px 1fr}.chart-value{grid-column:2}}
   
     .version-pill{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.17);font-size:.78rem;font-weight:800}.trip-overview{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0 18px}.overview-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;text-align:center;box-shadow:0 6px 18px rgba(49,42,59,.05)}.overview-card span{display:block;font-size:1.35rem}.overview-card strong{display:block;font-size:1.08rem;margin-top:4px}.overview-card small{display:block;color:var(--muted);margin-top:2px}.progress-track{height:7px;border-radius:999px;background:#ebe5f2;overflow:hidden;margin-top:8px}.progress-bar{height:100%;width:0;background:linear-gradient(90deg,#6750a4,#9b72cf);transition:width .35s ease}.update-toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:30;width:min(92%,520px);display:flex;align-items:center;justify-content:space-between;gap:12px;background:#2d2438;color:#fff;border-radius:18px;padding:13px 14px;box-shadow:0 12px 34px rgba(0,0,0,.25)}.update-toast button{padding:9px 12px;background:#fff;color:#4f378b}.menu-card:active,button:active{transform:scale(.985)}@media(max-width:520px){.trip-overview{grid-template-columns:1fr}.overview-card{text-align:left;display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center}.overview-card span{grid-row:1/4}.overview-card .progress-track{grid-column:2}}
-
-    .weather-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}.weather-summary-card{background:linear-gradient(145deg,#f4effb,#fff);border:1px solid var(--line);border-radius:18px;padding:14px}.weather-summary-card strong{display:block;color:#4f378b;margin-top:4px}.weather-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.weather-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px;box-shadow:0 8px 24px rgba(49,42,59,.05)}.weather-card.today{border:2px solid var(--purple);background:linear-gradient(145deg,#fff,#f2ecfa)}.weather-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.weather-icon{font-size:2.2rem}.weather-date{font-weight:850}.weather-desc{color:var(--muted);margin:7px 0}.weather-temps{font-size:1.4rem;font-weight:900;color:#4f378b}.weather-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.weather-metric{background:#f7f3fb;border-radius:14px;padding:10px;text-align:center;font-size:.85rem}.weather-metric strong{display:block;color:#4f378b;margin-top:3px}.weather-advice{margin-top:12px;background:#eee6f8;color:#4f378b;border-radius:14px;padding:11px 12px;font-weight:750}.weather-actions{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.weather-note{background:#fff4d7;border:1px solid #f0d98a;color:#6d5310;border-radius:16px;padding:14px}.photo-upload{display:grid;gap:12px}.photo-upload input,.photo-upload select{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:12px;background:#fff}.photo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.photo-card{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 8px 24px rgba(49,42,59,.05)}.photo-thumb{aspect-ratio:4/3;background:#eee8f4;display:grid;place-items:center;font-size:2rem;overflow:hidden}.photo-thumb img{width:100%;height:100%;object-fit:cover}.photo-info{padding:12px}.photo-info h3{margin:0 0 4px}.photo-info p{margin:0;color:var(--muted);font-size:.85rem}.photo-actions{display:flex;gap:8px;margin-top:10px}.photo-actions button{padding:9px 10px}.guide-grid{display:grid;gap:14px}.guide-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px}.guide-card h3{margin:0 0 8px}.guide-card p{margin:6px 0;color:var(--muted)}.guide-card details{margin-top:10px}.guide-card summary{cursor:pointer;font-weight:800;color:#4f378b}.tip-list{padding-left:1.2rem;margin:.6rem 0}.tip-list li{margin:.45rem 0}.transport-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;margin:12px 0}.transport-card h3{margin:0 0 8px}.transport-card p{margin:5px 0;color:var(--muted)}.transport-badge{display:inline-block;background:#ede7f6;color:#4f378b;border-radius:999px;padding:5px 9px;font-size:.78rem;font-weight:800;margin:3px 4px 3px 0}@media(max-width:560px){.weather-grid,.photo-grid,.weather-summary{grid-template-columns:1fr}.weather-metrics{grid-template-columns:1fr 1fr}.weather-metric:last-child{grid-column:1/-1}}
-  </style>
+</style>
 </head>
 <body>
 <main class="shell">
@@ -46,7 +124,7 @@
     <header class="topbar"><div><strong id="tripTitleTop"></strong><small id="userEmail2"></small></div><button class="ghost logout">Sortir</button></header>
 
     <div id="dashboardView">
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 2.4 final</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 2.8 estable</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
         <div class="overview-card"><span>✅</span><strong id="overviewChecklist">0/0</strong><small>Checklist completada</small><div class="progress-track"><div id="overviewProgress" class="progress-bar"></div></div></div>
@@ -65,8 +143,13 @@
         <button class="menu-card" data-open="favoritesView"><span class="icon">⭐</span><strong>Preferits <span id="favoriteCount" class="favorite-count">0</span></strong><small>Els vostres imprescindibles</small></button>
         <button class="menu-card" data-open="documentsView"><span class="icon">📄</span><strong>Documents <span id="documentCount" class="doc-count">0</span></strong><small>PDF, captures i QR privats</small></button>
         <button class="menu-card" data-open="expensesView"><span class="icon">💶</span><strong>Despeses <span id="expenseCount" class="expense-count">0</span></strong><small>Registre del compte comú</small></button>
-        <button class="menu-card" data-open="photosView"><span class="icon">📸</span><strong>Fotos</strong><small>Àlbum compartit del viatge</small></button>
-        <button class="menu-card" data-open="weatherView"><span class="icon">🌦️</span><strong>Temps</strong><small>Previsió actualitzada de Londres</small></button><button class="menu-card" data-open="guideView"><span class="icon">📖</span><strong>Descobreix Londres</strong><small>Història i curiositats</small></button><button class="menu-card" data-open="transportView"><span class="icon">🚇</span><strong>Transport</strong><small>Guia pràctica per moure-us</small></button>
+        <button class="menu-card" data-open="transportView"><span class="icon">🚇</span><strong>Transport</strong><small>Guia pràctica de Londres</small></button>
+        <button class="menu-card"><span class="icon">📸</span><strong>Fotos</strong><small>Properament</small></button>
+        <button class="menu-card" data-open="weatherView">
+          <span class="icon">🌦️</span>
+          <strong>Temps</strong>
+          <small>Previsió de Londres</small>
+        </button>
       </div>
       <div class="card"><h2>Codi d’invitació</h2><p>Comparteix-lo amb el Xesc:</p><div id="inviteCode" class="code"></div><p><button id="copyCode" type="button" class="secondary">Copiar codi</button></p><p id="appMsg" class="message hidden"></p></div>
     </div>
@@ -103,7 +186,6 @@
             <option value="Excursió">🚌 Excursió</option>
             <option value="Museu">🏛️ Museu o monument</option>
             <option value="Personal">🛂 Document personal</option>
-            <option value="Foto">📸 Foto</option>
             <option value="Altres">📎 Altres</option>
           </select>
           <input id="documentFile" type="file" accept="image/*,.pdf,application/pdf" required>
@@ -148,8 +230,7 @@
           </div>
           <div class="expense-row">
             <select id="expensePaidBy"><option value="Compte comú">Pagat amb el compte comú</option><option value="Eva">Pagat per l’Eva</option><option value="Xesc">Pagat per en Xesc</option></select>
-            <select id="expenseCategory"><option value="Menjar">🍽️ Menjar</option><option value="Transport">🚇 Transport</option><option value="Entrades">🎟️ Entrades</option><option value="Compres">🛍️ Compres</option><option value="Hotel">🏨 Allotjament</option><option value="Foto">📸 Foto</option>
-            <option value="Altres">📎 Altres</option></select>
+            <select id="expenseCategory"><option value="Menjar">🍽️ Menjar</option><option value="Transport">🚇 Transport</option><option value="Entrades">🎟️ Entrades</option><option value="Compres">🛍️ Compres</option><option value="Hotel">🏨 Allotjament</option><option value="Altres">📎 Altres</option></select>
           </div>
           <div class="expense-row">
             <input id="expenseDate" type="date" value="2026-08-06">
@@ -175,6 +256,140 @@
       <button id="floatExpenseAdd" class="float-add hidden" type="button" aria-label="Afegir despesa">＋</button>
     </div>
 
+    <div id="transportView" class="hidden">
+      <button class="ghost back" data-back>← Torna al tauler</button>
+      <div class="transport-panel">
+        <div class="transport-hero">
+          <p class="transport-label">🚇 Transport</p>
+          <h2>Mou-te per Londres</h2>
+          <p class="transport-copy">Les millors rutes del vostre viatge amb Google Maps i Citymapper.</p>
+        </div>
+      </div>
+      <div class="transport-grid">
+        <article class="transport-card">
+          <div class="transport-card-icon">💳</div>
+          <h3>💳 Com pagar</h3>
+          <p>Contactless: paga amb targeta o mòbil directament al lector groc.</p>
+          <p>Oyster: una alternativa recarregable per viatges múltiples.</p>
+          <div class="transport-note">Cada persona ha de validar amb la seva pròpia targeta o dispositiu.</div>
+          <p class="transport-small">A metro i tren cal tocar a l’entrada i a la sortida. Als autobusos, només cal validar en pujar.</p>
+          <div class="transport-warning">No compartiu la mateixa targeta contactless entre diverses persones.</div>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">🚇</div>
+          <h3>🚇 Tube</h3>
+          <p>La manera més ràpida per travessar el centre i arribar a Westminster, South Bank i la City.</p>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">🚌</div>
+          <h3>🚌 Bus</h3>
+          <p>Perfecte per trajectes curts i per veure la ciutat sense perdre el ritme.</p>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">🚆</div>
+          <h3>🚆 Elizabeth line</h3>
+          <p>Creua Londres sense canvis innecessaris, molt còmode per a estacions com Paddington i Canary Wharf.</p>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">🚊</div>
+          <h3>🚊 DLR</h3>
+          <p>Ideal per Greenwich i Canary Wharf, amb connexions lleugeres i espai per maletes petites.</p>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">⛴️</div>
+          <h3>⛴️ Thames Clippers</h3>
+          <p>Una alternativa agradable pel riu per arribar a South Bank i Greenwich sense estrès.</p>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">🚕</div>
+          <h3>🚕 Black Cab / taxi</h3>
+          <p>Còmode per maletes pesades o trajectes molt directes quan avança el temps.</p>
+        </article>
+        <article class="transport-card">
+          <div class="transport-card-icon">🚶</div>
+          <h3>🚶 A peu</h3>
+          <p>Recomanat per distàncies curtes i per gaudir del centre a ritme tranquil.</p>
+        </article>
+      </div>
+      <div class="transport-section">
+        <div class="transport-card transport-arrival">
+          <h3>✈️ De Stansted a l’hotel</h3>
+          <div class="transport-meta">
+            <div class="route-place"><span>📍</span><span>London Stansted Airport</span></div>
+            <div class="route-place"><span>🎯</span><span>Riu Plaza London The Westminster</span></div>
+          </div>
+          <p>Stansted Express fins a Liverpool Street o Tottenham Hale i després transport urbà fins a Westminster. Comprova la millor combinació el mateix dia segons incidències.</p>
+          <div class="transport-actions">
+            <a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=London+Stansted+Airport&destination=Riu+Plaza+London+The+Westminster&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a>
+            <a class="route-button citymapper" href="https://citymapper.com/directions?startcoord=51.8880,-0.2370&endcoord=51.4980,-0.1310&start=London+Stansted+Airport&end=Riu+Plaza+London+The+Westminster" target="_blank" rel="noopener">🚇 Citymapper</a>
+          </div>
+        </div>
+      </div>
+      <div class="transport-section">
+        <h3>🗺️ Rutes del nostre viatge</h3>
+        <div class="transport-route-list">
+          <article class="route-card"><div class="route-card-icon">🚇</div><div class="route-details"><strong>Hotel → British Museum</strong><div class="route-place"><span>📍</span><span>Riu Plaza London The Westminster</span></div><div class="route-place"><span>🎯</span><span>British Museum</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=British+Museum&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Riu+Plaza+London+The+Westminster&end=British+Museum" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">🚌</div><div class="route-details"><strong>British Museum → Sondheim Theatre</strong><div class="route-place"><span>📍</span><span>British Museum</span></div><div class="route-place"><span>🎯</span><span>Sondheim Theatre</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=British+Museum&destination=Sondheim+Theatre&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=British+Museum&end=Sondheim+Theatre" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">🚇</div><div class="route-details"><strong>Hotel → Tower of London</strong><div class="route-place"><span>📍</span><span>Riu Plaza London The Westminster</span></div><div class="route-place"><span>🎯</span><span>Tower of London</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Tower+of+London&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Riu+Plaza+London+The+Westminster&end=Tower+of+London" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">🚶</div><div class="route-details"><strong>Tower of London → St Dunstan in the East</strong><div class="route-place"><span>📍</span><span>Tower of London</span></div><div class="route-place"><span>🎯</span><span>St Dunstan in the East</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Tower+of+London&destination=St+Dunstan+in+the+East&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Tower+of+London&end=St+Dunstan+in+the+East" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">🚊</div><div class="route-details"><strong>Hotel → Greenwich / Royal Observatory</strong><div class="route-place"><span>📍</span><span>Riu Plaza London The Westminster</span></div><div class="route-place"><span>🎯</span><span>Royal Observatory Greenwich</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Royal+Observatory+Greenwich&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Riu+Plaza+London+The+Westminster&end=Royal+Observatory+Greenwich" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">⛴️</div><div class="route-details"><strong>Greenwich → London Eye</strong><div class="route-place"><span>📍</span><span>Greenwich</span></div><div class="route-place"><span>🎯</span><span>London Eye</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Greenwich&destination=London+Eye&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Greenwich&end=London+Eye" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">🚇</div><div class="route-details"><strong>Hotel → Houses of Parliament</strong><div class="route-place"><span>📍</span><span>Riu Plaza London The Westminster</span></div><div class="route-place"><span>🎯</span><span>Houses of Parliament</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Houses+of+Parliament&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Riu+Plaza+London+The+Westminster&end=Houses+of+Parliament" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+          <article class="route-card"><div class="route-card-icon">🚆</div><div class="route-details"><strong>Hotel → estació o aeroport de tornada</strong><div class="route-place"><span>📍</span><span>Riu Plaza London The Westminster</span></div><div class="route-place"><span>🎯</span><span>Stansted Airport</span></div><div class="route-actions"><a class="route-button google" href="https://www.google.com/maps/dir/?api=1&origin=Riu+Plaza+London+The+Westminster&destination=Stansted+Airport&travelmode=transit" target="_blank" rel="noopener">🗺️ Google Maps</a><a class="route-button citymapper" href="https://citymapper.com/directions?start=Riu+Plaza+London+The+Westminster&end=Stansted+Airport" target="_blank" rel="noopener">🚇 Citymapper</a></div></div></article>
+        </div>
+      </div>
+      <div class="transport-section">
+        <h3>🔧 Consells pràctics</h3>
+        <div class="tip-list">
+          <div class="tip-item">Eviteu les hores punta quan sigui possible.</div>
+          <div class="tip-item">Deixeu baixar abans de pujar.</div>
+          <div class="tip-item">A les escales mecàniques, quedeu-vos a la dreta.</div>
+          <div class="tip-item">Tingueu el mètode de pagament preparat.</div>
+          <div class="tip-item">Comproveu incidències abans dels trajectes importants.</div>
+          <div class="tip-item">Guardeu una alternativa si hi ha talls o retards.</div>
+          <div class="tip-item">El metro pot ser calorós a l’agost: porteu aigua.</div>
+        </div>
+      </div>
+      <div class="transport-section">
+        <h3>🚀 Accessos ràpids</h3>
+        <div class="quick-links">
+          <a class="quick-link" href="https://www.google.com/maps" target="_blank" rel="noopener"><span>🗺️</span>Google Maps</a>
+          <a class="quick-link" href="https://citymapper.com" target="_blank" rel="noopener"><span>📍</span>Citymapper</a>
+          <a class="quick-link" href="https://tfl.gov.uk/maps/track/tube" target="_blank" rel="noopener"><span>🚇</span>Mapa oficial del Tube</a>
+          <a class="quick-link" href="https://tfl.gov.uk/status" target="_blank" rel="noopener"><span>⚠️</span>Estat del servei de TfL</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="weatherView" class="hidden">
+      <button class="ghost back" data-back>← Torna al tauler</button>
+      <div class="card weather-panel">
+        <div class="weather-hero">
+          <div>
+            <p class="weather-hero-label">Temps a Londres</p>
+            <h2>Previsió del 6 a l’11 d’agost</h2>
+            <p class="weather-hero-copy">Resum del dia més càlid i del dia amb més probabilitat de pluja per preparar la maleta.</p>
+          </div>
+          <button id="refreshWeather" type="button" class="refresh-button">🔄 Actualitza</button>
+        </div>
+        <div class="weather-hero-grid">
+          <div class="weather-hero-card weather-hero-hot">
+            <span>Dia més càlid</span>
+            <strong id="hottestDayLabel">—</strong>
+            <small id="hottestDaySummary">Màx. —</small>
+          </div>
+          <div class="weather-hero-card weather-hero-rain">
+            <span>Dia més plujós</span>
+            <strong id="rainiestDayLabel">—</strong>
+            <small id="rainiestDaySummary">Pluja —</small>
+          </div>
+        </div>
+        <div id="weatherStatus" class="weather-status muted">Carregant la previsió…</div>
+        <div id="weatherNotice" class="weather-banner hidden"></div>
+        <div id="weatherGrid" class="weather-grid"></div>
+      </div>
+    </div>
+
     <div id="favoritesView" class="hidden">
       <button class="ghost back" data-back>← Torna al tauler</button>
       <div class="card">
@@ -183,44 +398,6 @@
         <div id="favoritesList" class="favorites-grid"></div>
         <div id="favoritesEmpty" class="favorite-empty">Encara no has marcat cap preferit. Ves a l’itinerari o a les entrades i toca ☆.</div>
       </div>
-    </div>
-
-
-    <div id="weatherView" class="hidden">
-      <button class="ghost back" data-back>← Torna al tauler</button>
-      <div class="card"><h2>🌦️ Temps a Londres</h2><p class="muted">Previsió actualitzada per al vostre viatge.</p><div id="weatherSummary" class="weather-summary hidden"></div><div class="weather-actions"><button id="refreshWeather" type="button">🔄 Actualitza</button></div><p id="weatherStatus" class="message hidden"></p><div id="weatherNote" class="weather-note hidden"></div></div>
-      <div id="weatherGrid" class="weather-grid"></div>
-    </div>
-
-    <div id="photosView" class="hidden">
-      <button class="ghost back" data-back>← Torna al tauler</button>
-      <div class="card"><h2>📸 Fotos compartides</h2><p class="muted">Pugeu fotos des del mòbil. Es desen al mateix espai privat que els documents i les veureu tots dos.</p></div>
-      <div class="card"><h3>Afegir foto</h3><form id="photoForm" class="photo-upload"><input id="photoTitle" placeholder="Títol (p. ex. Tower Bridge)" required><input id="photoFile" type="file" accept="image/*" required><button id="uploadPhoto" type="submit">Pujar foto</button></form><p id="photoMsg" class="message hidden"></p></div>
-      <div id="photosGrid" class="photo-grid"></div><p id="photosEmpty" class="doc-empty">Encara no hi ha fotos.</p>
-    </div>
-
-    <div id="guideView" class="hidden">
-      <button class="ghost back" data-back>← Torna al tauler</button>
-      <div class="card"><h2>📖 Descobreix Londres</h2><p class="muted">Història, curiositats i allò que no us heu de perdre dels principals llocs del vostre itinerari.</p></div>
-      <div class="guide-grid">
-        <article class="guide-card"><h3>🕰️ Big Ben i Westminster</h3><p>Big Ben és, en realitat, el nom de la gran campana de la torre del Palau de Westminster. La torre es diu Elizabeth Tower des de 2012.</p><details><summary>Curiositats i imprescindibles</summary><ul class="tip-list"><li>La torre neogòtica es va completar el 1859.</li><li>La millor perspectiva és des del pont de Westminster i de la riba sud.</li><li>Westminster Abbey ha estat escenari de coronacions reials des de 1066.</li></ul></details><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Big+Ben+London">📍 Maps</a></article>
-        <article class="guide-card"><h3>🏰 Tower of London</h3><p>Fortalesa normanda iniciada per Guillem el Conqueridor al segle XI. Ha estat palau, presó, arsenal, casa de la moneda i custòdia de les Joies de la Corona.</p><details><summary>Curiositats i imprescindibles</summary><ul class="tip-list"><li>Busqueu els corbs: la llegenda diu que, si marxen, cauran la Torre i el regne.</li><li>No us perdeu la White Tower i l’exposició de les Joies de la Corona.</li><li>Els Yeoman Warders són coneguts popularment com a Beefeaters.</li></ul></details></article>
-        <article class="guide-card"><h3>🌉 Tower Bridge</h3><p>Construït entre 1886 i 1894, és un pont basculant i penjant concebut per no interrompre el trànsit fluvial del Tàmesi.</p><details><summary>Curiositats i imprescindibles</summary><ul class="tip-list"><li>Les passarel·les superiors ofereixen una vista magnífica.</li><li>El terra de vidre permet veure el trànsit sota els peus.</li><li>No s’ha de confondre amb London Bridge.</li></ul></details></article>
-        <article class="guide-card"><h3>🏛️ British Museum</h3><p>Fundat el 1753, va ser el primer gran museu públic nacional del món. Reuneix objectes de cultures i períodes de tot el planeta.</p><details><summary>Què no us heu de perdre</summary><ul class="tip-list"><li>La Pedra de Rosetta.</li><li>Les escultures del Partenó.</li><li>Les mòmies egípcies i la Great Court.</li></ul></details></article>
-        <article class="guide-card"><h3>🌍 Royal Observatory Greenwich</h3><p>Fundat el 1675 per Carles II, és el lloc de referència del meridià zero i de la història de la navegació astronòmica britànica.</p><details><summary>Curiositats i imprescindibles</summary><ul class="tip-list"><li>Podeu posar un peu a cada hemisferi.</li><li>Des del turó hi ha una de les millors panoràmiques de Londres.</li><li>Greenwich Mean Time va ser una referència mundial del temps.</li></ul></details></article>
-        <article class="guide-card"><h3>⛪ St Dunstan in the East</h3><p>Les ruïnes d’una església medieval, reconstruïda per Christopher Wren i greument danyada durant el Blitz, es van convertir en jardí públic el 1971.</p><details><summary>Per què és especial</summary><ul class="tip-list"><li>La vegetació s’enfila per les parets gòtiques.</li><li>És un racó tranquil enmig de la City.</li><li>Molt fotogènic a primera hora o a la tarda.</li></ul></details></article>
-      </div>
-    </div>
-
-    <div id="transportView" class="hidden">
-      <button class="ghost back" data-back>← Torna al tauler</button>
-      <div class="card"><h2>🚇 Guia pràctica de transport</h2><p class="muted">La informació essencial per moure-us per Londres sense complicacions.</p></div>
-      <article class="transport-card"><h3>💳 Contactless i Oyster</h3><p>Podeu pagar metro, bus, DLR i la majoria de trajectes amb una targeta contactless o Apple Pay. Feu servir sempre el mateix dispositiu per entrar i sortir.</p><span class="transport-badge">Daily cap</span><span class="transport-badge">No cal comprar bitllet</span></article>
-      <article class="transport-card"><h3>🚇 Metro</h3><p>Cal fer <em>touch in</em> i <em>touch out</em>. Eviteu les hores punta si podeu. Westminster, Embankment, Charing Cross, Tower Hill, Gloucester Road i Tottenham Court Road seran estacions clau.</p><a class="map-link" target="_blank" rel="noopener" href="https://tfl.gov.uk/maps/track/tube">Obrir mapa oficial</a></article>
-      <article class="transport-card"><h3>🚌 Autobús</h3><p>Només cal validar en pujar; no es valida en baixar. No s’accepta efectiu. És més lent, però permet veure la ciutat.</p></article>
-      <article class="transport-card"><h3>🚤 Uber Boat by Thames Clippers</h3><p>Ideal per anar a Greenwich. Es pot pagar amb contactless o Oyster. Arribeu al moll amb marge i comproveu el sentit del servei.</p></article>
-      <article class="transport-card"><h3>✈️ Stansted</h3><p>El Stansted Express connecta l’aeroport amb Liverpool Street. Reserveu marge per als controls i tingueu present el trajecte des de l’hotel fins a l’estació.</p><a class="map-link" target="_blank" rel="noopener" href="https://www.stanstedexpress.com/">Web oficial</a></article>
-      <article class="transport-card"><h3>📱 Consells ràpids</h3><ul class="tip-list"><li>Citymapper i Google Maps són molt útils per combinar metro, bus i caminades.</li><li>A les escales mecàniques: dreta per quedar-se quiet, esquerra per avançar.</li><li>Conserveu bateria: descarregueu mapes i porteu una bateria externa.</li><li>En emergència, el telèfon general és el 999 o el 112.</li></ul></article>
     </div>
 
     <div id="itineraryView" class="hidden">
@@ -239,7 +416,7 @@
 
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 2.4 final</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 2.8</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -252,7 +429,7 @@ let session=null,trip=null,channel=null;
 const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-function setAppView(id){['dashboardView','checklistView','ticketsView','favoritesView','documentsView','expensesView','photosView','weatherView','guideView','transportView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='photosView')loadPhotos();if(id==='weatherView')loadWeather();window.scrollTo(0,0)}
+function setAppView(id){['dashboardView','checklistView','ticketsView','transportView','favoritesView','documentsView','expensesView','weatherView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
 function updateCountdown(){const now=new Date(),start=new Date('2026-08-06T12:45:00+02:00'),end=new Date('2026-08-12T00:35:00+02:00');let text='';if(now<start){const d=Math.ceil((start-now)/86400000);text=d===1?'Falta 1 dia!':`Falten ${d} dies!`}else if(now<end){text='🇬🇧 Bon viatge!'}else{text='Un viatge per recordar 💜'}$('countdown').textContent=text}
 function updateTravelBrief(){
   const now=new Date();
@@ -279,10 +456,146 @@ async function loadItems(){if(!trip)return;const {data,error}=await db.from('che
 function subscribe(){if(channel)db.removeChannel(channel);channel=db.channel('checklist-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},loadItems).subscribe()}
 async function toggleItem(id,done){const {error}=await db.from('checklist_items').update({done}).eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
 async function deleteItem(id){const {error}=await db.from('checklist_items').delete().eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
-document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>setAppView(b.dataset.open));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView('dashboardView'));
+document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.open==='weatherView')console.log('Obrint weatherView');setAppView(b.dataset.open)});document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView('dashboardView'));document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
 document.querySelectorAll('.day-tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.day-tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.day').forEach(x=>x.classList.toggle('active',x.id===b.dataset.day))});
 
-function favoriteStorageKey(){return `freya-favorites-${trip?.id||'london-2026'}-${session?.user?.id||'guest'}`}
+const WEATHER_CACHE_KEY='freya-weather-cache-v2';
+const WEATHER_TTL_MS=30*60*1000;
+const WEATHER_TARGET_DATES=['2026-08-06','2026-08-07','2026-08-08','2026-08-09','2026-08-10','2026-08-11'];
+
+function formatWeatherDate(date){
+  const parsed=new Date(`${date}T12:00:00`);
+  return new Intl.DateTimeFormat('ca-ES',{weekday:'long',day:'numeric',month:'long'}).format(parsed).replace(/^./,c=>c.toUpperCase());
+}
+
+function weatherDescription(code){
+  if(code===0)return 'Cel serè';
+  if(code>=1&&code<=2)return 'Poc ennuvolat';
+  if(code===3)return 'Ennuvolat';
+  if(code>=45&&code<=48)return 'Boira';
+  if(code>=51&&code<=57)return 'Plugim';
+  if(code>=61&&code<=67)return 'Pluja';
+  if(code>=71&&code<=77)return 'Neu';
+  if(code>=80&&code<=82)return 'Ruixats';
+  if(code>=85&&code<=86)return 'Ruixats de neu';
+  if(code>=95&&code<=99)return 'Tempesta';
+  return 'Condicions variables';
+}
+
+function weatherIcon(code){
+  if(code===0)return '☀️';
+  if(code>=1&&code<=2)return '🌤️';
+  if(code===3)return '☁️';
+  if(code>=45&&code<=48)return '🌫️';
+  if(code>=51&&code<=57)return '🌦️';
+  if(code>=61&&code<=67)return '🌧️';
+  if(code>=71&&code<=77)return '🌨️';
+  if(code>=80&&code<=82)return '🌦️';
+  if(code>=85&&code<=86)return '🌨️';
+  if(code>=95&&code<=99)return '⛈️';
+  return '🌤️';
+}
+
+function getWeatherAdvice(rain,wind,max){
+  if(rain>=40) return 'Porteu paraigua.';
+  if(max>=25) return 'Dia càlid: porteu aigua.';
+  if(wind>=30) return 'Pot fer força vent.';
+  return 'Bon dia per caminar i descobrir Londres.';
+}
+
+function renderWeather(days,notice,updatedAt){
+  const grid=$('weatherGrid');
+  const status=$('weatherStatus');
+  const noticeBox=$('weatherNotice');
+  const hottestLabel=$('hottestDayLabel');
+  const hottestSummary=$('hottestDaySummary');
+  const rainiestLabel=$('rainiestDayLabel');
+  const rainiestSummary=$('rainiestDaySummary');
+  if(!grid||!status||!noticeBox||!hottestLabel||!hottestSummary||!rainiestLabel||!rainiestSummary)return;
+  status.textContent=updatedAt?`Darrera actualització: ${updatedAt}`:'Previsió preparada per a la setmana del viatge';
+  noticeBox.classList.toggle('hidden',!notice);
+  noticeBox.textContent=notice||'';
+  if(!days.length){
+    hottestLabel.textContent='—';
+    hottestSummary.textContent='—';
+    rainiestLabel.textContent='—';
+    rainiestSummary.textContent='—';
+    grid.innerHTML='<div class="weather-card"><p class="muted">No hi ha dades disponibles per als dies del viatge.</p></div>';
+    return;
+  }
+  const hottest=days.reduce((best,day)=>!best||day.max>best.max?day:best,days[0]);
+  const rainiest=days.reduce((best,day)=>!best||day.rain>best.rain?day:best,days[0]);
+  hottestLabel.textContent=hottest.label;
+  hottestSummary.textContent=`Màx. ${hottest.max}° · ${hottest.description}`;
+  rainiestLabel.textContent=rainiest.label;
+  rainiestSummary.textContent=`${rainiest.rain}% pluja · ${rainiest.description}`;
+  grid.innerHTML=days.map(day=>{
+    const highlight=[day.max===hottest.max? ' hottest':'', day.rain===rainiest.rain? ' rainiest':''].join('');
+    return `<article class="weather-card${highlight}"><div class="weather-top"><span class="weather-icon">${day.icon}</span><div><strong>${day.label}</strong><p>${day.description}</p></div></div><div class="weather-temp-grid"><div class="weather-temp-large"><strong>${day.max}°</strong><small>Màx</small></div><div class="weather-temp-small"><strong>${day.min}°</strong><small>Mín</small></div></div><div class="weather-facts-grid"><div><small>Pluja</small><strong>${day.rain}%</strong></div><div><small>Vent</small><strong>${day.wind !== undefined ? day.wind + ' km/h' : '—'}</strong></div><div><small>Sortida</small><strong>${day.sunrise || '—'}</strong></div><div><small>Posta</small><strong>${day.sunset || '—'}</strong></div></div><div class="weather-advice">${day.advice || 'Bon dia per caminar i descobrir Londres.'}</div></article>`;
+  }).join('');
+}
+
+async function loadWeather(force=false){
+  const status=$('weatherStatus');
+  if(!status)return;
+  status.textContent='Carregant la previsió…';
+  if(!force){
+    try{
+      const cached=localStorage.getItem(WEATHER_CACHE_KEY);
+      if(cached){
+        const parsed=JSON.parse(cached);
+        if(Date.now()-parsed.savedAt<WEATHER_TTL_MS){
+          renderWeather(parsed.days,parsed.notice,parsed.updatedAt);
+          return;
+        }
+      }
+    }catch(_){
+      localStorage.removeItem(WEATHER_CACHE_KEY);
+    }
+  }
+  try{
+    const response=await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.5074&longitude=-0.1278&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max,sunrise,sunset&timezone=Europe/London&forecast_days=16');
+    if(!response.ok)throw new Error('No s’han pogut obtenir dades de la previsió');
+    const data=await response.json();
+    const days=[];
+    for(const date of WEATHER_TARGET_DATES){
+      const index=data.daily.time.indexOf(date);
+      if(index===-1)continue;
+      days.push({
+        date,
+        label:formatWeatherDate(date),
+        icon:weatherIcon(data.daily.weather_code[index]),
+        description:weatherDescription(data.daily.weather_code[index]),
+        max:Math.round(data.daily.temperature_2m_max[index]),
+        min:Math.round(data.daily.temperature_2m_min[index]),
+        rain:data.daily.precipitation_probability_max[index],
+        wind:Math.round(data.daily.windspeed_10m_max[index]),
+        sunrise:data.daily.sunrise[index],
+        sunset:data.daily.sunset[index],
+        advice:getWeatherAdvice(data.daily.precipitation_probability_max[index],Math.round(data.daily.windspeed_10m_max[index]),Math.round(data.daily.temperature_2m_max[index]))
+      });
+    }
+    const missing=WEATHER_TARGET_DATES.filter(date=>!days.some(day=>day.date===date));
+    const notice=missing.length?`No hi ha dades per a aquests dies encara: ${missing.join(', ')}. Es mostren els dies disponibles.`:'';
+    const updatedAt=new Date().toLocaleString('ca-ES');
+    renderWeather(days,notice,updatedAt);
+    localStorage.setItem(WEATHER_CACHE_KEY,JSON.stringify({savedAt:Date.now(),days,notice,updatedAt}));
+  }catch(error){
+    const message=error instanceof Error?error.message:'No s’han pogut obtenir dades de la previsió';
+    status.textContent=message;
+    const noticeBox=$('weatherNotice');
+    if(noticeBox){
+      noticeBox.classList.add('hidden');
+      noticeBox.textContent='';
+    }
+    const grid=$('weatherGrid');
+    if(grid)grid.innerHTML='<div class="weather-card"><p class="muted">No s’ha pogut carregar la previsió.</p></div>';
+  }
+}
+
+function favoriteStorageKey(){
+  return `freya-favorites-${trip?.id||'london-2026'}-${session?.user?.id||'guest'}`;
+}
 function getFavorites(){try{return JSON.parse(localStorage.getItem(favoriteStorageKey())||'[]')}catch(_){return[]}}
 function saveFavorites(items){localStorage.setItem(favoriteStorageKey(),JSON.stringify(items));renderFavorites();syncFavoriteButtons()}
 function slug(value){return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')}
@@ -317,7 +630,7 @@ addFavoriteButtons();renderFavorites();
 
 let documentChannel=null;
 const DOC_BUCKET='trip-documents';
-function categoryIcon(category){return ({Entrada:'🎟️',Vol:'✈️',Hotel:'🏨',Excursió:'🚌',Museu:'🏛️',Personal:'🛂',Foto:'📸',Altres:'📎'})[category]||'📎'}
+function categoryIcon(category){return ({Entrada:'🎟️',Vol:'✈️',Hotel:'🏨',Excursió:'🚌',Museu:'🏛️',Personal:'🛂',Altres:'📎'})[category]||'📎'}
 function safeFileName(name){return name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'document'}
 async function loadDocuments(silent=false){
   if(!trip)return;
@@ -366,28 +679,6 @@ $('documentForm').onsubmit=async e=>{
   if(error){await db.storage.from(DOC_BUCKET).remove([path]);$('uploadDocument').disabled=false;msg('documentMsg',error.message,true);return}
   $('documentForm').reset();$('uploadDocument').disabled=false;msg('documentMsg','Document pujat i compartit amb el viatge.');loadDocuments();
 };
-
-
-let photoDocs=[];
-async function loadPhotos(){
-  if(!trip)return;
-  const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at').eq('trip_id',trip.id).eq('category','Foto').order('created_at',{ascending:false});
-  if(error){msg('photoMsg',error.message,true);return}
-  photoDocs=data||[];const grid=$('photosGrid'),empty=$('photosEmpty');empty.classList.toggle('hidden',photoDocs.length>0);grid.innerHTML='';
-  for(const d of photoDocs){
-    const card=document.createElement('article');card.className='photo-card';card.innerHTML=`<div class="photo-thumb" data-photo-thumb="${esc(d.id)}">📸</div><div class="photo-info"><h3>${esc(d.title)}</h3><p>${new Date(d.created_at).toLocaleDateString('ca-ES')}</p><div class="photo-actions"><button type="button" data-open-photo="${esc(d.id)}">Obrir</button><button type="button" class="doc-delete" data-delete-photo="${esc(d.id)}">Eliminar</button></div></div>`;grid.appendChild(card);
-    const signed=await db.storage.from(DOC_BUCKET).createSignedUrl(d.file_path,300);if(!signed.error&&d.mime_type?.startsWith('image/'))card.querySelector('[data-photo-thumb]').innerHTML=`<img src="${esc(signed.data.signedUrl)}" alt="${esc(d.title)}">`;
-  }
-  grid.querySelectorAll('[data-open-photo]').forEach(b=>b.onclick=()=>openDocument(b.dataset.openPhoto,photoDocs));grid.querySelectorAll('[data-delete-photo]').forEach(b=>b.onclick=async()=>{await deleteDocument(b.dataset.deletePhoto,photoDocs);loadPhotos()});
-}
-$('photoForm').onsubmit=async e=>{e.preventDefault();if(!trip||!session)return;const file=$('photoFile').files[0],title=$('photoTitle').value.trim();if(!file||!title)return;if(!file.type.startsWith('image/')){msg('photoMsg','Selecciona una imatge.',true);return}if(file.size>15*1024*1024){msg('photoMsg','La foto supera el límit de 15 MB.',true);return}$('uploadPhoto').disabled=true;msg('photoMsg','Pujant foto…');const ext=(file.name.split('.').pop()||'jpg').toLowerCase(),path=`${trip.id}/${crypto.randomUUID()}-${safeFileName(title)}.${ext}`;const up=await db.storage.from(DOC_BUCKET).upload(path,file,{contentType:file.type,upsert:false});if(up.error){$('uploadPhoto').disabled=false;msg('photoMsg',up.error.message,true);return}const {error}=await db.from('travel_documents').insert({trip_id:trip.id,title,category:'Foto',file_name:file.name,file_path:path,mime_type:file.type,created_by:session.user.id});$('uploadPhoto').disabled=false;if(error){await db.storage.from(DOC_BUCKET).remove([path]);msg('photoMsg',error.message,true);return}$('photoForm').reset();msg('photoMsg','Foto compartida.');loadPhotos();loadDocuments(true)};
-
-const WEATHER_URL='https://api.open-meteo.com/v1/forecast?latitude=51.5074&longitude=-0.1278&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,sunrise,sunset&timezone=Europe%2FLondon&forecast_days=16';
-function weatherInfo(code){if(code===0)return['☀️','Cel serè'];if(code<=2)return['🌤️','Poc ennuvolat'];if(code===3)return['☁️','Ennuvolat'];if(code>=45&&code<=48)return['🌫️','Boira'];if(code>=51&&code<=57)return['🌦️','Plugim'];if(code>=61&&code<=67)return['🌧️','Pluja'];if(code>=71&&code<=77)return['🌨️','Neu'];if(code>=80&&code<=82)return['🌦️','Ruixats'];if(code>=85&&code<=86)return['🌨️','Ruixats de neu'];if(code>=95)return['⛈️','Tempesta'];return['🌤️','Variable']}
-function shortTime(value){return value?new Date(value).toLocaleTimeString('ca-ES',{hour:'2-digit',minute:'2-digit'}):'—'}
-function weatherAdvice(x){if((x.rain||0)>=40)return'Porteu paraigua.';if((x.max||0)>=25)return'Dia càlid: porteu aigua.';if((x.wind||0)>=30)return'Pot fer força vent.';return'Bon dia per caminar i descobrir Londres.'}
-async function loadWeather(force=false){const grid=$('weatherGrid'),note=$('weatherNote'),summary=$('weatherSummary');grid.innerHTML='';summary.innerHTML='';summary.classList.add('hidden');msg('weatherStatus','Carregant la previsió…');try{let payload=null;const cached=JSON.parse(localStorage.getItem('freya-weather-cache-v24')||'null');if(!force&&cached&&Date.now()-cached.savedAt<30*60*1000)payload=cached.data;else{const response=await fetch(WEATHER_URL);if(!response.ok)throw new Error('No s’ha pogut obtenir la previsió.');payload=await response.json();localStorage.setItem('freya-weather-cache-v24',JSON.stringify({savedAt:Date.now(),data:payload}))}const d=payload.daily,rows=d.time.map((date,i)=>({date,code:d.weather_code[i],max:d.temperature_2m_max[i],min:d.temperature_2m_min[i],rain:d.precipitation_probability_max[i],wind:d.wind_speed_10m_max[i],sunrise:d.sunrise[i],sunset:d.sunset[i]}));const tripRows=rows.filter(x=>x.date>='2026-08-06'&&x.date<='2026-08-11');const display=tripRows.length?tripRows:rows.slice(0,7);note.classList.toggle('hidden',tripRows.length===6);if(tripRows.length!==6){note.textContent='La previsió meteorològica fiable només arriba a uns dies vista. Ara mostrem els dies disponibles i, quan s’acosti el viatge, hi apareixerà automàticament la previsió del 6 a l’11 d’agost.';note.classList.remove('hidden')}if(display.length){const warmest=display.reduce((a,b)=>b.max>a.max?b:a),wettest=display.reduce((a,b)=>(b.rain||0)>(a.rain||0)?b:a);const fmt=x=>new Intl.DateTimeFormat('ca-ES',{weekday:'long',day:'numeric'}).format(new Date(x.date+'T12:00:00'));summary.innerHTML=`<div class="weather-summary-card">🔥 Dia més càlid<strong>${esc(fmt(warmest))}: ${Math.round(warmest.max)}°</strong></div><div class="weather-summary-card">☔ Més risc de pluja<strong>${esc(fmt(wettest))}: ${Math.round(wettest.rain||0)}%</strong></div>`;summary.classList.remove('hidden')}const today=new Date().toISOString().slice(0,10);grid.innerHTML=display.map(x=>{const [icon,desc]=weatherInfo(x.code),label=new Intl.DateTimeFormat('ca-ES',{weekday:'long',day:'numeric',month:'long'}).format(new Date(x.date+'T12:00:00'));return `<article class="weather-card ${x.date===today?'today':''}"><div class="weather-top"><div><div class="weather-date">${esc(label.charAt(0).toUpperCase()+label.slice(1))}</div><div class="weather-desc">${esc(desc)}</div></div><div class="weather-icon">${icon}</div></div><div class="weather-temps">${Math.round(x.max)}° / ${Math.round(x.min)}°</div><div class="weather-metrics"><div class="weather-metric">☔ Pluja<strong>${Math.round(x.rain||0)}%</strong></div><div class="weather-metric">🌬️ Vent<strong>${Math.round(x.wind||0)} km/h</strong></div><div class="weather-metric">🌅 Sol<strong>${shortTime(x.sunrise)} · ${shortTime(x.sunset)}</strong></div></div><div class="weather-advice">💡 ${esc(weatherAdvice(x))}</div></article>`}).join('');msg('weatherStatus','')}catch(err){msg('weatherStatus',err.message||'Error carregant la previsió.',true)}}
-$('refreshWeather').onclick=()=>loadWeather(true);
 
 
 let expenseChannel=null;
