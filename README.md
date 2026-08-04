@@ -16,7 +16,9 @@ Afegeix de nou la informació cultural dels llocs i incorpora audioguies en cata
 - Plataforma 9¾ de King’s Cross afegida a l’itinerari i a la guia.
 
 
-## Versió 6.4.1
-- L'Itinerari principal obre ara el fitxer actualitzat de l'arrel.
-- King's Cross i la Plataforma 9¾ apareixen al dia 7.
-- El botó de tornada de l'itinerari conserva totes les finestres del viatge de Londres.
+## Versió 6.4.2
+- Itinerari definitiu recuperat.
+- Cotswolds i Oxford: dilluns 10.
+- Trafalgar Square: dijous 6.
+- Plataforma 9¾: divendres 7.
+- Retorn directe de l’itinerari al tauler de Londres.
