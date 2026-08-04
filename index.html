@@ -145,6 +145,29 @@
     .photo-lightbox-close{position:absolute;top:calc(18px + env(safe-area-inset-top));right:18px;border:0;border-radius:999px;width:44px;height:44px;background:#fff;color:#4c235f;font-size:1.4rem;font-weight:900;cursor:pointer}
     @media(max-width:520px){.photo-grid{grid-template-columns:1fr 1fr;gap:10px}.photo-info{padding:11px}.photo-hero{padding:23px 19px}}
 
+
+    /* Aparcament */
+    .parking-shell{display:grid;gap:18px}
+    .parking-hero{position:relative;overflow:hidden;border-radius:30px;padding:26px;color:#fff;background:linear-gradient(135deg,#4d238f,#793ec0 58%,#c04bc6);box-shadow:0 22px 55px rgba(70,31,118,.22)}
+    .parking-hero h2{font-size:2rem;margin:8px 0}.parking-hero p{margin:0;color:rgba(255,255,255,.86);line-height:1.55}
+    .parking-status{display:inline-flex;margin-top:16px;padding:9px 13px;border-radius:999px;background:rgba(255,255,255,.15);font-weight:800}
+    .parking-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .parking-panel{background:#fff;border:1px solid #eadff2;border-radius:24px;padding:20px;box-shadow:0 12px 32px rgba(54,24,89,.08)}
+    .parking-panel h3{margin:0 0 14px}.parking-form{display:grid;gap:12px}
+    .parking-form label{display:grid;gap:6px;font-size:.9rem;font-weight:800;color:#5d5265}
+    .parking-form input,.parking-form textarea{width:100%;border:1px solid #ded1e8;border-radius:15px;padding:12px 13px;background:#fff;color:#261d2d}
+    .parking-form textarea{min-height:86px;resize:vertical}
+    .parking-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+    .parking-actions button,.parking-map-link{border:0;border-radius:15px;padding:12px 14px;font-weight:800;text-decoration:none;cursor:pointer}
+    .parking-actions button{background:#5b2aa8;color:#fff}.parking-actions .secondary{background:#efe7f7;color:#5b2aa8}
+    .parking-map-link{display:inline-flex;background:#efe7f7;color:#5b2aa8}
+    .parking-photo-preview{display:none;margin-top:14px}.parking-photo-preview.visible{display:block}
+    .parking-photo-preview img{width:100%;max-height:360px;object-fit:cover;border-radius:20px;border:1px solid #eadff2}
+    .parking-empty{padding:18px;border:1px dashed #ccb8dd;border-radius:18px;text-align:center;color:#776c7d;background:#fcf9fe}
+    .parking-return{background:linear-gradient(145deg,#fff7dc,#fff);border-color:#f2df9c}
+    .parking-return strong{display:block;font-size:1.35rem;margin:8px 0}
+    @media(max-width:650px){.parking-grid{grid-template-columns:1fr}.parking-hero{padding:22px 18px}.parking-hero h2{font-size:1.7rem}}
+
 </style>
 </head>
 <body>
@@ -165,7 +188,7 @@
     <header class="topbar"><div><strong id="tripTitleTop"></strong><small id="userEmail2"></small></div><button class="ghost logout">Sortir</button></header>
 
     <div id="dashboardView">
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 5.1 · Fotos compartides</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 5.2 · Aparcament intel·ligent</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
         <div class="overview-card"><span>✅</span><strong id="overviewChecklist">0/0</strong><small>Checklist completada</small><div class="progress-track"><div id="overviewProgress" class="progress-bar"></div></div></div>
@@ -186,6 +209,7 @@
         <button class="menu-card" data-open="documentsView"><span class="icon">📄</span><strong>Documents <span id="documentCount" class="doc-count">0</span></strong><small>PDF, captures i QR privats</small></button>
         <button class="menu-card" data-open="expensesView"><span class="icon">💶</span><strong>Despeses <span id="expenseCount" class="expense-count">0</span></strong><small>Registre del compte comú</small></button>
         <button class="menu-card" data-open="transportView"><span class="icon">🚇</span><strong>Transport</strong><small>Guia pràctica de Londres</small></button>
+        <button class="menu-card" data-open="parkingView"><span class="icon">🚗</span><strong>Aparcament</strong><small>Reserva, plaça, foto i GPS</small></button>
         <button class="menu-card" data-open="photosView"><span class="icon">📸</span><strong>Fotos <span id="photoCount" class="doc-count">0</span></strong><small>Àlbum compartit del viatge</small></button>
         <button class="menu-card" data-open="weatherView">
           <span class="icon">🌦️</span>
@@ -315,6 +339,75 @@
     <div id="photoLightbox" class="photo-lightbox hidden" role="dialog" aria-modal="true" aria-label="Foto ampliada">
       <button id="photoLightboxClose" class="photo-lightbox-close" type="button" aria-label="Tancar">×</button>
       <img id="photoLightboxImage" alt="Foto del viatge">
+    </div>
+
+
+    <div id="parkingView" class="hidden">
+      <button class="ghost back" data-back>← Torna al tauler</button>
+      <div class="parking-shell">
+        <section class="parking-hero">
+          <small>🚗 Cotxe · Aeroport</small>
+          <h2>On hem aparcat?</h2>
+          <p>Guardeu la reserva, la planta, la plaça, una foto del cartell i la ubicació GPS. Quan torneu, ho tindreu tot a mà.</p>
+          <div id="parkingHeroStatus" class="parking-status">Encara no hi ha cap ubicació guardada</div>
+        </section>
+
+        <section class="parking-grid">
+          <div class="parking-panel">
+            <h3>🅿️ Reserva del pàrquing</h3>
+            <form id="parkingForm" class="parking-form">
+              <label>Nom del pàrquing<input id="parkingName" placeholder="P. ex. Pàrquing Aeroport de Girona"></label>
+              <label>Número o referència de reserva<input id="parkingReservation" placeholder="P. ex. ABC12345"></label>
+              <label>Entrada<input id="parkingEntry" type="datetime-local"></label>
+              <label>Sortida prevista<input id="parkingExit" type="datetime-local"></label>
+              <label>Adreça o indicacions<textarea id="parkingAddress" placeholder="Adreça, barrera d'entrada, zona..."></textarea></label>
+              <div class="parking-actions">
+                <button type="submit">💾 Desa-ho</button>
+                <button id="parkingOpenDocuments" type="button" class="secondary">📄 Reserva als Documents</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="parking-panel">
+            <h3>📍 Ubicació del cotxe</h3>
+            <form id="parkingSpotForm" class="parking-form">
+              <label>Planta<input id="parkingFloor" placeholder="P. ex. P2"></label>
+              <label>Zona o color<input id="parkingZone" placeholder="P. ex. Zona violeta"></label>
+              <label>Plaça<input id="parkingSpot" placeholder="P. ex. 217"></label>
+              <label>Notes<textarea id="parkingNotes" placeholder="Prop de l'ascensor, fila C..."></textarea></label>
+              <input id="parkingLat" type="hidden"><input id="parkingLng" type="hidden">
+              <div class="parking-actions">
+                <button type="submit">🚘 Guarda la plaça</button>
+                <button id="parkingGps" type="button" class="secondary">📍 Desa el GPS</button>
+              </div>
+              <div id="parkingGpsStatus" class="muted"></div>
+              <a id="parkingMapLink" class="parking-map-link hidden" target="_blank" rel="noopener">🗺️ Obre la ubicació al mapa</a>
+            </form>
+          </div>
+        </section>
+
+        <section class="parking-panel">
+          <h3>📷 Foto de la plaça o del cartell</h3>
+          <p class="muted">Feu una foto al número de plaça, la planta o el cartell més proper.</p>
+          <input id="parkingPhotoFile" type="file" accept="image/*" capture="environment">
+          <div class="parking-actions">
+            <button id="parkingUploadPhoto" type="button">📷 Puja la foto</button>
+            <button id="parkingRemovePhoto" type="button" class="secondary hidden">🗑️ Treu-la</button>
+          </div>
+          <div id="parkingPhotoPreview" class="parking-photo-preview"><img id="parkingPhotoImage" alt="Foto de la plaça d'aparcament"></div>
+        </section>
+
+        <section class="parking-panel parking-return">
+          <h3>🏡 Quan torneu</h3>
+          <div id="parkingReturnEmpty" class="parking-empty">Quan deseu la plaça, aquí apareixerà el recordatori per trobar el cotxe ràpidament.</div>
+          <div id="parkingReturnInfo" class="hidden">
+            <span>El vostre cotxe és a:</span>
+            <strong id="parkingReturnSpot">—</strong>
+            <div id="parkingReturnNotes" class="muted"></div>
+          </div>
+        </section>
+        <p id="parkingMsg" class="message hidden"></p>
+      </div>
     </div>
 
     <div id="documentsView" class="hidden">
@@ -578,7 +671,7 @@ let session=null,trip=null,channel=null;
 const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-function setAppView(id){['dashboardView','checklistView','flightsView','ticketsView','transportView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='photosView')loadPhotos();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
+function setAppView(id){['dashboardView','checklistView','flightsView','ticketsView','transportView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
 function updateFlightPremium(){
   const now=new Date();
@@ -628,7 +721,7 @@ function updateTravelBrief(){
 async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');setAppView('dashboardView');$('tripTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();
 updateFlightPremium();
 initFlightChecklist();
-setInterval(updateFlightPremium,1000);updateTravelBrief();addFavoriteButtons();renderFavorites();await loadItems();await loadDocuments(true);await loadExpenses(true);subscribe();subscribeDocuments();subscribeExpenses()}
+setInterval(updateFlightPremium,1000);updateTravelBrief();addFavoriteButtons();renderFavorites();await loadItems();await ensureDefaultChecklistItems();await loadDocuments(true);await loadExpenses(true);subscribe();subscribeDocuments();subscribeExpenses()}
 async function loadItems(){if(!trip)return;const {data,error}=await db.from('checklist_items').select('id,text,done,created_at').eq('trip_id',trip.id).order('created_at');if(error){msg('appMsg',error.message,true);return}const items=data||[];const doneCount=items.filter(i=>i.done).length;const overviewChecklist=$('overviewChecklist'),overviewProgress=$('overviewProgress');if(overviewChecklist)overviewChecklist.textContent=`${doneCount}/${items.length}`;if(overviewProgress)overviewProgress.style.width=items.length?`${Math.round(doneCount/items.length*100)}%`:'0%';$('itemsEmpty').classList.toggle('hidden',items.length>0);$('items').innerHTML=items.map(i=>`<div class="item ${i.done?'done':''}"><label><input type="checkbox" data-toggle="${i.id}" ${i.done?'checked':''}><span>${esc(i.text)}</span></label><button class="delete" data-delete="${i.id}" aria-label="Eliminar">×</button></div>`).join('');document.querySelectorAll('[data-toggle]').forEach(el=>el.onchange=()=>toggleItem(el.dataset.toggle,el.checked));document.querySelectorAll('[data-delete]').forEach(el=>el.onclick=()=>deleteItem(el.dataset.delete))}
 function subscribe(){if(channel)db.removeChannel(channel);channel=db.channel('checklist-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},loadItems).subscribe()}
 async function toggleItem(id,done){const {error}=await db.from('checklist_items').update({done}).eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
@@ -1013,6 +1106,114 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=()=>db.auth.signOut())
 $('createTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('create_trip',{p_name:$('tripName').value});if(error)msg('tripMsg',error.message,true);else renderSession(session)};
 $('joinTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('join_trip',{p_invite_code:$('inviteInput').value.trim().toUpperCase()});if(error)msg('tripMsg',error.message,true);else renderSession(session)};
 $('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.invite_code);msg('appMsg','Codi copiat.')}catch(_){msg('appMsg','Codi: '+trip.invite_code)}};
+
+let parkingRow=null;
+async function ensureDefaultChecklistItems(){
+  if(!trip||!session)return;
+  const defaults=[
+    'Reservar el pàrquing de l’aeroport',
+    'Guardar la planta i la plaça del cotxe',
+    'Fer una foto del lloc on hem aparcat',
+    'Preparar menjar i aigua per als dos gats',
+    'Netejar la sorra dels gats',
+    'Confirmar qui cuidarà els gats i deixar-li les claus'
+  ];
+  const {data,error}=await db.from('checklist_items').select('text').eq('trip_id',trip.id);
+  if(error)return;
+  const existing=new Set((data||[]).map(x=>String(x.text).trim().toLowerCase()));
+  const missing=defaults.filter(x=>!existing.has(x.toLowerCase())).map(text=>({trip_id:trip.id,text,created_by:session.user.id}));
+  if(missing.length){await db.from('checklist_items').insert(missing);await loadItems()}
+}
+function parkingValue(id,value=''){const el=$(id);if(el)el.value=value??''}
+function parkingText(id,value=''){const el=$(id);if(el)el.textContent=value??''}
+function parkingMessage(message,error=false){msg('parkingMsg',message,error)}
+function parkingSpotLabel(row=parkingRow){
+  if(!row)return '';
+  return [row.floor,row.zone,row.spot].filter(Boolean).join(' · ');
+}
+async function loadParking(){
+  if(!trip)return;
+  const {data,error}=await db.from('travel_parking').select('*').eq('trip_id',trip.id).maybeSingle();
+  if(error){parkingMessage('Cal activar la taula d’aparcament a Supabase abans d’utilitzar aquesta pantalla.',true);return}
+  parkingRow=data||null;
+  const row=parkingRow||{};
+  parkingValue('parkingName',row.parking_name);parkingValue('parkingReservation',row.reservation_code);
+  parkingValue('parkingEntry',row.entry_at?String(row.entry_at).slice(0,16):'');parkingValue('parkingExit',row.exit_at?String(row.exit_at).slice(0,16):'');
+  parkingValue('parkingAddress',row.address);parkingValue('parkingFloor',row.floor);parkingValue('parkingZone',row.zone);
+  parkingValue('parkingSpot',row.spot);parkingValue('parkingNotes',row.notes);parkingValue('parkingLat',row.latitude);parkingValue('parkingLng',row.longitude);
+  const label=parkingSpotLabel(row);
+  parkingText('parkingHeroStatus',label?`Cotxe guardat: ${label}`:(row.parking_name?`Reserva guardada: ${row.parking_name}`:'Encara no hi ha cap ubicació guardada'));
+  $('parkingReturnEmpty').classList.toggle('hidden',!!label);$('parkingReturnInfo').classList.toggle('hidden',!label);
+  parkingText('parkingReturnSpot',label||'—');parkingText('parkingReturnNotes',row.notes||'');
+  updateParkingMap(row.latitude,row.longitude);
+  await renderParkingPhoto(row.photo_path);
+}
+function parkingPayload(){
+  return {
+    trip_id:trip.id,parking_name:$('parkingName').value.trim()||null,reservation_code:$('parkingReservation').value.trim()||null,
+    entry_at:$('parkingEntry').value||null,exit_at:$('parkingExit').value||null,address:$('parkingAddress').value.trim()||null,
+    floor:$('parkingFloor').value.trim()||null,zone:$('parkingZone').value.trim()||null,spot:$('parkingSpot').value.trim()||null,
+    notes:$('parkingNotes').value.trim()||null,latitude:$('parkingLat').value?Number($('parkingLat').value):null,
+    longitude:$('parkingLng').value?Number($('parkingLng').value):null,updated_by:session.user.id,updated_at:new Date().toISOString()
+  };
+}
+async function saveParking(message){
+  if(!trip||!session)return;
+  const payload=parkingPayload();if(parkingRow?.photo_path)payload.photo_path=parkingRow.photo_path;
+  const {data,error}=await db.from('travel_parking').upsert(payload,{onConflict:'trip_id'}).select().single();
+  if(error){parkingMessage(error.message,true);return}
+  parkingRow=data;parkingMessage(message||'Aparcament desat.');await loadParking();
+}
+$('parkingForm').onsubmit=async e=>{e.preventDefault();await saveParking('Reserva del pàrquing desada.')};
+$('parkingSpotForm').onsubmit=async e=>{e.preventDefault();await saveParking('Plaça del cotxe desada.')};
+$('parkingOpenDocuments').onclick=()=>setAppView('documentsView');
+function updateParkingMap(lat,lng){
+  const link=$('parkingMapLink'),status=$('parkingGpsStatus');
+  if(lat!=null&&lng!=null){link.href=`https://www.google.com/maps?q=${encodeURIComponent(lat+','+lng)}`;link.classList.remove('hidden');status.textContent=`GPS desat: ${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`}
+  else{link.classList.add('hidden');status.textContent=''}
+}
+$('parkingGps').onclick=()=>{
+  if(!navigator.geolocation){parkingMessage('Aquest dispositiu no permet obtenir la ubicació.',true);return}
+  parkingText('parkingGpsStatus','Obtenint la ubicació…');
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    parkingValue('parkingLat',pos.coords.latitude);parkingValue('parkingLng',pos.coords.longitude);
+    updateParkingMap(pos.coords.latitude,pos.coords.longitude);await saveParking('Ubicació GPS desada.');
+  },err=>parkingMessage('No s’ha pogut obtenir la ubicació: '+err.message,true),{enableHighAccuracy:true,timeout:15000});
+};
+async function renderParkingPhoto(path){
+  const wrap=$('parkingPhotoPreview'),img=$('parkingPhotoImage'),remove=$('parkingRemovePhoto');
+  if(!path){wrap.classList.remove('visible');img.removeAttribute('src');remove.classList.add('hidden');return}
+  const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(path,3600);
+  if(error){wrap.classList.remove('visible');return}
+  img.src=data.signedUrl;wrap.classList.add('visible');remove.classList.remove('hidden');
+}
+$('parkingPhotoFile').onchange=()=>{
+  const file=$('parkingPhotoFile').files[0];if(!file)return;
+  $('parkingPhotoImage').src=URL.createObjectURL(file);$('parkingPhotoPreview').classList.add('visible');
+};
+$('parkingUploadPhoto').onclick=async()=>{
+  if(!trip||!session)return;const file=$('parkingPhotoFile').files[0];
+  if(!file){parkingMessage('Primer selecciona o fes una foto.',true);return}
+  if(!file.type.startsWith('image/')){parkingMessage('Selecciona una imatge.',true);return}
+  const path=`${trip.id}/parking/${Date.now()}-${safeFileName(file.name)}`;
+  const {error:uploadError}=await db.storage.from(DOC_BUCKET).upload(path,file,{contentType:file.type,upsert:false});
+  if(uploadError){parkingMessage(uploadError.message,true);return}
+  const payload=parkingPayload();payload.photo_path=path;
+  const {data,error}=await db.from('travel_parking').upsert(payload,{onConflict:'trip_id'}).select().single();
+  if(error){await db.storage.from(DOC_BUCKET).remove([path]);parkingMessage(error.message,true);return}
+  if(parkingRow?.photo_path&&parkingRow.photo_path!==path)await db.storage.from(DOC_BUCKET).remove([parkingRow.photo_path]);
+  parkingRow=data;$('parkingPhotoFile').value='';parkingMessage('Foto de la plaça desada.');await loadParking();
+};
+$('parkingRemovePhoto').onclick=async()=>{
+  if(!parkingRow?.photo_path)return;
+  if(!confirm('Vols eliminar la foto de la plaça?'))return;
+  const old=parkingRow.photo_path;await db.storage.from(DOC_BUCKET).remove([old]);
+  const {data,error}=await db.from('travel_parking').update({photo_path:null,updated_by:session.user.id,updated_at:new Date().toISOString()}).eq('trip_id',trip.id).select().single();
+  if(error){parkingMessage(error.message,true);return}
+  parkingRow=data;parkingMessage('Foto eliminada.');await loadParking();
+};
+
+
 $('itemForm').onsubmit=async e=>{e.preventDefault();const text=$('newItem').value.trim();if(!text)return;const {error}=await db.from('checklist_items').insert({trip_id:trip.id,text,created_by:session.user.id});if(error)msg('appMsg',error.message,true);else{$('newItem').value='';loadItems()}};
 
 if('serviceWorker' in navigator){
