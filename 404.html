@@ -12,6 +12,35 @@
   <title>Freya Travel</title>
   <style>
     :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1f1b24;background:#f7f5fb;--purple:#6750a4;--soft:#eee8f4;--line:#e7e0ec;--muted:#625b71}*{box-sizing:border-box}body{margin:0}.shell{max-width:820px;margin:auto;padding:20px 16px 70px}.hero{text-align:center;padding:38px 16px 24px}.hero.compact{padding:24px 16px}.logo{font-size:46px}.hero h1{font-size:38px;margin:8px 0}.hero p{margin:6px 0;color:var(--muted)}.card{background:white;border:1px solid var(--line);border-radius:24px;padding:22px;margin:16px 0;box-shadow:0 8px 26px rgba(49,42,59,.07)}.stack{display:grid;gap:12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel{border:1px solid var(--line);border-radius:18px;padding:16px;display:grid;gap:10px}input,button{font:inherit}input{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:13px;background:#fff}button{border:0;border-radius:14px;padding:13px 16px;background:var(--purple);color:#fff;font-weight:700;cursor:pointer}.secondary,.ghost{background:var(--soft);color:#4f378b}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px}.topbar small{display:block;color:var(--muted);margin-top:4px}.message{padding:12px 14px;border-radius:14px;background:var(--soft);color:#3f2e63}.error{background:#ffdad6;color:#8c1d18}.add{display:flex;gap:10px}.add input{flex:1}.item{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--soft);padding:12px 0}.item label{display:flex;align-items:center;gap:10px;flex:1}.item input{width:auto}.item.done span{text-decoration:line-through;color:#79747e}.delete{width:40px;padding:8px;background:transparent;color:#b3261e;font-size:24px}.code{display:inline-block;font-size:21px;letter-spacing:2px;background:var(--soft);border-radius:12px;padding:10px 14px}.muted{color:#79747e}.hidden{display:none!important}
+
+    /* Freya Travel 6.0 · selector multiviatge */
+    .trips-home{padding:8px 0 26px}
+    .trips-hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#4d238f 0%,#7440bd 58%,#c04cc8 100%);color:#fff;border-radius:30px;padding:28px;margin:14px 0 18px;box-shadow:0 24px 60px rgba(69,31,119,.24)}
+    .trips-hero:after{content:'';position:absolute;width:230px;height:230px;border-radius:50%;right:-85px;top:-105px;background:rgba(255,255,255,.09)}
+    .trips-kicker{text-transform:uppercase;letter-spacing:.18em;font-weight:800;font-size:.74rem;color:rgba(255,255,255,.8)}
+    .trips-hero h1{font-size:2.25rem;line-height:1.04;margin:12px 0 9px}
+    .trips-hero p{margin:0;color:rgba(255,255,255,.84);line-height:1.55}
+    .trips-section-title{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:24px 2px 12px}
+    .trips-section-title h2{margin:0;font-size:1.35rem}.trips-section-title span{color:var(--muted);font-size:.88rem}
+    .trip-card{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:26px;padding:22px;box-shadow:0 14px 36px rgba(49,42,59,.09)}
+    .trip-card:before{content:'';position:absolute;inset:0 auto 0 0;width:7px;background:linear-gradient(#6a42b8,#c04cc8)}
+    .trip-card-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+    .trip-flag{font-size:2.35rem;line-height:1}.trip-card h3{font-size:1.55rem;margin:3px 0 7px}.trip-card p{margin:0;color:var(--muted)}
+    .trip-status{background:#e7f5ec;color:#247642;border-radius:999px;padding:7px 10px;font-size:.76rem;font-weight:800;white-space:nowrap}
+    .trip-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:18px 0}
+    .trip-stats div{background:#f8f4fb;border-radius:16px;padding:12px;text-align:center}.trip-stats strong{display:block;color:#4f378b}.trip-stats small{color:var(--muted)}
+    .trip-open{width:100%;font-size:1rem;padding:15px;border-radius:16px}
+    .new-trip-card{margin-top:14px;border:2px dashed #d6c7e7;background:rgba(255,255,255,.6);border-radius:24px;padding:20px;text-align:center}
+    .new-trip-card button{background:#eee8f4;color:#4f378b}.new-trip-card p{color:var(--muted);margin:8px 0 14px}
+    .departure-center{margin-top:22px;background:#fff;border:1px solid var(--line);border-radius:26px;padding:22px;box-shadow:0 14px 36px rgba(49,42,59,.08)}
+    .departure-center h2{margin:0 0 6px}.departure-center>p{color:var(--muted);margin:0 0 16px}
+    .departure-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .departure-action{border:1px solid var(--line);background:#faf8fc;color:#3f3150;text-align:left;border-radius:18px;padding:15px;min-height:84px}
+    .departure-action span{display:block;font-size:1.5rem;margin-bottom:7px}.departure-action strong{display:block}.departure-action small{display:block;color:var(--muted);margin-top:3px}
+    .trips-footer{text-align:center;color:#8a8190;font-size:.82rem;margin-top:24px}
+    .dashboard-switch{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);padding:9px 12px;border-radius:14px;margin-top:12px}
+    @media(max-width:560px){.trips-hero h1{font-size:1.95rem}.trip-stats{grid-template-columns:1fr}.departure-grid{grid-template-columns:1fr}}
+
     .dashboard-head{background:linear-gradient(135deg,#6750a4,#9b72cf);color:#fff;border-radius:28px;padding:26px;margin:16px 0}.dashboard-head h1{margin:5px 0 8px}.dashboard-head p{margin:4px 0;color:#f1eaff}.countdown{font-size:1.15rem;font-weight:800;margin-top:14px}.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}.menu-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;text-align:left;color:#1f1b24;min-height:112px}.menu-card .icon{font-size:30px;display:block;margin-bottom:8px}.menu-card strong{display:block;font-size:1.06rem}.menu-card small{display:block;color:#79747e;margin-top:4px}.menu-card.disabled{opacity:.62}.back{margin-bottom:12px}.day-tabs{display:flex;gap:8px;overflow:auto;padding-bottom:8px}.day-tab{white-space:nowrap;background:#fff;color:#4f378b;border:1px solid var(--line);padding:10px 12px}.day-tab.active{background:var(--purple);color:#fff}.day{display:none}.day.active{display:block}.day-title{background:linear-gradient(135deg,#7657ad,#4f378b);color:#fff;border-radius:24px;padding:22px;margin:12px 0 16px}.day-title h2{margin:4px 0}.timeline{list-style:none;padding:0;margin:0;position:relative}.timeline:before{content:"";position:absolute;left:49px;top:12px;bottom:12px;width:2px;background:#d9cdef}.event{display:grid;grid-template-columns:70px 1fr;gap:12px;padding:8px 0;position:relative}.event time{font-weight:800;color:#6750a4;font-variant-numeric:tabular-nums}.event div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px 14px;position:relative}.event div:before{content:"";position:absolute;left:-28px;top:17px;width:10px;height:10px;border-radius:50%;background:#6750a4;border:3px solid #f7f5fb}.event strong{display:block}.event p{margin:4px 0 0;color:#625b71;font-size:.92rem}.badge{display:inline-block;background:#e7f5ec;color:#247642;border-radius:999px;padding:4px 8px;font-size:.75rem;font-weight:800;margin-top:7px}.map-link{display:inline-block;margin-top:10px;text-decoration:none;background:var(--soft);color:#4f378b;border-radius:12px;padding:10px 12px;font-weight:700}.footer{text-align:center;color:#79747e;font-size:.84rem;margin-top:28px}
     .weather-panel{position:relative;background:linear-gradient(180deg,#4f3290,#6b4ebd 48%,#8d79e8);color:#fff;border:0;box-shadow:0 32px 80px rgba(60,31,112,.18);overflow:hidden}
     .weather-panel::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top right,rgba(255,255,255,.14),transparent 32%);pointer-events:none}
@@ -187,8 +216,51 @@
   <section id="tripView" class="hidden">
     <header class="topbar"><div><strong id="tripTitleTop"></strong><small id="userEmail2"></small></div><button class="ghost logout">Sortir</button></header>
 
+
+    <div id="tripsHomeView" class="hidden trips-home">
+      <section class="trips-hero">
+        <div class="trips-kicker">Freya Travel 6.0</div>
+        <h1>Els vostres viatges</h1>
+        <p>Londres és només el principi. Cada aventura tindrà el seu espai, sense perdre mai els records de les anteriors.</p>
+      </section>
+
+      <div class="trips-section-title"><h2>Viatges</h2><span>1 viatge actiu</span></div>
+      <article class="trip-card">
+        <div class="trip-card-top">
+          <div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">🇬🇧</div><div><h3 id="tripCardTitle">Londres 2026</h3><p>6–11 d’agost · Eva ❤️ Xesc</p></div></div>
+          <span class="trip-status">En preparació</span>
+        </div>
+        <div class="trip-stats">
+          <div><strong>6 dies</strong><small>de viatge</small></div>
+          <div><strong>Compartit</strong><small>Eva i Xesc</small></div>
+          <div><strong>Tot a punt</strong><small>vols, fotos i documents</small></div>
+        </div>
+        <button id="openLondonTrip" class="trip-open" type="button">Obrir Londres →</button>
+      </article>
+
+      <section class="new-trip-card">
+        <div style="font-size:2rem">➕</div><strong>Nou viatge</strong>
+        <p>Després de Londres activarem la creació de noves destinacions sense esborrar cap record.</p>
+        <button id="newTripPreview" type="button">Preparar el proper viatge</button>
+      </section>
+
+      <section class="departure-center">
+        <h2>🧳 Centre de sortida</h2>
+        <p>Tot el que necessiteu abans de marxar, a un sol toc.</p>
+        <div class="departure-grid">
+          <button class="departure-action" type="button" data-quick-view="flightsView"><span>✈️</span><strong>Vols</strong><small>Horaris i preparatius</small></button>
+          <button class="departure-action" type="button" data-quick-view="documentsView"><span>📄</span><strong>Documents</strong><small>Entrades, reserves i QR</small></button>
+          <button class="departure-action" type="button" data-quick-view="parkingView"><span>🚗</span><strong>Aparcament</strong><small>Reserva, plaça, foto i GPS</small></button>
+          <button class="departure-action" type="button" data-quick-view="checklistView"><span>✅</span><strong>Checklist</strong><small>Maletes, casa i els dos gats</small></button>
+          <button class="departure-action" type="button" data-quick-view="weatherView"><span>🌦️</span><strong>Temps</strong><small>Previsió per al viatge</small></button>
+          <button class="departure-action" type="button" onclick="window.location.href='freya-travel-v1.5/itinerary.html'"><span>📅</span><strong>Itinerari</strong><small>El programa dia a dia</small></button>
+        </div>
+      </section>
+      <div class="trips-footer">Creat amb ❤️ per Eva i Freya · Versió 6.0 multiviatge</div>
+    </div>
+
     <div id="dashboardView">
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 5.2 · Aparcament intel·ligent</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.0 · Multiviatge</div><button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
         <div class="overview-card"><span>✅</span><strong id="overviewChecklist">0/0</strong><small>Checklist completada</small><div class="progress-track"><div id="overviewProgress" class="progress-bar"></div></div></div>
@@ -658,7 +730,7 @@
 
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 4.0</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.0</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -671,7 +743,7 @@ let session=null,trip=null,channel=null;
 const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-function setAppView(id){['dashboardView','checklistView','flightsView','ticketsView','transportView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
+function setAppView(id){['tripsHomeView','dashboardView','checklistView','flightsView','ticketsView','transportView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
 function updateFlightPremium(){
   const now=new Date();
@@ -718,7 +790,7 @@ function updateTravelBrief(){
   else {day=days.at(-1);item=['💜','Londres 2026','Un viatge per recordar plegats.'];label='Record del viatge';}
   $('briefChip').textContent=day.chip||'Londres 2026';$('briefLabel').textContent=label;$('briefTime').textContent=item[0];$('briefActivity').textContent=item[1];$('briefDescription').textContent=item[2]||'';
 }
-async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');setAppView('dashboardView');$('tripTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();
+async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');setAppView('tripsHomeView');$('tripTitle').textContent=trip.name;$('tripCardTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();
 updateFlightPremium();
 initFlightChecklist();
 setInterval(updateFlightPremium,1000);updateTravelBrief();addFavoriteButtons();renderFavorites();await loadItems();await ensureDefaultChecklistItems();await loadDocuments(true);await loadExpenses(true);subscribe();subscribeDocuments();subscribeExpenses()}
@@ -726,7 +798,8 @@ async function loadItems(){if(!trip)return;const {data,error}=await db.from('che
 function subscribe(){if(channel)db.removeChannel(channel);channel=db.channel('checklist-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},loadItems).subscribe()}
 async function toggleItem(id,done){const {error}=await db.from('checklist_items').update({done}).eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
 async function deleteItem(id){const {error}=await db.from('checklist_items').delete().eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
-document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.open==='weatherView')console.log('Obrint weatherView');setAppView(b.dataset.open)});document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView('dashboardView'));document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
+document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.open==='weatherView')console.log('Obrint weatherView');setAppView(b.dataset.open)});
+$('openLondonTrip').onclick=()=>setAppView('dashboardView');$('backToTrips').onclick=()=>setAppView('tripsHomeView');document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));$('newTripPreview').onclick=()=>alert('Després de Londres activarem la creació completa de nous viatges. Londres quedarà guardat per sempre 💜');document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView('dashboardView'));document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
 document.querySelectorAll('.day-tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.day-tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.day').forEach(x=>x.classList.toggle('active',x.id===b.dataset.day))});
 
 const WEATHER_CACHE_KEY='freya-weather-cache-v2';

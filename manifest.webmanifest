@@ -1,7 +1,7 @@
 {
-  "name": "Freya Travel - Londres 2026",
+  "name": "Freya Travel",
   "short_name": "Freya Travel",
-  "description": "Freya Travel 2.0: itinerari, entrades, documents privats, checklist i despeses compartides per al viatge a Londres 2026.",
+  "description": "Freya Travel: tots els vostres viatges, itineraris, vols, fotos, documents, aparcament i records en una sola app.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
