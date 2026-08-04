@@ -1,3 +1,7 @@
+# Freya Travel 6.2 — Checklist intel·ligent
+
+Checklist compartida agrupada per Equipatge, Documentació, Cotxe i aparcament, Casa, Piki i Ghost, Aeroport i vol, Tecnologia i Altres. Inclou progrés general i per secció, targetes plegables i alta de tasques amb categoria.
+
 # Freya Travel 6.1 — Menja com un local
 
 Afegeix restaurants recomanats per zona, preferits, notes i records fotogràfics vinculats a l'àlbum compartit.
