@@ -289,7 +289,7 @@
           <button class="departure-action" type="button" data-quick-view="parkingView"><span>🚗</span><strong>Aparcament</strong><small>Reserva, plaça, foto i GPS</small></button>
           <button class="departure-action" type="button" data-quick-view="checklistView"><span>✅</span><strong>Checklist</strong><small>Maletes, casa i els dos gats</small></button>
           <button class="departure-action" type="button" data-quick-view="weatherView"><span>🌦️</span><strong>Temps</strong><small>Previsió per al viatge</small></button>
-          <button class="departure-action" type="button" onclick="window.location.href='freya-travel-v1.5/itinerary.html'"><span>📅</span><strong>Itinerari</strong><small>El programa dia a dia</small></button>
+          <button class="departure-action" type="button" onclick="window.location.href='itinerary.html'"><span>📅</span><strong>Itinerari</strong><small>El programa dia a dia</small></button>
         </div>
       </section>
       <div class="trips-footer">Creat amb ❤️ per Eva i Freya · Versió 6.4 · Cerca intel·ligent</div>
@@ -306,7 +306,7 @@
       <section class="travel-brief" aria-labelledby="briefTitle">
         <div class="travel-brief-head"><h2 id="briefTitle">✨ El vostre dia</h2><span id="briefChip" class="travel-chip">Preparant el viatge</span></div>
         <div class="next-card"><div id="briefLabel" class="next-label">Primera activitat</div><div class="next-main"><div id="briefTime" class="next-time">—</div><div><div id="briefActivity" class="next-title">Carregant itinerari…</div><div id="briefDescription" class="next-description"></div></div></div></div>
-        <div class="brief-actions"><button type="button" class="secondary" onclick="window.location.href='freya-travel-v1.5/itinerary.html'">Veure itinerari</button><button type="button" data-open="ticketsView">Obrir entrades</button></div>
+        <div class="brief-actions"><button type="button" class="secondary" onclick="window.location.href='itinerary.html'">Veure itinerari</button><button type="button" data-open="ticketsView">Obrir entrades</button></div>
       </section>
       <section class="global-search-card">
         <h2>🔎 Cerca a Freya Travel</h2>
@@ -316,7 +316,7 @@
       </section>
       <div class="menu-grid">
         <button class="menu-card" data-open="checklistView"><span class="icon">✅</span><strong>Checklist</strong><small>Preparatius compartits</small></button>
-        <button class="menu-card" onclick="window.location.href='freya-travel-v1.5/itinerary.html'"><span class="icon">📅</span><strong>Itinerari</strong><small>Programa complet dia a dia</small></button>
+        <button class="menu-card" onclick="window.location.href='itinerary.html'"><span class="icon">📅</span><strong>Itinerari</strong><small>Programa complet dia a dia</small></button>
         <button class="menu-card" data-open="discoverView"><span class="icon">🎧</span><strong>Descobreix Londres</strong><small>Història, curiositats i audioguies</small></button>
         <button class="menu-card" data-open="flightsView"><span class="icon">✈️</span><strong>Vols</strong><small>Horaris, aeroports i documents</small></button>
         <button class="menu-card" data-open="ticketsView"><span class="icon">🎟️</span><strong>Entrades</strong><small>Cartera digital del viatge</small></button>
@@ -966,7 +966,7 @@ function globalSearchEntries(){
 }
 function executeSearchResult(entry){
   if(entry.docId){openDocument(entry.docId,documentRows);return}
-  if(entry.action==='itinerary'){window.location.href='freya-travel-v1.5/itinerary.html';return}
+  if(entry.action==='itinerary'){window.location.href='itinerary.html';return}
   if(entry.view){setAppView(entry.view);return}
 }
 function renderGlobalSearch(query,targetId,limit=50){
