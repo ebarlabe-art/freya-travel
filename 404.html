@@ -197,7 +197,28 @@
     .parking-return strong{display:block;font-size:1.35rem;margin:8px 0}
     @media(max-width:650px){.parking-grid{grid-template-columns:1fr}.parking-hero{padding:22px 18px}.parking-hero h2{font-size:1.7rem}}
 
-</style>
+
+    .food-shell{display:grid;gap:18px}
+    .food-hero{position:relative;overflow:hidden;border-radius:30px;padding:26px;color:#fff;background:linear-gradient(135deg,#5a2496,#8c43c6 58%,#d85d9f);box-shadow:0 22px 55px rgba(70,31,118,.22)}
+    .food-hero h2{font-size:2rem;margin:8px 0}.food-hero p{margin:0;color:rgba(255,255,255,.88);line-height:1.55}
+    .food-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+    .food-filters{display:flex;gap:8px;overflow:auto;padding-bottom:4px;scrollbar-width:none}.food-filters::-webkit-scrollbar{display:none}
+    .food-filter{border:1px solid #dfd1ea;background:#fff;color:#5b2aa8;border-radius:999px;padding:10px 13px;font-weight:800;white-space:nowrap;cursor:pointer}
+    .food-filter.active{background:#5b2aa8;color:#fff;border-color:#5b2aa8}
+    .food-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .food-card{background:#fff;border:1px solid #eadff2;border-radius:24px;padding:18px;box-shadow:0 12px 32px rgba(54,24,89,.08);display:flex;flex-direction:column;gap:12px}
+    .food-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.food-card h3{margin:0;font-size:1.25rem}.food-card p{margin:0;color:#6d6275;line-height:1.5}
+    .food-zone{display:inline-flex;padding:7px 10px;border-radius:999px;background:#f0e8f8;color:#5b2aa8;font-size:.8rem;font-weight:900}
+    .food-meta{display:flex;flex-wrap:wrap;gap:7px}.food-meta span{padding:7px 9px;border-radius:12px;background:#f8f4fb;color:#5f5367;font-size:.82rem;font-weight:800}
+    .food-why{padding:12px 13px;border-radius:16px;background:linear-gradient(145deg,#fbf4ff,#fff);border:1px solid #eadff2;color:#54485d;line-height:1.5}
+    .food-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:auto}.food-actions button,.food-actions a{border:0;border-radius:14px;padding:10px 12px;text-decoration:none;font-weight:800;cursor:pointer}
+    .food-actions a{background:#5b2aa8;color:#fff}.food-save{background:#f0e8f8;color:#5b2aa8}.food-save.saved{background:#fff0c9;color:#6d5412}
+    .food-memory{margin-top:2px;border-top:1px solid #eee3f4;padding-top:12px;display:grid;gap:9px}.food-memory input,.food-memory textarea{width:100%;border:1px solid #ded1e8;border-radius:14px;padding:11px 12px}.food-memory textarea{min-height:72px;resize:vertical}
+    .food-memory button{border:0;border-radius:14px;padding:10px 12px;background:#efe7f7;color:#5b2aa8;font-weight:800;cursor:pointer}.food-msg{min-height:1.2em;color:#5b2aa8;font-weight:700}
+    .food-empty{padding:22px;border:1px dashed #ccb8dd;border-radius:20px;text-align:center;color:#776c7d;background:#fcf9fe}
+    @media(max-width:680px){.food-grid{grid-template-columns:1fr}.food-hero{padding:22px 18px}.food-hero h2{font-size:1.7rem}}
+
+  </style>
 </head>
 <body>
 <main class="shell">
@@ -256,11 +277,11 @@
           <button class="departure-action" type="button" onclick="window.location.href='freya-travel-v1.5/itinerary.html'"><span>📅</span><strong>Itinerari</strong><small>El programa dia a dia</small></button>
         </div>
       </section>
-      <div class="trips-footer">Creat amb ❤️ per Eva i Freya · Versió 6.0 multiviatge</div>
+      <div class="trips-footer">Creat amb ❤️ per Eva i Freya · Versió 6.1 · Menja com un local</div>
     </div>
 
     <div id="dashboardView">
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.0 · Multiviatge</div><button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.1 · Menja com un local</div><button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
         <div class="overview-card"><span>✅</span><strong id="overviewChecklist">0/0</strong><small>Checklist completada</small><div class="progress-track"><div id="overviewProgress" class="progress-bar"></div></div></div>
@@ -281,6 +302,7 @@
         <button class="menu-card" data-open="documentsView"><span class="icon">📄</span><strong>Documents <span id="documentCount" class="doc-count">0</span></strong><small>PDF, captures i QR privats</small></button>
         <button class="menu-card" data-open="expensesView"><span class="icon">💶</span><strong>Despeses <span id="expenseCount" class="expense-count">0</span></strong><small>Registre del compte comú</small></button>
         <button class="menu-card" data-open="transportView"><span class="icon">🚇</span><strong>Transport</strong><small>Guia pràctica de Londres</small></button>
+        <button class="menu-card" data-open="restaurantsView"><span class="icon">🍽️</span><strong>Restaurants</strong><small>Menja bé per cada zona</small></button>
         <button class="menu-card" data-open="parkingView"><span class="icon">🚗</span><strong>Aparcament</strong><small>Reserva, plaça, foto i GPS</small></button>
         <button class="menu-card" data-open="photosView"><span class="icon">📸</span><strong>Fotos <span id="photoCount" class="doc-count">0</span></strong><small>Àlbum compartit del viatge</small></button>
         <button class="menu-card" data-open="weatherView">
@@ -383,6 +405,32 @@
       </div>
     </div>
 
+
+
+    <div id="restaurantsView" class="hidden">
+      <button class="ghost back" data-back>← Torna al tauler</button>
+      <div class="food-shell">
+        <section class="food-hero">
+          <small>🍽️ Londres · Menja com un local</small>
+          <h2>On mengem avui?</h2>
+          <p>Una selecció curta i útil per les zones del vostre itinerari, amb opcions per guardar preferits i convertir cada àpat en un record.</p>
+        </section>
+        <section class="card">
+          <div class="food-toolbar">
+            <div><h2 style="margin:0">Recomanats per zona</h2><p class="muted" style="margin:.35rem 0 0">Comproveu horaris i reserva abans d'anar-hi.</p></div>
+            <div id="foodSavedCount" class="doc-count">0 guardats</div>
+          </div>
+          <div id="foodFilters" class="food-filters" aria-label="Filtra restaurants"></div>
+        </section>
+        <section id="foodGrid" class="food-grid"></section>
+        <div id="foodEmpty" class="food-empty hidden">No hi ha restaurants en aquesta categoria.</div>
+        <section class="card">
+          <h2>❤️ Els nostres restaurants</h2>
+          <p class="muted">Els que marqueu amb estrella quedaran aquí com a record de Londres.</p>
+          <div id="foodSavedList" class="food-grid"></div>
+        </section>
+      </div>
+    </div>
 
     <div id="photosView" class="hidden">
       <button class="ghost back" data-back>← Torna al tauler</button>
@@ -743,7 +791,59 @@ let session=null,trip=null,channel=null;
 const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-function setAppView(id){['tripsHomeView','dashboardView','checklistView','flightsView','ticketsView','transportView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
+
+const RESTAURANTS=[
+ {id:'regency-cafe',name:'Regency Café',zone:'Westminster',kind:'Esmorzar',price:'£',booking:'Sense reserva',why:'Un cafè londinenc clàssic i sense pretensions, ideal per començar un matí a Westminster.',maps:'https://www.google.com/maps/search/?api=1&query=Regency+Cafe+London'},
+ {id:'cinnamon-club',name:'The Cinnamon Club',zone:'Westminster',kind:'Dinar o sopar',price:'£££',booking:'Reserva recomanada',why:'Cuina índia moderna en un edifici espectacular, perfecte per un àpat especial a prop del Parlament.',maps:'https://www.google.com/maps/search/?api=1&query=The+Cinnamon+Club+London'},
+ {id:'bancone',name:'Bancone Covent Garden',zone:'Covent Garden',kind:'Pasta',price:'££',booking:'Reserva recomanada',why:'Pasta fresca molt ben valorada i una bona opció abans o després del teatre.',maps:'https://www.google.com/maps/search/?api=1&query=Bancone+Covent+Garden'},
+ {id:'dishoom',name:'Dishoom Covent Garden',zone:'Covent Garden',kind:'Índia',price:'££',booking:'Pot haver-hi cua',why:'Ambient bonic i plats pensats per compartir; encaixa molt bé amb una tarda pel West End.',maps:'https://www.google.com/maps/search/?api=1&query=Dishoom+Covent+Garden'},
+ {id:'flat-iron',name:'Flat Iron Soho',zone:'Soho',kind:'Carn',price:'££',booking:'Comproveu disponibilitat',why:'Una opció molt clara per al Xesc: carn, bon ambient i una relació qualitat-preu habitualment molt competitiva.',maps:'https://www.google.com/maps/search/?api=1&query=Flat+Iron+Soho'},
+ {id:'barrafina',name:'Barrafina',zone:'Soho',kind:'Tapes',price:'£££',booking:'Comproveu seu i cua',why:'Tapes d’alt nivell i una experiència molt animada per compartir diversos plats.',maps:'https://www.google.com/maps/search/?api=1&query=Barrafina+Soho+London'},
+ {id:'hawksmoor',name:'Hawksmoor Guildhall',zone:'City',kind:'Carn i britànica',price:'£££',booking:'Reserva recomanada',why:'Una aposta segura si voleu un sopar de carn especial després de recórrer la City.',maps:'https://www.google.com/maps/search/?api=1&query=Hawksmoor+Guildhall'},
+ {id:'camille',name:'Camille',zone:'Borough',kind:'Francesa',price:'£££',booking:'Reserva recomanada',why:'Bistró molt reconegut a Borough Market, ideal per convertir el dinar en una experiència del viatge.',maps:'https://www.google.com/maps/search/?api=1&query=Camille+Borough+Market+London'},
+ {id:'goddards',name:'Goddards at Greenwich',zone:'Greenwich',kind:'Britànica',price:'£',booking:'Normalment informal',why:'Pie and mash tradicional per menjar alguna cosa molt londinenca mentre descobriu Greenwich.',maps:'https://www.google.com/maps/search/?api=1&query=Goddards+at+Greenwich'},
+ {id:'trafalgar-tavern',name:'The Trafalgar Tavern',zone:'Greenwich',kind:'Pub amb vistes',price:'££',booking:'Reserva útil',why:'Pub històric vora el Tàmesi: l’entorn és part de l’experiència.',maps:'https://www.google.com/maps/search/?api=1&query=The+Trafalgar+Tavern+Greenwich'},
+ {id:'harrods-dining',name:'Harrods Dining Hall',zone:'Knightsbridge',kind:'Varietat',price:'£££',booking:'Segons restaurant',why:'Molt pràctic si sou a Harrods i voleu escollir entre diverses cuines sense sortir de la zona.',maps:'https://www.google.com/maps/search/?api=1&query=Harrods+Dining+Hall'},
+ {id:'churchill-arms',name:'The Churchill Arms',zone:'Kensington',kind:'Pub tailandès',price:'££',booking:'Reserva recomanada',why:'Un dels pubs més fotogènics de Londres i una opció divertida per combinar ambient britànic i cuina tailandesa.',maps:'https://www.google.com/maps/search/?api=1&query=The+Churchill+Arms+London'}
+];
+const FOOD_KEY='freya-restaurants-v6.1';
+let foodFilter='Tots';
+function foodState(){try{return JSON.parse(localStorage.getItem(FOOD_KEY)||'{}')}catch{return{}}}
+function saveFoodState(s){localStorage.setItem(FOOD_KEY,JSON.stringify(s))}
+function renderRestaurants(){
+  const state=foodState(),zones=['Tots',...new Set(RESTAURANTS.map(r=>r.zone))];
+  $('foodFilters').innerHTML=zones.map(z=>`<button class="food-filter ${z===foodFilter?'active':''}" data-food-filter="${esc(z)}">${esc(z)}</button>`).join('');
+  $('foodFilters').querySelectorAll('[data-food-filter]').forEach(b=>b.onclick=()=>{foodFilter=b.dataset.foodFilter;renderRestaurants()});
+  const rows=RESTAURANTS.filter(r=>foodFilter==='Tots'||r.zone===foodFilter);
+  $('foodEmpty').classList.toggle('hidden',rows.length>0);
+  $('foodGrid').innerHTML=rows.map(r=>foodCard(r,state,false)).join('');
+  const saved=RESTAURANTS.filter(r=>state[r.id]?.saved);
+  $('foodSavedCount').textContent=`${saved.length} guardats`;
+  $('foodSavedList').innerHTML=saved.length?saved.map(r=>foodCard(r,state,true)).join(''):'<div class="food-empty">Encara no n’heu guardat cap. Premeu ⭐ Guardar als que us facin més gràcia.</div>';
+  bindFoodActions();
+}
+function foodCard(r,state,compact){
+  const s=state[r.id]||{};
+  return `<article class="food-card" data-food-id="${r.id}"><div class="food-card-head"><div><span class="food-zone">${esc(r.zone)}</span><h3>${esc(r.name)}</h3></div><span style="font-size:1.5rem">${s.saved?'⭐':'🍽️'}</span></div><div class="food-meta"><span>${esc(r.kind)}</span><span>${esc(r.price)}</span><span>${esc(r.booking)}</span></div><div class="food-why"><strong>💜 Per què us el recomana Freya?</strong><br>${esc(r.why)}</div><div class="food-actions"><a href="${r.maps}" target="_blank" rel="noopener">📍 Obrir Maps</a><button class="food-save ${s.saved?'saved':''}" data-food-save="${r.id}">${s.saved?'★ Guardat':'☆ Guardar'}</button></div>${compact?'':`<div class="food-memory"><textarea data-food-note="${r.id}" placeholder="Escriviu un record o què hi vau menjar...">${esc(s.note||'')}</textarea><input data-food-photo="${r.id}" type="file" accept="image/*" capture="environment"><button data-food-memory="${r.id}" type="button">📸 Desa el record a l’àlbum</button><div class="food-msg" data-food-msg="${r.id}"></div></div>`}</article>`
+}
+function bindFoodActions(){
+  document.querySelectorAll('[data-food-save]').forEach(b=>b.onclick=()=>{const s=foodState(),id=b.dataset.foodSave;s[id]={...(s[id]||{}),saved:!s[id]?.saved};saveFoodState(s);renderRestaurants()});
+  document.querySelectorAll('[data-food-memory]').forEach(b=>b.onclick=()=>saveRestaurantMemory(b.dataset.foodMemory));
+}
+async function saveRestaurantMemory(id){
+  const r=RESTAURANTS.find(x=>x.id===id),note=document.querySelector(`[data-food-note="${id}"]`)?.value.trim()||'',file=document.querySelector(`[data-food-photo="${id}"]`)?.files?.[0],out=document.querySelector(`[data-food-msg="${id}"]`);if(!r||!trip||!session)return;
+  const s=foodState();s[id]={...(s[id]||{}),saved:true,note};saveFoodState(s);
+  if(!file){out.textContent='Record desat en aquest dispositiu. 💜';renderRestaurants();return}
+  if(!file.type.startsWith('image/')){out.textContent='Selecciona una imatge.';return}
+  out.textContent='Pujant la foto al vostre àlbum…';
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase(),title=note?`${r.name} · ${note}`:r.name,path=`${trip.id}/photos/${crypto.randomUUID()}-${safeFileName(r.name)}.${ext}`;
+  const up=await db.storage.from(DOC_BUCKET).upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});if(up.error){out.textContent=up.error.message;return}
+  const {data:inserted,error}=await db.from('travel_documents').insert({trip_id:trip.id,title,category:'Foto',file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id}).select('id,title,category,file_name,file_path,mime_type,created_at,created_by').single();
+  if(error){await db.storage.from(DOC_BUCKET).remove([path]);out.textContent=error.message;return}
+  photoRows=[inserted,...photoRows.filter(p=>p.id!==inserted.id)];out.textContent='Foto i record afegits a l’àlbum! 💜';renderRestaurants();setTimeout(()=>loadPhotos(true),900)
+}
+
+function setAppView(id){['tripsHomeView','dashboardView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='restaurantsView')renderRestaurants();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
 function updateFlightPremium(){
   const now=new Date();

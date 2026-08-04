@@ -1,3 +1,7 @@
+# Freya Travel 6.1 — Menja com un local
+
+Afegeix restaurants recomanats per zona, preferits, notes i records fotogràfics vinculats a l'àlbum compartit.
+
 # Freya Travel 5.1
 
 Nou àlbum de fotos compartit entre l’Eva i en Xesc, amb pujada des del mòbil, previsualització, galeria, ampliació a pantalla completa i eliminació segura. Les fotos reutilitzen el bucket privat `trip-documents` i la taula `travel_documents` amb la categoria `Foto`.
