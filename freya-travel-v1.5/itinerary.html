@@ -116,7 +116,7 @@
 <body>
   <main class="shell">
     <div class="topbar">
-      <a class="back" href="index.html">← Torna al tauler</a>
+      <a class="back" href="../index.html">← Torna al tauler</a>
       <button class="now-btn" id="nowBtn">Mode Ara</button>
     </div>
 
@@ -189,7 +189,8 @@ const tripDays = [
     events:[
       {time:"09:30",emoji:"👑",title:"Buckingham Palace",desc:"Passeig per St James's Park i entorn del palau.",maps:"https://www.google.com/maps/search/?api=1&query=Buckingham+Palace"},
       {time:"11:30",emoji:"🏛️",title:"British Museum",desc:"Visita seleccionada a les sales imprescindibles.",details:"Prioritzeu la Pedra de Rosetta, les escultures del Partenó i les galeries egípcies.",maps:"https://www.google.com/maps/search/?api=1&query=British+Museum"},
-      {time:"14:30",emoji:"🎭",title:"Covent Garden i Soho",desc:"Dinar, passeig i ambient del West End.",maps:"https://www.google.com/maps/search/?api=1&query=Covent+Garden"},
+      {time:"13:45",emoji:"⚡",title:"Plataforma 9¾ · King’s Cross",desc:"Parada breu per veure el carretó de Harry Potter travessant la paret.",details:"Reserveu aproximadament 20–30 minuts. Fer la foto amb el vostre mòbil és gratuït; si hi ha molta cua, podeu veure l’espai i continuar cap a Covent Garden per no anar justos abans de Les Misérables.",maps:"https://www.google.com/maps/search/?api=1&query=Platform+9+3%2F4+Kings+Cross+London"},
+      {time:"14:45",emoji:"🎭",title:"Covent Garden i Soho",desc:"Dinar, passeig i ambient del West End.",maps:"https://www.google.com/maps/search/?api=1&query=Covent+Garden"},
       {time:"18:45",emoji:"🍽️",title:"Sopar abans del teatre",desc:"Àpat lleuger a prop del Sondheim Theatre."},
       {time:"19:30",emoji:"🎟️",title:"Les Misérables",desc:"Representació al Sondheim Theatre.",booked:true,details:"Reserva confirmada. Arribeu amb marge per localitzar l'entrada i acomodar-vos.",maps:"https://www.google.com/maps/search/?api=1&query=Sondheim+Theatre+London"}
     ]
@@ -338,8 +339,11 @@ function goNow(){
 }
 
 function render(){ renderTabs();renderDay();updateProgress();nextActivity(); }
+const hashMatch=location.hash.match(/^#event-(\d+)-(\d+)$/);
+if(hashMatch){activeDay=Math.max(0,Math.min(tripDays.length-1,Number(hashMatch[1])))}
 $("#nowBtn").onclick=goNow;
 render();
+if(hashMatch){setTimeout(()=>document.querySelector(location.hash)?.scrollIntoView({behavior:"smooth",block:"center"}),120)}
 setInterval(nextActivity,60000);
 </script>
 </body>
