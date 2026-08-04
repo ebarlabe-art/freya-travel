@@ -126,6 +126,25 @@
     .airport-plan{display:grid;gap:12px}.airport-plan-card{background:#fff;border:1px solid var(--line);border-radius:21px;padding:18px;box-shadow:0 10px 26px rgba(49,42,59,.06)}.airport-plan-card h3{margin:0 0 8px}.airport-plan-card p{margin:5px 0;color:var(--muted)}.airport-plan-card ul{margin:10px 0 0;padding-left:20px;color:#4e4658}.airport-plan-card li{margin:7px 0}.flight-checklist{display:grid;grid-template-columns:1fr 1fr;gap:10px}.flight-check{display:flex;align-items:center;gap:10px;background:#faf8fd;border:1px solid var(--line);border-radius:15px;padding:13px;font-weight:750;color:#4e4658;cursor:pointer;user-select:none}.flight-check input{width:20px;height:20px;accent-color:#6b42ab}.flight-check.done{background:#edf8f0;color:#2f6b40;text-decoration:line-through}.flight-weather-button{width:100%;border:0;background:linear-gradient(135deg,#eef4ff,#f7efff);color:#4f378b;border-radius:16px;padding:13px;font-weight:850;cursor:pointer}
     @media(max-width:700px){.flight-summary-grid{grid-template-columns:1fr}.flight-hero h2{font-size:1.72rem}.flight-times{grid-template-columns:1fr}.flight-checklist{grid-template-columns:1fr}.flight-path:before,.flight-path:after{width:22px}.flight-actions{flex-direction:column}.flight-actions a,.flight-actions button{width:100%}.flight-countdown{grid-template-columns:repeat(4,1fr)}.flight-count-unit strong{font-size:1.15rem}}
 
+
+    .photo-shell{display:grid;gap:18px}
+    .photo-hero{padding:26px;border-radius:30px;color:#fff;background:linear-gradient(135deg,#4f2295,#7c3ec4 58%,#c14bc9);box-shadow:0 24px 60px rgba(78,32,135,.22)}
+    .photo-hero h2{margin:8px 0 6px;font-size:2rem}.photo-hero p{margin:0;color:rgba(255,255,255,.86);line-height:1.55}
+    .photo-upload-card{background:#fff;border-radius:26px;padding:20px;box-shadow:0 16px 40px rgba(52,24,84,.09)}
+    .photo-form{display:grid;gap:12px}.photo-form input,.photo-form select{width:100%;border:1px solid #e5d9ef;border-radius:16px;padding:14px;background:#fff;color:#2a2130}
+    .photo-preview{display:none;overflow:hidden;border-radius:20px;background:#f4eef9;max-height:320px}.photo-preview img{display:block;width:100%;height:100%;max-height:320px;object-fit:cover}
+    .photo-preview.visible{display:block}.photo-upload-button{border:0;border-radius:16px;padding:14px 18px;background:#5b2aa8;color:#fff;font-weight:800;cursor:pointer}
+    .photo-upload-button:disabled{opacity:.55;cursor:not-allowed}.photo-message{margin:0;color:#655b6d}.photo-message.error{color:#a52a3a}
+    .photo-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.photo-toolbar h2{margin:0}.photo-count{background:#efe7f7;color:#5b2aa8;border-radius:999px;padding:8px 12px;font-weight:800}
+    .photo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.photo-card{position:relative;overflow:hidden;border-radius:22px;background:#fff;box-shadow:0 14px 34px rgba(52,24,84,.10)}
+    .photo-card button.photo-open{display:block;width:100%;border:0;padding:0;background:none;cursor:pointer;text-align:left}.photo-card img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:#eee6f4}
+    .photo-info{padding:13px}.photo-info strong{display:block}.photo-info small{display:block;margin-top:4px;color:#746a7b}.photo-delete{position:absolute;top:10px;right:10px;border:0;border-radius:999px;width:36px;height:36px;background:rgba(27,18,34,.72);color:#fff;font-size:1rem;cursor:pointer}
+    .photo-empty{padding:26px;text-align:center;border:2px dashed #d9c7e7;border-radius:24px;color:#756a7c;background:#fbf8fd}.photo-new{animation:photoGlow 2.8s ease}
+    @keyframes photoGlow{0%,100%{box-shadow:0 14px 34px rgba(52,24,84,.10)}35%{box-shadow:0 0 0 6px rgba(199,74,196,.20),0 20px 48px rgba(78,32,135,.22)}}
+    .photo-lightbox{position:fixed;inset:0;z-index:9999;background:rgba(19,11,25,.92);display:flex;align-items:center;justify-content:center;padding:18px}.photo-lightbox.hidden{display:none}.photo-lightbox img{max-width:100%;max-height:84vh;border-radius:20px;box-shadow:0 28px 90px rgba(0,0,0,.42)}
+    .photo-lightbox-close{position:absolute;top:calc(18px + env(safe-area-inset-top));right:18px;border:0;border-radius:999px;width:44px;height:44px;background:#fff;color:#4c235f;font-size:1.4rem;font-weight:900;cursor:pointer}
+    @media(max-width:520px){.photo-grid{grid-template-columns:1fr 1fr;gap:10px}.photo-info{padding:11px}.photo-hero{padding:23px 19px}}
+
 </style>
 </head>
 <body>
@@ -146,7 +165,7 @@
     <header class="topbar"><div><strong id="tripTitleTop"></strong><small id="userEmail2"></small></div><button class="ghost logout">Sortir</button></header>
 
     <div id="dashboardView">
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 4.0 premium</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 5.1 · Fotos compartides</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
         <div class="overview-card"><span>✅</span><strong id="overviewChecklist">0/0</strong><small>Checklist completada</small><div class="progress-track"><div id="overviewProgress" class="progress-bar"></div></div></div>
@@ -167,7 +186,7 @@
         <button class="menu-card" data-open="documentsView"><span class="icon">📄</span><strong>Documents <span id="documentCount" class="doc-count">0</span></strong><small>PDF, captures i QR privats</small></button>
         <button class="menu-card" data-open="expensesView"><span class="icon">💶</span><strong>Despeses <span id="expenseCount" class="expense-count">0</span></strong><small>Registre del compte comú</small></button>
         <button class="menu-card" data-open="transportView"><span class="icon">🚇</span><strong>Transport</strong><small>Guia pràctica de Londres</small></button>
-        <button class="menu-card"><span class="icon">📸</span><strong>Fotos</strong><small>Properament</small></button>
+        <button class="menu-card" data-open="photosView"><span class="icon">📸</span><strong>Fotos <span id="photoCount" class="doc-count">0</span></strong><small>Àlbum compartit del viatge</small></button>
         <button class="menu-card" data-open="weatherView">
           <span class="icon">🌦️</span>
           <strong>Temps</strong>
@@ -266,6 +285,36 @@
         <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🚌</span><div><strong>Oxford i els Cotswolds</strong><small>Excursió d’un dia</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Dilluns 10 d’agost</h3><div class="big-time">07.30 h</div><p><strong>Punt de trobada:</strong> Gloucester Road Station, Gloucester Rd, South Kensington, London SW7 4SF, UK.</p><div class="ticket-actions"><button class="pending" type="button" disabled>Reserva pendent d’afegir</button><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Gloucester+Road+Station+London+SW7+4SF">📍 Obrir punt de trobada</a></div></div></div></article>
         <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">✈️</span><div><strong>Vol de tornada</strong><small>Ryanair · FR9798</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="boarding"><div><strong>RYANAIR · FR9798</strong></div><div class="route"><div class="airport"><b>STN</b><span>London Stansted</span></div><div class="plane-line">✈︎</div><div class="airport"><b>GRO</b><span>Girona</span></div></div><div class="ticket-meta"><div><small>Data</small><b>11 ag. 2026</b></div><div><small>Sortida</small><b>21.30 h</b></div><div><small>Arribada</small><b>Pendent</b></div></div></div><div class="ticket-actions"><button class="pending" type="button" disabled>Document pendent</button></div></div></article>
       </div>
+    </div>
+
+
+    <div id="photosView" class="hidden">
+      <button class="ghost back" data-back>← Torna al tauler</button>
+      <div class="photo-shell">
+        <section class="photo-hero">
+          <small>Records · Londres 2026</small>
+          <h2>📸 El vostre àlbum compartit</h2>
+          <p>Pugeu fotografies des del mòbil i compartiu-les entre l’Eva i en Xesc. Apareixeran aquí al moment.</p>
+        </section>
+        <section class="photo-upload-card">
+          <form id="photoForm" class="photo-form">
+            <input id="photoTitle" type="text" maxlength="80" placeholder="Títol o lloc (opcional)">
+            <input id="photoFile" type="file" accept="image/*" capture="environment" required>
+            <div id="photoPreview" class="photo-preview"><img id="photoPreviewImage" alt="Previsualització"></div>
+            <button id="uploadPhoto" class="photo-upload-button" type="submit">📷 Afegir a l’àlbum</button>
+            <p id="photoMsg" class="photo-message"></p>
+          </form>
+        </section>
+        <section>
+          <div class="photo-toolbar"><h2>Els vostres records</h2><span id="photoCountLabel" class="photo-count">0 fotos</span></div>
+          <div id="photosList" class="photo-grid"></div>
+          <div id="photosEmpty" class="photo-empty">Encara no hi ha cap foto. La primera serà l’inici del vostre àlbum de Londres. 💜</div>
+        </section>
+      </div>
+    </div>
+    <div id="photoLightbox" class="photo-lightbox hidden" role="dialog" aria-modal="true" aria-label="Foto ampliada">
+      <button id="photoLightboxClose" class="photo-lightbox-close" type="button" aria-label="Tancar">×</button>
+      <img id="photoLightboxImage" alt="Foto del viatge">
     </div>
 
     <div id="documentsView" class="hidden">
@@ -529,7 +578,7 @@ let session=null,trip=null,channel=null;
 const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-function setAppView(id){['dashboardView','checklistView','flightsView','ticketsView','transportView','favoritesView','documentsView','expensesView','weatherView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
+function setAppView(id){['dashboardView','checklistView','flightsView','ticketsView','transportView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='photosView')loadPhotos();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
 function updateFlightPremium(){
   const now=new Date();
@@ -756,6 +805,53 @@ function renderFavorites(){const favs=getFavorites();const list=$('favoritesList
 addFavoriteButtons();renderFavorites();
 
 
+
+let photoRows=[];
+let photoObjectUrls=[];
+function clearPhotoObjectUrls(){photoObjectUrls.forEach(url=>URL.revokeObjectURL(url));photoObjectUrls=[]}
+function photoDate(value){if(!value)return '';return new Date(value).toLocaleDateString('ca-ES',{day:'numeric',month:'short',year:'numeric'})}
+async function loadPhotos(silent=false){
+  if(!trip)return;
+  const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',trip.id).eq('category','Foto').order('created_at',{ascending:false});
+  if(error){if(!silent)showPhotoMessage(error.message,true);else console.error('No s’han pogut carregar les fotos:',error);return}
+  photoRows=data||[];
+  await renderPhotos(photoRows);
+}
+async function renderPhotos(rows=photoRows){
+  const list=$('photosList'),empty=$('photosEmpty'),count=$('photoCount'),label=$('photoCountLabel');if(!list||!empty)return;
+  if(count)count.textContent=rows.length;if(label)label.textContent=`${rows.length} ${rows.length===1?'foto':'fotos'}`;
+  empty.classList.toggle('hidden',rows.length>0);list.innerHTML='';
+  if(!rows.length)return;
+  const signed=await Promise.all(rows.map(async photo=>{const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(photo.file_path,3600);return {...photo,signedUrl:error?'':data.signedUrl}}));
+  list.innerHTML=signed.map(p=>`<article class="photo-card" data-photo-id="${esc(p.id)}"><button class="photo-open" type="button" data-photo-open="${esc(p.id)}"><img src="${esc(p.signedUrl)}" alt="${esc(p.title||p.file_name||'Foto del viatge')}" loading="lazy"><div class="photo-info"><strong>${esc(p.title||'Foto del viatge')}</strong><small>${esc(photoDate(p.created_at))}</small></div></button><button class="photo-delete" type="button" data-photo-delete="${esc(p.id)}" aria-label="Eliminar foto">🗑</button></article>`).join('');
+  list.querySelectorAll('[data-photo-open]').forEach(btn=>btn.onclick=()=>openPhoto(btn.dataset.photoOpen,signed));
+  list.querySelectorAll('[data-photo-delete]').forEach(btn=>btn.onclick=()=>deletePhoto(btn.dataset.photoDelete,rows));
+}
+function openPhoto(id,rows){const p=rows.find(x=>x.id===id);if(!p||!p.signedUrl)return;$('photoLightboxImage').src=p.signedUrl;$('photoLightbox').classList.remove('hidden')}
+function closePhotoLightbox(){$('photoLightbox').classList.add('hidden');$('photoLightboxImage').removeAttribute('src')}
+$('photoLightboxClose').onclick=closePhotoLightbox;$('photoLightbox').onclick=e=>{if(e.target===$('photoLightbox'))closePhotoLightbox()};
+function showPhotoMessage(message,isError=false){const el=$('photoMsg');if(!el)return;el.textContent=message||'';el.classList.toggle('error',isError)}
+$('photoFile').onchange=()=>{const file=$('photoFile').files[0],wrap=$('photoPreview'),img=$('photoPreviewImage');if(!file){wrap.classList.remove('visible');img.removeAttribute('src');return}clearPhotoObjectUrls();const url=URL.createObjectURL(file);photoObjectUrls.push(url);img.src=url;wrap.classList.add('visible')};
+$('photoForm').onsubmit=async e=>{
+  e.preventDefault();if(!trip||!session)return;
+  const file=$('photoFile').files[0];if(!file)return;
+  if(!file.type.startsWith('image/')){showPhotoMessage('Selecciona una imatge.',true);return}
+  if(file.size>15*1024*1024){showPhotoMessage('La foto supera el límit de 15 MB.',true);return}
+  const title=$('photoTitle').value.trim()||`Londres · ${new Date().toLocaleDateString('ca-ES',{day:'numeric',month:'short'})}`;
+  $('uploadPhoto').disabled=true;showPhotoMessage('Pujant la foto…');
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+  const path=`${trip.id}/photos/${crypto.randomUUID()}-${safeFileName(title)}.${ext}`;
+  const up=await db.storage.from(DOC_BUCKET).upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});
+  if(up.error){$('uploadPhoto').disabled=false;showPhotoMessage(up.error.message,true);return}
+  const {data:inserted,error}=await db.from('travel_documents').insert({trip_id:trip.id,title,category:'Foto',file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id}).select('id,title,category,file_name,file_path,mime_type,created_at,created_by').single();
+  if(error){await db.storage.from(DOC_BUCKET).remove([path]);$('uploadPhoto').disabled=false;showPhotoMessage(error.message,true);return}
+  $('photoForm').reset();$('photoPreview').classList.remove('visible');clearPhotoObjectUrls();$('uploadPhoto').disabled=false;
+  photoRows=[inserted,...photoRows.filter(p=>p.id!==inserted.id)];await renderPhotos(photoRows);showPhotoMessage('Foto afegida a l’àlbum! 💜');
+  requestAnimationFrame(()=>{const card=document.querySelector(`[data-photo-id="${inserted.id}"]`);if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('photo-new');setTimeout(()=>card.classList.remove('photo-new'),3000)}});
+  setTimeout(()=>loadPhotos(true),1500);
+};
+async function deletePhoto(id,rows){const photo=rows.find(x=>x.id===id);if(!photo)return;if(!confirm(`Eliminar «${photo.title||'aquesta foto'}»?`))return;showPhotoMessage('Eliminant…');const storage=await db.storage.from(DOC_BUCKET).remove([photo.file_path]);if(storage.error){showPhotoMessage(storage.error.message,true);return}const {error}=await db.from('travel_documents').delete().eq('id',id);if(error){showPhotoMessage(error.message,true);return}photoRows=photoRows.filter(x=>x.id!==id);await renderPhotos(photoRows);showPhotoMessage('Foto eliminada.')}
+
 let documentChannel=null;
 let documentRows=[];
 let pendingDocumentRows=[];
@@ -764,7 +860,7 @@ function categoryIcon(category){return ({Entrada:'🎟️',Vol:'✈️',Hotel:'�
 function safeFileName(name){return name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'document'}
 async function loadDocuments(silent=false){
   if(!trip)return;
-  const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',trip.id).order('created_at',{ascending:false});
+  const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',trip.id).neq('category','Foto').order('created_at',{ascending:false});
   if(error){if(!silent)msg('documentMsg',error.message,true);else console.error('No s’han pogut carregar els documents:',error);return []}
   const serverDocs=data||[];
   const serverIds=new Set(serverDocs.map(d=>d.id));
