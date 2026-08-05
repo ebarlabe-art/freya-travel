@@ -43,3 +43,7 @@ Afegeix de nou la informació cultural dels llocs i incorpora audioguies en cata
 - Corregeix la subscripció en temps real de la checklist.
 - Manté visibles les fotos acabades de pujar mentre Supabase sincronitza la lectura.
 - Actualitza la memòria cau de la PWA.
+
+## Versió 6.4.7
+- A l'apartat Fotos, el selector ja no força l'obertura de la càmera.
+- El mòbil permet escollir una imatge de la galeria (i, segons el sistema, també ofereix fer-ne una de nova).
