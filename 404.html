@@ -194,6 +194,13 @@
     .parking-map-link{display:inline-flex;background:#efe7f7;color:#5b2aa8}
     .parking-photo-preview{display:none;margin-top:14px}.parking-photo-preview.visible{display:block}
     .parking-photo-preview img{width:100%;max-height:360px;object-fit:cover;border-radius:20px;border:1px solid #eadff2}
+    .parking-reservation-card{display:none;margin-top:14px;padding:14px;border:1px solid #d9c8e8;border-radius:18px;background:#faf6fd}
+    .parking-reservation-card.visible{display:block}
+    .parking-reservation-head{display:flex;align-items:center;gap:12px}
+    .parking-reservation-icon{display:grid;place-items:center;width:46px;height:46px;border-radius:14px;background:#efe7f7;font-size:1.45rem}
+    .parking-reservation-head strong{display:block}.parking-reservation-head small{display:block;margin-top:3px;color:#776c7d}
+    .parking-reservation-preview{display:none;margin-top:12px}.parking-reservation-preview.visible{display:block}
+    .parking-reservation-preview img{width:100%;max-height:260px;object-fit:contain;border-radius:16px;border:1px solid #eadff2;background:#fff;cursor:pointer}
     .parking-empty{padding:18px;border:1px dashed #ccb8dd;border-radius:18px;text-align:center;color:#776c7d;background:#fcf9fe}
     .parking-return{background:linear-gradient(145deg,#fff7dc,#fff);border-color:#f2df9c}
     .parking-return strong{display:block;font-size:1.35rem;margin:8px 0}
@@ -292,11 +299,11 @@
           <button class="departure-action" type="button" onclick="window.location.href='freya-travel-v1.5/itinerary.html'"><span>📅</span><strong>Itinerari</strong><small>El programa dia a dia</small></button>
         </div>
       </section>
-      <div class="trips-footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.2 · Itinerari definitiu</div>
+      <div class="trips-footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.3 · Documents accessibles</div>
     </div>
 
     <div id="dashboardView">
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.2 · Itinerari definitiu</div><button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.3 · Documents accessibles</div><button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
         <div class="overview-card"><span>✅</span><strong id="overviewChecklist">0/0</strong><small>Checklist completada</small><div class="progress-track"><div id="overviewProgress" class="progress-bar"></div></div></div>
@@ -537,7 +544,15 @@
               <label>Adreça o indicacions<textarea id="parkingAddress" placeholder="Adreça, barrera d'entrada, zona..."></textarea></label>
               <div class="parking-actions">
                 <button type="submit">💾 Desa-ho</button>
-                <button id="parkingOpenDocuments" type="button" class="secondary">📄 Reserva als Documents</button>
+                <button id="parkingViewReservation" type="button" class="secondary hidden">👁️ Veure reserva</button>
+                <button id="parkingOpenDocuments" type="button" class="secondary">📄 Afegir o substituir reserva</button>
+              </div>
+              <div id="parkingReservationCard" class="parking-reservation-card">
+                <div class="parking-reservation-head">
+                  <div class="parking-reservation-icon" id="parkingReservationIcon">📄</div>
+                  <div><strong id="parkingReservationTitle">Reserva carregada</strong><small id="parkingReservationFile">Document disponible</small></div>
+                </div>
+                <div id="parkingReservationPreview" class="parking-reservation-preview"><img id="parkingReservationImage" alt="Captura de la reserva del pàrquing"></div>
               </div>
             </form>
           </div>
@@ -833,7 +848,7 @@
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
     <button id="globalSearchFab" class="search-fab" type="button" aria-label="Cerca a tota l'app">🔎</button>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.2</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.3</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1319,6 +1334,7 @@ function renderDocuments(docs=documentRows){
   list.querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>openDocument(b.dataset.openDoc,documentRows));
   list.querySelectorAll('[data-delete-doc]').forEach(b=>b.onclick=()=>deleteDocument(b.dataset.deleteDoc,documentRows));
   updateFlightDocumentLinks();
+  updateParkingReservationUi();
 }
 async function openDocument(id,docs){
   const doc=docs.find(x=>x.id===id);if(!doc)return;
@@ -1495,6 +1511,8 @@ async function loadParking(){
   parkingText('parkingReturnSpot',label||'—');parkingText('parkingReturnNotes',row.notes||'');
   updateParkingMap(row.latitude,row.longitude);
   await renderParkingPhoto(row.photo_path);
+  if(!documentRows.length)await loadDocuments(true);
+  await updateParkingReservationUi();
 }
 function parkingPayload(){
   return {
@@ -1514,7 +1532,34 @@ async function saveParking(message){
 }
 $('parkingForm').onsubmit=async e=>{e.preventDefault();await saveParking('Reserva del pàrquing desada.')};
 $('parkingSpotForm').onsubmit=async e=>{e.preventDefault();await saveParking('Plaça del cotxe desada.')};
-$('parkingOpenDocuments').onclick=()=>setAppView('documentsView');
+function parkingDocumentScore(doc){
+  const text=normalizeSearchText(`${doc.title||''} ${doc.category||''} ${doc.file_name||''}`);
+  let score=0;
+  ['parking','parquing','aparcament'].forEach(k=>{if(text.includes(k))score+=5});
+  ['reserva','booking','aeroport','girona'].forEach(k=>{if(text.includes(k))score+=1});
+  if(text.includes('placa')||text.includes('cartell'))score-=2;
+  return score;
+}
+function findParkingReservationDocument(){
+  return [...(documentRows||[])].sort((a,b)=>parkingDocumentScore(b)-parkingDocumentScore(a)).find(d=>parkingDocumentScore(d)>0)||null;
+}
+async function updateParkingReservationUi(){
+  const card=$('parkingReservationCard'),button=$('parkingViewReservation'),preview=$('parkingReservationPreview'),img=$('parkingReservationImage');
+  if(!card||!button||!preview||!img)return;
+  const doc=findParkingReservationDocument();
+  if(!doc){card.classList.remove('visible');button.classList.add('hidden');preview.classList.remove('visible');img.removeAttribute('src');return}
+  card.classList.add('visible');button.classList.remove('hidden');
+  parkingText('parkingReservationTitle','✅ Reserva carregada');
+  parkingText('parkingReservationFile',doc.title||doc.file_name||'Document disponible');
+  parkingText('parkingReservationIcon',(doc.mime_type||'').startsWith('image/')?'🖼️':'📄');
+  button.onclick=()=>openDocument(doc.id,documentRows);
+  if((doc.mime_type||'').startsWith('image/')){
+    const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(doc.file_path,3600);
+    if(!error&&data?.signedUrl){img.src=data.signedUrl;preview.classList.add('visible');img.onclick=()=>openDocument(doc.id,documentRows)}
+    else{preview.classList.remove('visible');img.removeAttribute('src')}
+  }else{preview.classList.remove('visible');img.removeAttribute('src')}
+}
+$('parkingOpenDocuments').onclick=()=>{setAppView('documentsView');setTimeout(()=>{const form=$('documentForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'})},80)};
 function updateParkingMap(lat,lng){
   const link=$('parkingMapLink'),status=$('parkingGpsStatus');
   if(lat!=null&&lng!=null){link.href=`https://www.google.com/maps?q=${encodeURIComponent(lat+','+lng)}`;link.classList.remove('hidden');status.textContent=`GPS desat: ${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`}

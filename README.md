@@ -22,3 +22,10 @@ Afegeix de nou la informació cultural dels llocs i incorpora audioguies en cata
 - Trafalgar Square: dijous 6.
 - Plataforma 9¾: divendres 7.
 - Retorn directe de l’itinerari al tauler de Londres.
+
+
+## Versió 6.4.3
+
+- La reserva del pàrquing es pot obrir directament des de l'apartat Aparcament.
+- Les captures d'imatge mostren una miniatura tocable.
+- El botó d'afegir o substituir porta directament a Documents.
