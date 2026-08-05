@@ -299,11 +299,11 @@
           <button class="departure-action" type="button" onclick="window.location.href='freya-travel-v1.5/itinerary.html'"><span>📅</span><strong>Itinerari</strong><small>El programa dia a dia</small></button>
         </div>
       </section>
-      <div class="trips-footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.3 · Documents accessibles</div>
+      <div class="trips-footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.4 · Checklist compartida</div>
     </div>
 
     <div id="dashboardView">
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.3 · Documents accessibles</div><button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.4 · Checklist compartida</div><button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
         <div class="overview-card"><span>✅</span><strong id="overviewChecklist">0/0</strong><small>Checklist completada</small><div class="progress-track"><div id="overviewProgress" class="progress-bar"></div></div></div>
@@ -365,7 +365,7 @@
       <div id="guideGrid" class="guide-grid"></div>
     </div>
 
-    <div id="checklistView" class="hidden"><button class="ghost back" data-back>← Torna al tauler</button><div class="card"><h2>Checklist compartida</h2><form id="itemForm" class="add"><input id="newItem" placeholder="Afegeix una tasca" required><button>Afegir</button></form><div id="items"></div><p id="itemsEmpty" class="muted">Encara no hi ha cap tasca.</p></div></div>
+    <div id="checklistView" class="hidden"><button class="ghost back" data-back>← Torna al tauler</button><div class="card"><h2>Checklist compartida</h2><p class="muted">Preparatius ordenats per temes perquè trobeu ràpidament què falta.</p><form id="itemForm" class="checklist-add"><select id="newItemCategory" aria-label="Apartat"><option value="equipment">🧳 Equipatge</option><option value="documents">📄 Documentació</option><option value="car">🚗 Cotxe i aparcament</option><option value="home">🏠 Casa</option><option value="cats">🐈 Piki i Ghost</option><option value="airport">✈️ Aeroport i vol</option><option value="technology">📱 Tecnologia</option><option value="other">✨ Altres</option></select><input id="newItem" placeholder="Afegeix una tasca" required><button>Afegir</button></form><div id="checklistSummary" class="checklist-summary hidden"></div><div id="items" class="checklist-groups"></div><p id="itemsEmpty" class="muted">Encara no hi ha cap tasca.</p></div></div>
 
 
     <div id="flightsView" class="hidden">
@@ -848,7 +848,7 @@
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
     <button id="globalSearchFab" class="search-fab" type="button" aria-label="Cerca a tota l'app">🔎</button>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.3</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.4</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1083,8 +1083,57 @@ updateFlightPremium();
 initFlightChecklist();
 initGlobalSearch();
 setInterval(updateFlightPremium,1000);updateTravelBrief();addFavoriteButtons();renderFavorites();await loadItems();await ensureDefaultChecklistItems();await loadDocuments(true);await loadExpenses(true);subscribe();subscribeDocuments();subscribeExpenses()}
-async function loadItems(){if(!trip)return;const {data,error}=await db.from('checklist_items').select('id,text,done,created_at').eq('trip_id',trip.id).order('created_at');if(error){msg('appMsg',error.message,true);return}const items=data||[];const doneCount=items.filter(i=>i.done).length;const overviewChecklist=$('overviewChecklist'),overviewProgress=$('overviewProgress');if(overviewChecklist)overviewChecklist.textContent=`${doneCount}/${items.length}`;if(overviewProgress)overviewProgress.style.width=items.length?`${Math.round(doneCount/items.length*100)}%`:'0%';$('itemsEmpty').classList.toggle('hidden',items.length>0);$('items').innerHTML=items.map(i=>`<div class="item ${i.done?'done':''}"><label><input type="checkbox" data-toggle="${i.id}" ${i.done?'checked':''}><span>${esc(i.text)}</span></label><button class="delete" data-delete="${i.id}" aria-label="Eliminar">×</button></div>`).join('');document.querySelectorAll('[data-toggle]').forEach(el=>el.onchange=()=>toggleItem(el.dataset.toggle,el.checked));document.querySelectorAll('[data-delete]').forEach(el=>el.onclick=()=>deleteItem(el.dataset.delete))}
-function subscribe(){if(channel)db.removeChannel(channel);channel=db.channel('checklist-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},loadItems).subscribe()}
+const CHECKLIST_CATEGORIES=[
+  {id:'equipment',icon:'🧳',label:'Equipatge'},
+  {id:'documents',icon:'📄',label:'Documentació'},
+  {id:'car',icon:'🚗',label:'Cotxe i aparcament'},
+  {id:'home',icon:'🏠',label:'Casa'},
+  {id:'cats',icon:'🐈',label:'Piki i Ghost'},
+  {id:'airport',icon:'✈️',label:'Aeroport i vol'},
+  {id:'technology',icon:'📱',label:'Tecnologia'},
+  {id:'other',icon:'✨',label:'Altres'}
+];
+function checklistTextParts(value){
+  const raw=String(value||'');
+  const match=raw.match(/^\[\[cat:([a-z-]+)\]\]\s*/i);
+  const text=raw.replace(/^\[\[cat:[a-z-]+\]\]\s*/i,'').trim();
+  if(match&&CHECKLIST_CATEGORIES.some(c=>c.id===match[1].toLowerCase()))return {category:match[1].toLowerCase(),text};
+  const normalized=normalizeSearchText(text);
+  const rules={
+    cats:['gat','gats','piki','ghost','sorra','menjadora','veterinari'],
+    car:['parking','parquing','aparcament','cotxe','placa','planta','combustible','gps'],
+    airport:['aeroport','vol','check-in','check in','embarcament','terminal','maleta de cabina','equipatge de ma'],
+    documents:['passaport','dni','document','entrada','reserva','asseguranca','targeta sanitaria','boarding pass'],
+    technology:['mobil','carregador','cable','bateria','adaptador','auricular','roaming','dades','app'],
+    home:['casa','finestra','persiana','llum','nevera','escombraries','aigua','gas','planta','claus'],
+    equipment:['roba','calcat','sabata','necesser','medicacio','paraigua','motxilla','maleta','ulleres']
+  };
+  for(const [category,words] of Object.entries(rules))if(words.some(word=>normalized.includes(word)))return {category,text};
+  return {category:'other',text};
+}
+async function loadItems(){
+  if(!trip)return;
+  const {data,error}=await db.from('checklist_items').select('id,text,done,created_at').eq('trip_id',trip.id).order('created_at');
+  if(error){msg('appMsg',error.message,true);return}
+  const items=(data||[]).map(item=>({...item,...checklistTextParts(item.text)}));
+  const doneCount=items.filter(i=>i.done).length;
+  const overviewChecklist=$('overviewChecklist'),overviewProgress=$('overviewProgress');
+  if(overviewChecklist)overviewChecklist.textContent=`${doneCount}/${items.length}`;
+  if(overviewProgress)overviewProgress.style.width=items.length?`${Math.round(doneCount/items.length*100)}%`:'0%';
+  $('itemsEmpty').classList.toggle('hidden',items.length>0);
+  const summary=$('checklistSummary');
+  if(summary){summary.classList.toggle('hidden',items.length===0);summary.innerHTML=items.length?`<div><strong>Progrés general</strong><small>${doneCount} tasques completades de ${items.length}</small></div><span class="checklist-total">${doneCount}/${items.length}</span>`:''}
+  $('items').innerHTML=CHECKLIST_CATEGORIES.map(category=>{
+    const group=items.filter(item=>item.category===category.id);
+    if(!group.length)return '';
+    const groupDone=group.filter(item=>item.done).length;
+    const percent=Math.round(groupDone/group.length*100);
+    return `<details class="check-group" open><summary><span class="check-group-icon">${category.icon}</span><span class="check-group-title"><strong>${esc(category.label)}</strong><small>${groupDone} de ${group.length} completades</small></span><span class="check-group-count">${groupDone}/${group.length}</span></summary><div class="check-group-progress"><span style="width:${percent}%"></span></div><div class="check-group-items">${group.map(i=>`<div class="item ${i.done?'done':''}"><label><input type="checkbox" data-toggle="${i.id}" ${i.done?'checked':''}><span>${esc(i.text)}</span></label><button class="delete" data-delete="${i.id}" aria-label="Eliminar">×</button></div>`).join('')}</div></details>`;
+  }).join('');
+  document.querySelectorAll('[data-toggle]').forEach(el=>el.onchange=()=>toggleItem(el.dataset.toggle,el.checked));
+  document.querySelectorAll('[data-delete]').forEach(el=>el.onclick=()=>deleteItem(el.dataset.delete));
+}
+
 async function toggleItem(id,done){const {error}=await db.from('checklist_items').update({done}).eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
 async function deleteItem(id){const {error}=await db.from('checklist_items').delete().eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
 document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.open==='weatherView')console.log('Obrint weatherView');setAppView(b.dataset.open)});
@@ -1607,7 +1656,7 @@ $('parkingRemovePhoto').onclick=async()=>{
 };
 
 
-$('itemForm').onsubmit=async e=>{e.preventDefault();const text=$('newItem').value.trim();if(!text)return;const {error}=await db.from('checklist_items').insert({trip_id:trip.id,text,created_by:session.user.id});if(error)msg('appMsg',error.message,true);else{$('newItem').value='';loadItems()}};
+$('itemForm').onsubmit=async e=>{e.preventDefault();const text=$('newItem').value.trim(),category=$('newItemCategory').value||'other';if(!text)return;const storedText=`[[cat:${category}]] ${text}`;const {error}=await db.from('checklist_items').insert({trip_id:trip.id,text:storedText,created_by:session.user.id});if(error)msg('appMsg',error.message,true);else{$('newItem').value='';loadItems()}};
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{

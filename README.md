@@ -29,3 +29,11 @@ Afegeix de nou la informació cultural dels llocs i incorpora audioguies en cata
 - La reserva del pàrquing es pot obrir directament des de l'apartat Aparcament.
 - Les captures d'imatge mostren una miniatura tocable.
 - El botó d'afegir o substituir porta directament a Documents.
+
+
+## Versió 6.4.4
+
+- Checklist recuperada i agrupada en vuit apartats plegables, amb progrés per secció.
+- Les tasques existents es classifiquen automàticament; les noves permeten triar l'apartat.
+- Política de Supabase preparada perquè qualsevol membre del viatge pugui pujar documents i fotos compartides.
+- Inclou `supabase-members-upload-fix.sql`, que cal executar una sola vegada a Supabase.
