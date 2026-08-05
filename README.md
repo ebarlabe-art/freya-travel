@@ -31,6 +31,11 @@ Afegeix de nou la informació cultural dels llocs i incorpora audioguies en cata
 - El botó d'afegir o substituir porta directament a Documents.
 
 
+## Versió 6.4.5
+
+- Corregeix l'error `subscribe is not defined` que interrompia la inicialització de la sessió.
+- Restaura la subscripció en temps real de la checklist.
+
 ## Versió 6.4.4
 
 - Checklist recuperada i agrupada en vuit apartats plegables, amb progrés per secció.

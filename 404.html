@@ -1083,6 +1083,13 @@ updateFlightPremium();
 initFlightChecklist();
 initGlobalSearch();
 setInterval(updateFlightPremium,1000);updateTravelBrief();addFavoriteButtons();renderFavorites();await loadItems();await ensureDefaultChecklistItems();await loadDocuments(true);await loadExpenses(true);subscribe();subscribeDocuments();subscribeExpenses()}
+function subscribe(){
+  if(!trip)return;
+  if(channel)db.removeChannel(channel);
+  channel=db.channel('checklist-'+trip.id)
+    .on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},()=>loadItems())
+    .subscribe();
+}
 const CHECKLIST_CATEGORIES=[
   {id:'equipment',icon:'🧳',label:'Equipatge'},
   {id:'documents',icon:'📄',label:'Documentació'},
