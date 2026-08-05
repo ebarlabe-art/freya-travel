@@ -299,11 +299,11 @@
           <button class="departure-action" type="button" onclick="window.location.href='freya-travel-v1.5/itinerary.html'"><span>📅</span><strong>Itinerari</strong><small>El programa dia a dia</small></button>
         </div>
       </section>
-      <div class="trips-footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.4 · Checklist compartida</div>
+      <div class="trips-footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.6 · Compartició estable</div>
     </div>
 
     <div id="dashboardView">
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.4 · Checklist compartida</div><button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.6 · Compartició estable</div><button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
         <div class="overview-card"><span>✅</span><strong id="overviewChecklist">0/0</strong><small>Checklist completada</small><div class="progress-track"><div id="overviewProgress" class="progress-bar"></div></div></div>
@@ -848,7 +848,7 @@
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
     <button id="globalSearchFab" class="search-fab" type="button" aria-label="Cerca a tota l'app">🔎</button>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.4</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.6</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1078,18 +1078,19 @@ function updateTravelBrief(){
   else {day=days.at(-1);item=['💜','Londres 2026','Un viatge per recordar plegats.'];label='Record del viatge';}
   $('briefChip').textContent=day.chip||'Londres 2026';$('briefLabel').textContent=label;$('briefTime').textContent=item[0];$('briefActivity').textContent=item[1];$('briefDescription').textContent=item[2]||'';
 }
+let checklistChannel=null;
+function subscribe(){
+  if(!trip)return;
+  if(checklistChannel)db.removeChannel(checklistChannel);
+  checklistChannel=db.channel('checklist-'+trip.id)
+    .on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},()=>loadItems())
+    .subscribe();
+}
 async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');const requestedView=new URLSearchParams(window.location.search).get('view');setAppView(requestedView==='london'?'dashboardView':'tripsHomeView');if(requestedView==='london')history.replaceState(null,'',window.location.pathname);$('tripTitle').textContent=trip.name;$('tripCardTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();
 updateFlightPremium();
 initFlightChecklist();
 initGlobalSearch();
 setInterval(updateFlightPremium,1000);updateTravelBrief();addFavoriteButtons();renderFavorites();await loadItems();await ensureDefaultChecklistItems();await loadDocuments(true);await loadExpenses(true);subscribe();subscribeDocuments();subscribeExpenses()}
-function subscribe(){
-  if(!trip)return;
-  if(channel)db.removeChannel(channel);
-  channel=db.channel('checklist-'+trip.id)
-    .on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},()=>loadItems())
-    .subscribe();
-}
 const CHECKLIST_CATEGORIES=[
   {id:'equipment',icon:'🧳',label:'Equipatge'},
   {id:'documents',icon:'📄',label:'Documentació'},
@@ -1318,6 +1319,7 @@ addFavoriteButtons();renderFavorites();
 
 
 let photoRows=[];
+let pendingPhotoRows=[];
 let photoObjectUrls=[];
 function clearPhotoObjectUrls(){photoObjectUrls.forEach(url=>URL.revokeObjectURL(url));photoObjectUrls=[]}
 function photoDate(value){if(!value)return '';return new Date(value).toLocaleDateString('ca-ES',{day:'numeric',month:'short',year:'numeric'})}
@@ -1325,7 +1327,10 @@ async function loadPhotos(silent=false){
   if(!trip)return;
   const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',trip.id).eq('category','Foto').order('created_at',{ascending:false});
   if(error){if(!silent)showPhotoMessage(error.message,true);else console.error('No s’han pogut carregar les fotos:',error);return}
-  photoRows=data||[];
+  const serverPhotos=data||[];
+  const serverIds=new Set(serverPhotos.map(p=>p.id));
+  pendingPhotoRows=pendingPhotoRows.filter(p=>!serverIds.has(p.id) && Date.now()-(p._pendingAt||0)<60000);
+  photoRows=[...pendingPhotoRows,...serverPhotos.filter(p=>!pendingPhotoRows.some(x=>x.id===p.id))];
   await renderPhotos(photoRows);
 }
 async function renderPhotos(rows=photoRows){
@@ -1357,7 +1362,9 @@ $('photoForm').onsubmit=async e=>{
   const {data:inserted,error}=await db.from('travel_documents').insert({trip_id:trip.id,title,category:'Foto',file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id}).select('id,title,category,file_name,file_path,mime_type,created_at,created_by').single();
   if(error){await db.storage.from(DOC_BUCKET).remove([path]);$('uploadPhoto').disabled=false;showPhotoMessage(error.message,true);return}
   $('photoForm').reset();$('photoPreview').classList.remove('visible');clearPhotoObjectUrls();$('uploadPhoto').disabled=false;
-  photoRows=[inserted,...photoRows.filter(p=>p.id!==inserted.id)];await renderPhotos(photoRows);showPhotoMessage('Foto afegida a l’àlbum! 💜');
+  const visibleInserted={...inserted,_pendingAt:Date.now()};
+  pendingPhotoRows=[visibleInserted,...pendingPhotoRows.filter(p=>p.id!==visibleInserted.id)];
+  photoRows=[visibleInserted,...photoRows.filter(p=>p.id!==visibleInserted.id)];await renderPhotos(photoRows);showPhotoMessage('Foto afegida a l’àlbum! 💜');
   requestAnimationFrame(()=>{const card=document.querySelector(`[data-photo-id="${inserted.id}"]`);if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('photo-new');setTimeout(()=>card.classList.remove('photo-new'),3000)}});
   setTimeout(()=>loadPhotos(true),1500);
 };

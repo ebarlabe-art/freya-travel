@@ -31,14 +31,15 @@ Afegeix de nou la informació cultural dels llocs i incorpora audioguies en cata
 - El botó d'afegir o substituir porta directament a Documents.
 
 
-## Versió 6.4.5
-
-- Corregeix l'error `subscribe is not defined` que interrompia la inicialització de la sessió.
-- Restaura la subscripció en temps real de la checklist.
-
 ## Versió 6.4.4
 
 - Checklist recuperada i agrupada en vuit apartats plegables, amb progrés per secció.
 - Les tasques existents es classifiquen automàticament; les noves permeten triar l'apartat.
 - Política de Supabase preparada perquè qualsevol membre del viatge pugui pujar documents i fotos compartides.
 - Inclou `supabase-members-upload-fix.sql`, que cal executar una sola vegada a Supabase.
+
+
+## Versió 6.4.6
+- Corregeix la subscripció en temps real de la checklist.
+- Manté visibles les fotos acabades de pujar mentre Supabase sincronitza la lectura.
+- Actualitza la memòria cau de la PWA.
