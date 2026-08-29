@@ -1,4 +1,4 @@
-const CACHE='freya-travel-v6.4.7-galeria-fotos';
+const CACHE='freya-travel-v6.4.8-api-cache-fix';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./itinerary.html','./freya-travel-v1.5/itinerary.html'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
@@ -7,6 +7,7 @@ self.addEventListener('fetch',event=>{
   const request=event.request;
   const url=new URL(request.url);
   const isSameOrigin=url.origin===self.location.origin;
+  if(!isSameOrigin)return;
   const isNavigation=request.mode==='navigate'||request.destination==='document';
   const isIndexRequest=isSameOrigin && (url.pathname.endsWith('/index.html') || url.pathname === '/' || url.pathname === '/freya-travel/' || url.pathname === '/freya-travel');
   if(isNavigation || isIndexRequest){
