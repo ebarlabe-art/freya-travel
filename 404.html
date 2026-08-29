@@ -448,11 +448,15 @@
       <button class="ghost back" data-back>← Torna al tauler</button>
       <div class="card"><h2>Entrades i reserves</h2><p class="muted">La cartera digital del viatge. Aquí hi tens totes les reserves importants, ordenades cronològicament.</p><div class="wallet-note">📎 Els botons dels documents quedaran actius quan hi afegim els PDF, les captures o els codis QR.</div></div>
       <div class="ticket-list">
-        <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">✈️</span><div><strong>Vol d’anada</strong><small>Ryanair · FR9797</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="boarding"><div><strong>RYANAIR · FR9797</strong></div><div class="route"><div class="airport"><b>GRO</b><span>Girona</span></div><div class="plane-line">✈︎</div><div class="airport"><b>STN</b><span>London Stansted</span></div></div><div class="ticket-meta"><div><small>Data</small><b>6 ag. 2026</b></div><div><small>Sortida</small><b>12.45 h</b></div><div><small>Arribada</small><b>13.55 h</b></div></div></div><div class="ticket-actions"><button class="pending" type="button" data-flight-doc="outbound" disabled>Document pendent</button></div></div></article>
-        <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🎭</span><div><strong>Les Misérables</strong><small>Musical</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Divendres 7 d’agost</h3><div class="big-time">19.30 h</div><p>Arribada recomanada amb 30–45 minuts d’antelació.</p><div class="ticket-actions"><button class="pending" type="button" disabled>Entrada pendent d’afegir</button><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Les+Miserables+London+theatre">📍 Obrir a Maps</a></div></div></div></article>
-        <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🎡</span><div><strong>London Eye</strong><small>Reserva per a 2 persones</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Diumenge 9 d’agost</h3><div class="big-time">19.30 h</div><p>Presentar-s’hi cap a les 18.30 h per a cues i controls.</p><div class="ticket-actions"><button class="pending" type="button" disabled>Entrada pendent d’afegir</button><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=London+Eye">📍 Obrir a Maps</a></div></div></div></article>
-        <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🚌</span><div><strong>Oxford i els Cotswolds</strong><small>Excursió d’un dia</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Dilluns 10 d’agost</h3><div class="big-time">07.30 h</div><p><strong>Punt de trobada:</strong> Gloucester Road Station, Gloucester Rd, South Kensington, London SW7 4SF, UK.</p><div class="ticket-actions"><button class="pending" type="button" disabled>Reserva pendent d’afegir</button><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Gloucester+Road+Station+London+SW7+4SF">📍 Obrir punt de trobada</a></div></div></div></article>
-        <article class="ticket-card"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">✈️</span><div><strong>Vol de tornada</strong><small>Ryanair · FR9798</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="boarding"><div><strong>RYANAIR · FR9798</strong></div><div class="route"><div class="airport"><b>STN</b><span>London Stansted</span></div><div class="plane-line">✈︎</div><div class="airport"><b>GRO</b><span>Girona</span></div></div><div class="ticket-meta"><div><small>Data</small><b>11 ag. 2026</b></div><div><small>Sortida</small><b>21.30 h</b></div><div><small>Arribada</small><b>Pendent</b></div></div></div><div class="ticket-actions"><button class="pending" type="button" data-flight-doc="return" disabled>Document pendent</button></div></div></article>
+        <article class="ticket-card" data-ticket-key="flight-outbound"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">✈️</span><div><strong>Vol d’anada</strong><small>Ryanair · FR9797</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="boarding"><div><strong>RYANAIR · FR9797</strong></div><div class="route"><div class="airport"><b>GRO</b><span>Girona</span></div><div class="plane-line">✈︎</div><div class="airport"><b>STN</b><span>London Stansted</span></div></div><div class="ticket-meta"><div><small>Data</small><b>6 ag. 2026</b></div><div><small>Sortida</small><b>12.45 h</b></div><div><small>Arribada</small><b>13.55 h</b></div></div></div><div class="ticket-actions"><button class="pending" type="button" data-ticket-doc="flight-outbound" disabled>Entrada pendent</button></div></div></article>
+        <article class="ticket-card" data-ticket-key="british-museum"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🏛️</span><div><strong>British Museum</strong><small>Entrada reservada</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Divendres 7 d’agost</h3><div class="big-time">12.30 h</div><p>Visita prevista d’unes dues hores.</p><div class="ticket-actions"><button class="pending" type="button" data-ticket-doc="british-museum" disabled>Entrada pendent</button></div></div></div></article>
+        <article class="ticket-card" data-ticket-key="les-miserables"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🎭</span><div><strong>Les Misérables</strong><small>Musical</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Divendres 7 d’agost</h3><div class="big-time">19.30 h</div><p>Arribada recomanada amb 30–45 minuts d’antelació.</p><div class="ticket-actions"><button class="pending" type="button" data-ticket-doc="les-miserables" disabled>Entrada pendent</button><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Les+Miserables+London+theatre">📍 Obrir a Maps</a></div></div></div></article>
+        <article class="ticket-card" data-ticket-key="tower-of-london"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🏰</span><div><strong>Tower of London</strong><small>Entrada reservada</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Dissabte 8 d’agost</h3><div class="big-time">09.00 h</div><p>Joies de la Corona, White Tower i recorregut interior.</p><div class="ticket-actions"><button class="pending" type="button" data-ticket-doc="tower-of-london" disabled>Entrada pendent</button></div></div></div></article>
+        <article class="ticket-card" data-ticket-key="royal-observatory"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🌐</span><div><strong>Royal Observatory</strong><small>Entrada reservada</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Diumenge 9 d’agost</h3><div class="big-time">12.00 h</div><p>Meridià zero, rellotges i vistes sobre Londres.</p><div class="ticket-actions"><button class="pending" type="button" data-ticket-doc="royal-observatory" disabled>Entrada pendent</button></div></div></div></article>
+        <article class="ticket-card" data-ticket-key="london-eye"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🎡</span><div><strong>London Eye</strong><small>Reserva per a 2 persones</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Diumenge 9 d’agost</h3><div class="big-time">19.30 h</div><p>Presentar-s’hi cap a les 18.30 h per a cues i controls.</p><div class="ticket-actions"><button class="pending" type="button" data-ticket-doc="london-eye" disabled>Entrada pendent</button><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=London+Eye">📍 Obrir a Maps</a></div></div></div></article>
+        <article class="ticket-card" data-ticket-key="cotswolds-oxford"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🚌</span><div><strong>Oxford i els Cotswolds</strong><small>Excursió d’un dia</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Dilluns 10 d’agost</h3><div class="big-time">07.30 h</div><p><strong>Punt de trobada:</strong> Gloucester Road Station, Gloucester Rd, South Kensington, London SW7 4SF, UK.</p><div class="ticket-actions"><button class="pending" type="button" data-ticket-doc="cotswolds-oxford" disabled>Entrada pendent</button><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Gloucester+Road+Station+London+SW7+4SF">📍 Obrir punt de trobada</a></div></div></div></article>
+        <article class="ticket-card" data-ticket-key="uk-parliament"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">🏛️</span><div><strong>UK Parliament</strong><small>Audio Tour reservat</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="reservation"><h3>Dimarts 11 d’agost</h3><div class="big-time">09.30 h</div><p>Entrada per Cromwell Green Visitor Entrance.</p><div class="ticket-actions"><button class="pending" type="button" data-ticket-doc="uk-parliament" disabled>Entrada pendent</button></div></div></div></article>
+        <article class="ticket-card" data-ticket-key="flight-return"><div class="ticket-head"><div class="ticket-type"><span class="ticket-icon">✈️</span><div><strong>Vol de tornada</strong><small>Ryanair · FR9798</small></div></div><span class="ticket-status">Confirmat</span></div><div class="ticket-body"><div class="boarding"><div><strong>RYANAIR · FR9798</strong></div><div class="route"><div class="airport"><b>STN</b><span>London Stansted</span></div><div class="plane-line">✈︎</div><div class="airport"><b>GRO</b><span>Girona</span></div></div><div class="ticket-meta"><div><small>Data</small><b>11 ag. 2026</b></div><div><small>Sortida</small><b>21.30 h</b></div><div><small>Arribada</small><b>Pendent</b></div></div></div><div class="ticket-actions"><button class="pending" type="button" data-ticket-doc="flight-return" disabled>Entrada pendent</button></div></div></article>
       </div>
     </div>
 
@@ -1007,29 +1011,40 @@ function initGlobalSearch(){
   if($('globalSearchFab'))$('globalSearchFab').onclick=()=>{setAppView('searchView');setTimeout(()=>full?.focus(),50)};
   if(preview)preview.innerHTML='<div class="search-empty">Prova “London Eye”, “Harry”, “embarcament” o “Piki”.</div>';
 }
-function flightDocScore(doc,direction){
-  const text=normalizeSearchText(`${doc.title} ${doc.category} ${doc.file_name}`);
-  let score=0;
-  ['targeta embarcament','boarding pass','ryanair','embarcament'].forEach(k=>{if(text.includes(k))score+=2});
-  const outbound=['fr9797','9797','anada','outbound','girona','gro','stansted','stn','6 agost','06 08'];
-  const inbound=['fr9798','9798','tornada','return','stansted','stn','girona','gro','11 agost','11 08'];
-  (direction==='outbound'?outbound:inbound).forEach(k=>{if(text.includes(k))score+=1});
-  if(direction==='outbound' && (text.includes('fr9798')||text.includes('tornada')))score-=5;
-  if(direction==='return' && (text.includes('fr9797')||text.includes('anada')))score-=5;
-  return score;
+const TICKET_DOCUMENT_TERMS={
+  'flight-outbound':['fr9797'],
+  'british-museum':['british museum'],
+  'les-miserables':['les miserables'],
+  'tower-of-london':['tower of london'],
+  'royal-observatory':['royal observatory','observatori reial'],
+  'london-eye':['london eye'],
+  'cotswolds-oxford':['cotswolds'],
+  'uk-parliament':['uk parliament','parlament britanic'],
+  'flight-return':['fr9798']
+};
+const KNOWN_TICKET_KEYS=new Set(Object.keys(TICKET_DOCUMENT_TERMS));
+let requestedTicketKey=null;
+function ticketDocumentMatches(doc,key){
+  const normalize=value=>normalizeSearchText(value).replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
+  const text=normalize(`${doc.title||''} ${doc.category||''} ${doc.file_name||''}`);
+  return (TICKET_DOCUMENT_TERMS[key]||[]).some(term=>` ${text} `.includes(` ${normalize(term)} `));
 }
-function updateFlightDocumentLinks(){
-  const buttons=[...document.querySelectorAll('[data-flight-doc]')];if(!buttons.length)return;
-  const flightDocs=(documentRows||[]).filter(d=>flightDocScore(d,'outbound')>0||flightDocScore(d,'return')>0);
+function updateTicketDocumentLinks(){
+  const buttons=[...document.querySelectorAll('[data-ticket-doc]')];if(!buttons.length)return;
   buttons.forEach(btn=>{
-    const direction=btn.dataset.flightDoc;
-    let best=[...flightDocs].sort((a,b)=>flightDocScore(b,direction)-flightDocScore(a,direction))[0];
-    if(best && flightDocScore(best,direction)>0){
-      btn.disabled=false;btn.classList.remove('pending');btn.classList.add('doc-open');btn.textContent='✓ Obrir targeta d’embarcament';btn.onclick=()=>openDocument(best.id,documentRows);
+    const matches=(documentRows||[]).filter(doc=>ticketDocumentMatches(doc,btn.dataset.ticketDoc));
+    if(matches.length===1){
+      const doc=matches[0];
+      btn.disabled=false;btn.classList.remove('pending');btn.classList.add('doc-open');btn.textContent='🎟️ Obre l’entrada';btn.onclick=()=>openDocument(doc.id,documentRows);
     }else{
-      btn.disabled=true;btn.classList.add('pending');btn.classList.remove('doc-open');btn.textContent='Document pendent';btn.onclick=null;
+      btn.disabled=true;btn.classList.add('pending');btn.classList.remove('doc-open');btn.textContent=matches.length>1?'Entrada pendent · coincidència ambigua':'Entrada pendent';btn.onclick=null;
     }
   });
+}
+function focusRequestedTicket(){
+  if(!requestedTicketKey)return;
+  const card=document.querySelector(`[data-ticket-key="${requestedTicketKey}"]`);
+  if(card)setTimeout(()=>card.scrollIntoView({behavior:'smooth',block:'center'}),80);
 }
 function setAppView(id){['tripsHomeView','dashboardView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
@@ -1086,11 +1101,11 @@ function subscribe(){
     .on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},()=>loadItems())
     .subscribe();
 }
-async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');const requestedView=new URLSearchParams(window.location.search).get('view');setAppView(requestedView==='london'?'dashboardView':'tripsHomeView');if(requestedView==='london')history.replaceState(null,'',window.location.pathname);$('tripTitle').textContent=trip.name;$('tripCardTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();
+async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');const route=new URLSearchParams(window.location.search),requestedView=route.get('view'),ticketKey=route.get('ticket');requestedTicketKey=requestedView==='tickets'&&KNOWN_TICKET_KEYS.has(ticketKey)?ticketKey:null;setAppView(requestedTicketKey?'ticketsView':requestedView==='london'?'dashboardView':'tripsHomeView');if(requestedView==='london'||requestedTicketKey)history.replaceState(null,'',window.location.pathname);$('tripTitle').textContent=trip.name;$('tripCardTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();
 updateFlightPremium();
 initFlightChecklist();
 initGlobalSearch();
-setInterval(updateFlightPremium,1000);updateTravelBrief();addFavoriteButtons();renderFavorites();await loadItems();await ensureDefaultChecklistItems();await loadDocuments(true);await loadExpenses(true);subscribe();subscribeDocuments();subscribeExpenses()}
+setInterval(updateFlightPremium,1000);updateTravelBrief();addFavoriteButtons();renderFavorites();await loadItems();await ensureDefaultChecklistItems();await loadDocuments(true);focusRequestedTicket();await loadExpenses(true);subscribe();subscribeDocuments();subscribeExpenses()}
 const CHECKLIST_CATEGORIES=[
   {id:'equipment',icon:'🧳',label:'Equipatge'},
   {id:'documents',icon:'📄',label:'Documentació'},
@@ -1396,7 +1411,7 @@ function renderDocuments(docs=documentRows){
   list.innerHTML=documentRows.map(d=>`<article class="doc-card" data-doc-id="${esc(d.id)}"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(d.category||'Document')}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button><button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
   list.querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>openDocument(b.dataset.openDoc,documentRows));
   list.querySelectorAll('[data-delete-doc]').forEach(b=>b.onclick=()=>deleteDocument(b.dataset.deleteDoc,documentRows));
-  updateFlightDocumentLinks();
+  updateTicketDocumentLinks();
   updateParkingReservationUi();
 }
 async function openDocument(id,docs){
