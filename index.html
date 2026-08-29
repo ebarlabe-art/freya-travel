@@ -578,7 +578,7 @@
         <section class="parking-panel">
           <h3>📷 Foto de la plaça o del cartell</h3>
           <p class="muted">Feu una foto al número de plaça, la planta o el cartell més proper.</p>
-          <input id="parkingPhotoFile" type="file" accept="image/*" capture="environment">
+          <input id="parkingPhotoFile" type="file" accept="image/*">
           <div class="parking-actions">
             <button id="parkingUploadPhoto" type="button">📷 Puja la foto</button>
             <button id="parkingRemovePhoto" type="button" class="secondary hidden">🗑️ Treu-la</button>
@@ -1534,7 +1534,7 @@ $('createTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('
 $('joinTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('join_trip',{p_invite_code:$('inviteInput').value.trim().toUpperCase()});if(error)msg('tripMsg',error.message,true);else renderSession(session)};
 $('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.invite_code);msg('appMsg','Codi copiat.')}catch(_){msg('appMsg','Codi: '+trip.invite_code)}};
 
-let parkingRow=null,parkingLoadsPending=0;
+let parkingRow=null,parkingLoadsPending=0,parkingPhotoObjectUrl=null;
 async function ensureDefaultChecklistItems(){
   if(!trip||!session)return;
   const defaults=[
@@ -1648,14 +1648,18 @@ $('parkingGps').onclick=()=>{
 };
 async function renderParkingPhoto(path){
   const wrap=$('parkingPhotoPreview'),img=$('parkingPhotoImage'),remove=$('parkingRemovePhoto');
+  if($('parkingPhotoFile').files[0]){remove.classList.remove('hidden');return}
+  if(parkingPhotoObjectUrl){URL.revokeObjectURL(parkingPhotoObjectUrl);parkingPhotoObjectUrl=null}
   if(!path){wrap.classList.remove('visible');img.removeAttribute('src');remove.classList.add('hidden');return}
+  remove.classList.remove('hidden');
   const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(path,3600);
-  if(error){wrap.classList.remove('visible');return}
-  img.src=data.signedUrl;wrap.classList.add('visible');remove.classList.remove('hidden');
+  if(error){wrap.classList.remove('visible');img.removeAttribute('src');return}
+  img.src=data.signedUrl;wrap.classList.add('visible');
 }
 $('parkingPhotoFile').onchange=()=>{
   const file=$('parkingPhotoFile').files[0];if(!file)return;
-  $('parkingPhotoImage').src=URL.createObjectURL(file);$('parkingPhotoPreview').classList.add('visible');
+  if(parkingPhotoObjectUrl)URL.revokeObjectURL(parkingPhotoObjectUrl);
+  parkingPhotoObjectUrl=URL.createObjectURL(file);$('parkingPhotoImage').src=parkingPhotoObjectUrl;$('parkingPhotoPreview').classList.add('visible');$('parkingRemovePhoto').classList.remove('hidden');
 };
 $('parkingUploadPhoto').onclick=async()=>{
   if(!trip||!session)return;const file=$('parkingPhotoFile').files[0];
@@ -1668,9 +1672,16 @@ $('parkingUploadPhoto').onclick=async()=>{
   const {data,error}=await db.from('travel_parking').upsert(payload,{onConflict:'trip_id'}).select().single();
   if(error){await db.storage.from(DOC_BUCKET).remove([path]);parkingMessage(error.message,true);return}
   if(parkingRow?.photo_path&&parkingRow.photo_path!==path)await db.storage.from(DOC_BUCKET).remove([parkingRow.photo_path]);
-  parkingRow=data;$('parkingPhotoFile').value='';parkingMessage('Foto de la plaça desada.');await loadParking();
+  parkingRow=data;$('parkingPhotoFile').value='';if(parkingPhotoObjectUrl){URL.revokeObjectURL(parkingPhotoObjectUrl);parkingPhotoObjectUrl=null}parkingMessage('Foto de la plaça desada.');await loadParking();
 };
 $('parkingRemovePhoto').onclick=async()=>{
+  const input=$('parkingPhotoFile');
+  if(input.files[0]){
+    input.value='';if(parkingPhotoObjectUrl){URL.revokeObjectURL(parkingPhotoObjectUrl);parkingPhotoObjectUrl=null}
+    if(parkingRow?.photo_path)await renderParkingPhoto(parkingRow.photo_path);
+    else{$('parkingPhotoPreview').classList.remove('visible');$('parkingPhotoImage').removeAttribute('src');$('parkingRemovePhoto').classList.add('hidden')}
+    parkingMessage('Foto seleccionada descartada.');return;
+  }
   if(!parkingRow?.photo_path)return;
   if(!confirm('Vols eliminar la foto de la plaça?'))return;
   const old=parkingRow.photo_path;
