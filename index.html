@@ -1024,6 +1024,12 @@ const TICKET_DOCUMENT_TERMS={
 };
 const KNOWN_TICKET_KEYS=new Set(Object.keys(TICKET_DOCUMENT_TERMS));
 let requestedTicketKey=null;
+const initialRouteParams=new URLSearchParams(window.location.search);
+const initialRouteView=initialRouteParams.get('view'),initialRouteTicket=initialRouteParams.get('ticket');
+const pendingInitialRoute=initialRouteView==='tickets'&&KNOWN_TICKET_KEYS.has(initialRouteTicket)
+  ?{view:'tickets',ticketKey:initialRouteTicket}
+  :initialRouteView==='london'?{view:'london',ticketKey:null}:null;
+let initialViewApplied=false;
 function ticketDocumentMatches(doc,key){
   const normalize=value=>normalizeSearchText(value).replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
   const text=normalize(`${doc.title||''} ${doc.category||''} ${doc.file_name||''}`);
@@ -1045,6 +1051,18 @@ function focusRequestedTicket(){
   if(!requestedTicketKey)return;
   const card=document.querySelector(`[data-ticket-key="${requestedTicketKey}"]`);
   if(card)setTimeout(()=>card.scrollIntoView({behavior:'smooth',block:'center'}),80);
+}
+function applyPendingInitialView(){
+  if(initialViewApplied)return;
+  if(pendingInitialRoute?.view==='tickets'){
+    requestedTicketKey=pendingInitialRoute.ticketKey;
+    setAppView('ticketsView');
+    focusRequestedTicket();
+  }else{
+    setAppView(pendingInitialRoute?.view==='london'?'dashboardView':'tripsHomeView');
+  }
+  if(pendingInitialRoute)history.replaceState(null,'',window.location.pathname);
+  initialViewApplied=true;
 }
 function setAppView(id){['tripsHomeView','dashboardView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
@@ -1101,11 +1119,11 @@ function subscribe(){
     .on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},()=>loadItems())
     .subscribe();
 }
-async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');const route=new URLSearchParams(window.location.search),requestedView=route.get('view'),ticketKey=route.get('ticket');requestedTicketKey=requestedView==='tickets'&&KNOWN_TICKET_KEYS.has(ticketKey)?ticketKey:null;setAppView(requestedTicketKey?'ticketsView':requestedView==='london'?'dashboardView':'tripsHomeView');if(requestedView==='london'||requestedTicketKey)history.replaceState(null,'',window.location.pathname);$('tripTitle').textContent=trip.name;$('tripCardTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();
+async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');$('tripTitle').textContent=trip.name;$('tripCardTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();
 updateFlightPremium();
 initFlightChecklist();
 initGlobalSearch();
-setInterval(updateFlightPremium,1000);updateTravelBrief();addFavoriteButtons();renderFavorites();await loadItems();await ensureDefaultChecklistItems();await loadDocuments(true);focusRequestedTicket();await loadExpenses(true);subscribe();subscribeDocuments();subscribeExpenses()}
+setInterval(updateFlightPremium,1000);updateTravelBrief();addFavoriteButtons();renderFavorites();await loadItems();await ensureDefaultChecklistItems();await loadDocuments(true);applyPendingInitialView();await loadExpenses(true);subscribe();subscribeDocuments();subscribeExpenses()}
 const CHECKLIST_CATEGORIES=[
   {id:'equipment',icon:'🧳',label:'Equipatge'},
   {id:'documents',icon:'📄',label:'Documentació'},
