@@ -248,7 +248,8 @@
 
   <section id="auth" class="hidden">
     <div class="hero"><div class="logo">✈️</div><h1>Freya Travel</h1><p>El vostre viatge, compartit de veritat.</p></div>
-    <div class="card"><h2>Entrar o crear un compte</h2><form id="authForm" class="stack"><input id="email" type="email" placeholder="Correu electrònic" required><input id="password" type="password" placeholder="Contrasenya (mínim 6 caràcters)" minlength="6" required><button type="submit">Iniciar sessió</button><button id="signup" type="button" class="secondary">Crear compte</button></form><p id="authMsg" class="message hidden"></p></div>
+    <div id="loginCard" class="card"><h2>Entrar o crear un compte</h2><form id="authForm" class="stack"><input id="email" type="email" placeholder="Correu electrònic" required><input id="password" type="password" placeholder="Contrasenya (mínim 6 caràcters)" minlength="6" required><button type="submit">Iniciar sessió</button><button id="signup" type="button" class="secondary">Crear compte</button><button id="forgotPassword" type="button" class="ghost">He oblidat la contrasenya</button></form><p id="authMsg" class="message hidden"></p></div>
+    <div id="passwordRecoveryCard" class="card hidden"><h2>Canvia la contrasenya</h2><form id="passwordRecoveryForm" class="stack"><input id="newPassword" type="password" placeholder="Nova contrasenya (mínim 6 caràcters)" minlength="6" autocomplete="new-password" required><input id="confirmNewPassword" type="password" placeholder="Repeteix la contrasenya" minlength="6" autocomplete="new-password" required><button id="updatePassword" type="submit">Actualitza la contrasenya</button><button id="requestAnotherRecovery" type="button" class="secondary">Sol·licita un altre enllaç</button></form><p id="passwordRecoveryMsg" class="message hidden"></p></div>
   </section>
 
   <section id="noTrip" class="hidden">
@@ -859,6 +860,10 @@
 <script>
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
+const PASSWORD_RECOVERY_REDIRECT='https://ebarlabe-art.github.io/freya-travel/?view=password-recovery';
+const initialAuthRouteParams=new URLSearchParams(window.location.search);
+let passwordRecoveryMode=initialAuthRouteParams.get('view')==='password-recovery';
+let passwordRecoverySessionValid=false,passwordRecoverySubmitting=false,authInitializationResolved=false;
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let deferredInstallPrompt=null;
 let session=null,trip=null,channel=null;
@@ -1119,7 +1124,14 @@ function subscribe(){
     .on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},()=>loadItems())
     .subscribe();
 }
-async function renderSession(next){session=next;hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');$('tripTitle').textContent=trip.name;$('tripCardTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();
+function renderPasswordRecovery(){
+  hide('loading');hide('noTrip');hide('tripView');show('auth');hide('loginCard');show('passwordRecoveryCard');
+  $('newPassword').disabled=!passwordRecoverySessionValid;$('confirmNewPassword').disabled=!passwordRecoverySessionValid;$('updatePassword').disabled=!passwordRecoverySessionValid||passwordRecoverySubmitting;
+  if(passwordRecoverySessionValid)msg('passwordRecoveryMsg','Introdueix i confirma la nova contrasenya.');
+  else if(authInitializationResolved)msg('passwordRecoveryMsg','L’enllaç de recuperació ha caducat o no és vàlid. Sol·licita’n un altre.',true);
+  else msg('passwordRecoveryMsg','Validant l’enllaç de recuperació…');
+}
+async function renderSession(next){session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');show('loginCard');hide('passwordRecoveryCard');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(passwordRecoveryMode){renderPasswordRecovery();return}if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');$('tripTitle').textContent=trip.name;$('tripCardTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();
 updateFlightPremium();
 initFlightChecklist();
 initGlobalSearch();
@@ -1562,6 +1574,28 @@ $('expenseForm').onsubmit=async e=>{
 
 $('authForm').onsubmit=async e=>{e.preventDefault();msg('authMsg','');const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)msg('authMsg',error.message,true)};
 $('signup').onclick=async()=>{msg('authMsg','');const {data,error}=await db.auth.signUp({email:$('email').value.trim(),password:$('password').value});if(error)msg('authMsg',error.message,true);else msg('authMsg',data.session?'Compte creat i sessió iniciada.':'Compte creat. Revisa el correu per confirmar-lo i després inicia sessió.')};
+$('forgotPassword').onclick=async()=>{
+  const email=$('email');msg('authMsg','');if(!email.checkValidity()){email.reportValidity();return}
+  $('forgotPassword').disabled=true;
+  try{await db.auth.resetPasswordForEmail(email.value.trim(),{redirectTo:PASSWORD_RECOVERY_REDIRECT})}catch(_){ }
+  $('forgotPassword').disabled=false;msg('authMsg','Si existeix un compte amb aquest correu, rebràs un enllaç de recuperació.');
+};
+$('passwordRecoveryForm').onsubmit=async e=>{
+  e.preventDefault();if(!passwordRecoverySessionValid||!session){msg('passwordRecoveryMsg','L’enllaç de recuperació ha caducat o no és vàlid. Sol·licita’n un altre.',true);return}
+  const newPassword=$('newPassword').value,confirmation=$('confirmNewPassword').value;
+  if(newPassword!==confirmation){msg('passwordRecoveryMsg','Les contrasenyes no coincideixen.',true);return}
+  passwordRecoverySubmitting=true;renderPasswordRecovery();msg('passwordRecoveryMsg','Actualitzant la contrasenya…');
+  const {error}=await db.auth.updateUser({password:newPassword});
+  if(error){passwordRecoverySubmitting=false;renderPasswordRecovery();msg('passwordRecoveryMsg',error.message,true);return}
+  passwordRecoveryMode=false;passwordRecoverySessionValid=false;passwordRecoverySubmitting=false;
+  history.replaceState(null,'',window.location.pathname);await db.auth.signOut();
+  $('passwordRecoveryForm').reset();hide('passwordRecoveryCard');show('loginCard');show('auth');msg('authMsg','Contrasenya actualitzada. Ja pots iniciar sessió.');
+};
+$('requestAnotherRecovery').onclick=async()=>{
+  passwordRecoveryMode=false;passwordRecoverySessionValid=false;passwordRecoverySubmitting=false;history.replaceState(null,'',window.location.pathname);
+  if(session)await db.auth.signOut();else renderSession(null);
+  $('passwordRecoveryForm').reset();hide('passwordRecoveryCard');show('loginCard');show('auth');msg('authMsg','');$('email').focus();
+};
 document.querySelectorAll('.logout').forEach(b=>b.onclick=()=>db.auth.signOut());
 $('createTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('create_trip',{p_name:$('tripName').value});if(error)msg('tripMsg',error.message,true);else renderSession(session)};
 $('joinTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('join_trip',{p_invite_code:$('inviteInput').value.trim().toUpperCase()});if(error)msg('tripMsg',error.message,true);else renderSession(session)};
@@ -1758,7 +1792,19 @@ window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;updateIns
 $('installApp').onclick=async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;updateInstallUi()};
 window.addEventListener('load',()=>{updateInstallUi();initGuide()});
 
-db.auth.getSession().then(({data})=>renderSession(data.session));db.auth.onAuthStateChange((_event,next)=>renderSession(next));
+db.auth.onAuthStateChange((event,next)=>{
+  session=next;
+  if(event==='PASSWORD_RECOVERY'){
+    passwordRecoveryMode=true;passwordRecoverySessionValid=!!next;authInitializationResolved=true;renderPasswordRecovery();return;
+  }
+  if(passwordRecoveryMode){if(!next)passwordRecoverySessionValid=false;renderPasswordRecovery();return}
+  renderSession(next);
+});
+db.auth.getSession().then(({data,error})=>{
+  authInitializationResolved=true;
+  if(passwordRecoveryMode){session=data.session;renderPasswordRecovery();return}
+  renderSession(data.session);
+});
 </script>
 </body>
 </html>
