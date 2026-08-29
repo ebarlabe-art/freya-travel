@@ -1534,7 +1534,7 @@ $('createTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('
 $('joinTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('join_trip',{p_invite_code:$('inviteInput').value.trim().toUpperCase()});if(error)msg('tripMsg',error.message,true);else renderSession(session)};
 $('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.invite_code);msg('appMsg','Codi copiat.')}catch(_){msg('appMsg','Codi: '+trip.invite_code)}};
 
-let parkingRow=null;
+let parkingRow=null,parkingLoadsPending=0;
 async function ensureDefaultChecklistItems(){
   if(!trip||!session)return;
   const defaults=[
@@ -1554,28 +1554,36 @@ async function ensureDefaultChecklistItems(){
 function parkingValue(id,value=''){const el=$(id);if(el)el.value=value??''}
 function parkingText(id,value=''){const el=$(id);if(el)el.textContent=value??''}
 function parkingMessage(message,error=false){msg('parkingMsg',message,error)}
+function setParkingControlsDisabled(disabled){
+  document.querySelectorAll('#parkingForm input,#parkingForm textarea,#parkingForm button,#parkingSpotForm input,#parkingSpotForm textarea,#parkingSpotForm button,#parkingPhotoFile,#parkingUploadPhoto,#parkingRemovePhoto').forEach(control=>{control.disabled=disabled});
+}
 function parkingSpotLabel(row=parkingRow){
   if(!row)return '';
   return [row.floor,row.zone,row.spot].filter(Boolean).join(' · ');
 }
 async function loadParking(){
   if(!trip)return;
-  const {data,error}=await db.from('travel_parking').select('*').eq('trip_id',trip.id).maybeSingle();
-  if(error){parkingMessage('Cal activar la taula d’aparcament a Supabase abans d’utilitzar aquesta pantalla.',true);return}
-  parkingRow=data||null;
-  const row=parkingRow||{};
-  parkingValue('parkingName',row.parking_name);parkingValue('parkingReservation',row.reservation_code);
-  parkingValue('parkingEntry',row.entry_at?String(row.entry_at).slice(0,16):'');parkingValue('parkingExit',row.exit_at?String(row.exit_at).slice(0,16):'');
-  parkingValue('parkingAddress',row.address);parkingValue('parkingFloor',row.floor);parkingValue('parkingZone',row.zone);
-  parkingValue('parkingSpot',row.spot);parkingValue('parkingNotes',row.notes);parkingValue('parkingLat',row.latitude);parkingValue('parkingLng',row.longitude);
-  const label=parkingSpotLabel(row);
-  parkingText('parkingHeroStatus',label?`Cotxe guardat: ${label}`:(row.parking_name?`Reserva guardada: ${row.parking_name}`:'Encara no hi ha cap ubicació guardada'));
-  $('parkingReturnEmpty').classList.toggle('hidden',!!label);$('parkingReturnInfo').classList.toggle('hidden',!label);
-  parkingText('parkingReturnSpot',label||'—');parkingText('parkingReturnNotes',row.notes||'');
-  updateParkingMap(row.latitude,row.longitude);
-  await renderParkingPhoto(row.photo_path);
-  if(!documentRows.length)await loadDocuments(true);
-  await updateParkingReservationUi();
+  parkingLoadsPending+=1;setParkingControlsDisabled(true);
+  try{
+    const {data,error}=await db.from('travel_parking').select('*').eq('trip_id',trip.id).maybeSingle();
+    if(error){parkingMessage('Cal activar la taula d’aparcament a Supabase abans d’utilitzar aquesta pantalla.',true);return}
+    parkingRow=data||null;
+    const row=parkingRow||{};
+    parkingValue('parkingName',row.parking_name);parkingValue('parkingReservation',row.reservation_code);
+    parkingValue('parkingEntry',row.entry_at?String(row.entry_at).slice(0,16):'');parkingValue('parkingExit',row.exit_at?String(row.exit_at).slice(0,16):'');
+    parkingValue('parkingAddress',row.address);parkingValue('parkingFloor',row.floor);parkingValue('parkingZone',row.zone);
+    parkingValue('parkingSpot',row.spot);parkingValue('parkingNotes',row.notes);parkingValue('parkingLat',row.latitude);parkingValue('parkingLng',row.longitude);
+    const label=parkingSpotLabel(row);
+    parkingText('parkingHeroStatus',label?`Cotxe guardat: ${label}`:(row.parking_name?`Reserva guardada: ${row.parking_name}`:'Encara no hi ha cap ubicació guardada'));
+    $('parkingReturnEmpty').classList.toggle('hidden',!!label);$('parkingReturnInfo').classList.toggle('hidden',!label);
+    parkingText('parkingReturnSpot',label||'—');parkingText('parkingReturnNotes',row.notes||'');
+    updateParkingMap(row.latitude,row.longitude);
+    await renderParkingPhoto(row.photo_path);
+    if(!documentRows.length)await loadDocuments(true);
+    await updateParkingReservationUi();
+  }finally{
+    parkingLoadsPending-=1;if(parkingLoadsPending===0)setParkingControlsDisabled(false);
+  }
 }
 function parkingPayload(){
   return {
@@ -1597,8 +1605,10 @@ $('parkingForm').onsubmit=async e=>{e.preventDefault();await saveParking('Reserv
 $('parkingSpotForm').onsubmit=async e=>{e.preventDefault();await saveParking('Plaça del cotxe desada.')};
 function parkingDocumentScore(doc){
   const text=normalizeSearchText(`${doc.title||''} ${doc.category||''} ${doc.file_name||''}`);
+  const strongKeywords=['parking','parquing','aparcament'];
+  if(!strongKeywords.some(k=>text.includes(k)))return 0;
   let score=0;
-  ['parking','parquing','aparcament'].forEach(k=>{if(text.includes(k))score+=5});
+  strongKeywords.forEach(k=>{if(text.includes(k))score+=5});
   ['reserva','booking','aeroport','girona'].forEach(k=>{if(text.includes(k))score+=1});
   if(text.includes('placa')||text.includes('cartell'))score-=2;
   return score;
@@ -1622,7 +1632,7 @@ async function updateParkingReservationUi(){
     else{preview.classList.remove('visible');img.removeAttribute('src')}
   }else{preview.classList.remove('visible');img.removeAttribute('src')}
 }
-$('parkingOpenDocuments').onclick=()=>{setAppView('documentsView');setTimeout(()=>{const form=$('documentForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'})},80)};
+$('parkingOpenDocuments').onclick=()=>{if(!$('documentTitle').value.trim())$('documentTitle').value='Reserva pàrquing';setAppView('documentsView');setTimeout(()=>{const form=$('documentForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'})},80)};
 function updateParkingMap(lat,lng){
   const link=$('parkingMapLink'),status=$('parkingGpsStatus');
   if(lat!=null&&lng!=null){link.href=`https://www.google.com/maps?q=${encodeURIComponent(lat+','+lng)}`;link.classList.remove('hidden');status.textContent=`GPS desat: ${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`}
@@ -1663,10 +1673,12 @@ $('parkingUploadPhoto').onclick=async()=>{
 $('parkingRemovePhoto').onclick=async()=>{
   if(!parkingRow?.photo_path)return;
   if(!confirm('Vols eliminar la foto de la plaça?'))return;
-  const old=parkingRow.photo_path;await db.storage.from(DOC_BUCKET).remove([old]);
+  const old=parkingRow.photo_path;
   const {data,error}=await db.from('travel_parking').update({photo_path:null,updated_by:session.user.id,updated_at:new Date().toISOString()}).eq('trip_id',trip.id).select().single();
   if(error){parkingMessage(error.message,true);return}
-  parkingRow=data;parkingMessage('Foto eliminada.');await loadParking();
+  parkingRow=data;
+  const storageResult=await db.storage.from(DOC_BUCKET).remove([old]);
+  parkingMessage(storageResult.error?'Foto desvinculada, però no s’ha pogut eliminar el fitxer de Storage.':'Foto eliminada.',!!storageResult.error);await loadParking();
 };
 
 
