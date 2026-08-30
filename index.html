@@ -1765,7 +1765,11 @@ $('itemForm').onsubmit=async e=>{e.preventDefault();const text=$('newItem').valu
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      const registration=await navigator.serviceWorker.register('./sw.js');
+      const legacyScope=new URL('/freya-travel/freya-travel-v1.5/',location.origin).href;
+      const registrations=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.filter(item=>item.scope===legacyScope).map(item=>item.unregister()));
+      if('caches' in window)await caches.delete('freya-travel-v1.5');
+      const registration=await navigator.serviceWorker.register('/freya-travel/sw.js',{scope:'/freya-travel/'});
       registration.addEventListener('updatefound',()=>{
         const worker=registration.installing;if(!worker)return;
         worker.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)showUpdateToast()});

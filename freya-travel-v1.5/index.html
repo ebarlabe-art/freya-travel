@@ -155,7 +155,18 @@ $('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.inv
 $('itemForm').onsubmit=async e=>{e.preventDefault();const text=$('newItem').value.trim();if(!text)return;const {error}=await db.from('checklist_items').insert({trip_id:trip.id,text,created_by:session.user.id});if(error)msg('appMsg',error.message,true);else{$('newItem').value='';loadItems()}};
 
 if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+  window.addEventListener('load',async()=>{
+    try{
+      const legacyScope=new URL('/freya-travel/freya-travel-v1.5/',location.origin).href;
+      const legacyScript=new URL('/freya-travel/freya-travel-v1.5/sw.js',location.origin).href;
+      const controlledByLegacy=navigator.serviceWorker.controller?.scriptURL===legacyScript;
+      const registrations=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.filter(item=>item.scope===legacyScope).map(item=>item.unregister()));
+      if('caches' in window)await caches.delete('freya-travel-v1.5');
+      await navigator.serviceWorker.register('../sw.js',{scope:'../'});
+      if(controlledByLegacy)location.reload();
+    }catch(_){ }
+  });
 }
 function isIos(){return /iphone|ipad|ipod/i.test(navigator.userAgent)}
 function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
