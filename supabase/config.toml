@@ -1,0 +1,4 @@
+project_id = "freya-travel"
+
+[functions.send-test-push]
+verify_jwt = false

@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "strict": true
+  },
+  "imports": {
+    "supabase-js": "npm:@supabase/supabase-js@2.49.4",
+    "web-push": "npm:web-push@3.6.7"
+  }
+}
