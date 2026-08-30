@@ -306,6 +306,7 @@
     <div id="dashboardView">
       <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.7 · Galeria de fotos</div><button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
+      <div id="pushCard" class="install-card"><div><strong>🔔 Notificacions</strong><small id="pushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="enablePush" type="button">Activa les notificacions</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
         <div class="overview-card"><span>✅</span><strong id="overviewChecklist">0/0</strong><small>Checklist completada</small><div class="progress-track"><div id="overviewProgress" class="progress-bar"></div></div></div>
         <div class="overview-card"><span>📄</span><strong id="overviewDocuments">0</strong><small>Documents guardats</small></div>
@@ -860,6 +861,7 @@
 <script>
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
+const VAPID_PUBLIC_KEY='BA7bb99zg5spuTONmRkoEsWya_oRZfGsUxzWc0rUv1zTLEk8qkSnaqHjMa1VDs4EgvfzdMwU479juh64Rgtwbbk';
 const PASSWORD_RECOVERY_REDIRECT='https://ebarlabe-art.github.io/freya-travel/?view=password-recovery';
 const initialAuthRouteParams=new URLSearchParams(window.location.search);
 let passwordRecoveryMode=initialAuthRouteParams.get('view')==='password-recovery';
@@ -1131,7 +1133,7 @@ function renderPasswordRecovery(){
   else if(authInitializationResolved)msg('passwordRecoveryMsg','L’enllaç de recuperació ha caducat o no és vàlid. Sol·licita’n un altre.',true);
   else msg('passwordRecoveryMsg','Validant l’enllaç de recuperació…');
 }
-async function renderSession(next){session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');show('loginCard');hide('passwordRecoveryCard');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(passwordRecoveryMode){renderPasswordRecovery();return}if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');$('tripTitle').textContent=trip.name;$('tripCardTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();
+async function renderSession(next){session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');show('loginCard');hide('passwordRecoveryCard');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(passwordRecoveryMode){renderPasswordRecovery();return}if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');$('tripTitle').textContent=trip.name;$('tripCardTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();refreshPushUi();
 updateFlightPremium();
 initFlightChecklist();
 initGlobalSearch();
@@ -1783,6 +1785,51 @@ function showUpdateToast(){
 }
 function isIos(){return /iphone|ipad|ipod/i.test(navigator.userAgent)}
 function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
+function pushSupported(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window}
+function setPushState(text,disabled=false){const status=$('pushStatus'),button=$('enablePush');if(status)status.textContent=text;if(button)button.disabled=disabled}
+function vapidPublicKeyBytes(){
+  const padding='='.repeat((4-VAPID_PUBLIC_KEY.length%4)%4),base64=(VAPID_PUBLIC_KEY+padding).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(base64);
+  return Uint8Array.from(raw,char=>char.charCodeAt(0));
+}
+async function refreshPushUi(){
+  if(!$('enablePush'))return;
+  if(!pushSupported()){setPushState('Aquest dispositiu o navegador no és compatible amb Web Push.',true);return}
+  if(isIos()&&!isStandalone()){setPushState('No instal·lada: afegeix Freya Travel a la pantalla d’inici i obre-la des de la seva icona.',true);return}
+  if(Notification.permission==='denied'){setPushState('Permís denegat. Activa les notificacions als Ajustos de l’iPhone.',true);return}
+  if(!session||!trip){setPushState('Inicia sessió i obre un viatge abans d’activar-les.',true);return}
+  try{
+    const registration=await navigator.serviceWorker.ready,subscription=await registration.pushManager.getSubscription();
+    if(!subscription){setPushState('Prem el botó per activar les notificacions.',false);return}
+    const json=subscription.toJSON(),endpoint=json.endpoint||subscription.endpoint;
+    const {data,error}=await db.from('push_subscriptions').select('id').eq('user_id',session.user.id).eq('trip_id',trip.id).eq('endpoint',endpoint).eq('active',true).maybeSingle();
+    if(error)throw error;
+    setPushState(data?'Notificacions actives.':'Subscripció pendent de guardar. Prem el botó per completar-la.',!!data);
+  }catch(_){setPushState('No s’ha pogut comprovar l’estat. Torna-ho a provar.',false)}
+}
+async function enablePushNotifications(){
+  if(!pushSupported()){setPushState('Aquest dispositiu o navegador no és compatible amb Web Push.',true);return}
+  if(isIos()&&!isStandalone()){setPushState('No instal·lada: afegeix Freya Travel a la pantalla d’inici i obre-la des de la seva icona.',true);return}
+  if(!session||!trip){setPushState('Inicia sessió i obre un viatge abans d’activar-les.',true);return}
+  setPushState('Activant…',true);
+  let createdSubscription=false,subscription=null;
+  try{
+    const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+    if(permission!=='granted'){setPushState(permission==='denied'?'Permís denegat. Activa les notificacions als Ajustos de l’iPhone.':'No s’ha concedit el permís de notificacions.',permission==='denied');return}
+    const registration=await navigator.serviceWorker.ready;
+    const expectedWorker=new URL('/freya-travel/sw.js',location.origin).href;
+    if(registration.active?.scriptURL!==expectedWorker)throw new Error('El service worker principal encara no està actiu. Tanca i torna a obrir Freya Travel.');
+    subscription=await registration.pushManager.getSubscription();
+    if(!subscription){subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:vapidPublicKeyBytes()});createdSubscription=true}
+    const json=subscription.toJSON(),keys=json.keys||{};
+    if(!json.endpoint||!keys.p256dh||!keys.auth)throw new Error('La subscripció Push no ha retornat totes les claus necessàries.');
+    const {error}=await db.from('push_subscriptions').upsert({user_id:session.user.id,trip_id:trip.id,endpoint:json.endpoint,p256dh:keys.p256dh,auth:keys.auth,active:true,updated_at:new Date().toISOString()},{onConflict:'endpoint'});
+    if(error)throw error;
+    setPushState('Notificacions actives.',true);
+  }catch(error){
+    if(createdSubscription&&subscription)await subscription.unsubscribe().catch(()=>{});
+    setPushState(error?.message||'No s’han pogut activar les notificacions.',false);
+  }
+}
 function updateInstallUi(){
   const card=$('installCard'),help=$('installHelp'),button=$('installApp');
   if(!card||isStandalone()){card?.classList.add('hidden');return}
@@ -1794,7 +1841,9 @@ function updateInstallUi(){
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;updateInstallUi()});
 window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;updateInstallUi()});
 $('installApp').onclick=async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;updateInstallUi()};
-window.addEventListener('load',()=>{updateInstallUi();initGuide()});
+$('enablePush').onclick=enablePushNotifications;
+window.addEventListener('load',()=>{updateInstallUi();refreshPushUi();initGuide()});
+window.addEventListener('pageshow',refreshPushUi);
 
 db.auth.onAuthStateChange((event,next)=>{
   session=next;
