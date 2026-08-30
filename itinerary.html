@@ -97,6 +97,9 @@
     .complete-btn.done{background:var(--green);color:var(--green-ink)}
     .details{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);line-height:1.55;color:#51475b}
     .event-card.open .details{display:block}
+    .event.deep-linked .event-card{border-color:#8b4dcc;box-shadow:0 0 0 5px rgba(139,77,204,.18),0 18px 42px rgba(78,32,135,.2);animation:activityHighlight 3.5s ease}
+    @keyframes activityHighlight{0%,100%{transform:translateY(0)}18%{transform:translateY(-4px)}36%{transform:translateY(0)}}
+    @media(prefers-reduced-motion:reduce){.event.deep-linked .event-card{animation:none}}
     .reservation{background:var(--gold);color:var(--gold-ink);padding:8px 10px;border-radius:12px;font-weight:800;display:inline-block;margin-top:10px}
     .summary{padding:24px;margin-top:20px;text-align:center}
     .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
@@ -172,6 +175,85 @@
 <script>
 const tripDays = [{"date":"2026-08-06","short":"Dj. 6","title":"Arribada, Westminster, Whitehall i Trafalgar Square","area":"Westminster","style":"Primer vespre","message":"Primer contacte amb Londres: una ruta compacta fins a Trafalgar Square, sense repetir el South Bank del diumenge.","events":[{"time":"12:45","emoji":"✈️","title":"Vol Girona → Stansted","desc":"FR9797. Arribada prevista a les 13.55 h.","booked":true},{"time":"13:55","emoji":"🛬","title":"Arribada a Stansted","desc":"Immigració i equipatge. Compteu entre 40 i 70 minuts.","maps":"https://www.google.com/maps/search/?api=1&query=London+Stansted+Airport"},{"time":"15:15","emoji":"🚆","title":"Stansted Express","desc":"Fins a London Liverpool Street. Durada aproximada: 48–50 minuts."},{"time":"16:15","emoji":"🚇","title":"Liverpool Street → Westminster","desc":"Circle Line en direcció oest fins a Westminster."},{"time":"17:00","emoji":"🏨","title":"Hotel i check-in","desc":"Riu Plaza London The Westminster. Pausa breu.","maps":"https://www.google.com/maps/search/?api=1&query=Riu+Plaza+London+The+Westminster"},{"time":"17:45","emoji":"🕰️","title":"Westminster a peu","desc":"Westminster Abbey per fora, Parliament Square i Big Ben."},{"time":"18:20","emoji":"🏛️","title":"Whitehall i Downing Street","desc":"Cenotaph i entrada de Downing Street des de la reixa."},{"time":"18:50","emoji":"🐎","title":"Horse Guards","desc":"Passeu pel pati i sortiu cap a Whitehall / The Mall."},{"time":"19:10","emoji":"🦁","title":"Trafalgar Square","desc":"Nelson’s Column, els lleons i la National Gallery.","maps":"https://www.google.com/maps/search/?api=1&query=Trafalgar+Square+London"},{"time":"19:45","emoji":"🍽️","title":"Sopar i retorn","desc":"Trafalgar, Embankment o prop de l’hotel, segons l’hora real."}]},{"date":"2026-08-07","short":"Dv. 7","title":"Buckingham, British Museum, King’s Cross i Les Misérables","area":"West End","style":"Cultural","message":"Dia monumental i cultural, amb una parada breu a la Plataforma 9¾ abans de tornar cap al West End.","events":[{"time":"09:20","emoji":"🚶","title":"Sortida de l’hotel","desc":"A peu cap a Buckingham Palace; 25–30 minuts."},{"time":"09:50","emoji":"👑","title":"Buckingham Palace","desc":"Canvi de guàrdia: confirmeu-lo 48 hores abans.","maps":"https://www.google.com/maps/search/?api=1&query=Buckingham+Palace"},{"time":"11:20","emoji":"🌳","title":"St James’s Park","desc":"Passeig curt cap a Green Park."},{"time":"11:55","emoji":"🚇","title":"Green Park → British Museum","desc":"Piccadilly Line fins a Holborn; 7–9 minuts a peu."},{"time":"12:30","emoji":"🏛️","title":"British Museum","desc":"Egipte, Pedra de Rosetta i Partenó. 2 h – 2 h 20.","booked":true,"details":"Entrada reservada.","maps":"https://www.google.com/maps/search/?api=1&query=British+Museum"},{"time":"15:00","emoji":"⚡","title":"Plataforma 9¾ · King’s Cross","desc":"Parada breu per veure el carretó de Harry Potter travessant la paret.","details":"Reserveu 20–30 minuts. Si hi ha molta cua, feu una visita ràpida i continueu cap a Covent Garden.","maps":"https://www.google.com/maps/search/?api=1&query=Platform+9+3%2F4+Kings+Cross+London"},{"time":"15:45","emoji":"🍽️","title":"Dinar i Covent Garden","desc":"Dinar tardà i passeig per Seven Dials / Covent Garden."},{"time":"16:45","emoji":"🏮","title":"Soho, Chinatown i Regent Street","desc":"Recorregut flexible segons el ritme."},{"time":"18:00","emoji":"🍽️","title":"Sopar d’hora","desc":"A prop del Sondheim Theatre."},{"time":"19:00","emoji":"🎭","title":"Arribada al teatre","desc":"51 Shaftesbury Avenue."},{"time":"19:30","emoji":"🎟️","title":"Les Misérables","desc":"Sondheim Theatre. Final aproximat cap a les 22.20 h.","booked":true,"maps":"https://www.google.com/maps/search/?api=1&query=Sondheim+Theatre+London"}]},{"date":"2026-08-08","short":"Ds. 8","title":"Tower of London, City i Sky Garden","area":"City","style":"Història i vistes","message":"Fortalesa, ponts i racons històrics de la City.","events":[{"time":"08:15","emoji":"🚶","title":"Sortida de l’hotel","desc":"Camineu fins a Westminster Station."},{"time":"08:25","emoji":"🚇","title":"Westminster → Tower Hill","desc":"District Line direcció Upminster."},{"time":"09:00","emoji":"🏰","title":"Tower of London","desc":"Joies de la Corona primer; White Tower i Yeoman Warder Tour.","booked":true,"maps":"https://www.google.com/maps/search/?api=1&query=Tower+of+London"},{"time":"12:05","emoji":"🌉","title":"Tower Bridge","desc":"Creueu-lo per l’exterior i feu fotografies.","maps":"https://www.google.com/maps/search/?api=1&query=Tower+Bridge"},{"time":"12:45","emoji":"⚓","title":"St Katharine Docks","desc":"Dinar i descans."},{"time":"14:00","emoji":"🌿","title":"St Dunstan in the East","desc":"Passeig de 15 minuts. Visita curta.","maps":"https://www.google.com/maps/search/?api=1&query=St+Dunstan+in+the+East"},{"time":"14:35","emoji":"🏛️","title":"Leadenhall Market","desc":"Mercat victorià i volta breu.","maps":"https://www.google.com/maps/search/?api=1&query=Leadenhall+Market"},{"time":"15:15","emoji":"🚶","title":"Monument / Sky Garden","desc":"Cap a 20 Fenchurch Street."},{"time":"16:00","emoji":"🌇","title":"Sky Garden","desc":"Si no hi ha entrada, manteniu la City i feu el pla B.","maps":"https://www.google.com/maps/search/?api=1&query=Sky+Garden+London"},{"time":"17:15","emoji":"⛪","title":"St Paul’s o riba del Tàmesi","desc":"Exterior, Millennium Bridge o passeig cap a London Bridge."},{"time":"18:30","emoji":"🍽️","title":"Sopar","desc":"City o London Bridge."}]},{"date":"2026-08-09","short":"Dg. 9","title":"Greenwich, Camden i London Eye","area":"Tàmesi","style":"Dia estrella","message":"Arribada a Greenwich pel riu, tarda a Camden i London Eye al capvespre.","events":[{"time":"08:30","emoji":"🚶","title":"Sortida de l’hotel","desc":"A peu fins a Westminster Pier."},{"time":"09:00","emoji":"🚤","title":"Uber Boat cap a Greenwich","desc":"45–55 minuts. Podeu pagar contactless."},{"time":"10:00","emoji":"⛵","title":"Cutty Sark","desc":"Exterior i fotografies."},{"time":"10:30","emoji":"☕","title":"Greenwich Market","desc":"Cafè o brunch lleuger."},{"time":"11:10","emoji":"🏛️","title":"Old Royal Naval College","desc":"Passeig exterior i continuació pel parc."},{"time":"12:00","emoji":"🌐","title":"Royal Observatory","desc":"Meridià zero, rellotges i vistes. 1 h 20 – 1 h 30.","booked":true,"maps":"https://www.google.com/maps/search/?api=1&query=Royal+Observatory+Greenwich"},{"time":"13:40","emoji":"🚇","title":"Greenwich → Camden","desc":"DLR fins a Bank; Northern Line fins a Camden Town."},{"time":"14:40","emoji":"🎸","title":"Camden Market i canal","desc":"Dues hores aproximadament."},{"time":"17:30","emoji":"🚇","title":"Camden → Waterloo","desc":"Northern Line fins a Waterloo."},{"time":"18:30","emoji":"🎡","title":"Arribada al London Eye","desc":"Marge per cues i controls."},{"time":"19:30","emoji":"🎟️","title":"London Eye","desc":"Reserva confirmada.","booked":true,"maps":"https://www.google.com/maps/search/?api=1&query=London+Eye"},{"time":"20:15","emoji":"🍽️","title":"Sopar al South Bank","desc":"Taula recomanada cap a les 20.45 h."}]},{"date":"2026-08-10","short":"Dl. 10","title":"Excursió als Cotswolds i Oxford","area":"Excursió","style":"Dia complet","message":"Pobles de pedra color mel i Oxford universitària. Sortida molt matinera des de Gloucester Road.","events":[{"time":"06:30","emoji":"🚇","title":"Sortida de l’hotel","desc":"Metro amb marge suficient."},{"time":"06:40","emoji":"🚇","title":"Westminster → Gloucester Road","desc":"District Line direcció oest."},{"time":"07:15","emoji":"📍","title":"Punt de trobada","desc":"Stanhope Arms, 97 Gloucester Road.","maps":"https://www.google.com/maps/search/?api=1&query=Stanhope+Arms+97+Gloucester+Road+London"},{"time":"07:30","emoji":"🚌","title":"Sortida de Londres","desc":"Day Tours London. Reserva per a 2 adults.","booked":true},{"time":"10:00","emoji":"🏘️","title":"Burford","desc":"Parada aproximada de 30 minuts."},{"time":"11:00","emoji":"🌿","title":"Bourton-on-the-Water","desc":"Aproximadament 1 h 15."},{"time":"13:30","emoji":"🎓","title":"Oxford","desc":"Visita guiada i temps lliure."},{"time":"16:00","emoji":"🚌","title":"Sortida d’Oxford","desc":"Retorn cap a Londres."},{"time":"18:00","emoji":"📍","title":"Gloucester Road","desc":"Arribada orientativa."},{"time":"18:40","emoji":"🏨","title":"Hotel","desc":"District Line fins a Westminster."},{"time":"20:00","emoji":"🍽️","title":"Sopar tranquil","desc":"Sense res important programat."}]},{"date":"2026-08-11","short":"Dt. 11","title":"UK Parliament, parcs, Notting Hill i tornada","area":"Westminster i oest","style":"Comiat","message":"Últimes hores ben aprofitades, amb la visita al Parlament i marge ampli per arribar a Stansted.","events":[{"time":"08:00","emoji":"🧳","title":"Check-out","desc":"Deixeu les maletes a l’hotel."},{"time":"08:55","emoji":"🚶","title":"Sortida a peu","desc":"Cap a Cromwell Green Visitor Entrance."},{"time":"09:15","emoji":"🔐","title":"Arribada i controls","desc":"Presenteu-vos almenys 15 minuts abans."},{"time":"09:30","emoji":"🏛️","title":"UK Parliament","desc":"Visita interior aproximada d’1 h 30.","booked":true,"maps":"https://www.google.com/maps/search/?api=1&query=Cromwell+Green+Visitor+Entrance"},{"time":"11:10","emoji":"🚇","title":"Westminster → Hyde Park Corner","desc":"Metro amb transbordament o taxi curt."},{"time":"11:40","emoji":"🌳","title":"Hyde Park i Kensington Gardens","desc":"Wellington Arch, Serpentine i entorn del palau."},{"time":"13:00","emoji":"🍽️","title":"Dinar","desc":"Kensington o Notting Hill."},{"time":"14:00","emoji":"🏘️","title":"Notting Hill / Portobello Road","desc":"Cases de colors i passeig d’1 hora."},{"time":"15:10","emoji":"🚇","title":"Notting Hill Gate → Westminster","desc":"Circle Line fins a Westminster."},{"time":"15:50","emoji":"🧳","title":"Recollida d’equipatge","desc":"Marge de seguretat."},{"time":"16:20","emoji":"🚇","title":"Hotel → Liverpool Street","desc":"Circle Line fins a Liverpool Street."},{"time":"17:20","emoji":"🚆","title":"Stansted Express","desc":"Objectiu: tren entre 17.15 i 17.30."},{"time":"18:10","emoji":"🛫","title":"Arribada a Stansted","desc":"Marge ampli abans del vol."},{"time":"21:30","emoji":"✈️","title":"Vol FR9798","desc":"Arribada a Girona prevista a les 00.35 h.","booked":true}]}];
 
+const ACTIVITY_IDS_BY_EVENT=Object.freeze({
+  '2026-08-06|12:45|Vol Girona → Stansted':'2026-08-06-1245-vol-girona-stansted',
+  '2026-08-06|13:55|Arribada a Stansted':'2026-08-06-1355-arribada-a-stansted',
+  '2026-08-06|15:15|Stansted Express':'2026-08-06-1515-stansted-express',
+  '2026-08-06|16:15|Liverpool Street → Westminster':'2026-08-06-1615-liverpool-street-westminster',
+  '2026-08-06|17:00|Hotel i check-in':'2026-08-06-1700-hotel-i-check-in',
+  '2026-08-06|17:45|Westminster a peu':'2026-08-06-1745-westminster-a-peu',
+  '2026-08-06|18:20|Whitehall i Downing Street':'2026-08-06-1820-whitehall-i-downing-street',
+  '2026-08-06|18:50|Horse Guards':'2026-08-06-1850-horse-guards',
+  '2026-08-06|19:10|Trafalgar Square':'2026-08-06-1910-trafalgar-square',
+  '2026-08-06|19:45|Sopar i retorn':'2026-08-06-1945-sopar-i-retorn',
+  '2026-08-07|09:20|Sortida de l’hotel':'2026-08-07-0920-sortida-de-l-hotel',
+  '2026-08-07|09:50|Buckingham Palace':'2026-08-07-0950-buckingham-palace',
+  '2026-08-07|11:20|St James’s Park':'2026-08-07-1120-st-james-s-park',
+  '2026-08-07|11:55|Green Park → British Museum':'2026-08-07-1155-green-park-british-museum',
+  '2026-08-07|12:30|British Museum':'2026-08-07-1230-british-museum',
+  '2026-08-07|15:00|Plataforma 9¾ · King’s Cross':'2026-08-07-1500-plataforma-9-king-s-cross',
+  '2026-08-07|15:45|Dinar i Covent Garden':'2026-08-07-1545-dinar-i-covent-garden',
+  '2026-08-07|16:45|Soho, Chinatown i Regent Street':'2026-08-07-1645-soho-chinatown-i-regent-street',
+  '2026-08-07|18:00|Sopar d’hora':'2026-08-07-1800-sopar-d-hora',
+  '2026-08-07|19:00|Arribada al teatre':'2026-08-07-1900-arribada-al-teatre',
+  '2026-08-07|19:30|Les Misérables':'2026-08-07-1930-les-miserables',
+  '2026-08-08|08:15|Sortida de l’hotel':'2026-08-08-0815-sortida-de-l-hotel',
+  '2026-08-08|08:25|Westminster → Tower Hill':'2026-08-08-0825-westminster-tower-hill',
+  '2026-08-08|09:00|Tower of London':'2026-08-08-0900-tower-of-london',
+  '2026-08-08|12:05|Tower Bridge':'2026-08-08-1205-tower-bridge',
+  '2026-08-08|12:45|St Katharine Docks':'2026-08-08-1245-st-katharine-docks',
+  '2026-08-08|14:00|St Dunstan in the East':'2026-08-08-1400-st-dunstan-in-the-east',
+  '2026-08-08|14:35|Leadenhall Market':'2026-08-08-1435-leadenhall-market',
+  '2026-08-08|15:15|Monument / Sky Garden':'2026-08-08-1515-monument-sky-garden',
+  '2026-08-08|16:00|Sky Garden':'2026-08-08-1600-sky-garden',
+  '2026-08-08|17:15|St Paul’s o riba del Tàmesi':'2026-08-08-1715-st-paul-s-o-riba-del-tamesi',
+  '2026-08-08|18:30|Sopar':'2026-08-08-1830-sopar',
+  '2026-08-09|08:30|Sortida de l’hotel':'2026-08-09-0830-sortida-de-l-hotel',
+  '2026-08-09|09:00|Uber Boat cap a Greenwich':'2026-08-09-0900-uber-boat-cap-a-greenwich',
+  '2026-08-09|10:00|Cutty Sark':'2026-08-09-1000-cutty-sark',
+  '2026-08-09|10:30|Greenwich Market':'2026-08-09-1030-greenwich-market',
+  '2026-08-09|11:10|Old Royal Naval College':'2026-08-09-1110-old-royal-naval-college',
+  '2026-08-09|12:00|Royal Observatory':'2026-08-09-1200-royal-observatory',
+  '2026-08-09|13:40|Greenwich → Camden':'2026-08-09-1340-greenwich-camden',
+  '2026-08-09|14:40|Camden Market i canal':'2026-08-09-1440-camden-market-i-canal',
+  '2026-08-09|17:30|Camden → Waterloo':'2026-08-09-1730-camden-waterloo',
+  '2026-08-09|18:30|Arribada al London Eye':'2026-08-09-1830-arribada-al-london-eye',
+  '2026-08-09|19:30|London Eye':'2026-08-09-1930-london-eye',
+  '2026-08-09|20:15|Sopar al South Bank':'2026-08-09-2015-sopar-al-south-bank',
+  '2026-08-10|06:30|Sortida de l’hotel':'2026-08-10-0630-sortida-de-l-hotel',
+  '2026-08-10|06:40|Westminster → Gloucester Road':'2026-08-10-0640-westminster-gloucester-road',
+  '2026-08-10|07:15|Punt de trobada':'2026-08-10-0715-punt-de-trobada',
+  '2026-08-10|07:30|Sortida de Londres':'2026-08-10-0730-sortida-de-londres',
+  '2026-08-10|10:00|Burford':'2026-08-10-1000-burford',
+  '2026-08-10|11:00|Bourton-on-the-Water':'2026-08-10-1100-bourton-on-the-water',
+  '2026-08-10|13:30|Oxford':'2026-08-10-1330-oxford',
+  '2026-08-10|16:00|Sortida d’Oxford':'2026-08-10-1600-sortida-d-oxford',
+  '2026-08-10|18:00|Gloucester Road':'2026-08-10-1800-gloucester-road',
+  '2026-08-10|18:40|Hotel':'2026-08-10-1840-hotel',
+  '2026-08-10|20:00|Sopar tranquil':'2026-08-10-2000-sopar-tranquil',
+  '2026-08-11|08:00|Check-out':'2026-08-11-0800-check-out',
+  '2026-08-11|08:55|Sortida a peu':'2026-08-11-0855-sortida-a-peu',
+  '2026-08-11|09:15|Arribada i controls':'2026-08-11-0915-arribada-i-controls',
+  '2026-08-11|09:30|UK Parliament':'2026-08-11-0930-uk-parliament',
+  '2026-08-11|11:10|Westminster → Hyde Park Corner':'2026-08-11-1110-westminster-hyde-park-corner',
+  '2026-08-11|11:40|Hyde Park i Kensington Gardens':'2026-08-11-1140-hyde-park-i-kensington-gardens',
+  '2026-08-11|13:00|Dinar':'2026-08-11-1300-dinar',
+  '2026-08-11|14:00|Notting Hill / Portobello Road':'2026-08-11-1400-notting-hill-portobello-road',
+  '2026-08-11|15:10|Notting Hill Gate → Westminster':'2026-08-11-1510-notting-hill-gate-westminster',
+  '2026-08-11|15:50|Recollida d’equipatge':'2026-08-11-1550-recollida-d-equipatge',
+  '2026-08-11|16:20|Hotel → Liverpool Street':'2026-08-11-1620-hotel-liverpool-street',
+  '2026-08-11|17:20|Stansted Express':'2026-08-11-1720-stansted-express',
+  '2026-08-11|18:10|Arribada a Stansted':'2026-08-11-1810-arribada-a-stansted',
+  '2026-08-11|21:30|Vol FR9798':'2026-08-11-2130-vol-fr9798'
+});
+const knownActivityIds=new Set();
+tripDays.forEach(day=>day.events.forEach(event=>{
+  const identity=`${day.date}|${event.time}|${event.title}`,id=ACTIVITY_IDS_BY_EVENT[identity];
+  if(!id||knownActivityIds.has(id))throw new Error(`Identificador d’activitat invàlid: ${identity}`);
+  knownActivityIds.add(id);Object.defineProperty(event,'id',{value:id,enumerable:true});
+}));
+if(knownActivityIds.size!==Object.keys(ACTIVITY_IDS_BY_EVENT).length)throw new Error('El registre d’activitats conté entrades desconegudes.');
+
 const TICKET_KEYS_BY_EVENT={
   '2026-08-06|12:45|Vol Girona → Stansted':'flight-outbound',
   '2026-08-07|12:30|British Museum':'british-museum',
@@ -228,7 +310,7 @@ function renderDay(){
       <div class="timeline">
         ${d.events.map((e,ei)=>{
           const id=eventId(activeDay,ei), done=!!completed[id];
-          return `<div class="event" id="event-${id}" data-time="${d.date}T${e.time}:00">
+          return `<div class="event" id="event-${id}" data-activity-id="${e.id}" data-time="${d.date}T${e.time}:00">
             <div class="event-time">${e.time}</div>
             <div class="event-card ${done?"completed":""}">
               <div class="event-main">
@@ -291,11 +373,24 @@ function goNow(){
 }
 
 function render(){ renderTabs();renderDay();updateProgress();nextActivity(); }
+const initialEvents=allEvents();
+const requestedActivityId=new URLSearchParams(location.search).get('activity');
+const requestedActivity=requestedActivityId&&knownActivityIds.has(requestedActivityId)
+  ?initialEvents.find(item=>item.e.id===requestedActivityId)||null:null;
 const hashMatch=location.hash.match(/^#event-(\d+)-(\d+)$/);
-if(hashMatch){activeDay=Math.max(0,Math.min(tripDays.length-1,Number(hashMatch[1])))}
+const legacyActivity=hashMatch
+  ?initialEvents.find(item=>item.di===Number(hashMatch[1])&&item.ei===Number(hashMatch[2]))||null:null;
+const initialActivity=requestedActivity||legacyActivity;
+if(initialActivity)activeDay=initialActivity.di;
 $("#nowBtn").onclick=goNow;
 render();
-if(hashMatch){setTimeout(()=>document.querySelector(location.hash)?.scrollIntoView({behavior:"smooth",block:"center"}),120)}
+if(initialActivity){
+  setTimeout(()=>{
+    const target=document.getElementById(`event-${eventId(initialActivity.di,initialActivity.ei)}`);
+    if(!target)return;target.classList.add('deep-linked');target.scrollIntoView({behavior:"smooth",block:"center"});
+    setTimeout(()=>target.classList.remove('deep-linked'),4000);
+  },120);
+}
 setInterval(nextActivity,60000);
 </script>
 </body>
