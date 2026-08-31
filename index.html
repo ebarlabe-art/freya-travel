@@ -861,7 +861,10 @@
 <script>
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
-const VAPID_PUBLIC_KEY='BA7bb99zg5spuTONmRkoEsWya_oRZfGsUxzWc0rUv1zTLEk8qkSnaqHjMa1VDs4EgvfzdMwU479juh64Rgtwbbk';
+const VAPID_PUBLIC_KEY='BCDiQCUSP-o3QmkZ1sxNZtglQvyhVkRfVKdGv_w7Q9v4iT57y7awfseqg-lzlawT2wpmpGzfVDDgepmODcD1UBc';
+const PUSH_VAPID_GENERATION='v2';
+const PUSH_SUBSCRIPTION_STATE_KEY='freya-push-subscription-state';
+const PUSH_MIGRATION_PENDING_KEY='freya-push-vapid-migration-pending';
 const PASSWORD_RECOVERY_REDIRECT='https://ebarlabe-art.github.io/freya-travel/?view=password-recovery';
 const initialAuthRouteParams=new URLSearchParams(window.location.search);
 let passwordRecoveryMode=initialAuthRouteParams.get('view')==='password-recovery';
@@ -1791,6 +1794,41 @@ function vapidPublicKeyBytes(){
   const padding='='.repeat((4-VAPID_PUBLIC_KEY.length%4)%4),base64=(VAPID_PUBLIC_KEY+padding).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(base64);
   return Uint8Array.from(raw,char=>char.charCodeAt(0));
 }
+function readPushLocalState(key){
+  try{return JSON.parse(localStorage.getItem(key)||'null')}catch(_){return null}
+}
+function writePushLocalState(key,value){
+  try{localStorage.setItem(key,JSON.stringify(value));return true}catch(_){return false}
+}
+function clearPushLocalState(key){try{localStorage.removeItem(key)}catch(_){}}
+function pushSubscriptionUsesCurrentVapid(subscription){
+  const expected=vapidPublicKeyBytes(),applicationServerKey=subscription?.options?.applicationServerKey;
+  if(applicationServerKey){
+    const actual=new Uint8Array(applicationServerKey);
+    return actual.length===expected.length&&actual.every((value,index)=>value===expected[index]);
+  }
+  const state=readPushLocalState(PUSH_SUBSCRIPTION_STATE_KEY);
+  return state?.generation===PUSH_VAPID_GENERATION&&state?.endpoint===subscription?.endpoint;
+}
+function rememberCurrentPushSubscription(subscription){
+  writePushLocalState(PUSH_SUBSCRIPTION_STATE_KEY,{generation:PUSH_VAPID_GENERATION,endpoint:subscription.endpoint});
+}
+function currentPendingPushMigration(){
+  const pending=readPushLocalState(PUSH_MIGRATION_PENDING_KEY);
+  return pending?.endpoint&&pending?.userId===session?.user?.id&&pending?.tripId===trip?.id?pending:null;
+}
+async function resumePendingPushMigration(registration){
+  const pending=currentPendingPushMigration();if(!pending)return;
+  if(pending.stage==='unsubscribe'){
+    const current=await registration.pushManager.getSubscription();
+    if(current?.endpoint===pending.endpoint&&!(await current.unsubscribe()))throw new Error('No s’ha pogut retirar la subscripció anterior. Torna-ho a provar.');
+    pending.stage='deactivate';writePushLocalState(PUSH_MIGRATION_PENDING_KEY,pending);
+  }
+  const {error}=await db.from('push_subscriptions').update({active:false,updated_at:new Date().toISOString()}).eq('endpoint',pending.endpoint).eq('user_id',pending.userId).eq('trip_id',pending.tripId).eq('active',true);
+  if(error)throw new Error('La subscripció anterior s’ha retirat del dispositiu, però no s’ha pogut desactivar. Torna-ho a provar.');
+  clearPushLocalState(PUSH_MIGRATION_PENDING_KEY);
+  const state=readPushLocalState(PUSH_SUBSCRIPTION_STATE_KEY);if(state?.endpoint===pending.endpoint)clearPushLocalState(PUSH_SUBSCRIPTION_STATE_KEY);
+}
 async function refreshPushUi(){
   if(!$('enablePush'))return;
   if(!pushSupported()){setPushState('Aquest dispositiu o navegador no és compatible amb Web Push.',true);return}
@@ -1799,36 +1837,47 @@ async function refreshPushUi(){
   if(!session||!trip){setPushState('Inicia sessió i obre un viatge abans d’activar-les.',true);return}
   try{
     const registration=await navigator.serviceWorker.ready,subscription=await registration.pushManager.getSubscription();
+    if(currentPendingPushMigration()){setPushState('Actualització de notificacions pendent. Prem el botó per continuar.',false);return}
     if(!subscription){setPushState('Prem el botó per activar les notificacions.',false);return}
+    if(!pushSubscriptionUsesCurrentVapid(subscription)){setPushState('Cal actualitzar les notificacions. Prem el botó per continuar.',false);return}
+    rememberCurrentPushSubscription(subscription);
     const json=subscription.toJSON(),endpoint=json.endpoint||subscription.endpoint;
     const {data,error}=await db.from('push_subscriptions').select('id').eq('user_id',session.user.id).eq('trip_id',trip.id).eq('endpoint',endpoint).eq('active',true).maybeSingle();
     if(error)throw error;
     setPushState(data?'Notificacions actives.':'Subscripció pendent de guardar. Prem el botó per completar-la.',!!data);
   }catch(_){setPushState('No s’ha pogut comprovar l’estat. Torna-ho a provar.',false)}
 }
+let pushActivationInProgress=false;
 async function enablePushNotifications(){
+  if(pushActivationInProgress)return;
   if(!pushSupported()){setPushState('Aquest dispositiu o navegador no és compatible amb Web Push.',true);return}
   if(isIos()&&!isStandalone()){setPushState('No instal·lada: afegeix Freya Travel a la pantalla d’inici i obre-la des de la seva icona.',true);return}
   if(!session||!trip){setPushState('Inicia sessió i obre un viatge abans d’activar-les.',true);return}
+  pushActivationInProgress=true;
   setPushState('Activant…',true);
-  let createdSubscription=false,subscription=null;
   try{
+    if(Notification.permission==='denied'){setPushState('Permís denegat. Activa les notificacions als Ajustos de l’iPhone.',true);return}
     const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
     if(permission!=='granted'){setPushState(permission==='denied'?'Permís denegat. Activa les notificacions als Ajustos de l’iPhone.':'No s’ha concedit el permís de notificacions.',permission==='denied');return}
     const registration=await navigator.serviceWorker.ready;
     const expectedWorker=new URL('/freya-travel/sw.js',location.origin).href;
     if(registration.active?.scriptURL!==expectedWorker)throw new Error('El service worker principal encara no està actiu. Tanca i torna a obrir Freya Travel.');
-    subscription=await registration.pushManager.getSubscription();
-    if(!subscription){subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:vapidPublicKeyBytes()});createdSubscription=true}
+    await resumePendingPushMigration(registration);
+    let subscription=await registration.pushManager.getSubscription();
+    if(subscription&&!pushSubscriptionUsesCurrentVapid(subscription)){
+      if(!writePushLocalState(PUSH_MIGRATION_PENDING_KEY,{stage:'unsubscribe',endpoint:subscription.endpoint,userId:session.user.id,tripId:trip.id}))throw new Error('No s’ha pogut preparar l’actualització de notificacions. Torna-ho a provar.');
+      await resumePendingPushMigration(registration);subscription=null;
+    }
+    if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:vapidPublicKeyBytes()});
+    rememberCurrentPushSubscription(subscription);
     const json=subscription.toJSON(),keys=json.keys||{};
     if(!json.endpoint||!keys.p256dh||!keys.auth)throw new Error('La subscripció Push no ha retornat totes les claus necessàries.');
     const {error}=await db.from('push_subscriptions').upsert({user_id:session.user.id,trip_id:trip.id,endpoint:json.endpoint,p256dh:keys.p256dh,auth:keys.auth,active:true,updated_at:new Date().toISOString()},{onConflict:'endpoint'});
     if(error)throw error;
     setPushState('Notificacions actives.',true);
   }catch(error){
-    if(createdSubscription&&subscription)await subscription.unsubscribe().catch(()=>{});
     setPushState(error?.message||'No s’han pogut activar les notificacions.',false);
-  }
+  }finally{pushActivationInProgress=false}
 }
 function updateInstallUi(){
   const card=$('installCard'),help=$('installHelp'),button=$('installApp');
