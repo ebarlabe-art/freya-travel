@@ -1,5 +1,9 @@
-// @deno-types="npm:@types/web-push@3.6.4"
-import webPush from "web-push";
+import {
+  rawPayload,
+  sendPushNotification,
+  type PushSubscriptionData,
+  type VapidConfig,
+} from "standards-web-push";
 import { createClient } from "supabase-js";
 
 const TEST_NOTIFICATION = {
@@ -18,10 +22,6 @@ type PushSubscriptionRow = {
   p256dh: string;
   auth: string;
   active: boolean;
-};
-
-type PushServiceError = Error & {
-  statusCode?: number;
 };
 
 function jsonResponse(body: Record<string, unknown>, status: number): Response {
@@ -49,6 +49,9 @@ async function tokensMatch(received: string, expected: string): Promise<boolean>
 function getSupabaseAdminKey(): string | null {
   const legacyServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (legacyServiceRoleKey) return legacyServiceRoleKey;
+
+  const localSecretKey = Deno.env.get("SUPABASE_SECRET_KEY");
+  if (localSecretKey) return localSecretKey;
 
   const serializedSecretKeys = Deno.env.get("SUPABASE_SECRET_KEYS");
   if (!serializedSecretKeys) return null;
@@ -125,36 +128,38 @@ async function handleRequest(request: Request): Promise<Response> {
     return jsonResponse({ error: "Subscription is inactive" }, 409);
   }
 
-  try {
-    webPush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
-  } catch (_) {
-    return jsonResponse({ error: "Function is not configured" }, 500);
-  }
+  const subscription: PushSubscriptionData = {
+    endpoint: data.endpoint,
+    keys: { p256dh: data.p256dh, auth: data.auth },
+  };
+  const vapid: VapidConfig = {
+    subject: vapidSubject,
+    publicKey: vapidPublicKey,
+    privateKey: vapidPrivateKey,
+  };
 
+  let delivered: boolean;
   try {
-    await webPush.sendNotification(
-      {
-        endpoint: data.endpoint,
-        keys: { p256dh: data.p256dh, auth: data.auth },
-      },
-      JSON.stringify(TEST_NOTIFICATION),
-      { TTL: 60 },
+    delivered = await sendPushNotification(
+      subscription,
+      rawPayload(JSON.stringify(TEST_NOTIFICATION)),
+      vapid,
+      { ttl: 60 },
     );
-    return jsonResponse({ ok: true }, 200);
-  } catch (caught) {
-    const statusCode = (caught as PushServiceError)?.statusCode;
-    if (statusCode === 404 || statusCode === 410) {
-      const { error: updateError } = await admin
-        .from("push_subscriptions")
-        .update({ active: false, updated_at: new Date().toISOString() })
-        .eq("id", data.id);
-      if (updateError) {
-        return jsonResponse({ error: "Unable to disable expired subscription" }, 500);
-      }
-      return jsonResponse({ error: "Subscription expired and was disabled" }, 410);
-    }
+  } catch (_) {
     return jsonResponse({ error: "Push delivery failed" }, 502);
   }
+
+  if (delivered) return jsonResponse({ ok: true }, 200);
+
+  const { error: updateError } = await admin
+    .from("push_subscriptions")
+    .update({ active: false, updated_at: new Date().toISOString() })
+    .eq("id", data.id);
+  if (updateError) {
+    return jsonResponse({ error: "Unable to disable expired subscription" }, 500);
+  }
+  return jsonResponse({ error: "Subscription expired and was disabled" }, 410);
 }
 
 export default { fetch: handleRequest };
