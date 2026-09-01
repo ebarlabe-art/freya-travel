@@ -2,3 +2,6 @@ project_id = "freya-travel"
 
 [functions.send-test-push]
 verify_jwt = false
+
+[functions.send-itinerary-notifications]
+verify_jwt = false
