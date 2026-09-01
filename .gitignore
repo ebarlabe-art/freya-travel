@@ -28,3 +28,7 @@ Thumbs.db
 .vscode/
 *.swp
 *~
+
+# Supabase local metadata
+supabase/.branches/
+supabase/snippets/
