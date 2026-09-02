@@ -342,6 +342,9 @@ async function handleRequest(request: Request): Promise<Response> {
   const admin = createClient(supabaseUrl, adminKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+  const { error: syncError } = await admin.rpc("sync_notification_deliveries");
+  if (syncError) return jsonResponse({ error: "Unable to synchronize deliveries" }, 500);
+
   const { data: claimData, error: claimError } = await admin.rpc(
     "claim_notification_deliveries",
     { p_batch_size: BATCH_SIZE, p_lease_seconds: LEASE_SECONDS },
