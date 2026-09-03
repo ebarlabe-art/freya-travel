@@ -254,12 +254,12 @@
   </section>
 
   <section id="noTrip" class="hidden">
-    <header class="topbar"><div><strong>Freya Travel</strong><small id="userEmail1"></small></div><button class="ghost logout">Sortir</button></header>
+    <header class="topbar"><div><strong>Freya Travel</strong><small id="userEmail1"></small></div><button class="ghost logout">Tancar sessió</button></header>
     <div class="card"><h2>No s’han pogut carregar els viatges</h2><p id="tripLoadError" class="message error"></p></div>
   </section>
 
   <section id="tripView" class="hidden">
-    <header class="topbar"><div><strong id="tripTitleTop"></strong><small id="userEmail2"></small></div><button class="ghost logout">Sortir</button></header>
+    <header class="topbar"><div><strong id="tripTitleTop"></strong><small id="userEmail2"></small></div><button class="ghost logout">Tancar sessió</button></header>
 
 
     <div id="tripsHomeView" class="hidden trips-home">
@@ -1864,7 +1864,13 @@ $('requestAnotherRecovery').onclick=async()=>{
   if(session)await db.auth.signOut();else renderSession(null);
   $('passwordRecoveryForm').reset();hide('passwordRecoveryCard');show('loginCard');show('auth');msg('authMsg','');$('email').focus();
 };
-document.querySelectorAll('.logout').forEach(b=>b.onclick=()=>db.auth.signOut());
+document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
+  const password=$('password');
+  if(password)password.value='';
+  msg('authMsg','');
+  await db.auth.signOut();
+  if(password)password.value='';
+});
 try{$('tripTimeZone').value=Intl.DateTimeFormat().resolvedOptions().timeZone||'Europe/Madrid'}catch(_){$('tripTimeZone').value='Europe/Madrid'}
 $('tripStartDate').onchange=()=>{$('tripEndDate').min=$('tripStartDate').value;if(!$('tripEndDate').value||$('tripEndDate').value<$('tripStartDate').value)$('tripEndDate').value=$('tripStartDate').value};
 $('createTripForm').onsubmit=async e=>{
