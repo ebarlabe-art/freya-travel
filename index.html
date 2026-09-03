@@ -22,7 +22,8 @@
     .trips-hero p{margin:0;color:rgba(255,255,255,.84);line-height:1.55}
     .trips-section-title{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:24px 2px 12px}
     .trips-section-title h2{margin:0;font-size:1.35rem}.trips-section-title span{color:var(--muted);font-size:.88rem}
-    .trip-card{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:26px;padding:22px;box-shadow:0 14px 36px rgba(49,42,59,.09)}
+    .trip-list{display:grid;gap:14px}.trip-card{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:26px;padding:22px;box-shadow:0 14px 36px rgba(49,42,59,.09)}
+    .trip-card.selected{border-color:#8d6bc2;box-shadow:0 0 0 3px rgba(103,80,164,.12),0 14px 36px rgba(49,42,59,.09)}
     .trip-card:before{content:'';position:absolute;inset:0 auto 0 0;width:7px;background:linear-gradient(#6a42b8,#c04cc8)}
     .trip-card-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
     .trip-flag{font-size:2.35rem;line-height:1}.trip-card h3{font-size:1.55rem;margin:3px 0 7px}.trip-card p{margin:0;color:var(--muted)}
@@ -31,7 +32,7 @@
     .trip-stats div{background:#f8f4fb;border-radius:16px;padding:12px;text-align:center}.trip-stats strong{display:block;color:#4f378b}.trip-stats small{color:var(--muted)}
     .trip-open{width:100%;font-size:1rem;padding:15px;border-radius:16px}
     .new-trip-card{margin-top:14px;border:2px dashed #d6c7e7;background:rgba(255,255,255,.6);border-radius:24px;padding:20px;text-align:center}
-    .new-trip-card button{background:#eee8f4;color:#4f378b}.new-trip-card p{color:var(--muted);margin:8px 0 14px}
+    .new-trip-card button{background:#eee8f4;color:#4f378b}.new-trip-card p{color:var(--muted);margin:8px 0 14px}.new-trip-card h2{margin:4px 0 8px}.trip-form{display:grid;gap:12px;text-align:left;margin-top:16px}.trip-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.trip-form label{display:grid;gap:6px;color:#51465a;font-weight:700}.trip-form .wide{grid-column:1/-1}.trip-form input{font-weight:400}.trip-empty{background:#fff;border:1px dashed #cdbdde;border-radius:22px;padding:22px;text-align:center;color:var(--muted)}.join-trip{display:flex;gap:10px;margin-top:20px}.join-trip input{flex:1}.generic-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.generic-meta span{background:rgba(255,255,255,.16);border-radius:999px;padding:7px 10px;font-size:.84rem}.generic-itinerary{background:#fff;border:1px solid var(--line);border-radius:22px;padding:20px;margin:16px 0}.generic-itinerary h2{margin:0 0 7px}.generic-itinerary p{margin:0;color:var(--muted)}
     .departure-center{margin-top:22px;background:#fff;border:1px solid var(--line);border-radius:26px;padding:22px;box-shadow:0 14px 36px rgba(49,42,59,.08)}
     .departure-center h2{margin:0 0 6px}.departure-center>p{color:var(--muted);margin:0 0 16px}
     .departure-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
@@ -39,7 +40,7 @@
     .departure-action span{display:block;font-size:1.5rem;margin-bottom:7px}.departure-action strong{display:block}.departure-action small{display:block;color:var(--muted);margin-top:3px}
     .trips-footer{text-align:center;color:#8a8190;font-size:.82rem;margin-top:24px}
     .dashboard-switch{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);padding:9px 12px;border-radius:14px;margin-top:12px}
-    @media(max-width:560px){.trips-hero h1{font-size:1.95rem}.trip-stats{grid-template-columns:1fr}.departure-grid{grid-template-columns:1fr}}
+    @media(max-width:560px){.trips-hero h1{font-size:1.95rem}.trip-stats{grid-template-columns:1fr}.departure-grid,.trip-form-grid{grid-template-columns:1fr}.trip-form .wide{grid-column:auto}.join-trip{flex-direction:column}}
 
     .dashboard-head{background:linear-gradient(135deg,#6750a4,#9b72cf);color:#fff;border-radius:28px;padding:26px;margin:16px 0}.dashboard-head h1{margin:5px 0 8px}.dashboard-head p{margin:4px 0;color:#f1eaff}.countdown{font-size:1.15rem;font-weight:800;margin-top:14px}.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}.menu-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;text-align:left;color:#1f1b24;min-height:112px}.menu-card .icon{font-size:30px;display:block;margin-bottom:8px}.menu-card strong{display:block;font-size:1.06rem}.menu-card small{display:block;color:#79747e;margin-top:4px}.menu-card.disabled{opacity:.62}.back{margin-bottom:12px}.day-tabs{display:flex;gap:8px;overflow:auto;padding-bottom:8px}.day-tab{white-space:nowrap;background:#fff;color:#4f378b;border:1px solid var(--line);padding:10px 12px}.day-tab.active{background:var(--purple);color:#fff}.day{display:none}.day.active{display:block}.day-title{background:linear-gradient(135deg,#7657ad,#4f378b);color:#fff;border-radius:24px;padding:22px;margin:12px 0 16px}.day-title h2{margin:4px 0}.timeline{list-style:none;padding:0;margin:0;position:relative}.timeline:before{content:"";position:absolute;left:49px;top:12px;bottom:12px;width:2px;background:#d9cdef}.event{display:grid;grid-template-columns:70px 1fr;gap:12px;padding:8px 0;position:relative}.event time{font-weight:800;color:#6750a4;font-variant-numeric:tabular-nums}.event div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px 14px;position:relative}.event div:before{content:"";position:absolute;left:-28px;top:17px;width:10px;height:10px;border-radius:50%;background:#6750a4;border:3px solid #f7f5fb}.event strong{display:block}.event p{margin:4px 0 0;color:#625b71;font-size:.92rem}.badge{display:inline-block;background:#e7f5ec;color:#247642;border-radius:999px;padding:4px 8px;font-size:.75rem;font-weight:800;margin-top:7px}.map-link{display:inline-block;margin-top:10px;text-decoration:none;background:var(--soft);color:#4f378b;border-radius:12px;padding:10px 12px;font-weight:700}.footer{text-align:center;color:#79747e;font-size:.84rem;margin-top:28px}
     .weather-panel{position:relative;background:linear-gradient(180deg,#4f3290,#6b4ebd 48%,#8d79e8);color:#fff;border:0;box-shadow:0 32px 80px rgba(60,31,112,.18);overflow:hidden}
@@ -254,7 +255,7 @@
 
   <section id="noTrip" class="hidden">
     <header class="topbar"><div><strong>Freya Travel</strong><small id="userEmail1"></small></div><button class="ghost logout">Sortir</button></header>
-    <div class="card"><h2>Comencem</h2><div class="two"><div class="panel"><h3>Crear un viatge</h3><input id="tripName" value="Londres 2026"><button id="createTrip">Crear viatge</button></div><div class="panel"><h3>Unir-me al viatge</h3><input id="inviteInput" placeholder="Codi d'invitació"><button id="joinTrip">Unir-m'hi</button></div></div><p id="tripMsg" class="message hidden"></p></div>
+    <div class="card"><h2>No s’han pogut carregar els viatges</h2><p id="tripLoadError" class="message error"></p></div>
   </section>
 
   <section id="tripView" class="hidden">
@@ -264,31 +265,30 @@
     <div id="tripsHomeView" class="hidden trips-home">
       <section class="trips-hero">
         <div class="trips-kicker">Freya Travel 6.0</div>
-        <h1>Els vostres viatges</h1>
-        <p>Londres és només el principi. Cada aventura tindrà el seu espai, sense perdre mai els records de les anteriors.</p>
+        <h1>Els meus viatges</h1>
+        <p>Cada aventura té el seu espai, sense perdre mai els records de les anteriors.</p>
       </section>
 
-      <div class="trips-section-title"><h2>Viatges</h2><span>1 viatge actiu</span></div>
-      <article class="trip-card">
-        <div class="trip-card-top">
-          <div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">🇬🇧</div><div><h3 id="tripCardTitle">Londres 2026</h3><p>6–11 d’agost · Eva ❤️ Xesc</p></div></div>
-          <span class="trip-status">En preparació</span>
-        </div>
-        <div class="trip-stats">
-          <div><strong>6 dies</strong><small>de viatge</small></div>
-          <div><strong>Compartit</strong><small>Eva i Xesc</small></div>
-          <div><strong>Tot a punt</strong><small>vols, fotos i documents</small></div>
-        </div>
-        <button id="openLondonTrip" class="trip-open" type="button">Obrir Londres →</button>
-      </article>
+      <div class="trips-section-title"><h2>Viatges</h2><span id="tripCountLabel">0 viatges</span></div>
+      <div id="tripsList" class="trip-list"></div>
 
       <section class="new-trip-card">
-        <div style="font-size:2rem">➕</div><strong>Nou viatge</strong>
-        <p>Després de Londres activarem la creació de noves destinacions sense esborrar cap record.</p>
-        <button id="newTripPreview" type="button">Preparar el proper viatge</button>
+        <div style="font-size:2rem">🧭</div><h2>A on vols anar?</h2>
+        <p>Crea un espai nou amb les dates i la zona horària de la destinació.</p>
+        <form id="createTripForm" class="trip-form">
+          <div class="trip-form-grid">
+            <label class="wide">Nom o destinació<input id="tripName" maxlength="100" placeholder="Ex.: Roma" required></label>
+            <label class="wide">Zona horària<input id="tripTimeZone" placeholder="Europe/Rome" required></label>
+            <label>Data d’inici<input id="tripStartDate" type="date" required></label>
+            <label>Data de fi<input id="tripEndDate" type="date" required></label>
+          </div>
+          <button id="createTrip" type="submit">Crear viatge</button>
+        </form>
+        <div class="join-trip"><input id="inviteInput" placeholder="Codi d’invitació" aria-label="Codi d’invitació"><button id="joinTrip" type="button">Unir-m’hi</button></div>
+        <p id="tripMsg" class="message hidden" role="status" aria-live="polite"></p>
       </section>
 
-      <section class="departure-center">
+      <section id="londonDepartureCenter" class="departure-center hidden">
         <h2>🧳 Centre de sortida</h2>
         <p>Tot el que necessiteu abans de marxar, a un sol toc.</p>
         <div class="departure-grid">
@@ -301,6 +301,17 @@
         </div>
       </section>
       <div class="trips-footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.7 · Galeria de fotos</div>
+    </div>
+
+    <div id="genericDashboardView" class="hidden">
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="genericTripTitle"></h1><p id="genericTripDates"></p><div id="genericTripMeta" class="generic-meta"></div><button class="dashboard-switch" type="button" data-trips-home>← Els meus viatges</button></div>
+      <section class="generic-itinerary"><h2>📅 Itinerari</h2><p>Itinerari pendent de configurar.</p></section>
+      <div class="menu-grid">
+        <button class="menu-card" data-open="checklistView"><span class="icon">✅</span><strong>Checklist</strong><small>Preparatius compartits</small></button>
+        <button class="menu-card" data-open="documentsView"><span class="icon">📄</span><strong>Documents</strong><small>Fitxers privats del viatge</small></button>
+        <button class="menu-card" data-open="photosView"><span class="icon">📸</span><strong>Fotos</strong><small>Àlbum compartit del viatge</small></button>
+      </div>
+      <div class="card"><h2>Codi d’invitació</h2><p>Comparteix aquest codi per convidar algú al viatge:</p><div id="genericInviteCode" class="code"></div><p><button id="copyGenericCode" type="button" class="secondary">Copiar codi</button></p><p id="genericAppMsg" class="message hidden"></p></div>
     </div>
 
     <div id="dashboardView">
@@ -367,7 +378,7 @@
       <div id="guideGrid" class="guide-grid"></div>
     </div>
 
-    <div id="checklistView" class="hidden"><button class="ghost back" data-back>← Torna al tauler</button><div class="card"><h2>Checklist compartida</h2><p class="muted">Preparatius ordenats per temes perquè trobeu ràpidament què falta.</p><form id="itemForm" class="checklist-add"><select id="newItemCategory" aria-label="Apartat"><option value="equipment">🧳 Equipatge</option><option value="documents">📄 Documentació</option><option value="car">🚗 Cotxe i aparcament</option><option value="home">🏠 Casa</option><option value="cats">🐈 Piki i Ghost</option><option value="airport">✈️ Aeroport i vol</option><option value="technology">📱 Tecnologia</option><option value="other">✨ Altres</option></select><input id="newItem" placeholder="Afegeix una tasca" required><button>Afegir</button></form><div id="checklistSummary" class="checklist-summary hidden"></div><div id="items" class="checklist-groups"></div><p id="itemsEmpty" class="muted">Encara no hi ha cap tasca.</p></div></div>
+    <div id="checklistView" class="hidden"><button class="ghost back" data-back>← Torna al tauler</button><div class="card"><h2>Checklist compartida</h2><p class="muted">Preparatius ordenats per temes perquè trobeu ràpidament què falta.</p><form id="itemForm" class="checklist-add"><select id="newItemCategory" aria-label="Apartat"><option value="equipment">🧳 Equipatge</option><option value="documents">📄 Documentació</option><option value="car">🚗 Cotxe i aparcament</option><option value="home">🏠 Casa</option><option value="cats">🐈 Piki i Ghost</option><option value="airport">✈️ Aeroport i vol</option><option value="technology">📱 Tecnologia</option><option value="other">✨ Altres</option></select><input id="newItem" placeholder="Afegeix una tasca" required><button>Afegir</button></form><p id="checklistMsg" class="message hidden"></p><div id="checklistSummary" class="checklist-summary hidden"></div><div id="items" class="checklist-groups"></div><p id="itemsEmpty" class="muted">Encara no hi ha cap tasca.</p></div></div>
 
 
     <div id="flightsView" class="hidden">
@@ -503,9 +514,9 @@
       <button class="ghost back" data-back>← Torna al tauler</button>
       <div class="photo-shell">
         <section class="photo-hero">
-          <small>Records · Londres 2026</small>
+          <small id="photoHeroKicker">Records · Londres 2026</small>
           <h2>📸 El vostre àlbum compartit</h2>
-          <p>Pugeu fotografies des del mòbil i compartiu-les entre l’Eva i en Xesc. Apareixeran aquí al moment.</p>
+          <p id="photoHeroCopy">Pugeu fotografies des del mòbil i compartiu-les entre l’Eva i en Xesc. Apareixeran aquí al moment.</p>
         </section>
         <section class="photo-upload-card">
           <form id="photoForm" class="photo-form">
@@ -871,10 +882,25 @@ let passwordRecoveryMode=initialAuthRouteParams.get('view')==='password-recovery
 let passwordRecoverySessionValid=false,passwordRecoverySubmitting=false,authInitializationResolved=false;
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let deferredInstallPrompt=null;
-let session=null,trip=null,channel=null;
+let session=null;
+let trips = [];
+let trip = null;
+let channel=null,tripLoadGeneration=0,sessionRenderGeneration=0,flightTimer=null;
 const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function isLondonTrip(value=trip){return value?.experience_key==='london-2026'}
+function selectedTripStorageKey(){return session?.user?.id?`freya-selected-trip-${session.user.id}`:null}
+function readSelectedTripId(){const key=selectedTripStorageKey();if(!key)return null;try{return localStorage.getItem(key)}catch(_){return null}}
+function rememberSelectedTrip(){const key=selectedTripStorageKey();if(!key||!trip)return;try{localStorage.setItem(key,trip.id)}catch(_){}}
+function forgetSelectedTrip(){const key=selectedTripStorageKey();if(!key)return;try{localStorage.removeItem(key)}catch(_){}}
+function tripRequestIsCurrent(tripId,generation){return trip?.id===tripId&&tripLoadGeneration===generation}
+function parseTripDate(value){if(!value)return null;const [year,month,day]=String(value).split('-').map(Number);return year&&month&&day?new Date(year,month-1,day,12):null}
+function formatTripDate(value){const date=parseTripDate(value);return date?new Intl.DateTimeFormat('ca-ES',{day:'numeric',month:'short',year:'numeric'}).format(date):'Data pendent'}
+function tripDateRange(value){return value?.start_date&&value?.end_date?`${formatTripDate(value.start_date)} – ${formatTripDate(value.end_date)}`:'Dates pendents'}
+function tripDuration(value){const start=parseTripDate(value?.start_date),end=parseTripDate(value?.end_date);return start&&end?Math.floor((end-start)/86400000)+1:null}
+function tripStatus(value){const today=new Date();today.setHours(0,0,0,0);const start=parseTripDate(value?.start_date),end=parseTripDate(value?.end_date);if(!start||!end)return 'Per configurar';if(today<start)return 'En preparació';if(today<=end)return 'En curs';return 'Completat'}
+function tripDashboardId(){return isLondonTrip()?'dashboardView':'genericDashboardView'}
 
 const RESTAURANTS=[
  {id:'regency-cafe',name:'Regency Café',zone:'Westminster',kind:'Esmorzar',price:'£',booking:'Sense reserva',why:'Un cafè londinenc clàssic i sense pretensions, ideal per començar un matí a Westminster.',maps:'https://www.google.com/maps/search/?api=1&query=Regency+Cafe+London'},
@@ -916,14 +942,16 @@ function bindFoodActions(){
 }
 async function saveRestaurantMemory(id){
   const r=RESTAURANTS.find(x=>x.id===id),note=document.querySelector(`[data-food-note="${id}"]`)?.value.trim()||'',file=document.querySelector(`[data-food-photo="${id}"]`)?.files?.[0],out=document.querySelector(`[data-food-msg="${id}"]`);if(!r||!trip||!session)return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   const s=foodState();s[id]={...(s[id]||{}),saved:true,note};saveFoodState(s);
   if(!file){out.textContent='Record desat en aquest dispositiu. 💜';renderRestaurants();return}
   if(!file.type.startsWith('image/')){out.textContent='Selecciona una imatge.';return}
   out.textContent='Pujant la foto al vostre àlbum…';
-  const ext=(file.name.split('.').pop()||'jpg').toLowerCase(),title=note?`${r.name} · ${note}`:r.name,path=`${trip.id}/photos/${crypto.randomUUID()}-${safeFileName(r.name)}.${ext}`;
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase(),title=note?`${r.name} · ${note}`:r.name,path=`${tripId}/photos/${crypto.randomUUID()}-${safeFileName(r.name)}.${ext}`;
   const up=await db.storage.from(DOC_BUCKET).upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});if(up.error){out.textContent=up.error.message;return}
-  const {data:inserted,error}=await db.from('travel_documents').insert({trip_id:trip.id,title,category:'Foto',file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id}).select('id,title,category,file_name,file_path,mime_type,created_at,created_by').single();
+  const {data:inserted,error}=await db.from('travel_documents').insert({trip_id:tripId,title,category:'Foto',file_name:file.name,file_path:path,mime_type:file.type||null,created_by:userId}).select('id,title,category,file_name,file_path,mime_type,created_at,created_by').single();
   if(error){await db.storage.from(DOC_BUCKET).remove([path]);out.textContent=error.message;return}
+  if(!tripRequestIsCurrent(tripId,generation))return;
   photoRows=[inserted,...photoRows.filter(p=>p.id!==inserted.id)];out.textContent='Foto i record afegits a l’àlbum! 💜';renderRestaurants();setTimeout(()=>loadPhotos(true),900)
 }
 
@@ -961,7 +989,12 @@ function speakGuide(id){
  u.onend=u.onerror=()=>{activeGuideId=null;$('audioStatus').textContent='Audioguia finalitzada.';renderLondonGuides()};
  speechSynthesis.speak(u);
 }
-function initGuide(){renderLondonGuides();if($('guideSearch'))$('guideSearch').oninput=renderLondonGuides;if($('guideZone'))$('guideZone').onchange=renderLondonGuides}
+function initGuide(){
+  if(!isLondonTrip())return;
+  renderLondonGuides();
+  if($('guideSearch'))$('guideSearch').oninput=renderLondonGuides;
+  if($('guideZone'))$('guideZone').onchange=renderLondonGuides;
+}
 if($('audioPause'))$('audioPause').onclick=()=>{if(!('speechSynthesis' in window))return;if(speechSynthesis.paused){speechSynthesis.resume();$('audioStatus').textContent='Audioguia represa.'}else if(speechSynthesis.speaking){speechSynthesis.pause();$('audioStatus').textContent='Audioguia en pausa.'}};
 if($('audioStop'))$('audioStop').onclick=()=>{if('speechSynthesis' in window)speechSynthesis.cancel();activeGuideId=null;$('audioStatus').textContent='Audioguia aturada.';renderLondonGuides()};
 
@@ -1013,6 +1046,17 @@ function renderGlobalSearch(query,targetId,limit=50){
 }
 function initGlobalSearch(){
   const preview=$('globalSearchPreview'),input=$('globalSearchInput'),button=$('globalSearchButton');
+  if(!isLondonTrip()){
+    if(input){input.oninput=null;input.onkeydown=null;input.value=''}
+    if(button)button.onclick=null;
+    const full=$('globalSearchInputFull'),fullButton=$('globalSearchButtonFull');
+    if(full){full.oninput=null;full.onkeydown=null;full.value=''}
+    if(fullButton)fullButton.onclick=null;
+    if($('globalSearchFab'))$('globalSearchFab').onclick=null;
+    if(preview)preview.innerHTML='';
+    if($('globalSearchResults'))$('globalSearchResults').innerHTML='';
+    return;
+  }
   if(input){input.oninput=()=>renderGlobalSearch(input.value,'globalSearchPreview',5);input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('globalSearchInputFull').value=input.value;setAppView('searchView');renderGlobalSearch(input.value,'globalSearchResults')}}}
   if(button)button.onclick=()=>{const q=input.value;$('globalSearchInputFull').value=q;setAppView('searchView');renderGlobalSearch(q,'globalSearchResults')};
   const full=$('globalSearchInputFull'),fullButton=$('globalSearchButtonFull');
@@ -1064,6 +1108,11 @@ function focusRequestedTicket(){
 }
 function applyPendingInitialView(){
   if(initialViewApplied)return;
+  if(pendingInitialRoute&&!isLondonTrip()){
+    setAppView('tripsHomeView');
+    history.replaceState(null,'',window.location.pathname);initialViewApplied=true;
+    return;
+  }
   if(pendingInitialRoute?.view==='tickets'){
     requestedTicketKey=pendingInitialRoute.ticketKey;
     setAppView('ticketsView');
@@ -1074,9 +1123,38 @@ function applyPendingInitialView(){
   if(pendingInitialRoute)history.replaceState(null,'',window.location.pathname);
   initialViewApplied=true;
 }
-function setAppView(id){['tripsHomeView','dashboardView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'].forEach(v=>$(v).classList.toggle('hidden',v!==id));if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)}
+const APP_VIEWS=['tripsHomeView','dashboardView','genericDashboardView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','genericDashboardView','checklistView','documentsView','photosView']);
+function setAppView(id){
+  if(!trip&&id!=='tripsHomeView')id='tripsHomeView';
+  if(!isLondonTrip()&&!GENERIC_ALLOWED_VIEWS.has(id))id='genericDashboardView';
+  APP_VIEWS.forEach(v=>$(v)?.classList.toggle('hidden',v!==id));
+  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
+}
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
+function stopLondonFlightTimer(){
+  if(flightTimer){
+    clearInterval(flightTimer);
+    flightTimer=null;
+  }
+}
+
+function startLondonFlightTimer(){
+  if(!isLondonTrip()){
+    stopLondonFlightTimer();
+    return;
+  }
+  updateFlightPremium();
+  if(!flightTimer){
+    flightTimer=setInterval(()=>{
+      if(isLondonTrip())updateFlightPremium();
+      else stopLondonFlightTimer();
+    },1000);
+  }
+}
+
 function updateFlightPremium(){
+  if(!isLondonTrip())return;
   const now=new Date();
   const departure=new Date('2026-08-06T12:45:00+02:00');
   const arrival=new Date('2026-08-06T13:55:00+01:00');
@@ -1093,7 +1171,7 @@ function updateFlightPremium(){
 }
 function initFlightChecklist(){
   let saved={};try{saved=JSON.parse(localStorage.getItem(FLIGHT_CHECK_KEY)||'{}')}catch{}
-  document.querySelectorAll('[data-flight-check]').forEach(input=>{input.checked=!!saved[input.dataset.flightCheck];input.closest('.flight-check').classList.toggle('done',input.checked);input.addEventListener('change',()=>{saved[input.dataset.flightCheck]=input.checked;localStorage.setItem(FLIGHT_CHECK_KEY,JSON.stringify(saved));input.closest('.flight-check').classList.toggle('done',input.checked);updateFlightProgress()})});
+  document.querySelectorAll('[data-flight-check]').forEach(input=>{input.checked=!!saved[input.dataset.flightCheck];input.closest('.flight-check').classList.toggle('done',input.checked);input.onchange=()=>{saved[input.dataset.flightCheck]=input.checked;localStorage.setItem(FLIGHT_CHECK_KEY,JSON.stringify(saved));input.closest('.flight-check').classList.toggle('done',input.checked);updateFlightProgress()}});
   updateFlightProgress();
 }
 function updateFlightProgress(){
@@ -1125,8 +1203,9 @@ let checklistChannel=null;
 function subscribe(){
   if(!trip)return;
   if(checklistChannel)db.removeChannel(checklistChannel);
+  const subscribedTripId=trip.id,subscribedGeneration=tripLoadGeneration;
   checklistChannel=db.channel('checklist-'+trip.id)
-    .on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},()=>loadItems())
+    .on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},()=>{if(tripRequestIsCurrent(subscribedTripId,subscribedGeneration))loadItems()})
     .subscribe();
 }
 function renderPasswordRecovery(){
@@ -1136,11 +1215,110 @@ function renderPasswordRecovery(){
   else if(authInitializationResolved)msg('passwordRecoveryMsg','L’enllaç de recuperació ha caducat o no és vàlid. Sol·licita’n un altre.',true);
   else msg('passwordRecoveryMsg','Validant l’enllaç de recuperació…');
 }
-async function renderSession(next){session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');if(!session){show('auth');show('loginCard');hide('passwordRecoveryCard');return}$('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';const {data,error}=await db.rpc('get_my_trip');if(passwordRecoveryMode){renderPasswordRecovery();return}if(error){show('noTrip');msg('tripMsg',error.message,true);return}trip=data?.[0]||null;if(!trip){show('noTrip');return}show('tripView');$('tripTitle').textContent=trip.name;$('tripCardTitle').textContent=trip.name;$('tripTitleTop').textContent=trip.name;$('inviteCode').textContent=trip.invite_code;updateCountdown();refreshPushUi();
-updateFlightPremium();
-initFlightChecklist();
-initGlobalSearch();
-setInterval(updateFlightPremium,1000);updateTravelBrief();addFavoriteButtons();renderFavorites();await loadItems();await ensureDefaultChecklistItems();await loadDocuments(true);applyPendingInitialView();await loadExpenses(true);subscribe();subscribeDocuments();subscribeExpenses()}
+async function disconnectTripRealtime(){
+  const active=[channel,checklistChannel,documentChannel,expenseChannel].filter(Boolean);channel=checklistChannel=documentChannel=expenseChannel=null;
+  await Promise.allSettled(active.map(item=>db.removeChannel(item)));
+}
+function clearTripScopedState(){
+  documentRows=[];pendingDocumentRows=[];expenseRows=[];photoRows=[];pendingPhotoRows=[];parkingRow=null;parkingLoadsPending=0;clearPhotoObjectUrls();closePhotoLightbox();
+  const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
+  [['overviewChecklist','0/0'],['overviewDocuments','0'],['overviewExpenses','0'],['documentCount','0'],['expenseCount','0'],['photoCount','0']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
+  if($('overviewProgress'))$('overviewProgress').style.width='0%';
+  if($('globalSearchPreview'))$('globalSearchPreview').innerHTML='';
+  if($('globalSearchResults'))$('globalSearchResults').innerHTML='';
+
+  updateTicketDocumentLinks();
+
+  const parkingCard=$('parkingReservationCard'),parkingButton=$('parkingViewReservation'),parkingPreview=$('parkingReservationPreview'),parkingImage=$('parkingReservationImage');
+  if(parkingCard)parkingCard.classList.remove('visible');
+  if(parkingButton){parkingButton.classList.add('hidden');parkingButton.onclick=null}
+  if(parkingPreview)parkingPreview.classList.remove('visible');
+  if(parkingImage){parkingImage.removeAttribute('src');parkingImage.onclick=null}
+
+  if($('parkingForm'))$('parkingForm').reset();
+  if($('parkingSpotForm'))$('parkingSpotForm').reset();
+  if($('parkingPhotoFile'))$('parkingPhotoFile').value='';
+  if($('parkingPhotoPreview'))$('parkingPhotoPreview').classList.remove('visible');
+  if($('parkingPhotoImage'))$('parkingPhotoImage').removeAttribute('src');
+  if($('parkingRemovePhoto'))$('parkingRemovePhoto').classList.add('hidden');
+  if($('parkingMapLink')){$('parkingMapLink').classList.add('hidden');$('parkingMapLink').removeAttribute('href')}
+  if($('parkingGpsStatus'))$('parkingGpsStatus').textContent='';
+
+  setParkingControlsDisabled(false);
+  ['appMsg','genericAppMsg','checklistMsg','documentMsg','expenseMsg','parkingMsg'].forEach(id=>{if($(id))msg(id,'')});
+}
+function updateChecklistLabels(){
+  const cats=$('newItemCategory')?.querySelector('option[value="cats"]');if(cats)cats.textContent=isLondonTrip()?'🐈 Piki i Ghost':'🐾 Mascotes';
+}
+function renderTripsHome(){
+  $('tripCountLabel').textContent=`${trips.length} ${trips.length===1?'viatge':'viatges'}`;
+  $('tripsList').innerHTML=trips.length?trips.map(value=>{
+    const duration=tripDuration(value),london=isLondonTrip(value),selected=value.id===trip?.id;
+    return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(tripStatus(value))}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button></article>`;
+  }).join(''):'<div class="trip-empty"><strong>Encara no tens cap viatge.</strong><br>Crea’n un o uneix-t’hi amb un codi d’invitació.</div>';
+  $('tripsList').querySelectorAll('[data-select-trip]').forEach(button=>button.onclick=()=>selectTrip(button.dataset.selectTrip,{open:true}));
+  $('londonDepartureCenter').classList.toggle('hidden',!isLondonTrip());
+}
+function updateTripPresentation(){
+  const london=isLondonTrip();
+  $('tripTitleTop').textContent=trip?.name||'Els meus viatges';
+  $('globalSearchFab').classList.toggle('hidden',!london);
+  $('pushCard').classList.toggle('hidden',!london);
+  updateChecklistLabels();renderTripsHome();
+  if(!trip)return;
+  if($('expenseDate'))$('expenseDate').value=trip.start_date||'';
+  if($('documentTitle'))$('documentTitle').placeholder=london?'Nom del document (p. ex. Les Misérables)':'Nom del document';
+  if($('photoHeroKicker'))$('photoHeroKicker').textContent=`Records · ${trip.name}`;
+  if($('photoHeroCopy'))$('photoHeroCopy').textContent=london?'Pugeu fotografies des del mòbil i compartiu-les entre l’Eva i en Xesc. Apareixeran aquí al moment.':'Pugeu fotografies des del mòbil i compartiu-les amb els membres del viatge. Apareixeran aquí al moment.';
+  if($('photosEmpty'))$('photosEmpty').textContent=london?'Encara no hi ha cap foto. La primera serà l’inici del vostre àlbum de Londres. 💜':'Encara no hi ha cap foto. La primera serà l’inici de l’àlbum del viatge.';
+  if(london){
+    $('tripTitle').textContent=trip.name;
+    $('inviteCode').textContent=trip.invite_code||'';
+    startLondonFlightTimer();
+    initGlobalSearch();
+    initGuide();
+    updateCountdown();
+    updateTravelBrief();
+    renderFavorites();
+  }else{
+    stopLondonFlightTimer();
+    if('speechSynthesis' in window)speechSynthesis.cancel();
+    initGlobalSearch();
+    $('genericTripTitle').textContent=trip.name;
+    $('genericTripDates').textContent=tripDateRange(trip);
+    $('genericTripMeta').innerHTML=`<span>🌍 ${esc(trip.time_zone||'Zona horària pendent')}</span><span>${trip.is_owner?'Creat per tu':'Viatge compartit'}</span>`;
+    $('genericInviteCode').textContent=trip.invite_code||'';
+  }
+}
+async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
+  const selected=trips.find(value=>value.id===tripId)||null;if(!selected){trip=null;updateTripPresentation();setAppView('tripsHomeView');return false}
+  tripLoadGeneration+=1;const generation=tripLoadGeneration;await disconnectTripRealtime();if(generation!==tripLoadGeneration)return false;
+  clearTripScopedState();trip=selected;rememberSelectedTrip();updateTripPresentation();
+  if(open)setAppView(tripDashboardId());else setAppView('tripsHomeView');
+  await Promise.all([loadItems(),loadDocuments(true),...(isLondonTrip()?[loadExpenses(true)]:[])]);if(!tripRequestIsCurrent(selected.id,generation))return false;
+  if(isLondonTrip()){await ensureDefaultChecklistItems();if(!tripRequestIsCurrent(selected.id,generation))return false;addFavoriteButtons();initFlightChecklist()}
+  subscribe();subscribeDocuments();if(isLondonTrip())subscribeExpenses();
+  if(applyDeepLink)applyPendingInitialView();
+  refreshPushUi();return true;
+}
+async function refreshTrips({preferredTripId=null,open=false}={}){
+  const requestUserId=session?.user?.id;if(!requestUserId)return false;
+  const {data,error}=await db.rpc('get_my_trips');if(error)throw error;if(session?.user?.id!==requestUserId)return false;trips=data||[];
+  const savedId=readSelectedTripId(),validPreferred=trips.some(value=>value.id===preferredTripId)?preferredTripId:null,validSaved=trips.some(value=>value.id===savedId)?savedId:null;
+  if(savedId&&!validSaved)forgetSelectedTrip();
+  const londonForDeepLink=pendingInitialRoute&&!initialViewApplied?trips.find(isLondonTrip)?.id:null;
+  const selectedId=londonForDeepLink||validPreferred||validSaved||trips[0]?.id||null;
+  renderTripsHome();
+  if(selectedId)await selectTrip(selectedId,{open,applyDeepLink:!!londonForDeepLink});
+  else{trip=null;tripLoadGeneration+=1;await disconnectTripRealtime();clearTripScopedState();updateTripPresentation();setAppView('tripsHomeView')}
+  if(pendingInitialRoute&&!initialViewApplied)applyPendingInitialView();return true;
+}
+async function renderSession(next){
+  const renderGeneration=++sessionRenderGeneration;session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');
+  if(!session){trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();await disconnectTripRealtime();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
+  $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';show('tripView');
+  try{await refreshTrips();if(renderGeneration!==sessionRenderGeneration)return}catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
+}
 const CHECKLIST_CATEGORIES=[
   {id:'equipment',icon:'🧳',label:'Equipatge'},
   {id:'documents',icon:'📄',label:'Documentació'},
@@ -1158,7 +1336,7 @@ function checklistTextParts(value){
   if(match&&CHECKLIST_CATEGORIES.some(c=>c.id===match[1].toLowerCase()))return {category:match[1].toLowerCase(),text};
   const normalized=normalizeSearchText(text);
   const rules={
-    cats:['gat','gats','piki','ghost','sorra','menjadora','veterinari'],
+    ...(isLondonTrip()?{cats:['gat','gats','piki','ghost','sorra','menjadora','veterinari']}:{cats:['gat','gats','mascota','mascotes','veterinari']}),
     car:['parking','parquing','aparcament','cotxe','placa','planta','combustible','gps'],
     airport:['aeroport','vol','check-in','check in','embarcament','terminal','maleta de cabina','equipatge de ma'],
     documents:['passaport','dni','document','entrada','reserva','asseguranca','targeta sanitaria','boarding pass'],
@@ -1171,8 +1349,10 @@ function checklistTextParts(value){
 }
 async function loadItems(){
   if(!trip)return;
-  const {data,error}=await db.from('checklist_items').select('id,text,done,created_at').eq('trip_id',trip.id).order('created_at');
-  if(error){msg('appMsg',error.message,true);return}
+  const tripId=trip.id,generation=tripLoadGeneration;
+  const {data,error}=await db.from('checklist_items').select('id,text,done,created_at').eq('trip_id',tripId).order('created_at');
+  if(!tripRequestIsCurrent(tripId,generation))return;
+  if(error){msg('checklistMsg',error.message,true);return}
   const items=(data||[]).map(item=>({...item,...checklistTextParts(item.text)}));
   const doneCount=items.filter(i=>i.done).length;
   const overviewChecklist=$('overviewChecklist'),overviewProgress=$('overviewProgress');
@@ -1186,16 +1366,17 @@ async function loadItems(){
     if(!group.length)return '';
     const groupDone=group.filter(item=>item.done).length;
     const percent=Math.round(groupDone/group.length*100);
-    return `<details class="check-group" open><summary><span class="check-group-icon">${category.icon}</span><span class="check-group-title"><strong>${esc(category.label)}</strong><small>${groupDone} de ${group.length} completades</small></span><span class="check-group-count">${groupDone}/${group.length}</span></summary><div class="check-group-progress"><span style="width:${percent}%"></span></div><div class="check-group-items">${group.map(i=>`<div class="item ${i.done?'done':''}"><label><input type="checkbox" data-toggle="${i.id}" ${i.done?'checked':''}><span>${esc(i.text)}</span></label><button class="delete" data-delete="${i.id}" aria-label="Eliminar">×</button></div>`).join('')}</div></details>`;
+    const label=category.id==='cats'&&!isLondonTrip()?'Mascotes':category.label;
+    return `<details class="check-group" open><summary><span class="check-group-icon">${category.icon}</span><span class="check-group-title"><strong>${esc(label)}</strong><small>${groupDone} de ${group.length} completades</small></span><span class="check-group-count">${groupDone}/${group.length}</span></summary><div class="check-group-progress"><span style="width:${percent}%"></span></div><div class="check-group-items">${group.map(i=>`<div class="item ${i.done?'done':''}"><label><input type="checkbox" data-toggle="${i.id}" ${i.done?'checked':''}><span>${esc(i.text)}</span></label><button class="delete" data-delete="${i.id}" aria-label="Eliminar">×</button></div>`).join('')}</div></details>`;
   }).join('');
   document.querySelectorAll('[data-toggle]').forEach(el=>el.onchange=()=>toggleItem(el.dataset.toggle,el.checked));
   document.querySelectorAll('[data-delete]').forEach(el=>el.onclick=()=>deleteItem(el.dataset.delete));
 }
 
-async function toggleItem(id,done){const {error}=await db.from('checklist_items').update({done}).eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
-async function deleteItem(id){const {error}=await db.from('checklist_items').delete().eq('id',id);if(error)msg('appMsg',error.message,true);else loadItems()}
-document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.open==='weatherView')console.log('Obrint weatherView');setAppView(b.dataset.open)});
-$('openLondonTrip').onclick=()=>setAppView('dashboardView');$('backToTrips').onclick=()=>setAppView('tripsHomeView');document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));$('newTripPreview').onclick=()=>alert('Després de Londres activarem la creació completa de nous viatges. Londres quedarà guardat per sempre 💜');document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView('dashboardView'));document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
+async function toggleItem(id,done){const {error}=await db.from('checklist_items').update({done}).eq('id',id);if(error)msg('checklistMsg',error.message,true);else loadItems()}
+async function deleteItem(id){const {error}=await db.from('checklist_items').delete().eq('id',id);if(error)msg('checklistMsg',error.message,true);else loadItems()}
+document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>setAppView(b.dataset.open));
+$('backToTrips').onclick=()=>setAppView('tripsHomeView');document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=()=>setAppView('tripsHomeView'));document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView(tripDashboardId()));document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
 document.querySelectorAll('.day-tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.day-tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.day').forEach(x=>x.classList.toggle('active',x.id===b.dataset.day))});
 
 const WEATHER_CACHE_KEY='freya-weather-cache-v2';
@@ -1275,6 +1456,8 @@ function renderWeather(days,notice,updatedAt){
 }
 
 async function loadWeather(force=false){
+  if(!isLondonTrip())return;
+  const tripId=trip.id,generation=tripLoadGeneration;
   const status=$('weatherStatus');
   if(!status)return;
   status.textContent='Carregant la previsió…';
@@ -1284,6 +1467,7 @@ async function loadWeather(force=false){
       if(cached){
         const parsed=JSON.parse(cached);
         if(Date.now()-parsed.savedAt<WEATHER_TTL_MS){
+          if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
           renderWeather(parsed.days,parsed.notice,parsed.updatedAt);
           return;
         }
@@ -1294,8 +1478,10 @@ async function loadWeather(force=false){
   }
   try{
     const response=await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.5074&longitude=-0.1278&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max,sunrise,sunset&timezone=Europe/London&forecast_days=16');
+    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
     if(!response.ok)throw new Error('No s’han pogut obtenir dades de la previsió');
     const data=await response.json();
+    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
     const days=[];
     for(const date of WEATHER_TARGET_DATES){
       const index=data.daily.time.indexOf(date);
@@ -1317,9 +1503,11 @@ async function loadWeather(force=false){
     const missing=WEATHER_TARGET_DATES.filter(date=>!days.some(day=>day.date===date));
     const notice=missing.length?`No hi ha dades per a aquests dies encara: ${missing.join(', ')}. Es mostren els dies disponibles.`:'';
     const updatedAt=new Date().toLocaleString('ca-ES');
+    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
     renderWeather(days,notice,updatedAt);
     localStorage.setItem(WEATHER_CACHE_KEY,JSON.stringify({savedAt:Date.now(),days,notice,updatedAt}));
   }catch(error){
+    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
     const message=error instanceof Error?error.message:'No s’han pogut obtenir dades de la previsió';
     status.textContent=message;
     const noticeBox=$('weatherNotice');
@@ -1375,20 +1563,23 @@ function clearPhotoObjectUrls(){photoObjectUrls.forEach(url=>URL.revokeObjectURL
 function photoDate(value){if(!value)return '';return new Date(value).toLocaleDateString('ca-ES',{day:'numeric',month:'short',year:'numeric'})}
 async function loadPhotos(silent=false){
   if(!trip)return;
-  const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',trip.id).eq('category','Foto').order('created_at',{ascending:false});
+  const tripId=trip.id,generation=tripLoadGeneration;
+  const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',tripId).eq('category','Foto').order('created_at',{ascending:false});
+  if(!tripRequestIsCurrent(tripId,generation))return;
   if(error){if(!silent)showPhotoMessage(error.message,true);else console.error('No s’han pogut carregar les fotos:',error);return}
   const serverPhotos=data||[];
   const serverIds=new Set(serverPhotos.map(p=>p.id));
   pendingPhotoRows=pendingPhotoRows.filter(p=>!serverIds.has(p.id) && Date.now()-(p._pendingAt||0)<60000);
   photoRows=[...pendingPhotoRows,...serverPhotos.filter(p=>!pendingPhotoRows.some(x=>x.id===p.id))];
-  await renderPhotos(photoRows);
+  await renderPhotos(photoRows,tripId,generation);
 }
-async function renderPhotos(rows=photoRows){
+async function renderPhotos(rows=photoRows,tripId=trip?.id,generation=tripLoadGeneration){
   const list=$('photosList'),empty=$('photosEmpty'),count=$('photoCount'),label=$('photoCountLabel');if(!list||!empty)return;
   if(count)count.textContent=rows.length;if(label)label.textContent=`${rows.length} ${rows.length===1?'foto':'fotos'}`;
   empty.classList.toggle('hidden',rows.length>0);list.innerHTML='';
   if(!rows.length)return;
   const signed=await Promise.all(rows.map(async photo=>{const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(photo.file_path,3600);return {...photo,signedUrl:error?'':data.signedUrl}}));
+  if(!tripRequestIsCurrent(tripId,generation))return;
   list.innerHTML=signed.map(p=>`<article class="photo-card" data-photo-id="${esc(p.id)}"><button class="photo-open" type="button" data-photo-open="${esc(p.id)}"><img src="${esc(p.signedUrl)}" alt="${esc(p.title||p.file_name||'Foto del viatge')}" loading="lazy"><div class="photo-info"><strong>${esc(p.title||'Foto del viatge')}</strong><small>${esc(photoDate(p.created_at))}</small></div></button><button class="photo-delete" type="button" data-photo-delete="${esc(p.id)}" aria-label="Eliminar foto">🗑</button></article>`).join('');
   list.querySelectorAll('[data-photo-open]').forEach(btn=>btn.onclick=()=>openPhoto(btn.dataset.photoOpen,signed));
   list.querySelectorAll('[data-photo-delete]').forEach(btn=>btn.onclick=()=>deletePhoto(btn.dataset.photoDelete,rows));
@@ -1400,25 +1591,72 @@ function showPhotoMessage(message,isError=false){const el=$('photoMsg');if(!el)r
 $('photoFile').onchange=()=>{const file=$('photoFile').files[0],wrap=$('photoPreview'),img=$('photoPreviewImage');if(!file){wrap.classList.remove('visible');img.removeAttribute('src');return}clearPhotoObjectUrls();const url=URL.createObjectURL(file);photoObjectUrls.push(url);img.src=url;wrap.classList.add('visible')};
 $('photoForm').onsubmit=async e=>{
   e.preventDefault();if(!trip||!session)return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   const file=$('photoFile').files[0];if(!file)return;
   if(!file.type.startsWith('image/')){showPhotoMessage('Selecciona una imatge.',true);return}
   if(file.size>15*1024*1024){showPhotoMessage('La foto supera el límit de 15 MB.',true);return}
-  const title=$('photoTitle').value.trim()||`Londres · ${new Date().toLocaleDateString('ca-ES',{day:'numeric',month:'short'})}`;
+  const title=$('photoTitle').value.trim()||`${isLondonTrip()?'Londres':trip.name} · ${new Date().toLocaleDateString('ca-ES',{day:'numeric',month:'short'})}`;
   $('uploadPhoto').disabled=true;showPhotoMessage('Pujant la foto…');
   const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
-  const path=`${trip.id}/photos/${crypto.randomUUID()}-${safeFileName(title)}.${ext}`;
+  const path=`${tripId}/photos/${crypto.randomUUID()}-${safeFileName(title)}.${ext}`;
   const up=await db.storage.from(DOC_BUCKET).upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});
+  if(!tripRequestIsCurrent(tripId,generation))return;
   if(up.error){$('uploadPhoto').disabled=false;showPhotoMessage(up.error.message,true);return}
-  const {data:inserted,error}=await db.from('travel_documents').insert({trip_id:trip.id,title,category:'Foto',file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id}).select('id,title,category,file_name,file_path,mime_type,created_at,created_by').single();
-  if(error){await db.storage.from(DOC_BUCKET).remove([path]);$('uploadPhoto').disabled=false;showPhotoMessage(error.message,true);return}
+
+  const {data:inserted,error}=await db.from('travel_documents').insert({trip_id:tripId,title,category:'Foto',file_name:file.name,file_path:path,mime_type:file.type||null,created_by:userId}).select('id,title,category,file_name,file_path,mime_type,created_at,created_by').single();
+  if(!tripRequestIsCurrent(tripId,generation))return;
+
+  if(error){
+    await db.storage.from(DOC_BUCKET).remove([path]);
+    if(!tripRequestIsCurrent(tripId,generation))return;
+    $('uploadPhoto').disabled=false;
+    showPhotoMessage(error.message,true);
+    return;
+  }
+
   $('photoForm').reset();$('photoPreview').classList.remove('visible');clearPhotoObjectUrls();$('uploadPhoto').disabled=false;
+
   const visibleInserted={...inserted,_pendingAt:Date.now()};
   pendingPhotoRows=[visibleInserted,...pendingPhotoRows.filter(p=>p.id!==visibleInserted.id)];
-  photoRows=[visibleInserted,...photoRows.filter(p=>p.id!==visibleInserted.id)];await renderPhotos(photoRows);showPhotoMessage('Foto afegida a l’àlbum! 💜');
-  requestAnimationFrame(()=>{const card=document.querySelector(`[data-photo-id="${inserted.id}"]`);if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('photo-new');setTimeout(()=>card.classList.remove('photo-new'),3000)}});
-  setTimeout(()=>loadPhotos(true),1500);
+  photoRows=[visibleInserted,...photoRows.filter(p=>p.id!==visibleInserted.id)];
+
+  await renderPhotos(photoRows,tripId,generation);
+  if(!tripRequestIsCurrent(tripId,generation))return;
+  showPhotoMessage('Foto afegida a l’àlbum! 💜');
+
+  requestAnimationFrame(()=>{
+    if(!tripRequestIsCurrent(tripId,generation))return;
+    const card=document.querySelector(`[data-photo-id="${inserted.id}"]`);
+    if(card){
+      card.scrollIntoView({behavior:'smooth',block:'center'});
+      card.classList.add('photo-new');
+      setTimeout(()=>{
+        if(tripRequestIsCurrent(tripId,generation))card.classList.remove('photo-new');
+      },3000);
+    }
+  });
+
+  setTimeout(()=>{
+    if(tripRequestIsCurrent(tripId,generation))loadPhotos(true);
+  },1500);
 };
-async function deletePhoto(id,rows){const photo=rows.find(x=>x.id===id);if(!photo)return;if(!confirm(`Eliminar «${photo.title||'aquesta foto'}»?`))return;showPhotoMessage('Eliminant…');const storage=await db.storage.from(DOC_BUCKET).remove([photo.file_path]);if(storage.error){showPhotoMessage(storage.error.message,true);return}const {error}=await db.from('travel_documents').delete().eq('id',id);if(error){showPhotoMessage(error.message,true);return}photoRows=photoRows.filter(x=>x.id!==id);await renderPhotos(photoRows);showPhotoMessage('Foto eliminada.')}
+async function deletePhoto(id,rows){
+  if(!trip)return;
+  const tripId=trip.id,generation=tripLoadGeneration;
+  const photo=rows.find(x=>x.id===id);if(!photo)return;
+  if(!confirm(`Eliminar «${photo.title||'aquesta foto'}»?`))return;
+  showPhotoMessage('Eliminant…');
+  const storage=await db.storage.from(DOC_BUCKET).remove([photo.file_path]);
+  if(!tripRequestIsCurrent(tripId,generation))return;
+  if(storage.error){showPhotoMessage(storage.error.message,true);return}
+  const {error}=await db.from('travel_documents').delete().eq('id',id);
+  if(!tripRequestIsCurrent(tripId,generation))return;
+  if(error){showPhotoMessage(error.message,true);return}
+  photoRows=photoRows.filter(x=>x.id!==id);
+  await renderPhotos(photoRows);
+  if(!tripRequestIsCurrent(tripId,generation))return;
+  showPhotoMessage('Foto eliminada.');
+}
 
 let documentChannel=null;
 let documentRows=[];
@@ -1428,7 +1666,9 @@ function categoryIcon(category){return ({Entrada:'🎟️',Vol:'✈️',Hotel:'�
 function safeFileName(name){return name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'document'}
 async function loadDocuments(silent=false){
   if(!trip)return;
-  const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',trip.id).neq('category','Foto').order('created_at',{ascending:false});
+  const tripId=trip.id,generation=tripLoadGeneration;
+  const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',tripId).neq('category','Foto').order('created_at',{ascending:false});
+  if(!tripRequestIsCurrent(tripId,generation))return [];
   if(error){if(!silent)msg('documentMsg',error.message,true);else console.error('No s’han pogut carregar els documents:',error);return []}
   const serverDocs=data||[];
   const serverIds=new Set(serverDocs.map(d=>d.id));
@@ -1446,8 +1686,10 @@ function renderDocuments(docs=documentRows){
   list.innerHTML=documentRows.map(d=>`<article class="doc-card" data-doc-id="${esc(d.id)}"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(d.category||'Document')}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button><button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
   list.querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>openDocument(b.dataset.openDoc,documentRows));
   list.querySelectorAll('[data-delete-doc]').forEach(b=>b.onclick=()=>deleteDocument(b.dataset.deleteDoc,documentRows));
-  updateTicketDocumentLinks();
-  updateParkingReservationUi();
+  if(isLondonTrip()){
+    updateTicketDocumentLinks();
+    updateParkingReservationUi();
+  }
 }
 async function openDocument(id,docs){
   const doc=docs.find(x=>x.id===id);if(!doc)return;
@@ -1457,31 +1699,39 @@ async function openDocument(id,docs){
   msg('documentMsg','');window.open(data.signedUrl,'_blank','noopener');
 }
 async function deleteDocument(id,docs){
+  if(!trip)return;
+  const tripId=trip.id,generation=tripLoadGeneration;
   const doc=docs.find(x=>x.id===id);if(!doc)return;
   if(!confirm(`Eliminar «${doc.title}»?`))return;
   msg('documentMsg','Eliminant…');
   const storageResult=await db.storage.from(DOC_BUCKET).remove([doc.file_path]);
+  if(!tripRequestIsCurrent(tripId,generation))return;
   if(storageResult.error){msg('documentMsg',storageResult.error.message,true);return}
   const {error}=await db.from('travel_documents').delete().eq('id',id);
+  if(!tripRequestIsCurrent(tripId,generation))return;
   if(error){msg('documentMsg',error.message,true);return}
-  msg('documentMsg','Document eliminat.');loadDocuments();
+  msg('documentMsg','Document eliminat.');
+  loadDocuments();
 }
 function subscribeDocuments(){
   if(!trip)return;if(documentChannel)db.removeChannel(documentChannel);
-  documentChannel=db.channel('documents-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'travel_documents',filter:`trip_id=eq.${trip.id}`},()=>loadDocuments(true)).subscribe();
+  const subscribedTripId=trip.id,subscribedGeneration=tripLoadGeneration;
+  documentChannel=db.channel('documents-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'travel_documents',filter:`trip_id=eq.${trip.id}`},()=>{if(tripRequestIsCurrent(subscribedTripId,subscribedGeneration))loadDocuments(true)}).subscribe();
 }
 $('documentForm').onsubmit=async e=>{
   e.preventDefault();if(!trip||!session)return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   const file=$('documentFile').files[0],title=$('documentTitle').value.trim(),category=$('documentCategory').value;
   if(!file||!title)return;
   if(file.size>15*1024*1024){msg('documentMsg','El fitxer supera el límit de 15 MB.',true);return}
   $('uploadDocument').disabled=true;msg('documentMsg','Pujant document…');
   const ext=(file.name.split('.').pop()||'bin').toLowerCase();
-  const path=`${trip.id}/${crypto.randomUUID()}-${safeFileName(title)}.${ext}`;
+  const path=`${tripId}/${crypto.randomUUID()}-${safeFileName(title)}.${ext}`;
   const up=await db.storage.from(DOC_BUCKET).upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false});
   if(up.error){$('uploadDocument').disabled=false;msg('documentMsg',up.error.message,true);return}
-  const {data:inserted,error}=await db.from('travel_documents').insert({trip_id:trip.id,title,category,file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id}).select('id,title,category,file_name,file_path,mime_type,created_at,created_by').single();
+  const {data:inserted,error}=await db.from('travel_documents').insert({trip_id:tripId,title,category,file_name:file.name,file_path:path,mime_type:file.type||null,created_by:userId}).select('id,title,category,file_name,file_path,mime_type,created_at,created_by').single();
   if(error){await db.storage.from(DOC_BUCKET).remove([path]);$('uploadDocument').disabled=false;msg('documentMsg',error.message,true);return}
+  if(!tripRequestIsCurrent(tripId,generation)){$('uploadDocument').disabled=false;return}
   $('documentForm').reset();$('uploadDocument').disabled=false;
   const visibleInserted={...inserted,title,category,file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id,_pendingAt:Date.now()};
   pendingDocumentRows=[visibleInserted,...pendingDocumentRows.filter(d=>d.id!==visibleInserted.id)];
@@ -1511,7 +1761,9 @@ function filteredExpenses(){
 }
 async function loadExpenses(silent=false){
   if(!trip)return;
-  const {data,error}=await db.from('travel_expenses').select('id,description,amount,currency,paid_by,category,expense_date,place,receipt_path,created_at').eq('trip_id',trip.id).order('expense_date',{ascending:false}).order('created_at',{ascending:false});
+  const tripId=trip.id,generation=tripLoadGeneration;
+  const {data,error}=await db.from('travel_expenses').select('id,description,amount,currency,paid_by,category,expense_date,place,receipt_path,created_at').eq('trip_id',tripId).order('expense_date',{ascending:false}).order('created_at',{ascending:false});
+  if(!tripRequestIsCurrent(tripId,generation))return;
   if(error){if(!silent)msg('expenseMsg',error.message,true);return}
   expenseRows=data||[];
   const count=$('expenseCount');if(count)count.textContent=expenseRows.length;const overviewExpenses=$('overviewExpenses');if(overviewExpenses)overviewExpenses.textContent=String(expenseRows.length);
@@ -1550,17 +1802,27 @@ async function openReceipt(id){
   if(error){msg('expenseMsg',error.message,true);return}msg('expenseMsg','');window.open(data.signedUrl,'_blank','noopener');
 }
 async function deleteExpense(id){
+  if(!trip)return;
+  const tripId=trip.id,generation=tripLoadGeneration;
   const row=expenseRows.find(x=>x.id===id);if(!row||!confirm('Eliminar aquesta despesa?'))return;
-  if(row.receipt_path){const removed=await db.storage.from(RECEIPT_BUCKET).remove([row.receipt_path]);if(removed.error){msg('expenseMsg',removed.error.message,true);return}}
-  const {error}=await db.from('travel_expenses').delete().eq('id',id);if(error){msg('expenseMsg',error.message,true);return}msg('expenseMsg','Despesa eliminada.');loadExpenses();
+  if(row.receipt_path){
+    const removed=await db.storage.from(RECEIPT_BUCKET).remove([row.receipt_path]);
+    if(!tripRequestIsCurrent(tripId,generation))return;
+    if(removed.error){msg('expenseMsg',removed.error.message,true);return}
+  }
+  const {error}=await db.from('travel_expenses').delete().eq('id',id);
+  if(!tripRequestIsCurrent(tripId,generation))return;
+  if(error){msg('expenseMsg',error.message,true);return}
+  msg('expenseMsg','Despesa eliminada.');
+  loadExpenses();
 }
-function subscribeExpenses(){if(!trip)return;if(expenseChannel)db.removeChannel(expenseChannel);expenseChannel=db.channel('expenses-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'travel_expenses',filter:`trip_id=eq.${trip.id}`},()=>loadExpenses(true)).subscribe()}
+function subscribeExpenses(){if(!trip)return;if(expenseChannel)db.removeChannel(expenseChannel);const subscribedTripId=trip.id,subscribedGeneration=tripLoadGeneration;expenseChannel=db.channel('expenses-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'travel_expenses',filter:`trip_id=eq.${trip.id}`},()=>{if(tripRequestIsCurrent(subscribedTripId,subscribedGeneration))loadExpenses(true)}).subscribe()}
 function csvCell(value){return `"${String(value??'').replaceAll('"','""')}"`}
 function exportExpenses(){
   if(!expenseRows.length){msg('expenseMsg','Encara no hi ha despeses per exportar.',true);return}
   const head=['Data','Concepte','Categoria','Import','Moneda','Pagat per','Lloc','Tiquet adjunt'];
   const lines=[head,...expenseRows.map(x=>[x.expense_date||'',x.description,x.category,Number(x.amount).toFixed(2),x.currency,x.paid_by,x.place||'',x.receipt_path?'Sí':'No'])].map(r=>r.map(csvCell).join(';'));
-  const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='despeses-londres-2026.csv';a.click();URL.revokeObjectURL(url);msg('expenseMsg','Fitxer preparat per obrir amb Excel.');
+  const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`despeses-${slug(trip?.name||'viatge')}.csv`;a.click();URL.revokeObjectURL(url);msg('expenseMsg','Fitxer preparat per obrir amb Excel.');
 }
 ['expenseSearch','expensePayerFilter','expenseCategoryFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener('input',renderExpenseList)});
 $('scrollExpenseForm').onclick=$('floatExpenseAdd').onclick=()=>{$('expenseFormCard').scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>$('expenseDescription').focus(),450)};
@@ -1568,13 +1830,14 @@ $('exportExpenses').onclick=exportExpenses;
 window.addEventListener('scroll',()=>{const view=$('expensesView');if(!view||view.classList.contains('hidden'))return;const card=$('expenseFormCard').getBoundingClientRect();$('floatExpenseAdd').classList.toggle('hidden',card.top<innerHeight&&card.bottom>80)});
 $('expenseForm').onsubmit=async e=>{
   e.preventDefault();if(!trip||!session)return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   const description=$('expenseDescription').value.trim(),amount=Number($('expenseAmount').value),currency=$('expenseCurrency').value,paid_by=$('expensePaidBy').value,category=$('expenseCategory').value,expense_date=$('expenseDate').value||null,place=$('expensePlace').value.trim()||null,receipt=$('expenseReceipt').files[0]||null;
   if(!description||!Number.isFinite(amount)||amount<=0)return;if(receipt&&receipt.size>10*1024*1024){msg('expenseMsg','El tiquet supera el límit de 10 MB.',true);return}
   $('addExpense').disabled=true;msg('expenseMsg','Desant despesa…');let receipt_path=null;
-  if(receipt){const ext=(receipt.name.split('.').pop()||'bin').toLowerCase();receipt_path=`${trip.id}/${crypto.randomUUID()}-${safeFileName(description)}.${ext}`;const up=await db.storage.from(RECEIPT_BUCKET).upload(receipt_path,receipt,{contentType:receipt.type||'application/octet-stream',upsert:false});if(up.error){$('addExpense').disabled=false;msg('expenseMsg',up.error.message,true);return}}
-  const {error}=await db.from('travel_expenses').insert({trip_id:trip.id,description,amount,currency,paid_by,category,expense_date,place,receipt_path,created_by:session.user.id});$('addExpense').disabled=false;
+  if(receipt){const ext=(receipt.name.split('.').pop()||'bin').toLowerCase();receipt_path=`${tripId}/${crypto.randomUUID()}-${safeFileName(description)}.${ext}`;const up=await db.storage.from(RECEIPT_BUCKET).upload(receipt_path,receipt,{contentType:receipt.type||'application/octet-stream',upsert:false});if(up.error){$('addExpense').disabled=false;msg('expenseMsg',up.error.message,true);return}}
+  const {error}=await db.from('travel_expenses').insert({trip_id:tripId,description,amount,currency,paid_by,category,expense_date,place,receipt_path,created_by:userId});$('addExpense').disabled=false;
   if(error){if(receipt_path)await db.storage.from(RECEIPT_BUCKET).remove([receipt_path]);msg('expenseMsg',error.message,true);return}
-  $('expenseForm').reset();$('expenseDate').value='2026-08-06';msg('expenseMsg','Despesa afegida al registre compartit.');loadExpenses();
+  if(!tripRequestIsCurrent(tripId,generation))return;$('expenseForm').reset();$('expenseDate').value=trip.start_date||'';msg('expenseMsg','Despesa afegida al registre compartit.');loadExpenses();
 };
 
 $('authForm').onsubmit=async e=>{e.preventDefault();msg('authMsg','');const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)msg('authMsg',error.message,true)};
@@ -1602,13 +1865,114 @@ $('requestAnotherRecovery').onclick=async()=>{
   $('passwordRecoveryForm').reset();hide('passwordRecoveryCard');show('loginCard');show('auth');msg('authMsg','');$('email').focus();
 };
 document.querySelectorAll('.logout').forEach(b=>b.onclick=()=>db.auth.signOut());
-$('createTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('create_trip',{p_name:$('tripName').value});if(error)msg('tripMsg',error.message,true);else renderSession(session)};
-$('joinTrip').onclick=async()=>{msg('tripMsg','');const {error}=await db.rpc('join_trip',{p_invite_code:$('inviteInput').value.trim().toUpperCase()});if(error)msg('tripMsg',error.message,true);else renderSession(session)};
+try{$('tripTimeZone').value=Intl.DateTimeFormat().resolvedOptions().timeZone||'Europe/Madrid'}catch(_){$('tripTimeZone').value='Europe/Madrid'}
+$('tripStartDate').onchange=()=>{$('tripEndDate').min=$('tripStartDate').value;if(!$('tripEndDate').value||$('tripEndDate').value<$('tripStartDate').value)$('tripEndDate').value=$('tripStartDate').value};
+$('createTripForm').onsubmit=async e=>{
+  e.preventDefault();
+  msg('tripMsg','');
+
+  const name=$('tripName').value.trim();
+  const startDate=$('tripStartDate').value;
+  const endDate=$('tripEndDate').value;
+  const timeZone=$('tripTimeZone').value.trim();
+
+  if(!name||!startDate||!endDate||!timeZone){
+    msg('tripMsg','Completa el nom, les dates i la zona horària.',true);
+    return;
+  }
+
+  if(endDate<startDate){
+    msg('tripMsg','La data de fi no pot ser anterior a la data d’inici.',true);
+    return;
+  }
+
+  $('createTrip').disabled=true;
+
+  let createdId=null;
+
+  try{
+    const {data,error}=await db.rpc('create_trip_v2',{
+      p_name:name,
+      p_start_date:startDate,
+      p_end_date:endDate,
+      p_time_zone:timeZone
+    });
+
+    if(error){
+      msg('tripMsg',error.message,true);
+      return;
+    }
+
+    createdId=data?.[0]?.id||null;
+
+    try{
+      await refreshTrips({preferredTripId:createdId,open:true});
+      $('createTripForm').reset();
+      try{
+        $('tripTimeZone').value=Intl.DateTimeFormat().resolvedOptions().timeZone||'Europe/Madrid';
+      }catch(_){
+        $('tripTimeZone').value='Europe/Madrid';
+      }
+    }catch(loadError){
+      msg(
+        'tripMsg',
+        'El viatge s’ha creat correctament, però no hem pogut actualitzar la llista. No el tornis a crear: refresca els viatges o torna a entrar a Freya.',
+        true
+      );
+      console.error('Viatge creat però refreshTrips ha fallat:',createdId,loadError);
+    }
+  }catch(error){
+    msg('tripMsg',error?.message||'No s’ha pogut crear el viatge.',true);
+  }finally{
+    $('createTrip').disabled=false;
+  }
+};
+
+$('joinTrip').onclick=async()=>{
+  msg('tripMsg','');
+
+  const code=$('inviteInput').value.trim().toUpperCase();
+  if(!code){
+    msg('tripMsg','Escriu un codi d’invitació.',true);
+    return;
+  }
+
+  $('joinTrip').disabled=true;
+
+  try{
+    const {data,error}=await db.rpc('join_trip_v2',{p_invite_code:code});
+
+    if(error){
+      msg('tripMsg',error.message,true);
+      return;
+    }
+
+    const joinedId=data?.[0]?.id||null;
+
+    try{
+      await refreshTrips({preferredTripId:joinedId,open:true});
+      $('inviteInput').value='';
+    }catch(loadError){
+      msg(
+        'tripMsg',
+        'T’has unit al viatge, però no hem pogut actualitzar la llista. No cal repetir el codi: refresca els viatges o torna a entrar a Freya.',
+        true
+      );
+      console.error('Join correcte però refreshTrips ha fallat:',joinedId,loadError);
+    }
+  }catch(error){
+    msg('tripMsg',error?.message||'No t’has pogut unir al viatge.',true);
+  }finally{
+    $('joinTrip').disabled=false;
+  }
+};
 $('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.invite_code);msg('appMsg','Codi copiat.')}catch(_){msg('appMsg','Codi: '+trip.invite_code)}};
+$('copyGenericCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.invite_code);msg('genericAppMsg','Codi copiat.')}catch(_){msg('genericAppMsg','Codi: '+trip.invite_code)}};
 
 let parkingRow=null,parkingLoadsPending=0,parkingPhotoObjectUrl=null;
 async function ensureDefaultChecklistItems(){
-  if(!trip||!session)return;
+  if(!trip||!session||!isLondonTrip())return;
+  const tripId=trip.id,generation=tripLoadGeneration;
   const defaults=[
     'Reservar el pàrquing de l’aeroport',
     'Guardar la planta i la plaça del cotxe',
@@ -1617,10 +1981,10 @@ async function ensureDefaultChecklistItems(){
     'Netejar la sorra dels gats',
     'Confirmar qui cuidarà els gats i deixar-li les claus'
   ];
-  const {data,error}=await db.from('checklist_items').select('text').eq('trip_id',trip.id);
-  if(error)return;
+  const {data,error}=await db.from('checklist_items').select('text').eq('trip_id',tripId);
+  if(error||!tripRequestIsCurrent(tripId,generation))return;
   const existing=new Set((data||[]).map(x=>String(x.text).trim().toLowerCase()));
-  const missing=defaults.filter(x=>!existing.has(x.toLowerCase())).map(text=>({trip_id:trip.id,text,created_by:session.user.id}));
+  const missing=defaults.filter(x=>!existing.has(x.toLowerCase())).map(text=>({trip_id:tripId,text,created_by:session.user.id}));
   if(missing.length){await db.from('checklist_items').insert(missing);await loadItems()}
 }
 function parkingValue(id,value=''){const el=$(id);if(el)el.value=value??''}
@@ -1635,9 +1999,11 @@ function parkingSpotLabel(row=parkingRow){
 }
 async function loadParking(){
   if(!trip)return;
+  const tripId=trip.id,generation=tripLoadGeneration;
   parkingLoadsPending+=1;setParkingControlsDisabled(true);
   try{
-    const {data,error}=await db.from('travel_parking').select('*').eq('trip_id',trip.id).maybeSingle();
+    const {data,error}=await db.from('travel_parking').select('*').eq('trip_id',tripId).maybeSingle();
+    if(!tripRequestIsCurrent(tripId,generation))return;
     if(error){parkingMessage('Cal activar la taula d’aparcament a Supabase abans d’utilitzar aquesta pantalla.',true);return}
     parkingRow=data||null;
     const row=parkingRow||{};
@@ -1650,16 +2016,16 @@ async function loadParking(){
     $('parkingReturnEmpty').classList.toggle('hidden',!!label);$('parkingReturnInfo').classList.toggle('hidden',!label);
     parkingText('parkingReturnSpot',label||'—');parkingText('parkingReturnNotes',row.notes||'');
     updateParkingMap(row.latitude,row.longitude);
-    await renderParkingPhoto(row.photo_path);
+    await renderParkingPhoto(row.photo_path,tripId,generation);if(!tripRequestIsCurrent(tripId,generation))return;
     if(!documentRows.length)await loadDocuments(true);
-    await updateParkingReservationUi();
+    await updateParkingReservationUi(tripId,generation);
   }finally{
-    parkingLoadsPending-=1;if(parkingLoadsPending===0)setParkingControlsDisabled(false);
+    if(tripRequestIsCurrent(tripId,generation)){parkingLoadsPending=Math.max(0,parkingLoadsPending-1);if(parkingLoadsPending===0)setParkingControlsDisabled(false)}
   }
 }
-function parkingPayload(){
+function parkingPayload(tripId=trip?.id){
   return {
-    trip_id:trip.id,parking_name:$('parkingName').value.trim()||null,reservation_code:$('parkingReservation').value.trim()||null,
+    trip_id:tripId,parking_name:$('parkingName').value.trim()||null,reservation_code:$('parkingReservation').value.trim()||null,
     entry_at:$('parkingEntry').value||null,exit_at:$('parkingExit').value||null,address:$('parkingAddress').value.trim()||null,
     floor:$('parkingFloor').value.trim()||null,zone:$('parkingZone').value.trim()||null,spot:$('parkingSpot').value.trim()||null,
     notes:$('parkingNotes').value.trim()||null,latitude:$('parkingLat').value?Number($('parkingLat').value):null,
@@ -1668,8 +2034,9 @@ function parkingPayload(){
 }
 async function saveParking(message){
   if(!trip||!session)return;
-  const payload=parkingPayload();if(parkingRow?.photo_path)payload.photo_path=parkingRow.photo_path;
+  const tripId=trip.id,generation=tripLoadGeneration;const payload=parkingPayload(tripId);if(parkingRow?.photo_path)payload.photo_path=parkingRow.photo_path;
   const {data,error}=await db.from('travel_parking').upsert(payload,{onConflict:'trip_id'}).select().single();
+  if(!tripRequestIsCurrent(tripId,generation))return;
   if(error){parkingMessage(error.message,true);return}
   parkingRow=data;parkingMessage(message||'Aparcament desat.');await loadParking();
 }
@@ -1688,7 +2055,7 @@ function parkingDocumentScore(doc){
 function findParkingReservationDocument(){
   return [...(documentRows||[])].sort((a,b)=>parkingDocumentScore(b)-parkingDocumentScore(a)).find(d=>parkingDocumentScore(d)>0)||null;
 }
-async function updateParkingReservationUi(){
+async function updateParkingReservationUi(tripId=trip?.id,generation=tripLoadGeneration){
   const card=$('parkingReservationCard'),button=$('parkingViewReservation'),preview=$('parkingReservationPreview'),img=$('parkingReservationImage');
   if(!card||!button||!preview||!img)return;
   const doc=findParkingReservationDocument();
@@ -1700,6 +2067,7 @@ async function updateParkingReservationUi(){
   button.onclick=()=>openDocument(doc.id,documentRows);
   if((doc.mime_type||'').startsWith('image/')){
     const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(doc.file_path,3600);
+    if(!tripRequestIsCurrent(tripId,generation))return;
     if(!error&&data?.signedUrl){img.src=data.signedUrl;preview.classList.add('visible');img.onclick=()=>openDocument(doc.id,documentRows)}
     else{preview.classList.remove('visible');img.removeAttribute('src')}
   }else{preview.classList.remove('visible');img.removeAttribute('src')}
@@ -1712,19 +2080,22 @@ function updateParkingMap(lat,lng){
 }
 $('parkingGps').onclick=()=>{
   if(!navigator.geolocation){parkingMessage('Aquest dispositiu no permet obtenir la ubicació.',true);return}
+  const tripId=trip?.id,generation=tripLoadGeneration;
   parkingText('parkingGpsStatus','Obtenint la ubicació…');
   navigator.geolocation.getCurrentPosition(async pos=>{
+    if(!tripRequestIsCurrent(tripId,generation))return;
     parkingValue('parkingLat',pos.coords.latitude);parkingValue('parkingLng',pos.coords.longitude);
     updateParkingMap(pos.coords.latitude,pos.coords.longitude);await saveParking('Ubicació GPS desada.');
   },err=>parkingMessage('No s’ha pogut obtenir la ubicació: '+err.message,true),{enableHighAccuracy:true,timeout:15000});
 };
-async function renderParkingPhoto(path){
+async function renderParkingPhoto(path,tripId=trip?.id,generation=tripLoadGeneration){
   const wrap=$('parkingPhotoPreview'),img=$('parkingPhotoImage'),remove=$('parkingRemovePhoto');
   if($('parkingPhotoFile').files[0]){remove.classList.remove('hidden');return}
   if(parkingPhotoObjectUrl){URL.revokeObjectURL(parkingPhotoObjectUrl);parkingPhotoObjectUrl=null}
   if(!path){wrap.classList.remove('visible');img.removeAttribute('src');remove.classList.add('hidden');return}
   remove.classList.remove('hidden');
   const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(path,3600);
+  if(!tripRequestIsCurrent(tripId,generation))return;
   if(error){wrap.classList.remove('visible');img.removeAttribute('src');return}
   img.src=data.signedUrl;wrap.classList.add('visible');
 }
@@ -1735,37 +2106,114 @@ $('parkingPhotoFile').onchange=()=>{
 };
 $('parkingUploadPhoto').onclick=async()=>{
   if(!trip||!session)return;const file=$('parkingPhotoFile').files[0];
+  const tripId=trip.id,generation=tripLoadGeneration;
   if(!file){parkingMessage('Primer selecciona o fes una foto.',true);return}
   if(!file.type.startsWith('image/')){parkingMessage('Selecciona una imatge.',true);return}
-  const path=`${trip.id}/parking/${Date.now()}-${safeFileName(file.name)}`;
+  const path=`${tripId}/parking/${Date.now()}-${safeFileName(file.name)}`;
   const {error:uploadError}=await db.storage.from(DOC_BUCKET).upload(path,file,{contentType:file.type,upsert:false});
-  if(uploadError){parkingMessage(uploadError.message,true);return}
-  const payload=parkingPayload();payload.photo_path=path;
-  const {data,error}=await db.from('travel_parking').upsert(payload,{onConflict:'trip_id'}).select().single();
-  if(error){await db.storage.from(DOC_BUCKET).remove([path]);parkingMessage(error.message,true);return}
-  if(parkingRow?.photo_path&&parkingRow.photo_path!==path)await db.storage.from(DOC_BUCKET).remove([parkingRow.photo_path]);
-  parkingRow=data;$('parkingPhotoFile').value='';if(parkingPhotoObjectUrl){URL.revokeObjectURL(parkingPhotoObjectUrl);parkingPhotoObjectUrl=null}parkingMessage('Foto de la plaça desada.');await loadParking();
+  if(!tripRequestIsCurrent(tripId,generation))return;
+
+  if(uploadError){
+    parkingMessage(uploadError.message,true);
+    return;
+  }
+
+  const payload=parkingPayload(tripId);
+  payload.photo_path=path;
+
+  const {data,error}=await db.from('travel_parking')
+    .upsert(payload,{onConflict:'trip_id'})
+    .select()
+    .single();
+
+  if(!tripRequestIsCurrent(tripId,generation))return;
+
+  if(error){
+    await db.storage.from(DOC_BUCKET).remove([path]);
+    if(!tripRequestIsCurrent(tripId,generation))return;
+    parkingMessage(error.message,true);
+    return;
+  }
+
+  if(parkingRow?.photo_path && parkingRow.photo_path!==path){
+    await db.storage.from(DOC_BUCKET).remove([parkingRow.photo_path]);
+    if(!tripRequestIsCurrent(tripId,generation))return;
+  }
+
+  parkingRow=data;
+  $('parkingPhotoFile').value='';
+
+  if(parkingPhotoObjectUrl){
+    URL.revokeObjectURL(parkingPhotoObjectUrl);
+    parkingPhotoObjectUrl=null;
+  }
+
+  parkingMessage('Foto de la plaça desada.');
+  await loadParking();
 };
 $('parkingRemovePhoto').onclick=async()=>{
+  if(!trip||!session)return;
+  const tripId=trip.id,generation=tripLoadGeneration;
   const input=$('parkingPhotoFile');
+
   if(input.files[0]){
-    input.value='';if(parkingPhotoObjectUrl){URL.revokeObjectURL(parkingPhotoObjectUrl);parkingPhotoObjectUrl=null}
-    if(parkingRow?.photo_path)await renderParkingPhoto(parkingRow.photo_path);
-    else{$('parkingPhotoPreview').classList.remove('visible');$('parkingPhotoImage').removeAttribute('src');$('parkingRemovePhoto').classList.add('hidden')}
-    parkingMessage('Foto seleccionada descartada.');return;
+    input.value='';
+    if(parkingPhotoObjectUrl){
+      URL.revokeObjectURL(parkingPhotoObjectUrl);
+      parkingPhotoObjectUrl=null;
+    }
+
+    if(parkingRow?.photo_path){
+      await renderParkingPhoto(parkingRow.photo_path,tripId,generation);
+      if(!tripRequestIsCurrent(tripId,generation))return;
+    }else{
+      $('parkingPhotoPreview').classList.remove('visible');
+      $('parkingPhotoImage').removeAttribute('src');
+      $('parkingRemovePhoto').classList.add('hidden');
+    }
+
+    parkingMessage('Foto seleccionada descartada.');
+    return;
   }
+
   if(!parkingRow?.photo_path)return;
   if(!confirm('Vols eliminar la foto de la plaça?'))return;
+
   const old=parkingRow.photo_path;
-  const {data,error}=await db.from('travel_parking').update({photo_path:null,updated_by:session.user.id,updated_at:new Date().toISOString()}).eq('trip_id',trip.id).select().single();
-  if(error){parkingMessage(error.message,true);return}
+
+  const {data,error}=await db.from('travel_parking')
+    .update({
+      photo_path:null,
+      updated_by:session.user.id,
+      updated_at:new Date().toISOString()
+    })
+    .eq('trip_id',tripId)
+    .select()
+    .single();
+
+  if(!tripRequestIsCurrent(tripId,generation))return;
+  if(error){
+    parkingMessage(error.message,true);
+    return;
+  }
+
   parkingRow=data;
+
   const storageResult=await db.storage.from(DOC_BUCKET).remove([old]);
-  parkingMessage(storageResult.error?'Foto desvinculada, però no s’ha pogut eliminar el fitxer de Storage.':'Foto eliminada.',!!storageResult.error);await loadParking();
+  if(!tripRequestIsCurrent(tripId,generation))return;
+
+  parkingMessage(
+    storageResult.error
+      ? 'Foto desvinculada, però no s’ha pogut eliminar el fitxer de Storage.'
+      : 'Foto eliminada.',
+    !!storageResult.error
+  );
+
+  await loadParking();
 };
 
 
-$('itemForm').onsubmit=async e=>{e.preventDefault();const text=$('newItem').value.trim(),category=$('newItemCategory').value||'other';if(!text)return;const storedText=`[[cat:${category}]] ${text}`;const {error}=await db.from('checklist_items').insert({trip_id:trip.id,text:storedText,created_by:session.user.id});if(error)msg('appMsg',error.message,true);else{$('newItem').value='';loadItems()}};
+$('itemForm').onsubmit=async e=>{e.preventDefault();if(!trip||!session)return;const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,text=$('newItem').value.trim(),category=$('newItemCategory').value||'other';if(!text)return;const storedText=`[[cat:${category}]] ${text}`;const {error}=await db.from('checklist_items').insert({trip_id:tripId,text:storedText,created_by:userId});if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else{$('newItem').value='';msg('checklistMsg','');loadItems()}};
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
@@ -1831,18 +2279,23 @@ async function resumePendingPushMigration(registration){
 }
 async function refreshPushUi(){
   if(!$('enablePush'))return;
+  if(!isLondonTrip()){$('pushCard')?.classList.add('hidden');setPushState('Disponible només per a Londres 2026.',true);return}
+  $('pushCard')?.classList.remove('hidden');
   if(!pushSupported()){setPushState('Aquest dispositiu o navegador no és compatible amb Web Push.',true);return}
   if(isIos()&&!isStandalone()){setPushState('No instal·lada: afegeix Freya Travel a la pantalla d’inici i obre-la des de la seva icona.',true);return}
   if(Notification.permission==='denied'){setPushState('Permís denegat. Activa les notificacions als Ajustos de l’iPhone.',true);return}
   if(!session||!trip){setPushState('Inicia sessió i obre un viatge abans d’activar-les.',true);return}
+  const tripId=trip.id,generation=tripLoadGeneration;
   try{
     const registration=await navigator.serviceWorker.ready,subscription=await registration.pushManager.getSubscription();
+    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
     if(currentPendingPushMigration()){setPushState('Actualització de notificacions pendent. Prem el botó per continuar.',false);return}
     if(!subscription){setPushState('Prem el botó per activar les notificacions.',false);return}
     if(!pushSubscriptionUsesCurrentVapid(subscription)){setPushState('Cal actualitzar les notificacions. Prem el botó per continuar.',false);return}
     rememberCurrentPushSubscription(subscription);
     const json=subscription.toJSON(),endpoint=json.endpoint||subscription.endpoint;
-    const {data,error}=await db.from('push_subscriptions').select('id').eq('user_id',session.user.id).eq('trip_id',trip.id).eq('endpoint',endpoint).eq('active',true).maybeSingle();
+    const {data,error}=await db.from('push_subscriptions').select('id').eq('user_id',session.user.id).eq('trip_id',tripId).eq('endpoint',endpoint).eq('active',true).maybeSingle();
+    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
     if(error)throw error;
     setPushState(data?'Notificacions actives.':'Subscripció pendent de guardar. Prem el botó per completar-la.',!!data);
   }catch(_){setPushState('No s’ha pogut comprovar l’estat. Torna-ho a provar.',false)}
@@ -1850,29 +2303,34 @@ async function refreshPushUi(){
 let pushActivationInProgress=false;
 async function enablePushNotifications(){
   if(pushActivationInProgress)return;
+  if(!isLondonTrip()){setPushState('Disponible només per a Londres 2026.',true);return}
   if(!pushSupported()){setPushState('Aquest dispositiu o navegador no és compatible amb Web Push.',true);return}
   if(isIos()&&!isStandalone()){setPushState('No instal·lada: afegeix Freya Travel a la pantalla d’inici i obre-la des de la seva icona.',true);return}
   if(!session||!trip){setPushState('Inicia sessió i obre un viatge abans d’activar-les.',true);return}
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   pushActivationInProgress=true;
   setPushState('Activant…',true);
   try{
     if(Notification.permission==='denied'){setPushState('Permís denegat. Activa les notificacions als Ajustos de l’iPhone.',true);return}
     const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
     if(permission!=='granted'){setPushState(permission==='denied'?'Permís denegat. Activa les notificacions als Ajustos de l’iPhone.':'No s’ha concedit el permís de notificacions.',permission==='denied');return}
     const registration=await navigator.serviceWorker.ready;
     const expectedWorker=new URL('/freya-travel/sw.js',location.origin).href;
     if(registration.active?.scriptURL!==expectedWorker)throw new Error('El service worker principal encara no està actiu. Tanca i torna a obrir Freya Travel.');
     await resumePendingPushMigration(registration);
+    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
     let subscription=await registration.pushManager.getSubscription();
     if(subscription&&!pushSubscriptionUsesCurrentVapid(subscription)){
-      if(!writePushLocalState(PUSH_MIGRATION_PENDING_KEY,{stage:'unsubscribe',endpoint:subscription.endpoint,userId:session.user.id,tripId:trip.id}))throw new Error('No s’ha pogut preparar l’actualització de notificacions. Torna-ho a provar.');
+      if(!writePushLocalState(PUSH_MIGRATION_PENDING_KEY,{stage:'unsubscribe',endpoint:subscription.endpoint,userId,tripId}))throw new Error('No s’ha pogut preparar l’actualització de notificacions. Torna-ho a provar.');
       await resumePendingPushMigration(registration);subscription=null;
     }
     if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:vapidPublicKeyBytes()});
+    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
     rememberCurrentPushSubscription(subscription);
     const json=subscription.toJSON(),keys=json.keys||{};
     if(!json.endpoint||!keys.p256dh||!keys.auth)throw new Error('La subscripció Push no ha retornat totes les claus necessàries.');
-    const {error}=await db.from('push_subscriptions').upsert({user_id:session.user.id,trip_id:trip.id,endpoint:json.endpoint,p256dh:keys.p256dh,auth:keys.auth,active:true,updated_at:new Date().toISOString()},{onConflict:'endpoint'});
+    const {error}=await db.from('push_subscriptions').upsert({user_id:userId,trip_id:tripId,endpoint:json.endpoint,p256dh:keys.p256dh,auth:keys.auth,active:true,updated_at:new Date().toISOString()},{onConflict:'endpoint'});
     if(error)throw error;
     setPushState('Notificacions actives.',true);
   }catch(error){
