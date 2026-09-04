@@ -2,6 +2,22 @@
 
 Afegeix de nou la informació cultural dels llocs i incorpora audioguies en català amb la veu del dispositiu.
 
+## Contractes de base de dades
+
+Els contractes confirmats de producció que són anteriors a les migracions del
+repositori es documenten a `docs/database/`. Són baselines documentals, no SQL
+per reaplicar a producció:
+
+- [`travel-data-production-baseline.md`](docs/database/travel-data-production-baseline.md):
+  `travel_documents`, `travel_parking`, `travel_expenses` i els buckets
+  `trip-documents` i `expense-receipts`.
+- [`push-subscriptions-production-baseline.md`](docs/database/push-subscriptions-production-baseline.md):
+  `push_subscriptions`.
+
+El fitxer arrel `supabase-expenses-v2.sql` és un bootstrap històric. No és una
+migració aplicada ni representa l'esquema actual: producció utilitza
+`travel_expenses.description`, no `concept`.
+
 ## Novetats
 - 12 llocs del vostre itinerari amb història i consells.
 - Cerca i filtres per zona.

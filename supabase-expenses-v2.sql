@@ -1,3 +1,14 @@
+-- HISTORICAL / BOOTSTRAP SQL ONLY. DO NOT APPLY TO PRODUCTION.
+--
+-- This standalone file is not an applied migration and does not describe the
+-- current production contract. In particular, production uses the column
+-- `description` (not `concept`), has stricter legacy London constraints for
+-- `currency` and `paid_by`, and no UPDATE RLS policy was observed during the
+-- read-only production inspection for Sprint 3B.0B.
+--
+-- The confirmed production baseline is documented in:
+-- docs/database/travel-data-production-baseline.md
+
 create table if not exists public.travel_expenses (
   id uuid primary key default gen_random_uuid(),
   trip_id uuid not null references public.trips(id) on delete cascade,
