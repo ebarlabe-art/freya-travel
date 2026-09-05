@@ -145,7 +145,9 @@
     .version-pill{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.17);font-size:.78rem;font-weight:800}.trip-overview{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0 18px}.overview-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;text-align:center;box-shadow:0 6px 18px rgba(49,42,59,.05)}.overview-card span{display:block;font-size:1.35rem}.overview-card strong{display:block;font-size:1.08rem;margin-top:4px}.overview-card small{display:block;color:var(--muted);margin-top:2px}.progress-track{height:7px;border-radius:999px;background:#ebe5f2;overflow:hidden;margin-top:8px}.progress-bar{height:100%;width:0;background:linear-gradient(90deg,#6750a4,#9b72cf);transition:width .35s ease}.update-toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:30;width:min(92%,520px);display:flex;align-items:center;justify-content:space-between;gap:12px;background:#2d2438;color:#fff;border-radius:18px;padding:13px 14px;box-shadow:0 12px 34px rgba(0,0,0,.25)}.update-toast button{padding:9px 12px;background:#fff;color:#4f378b}.menu-card:active,button:active{transform:scale(.985)}@media(max-width:520px){.trip-overview{grid-template-columns:1fr}.overview-card{text-align:left;display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center}.overview-card span{grid-row:1/4}.overview-card .progress-track{grid-column:2}}
 
 .doc-card.doc-new{outline:4px solid #f5c451;box-shadow:0 0 0 8px rgba(245,196,81,.18),0 16px 36px rgba(63,40,111,.22);animation:docNewPulse 1s ease-in-out 2}
+.doc-card.doc-voucher-focus{outline:4px solid #8f62c9;background:#fbf7ff;box-shadow:0 0 0 8px rgba(143,98,201,.18),0 18px 40px rgba(63,40,111,.25);animation:docVoucherPulse .8s ease-in-out 2}
 @keyframes docNewPulse{50%{transform:scale(1.015)}}
+@keyframes docVoucherPulse{50%{transform:scale(1.018);box-shadow:0 0 0 11px rgba(143,98,201,.12),0 20px 44px rgba(63,40,111,.28)}}
 
     .flight-shell{display:grid;gap:16px}
     .flight-hero{position:relative;overflow:hidden;background:linear-gradient(145deg,#43207e 0%,#6d3db2 52%,#b24fc4 100%);color:#fff;border-radius:30px;padding:26px 22px 22px;box-shadow:0 22px 48px rgba(71,31,122,.30)}
@@ -1233,14 +1235,16 @@ let accommodationDocumentLinks=[];
 let accommodationSubmitting=false;
 let accommodationLoadSequence=0;
 let documentsReturnContext=null;
+let accommodationVoucherFocus=null,accommodationVoucherFocusTimer=null;
 const ACCOMMODATION_DRAFT_VERSION=1;
 const ACCOMMODATION_DRAFT_FIELDS=['accommodationType','accommodationName','accommodationAddress','accommodationCity','accommodationPostalCode','accommodationRegion','accommodationCountry','accommodationCheckIn','accommodationCheckOut','accommodationStatus','accommodationProvider','accommodationReference','accommodationPhone','accommodationEmail','accommodationWebsite','accommodationRoom','accommodationVoucher','accommodationNotes'];
 const ACCOMMODATION_SELECT='id,trip_id,accommodation_type,name,address,location_text,city,postal_code,region,country,latitude,longitude,check_in_at,check_out_at,time_zone,booking_reference,booking_provider,reservation_status,phone,email,website_url,room_number,notes,created_by,updated_by,created_at,updated_at';
 const ACCOMMODATION_TYPES={hotel:{icon:'🏨',label:'Hotel'},apartment:{icon:'🏠',label:'Apartament'},house:{icon:'🏡',label:'Casa'},hostel:{icon:'🛏️',label:'Hostal'},resort:{icon:'🌴',label:'Resort'},other:{icon:'📍',label:'Allotjament'}};
 const ACCOMMODATION_STATUSES={planning:'En planificació',confirmed:'Confirmat',cancelled:'Cancel·lat'};
 function optionalText(value){const normalized=String(value||'').trim();return normalized||null}
-function accommodationLinkFor(accommodationId){return accommodationDocumentLinks.find(link=>link.accommodation_id===accommodationId&&link.document_role==='voucher')||null}
-function accommodationDocumentFor(accommodationId){const link=accommodationLinkFor(accommodationId);return link?documentRows.find(document=>document.id===link.document_id)||null:null}
+function accommodationLinkFor(accommodationId){return accommodationDocumentLinks.find(link=>link.trip_id===trip?.id&&link.accommodation_id===accommodationId&&link.document_role==='voucher')||null}
+function accommodationVoucherDocumentId(accommodationId){return accommodationLinkFor(accommodationId)?.document_id||''}
+function accommodationDocumentFor(accommodationId){const documentId=accommodationVoucherDocumentId(accommodationId);return documentId?documentRows.find(document=>document.id===documentId)||null:null}
 function accommodationSummary(count=accommodationRows.length){return !count?'Cap allotjament':count===1?'1 allotjament':`${count} allotjaments`}
 function validDocumentsReturnContext(){
   const context=documentsReturnContext,userId=session?.user?.id,tripId=trip?.id;
@@ -1249,6 +1253,31 @@ function validDocumentsReturnContext(){
 }
 function updateDocumentsBack(){const contextual=!!validDocumentsReturnContext();if($('documentsBack'))$('documentsBack').textContent=contextual?'← Tornar a Allotjament':'← Torna al tauler'}
 function clearDocumentsReturnContext(){documentsReturnContext=null;updateDocumentsBack()}
+function clearAccommodationVoucherFocus(){
+  accommodationVoucherFocus=null;if(accommodationVoucherFocusTimer)clearTimeout(accommodationVoucherFocusTimer);accommodationVoucherFocusTimer=null;
+  document.querySelectorAll('.doc-card.doc-voucher-focus').forEach(card=>card.classList.remove('doc-voucher-focus'));
+}
+function accommodationVoucherFocusIsCurrent(request){return !!request&&session?.user?.id===request.userId&&trip?.id===request.tripId&&tripLoadGeneration===request.generation&&!isLondonTrip()}
+function focusAssociatedAccommodationVoucher(documentsResolved=false){
+  const request=accommodationVoucherFocus;if(!request)return false;
+  if(!accommodationVoucherFocusIsCurrent(request)){clearAccommodationVoucherFocus();return false}
+  if(!documentRows.some(document=>document.id===request.documentId)){if(documentsResolved)clearAccommodationVoucherFocus();return false}
+  const matchingCard=()=>[...$('documentsList').querySelectorAll('[data-doc-id]')].find(item=>item.dataset.docId===request.documentId);
+  if(!matchingCard()){if(documentsResolved)clearAccommodationVoucherFocus();return false}
+  if(request.scheduled)return true;
+  request.scheduled=true;
+  requestAnimationFrame(()=>{
+    if(accommodationVoucherFocus!==request||!accommodationVoucherFocusIsCurrent(request)||$('documentsView').classList.contains('hidden')||!documentRows.some(document=>document.id===request.documentId)){clearAccommodationVoucherFocus();return}
+    const card=matchingCard();if(!card){clearAccommodationVoucherFocus();return}
+    request.scheduled=false;if(!request.expiresAt)request.expiresAt=Date.now()+2800;
+    if(accommodationVoucherFocusTimer)clearTimeout(accommodationVoucherFocusTimer);
+    document.querySelectorAll('.doc-card.doc-voucher-focus').forEach(item=>item.classList.remove('doc-voucher-focus'));
+    const remaining=request.expiresAt-Date.now();if(remaining<=0){clearAccommodationVoucherFocus();return}
+    card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('doc-voucher-focus');
+    accommodationVoucherFocusTimer=setTimeout(()=>{if(accommodationVoucherFocus===request)accommodationVoucherFocus=null;card.classList.remove('doc-voucher-focus');accommodationVoucherFocusTimer=null},remaining);
+  });
+  return true;
+}
 function setAccommodationDocumentsReturnContext(){
   if(!trip||!session||isLondonTrip())return false;
   documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'accommodationView'};updateDocumentsBack();return true;
@@ -1262,11 +1291,16 @@ function readAccommodationDraft(tripId=trip?.id,userId=session?.user?.id){
   try{const draft=JSON.parse(localStorage.getItem(key)||'null');return draft?.version===ACCOMMODATION_DRAFT_VERSION&&draft.userId===userId&&draft.tripId===tripId?draft:null}catch(_){return null}
 }
 function clearAccommodationDraft(tripId=trip?.id,userId=session?.user?.id){const key=accommodationDraftKey(tripId,userId);if(!key)return;try{localStorage.removeItem(key)}catch(_){}}
+function accommodationVoucherDraftState(draft,currentDocumentId=''){
+  if(!draft)return {documentId:currentDocumentId||'',touched:false};
+  const draftedDocumentId=draft.fields?.accommodationVoucher||'',touched=draft.voucherTouched===true||!!(draft.editId&&draftedDocumentId&&draftedDocumentId!==(draft.originalVoucherDocumentId||''));
+  return {documentId:draft.editId&&!touched?draft.originalVoucherDocumentId||'':draftedDocumentId,touched};
+}
 function saveAccommodationDraft(){
   if(!trip||!session||isLondonTrip()||$('accommodationFormCard').classList.contains('hidden'))return;
   const form=$('accommodationForm'),tripId=trip.id,userId=session.user.id;if(form.dataset.tripId!==tripId)return;
   const fields=Object.fromEntries(ACCOMMODATION_DRAFT_FIELDS.map(id=>[id,$(id)?.value||'']));
-  const draft={version:ACCOMMODATION_DRAFT_VERSION,userId,tripId,editId:form.dataset.editId||'',timeZone:form.dataset.timeZone||trip.time_zone||'',originalUpdatedAt:form.dataset.originalUpdatedAt||'',originalVoucherDocumentId:form.dataset.originalVoucherDocumentId||'',legacyLocationText:form.dataset.legacyLocationText||'',fields};
+  const draft={version:ACCOMMODATION_DRAFT_VERSION,userId,tripId,editId:form.dataset.editId||'',timeZone:form.dataset.timeZone||trip.time_zone||'',originalUpdatedAt:form.dataset.originalUpdatedAt||'',originalVoucherDocumentId:form.dataset.originalVoucherDocumentId||'',voucherTouched:form.dataset.voucherTouched==='true',legacyLocationText:form.dataset.legacyLocationText||'',fields};
   try{localStorage.setItem(accommodationDraftKey(tripId,userId),JSON.stringify(draft))}catch(_){}
 }
 function restoreAccommodationDraft(){
@@ -1275,11 +1309,11 @@ function restoreAccommodationDraft(){
   const row=draft.editId?accommodationRows.find(item=>item.id===draft.editId):null;
   if((draft.editId&&(!row||!draft.originalUpdatedAt))||!draft.timeZone){clearAccommodationDraft();return false}
   clearAccommodationMessage();
-  const form=$('accommodationForm');form.reset();form.dataset.editId=draft.editId||'';form.dataset.timeZone=draft.timeZone;form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=draft.originalUpdatedAt||'';form.dataset.originalVoucherDocumentId=draft.originalVoucherDocumentId||'';form.dataset.legacyLocationText=draft.legacyLocationText||draft.fields?.accommodationLocation||'';form.dataset.remoteConflict='';
+  const voucherState=accommodationVoucherDraftState(draft),form=$('accommodationForm');form.reset();form.dataset.editId=draft.editId||'';form.dataset.timeZone=draft.timeZone;form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=draft.originalUpdatedAt||'';form.dataset.originalVoucherDocumentId=draft.originalVoucherDocumentId||'';form.dataset.voucherTouched=voucherState.touched?'true':'false';form.dataset.legacyLocationText=draft.legacyLocationText||draft.fields?.accommodationLocation||'';form.dataset.remoteConflict='';
   ACCOMMODATION_DRAFT_FIELDS.filter(id=>id!=='accommodationVoucher').forEach(id=>{if($(id)&&Object.prototype.hasOwnProperty.call(draft.fields||{},id))$(id).value=draft.fields[id]||''});
-  renderAccommodationDocumentOptions(draft.fields?.accommodationVoucher||'');
+  renderAccommodationDocumentOptions(voucherState.documentId);
   $('accommodationFormTitle').textContent=row?'Editar allotjament':'Afegir allotjament';$('accommodationTimeZoneHelp').textContent=`Hores guardades en la zona ${draft.timeZone}.`;setAccommodationFormMode(true);
-  if(row){const currentVoucher=accommodationLinkFor(row.id)?.document_id||'',remotelyChanged=row.updated_at!==draft.originalUpdatedAt||currentVoucher!==(draft.originalVoucherDocumentId||'');form.dataset.remoteConflict=remotelyChanged?'true':'';if(remotelyChanged)msg('accommodationMsg','Aquest allotjament ha canviat mentre no eres aquí. Hem conservat el teu esborrany; en desar comprovarem la versió actual.',true)}
+  if(row){const currentVoucher=accommodationVoucherDocumentId(row.id),remotelyChanged=row.updated_at!==draft.originalUpdatedAt||currentVoucher!==(draft.originalVoucherDocumentId||'');form.dataset.remoteConflict=remotelyChanged?'true':'';if(remotelyChanged)msg('accommodationMsg','Aquest allotjament ha canviat mentre no eres aquí. Hem conservat el teu esborrany; en desar comprovarem la versió actual.',true)}
   return true;
 }
 function zonedDateParts(date,timeZone){
@@ -1323,7 +1357,8 @@ function accommodationMapUrl(row){
 function renderAccommodationDocumentOptions(selectedDocumentId=''){
   const select=$('accommodationVoucher');if(!select)return;
   select.innerHTML='<option value="">Sense voucher associat</option>'+documentRows.map(document=>`<option value="${esc(document.id)}">${esc(document.title)} · ${esc(document.file_name||'Document')}</option>`).join('');
-  select.value=documentRows.some(document=>document.id===selectedDocumentId)?selectedDocumentId:'';
+  if(selectedDocumentId&&!documentRows.some(document=>document.id===selectedDocumentId))select.insertAdjacentHTML('beforeend',`<option value="${esc(selectedDocumentId)}">Document seleccionat · no disponible</option>`);
+  select.value=selectedDocumentId||'';
   $('accommodationDocumentHelp').textContent=documentRows.length?'Selecciona un document ja existent d’aquest viatge.':'Primer pots afegir el comprovant al mòdul Documents.';
 }
 function renderAccommodations(){
@@ -1332,7 +1367,7 @@ function renderAccommodations(){
   empty.classList.toggle('hidden',currentCount!==0);
   list.innerHTML=accommodationRows.map(row=>{
     const type=ACCOMMODATION_TYPES[row.accommodation_type]||ACCOMMODATION_TYPES.other,status=ACCOMMODATION_STATUSES[row.reservation_status]||row.reservation_status;
-    const locationLines=accommodationLocationLines(row),checkIn=formatAccommodationDate(row.check_in_at,row.time_zone),checkOut=formatAccommodationDate(row.check_out_at,row.time_zone),mapUrl=accommodationMapUrl(row),phone=safePhone(row.phone),website=safeWebsiteUrl(row.website_url),voucher=accommodationDocumentFor(row.id),hasVoucher=!!accommodationLinkFor(row.id);
+    const locationLines=accommodationLocationLines(row),checkIn=formatAccommodationDate(row.check_in_at,row.time_zone),checkOut=formatAccommodationDate(row.check_out_at,row.time_zone),mapUrl=accommodationMapUrl(row),phone=safePhone(row.phone),website=safeWebsiteUrl(row.website_url),voucherDocumentId=accommodationVoucherDocumentId(row.id),voucher=accommodationDocumentFor(row.id),hasVoucher=!!voucherDocumentId;
     const facts=[checkIn&&['Check-in',checkIn],checkOut&&['Check-out',checkOut],row.booking_reference&&['Referència',row.booking_reference],row.room_number&&['Habitació',row.room_number],row.booking_provider&&['Reserva',row.booking_provider]].filter(Boolean);
     return `<article class="accommodation-card" data-accommodation-id="${esc(row.id)}"><div class="accommodation-card-head"><div class="accommodation-identity"><div class="accommodation-icon">${type.icon}</div><div><small class="muted">${esc(type.label)}</small><h3>${esc(row.name)}</h3>${locationLines.length?`<div class="accommodation-place">📍 ${locationLines.map(esc).join('<br>')}</div>`:''}</div></div><span class="accommodation-status ${esc(row.reservation_status)}">${esc(status)}</span></div>${facts.length?`<div class="accommodation-facts">${facts.map(fact=>`<div class="accommodation-fact"><small>${esc(fact[0])}</small><strong>${esc(fact[1])}</strong></div>`).join('')}</div>`:''}${row.notes?`<p class="accommodation-notes">${esc(row.notes)}</p>`:''}<div class="accommodation-actions">${mapUrl?`<a class="primary-action" href="${esc(mapUrl)}" target="_blank" rel="noopener">Com arribar-hi</a>`:''}${hasVoucher?`<button type="button" data-accommodation-voucher="${esc(row.id)}">${voucher?'Voucher':'Obrir voucher'}</button>`:''}${phone?`<a href="tel:${esc(phone)}">Trucar</a>`:''}${website?`<a href="${esc(website)}" target="_blank" rel="noopener">Web</a>`:''}<button type="button" data-edit-accommodation="${esc(row.id)}">Editar</button><button type="button" class="danger-action" data-delete-accommodation="${esc(row.id)}">Eliminar</button></div></article>`;
   }).join('');
@@ -1359,7 +1394,7 @@ async function loadAccommodations(silent=false){
   const currentRow=editingId?accommodationRows.find(item=>item.id===editingId):null;
   if(editingId&&!$('accommodationFormCard').classList.contains('hidden')&&!currentRow){clearAccommodationDraft(tripId);if(!accommodationSubmitting)closeAccommodationForm();return accommodationRows}
   if(editingId&&!$('accommodationFormCard').classList.contains('hidden')&&!accommodationSubmitting){
-    const currentVoucher=accommodationLinkFor(editingId)?.document_id||'';
+    const currentVoucher=accommodationVoucherDocumentId(editingId);
     const remotelyChanged=!currentRow||currentRow.updated_at!==form.dataset.originalUpdatedAt||currentVoucher!==(form.dataset.originalVoucherDocumentId||'');
     form.dataset.remoteConflict=remotelyChanged?'true':'';
     if(remotelyChanged&&currentRow)msg('accommodationMsg','Aquest allotjament ha canviat mentre l’editaves. Els teus camps no s’han modificat; en desar comprovarem la versió actual.',true);
@@ -1367,17 +1402,17 @@ async function loadAccommodations(silent=false){
   if(!$('accommodationView').classList.contains('hidden'))restoreAccommodationDraft();
   return accommodationRows;
 }
-function resetAccommodationFormUi(){$('accommodationForm').reset();$('accommodationForm').dataset.editId='';$('accommodationForm').dataset.timeZone='';$('accommodationForm').dataset.tripId='';$('accommodationForm').dataset.originalUpdatedAt='';$('accommodationForm').dataset.originalVoucherDocumentId='';$('accommodationForm').dataset.legacyLocationText='';$('accommodationForm').dataset.remoteConflict='';setAccommodationFormMode(false);$('saveAccommodation').disabled=false;accommodationSubmitting=false;clearAccommodationMessage()}
+function resetAccommodationFormUi(){$('accommodationForm').reset();$('accommodationForm').dataset.editId='';$('accommodationForm').dataset.timeZone='';$('accommodationForm').dataset.tripId='';$('accommodationForm').dataset.originalUpdatedAt='';$('accommodationForm').dataset.originalVoucherDocumentId='';$('accommodationForm').dataset.voucherTouched='';$('accommodationForm').dataset.legacyLocationText='';$('accommodationForm').dataset.remoteConflict='';setAccommodationFormMode(false);$('saveAccommodation').disabled=false;accommodationSubmitting=false;clearAccommodationMessage()}
 function closeAccommodationForm(){clearAccommodationDraft();resetAccommodationFormUi()}
 function openAccommodationForm(id=''){
   if(!trip||isLondonTrip())return;
   const row=id?accommodationRows.find(item=>item.id===id):null;if(id&&!row)return;
   clearAccommodationDraft();clearAccommodationMessage();
   const timeZone=row?.time_zone||trip.time_zone;if(!timeZone){msg('accommodationMsg','Aquest viatge no té una zona horària vàlida.',true);return}
-  const originalVoucherDocumentId=row?accommodationLinkFor(row.id)?.document_id||'':'';
-  const form=$('accommodationForm');form.reset();form.dataset.editId=row?.id||'';form.dataset.timeZone=timeZone;form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=row?.updated_at||'';form.dataset.originalVoucherDocumentId=originalVoucherDocumentId;form.dataset.legacyLocationText=row?.location_text||'';form.dataset.remoteConflict='';
+  const originalVoucherDocumentId=row?accommodationVoucherDocumentId(row.id):'';
+  const form=$('accommodationForm');form.reset();form.dataset.editId=row?.id||'';form.dataset.timeZone=timeZone;form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=row?.updated_at||'';form.dataset.originalVoucherDocumentId=originalVoucherDocumentId;form.dataset.voucherTouched='false';form.dataset.legacyLocationText=row?.location_text||'';form.dataset.remoteConflict='';
   $('accommodationFormTitle').textContent=row?'Editar allotjament':'Afegir allotjament';$('accommodationType').value=row?.accommodation_type||'hotel';$('accommodationName').value=row?.name||'';$('accommodationAddress').value=row?.address||'';$('accommodationCity').value=row?.city||'';$('accommodationPostalCode').value=row?.postal_code||'';$('accommodationRegion').value=row?.region||'';$('accommodationCountry').value=row?.country||'';$('accommodationCheckIn').value=isoToZonedLocal(row?.check_in_at,timeZone);$('accommodationCheckOut').value=isoToZonedLocal(row?.check_out_at,timeZone);$('accommodationStatus').value=row?.reservation_status||'planning';$('accommodationProvider').value=row?.booking_provider||'';$('accommodationReference').value=row?.booking_reference||'';$('accommodationPhone').value=row?.phone||'';$('accommodationEmail').value=row?.email||'';$('accommodationWebsite').value=row?.website_url||'';$('accommodationRoom').value=row?.room_number||'';$('accommodationNotes').value=row?.notes||'';
-  $('accommodationTimeZoneHelp').textContent=`Hores guardades en la zona ${timeZone}.`;renderAccommodationDocumentOptions(row?accommodationLinkFor(row.id)?.document_id||'':'');setAccommodationFormMode(true);saveAccommodationDraft();$('accommodationName').focus();$('accommodationFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+  $('accommodationTimeZoneHelp').textContent=`Hores guardades en la zona ${timeZone}.`;renderAccommodationDocumentOptions(originalVoucherDocumentId);setAccommodationFormMode(true);saveAccommodationDraft();$('accommodationName').focus();$('accommodationFormCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function fetchCurrentAccommodationVoucher(accommodationId,tripId,generation){
   const {data,error}=await db.from('trip_accommodation_documents').select('document_id').eq('trip_id',tripId).eq('accommodation_id',accommodationId).eq('document_role','voucher').maybeSingle();
@@ -1401,13 +1436,10 @@ async function recoverAccommodationConflict(accommodationId,tripId,generation,me
   if(!current){closeAccommodationForm();msg('accommodationMsg','Aquest allotjament s’ha eliminat mentre l’editaves. Hem actualitzat la llista.',true);return}
   openAccommodationForm(accommodationId);msg('accommodationMsg',message||'Aquest allotjament ha canviat mentre l’editaves. Hem carregat la versió més recent. Revisa els canvis abans de tornar a desar.',true);
 }
-async function openAccommodationVoucher(accommodationId){
+function openAccommodationVoucher(accommodationId){
   if(!trip||isLondonTrip())return;
-  const tripId=trip.id,generation=tripLoadGeneration,link=accommodationLinkFor(accommodationId);if(!link)return;
-  let document=documentRows.find(item=>item.id===link.document_id);
-  if(!document){await loadDocuments(true);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;document=documentRows.find(item=>item.id===link.document_id)}
-  if(!document){msg('accommodationMsg','Aquest voucher ja no està disponible.',true);await loadAccommodations(true);return}
-  msg('accommodationMsg','Generant accés segur…');const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(document.file_path,300);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;if(error){msg('accommodationMsg',error.message,true);return}msg('accommodationMsg','');window.open(data.signedUrl,'_blank','noopener');
+  const tripId=trip.id,generation=tripLoadGeneration,documentId=accommodationVoucherDocumentId(accommodationId);if(!documentId)return;
+  clearAccommodationVoucherFocus();clearDocumentsReturnContext();accommodationVoucherFocus={userId:session?.user?.id,tripId,documentId,generation};setAppView('documentsView');focusAssociatedAccommodationVoucher(false);
 }
 async function deleteAccommodation(id,button){
   if(!trip||isLondonTrip())return;
@@ -1530,6 +1562,7 @@ function subscribe(){
 function renderPasswordRecovery(){
   clearNavigationState(session?.user?.id);
   clearDocumentsReturnContext();
+  clearAccommodationVoucherFocus();
   clearAccommodationMessage();
   hide('loading');hide('noTrip');hide('tripView');show('auth');hide('loginCard');show('passwordRecoveryCard');
   $('newPassword').disabled=!passwordRecoverySessionValid;$('confirmNewPassword').disabled=!passwordRecoverySessionValid;$('updatePassword').disabled=!passwordRecoverySessionValid||passwordRecoverySubmitting;
@@ -1543,6 +1576,7 @@ async function disconnectTripRealtime(){
 }
 function clearTripScopedState(){
   clearDocumentsReturnContext();
+  clearAccommodationVoucherFocus();
   documentRows=[];pendingDocumentRows=[];expenseRows=[];photoRows=[];pendingPhotoRows=[];accommodationRows=[];accommodationDocumentLinks=[];accommodationSubmitting=false;accommodationLoadSequence+=1;parkingRow=null;parkingLoadsPending=0;clearPhotoObjectUrls();closePhotoLightbox();
   const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList',''],['accommodationList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
   [['overviewChecklist','0/0'],['overviewDocuments','0'],['overviewExpenses','0'],['documentCount','0'],['expenseCount','0'],['photoCount','0']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
@@ -1581,7 +1615,7 @@ function clearTripScopedState(){
   if($('photoPreview'))$('photoPreview').classList.remove('visible');
   if($('photoPreviewImage'))$('photoPreviewImage').removeAttribute('src');
   showPhotoMessage('');
-  if($('accommodationForm')){$('accommodationForm').reset();$('accommodationForm').dataset.editId='';$('accommodationForm').dataset.timeZone='';$('accommodationForm').dataset.tripId='';$('accommodationForm').dataset.originalUpdatedAt='';$('accommodationForm').dataset.originalVoucherDocumentId='';$('accommodationForm').dataset.legacyLocationText='';$('accommodationForm').dataset.remoteConflict=''}
+  if($('accommodationForm')){$('accommodationForm').reset();$('accommodationForm').dataset.editId='';$('accommodationForm').dataset.timeZone='';$('accommodationForm').dataset.tripId='';$('accommodationForm').dataset.originalUpdatedAt='';$('accommodationForm').dataset.originalVoucherDocumentId='';$('accommodationForm').dataset.voucherTouched='';$('accommodationForm').dataset.legacyLocationText='';$('accommodationForm').dataset.remoteConflict=''}
   if($('accommodationFormCard'))setAccommodationFormMode(false);
   if($('accommodationEmpty'))$('accommodationEmpty').classList.add('hidden');
   if($('accommodationLoading'))$('accommodationLoading').classList.add('hidden');
@@ -1681,9 +1715,9 @@ async function refreshTrips({preferredTripId=null,open=false}={}){
 }
 async function renderSession(next){
   const renderGeneration=++sessionRenderGeneration,nextUserId=next?.user?.id||null;
-  if(nextUserId&&lastAuthenticatedUserId&&nextUserId!==lastAuthenticatedUserId){clearNavigationState(lastAuthenticatedUserId);clearDocumentsReturnContext()}
+  if(nextUserId&&lastAuthenticatedUserId&&nextUserId!==lastAuthenticatedUserId){clearNavigationState(lastAuthenticatedUserId);clearDocumentsReturnContext();clearAccommodationVoucherFocus()}
   if(nextUserId)lastAuthenticatedUserId=nextUserId;session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');
-  if(!session){if(lastAuthenticatedUserId)clearNavigationState(lastAuthenticatedUserId);lastAuthenticatedUserId=null;trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();await disconnectTripRealtime();clearDocumentsReturnContext();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
+  if(!session){if(lastAuthenticatedUserId)clearNavigationState(lastAuthenticatedUserId);lastAuthenticatedUserId=null;trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();await disconnectTripRealtime();clearDocumentsReturnContext();clearAccommodationVoucherFocus();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
   $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';show('tripView');
   try{await refreshTrips();if(renderGeneration!==sessionRenderGeneration)return}catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
 }
@@ -1774,12 +1808,13 @@ async function loadItems(){
 
 async function toggleItem(id,done){if(!trip)return;const tripId=trip.id,generation=tripLoadGeneration;const {error}=await db.from('checklist_items').update({done}).eq('id',id).eq('trip_id',tripId);if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
 async function deleteItem(id,templateKey=''){if(!trip)return;const tripId=trip.id,generation=tripLoadGeneration,dismissTemplate=!isLondonTrip()&&!!templateKey;const query=dismissTemplate?db.from('checklist_items').update({dismissed:true}).eq('id',id).eq('trip_id',tripId):db.from('checklist_items').delete().eq('id',id).eq('trip_id',tripId);const {error}=await query;if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
-document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.open==='documentsView')clearDocumentsReturnContext();setAppView(b.dataset.open)});
+document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.open==='documentsView'){clearDocumentsReturnContext();clearAccommodationVoucherFocus()}setAppView(b.dataset.open)});
 $('backToTrips').onclick=()=>setAppView('tripsHomeView');document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=()=>setAppView('tripsHomeView'));document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-generic-module]').forEach(b=>b.onclick=()=>openGenericModule(b.dataset.genericModule));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView(tripDashboardId()));document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
 $('documentsBack').onclick=handleDocumentsBack;
 $('addAccommodation').onclick=()=>openAccommodationForm();$('addFirstAccommodation').onclick=()=>openAccommodationForm();$('cancelAccommodation').onclick=closeAccommodationForm;
-$('accommodationOpenDocuments').onclick=()=>{if(!setAccommodationDocumentsReturnContext())return;saveAccommodationDraft();setAppView('documentsView')};
+$('accommodationOpenDocuments').onclick=()=>{if(!setAccommodationDocumentsReturnContext())return;clearAccommodationVoucherFocus();saveAccommodationDraft();setAppView('documentsView')};
 $('accommodationForm').addEventListener('input',saveAccommodationDraft);$('accommodationForm').addEventListener('change',saveAccommodationDraft);
+$('accommodationVoucher').addEventListener('change',()=>{$('accommodationForm').dataset.voucherTouched='true';saveAccommodationDraft()});
 $('accommodationForm').onsubmit=async event=>{
   event.preventDefault();if(accommodationSubmitting||!trip||!session||isLondonTrip())return;
   const form=$('accommodationForm');if(!form.reportValidity())return;
@@ -2111,7 +2146,7 @@ async function loadDocuments(silent=false){
   const tripId=trip.id,generation=tripLoadGeneration;
   const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',tripId).neq('category','Foto').order('created_at',{ascending:false});
   if(!tripRequestIsCurrent(tripId,generation))return [];
-  if(error){if(!silent)msg('documentMsg',error.message,true);else console.error('No s’han pogut carregar els documents:',error);return []}
+  if(error){clearAccommodationVoucherFocus();if(!silent)msg('documentMsg',error.message,true);else console.error('No s’han pogut carregar els documents:',error);return []}
   const serverDocs=data||[];
   const serverIds=new Set(serverDocs.map(d=>d.id));
   pendingDocumentRows=pendingDocumentRows.filter(d=>!serverIds.has(d.id) && Date.now()-(d._pendingAt||0)<60000);
@@ -2133,9 +2168,10 @@ function renderDocuments(docs=documentRows){
     updateTicketDocumentLinks();
     updateParkingReservationUi();
   }else{
-    if(!$('accommodationFormCard').classList.contains('hidden'))renderAccommodationDocumentOptions(readAccommodationDraft()?.fields?.accommodationVoucher??$('accommodationVoucher').value);
+    if(!$('accommodationFormCard').classList.contains('hidden'))renderAccommodationDocumentOptions(accommodationVoucherDraftState(readAccommodationDraft(),$('accommodationVoucher').value).documentId);
     renderAccommodations();
   }
+  focusAssociatedAccommodationVoucher(true);
 }
 async function openDocument(id,docs){
   if(!trip)return;
@@ -2326,6 +2362,7 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   if(password)password.value='';
   msg('authMsg','');
   clearNavigationState(session?.user?.id);
+  clearAccommodationVoucherFocus();
   await db.auth.signOut();
   if(password)password.value='';
 });
