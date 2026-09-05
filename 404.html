@@ -1273,9 +1273,10 @@ function renderAccommodations(){
   list.querySelectorAll('[data-edit-accommodation]').forEach(button=>button.onclick=()=>openAccommodationForm(button.dataset.editAccommodation));
   list.querySelectorAll('[data-delete-accommodation]').forEach(button=>button.onclick=()=>deleteAccommodation(button.dataset.deleteAccommodation,button));
 }
+function clearAccommodationMessage(){if($('accommodationMsg'))msg('accommodationMsg','')}
 async function loadAccommodations(silent=false){
   if(!trip||isLondonTrip())return [];
-  const tripId=trip.id,generation=tripLoadGeneration,loadSequence=++accommodationLoadSequence;if(!silent)$('accommodationLoading').classList.remove('hidden');
+  const tripId=trip.id,generation=tripLoadGeneration,loadSequence=++accommodationLoadSequence,previousAccommodationIds=new Set(accommodationRows.map(item=>item.id));if(!silent)$('accommodationLoading').classList.remove('hidden');
   const [accommodationResult,linkResult]=await Promise.all([
     db.from('trip_accommodations').select(ACCOMMODATION_SELECT).eq('trip_id',tripId).order('check_in_at',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true}).order('id',{ascending:true}),
     db.from('trip_accommodation_documents').select('trip_id,accommodation_id,document_id,document_role,created_at').eq('trip_id',tripId).order('created_at',{ascending:false})
@@ -1283,22 +1284,25 @@ async function loadAccommodations(silent=false){
   if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip()||loadSequence!==accommodationLoadSequence)return null;
   $('accommodationLoading').classList.add('hidden');
   const error=accommodationResult.error||linkResult.error;if(error){if(!silent)msg('accommodationMsg',error.message,true);else console.error('No s’han pogut carregar els allotjaments:',error);return null}
-  accommodationRows=accommodationResult.data||[];accommodationDocumentLinks=linkResult.data||[];renderAccommodations();
+  const nextAccommodationRows=accommodationResult.data||[],accommodationDeleted=[...previousAccommodationIds].some(id=>!nextAccommodationRows.some(item=>item.id===id));
+  accommodationRows=nextAccommodationRows;accommodationDocumentLinks=linkResult.data||[];renderAccommodations();
+  if(accommodationDeleted||!accommodationRows.length)clearAccommodationMessage();
   const form=$('accommodationForm'),editingId=form.dataset.editId||'';
   if(editingId&&!$('accommodationFormCard').classList.contains('hidden')&&!accommodationSubmitting){
     const currentRow=accommodationRows.find(item=>item.id===editingId),currentVoucher=accommodationLinkFor(editingId)?.document_id||'';
     const remotelyChanged=!currentRow||currentRow.updated_at!==form.dataset.originalUpdatedAt||currentVoucher!==(form.dataset.originalVoucherDocumentId||'');
     form.dataset.remoteConflict=remotelyChanged?'true':'';
-    if(remotelyChanged)msg('accommodationMsg','Aquest allotjament ha canviat mentre l’editaves. Els teus camps no s’han modificat; en desar comprovarem la versió actual.',true);
+    if(remotelyChanged&&currentRow)msg('accommodationMsg','Aquest allotjament ha canviat mentre l’editaves. Els teus camps no s’han modificat; en desar comprovarem la versió actual.',true);
   }
   return accommodationRows;
 }
 function closeAccommodationForm(){
-  $('accommodationForm').reset();$('accommodationForm').dataset.editId='';$('accommodationForm').dataset.timeZone='';$('accommodationForm').dataset.tripId='';$('accommodationForm').dataset.originalUpdatedAt='';$('accommodationForm').dataset.originalVoucherDocumentId='';$('accommodationForm').dataset.remoteConflict='';$('accommodationFormCard').classList.add('hidden');$('saveAccommodation').disabled=false;accommodationSubmitting=false;
+  $('accommodationForm').reset();$('accommodationForm').dataset.editId='';$('accommodationForm').dataset.timeZone='';$('accommodationForm').dataset.tripId='';$('accommodationForm').dataset.originalUpdatedAt='';$('accommodationForm').dataset.originalVoucherDocumentId='';$('accommodationForm').dataset.remoteConflict='';$('accommodationFormCard').classList.add('hidden');$('saveAccommodation').disabled=false;accommodationSubmitting=false;clearAccommodationMessage();
 }
 function openAccommodationForm(id=''){
   if(!trip||isLondonTrip())return;
   const row=id?accommodationRows.find(item=>item.id===id):null;if(id&&!row)return;
+  clearAccommodationMessage();
   const timeZone=row?.time_zone||trip.time_zone;if(!timeZone){msg('accommodationMsg','Aquest viatge no té una zona horària vàlida.',true);return}
   const originalVoucherDocumentId=row?accommodationLinkFor(row.id)?.document_id||'':'';
   const form=$('accommodationForm');form.reset();form.dataset.editId=row?.id||'';form.dataset.timeZone=timeZone;form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=row?.updated_at||'';form.dataset.originalVoucherDocumentId=originalVoucherDocumentId;form.dataset.remoteConflict='';
@@ -1434,6 +1438,7 @@ function subscribe(){
     .subscribe(status=>{if(status==='SUBSCRIBED'&&tripRequestIsCurrent(subscribedTripId,subscribedGeneration))loadItems()});
 }
 function renderPasswordRecovery(){
+  clearAccommodationMessage();
   hide('loading');hide('noTrip');hide('tripView');show('auth');hide('loginCard');show('passwordRecoveryCard');
   $('newPassword').disabled=!passwordRecoverySessionValid;$('confirmNewPassword').disabled=!passwordRecoverySessionValid;$('updatePassword').disabled=!passwordRecoverySessionValid||passwordRecoverySubmitting;
   if(passwordRecoverySessionValid)msg('passwordRecoveryMsg','Introdueix i confirma la nova contrasenya.');
@@ -1570,7 +1575,7 @@ async function refreshTrips({preferredTripId=null,open=false}={}){
 }
 async function renderSession(next){
   const renderGeneration=++sessionRenderGeneration;session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');
-  if(!session){trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();await disconnectTripRealtime();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
+  if(!session){trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();await disconnectTripRealtime();clearAccommodationMessage();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
   $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';show('tripView');
   try{await refreshTrips();if(renderGeneration!==sessionRenderGeneration)return}catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
 }
