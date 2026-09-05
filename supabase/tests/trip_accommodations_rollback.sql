@@ -2,6 +2,19 @@ begin;
 
 do $$
 begin
+  if (
+    select count(*)
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'trip_accommodations'
+      and column_name in ('city','postal_code','region','country')
+      and data_type = 'text'
+      and is_nullable = 'YES'
+      and column_default is null
+  ) <> 4 then
+    raise exception 'structured location columns are missing, non-nullable, non-text, or have defaults';
+  end if;
+
   if not exists (
     select 1 from pg_catalog.pg_class
     where oid = 'public.trip_accommodations'::regclass
@@ -82,13 +95,13 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub','33000000-0000-4000-8000-000000000001',true);
 
 insert into public.trip_accommodations (
-  id,trip_id,accommodation_type,name,check_in_at,check_out_at,time_zone,
-  reservation_status,created_by
+  id,trip_id,accommodation_type,name,address,location_text,city,postal_code,region,country,
+  check_in_at,check_out_at,time_zone,reservation_status,created_by
 )
 values
-  ('33000000-0000-4000-8000-000000000301','33000000-0000-4000-8000-000000000101','hotel','Primer hotel','2027-09-02 15:00+02','2027-09-04 11:00+02','Europe/Madrid','confirmed','33000000-0000-4000-8000-000000000001'),
-  ('33000000-0000-4000-8000-000000000302','33000000-0000-4000-8000-000000000101','apartment','Segon allotjament','2027-09-06 16:00+02','2027-09-09 10:00+02','Europe/Madrid','planning','33000000-0000-4000-8000-000000000001'),
-  ('33000000-0000-4000-8000-000000000303','33000000-0000-4000-8000-000000000101','house','Allotjament sense dates',null,null,'Europe/Madrid','planning','33000000-0000-4000-8000-000000000001');
+  ('33000000-0000-4000-8000-000000000301','33000000-0000-4000-8000-000000000101','hotel','Primer hotel','Rua das Flores 10',null,'Porto','4000-123','Norte','Portugal','2027-09-02 15:00+02','2027-09-04 11:00+02','Europe/Madrid','confirmed','33000000-0000-4000-8000-000000000001'),
+  ('33000000-0000-4000-8000-000000000302','33000000-0000-4000-8000-000000000101','apartment','Segon allotjament','Carrer Major 2',null,'Madrid',null,null,null,'2027-09-06 16:00+02','2027-09-09 10:00+02','Europe/Madrid','planning','33000000-0000-4000-8000-000000000001'),
+  ('33000000-0000-4000-8000-000000000303','33000000-0000-4000-8000-000000000101','house','Allotjament sense dates',null,'Badia antiga',null,null,null,null,null,null,'Europe/Madrid','planning','33000000-0000-4000-8000-000000000001');
 
 do $$
 declare
@@ -109,11 +122,33 @@ begin
     '33000000-0000-4000-8000-000000000302'::uuid,
     '33000000-0000-4000-8000-000000000303'::uuid
   ] then raise exception 'chronological ordering is incorrect: %', ordered_ids; end if;
+
+  if not exists (
+    select 1 from public.trip_accommodations
+    where id = '33000000-0000-4000-8000-000000000302'
+      and address = 'Carrer Major 2'
+      and city = 'Madrid'
+      and postal_code is null
+      and region is null
+      and country is null
+  ) then raise exception 'address and city-only create or nullable country failed'; end if;
+
+  if not exists (
+    select 1 from public.trip_accommodations
+    where id = '33000000-0000-4000-8000-000000000303'
+      and location_text = 'Badia antiga'
+      and city is null
+      and postal_code is null
+      and region is null
+      and country is null
+  ) then raise exception 'legacy location_text-only row was not preserved'; end if;
 end;
 $$;
 
 update public.trip_accommodations
-set name = 'Primer hotel editat'
+set name = 'Primer hotel editat',
+    city = 'Porto editat',
+    country = null
 where id = '33000000-0000-4000-8000-000000000301'
   and trip_id = '33000000-0000-4000-8000-000000000101';
 
@@ -123,6 +158,8 @@ begin
     select 1 from public.trip_accommodations
     where id = '33000000-0000-4000-8000-000000000301'
       and name = 'Primer hotel editat'
+      and city = 'Porto editat'
+      and country is null
       and updated_by = '33000000-0000-4000-8000-000000000001'
       and updated_at >= created_at
   ) then raise exception 'member UPDATE or audit trigger failed'; end if;
@@ -169,6 +206,38 @@ select pg_temp.expect_failure('excessive address', $sql$
   insert into public.trip_accommodations (trip_id,accommodation_type,name,address,time_zone,created_by)
   values ('33000000-0000-4000-8000-000000000101','hotel','Long address',repeat('x',501),'Europe/Madrid','33000000-0000-4000-8000-000000000001')
 $sql$);
+select pg_temp.expect_failure('whitespace city', $sql$
+  insert into public.trip_accommodations (trip_id,accommodation_type,name,city,time_zone,created_by)
+  values ('33000000-0000-4000-8000-000000000101','hotel','Bad city','   ','Europe/Madrid','33000000-0000-4000-8000-000000000001')
+$sql$,'23514');
+select pg_temp.expect_failure('excessive city', $sql$
+  insert into public.trip_accommodations (trip_id,accommodation_type,name,city,time_zone,created_by)
+  values ('33000000-0000-4000-8000-000000000101','hotel','Long city',repeat('c',201),'Europe/Madrid','33000000-0000-4000-8000-000000000001')
+$sql$,'23514');
+select pg_temp.expect_failure('whitespace postal code', $sql$
+  insert into public.trip_accommodations (trip_id,accommodation_type,name,postal_code,time_zone,created_by)
+  values ('33000000-0000-4000-8000-000000000101','hotel','Bad postal code','   ','Europe/Madrid','33000000-0000-4000-8000-000000000001')
+$sql$,'23514');
+select pg_temp.expect_failure('excessive postal code', $sql$
+  insert into public.trip_accommodations (trip_id,accommodation_type,name,postal_code,time_zone,created_by)
+  values ('33000000-0000-4000-8000-000000000101','hotel','Long postal code',repeat('p',41),'Europe/Madrid','33000000-0000-4000-8000-000000000001')
+$sql$,'23514');
+select pg_temp.expect_failure('whitespace region', $sql$
+  insert into public.trip_accommodations (trip_id,accommodation_type,name,region,time_zone,created_by)
+  values ('33000000-0000-4000-8000-000000000101','hotel','Bad region','   ','Europe/Madrid','33000000-0000-4000-8000-000000000001')
+$sql$,'23514');
+select pg_temp.expect_failure('excessive region', $sql$
+  insert into public.trip_accommodations (trip_id,accommodation_type,name,region,time_zone,created_by)
+  values ('33000000-0000-4000-8000-000000000101','hotel','Long region',repeat('r',201),'Europe/Madrid','33000000-0000-4000-8000-000000000001')
+$sql$,'23514');
+select pg_temp.expect_failure('whitespace country', $sql$
+  insert into public.trip_accommodations (trip_id,accommodation_type,name,country,time_zone,created_by)
+  values ('33000000-0000-4000-8000-000000000101','hotel','Bad country','   ','Europe/Madrid','33000000-0000-4000-8000-000000000001')
+$sql$,'23514');
+select pg_temp.expect_failure('excessive country', $sql$
+  insert into public.trip_accommodations (trip_id,accommodation_type,name,country,time_zone,created_by)
+  values ('33000000-0000-4000-8000-000000000101','hotel','Long country',repeat('k',201),'Europe/Madrid','33000000-0000-4000-8000-000000000001')
+$sql$,'23514');
 select pg_temp.expect_failure('checkout before checkin', $sql$
   insert into public.trip_accommodations (trip_id,accommodation_type,name,check_in_at,check_out_at,time_zone,created_by)
   values ('33000000-0000-4000-8000-000000000101','hotel','Bad dates','2027-09-04 12:00+02','2027-09-04 12:00+02','Europe/Madrid','33000000-0000-4000-8000-000000000001')
