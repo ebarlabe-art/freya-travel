@@ -952,6 +952,8 @@ let session=null;
 let trips = [];
 let trip = null;
 let channel=null,tripLoadGeneration=0,sessionRenderGeneration=0,flightTimer=null;
+const NAVIGATION_STATE_VERSION=1;
+let navigationRestoreInProgress=false,lastAuthenticatedUserId=null;
 const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
@@ -960,6 +962,16 @@ function selectedTripStorageKey(){return session?.user?.id?`freya-selected-trip-
 function readSelectedTripId(){const key=selectedTripStorageKey();if(!key)return null;try{return localStorage.getItem(key)}catch(_){return null}}
 function rememberSelectedTrip(){const key=selectedTripStorageKey();if(!key||!trip)return;try{localStorage.setItem(key,trip.id)}catch(_){}}
 function forgetSelectedTrip(){const key=selectedTripStorageKey();if(!key)return;try{localStorage.removeItem(key)}catch(_){}}
+function navigationStateStorageKey(userId=session?.user?.id){return userId?`freya-navigation-state-v${NAVIGATION_STATE_VERSION}-${userId}`:null}
+function clearNavigationState(userId=session?.user?.id){const key=navigationStateStorageKey(userId);if(!key)return;try{localStorage.removeItem(key)}catch(_){}}
+function readNavigationState(userId=session?.user?.id){
+  const key=navigationStateStorageKey(userId);if(!key)return null;
+  try{
+    const state=JSON.parse(localStorage.getItem(key)||'null');
+    if(!state||typeof state!=='object'||(state.tripId!==null&&typeof state.tripId!=='string')||typeof state.view!=='string'||!Number.isFinite(state.savedAt)){clearNavigationState(userId);return null}
+    return state;
+  }catch(_){clearNavigationState(userId);return null}
+}
 function tripRequestIsCurrent(tripId,generation){return trip?.id===tripId&&tripLoadGeneration===generation}
 function parseTripDate(value){if(!value)return null;const [year,month,day]=String(value).split('-').map(Number);return year&&month&&day?new Date(year,month-1,day,12):null}
 function formatTripDate(value){const date=parseTripDate(value);return date?new Intl.DateTimeFormat('ca-ES',{day:'numeric',month:'short',year:'numeric'}).format(date):'Data pendent'}
@@ -1398,11 +1410,30 @@ function subscribeAccommodations(){
 }
 const APP_VIEWS=['tripsHomeView','dashboardView','genericDashboardView','genericModuleView','accommodationView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
 const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','genericDashboardView','genericModuleView','accommodationView','checklistView','documentsView','photosView']);
+const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView'].includes(id)));
+function navigationViewIsValid(view,value=trip){
+  if(view==='tripsHomeView')return true;
+  if(!value)return false;
+  return (isLondonTrip(value)?LONDON_ALLOWED_VIEWS:GENERIC_ALLOWED_VIEWS).has(view);
+}
+function normalizedNavigationView(view,value=trip){
+  if(!value)return 'tripsHomeView';
+  if(!isLondonTrip(value)&&view==='genericModuleView')return 'genericDashboardView';
+  if(navigationViewIsValid(view,value))return view;
+  return isLondonTrip(value)?'dashboardView':'genericDashboardView';
+}
+function persistNavigationState(view){
+  const userId=session?.user?.id,key=navigationStateStorageKey(userId);if(!key||navigationRestoreInProgress)return;
+  const safeView=normalizedNavigationView(view,trip),state={tripId:trip?.id||null,view:safeView,savedAt:Date.now()};
+  try{localStorage.setItem(key,JSON.stringify(state))}catch(_){}
+}
+function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
 function setAppView(id){
   if(!trip&&id!=='tripsHomeView')id='tripsHomeView';
   if(isLondonTrip()&&['genericDashboardView','genericModuleView','accommodationView'].includes(id))id='dashboardView';
   if(!isLondonTrip()&&!GENERIC_ALLOWED_VIEWS.has(id))id='genericDashboardView';
   APP_VIEWS.forEach(v=>$(v)?.classList.toggle('hidden',v!==id));
+  persistNavigationState(id);
   if(id==='documentsView')updateDocumentsBack();
   if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
 }
@@ -1484,6 +1515,7 @@ function subscribe(){
     .subscribe(status=>{if(status==='SUBSCRIBED'&&tripRequestIsCurrent(subscribedTripId,subscribedGeneration))loadItems()});
 }
 function renderPasswordRecovery(){
+  clearNavigationState(session?.user?.id);
   clearDocumentsReturnContext();
   clearAccommodationMessage();
   hide('loading');hide('noTrip');hide('tripView');show('auth');hide('loginCard');show('passwordRecoveryCard');
@@ -1612,18 +1644,33 @@ async function initializeGenericChecklistDefaults(){
 async function refreshTrips({preferredTripId=null,open=false}={}){
   const requestUserId=session?.user?.id;if(!requestUserId)return false;
   const {data,error}=await db.rpc('get_my_trips');if(error)throw error;if(session?.user?.id!==requestUserId)return false;trips=data||[];
+  const explicitRoute=!!(pendingInitialRoute&&!initialViewApplied),savedNavigation=!explicitRoute&&!preferredTripId&&!open?readNavigationState(requestUserId):null;
+  const savedNavigationTrip=savedNavigation?.tripId?trips.find(value=>value.id===savedNavigation.tripId)||null:null;
+  if(savedNavigation?.tripId&&!savedNavigationTrip)clearNavigationState(requestUserId);
+  const restoreNavigation=!!(savedNavigationTrip&&!explicitRoute&&!preferredTripId&&!open),restoreView=restoreNavigation?normalizedNavigationView(savedNavigation.view,savedNavigationTrip):null;
+  if(restoreNavigation&&savedNavigation.view!=='genericModuleView'&&!navigationViewIsValid(savedNavigation.view,savedNavigationTrip))clearNavigationState(requestUserId);
   const savedId=readSelectedTripId(),validPreferred=trips.some(value=>value.id===preferredTripId)?preferredTripId:null,validSaved=trips.some(value=>value.id===savedId)?savedId:null;
   if(savedId&&!validSaved)forgetSelectedTrip();
   const londonForDeepLink=pendingInitialRoute&&!initialViewApplied?trips.find(isLondonTrip)?.id:null;
-  const selectedId=londonForDeepLink||validPreferred||validSaved||trips[0]?.id||null;
+  const selectedId=londonForDeepLink||validPreferred||savedNavigationTrip?.id||validSaved||trips[0]?.id||null;
   renderTripsHome();
-  if(selectedId)await selectTrip(selectedId,{open,applyDeepLink:!!londonForDeepLink});
+  if(selectedId){
+    navigationRestoreInProgress=restoreNavigation;
+    try{
+      const selected=await selectTrip(selectedId,{open:restoreNavigation?false:open,applyDeepLink:!!londonForDeepLink});
+      if(!selected)return false;
+      if(restoreNavigation&&session?.user?.id===requestUserId&&trip?.id===savedNavigationTrip.id)setAppView(restoreView);
+    }finally{navigationRestoreInProgress=false}
+    if(restoreNavigation&&session?.user?.id===requestUserId&&trip?.id===savedNavigationTrip.id)persistNavigationState(visibleAppView());
+  }
   else{trip=null;tripLoadGeneration+=1;await disconnectTripRealtime();clearTripScopedState();updateTripPresentation();setAppView('tripsHomeView')}
   if(pendingInitialRoute&&!initialViewApplied)applyPendingInitialView();return true;
 }
 async function renderSession(next){
-  const renderGeneration=++sessionRenderGeneration;session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');
-  if(!session){trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();await disconnectTripRealtime();clearDocumentsReturnContext();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
+  const renderGeneration=++sessionRenderGeneration,nextUserId=next?.user?.id||null;
+  if(nextUserId&&lastAuthenticatedUserId&&nextUserId!==lastAuthenticatedUserId){clearNavigationState(lastAuthenticatedUserId);clearDocumentsReturnContext()}
+  if(nextUserId)lastAuthenticatedUserId=nextUserId;session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');
+  if(!session){if(lastAuthenticatedUserId)clearNavigationState(lastAuthenticatedUserId);lastAuthenticatedUserId=null;trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();await disconnectTripRealtime();clearDocumentsReturnContext();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
   $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';show('tripView');
   try{await refreshTrips();if(renderGeneration!==sessionRenderGeneration)return}catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
 }
@@ -2265,6 +2312,7 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   const password=$('password');
   if(password)password.value='';
   msg('authMsg','');
+  clearNavigationState(session?.user?.id);
   await db.auth.signOut();
   if(password)password.value='';
 });
