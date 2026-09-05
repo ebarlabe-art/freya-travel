@@ -351,9 +351,11 @@
         <button id="addAccommodation" type="button">Afegir allotjament</button>
       </section>
       <p id="accommodationMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
-      <div id="accommodationLoading" class="accommodation-loading hidden">Carregant allotjaments…</div>
-      <div id="accommodationEmpty" class="accommodation-empty hidden"><strong>Encara no has afegit cap allotjament</strong>Pots començar amb només el tipus i el nom.<br><button id="addFirstAccommodation" type="button">Afegir allotjament</button></div>
-      <div id="accommodationList" class="accommodation-list"></div>
+      <div id="accommodationBrowse">
+        <div id="accommodationLoading" class="accommodation-loading hidden">Carregant allotjaments…</div>
+        <div id="accommodationEmpty" class="accommodation-empty hidden"><strong>Encara no has afegit cap allotjament</strong>Pots començar amb només el tipus i el nom.<br><button id="addFirstAccommodation" type="button">Afegir allotjament</button></div>
+        <div id="accommodationList" class="accommodation-list"></div>
+      </div>
       <section id="accommodationFormCard" class="card accommodation-form-card hidden">
         <h3 id="accommodationFormTitle">Afegir allotjament</h3>
         <form id="accommodationForm" class="accommodation-form">
@@ -1273,7 +1275,7 @@ function restoreAccommodationDraft(){
   const form=$('accommodationForm');form.reset();form.dataset.editId=draft.editId||'';form.dataset.timeZone=draft.timeZone;form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=draft.originalUpdatedAt||'';form.dataset.originalVoucherDocumentId=draft.originalVoucherDocumentId||'';form.dataset.remoteConflict='';
   ACCOMMODATION_DRAFT_FIELDS.filter(id=>id!=='accommodationVoucher').forEach(id=>{if($(id)&&Object.prototype.hasOwnProperty.call(draft.fields||{},id))$(id).value=draft.fields[id]||''});
   renderAccommodationDocumentOptions(draft.fields?.accommodationVoucher||'');
-  $('accommodationFormTitle').textContent=row?'Editar allotjament':'Afegir allotjament';$('accommodationTimeZoneHelp').textContent=`Hores guardades en la zona ${draft.timeZone}.`;$('accommodationFormCard').classList.remove('hidden');
+  $('accommodationFormTitle').textContent=row?'Editar allotjament':'Afegir allotjament';$('accommodationTimeZoneHelp').textContent=`Hores guardades en la zona ${draft.timeZone}.`;setAccommodationFormMode(true);
   if(row){const currentVoucher=accommodationLinkFor(row.id)?.document_id||'',remotelyChanged=row.updated_at!==draft.originalUpdatedAt||currentVoucher!==(draft.originalVoucherDocumentId||'');form.dataset.remoteConflict=remotelyChanged?'true':'';if(remotelyChanged)msg('accommodationMsg','Aquest allotjament ha canviat mentre no eres aquí. Hem conservat el teu esborrany; en desar comprovarem la versió actual.',true)}
   return true;
 }
@@ -1329,6 +1331,7 @@ function renderAccommodations(){
   list.querySelectorAll('[data-delete-accommodation]').forEach(button=>button.onclick=()=>deleteAccommodation(button.dataset.deleteAccommodation,button));
 }
 function clearAccommodationMessage(){if($('accommodationMsg'))msg('accommodationMsg','')}
+function setAccommodationFormMode(active){$('accommodationBrowse').classList.toggle('hidden',active);$('addAccommodation').classList.toggle('hidden',active);$('accommodationFormCard').classList.toggle('hidden',!active)}
 async function loadAccommodations(silent=false){
   if(!trip||isLondonTrip())return [];
   const tripId=trip.id,generation=tripLoadGeneration,loadSequence=++accommodationLoadSequence,previousAccommodationIds=new Set(accommodationRows.map(item=>item.id));if(!silent)$('accommodationLoading').classList.remove('hidden');
@@ -1354,7 +1357,7 @@ async function loadAccommodations(silent=false){
   if(!$('accommodationView').classList.contains('hidden'))restoreAccommodationDraft();
   return accommodationRows;
 }
-function resetAccommodationFormUi(){$('accommodationForm').reset();$('accommodationForm').dataset.editId='';$('accommodationForm').dataset.timeZone='';$('accommodationForm').dataset.tripId='';$('accommodationForm').dataset.originalUpdatedAt='';$('accommodationForm').dataset.originalVoucherDocumentId='';$('accommodationForm').dataset.remoteConflict='';$('accommodationFormCard').classList.add('hidden');$('saveAccommodation').disabled=false;accommodationSubmitting=false;clearAccommodationMessage()}
+function resetAccommodationFormUi(){$('accommodationForm').reset();$('accommodationForm').dataset.editId='';$('accommodationForm').dataset.timeZone='';$('accommodationForm').dataset.tripId='';$('accommodationForm').dataset.originalUpdatedAt='';$('accommodationForm').dataset.originalVoucherDocumentId='';$('accommodationForm').dataset.remoteConflict='';setAccommodationFormMode(false);$('saveAccommodation').disabled=false;accommodationSubmitting=false;clearAccommodationMessage()}
 function closeAccommodationForm(){clearAccommodationDraft();resetAccommodationFormUi()}
 function openAccommodationForm(id=''){
   if(!trip||isLondonTrip())return;
@@ -1364,7 +1367,7 @@ function openAccommodationForm(id=''){
   const originalVoucherDocumentId=row?accommodationLinkFor(row.id)?.document_id||'':'';
   const form=$('accommodationForm');form.reset();form.dataset.editId=row?.id||'';form.dataset.timeZone=timeZone;form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=row?.updated_at||'';form.dataset.originalVoucherDocumentId=originalVoucherDocumentId;form.dataset.remoteConflict='';
   $('accommodationFormTitle').textContent=row?'Editar allotjament':'Afegir allotjament';$('accommodationType').value=row?.accommodation_type||'hotel';$('accommodationName').value=row?.name||'';$('accommodationAddress').value=row?.address||'';$('accommodationLocation').value=row?.location_text||'';$('accommodationCheckIn').value=isoToZonedLocal(row?.check_in_at,timeZone);$('accommodationCheckOut').value=isoToZonedLocal(row?.check_out_at,timeZone);$('accommodationStatus').value=row?.reservation_status||'planning';$('accommodationProvider').value=row?.booking_provider||'';$('accommodationReference').value=row?.booking_reference||'';$('accommodationPhone').value=row?.phone||'';$('accommodationEmail').value=row?.email||'';$('accommodationWebsite').value=row?.website_url||'';$('accommodationRoom').value=row?.room_number||'';$('accommodationNotes').value=row?.notes||'';
-  $('accommodationTimeZoneHelp').textContent=`Hores guardades en la zona ${timeZone}.`;renderAccommodationDocumentOptions(row?accommodationLinkFor(row.id)?.document_id||'':'');$('accommodationFormCard').classList.remove('hidden');saveAccommodationDraft();$('accommodationName').focus();$('accommodationFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+  $('accommodationTimeZoneHelp').textContent=`Hores guardades en la zona ${timeZone}.`;renderAccommodationDocumentOptions(row?accommodationLinkFor(row.id)?.document_id||'':'');setAccommodationFormMode(true);saveAccommodationDraft();$('accommodationName').focus();$('accommodationFormCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function fetchCurrentAccommodationVoucher(accommodationId,tripId,generation){
   const {data,error}=await db.from('trip_accommodation_documents').select('document_id').eq('trip_id',tripId).eq('accommodation_id',accommodationId).eq('document_role','voucher').maybeSingle();
@@ -1569,7 +1572,7 @@ function clearTripScopedState(){
   if($('photoPreviewImage'))$('photoPreviewImage').removeAttribute('src');
   showPhotoMessage('');
   if($('accommodationForm')){$('accommodationForm').reset();$('accommodationForm').dataset.editId='';$('accommodationForm').dataset.timeZone='';$('accommodationForm').dataset.tripId='';$('accommodationForm').dataset.originalUpdatedAt='';$('accommodationForm').dataset.originalVoucherDocumentId='';$('accommodationForm').dataset.remoteConflict=''}
-  if($('accommodationFormCard'))$('accommodationFormCard').classList.add('hidden');
+  if($('accommodationFormCard'))setAccommodationFormMode(false);
   if($('accommodationEmpty'))$('accommodationEmpty').classList.add('hidden');
   if($('accommodationLoading'))$('accommodationLoading').classList.add('hidden');
   if($('saveAccommodation'))$('saveAccommodation').disabled=false;
