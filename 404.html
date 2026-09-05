@@ -1437,10 +1437,16 @@ async function recoverAccommodationConflict(accommodationId,tripId,generation,me
   if(!current){closeAccommodationForm();msg('accommodationMsg','Aquest allotjament s’ha eliminat mentre l’editaves. Hem actualitzat la llista.',true);return}
   openAccommodationForm(accommodationId);msg('accommodationMsg',message||'Aquest allotjament ha canviat mentre l’editaves. Hem carregat la versió més recent. Revisa els canvis abans de tornar a desar.',true);
 }
-function openAccommodationVoucher(accommodationId){
+async function openAccommodationVoucher(accommodationId){
   if(!trip||isLondonTrip())return;
-  const tripId=trip.id,generation=tripLoadGeneration,documentId=accommodationVoucherDocumentId(accommodationId);if(!documentId)return;
-  clearAccommodationVoucherFocus();clearDocumentsReturnContext();accommodationVoucherFocus={userId:session?.user?.id,tripId,documentId,generation};setAppView('documentsView');
+  const documentId=accommodationVoucherDocumentId(accommodationId);if(!documentId)return;
+  let document=documentRows.find(item=>item.id===documentId);
+  if(!document){
+    const docs=await loadDocuments(true);
+    document=(docs||[]).find(item=>item.id===documentId);
+  }
+  if(!document){msg('accommodationMsg','El document de reserva ja no està disponible.',true);return}
+  await openDocument(documentId,documentRows);
 }
 async function deleteAccommodation(id,button){
   if(!trip||isLondonTrip())return;
@@ -1697,8 +1703,8 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
   if(savedNavigation?.tripId&&!savedNavigationTrip)clearNavigationState(requestUserId);
   const restoreNavigation=!!(savedNavigationTrip&&!explicitRoute&&!preferredTripId&&!open);
   const restoredSavedView=restoreNavigation?normalizedNavigationView(savedNavigation.view,savedNavigationTrip):null;
-  const restoreView=restoreNavigation&&coldStart&&restoredSavedView!=='tripsHomeView'
-    ?(isLondonTrip(savedNavigationTrip)?'dashboardView':'genericDashboardView')
+  const restoreView=restoreNavigation&&coldStart
+    ?(savedNavigation.view==='tripsHomeView'?'tripsHomeView':(isLondonTrip(savedNavigationTrip)?'dashboardView':'genericDashboardView'))
     :restoredSavedView;
   if(restoreNavigation&&savedNavigation.view!=='genericModuleView'&&!navigationViewIsValid(savedNavigation.view,savedNavigationTrip))clearNavigationState(requestUserId);
   const savedId=readSelectedTripId(),validPreferred=trips.some(value=>value.id===preferredTripId)?preferredTripId:null,validSaved=trips.some(value=>value.id===savedId)?savedId:null;
@@ -1726,9 +1732,9 @@ async function renderSession(next){
   $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';show('tripView');
   try{
     const coldStart=coldStartNavigationPending;
+    if(coldStart)coldStartNavigationPending=false;
     await refreshTrips({coldStart});
     if(renderGeneration!==sessionRenderGeneration)return;
-    if(coldStart)coldStartNavigationPending=false;
   }catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
 }
 const LONDON_CHECKLIST_CATEGORIES=[
