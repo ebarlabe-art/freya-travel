@@ -961,6 +961,7 @@ let trip = null;
 let channel=null,tripLoadGeneration=0,sessionRenderGeneration=0,flightTimer=null;
 const NAVIGATION_STATE_VERSION=1;
 let navigationRestoreInProgress=false,lastAuthenticatedUserId=null;
+let coldStartNavigationPending=true;
 const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
@@ -1439,7 +1440,7 @@ async function recoverAccommodationConflict(accommodationId,tripId,generation,me
 function openAccommodationVoucher(accommodationId){
   if(!trip||isLondonTrip())return;
   const tripId=trip.id,generation=tripLoadGeneration,documentId=accommodationVoucherDocumentId(accommodationId);if(!documentId)return;
-  clearAccommodationVoucherFocus();clearDocumentsReturnContext();accommodationVoucherFocus={userId:session?.user?.id,tripId,documentId,generation};setAppView('documentsView');focusAssociatedAccommodationVoucher(false);
+  clearAccommodationVoucherFocus();clearDocumentsReturnContext();accommodationVoucherFocus={userId:session?.user?.id,tripId,documentId,generation};setAppView('documentsView');
 }
 async function deleteAccommodation(id,button){
   if(!trip||isLondonTrip())return;
@@ -1688,13 +1689,17 @@ async function initializeGenericChecklistDefaults(){
   if(!tripRequestIsCurrent(tripId,generation))return;
   if(error)msg('checklistMsg','No s’ha pogut preparar la checklist universal: '+error.message,true);
 }
-async function refreshTrips({preferredTripId=null,open=false}={}){
+async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}){
   const requestUserId=session?.user?.id;if(!requestUserId)return false;
   const {data,error}=await db.rpc('get_my_trips');if(error)throw error;if(session?.user?.id!==requestUserId)return false;trips=data||[];
   const explicitRoute=!!(pendingInitialRoute&&!initialViewApplied),savedNavigation=!explicitRoute&&!preferredTripId&&!open?readNavigationState(requestUserId):null;
   const savedNavigationTrip=savedNavigation?.tripId?trips.find(value=>value.id===savedNavigation.tripId)||null:null;
   if(savedNavigation?.tripId&&!savedNavigationTrip)clearNavigationState(requestUserId);
-  const restoreNavigation=!!(savedNavigationTrip&&!explicitRoute&&!preferredTripId&&!open),restoreView=restoreNavigation?normalizedNavigationView(savedNavigation.view,savedNavigationTrip):null;
+  const restoreNavigation=!!(savedNavigationTrip&&!explicitRoute&&!preferredTripId&&!open);
+  const restoredSavedView=restoreNavigation?normalizedNavigationView(savedNavigation.view,savedNavigationTrip):null;
+  const restoreView=restoreNavigation&&coldStart&&restoredSavedView!=='tripsHomeView'
+    ?(isLondonTrip(savedNavigationTrip)?'dashboardView':'genericDashboardView')
+    :restoredSavedView;
   if(restoreNavigation&&savedNavigation.view!=='genericModuleView'&&!navigationViewIsValid(savedNavigation.view,savedNavigationTrip))clearNavigationState(requestUserId);
   const savedId=readSelectedTripId(),validPreferred=trips.some(value=>value.id===preferredTripId)?preferredTripId:null,validSaved=trips.some(value=>value.id===savedId)?savedId:null;
   if(savedId&&!validSaved)forgetSelectedTrip();
@@ -1719,7 +1724,12 @@ async function renderSession(next){
   if(nextUserId)lastAuthenticatedUserId=nextUserId;session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');
   if(!session){if(lastAuthenticatedUserId)clearNavigationState(lastAuthenticatedUserId);lastAuthenticatedUserId=null;trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();await disconnectTripRealtime();clearDocumentsReturnContext();clearAccommodationVoucherFocus();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
   $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';show('tripView');
-  try{await refreshTrips();if(renderGeneration!==sessionRenderGeneration)return}catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
+  try{
+    const coldStart=coldStartNavigationPending;
+    await refreshTrips({coldStart});
+    if(renderGeneration!==sessionRenderGeneration)return;
+    if(coldStart)coldStartNavigationPending=false;
+  }catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
 }
 const LONDON_CHECKLIST_CATEGORIES=[
   {id:'equipment',icon:'🧳',label:'Equipatge'},
