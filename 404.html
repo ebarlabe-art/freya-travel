@@ -683,7 +683,7 @@
     </div>
 
     <div id="documentsView" class="hidden">
-      <button class="ghost back" data-back>← Torna al tauler</button>
+      <button id="documentsBack" class="ghost back" data-back>← Torna al tauler</button>
       <div class="card">
         <h2>📄 Documents privats</h2>
         <p class="muted">Puja entrades, reserves, captures o PDF directament des del mòbil. Els documents són compartits només amb els membres del viatge.</p>
@@ -1215,6 +1215,7 @@ let accommodationRows=[];
 let accommodationDocumentLinks=[];
 let accommodationSubmitting=false;
 let accommodationLoadSequence=0;
+let documentsReturnContext=null;
 const ACCOMMODATION_DRAFT_VERSION=1;
 const ACCOMMODATION_DRAFT_FIELDS=['accommodationType','accommodationName','accommodationAddress','accommodationLocation','accommodationCheckIn','accommodationCheckOut','accommodationStatus','accommodationProvider','accommodationReference','accommodationPhone','accommodationEmail','accommodationWebsite','accommodationRoom','accommodationVoucher','accommodationNotes'];
 const ACCOMMODATION_SELECT='id,trip_id,accommodation_type,name,address,location_text,latitude,longitude,check_in_at,check_out_at,time_zone,booking_reference,booking_provider,reservation_status,phone,email,website_url,room_number,notes,created_by,updated_by,created_at,updated_at';
@@ -1224,6 +1225,20 @@ function optionalText(value){const normalized=String(value||'').trim();return no
 function accommodationLinkFor(accommodationId){return accommodationDocumentLinks.find(link=>link.accommodation_id===accommodationId&&link.document_role==='voucher')||null}
 function accommodationDocumentFor(accommodationId){const link=accommodationLinkFor(accommodationId);return link?documentRows.find(document=>document.id===link.document_id)||null:null}
 function accommodationSummary(count=accommodationRows.length){return !count?'Cap allotjament':count===1?'1 allotjament':`${count} allotjaments`}
+function validDocumentsReturnContext(){
+  const context=documentsReturnContext,userId=session?.user?.id,tripId=trip?.id;
+  if(context?.returnView==='accommodationView'&&context.userId===userId&&context.tripId===tripId&&!isLondonTrip())return context;
+  documentsReturnContext=null;return null;
+}
+function updateDocumentsBack(){const contextual=!!validDocumentsReturnContext();if($('documentsBack'))$('documentsBack').textContent=contextual?'← Tornar a Allotjament':'← Torna al tauler'}
+function clearDocumentsReturnContext(){documentsReturnContext=null;updateDocumentsBack()}
+function setAccommodationDocumentsReturnContext(){
+  if(!trip||!session||isLondonTrip())return false;
+  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'accommodationView'};updateDocumentsBack();return true;
+}
+function handleDocumentsBack(){
+  const context=validDocumentsReturnContext();documentsReturnContext=null;updateDocumentsBack();setAppView(context?'accommodationView':tripDashboardId());
+}
 function accommodationDraftKey(tripId=trip?.id,userId=session?.user?.id){return tripId&&userId?`freya-accommodation-draft-v${ACCOMMODATION_DRAFT_VERSION}-${userId}-${tripId}`:null}
 function readAccommodationDraft(tripId=trip?.id,userId=session?.user?.id){
   const key=accommodationDraftKey(tripId,userId);if(!key)return null;
@@ -1388,6 +1403,7 @@ function setAppView(id){
   if(isLondonTrip()&&['genericDashboardView','genericModuleView','accommodationView'].includes(id))id='dashboardView';
   if(!isLondonTrip()&&!GENERIC_ALLOWED_VIEWS.has(id))id='genericDashboardView';
   APP_VIEWS.forEach(v=>$(v)?.classList.toggle('hidden',v!==id));
+  if(id==='documentsView')updateDocumentsBack();
   if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
 }
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
@@ -1468,6 +1484,7 @@ function subscribe(){
     .subscribe(status=>{if(status==='SUBSCRIBED'&&tripRequestIsCurrent(subscribedTripId,subscribedGeneration))loadItems()});
 }
 function renderPasswordRecovery(){
+  clearDocumentsReturnContext();
   clearAccommodationMessage();
   hide('loading');hide('noTrip');hide('tripView');show('auth');hide('loginCard');show('passwordRecoveryCard');
   $('newPassword').disabled=!passwordRecoverySessionValid;$('confirmNewPassword').disabled=!passwordRecoverySessionValid;$('updatePassword').disabled=!passwordRecoverySessionValid||passwordRecoverySubmitting;
@@ -1480,6 +1497,7 @@ async function disconnectTripRealtime(){
   await Promise.allSettled(active.map(item=>db.removeChannel(item)));
 }
 function clearTripScopedState(){
+  clearDocumentsReturnContext();
   documentRows=[];pendingDocumentRows=[];expenseRows=[];photoRows=[];pendingPhotoRows=[];accommodationRows=[];accommodationDocumentLinks=[];accommodationSubmitting=false;accommodationLoadSequence+=1;parkingRow=null;parkingLoadsPending=0;clearPhotoObjectUrls();closePhotoLightbox();
   const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList',''],['accommodationList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
   [['overviewChecklist','0/0'],['overviewDocuments','0'],['overviewExpenses','0'],['documentCount','0'],['expenseCount','0'],['photoCount','0']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
@@ -1605,7 +1623,7 @@ async function refreshTrips({preferredTripId=null,open=false}={}){
 }
 async function renderSession(next){
   const renderGeneration=++sessionRenderGeneration;session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');
-  if(!session){trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();await disconnectTripRealtime();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
+  if(!session){trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();await disconnectTripRealtime();clearDocumentsReturnContext();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
   $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';show('tripView');
   try{await refreshTrips();if(renderGeneration!==sessionRenderGeneration)return}catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
 }
@@ -1696,10 +1714,11 @@ async function loadItems(){
 
 async function toggleItem(id,done){if(!trip)return;const tripId=trip.id,generation=tripLoadGeneration;const {error}=await db.from('checklist_items').update({done}).eq('id',id).eq('trip_id',tripId);if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
 async function deleteItem(id,templateKey=''){if(!trip)return;const tripId=trip.id,generation=tripLoadGeneration,dismissTemplate=!isLondonTrip()&&!!templateKey;const query=dismissTemplate?db.from('checklist_items').update({dismissed:true}).eq('id',id).eq('trip_id',tripId):db.from('checklist_items').delete().eq('id',id).eq('trip_id',tripId);const {error}=await query;if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
-document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>setAppView(b.dataset.open));
+document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.open==='documentsView')clearDocumentsReturnContext();setAppView(b.dataset.open)});
 $('backToTrips').onclick=()=>setAppView('tripsHomeView');document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=()=>setAppView('tripsHomeView'));document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-generic-module]').forEach(b=>b.onclick=()=>openGenericModule(b.dataset.genericModule));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView(tripDashboardId()));document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
+$('documentsBack').onclick=handleDocumentsBack;
 $('addAccommodation').onclick=()=>openAccommodationForm();$('addFirstAccommodation').onclick=()=>openAccommodationForm();$('cancelAccommodation').onclick=closeAccommodationForm;
-$('accommodationOpenDocuments').onclick=()=>{if(!trip||!session||isLondonTrip())return;saveAccommodationDraft();setAppView('documentsView')};
+$('accommodationOpenDocuments').onclick=()=>{if(!setAccommodationDocumentsReturnContext())return;saveAccommodationDraft();setAppView('documentsView')};
 $('accommodationForm').addEventListener('input',saveAccommodationDraft);$('accommodationForm').addEventListener('change',saveAccommodationDraft);
 $('accommodationForm').onsubmit=async event=>{
   event.preventDefault();if(accommodationSubmitting||!trip||!session||isLondonTrip())return;
