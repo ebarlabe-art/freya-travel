@@ -317,7 +317,7 @@
       </section>
       <div class="generic-module-grid" aria-label="Mòduls del viatge">
         <button class="generic-module-card" type="button" data-generic-module="itinerary"><span class="generic-module-icon">📅</span><span class="generic-module-copy"><strong>Itinerari</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
-        <button class="generic-module-card" type="button" data-generic-module="transport"><span class="generic-module-icon">✈️</span><span class="generic-module-copy"><strong>Transport i vols</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
+        <button class="generic-module-card is-ready" type="button" data-open="genericFlightsView"><span class="generic-module-icon">✈️</span><span class="generic-module-copy"><strong>Transport i vols</strong><small id="genericFlightsModuleStatus">Cap vol</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card is-ready" type="button" data-open="accommodationView"><span class="generic-module-icon">🏨</span><span class="generic-module-copy"><strong>Allotjament</strong><small id="genericAccommodationModuleStatus">Cap allotjament</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card" type="button" data-generic-module="reservations"><span class="generic-module-icon">🎟️</span><span class="generic-module-copy"><strong>Reserves</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card" type="button" data-generic-module="baggage"><span class="generic-module-icon">🧳</span><span class="generic-module-copy"><strong>Equipatge</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
@@ -382,6 +382,146 @@
           <label class="wide">Notes<textarea id="accommodationNotes" maxlength="4000" placeholder="Informació útil per a l’estada"></textarea></label>
           <div class="accommodation-form-help">No hi guardis claus, contrasenyes ni codis d’accés.</div>
           <div class="accommodation-form-actions"><button id="saveAccommodation" type="submit">Desar allotjament</button><button id="cancelAccommodation" type="button" class="secondary">Cancel·lar</button></div>
+        </form>
+      </section>
+    </div>
+
+    <div id="genericFlightsView" class="hidden">
+      <button class="ghost back" data-back>← Torna al tauler</button>
+
+      <section class="accommodation-hero">
+        <div>
+          <small>✈️ Transport i vols</small>
+          <h2>Els teus vols</h2>
+          <p>Organitza cada tram del viatge i tingues horaris, aeroports i documents sempre a mà.</p>
+        </div>
+        <button id="addFlight" type="button">Afegir vol</button>
+      </section>
+
+      <p id="flightMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
+
+      <div id="flightBrowse">
+        <div id="flightLoading" class="accommodation-loading hidden">Carregant vols…</div>
+
+        <div id="flightEmpty" class="accommodation-empty">
+          <strong>Encara no has afegit cap vol</strong>
+          Pots començar afegint el primer tram del viatge.
+          <br>
+          <button id="addFirstFlight" type="button">Afegir vol</button>
+        </div>
+
+        <div id="flightList" class="accommodation-list"></div>
+      </div>
+
+      <section id="flightFormCard" class="card accommodation-form-card hidden">
+        <h3 id="flightFormTitle">Afegir vol</h3>
+
+        <form id="flightForm" class="accommodation-form">
+          <label>Companyia
+            <input id="flightAirline" maxlength="200" placeholder="Vueling">
+          </label>
+
+          <label>Número de vol
+            <input id="flightNumber" maxlength="30" placeholder="VY3500">
+          </label>
+
+          <label>Codi aeroport sortida
+            <input id="flightDepartureCode" maxlength="4" placeholder="BCN">
+          </label>
+
+          <label>Ciutat de sortida
+            <input id="flightDepartureCity" maxlength="200" placeholder="Barcelona">
+          </label>
+
+          <label class="wide">Aeroport de sortida
+            <input id="flightDepartureAirport" maxlength="200" placeholder="Barcelona-El Prat">
+          </label>
+
+          <label>Sortida
+            <input id="flightDepartureAt" type="datetime-local">
+          </label>
+
+          <label>Zona horària sortida
+            <input id="flightDepartureTimeZone" maxlength="100" placeholder="Europe/Madrid">
+          </label>
+
+          <label>Codi aeroport arribada
+            <input id="flightArrivalCode" maxlength="4" placeholder="IBZ">
+          </label>
+
+          <label>Ciutat d’arribada
+            <input id="flightArrivalCity" maxlength="200" placeholder="Eivissa">
+          </label>
+
+          <label class="wide">Aeroport d’arribada
+            <input id="flightArrivalAirport" maxlength="200" placeholder="Aeroport d’Eivissa">
+          </label>
+
+          <label>Arribada
+            <input id="flightArrivalAt" type="datetime-local">
+          </label>
+
+          <label>Zona horària arribada
+            <input id="flightArrivalTimeZone" maxlength="100" placeholder="Europe/Madrid">
+          </label>
+
+          <label>Estat
+            <select id="flightStatus">
+              <option value="planning">En planificació</option>
+              <option value="confirmed">Confirmat</option>
+              <option value="cancelled">Cancel·lat</option>
+            </select>
+          </label>
+
+          <label>Localitzador
+            <input id="flightReference" maxlength="200" placeholder="ABC123">
+          </label>
+
+          <label>Terminal sortida
+            <input id="flightDepartureTerminal" maxlength="50" placeholder="T1">
+          </label>
+
+          <label>Terminal arribada
+            <input id="flightArrivalTerminal" maxlength="50" placeholder="T1">
+          </label>
+
+          <label>Seient
+            <input id="flightSeat" maxlength="100" placeholder="12A">
+          </label>
+
+          <label>Equipatge
+            <input id="flightBaggage" maxlength="500" placeholder="Maleta de cabina, facturada...">
+          </label>
+
+          <label class="wide">Reserva
+            <select id="flightBookingDocument">
+              <option value="">Sense document associat</option>
+            </select>
+          </label>
+
+          <label class="wide">Targeta d’embarcament
+            <select id="flightBoardingDocument">
+              <option value="">Sense document associat</option>
+            </select>
+          </label>
+
+          <div class="accommodation-document-row wide">
+            <span class="accommodation-document-help">
+              Pots associar documents que ja hagis pujat a Documents.
+            </span>
+            <button id="flightOpenDocuments" type="button" class="secondary accommodation-documents-action">
+              Anar a Documents
+            </button>
+          </div>
+
+          <label class="wide">Notes
+            <textarea id="flightNotes" maxlength="4000" placeholder="Informació útil del vol"></textarea>
+          </label>
+
+          <div class="accommodation-form-actions">
+            <button id="saveFlight" type="submit">Desar vol</button>
+            <button id="cancelFlight" type="button" class="secondary">Cancel·lar</button>
+          </div>
         </form>
       </section>
     </div>
@@ -1232,6 +1372,11 @@ function openGenericModule(key){
 }
 let accommodationChannel=null;
 let accommodationRows=[];
+let flightChannel=null;
+let flightRows=[];
+let flightDocumentLinks=[];
+let flightSubmitting=false;
+let flightLoadSequence=0;
 let accommodationDocumentLinks=[];
 let accommodationSubmitting=false;
 let accommodationLoadSequence=0;
@@ -1460,9 +1605,9 @@ function subscribeAccommodations(){
   const reconcile=()=>{if(tripRequestIsCurrent(subscribedTripId,subscribedGeneration)&&!isLondonTrip())loadAccommodations(true)};
   accommodationChannel=db.channel('accommodations-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'trip_accommodations',filter:`trip_id=eq.${trip.id}`},reconcile).on('postgres_changes',{event:'*',schema:'public',table:'trip_accommodation_documents',filter:`trip_id=eq.${trip.id}`},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
 }
-const APP_VIEWS=['tripsHomeView','dashboardView','genericDashboardView','genericModuleView','accommodationView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','genericDashboardView','genericModuleView','accommodationView','checklistView','documentsView','photosView']);
-const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView'].includes(id)));
+const APP_VIEWS=['tripsHomeView','dashboardView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','checklistView','documentsView','photosView']);
+const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
   if(view==='tripsHomeView')return true;
   if(!value)return false;
@@ -1482,12 +1627,12 @@ function persistNavigationState(view){
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
 function setAppView(id){
   if(!trip&&id!=='tripsHomeView')id='tripsHomeView';
-  if(isLondonTrip()&&['genericDashboardView','genericModuleView','accommodationView'].includes(id))id='dashboardView';
+  if(isLondonTrip()&&['genericDashboardView','genericModuleView','accommodationView','genericFlightsView'].includes(id))id='dashboardView';
   if(!isLondonTrip()&&!GENERIC_ALLOWED_VIEWS.has(id))id='genericDashboardView';
   APP_VIEWS.forEach(v=>$(v)?.classList.toggle('hidden',v!==id));
   persistNavigationState(id);
   if(id==='documentsView')updateDocumentsBack();
-  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
+  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
 }
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
 function stopLondonFlightTimer(){
@@ -1566,6 +1711,274 @@ function subscribe(){
     .on('postgres_changes',{event:'*',schema:'public',table:'checklist_items',filter:`trip_id=eq.${trip.id}`},()=>{if(tripRequestIsCurrent(subscribedTripId,subscribedGeneration))loadItems()})
     .subscribe(status=>{if(status==='SUBSCRIBED'&&tripRequestIsCurrent(subscribedTripId,subscribedGeneration))loadItems()});
 }
+
+function flightSummary(count=flightRows.length){
+  return !count?'Cap vol':count===1?'1 vol':`${count} vols`;
+}
+function formatFlightDate(value){
+  if(!value)return 'Data pendent';
+  const date=new Date(value);
+  return new Intl.DateTimeFormat('ca-ES',{
+    day:'2-digit',month:'short',year:'numeric',
+    hour:'2-digit',minute:'2-digit'
+  }).format(date);
+}
+function renderFlights(){
+  const list=$('flightList'),empty=$('flightEmpty');
+  if(!list||!empty)return;
+
+  if($('genericFlightsModuleStatus'))$('genericFlightsModuleStatus').textContent=flightSummary();
+
+  empty.classList.toggle('hidden',flightRows.length>0);
+
+  list.innerHTML=flightRows.map(row=>{
+    const departure=row.departure_airport_code||row.departure_city||'Origen pendent';
+    const arrival=row.arrival_airport_code||row.arrival_city||'Destinació pendent';
+    const airline=[row.airline,row.flight_number].filter(Boolean).join(' · ')||'Vol en planificació';
+    const status=row.flight_status==='confirmed'?'Confirmat':row.flight_status==='cancelled'?'Cancel·lat':'En planificació';
+
+    return `<article class="accommodation-card">
+      <div class="accommodation-card-head">
+        <div class="accommodation-identity">
+          <div class="accommodation-icon">✈️</div>
+          <div>
+            <h3>${esc(departure)} → ${esc(arrival)}</h3>
+            <div class="accommodation-place">${esc(airline)}</div>
+          </div>
+        </div>
+        <span class="accommodation-status ${row.flight_status==='confirmed'?'confirmed':row.flight_status==='cancelled'?'cancelled':''}">${esc(status)}</span>
+      </div>
+      <div class="accommodation-facts">
+        <div class="accommodation-fact"><small>Sortida</small><strong>${esc(formatFlightDate(row.departure_at))}</strong></div>
+        <div class="accommodation-fact"><small>Arribada</small><strong>${esc(formatFlightDate(row.arrival_at))}</strong></div>
+        ${row.booking_reference?`<div class="accommodation-fact"><small>Localitzador</small><strong>${esc(row.booking_reference)}</strong></div>`:''}
+        ${row.seat?`<div class="accommodation-fact"><small>Seient</small><strong>${esc(row.seat)}</strong></div>`:''}
+      </div>
+      <div class="accommodation-card-actions">
+        <button type="button" class="secondary" data-edit-flight="${esc(row.id)}">Editar</button>
+        <button type="button" class="danger" data-delete-flight="${esc(row.id)}">Eliminar</button>
+      </div>
+    </article>`;
+  }).join('');
+
+  list.querySelectorAll('[data-edit-flight]').forEach(button=>{
+    button.onclick=()=>openFlightForm(button.dataset.editFlight);
+  });
+
+  list.querySelectorAll('[data-delete-flight]').forEach(button=>{
+    button.onclick=()=>deleteFlight(button.dataset.deleteFlight,button);
+  });
+}
+
+function setFlightFormMode(active){
+  $('flightBrowse').classList.toggle('hidden',active);
+  $('addFlight').classList.toggle('hidden',active);
+  $('flightFormCard').classList.toggle('hidden',!active);
+}
+function resetFlightFormUi(){
+  const form=$('flightForm');
+  form.reset();
+  form.dataset.editId='';
+  form.dataset.tripId='';
+  form.dataset.originalUpdatedAt='';
+  form.dataset.originalBookingDocumentId='';
+  form.dataset.originalBoardingDocumentId='';
+  form.dataset.remoteConflict='';
+  setFlightFormMode(false);
+  $('saveFlight').disabled=false;
+  flightSubmitting=false;
+  msg('flightMsg','');
+}
+function closeFlightForm(){
+  resetFlightFormUi();
+}
+function flightDocumentId(flightId,role){
+  return flightDocumentLinks.find(link=>link.flight_id===flightId&&link.document_role===role)?.document_id||'';
+}
+function renderFlightDocumentOptions(selectedBooking='',selectedBoarding=''){
+  const documents=documentRows||[];
+
+  const render=(select,selected)=>{
+    if(!select)return;
+    select.innerHTML='<option value="">Sense document associat</option>'+
+      documents.map(document=>`<option value="${esc(document.id)}">${esc(document.title||document.file_name||'Document')}</option>`).join('');
+    select.value=documents.some(document=>document.id===selected)?selected:'';
+  };
+
+  render($('flightBookingDocument'),selectedBooking);
+  render($('flightBoardingDocument'),selectedBoarding);
+}
+function openFlightForm(id=''){
+  if(!trip||isLondonTrip())return;
+
+  const row=id?flightRows.find(item=>item.id===id):null;
+  if(id&&!row)return;
+
+  const form=$('flightForm');
+  form.reset();
+  form.dataset.editId=row?.id||'';
+  form.dataset.tripId=trip.id;
+  form.dataset.originalUpdatedAt=row?.updated_at||'';
+  form.dataset.originalBookingDocumentId=row?flightDocumentId(row.id,'booking'):'';
+  form.dataset.originalBoardingDocumentId=row?flightDocumentId(row.id,'boarding_pass'):'';
+  form.dataset.remoteConflict='';
+
+  $('flightFormTitle').textContent=row?'Editar vol':'Afegir vol';
+  $('flightAirline').value=row?.airline||'';
+  $('flightNumber').value=row?.flight_number||'';
+  $('flightDepartureCode').value=row?.departure_airport_code||'';
+  $('flightDepartureCity').value=row?.departure_city||'';
+  $('flightDepartureAirport').value=row?.departure_airport_name||'';
+  $('flightDepartureTimeZone').value=row?.departure_time_zone||trip.time_zone||'';
+  $('flightDepartureAt').value=isoToZonedLocal(row?.departure_at,$('flightDepartureTimeZone').value);
+  $('flightArrivalCode').value=row?.arrival_airport_code||'';
+  $('flightArrivalCity').value=row?.arrival_city||'';
+  $('flightArrivalAirport').value=row?.arrival_airport_name||'';
+  $('flightArrivalTimeZone').value=row?.arrival_time_zone||trip.time_zone||'';
+  $('flightArrivalAt').value=isoToZonedLocal(row?.arrival_at,$('flightArrivalTimeZone').value);
+  $('flightStatus').value=row?.flight_status||'planning';
+  $('flightReference').value=row?.booking_reference||'';
+  $('flightDepartureTerminal').value=row?.departure_terminal||'';
+  $('flightArrivalTerminal').value=row?.arrival_terminal||'';
+  $('flightSeat').value=row?.seat||'';
+  $('flightBaggage').value=row?.baggage||'';
+  $('flightNotes').value=row?.notes||'';
+
+  renderFlightDocumentOptions(
+    form.dataset.originalBookingDocumentId,
+    form.dataset.originalBoardingDocumentId
+  );
+
+  setFlightFormMode(true);
+  $('flightAirline').focus();
+  $('flightFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function loadFlights(silent=false){
+  if(!trip||isLondonTrip())return [];
+
+  const tripId=trip.id;
+  const generation=tripLoadGeneration;
+  const loadSequence=++flightLoadSequence;
+
+  if(!silent&&$('flightLoading'))$('flightLoading').classList.remove('hidden');
+
+  try{
+    const [flightResult,linkResult]=await Promise.all([
+      db.from('trip_flights')
+        .select('*')
+        .eq('trip_id',tripId)
+        .order('departure_at',{ascending:true,nullsFirst:false})
+        .order('created_at',{ascending:true})
+        .order('id',{ascending:true}),
+      db.from('trip_flight_documents')
+        .select('trip_id,flight_id,document_id,document_role')
+        .eq('trip_id',tripId)
+    ]);
+
+    if(!tripRequestIsCurrent(tripId,generation)||loadSequence!==flightLoadSequence)return flightRows;
+    if(flightResult.error)throw flightResult.error;
+    if(linkResult.error)throw linkResult.error;
+
+    flightRows=flightResult.data||[];
+    flightDocumentLinks=linkResult.data||[];
+    renderFlights();
+    return flightRows;
+  }catch(error){
+    if(tripRequestIsCurrent(tripId,generation)&&loadSequence===flightLoadSequence){
+      msg('flightMsg',error.message||'No s’han pogut carregar els vols.',true);
+    }
+    return flightRows;
+  }finally{
+    if(tripRequestIsCurrent(tripId,generation)&&loadSequence===flightLoadSequence&&$('flightLoading')){
+      $('flightLoading').classList.add('hidden');
+    }
+  }
+}
+
+function isFlightConflictError(error){
+  return error?.code==='40001'||/conflicte/i.test(error?.message||'');
+}
+function isFlightMissingError(error){
+  return error?.code==='P0002'||/ja no existeix/i.test(error?.message||'');
+}
+async function syncFlightDocument(flightId,role,newDocumentId,expectedDocumentId,expectedUpdatedAt,tripId,generation){
+  if(newDocumentId&&!documentRows.some(document=>document.id===newDocumentId)){
+    throw new Error('El document seleccionat no pertany al viatge actiu.');
+  }
+
+  const {error}=await db.rpc('sync_trip_flight_document',{
+    p_trip_id:tripId,
+    p_flight_id:flightId,
+    p_document_role:role,
+    p_expected_flight_updated_at:expectedUpdatedAt,
+    p_expected_document_id:expectedDocumentId||null,
+    p_new_document_id:newDocumentId||null
+  });
+
+  if(!tripRequestIsCurrent(tripId,generation))return false;
+  if(error)throw error;
+  return true;
+}
+async function recoverFlightConflict(flightId,tripId,generation,message){
+  await loadFlights(true);
+  if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;
+
+  const current=flightRows.find(item=>item.id===flightId);
+  if(!current){
+    closeFlightForm();
+    msg('flightMsg','Aquest vol s’ha eliminat mentre l’editaves. Hem actualitzat la llista.',true);
+    return;
+  }
+
+  openFlightForm(flightId);
+  msg('flightMsg',message||'Aquest vol ha canviat mentre l’editaves. Hem carregat la versió més recent. Revisa els canvis abans de tornar a desar.',true);
+}
+async function deleteFlight(id,button){
+  if(!trip||isLondonTrip())return;
+
+  const row=flightRows.find(item=>item.id===id);
+  if(!row||!confirm(`Eliminar el vol ${row.flight_number||''} ${row.departure_airport_code||''} → ${row.arrival_airport_code||''}? Els documents associats es conservaran.`))return;
+
+  const tripId=trip.id,generation=tripLoadGeneration;
+  button.disabled=true;
+  msg('flightMsg','Eliminant vol…');
+
+  try{
+    const {error}=await db.from('trip_flights')
+      .delete()
+      .eq('id',id)
+      .eq('trip_id',tripId);
+
+    if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;
+    if(error)throw error;
+
+    if($('flightForm').dataset.editId===id)closeFlightForm();
+    msg('flightMsg','Vol eliminat.');
+    await loadFlights(true);
+  }catch(error){
+    if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip()){
+      button.disabled=false;
+      msg('flightMsg',error?.message||'No s’ha pogut eliminar el vol.',true);
+    }
+  }
+}
+
+function subscribeFlights(){
+  if(!trip||isLondonTrip())return;
+  if(flightChannel)db.removeChannel(flightChannel);
+
+  const tripId=trip.id,generation=tripLoadGeneration;
+  const reconcile=()=>{
+    if(tripRequestIsCurrent(tripId,generation))loadFlights(true);
+  };
+
+  flightChannel=db.channel('flights-'+tripId)
+    .on('postgres_changes',{event:'*',schema:'public',table:'trip_flights',filter:`trip_id=eq.${tripId}`},reconcile)
+    .on('postgres_changes',{event:'*',schema:'public',table:'trip_flight_documents',filter:`trip_id=eq.${tripId}`},reconcile)
+    .subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
+}
+
 function renderPasswordRecovery(){
   clearNavigationState(session?.user?.id);
   clearDocumentsReturnContext();
@@ -1578,16 +1991,16 @@ function renderPasswordRecovery(){
   else msg('passwordRecoveryMsg','Validant l’enllaç de recuperació…');
 }
 async function disconnectTripRealtime(){
-  const active=[channel,checklistChannel,documentChannel,expenseChannel,accommodationChannel].filter(Boolean);channel=checklistChannel=documentChannel=expenseChannel=accommodationChannel=null;
+  const active=[channel,checklistChannel,documentChannel,expenseChannel,accommodationChannel,flightChannel].filter(Boolean);channel=checklistChannel=documentChannel=expenseChannel=accommodationChannel=flightChannel=null;
   await Promise.allSettled(active.map(item=>db.removeChannel(item)));
 }
 function clearTripScopedState(){
   clearDocumentsReturnContext();
   clearAccommodationVoucherFocus();
-  documentRows=[];pendingDocumentRows=[];expenseRows=[];photoRows=[];pendingPhotoRows=[];accommodationRows=[];accommodationDocumentLinks=[];accommodationSubmitting=false;accommodationLoadSequence+=1;parkingRow=null;parkingLoadsPending=0;clearPhotoObjectUrls();closePhotoLightbox();
-  const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList',''],['accommodationList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
+  documentRows=[];pendingDocumentRows=[];expenseRows=[];photoRows=[];pendingPhotoRows=[];accommodationRows=[];accommodationDocumentLinks=[];accommodationSubmitting=false;accommodationLoadSequence+=1;flightRows=[];flightDocumentLinks=[];flightSubmitting=false;flightLoadSequence+=1;parkingRow=null;parkingLoadsPending=0;clearPhotoObjectUrls();closePhotoLightbox();
+  const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList',''],['accommodationList',''],['flightList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
   [['overviewChecklist','0/0'],['overviewDocuments','0'],['overviewExpenses','0'],['documentCount','0'],['expenseCount','0'],['photoCount','0']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
-  [['genericChecklistModuleStatus','Preparatius compartits'],['genericDocumentsModuleStatus','Documents del viatge'],['genericPhotosModuleStatus','Àlbum compartit del viatge'],['genericTravelersModuleStatus','Invitacions del viatge'],['genericAccommodationModuleStatus','Cap allotjament']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
+  [['genericChecklistModuleStatus','Preparatius compartits'],['genericDocumentsModuleStatus','Documents del viatge'],['genericPhotosModuleStatus','Àlbum compartit del viatge'],['genericTravelersModuleStatus','Invitacions del viatge'],['genericAccommodationModuleStatus','Cap allotjament'],['genericFlightsModuleStatus','Cap vol']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
   if($('genericPlaceholderTrip'))$('genericPlaceholderTrip').textContent='Viatge';
   if($('genericPlaceholderIcon'))$('genericPlaceholderIcon').textContent='✨';
   if($('genericPlaceholderTitle'))$('genericPlaceholderTitle').textContent='Mòdul del viatge';
@@ -1684,7 +2097,7 @@ async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
   if(!isLondonTrip()){await initializeGenericChecklistDefaults();if(!tripRequestIsCurrent(selected.id,generation))return false}
   await Promise.all([loadItems(),loadDocuments(true),...(isLondonTrip()?[loadExpenses(true)]:[loadAccommodations(true)])]);if(!tripRequestIsCurrent(selected.id,generation))return false;
   if(isLondonTrip()){await ensureDefaultChecklistItems();if(!tripRequestIsCurrent(selected.id,generation))return false;addFavoriteButtons();initFlightChecklist()}
-  subscribe();subscribeDocuments();if(isLondonTrip())subscribeExpenses();else subscribeAccommodations();
+  subscribe();subscribeDocuments();if(isLondonTrip())subscribeExpenses();else{subscribeAccommodations();subscribeFlights()}
   if(applyDeepLink)applyPendingInitialView();
   refreshPushUi();return true;
 }
@@ -1828,6 +2241,166 @@ document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.
 $('backToTrips').onclick=()=>setAppView('tripsHomeView');document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=()=>setAppView('tripsHomeView'));document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-generic-module]').forEach(b=>b.onclick=()=>openGenericModule(b.dataset.genericModule));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView(tripDashboardId()));document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
 $('documentsBack').onclick=handleDocumentsBack;
 $('addAccommodation').onclick=()=>openAccommodationForm();$('addFirstAccommodation').onclick=()=>openAccommodationForm();$('cancelAccommodation').onclick=closeAccommodationForm;
+$('addFlight').onclick=()=>openFlightForm();
+$('addFirstFlight').onclick=()=>openFlightForm();
+$('cancelFlight').onclick=closeFlightForm;
+$('flightForm').onsubmit=async event=>{
+  event.preventDefault();
+  if(flightSubmitting||!trip||!session||isLondonTrip())return;
+
+  const form=$('flightForm');
+  if(!form.reportValidity())return;
+
+  const tripId=trip.id;
+  const generation=tripLoadGeneration;
+  const editId=form.dataset.editId||'';
+  const originalUpdatedAt=form.dataset.originalUpdatedAt||'';
+  const originalBooking=form.dataset.originalBookingDocumentId||'';
+  const originalBoarding=form.dataset.originalBoardingDocumentId||'';
+
+  const departureZone=$('flightDepartureTimeZone').value.trim()||null;
+  const arrivalZone=$('flightArrivalTimeZone').value.trim()||null;
+
+  let departureAt=null,arrivalAt=null;
+  try{
+    departureAt=$('flightDepartureAt').value
+      ?zonedLocalToIso($('flightDepartureAt').value,departureZone)
+      :null;
+
+    arrivalAt=$('flightArrivalAt').value
+      ?zonedLocalToIso($('flightArrivalAt').value,arrivalZone)
+      :null;
+  }catch(error){
+    msg('flightMsg',error?.message||'Revisa les hores i les zones horàries.',true);
+    return;
+  }
+
+  if(departureAt&&!departureZone){
+    msg('flightMsg','Indica la zona horària de sortida.',true);
+    return;
+  }
+
+  if(arrivalAt&&!arrivalZone){
+    msg('flightMsg','Indica la zona horària d’arribada.',true);
+    return;
+  }
+
+  const nullable=value=>{
+    const clean=value.trim();
+    return clean||null;
+  };
+
+  const payload={
+    airline:nullable($('flightAirline').value),
+    flight_number:nullable($('flightNumber').value),
+    departure_airport_code:nullable($('flightDepartureCode').value)?.toUpperCase()||null,
+    departure_airport_name:nullable($('flightDepartureAirport').value),
+    departure_city:nullable($('flightDepartureCity').value),
+    departure_at:departureAt,
+    departure_time_zone:departureZone,
+    arrival_airport_code:nullable($('flightArrivalCode').value)?.toUpperCase()||null,
+    arrival_airport_name:nullable($('flightArrivalAirport').value),
+    arrival_city:nullable($('flightArrivalCity').value),
+    arrival_at:arrivalAt,
+    arrival_time_zone:arrivalZone,
+    booking_reference:nullable($('flightReference').value),
+    departure_terminal:nullable($('flightDepartureTerminal').value),
+    arrival_terminal:nullable($('flightArrivalTerminal').value),
+    seat:nullable($('flightSeat').value),
+    baggage:nullable($('flightBaggage').value),
+    flight_status:$('flightStatus').value,
+    notes:nullable($('flightNotes').value)
+  };
+
+  const bookingDocumentId=$('flightBookingDocument').value||'';
+  const boardingDocumentId=$('flightBoardingDocument').value||'';
+
+  flightSubmitting=true;
+  $('saveFlight').disabled=true;
+  msg('flightMsg',editId?'Desant canvis…':'Desant vol…');
+
+  try{
+    let flight;
+
+    if(editId){
+      const {data,error}=await db.from('trip_flights')
+        .update(payload)
+        .eq('id',editId)
+        .eq('trip_id',tripId)
+        .eq('updated_at',originalUpdatedAt)
+        .select('*')
+        .maybeSingle();
+
+      if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;
+      if(error)throw error;
+
+      if(!data){
+        await recoverFlightConflict(editId,tripId,generation);
+        return;
+      }
+
+      flight=data;
+    }else{
+      const {data,error}=await db.from('trip_flights')
+        .insert({
+          ...payload,
+          trip_id:tripId,
+          created_by:session.user.id
+        })
+        .select('*')
+        .single();
+
+      if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;
+      if(error)throw error;
+      flight=data;
+    }
+
+    await syncFlightDocument(
+      flight.id,
+      'booking',
+      bookingDocumentId,
+      editId?originalBooking:'',
+      flight.updated_at,
+      tripId,
+      generation
+    );
+
+    await syncFlightDocument(
+      flight.id,
+      'boarding_pass',
+      boardingDocumentId,
+      editId?originalBoarding:'',
+      flight.updated_at,
+      tripId,
+      generation
+    );
+
+    if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;
+
+    closeFlightForm();
+    msg('flightMsg',editId?'Vol actualitzat.':'Vol afegit.');
+    await loadFlights(true);
+
+  }catch(error){
+    if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;
+
+    if(editId&&isFlightConflictError(error)){
+      await recoverFlightConflict(editId,tripId,generation);
+    }else if(editId&&isFlightMissingError(error)){
+      closeFlightForm();
+      await loadFlights(true);
+      msg('flightMsg','Aquest vol ja no existeix.',true);
+    }else{
+      msg('flightMsg',error?.message||'No s’ha pogut desar el vol.',true);
+    }
+  }finally{
+    if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip()){
+      flightSubmitting=false;
+      $('saveFlight').disabled=false;
+    }
+  }
+};
+
 $('accommodationOpenDocuments').onclick=()=>{if(!setAccommodationDocumentsReturnContext())return;clearAccommodationVoucherFocus();saveAccommodationDraft();setAppView('documentsView')};
 $('accommodationForm').addEventListener('input',saveAccommodationDraft);$('accommodationForm').addEventListener('change',saveAccommodationDraft);
 $('accommodationVoucher').addEventListener('change',()=>{$('accommodationForm').dataset.voucherTouched='true';saveAccommodationDraft()});
