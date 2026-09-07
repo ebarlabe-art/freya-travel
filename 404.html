@@ -1736,6 +1736,8 @@ function renderFlights(){
     const arrival=row.arrival_airport_code||row.arrival_city||'Destinació pendent';
     const airline=[row.airline,row.flight_number].filter(Boolean).join(' · ')||'Vol en planificació';
     const status=row.flight_status==='confirmed'?'Confirmat':row.flight_status==='cancelled'?'Cancel·lat':'En planificació';
+    const bookingDocumentId=flightDocumentId(row.id,'booking');
+    const boardingDocumentId=flightDocumentId(row.id,'boarding_pass');
 
     return `<article class="accommodation-card">
       <div class="accommodation-card-head">
@@ -1755,11 +1757,20 @@ function renderFlights(){
         ${row.seat?`<div class="accommodation-fact"><small>Seient</small><strong>${esc(row.seat)}</strong></div>`:''}
       </div>
       <div class="accommodation-card-actions">
+        ${bookingDocumentId?`<button type="button" class="secondary" data-flight-document="${esc(row.id)}" data-flight-document-role="booking">📄 Document reserva</button>`:''}
+        ${boardingDocumentId?`<button type="button" class="secondary" data-flight-document="${esc(row.id)}" data-flight-document-role="boarding_pass">🎫 Targeta d’embarcament</button>`:''}
         <button type="button" class="secondary" data-edit-flight="${esc(row.id)}">Editar</button>
         <button type="button" class="danger" data-delete-flight="${esc(row.id)}">Eliminar</button>
       </div>
     </article>`;
   }).join('');
+
+  list.querySelectorAll('[data-flight-document]').forEach(button=>{
+    button.onclick=()=>openFlightDocument(
+      button.dataset.flightDocument,
+      button.dataset.flightDocumentRole
+    );
+  });
 
   list.querySelectorAll('[data-edit-flight]').forEach(button=>{
     button.onclick=()=>openFlightForm(button.dataset.editFlight);
@@ -1934,6 +1945,28 @@ async function recoverFlightConflict(flightId,tripId,generation,message){
   openFlightForm(flightId);
   msg('flightMsg',message||'Aquest vol ha canviat mentre l’editaves. Hem carregat la versió més recent. Revisa els canvis abans de tornar a desar.',true);
 }
+
+async function openFlightDocument(flightId,role){
+  if(!trip||isLondonTrip())return;
+
+  const documentId=flightDocumentId(flightId,role);
+  if(!documentId)return;
+
+  let document=documentRows.find(item=>item.id===documentId);
+
+  if(!document){
+    const docs=await loadDocuments(true);
+    document=(docs||[]).find(item=>item.id===documentId);
+  }
+
+  if(!document){
+    msg('flightMsg','El document associat ja no està disponible.',true);
+    return;
+  }
+
+  await openDocument(documentId,documentRows);
+}
+
 async function deleteFlight(id,button){
   if(!trip||isLondonTrip())return;
 
@@ -2244,6 +2277,10 @@ $('addAccommodation').onclick=()=>openAccommodationForm();$('addFirstAccommodati
 $('addFlight').onclick=()=>openFlightForm();
 $('addFirstFlight').onclick=()=>openFlightForm();
 $('cancelFlight').onclick=closeFlightForm;
+$('flightOpenDocuments').onclick=()=>{
+  if(!trip||isLondonTrip())return;
+  setAppView('documentsView');
+};
 $('flightForm').onsubmit=async event=>{
   event.preventDefault();
   if(flightSubmitting||!trip||!session||isLondonTrip())return;
