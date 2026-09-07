@@ -319,7 +319,7 @@
         <button class="generic-module-card" type="button" data-generic-module="itinerary"><span class="generic-module-icon">📅</span><span class="generic-module-copy"><strong>Itinerari</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card is-ready" type="button" data-open="genericFlightsView"><span class="generic-module-icon">✈️</span><span class="generic-module-copy"><strong>Transport i vols</strong><small id="genericFlightsModuleStatus">Cap vol</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card is-ready" type="button" data-open="accommodationView"><span class="generic-module-icon">🏨</span><span class="generic-module-copy"><strong>Allotjament</strong><small id="genericAccommodationModuleStatus">Cap allotjament</small></span><span class="generic-module-arrow">›</span></button>
-        <button class="generic-module-card" type="button" data-generic-module="reservations"><span class="generic-module-icon">🎟️</span><span class="generic-module-copy"><strong>Reserves</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
+        <button class="generic-module-card is-ready" type="button" data-open="activitiesView"><span class="generic-module-icon">🎟️</span><span class="generic-module-copy"><strong>Reserves i activitats</strong><small id="genericActivitiesModuleStatus">Cap reserva ni activitat</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card" type="button" data-generic-module="baggage"><span class="generic-module-icon">🧳</span><span class="generic-module-copy"><strong>Equipatge</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card is-ready" type="button" data-open="documentsView"><span class="generic-module-icon">📄</span><span class="generic-module-copy"><strong>Documents</strong><small id="genericDocumentsModuleStatus">Documents del viatge</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card is-ready" type="button" data-open="checklistView"><span class="generic-module-icon">✅</span><span class="generic-module-copy"><strong>Checklist</strong><small id="genericChecklistModuleStatus">Preparatius compartits</small></span><span class="generic-module-arrow">›</span></button>
@@ -522,6 +522,47 @@
             <button id="saveFlight" type="submit">Desar vol</button>
             <button id="cancelFlight" type="button" class="secondary">Cancel·lar</button>
           </div>
+        </form>
+      </section>
+    </div>
+
+    <div id="activitiesView" class="hidden">
+      <button class="ghost back" data-back>← Torna al tauler</button>
+      <section class="accommodation-hero">
+        <div><small>🎟️ Reserves i activitats</small><h2>Què vols fer?</h2><p>Organitza plans, visites i reserves del viatge, amb els documents importants sempre a mà.</p></div>
+        <button id="addActivity" type="button">Afegir activitat</button>
+      </section>
+      <p id="activityMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
+      <div id="activityBrowse">
+        <div id="activityLoading" class="accommodation-loading hidden">Carregant activitats…</div>
+        <div id="activityEmpty" class="accommodation-empty hidden"><strong>Encara no hi ha cap reserva ni activitat</strong>Pots afegir plans amb data o deixar l’horari pendent.<br><button id="addFirstActivity" type="button">Afegir activitat</button></div>
+        <div id="activityList" class="accommodation-list"></div>
+      </div>
+      <section id="activityFormCard" class="card accommodation-form-card hidden">
+        <h3 id="activityFormTitle">Afegir activitat</h3>
+        <form id="activityForm" class="accommodation-form">
+          <label>Tipus<select id="activityType" required><option value="restaurant">Restaurant</option><option value="attraction">Atracció</option><option value="tour">Tour o visita</option><option value="excursion">Excursió</option><option value="museum">Museu</option><option value="show">Espectacle</option><option value="experience">Experiència</option><option value="beach">Platja</option><option value="transport_activity">Activitat de transport</option><option value="other">Altres</option></select></label>
+          <label>Nom<input id="activityTitle" maxlength="200" required placeholder="Nom de l’activitat"></label>
+          <label>Inici (opcional)<input id="activityStartAt" type="datetime-local"></label>
+          <label>Final (opcional)<input id="activityEndAt" type="datetime-local"></label>
+          <label class="wide">Zona horària<input id="activityTimeZone" maxlength="100" placeholder="Europe/Madrid"><span class="muted">Necessària si indiques una data o hora.</span></label>
+          <label>Lloc<input id="activityVenue" maxlength="200" placeholder="Nom del lloc"></label>
+          <label>Ciutat<input id="activityCity" maxlength="200" placeholder="Població o ciutat"></label>
+          <label class="wide">Adreça<input id="activityAddress" maxlength="500" placeholder="Carrer, número..."></label>
+          <label>Estat<select id="activityStatus"><option value="planning">En planificació</option><option value="reserved">Reservat</option><option value="confirmed">Confirmat</option><option value="cancelled">Cancel·lat</option></select></label>
+          <label>Persones<input id="activityPeople" type="number" min="1" max="10000" inputmode="numeric"></label>
+          <label>Referència<input id="activityReference" maxlength="200" placeholder="Localitzador de reserva"></label>
+          <label>Proveïdor<input id="activityProvider" maxlength="200" placeholder="Empresa o plataforma"></label>
+          <label>Telèfon<input id="activityPhone" type="tel" maxlength="50" placeholder="+34..."></label>
+          <label>Correu<input id="activityEmail" type="email" maxlength="254" placeholder="contacte@example.com"></label>
+          <label class="wide">Web<input id="activityWebsite" type="url" maxlength="2048" placeholder="https://..."></label>
+          <label>Preu<input id="activityAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+          <label>Moneda<input id="activityCurrency" maxlength="3" pattern="[A-Za-z]{3}" placeholder="EUR"></label>
+          <label class="wide">Document de reserva<select id="activityBookingDocument"><option value="">Sense document associat</option></select></label>
+          <label class="wide">Entrada<select id="activityTicketDocument"><option value="">Sense document associat</option></select></label>
+          <div class="accommodation-document-row wide"><span class="accommodation-document-help">Pots associar documents que ja hagis pujat a Documents.</span><button id="activityOpenDocuments" type="button" class="secondary accommodation-documents-action">Anar a Documents</button></div>
+          <label class="wide">Notes<textarea id="activityNotes" maxlength="4000" placeholder="Informació útil, condicions o recordatoris"></textarea></label>
+          <div class="accommodation-form-actions"><button id="saveActivity" type="submit">Desar activitat</button><button id="cancelActivity" type="button" class="secondary">Cancel·lar</button></div>
         </form>
       </section>
     </div>
@@ -1377,6 +1418,11 @@ let flightRows=[];
 let flightDocumentLinks=[];
 let flightSubmitting=false;
 let flightLoadSequence=0;
+let activityChannel=null;
+let activityRows=[];
+let activityDocumentLinks=[];
+let activitySubmitting=false;
+let activityLoadSequence=0;
 let accommodationDocumentLinks=[];
 let accommodationSubmitting=false;
 let accommodationLoadSequence=0;
@@ -1387,6 +1433,10 @@ const ACCOMMODATION_DRAFT_FIELDS=['accommodationType','accommodationName','accom
 const ACCOMMODATION_SELECT='id,trip_id,accommodation_type,name,address,location_text,city,postal_code,region,country,latitude,longitude,check_in_at,check_out_at,time_zone,booking_reference,booking_provider,reservation_status,phone,email,website_url,room_number,notes,created_by,updated_by,created_at,updated_at';
 const ACCOMMODATION_TYPES={hotel:{icon:'🏨',label:'Hotel'},apartment:{icon:'🏠',label:'Apartament'},house:{icon:'🏡',label:'Casa'},hostel:{icon:'🛏️',label:'Hostal'},resort:{icon:'🌴',label:'Resort'},other:{icon:'📍',label:'Allotjament'}};
 const ACCOMMODATION_STATUSES={planning:'En planificació',confirmed:'Confirmat',cancelled:'Cancel·lat'};
+const ACTIVITY_TYPES={restaurant:{icon:'🍽️',label:'Restaurant'},attraction:{icon:'🎡',label:'Atracció'},tour:{icon:'🗺️',label:'Tour o visita'},excursion:{icon:'🥾',label:'Excursió'},museum:{icon:'🏛️',label:'Museu'},show:{icon:'🎭',label:'Espectacle'},experience:{icon:'✨',label:'Experiència'},beach:{icon:'🏖️',label:'Platja'},transport_activity:{icon:'🚐',label:'Activitat de transport'},other:{icon:'📍',label:'Altres'}};
+const ACTIVITY_STATUSES={planning:'En planificació',reserved:'Reservat',confirmed:'Confirmat',cancelled:'Cancel·lat'};
+const ACTIVITY_DRAFT_VERSION=1;
+const ACTIVITY_DRAFT_FIELDS=['activityType','activityTitle','activityStartAt','activityEndAt','activityTimeZone','activityVenue','activityAddress','activityCity','activityStatus','activityReference','activityProvider','activityPhone','activityEmail','activityWebsite','activityPeople','activityAmount','activityCurrency','activityBookingDocument','activityTicketDocument','activityNotes'];
 function optionalText(value){const normalized=String(value||'').trim();return normalized||null}
 function accommodationLinkFor(accommodationId){return accommodationDocumentLinks.find(link=>link.trip_id===trip?.id&&link.accommodation_id===accommodationId&&link.document_role==='voucher')||null}
 function accommodationVoucherDocumentId(accommodationId){return accommodationLinkFor(accommodationId)?.document_id||''}
@@ -1394,10 +1444,10 @@ function accommodationDocumentFor(accommodationId){const documentId=accommodatio
 function accommodationSummary(count=accommodationRows.length){return !count?'Cap allotjament':count===1?'1 allotjament':`${count} allotjaments`}
 function validDocumentsReturnContext(){
   const context=documentsReturnContext,userId=session?.user?.id,tripId=trip?.id;
-  if(context?.returnView==='accommodationView'&&context.userId===userId&&context.tripId===tripId&&!isLondonTrip())return context;
+  if(['accommodationView','activitiesView'].includes(context?.returnView)&&context.userId===userId&&context.tripId===tripId&&!isLondonTrip())return context;
   documentsReturnContext=null;return null;
 }
-function updateDocumentsBack(){const contextual=!!validDocumentsReturnContext();if($('documentsBack'))$('documentsBack').textContent=contextual?'← Tornar a Allotjament':'← Torna al tauler'}
+function updateDocumentsBack(){const context=validDocumentsReturnContext();if($('documentsBack'))$('documentsBack').textContent=context?.returnView==='accommodationView'?'← Tornar a Allotjament':context?.returnView==='activitiesView'?'← Tornar a Reserves i activitats':'← Torna al tauler'}
 function clearDocumentsReturnContext(){documentsReturnContext=null;updateDocumentsBack()}
 function clearAccommodationVoucherFocus(){
   accommodationVoucherFocus=null;if(accommodationVoucherFocusTimer)clearTimeout(accommodationVoucherFocusTimer);accommodationVoucherFocusTimer=null;
@@ -1428,8 +1478,12 @@ function setAccommodationDocumentsReturnContext(){
   if(!trip||!session||isLondonTrip())return false;
   documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'accommodationView'};updateDocumentsBack();return true;
 }
+function setActivityDocumentsReturnContext(){
+  if(!trip||!session||isLondonTrip())return false;
+  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'activitiesView'};updateDocumentsBack();return true;
+}
 function handleDocumentsBack(){
-  const context=validDocumentsReturnContext();documentsReturnContext=null;updateDocumentsBack();setAppView(context?'accommodationView':tripDashboardId());
+  const context=validDocumentsReturnContext();documentsReturnContext=null;updateDocumentsBack();setAppView(context?.returnView||tripDashboardId());
 }
 function accommodationDraftKey(tripId=trip?.id,userId=session?.user?.id){return tripId&&userId?`freya-accommodation-draft-v${ACCOMMODATION_DRAFT_VERSION}-${userId}-${tripId}`:null}
 function readAccommodationDraft(tripId=trip?.id,userId=session?.user?.id){
@@ -1605,9 +1659,9 @@ function subscribeAccommodations(){
   const reconcile=()=>{if(tripRequestIsCurrent(subscribedTripId,subscribedGeneration)&&!isLondonTrip())loadAccommodations(true)};
   accommodationChannel=db.channel('accommodations-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'trip_accommodations',filter:`trip_id=eq.${trip.id}`},reconcile).on('postgres_changes',{event:'*',schema:'public',table:'trip_accommodation_documents',filter:`trip_id=eq.${trip.id}`},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
 }
-const APP_VIEWS=['tripsHomeView','dashboardView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','checklistView','documentsView','photosView']);
-const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView'].includes(id)));
+const APP_VIEWS=['tripsHomeView','dashboardView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','checklistView','documentsView','photosView']);
+const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
   if(view==='tripsHomeView')return true;
   if(!value)return false;
@@ -1627,12 +1681,12 @@ function persistNavigationState(view){
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
 function setAppView(id){
   if(!trip&&id!=='tripsHomeView')id='tripsHomeView';
-  if(isLondonTrip()&&['genericDashboardView','genericModuleView','accommodationView','genericFlightsView'].includes(id))id='dashboardView';
+  if(isLondonTrip()&&['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView'].includes(id))id='dashboardView';
   if(!isLondonTrip()&&!GENERIC_ALLOWED_VIEWS.has(id))id='genericDashboardView';
   APP_VIEWS.forEach(v=>$(v)?.classList.toggle('hidden',v!==id));
   persistNavigationState(id);
   if(id==='documentsView')updateDocumentsBack();
-  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
+  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView')loadActivities();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
 }
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
 function stopLondonFlightTimer(){
@@ -2012,6 +2066,118 @@ function subscribeFlights(){
     .subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
 }
 
+function activityDraftKey(tripId=trip?.id,userId=session?.user?.id){return tripId&&userId?`freya-activity-draft-v${ACTIVITY_DRAFT_VERSION}-${userId}-${tripId}`:null}
+function readActivityDraft(tripId=trip?.id,userId=session?.user?.id){
+  const key=activityDraftKey(tripId,userId);if(!key)return null;
+  try{const draft=JSON.parse(localStorage.getItem(key)||'null');if(!draft||draft.version!==ACTIVITY_DRAFT_VERSION||draft.userId!==userId||draft.tripId!==tripId||!draft.fields||typeof draft.fields!=='object')return null;return draft}catch(_){return null}
+}
+function clearActivityDraft(tripId=trip?.id,userId=session?.user?.id){const key=activityDraftKey(tripId,userId);if(key)try{localStorage.removeItem(key)}catch(_){}}
+function saveActivityDraft(){
+  if(!trip||!session||isLondonTrip()||$('activityFormCard').classList.contains('hidden'))return;const form=$('activityForm'),tripId=trip.id,userId=session.user.id;if(form.dataset.tripId!==tripId)return;
+  const fields=Object.fromEntries(ACTIVITY_DRAFT_FIELDS.map(id=>[id,$(id)?.value||'']));const draft={version:ACTIVITY_DRAFT_VERSION,userId,tripId,editId:form.dataset.editId||'',originalUpdatedAt:form.dataset.originalUpdatedAt||'',originalBookingDocumentId:form.dataset.originalBookingDocumentId||'',originalTicketDocumentId:form.dataset.originalTicketDocumentId||'',fields};
+  try{localStorage.setItem(activityDraftKey(tripId,userId),JSON.stringify(draft))}catch(_){}
+}
+function restoreActivityDraft(){
+  if(!trip||!session||isLondonTrip()||!$('activityFormCard').classList.contains('hidden'))return false;const draft=readActivityDraft();if(!draft)return false;const row=draft.editId?activityRows.find(item=>item.id===draft.editId):null;
+  if(draft.editId&&(!row||!draft.originalUpdatedAt)){clearActivityDraft();msg('activityMsg','L’activitat de l’esborrany ja no existeix. Hem actualitzat la llista.',true);return false}
+  const form=$('activityForm');form.reset();form.dataset.editId=draft.editId||'';form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=draft.originalUpdatedAt||'';form.dataset.originalBookingDocumentId=draft.originalBookingDocumentId||'';form.dataset.originalTicketDocumentId=draft.originalTicketDocumentId||'';form.dataset.remoteConflict='';
+  ACTIVITY_DRAFT_FIELDS.filter(id=>!['activityBookingDocument','activityTicketDocument'].includes(id)).forEach(id=>{if($(id)&&Object.prototype.hasOwnProperty.call(draft.fields,id))$(id).value=draft.fields[id]||''});
+  renderActivityDocumentOptions(draft.fields.activityBookingDocument||'',draft.fields.activityTicketDocument||'');$('activityFormTitle').textContent=row?'Editar activitat':'Afegir activitat';setActivityFormMode(true);return true;
+}
+function activityDocumentId(activityId,role){
+  return activityDocumentLinks.find(link=>link.trip_id===trip?.id&&link.activity_id===activityId&&link.document_role===role)?.document_id||'';
+}
+function activitySummary(count=activityRows.length){return !count?'Cap reserva ni activitat':count===1?'1 reserva o activitat':`${count} reserves o activitats`}
+function activitySchedule(row){
+  if(!row.start_at)return null;
+  const start=new Date(row.start_at),end=row.end_at?new Date(row.end_at):null,timeZone=row.time_zone||trip?.time_zone||undefined;
+  try{
+    const date=new Intl.DateTimeFormat('ca-ES',{timeZone,weekday:'short',day:'numeric',month:'short',year:'numeric'}).format(start);
+    const timeFormat=new Intl.DateTimeFormat('ca-ES',{timeZone,hour:'2-digit',minute:'2-digit'});
+    return {date,time:end?`${timeFormat.format(start)}–${timeFormat.format(end)}`:timeFormat.format(start)};
+  }catch(_){return {date:start.toLocaleDateString('ca-ES'),time:start.toLocaleTimeString('ca-ES',{hour:'2-digit',minute:'2-digit'})}}
+}
+function activityLocation(row){
+  const seen=new Set();return [row.venue_name,row.address,row.city].filter(value=>{const key=String(value||'').trim().toLocaleLowerCase('ca');if(!key||seen.has(key))return false;seen.add(key);return true}).join(' · ');
+}
+function activityMapUrl(row){
+  if(row.latitude!=null&&row.longitude!=null)return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${row.latitude},${row.longitude}`)}`;
+  const query=[row.venue_name,row.address,row.city].filter(Boolean).join(', ');return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:'';
+}
+function renderActivities(){
+  const list=$('activityList'),empty=$('activityEmpty');if(!list||!empty)return;
+  if(isLondonTrip()){list.innerHTML='';empty.classList.add('hidden');return}
+  $('genericActivitiesModuleStatus').textContent=activitySummary();
+  empty.classList.toggle('hidden',activityRows.length>0);
+  list.innerHTML=activityRows.map(row=>{
+    const type=ACTIVITY_TYPES[row.activity_type]||ACTIVITY_TYPES.other,status=ACTIVITY_STATUSES[row.reservation_status]||row.reservation_status,schedule=activitySchedule(row),location=activityLocation(row),mapUrl=activityMapUrl(row);
+    const bookingId=activityDocumentId(row.id,'booking'),ticketId=activityDocumentId(row.id,'ticket');
+    const facts=[];
+    if(schedule){facts.push(['Data',schedule.date],['Hora',schedule.time])}else facts.push(['Horari','Pendent de concretar']);
+    if(row.people_count)facts.push(['Persones',String(row.people_count)]);
+    if(row.booking_reference)facts.push(['Referència',row.booking_reference]);
+    if(row.provider)facts.push(['Proveïdor',row.provider]);
+    if(row.amount!=null&&row.currency)facts.push(['Preu',money(row.amount,row.currency)]);
+    const phone=safePhone(row.contact_phone),website=safeWebsiteUrl(row.website_url);
+    return `<article class="accommodation-card"><div class="accommodation-card-head"><div class="accommodation-identity"><div class="accommodation-icon">${type.icon}</div><div><small class="muted">${esc(type.label)}</small><h3>${esc(row.title)}</h3>${location?`<div class="accommodation-place">${esc(location)}</div>`:''}</div></div><span class="accommodation-status ${esc(row.reservation_status)}">${esc(status)}</span></div><div class="accommodation-facts">${facts.map(([label,value])=>`<div class="accommodation-fact"><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`).join('')}</div>${row.notes?`<p class="accommodation-notes">${esc(row.notes)}</p>`:''}<div class="accommodation-actions">${bookingId?`<button type="button" class="primary-action" data-activity-document="${esc(row.id)}" data-activity-document-role="booking">📄 Reserva</button>`:''}${ticketId?`<button type="button" class="primary-action" data-activity-document="${esc(row.id)}" data-activity-document-role="ticket">🎟️ Entrada</button>`:''}${mapUrl?`<a href="${esc(mapUrl)}" target="_blank" rel="noopener">📍 Mapa</a>`:''}${phone?`<a href="tel:${esc(phone)}">📞 Trucar</a>`:''}${row.contact_email?`<a href="mailto:${esc(row.contact_email)}">✉️ Correu</a>`:''}${website?`<a href="${esc(website)}" target="_blank" rel="noopener">🌐 Web</a>`:''}<button type="button" data-edit-activity="${esc(row.id)}">Editar</button><button type="button" class="danger-action" data-delete-activity="${esc(row.id)}">Eliminar</button></div></article>`;
+  }).join('');
+  list.querySelectorAll('[data-activity-document]').forEach(button=>button.onclick=()=>openActivityDocument(button.dataset.activityDocument,button.dataset.activityDocumentRole));
+  list.querySelectorAll('[data-edit-activity]').forEach(button=>button.onclick=()=>openActivityForm(button.dataset.editActivity));
+  list.querySelectorAll('[data-delete-activity]').forEach(button=>button.onclick=()=>deleteActivity(button.dataset.deleteActivity,button));
+}
+function setActivityFormMode(active){$('activityBrowse').classList.toggle('hidden',active);$('addActivity').classList.toggle('hidden',active);$('activityFormCard').classList.toggle('hidden',!active)}
+function resetActivityFormUi(){
+  const form=$('activityForm');form.reset();form.dataset.editId='';form.dataset.tripId='';form.dataset.originalUpdatedAt='';form.dataset.originalBookingDocumentId='';form.dataset.originalTicketDocumentId='';form.dataset.remoteConflict='';setActivityFormMode(false);$('saveActivity').disabled=false;activitySubmitting=false;msg('activityMsg','');
+}
+function closeActivityForm(){clearActivityDraft($('activityForm').dataset.tripId||trip?.id);resetActivityFormUi()}
+function renderActivityDocumentOptions(selectedBooking='',selectedTicket=''){
+  const render=(select,selected)=>{
+    if(!select)return;const available=documentRows.some(document=>document.id===selected);
+    select.innerHTML='<option value="">Sense document associat</option>'+(!available&&selected?`<option value="${esc(selected)}">Document associat · no disponible</option>`:'')+documentRows.map(document=>`<option value="${esc(document.id)}">${esc(document.title||document.file_name||'Document')}</option>`).join('');select.value=selected||'';
+  };
+  render($('activityBookingDocument'),selectedBooking);render($('activityTicketDocument'),selectedTicket);
+}
+function openActivityForm(id=''){
+  if(!trip||isLondonTrip())return;const row=id?activityRows.find(item=>item.id===id):null;if(id&&!row)return;
+  clearActivityDraft();
+  const form=$('activityForm');form.reset();form.dataset.editId=row?.id||'';form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=row?.updated_at||'';form.dataset.originalBookingDocumentId=row?activityDocumentId(row.id,'booking'):'';form.dataset.originalTicketDocumentId=row?activityDocumentId(row.id,'ticket'):'';form.dataset.remoteConflict='';
+  $('activityFormTitle').textContent=row?'Editar activitat':'Afegir activitat';$('activityType').value=row?.activity_type||'other';$('activityTitle').value=row?.title||'';$('activityTimeZone').value=row?.time_zone||trip.time_zone||Intl.DateTimeFormat().resolvedOptions().timeZone||'';$('activityStartAt').value=isoToZonedLocal(row?.start_at,$('activityTimeZone').value);$('activityEndAt').value=isoToZonedLocal(row?.end_at,$('activityTimeZone').value);$('activityVenue').value=row?.venue_name||'';$('activityAddress').value=row?.address||'';$('activityCity').value=row?.city||'';$('activityStatus').value=row?.reservation_status||'planning';$('activityReference').value=row?.booking_reference||'';$('activityProvider').value=row?.provider||'';$('activityPhone').value=row?.contact_phone||'';$('activityEmail').value=row?.contact_email||'';$('activityWebsite').value=row?.website_url||'';$('activityPeople').value=row?.people_count??'';$('activityAmount').value=row?.amount??'';$('activityCurrency').value=row?.currency||'';$('activityNotes').value=row?.notes||'';
+  renderActivityDocumentOptions(form.dataset.originalBookingDocumentId,form.dataset.originalTicketDocumentId);setActivityFormMode(true);saveActivityDraft();$('activityTitle').focus();$('activityFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function loadActivities(silent=false){
+  if(!trip||isLondonTrip())return [];const tripId=trip.id,generation=tripLoadGeneration,sequence=++activityLoadSequence;
+  if(!silent)$('activityLoading').classList.remove('hidden');
+  try{
+    const [rowsResult,linksResult]=await Promise.all([db.from('trip_activities').select('*').eq('trip_id',tripId).order('start_at',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true}).order('id',{ascending:true}),db.from('trip_activity_documents').select('trip_id,activity_id,document_id,document_role').eq('trip_id',tripId)]);
+    if(!tripRequestIsCurrent(tripId,generation)||sequence!==activityLoadSequence||isLondonTrip())return activityRows;if(rowsResult.error)throw rowsResult.error;if(linksResult.error)throw linksResult.error;
+    activityRows=rowsResult.data||[];activityDocumentLinks=linksResult.data||[];renderActivities();if(!$('activitiesView').classList.contains('hidden'))restoreActivityDraft();
+    const form=$('activityForm'),editingId=form.dataset.tripId===tripId?form.dataset.editId||'':'';
+    if(editingId){const current=activityRows.find(item=>item.id===editingId),originalUpdatedAt=form.dataset.originalUpdatedAt||'',originalBooking=form.dataset.originalBookingDocumentId||'',originalTicket=form.dataset.originalTicketDocumentId||'';if(!current){clearActivityDraft(tripId);resetActivityFormUi();msg('activityMsg','Aquesta activitat s’ha eliminat mentre l’editaves. Hem actualitzat la llista.',true)}else if(current.updated_at!==originalUpdatedAt||activityDocumentId(editingId,'booking')!==originalBooking||activityDocumentId(editingId,'ticket')!==originalTicket){form.dataset.remoteConflict='true';msg('activityMsg','Aquesta activitat ha canviat mentre l’editaves. Els teus camps no s’han sobreescrit; torna a desar per revisar el conflicte.',true)}}
+    return activityRows;
+  }catch(error){if(tripRequestIsCurrent(tripId,generation)&&sequence===activityLoadSequence&&!isLondonTrip())msg('activityMsg',error?.message||'No s’han pogut carregar les activitats.',true);return activityRows}finally{if(tripRequestIsCurrent(tripId,generation)&&sequence===activityLoadSequence)$('activityLoading').classList.add('hidden')}
+}
+function isActivityConflictError(error){return error?.code==='40001'||/conflicte/i.test(error?.message||'')}
+function isActivityMissingError(error){return error?.code==='P0002'||/ja no existeix/i.test(error?.message||'')}
+async function fetchCurrentActivityDocuments(activityId,tripId,generation){
+  const {data,error}=await db.from('trip_activity_documents').select('document_id,document_role').eq('trip_id',tripId).eq('activity_id',activityId);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return {stale:true,booking:'',ticket:''};if(error)throw error;return {stale:false,booking:(data||[]).find(item=>item.document_role==='booking')?.document_id||'',ticket:(data||[]).find(item=>item.document_role==='ticket')?.document_id||''};
+}
+async function syncActivityDocument(activityId,role,newDocumentId,expectedDocumentId,expectedUpdatedAt,tripId,generation){
+  if(newDocumentId&&!documentRows.some(document=>document.id===newDocumentId))throw new Error('El document seleccionat no pertany al viatge actiu.');
+  const {error}=await db.rpc('sync_trip_activity_document',{p_trip_id:tripId,p_activity_id:activityId,p_document_role:role,p_expected_activity_updated_at:expectedUpdatedAt,p_expected_document_id:expectedDocumentId||null,p_new_document_id:newDocumentId||null});if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return false;if(error)throw error;return true;
+}
+async function recoverActivityConflict(activityId,tripId,generation,message){
+  await loadActivities(true);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;const current=activityRows.find(item=>item.id===activityId);if(!current){clearActivityDraft(tripId);resetActivityFormUi();msg('activityMsg','Aquesta activitat s’ha eliminat mentre l’editaves. Hem actualitzat la llista.',true);return}clearActivityDraft(tripId);openActivityForm(activityId);msg('activityMsg',message||'Aquesta activitat ha canviat mentre l’editaves. Hem carregat la versió més recent. Revisa els canvis abans de tornar a desar.',true);
+}
+async function openActivityDocument(activityId,role){
+  if(!trip||isLondonTrip())return;const tripId=trip.id,generation=tripLoadGeneration,documentId=activityDocumentId(activityId,role);if(!documentId)return;let document=documentRows.find(item=>item.id===documentId);if(!document){const documents=await loadDocuments(true);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;document=(documents||[]).find(item=>item.id===documentId)}if(!document){msg('activityMsg','El document associat ja no està disponible.',true);return}await openDocument(documentId,documentRows);
+}
+async function deleteActivity(id,button){
+  if(!trip||isLondonTrip())return;const row=activityRows.find(item=>item.id===id);if(!row||!confirm(`Eliminar «${row.title}»? Els documents es conservaran.`))return;const tripId=trip.id,generation=tripLoadGeneration,wasBeingEdited=$('activityForm').dataset.editId===id;button.disabled=true;msg('activityMsg','Eliminant activitat…');try{const {error}=await db.from('trip_activities').delete().eq('id',id).eq('trip_id',tripId);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;if(error)throw error;if(wasBeingEdited){clearActivityDraft(tripId);resetActivityFormUi()}msg('activityMsg','Activitat eliminada.');await loadActivities(true)}catch(error){if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip()){button.disabled=false;msg('activityMsg',error?.message||'No s’ha pogut eliminar l’activitat.',true)}}
+}
+function subscribeActivities(){
+  if(!trip||isLondonTrip())return;if(activityChannel)db.removeChannel(activityChannel);const tripId=trip.id,generation=tripLoadGeneration,reconcile=()=>{if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip())loadActivities(true)};activityChannel=db.channel('activities-'+tripId).on('postgres_changes',{event:'*',schema:'public',table:'trip_activities',filter:`trip_id=eq.${tripId}`},reconcile).on('postgres_changes',{event:'*',schema:'public',table:'trip_activity_documents',filter:`trip_id=eq.${tripId}`},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
+}
+
 function renderPasswordRecovery(){
   clearNavigationState(session?.user?.id);
   clearDocumentsReturnContext();
@@ -2024,16 +2190,16 @@ function renderPasswordRecovery(){
   else msg('passwordRecoveryMsg','Validant l’enllaç de recuperació…');
 }
 async function disconnectTripRealtime(){
-  const active=[channel,checklistChannel,documentChannel,expenseChannel,accommodationChannel,flightChannel].filter(Boolean);channel=checklistChannel=documentChannel=expenseChannel=accommodationChannel=flightChannel=null;
+  const active=[channel,checklistChannel,documentChannel,expenseChannel,accommodationChannel,flightChannel,activityChannel].filter(Boolean);channel=checklistChannel=documentChannel=expenseChannel=accommodationChannel=flightChannel=activityChannel=null;
   await Promise.allSettled(active.map(item=>db.removeChannel(item)));
 }
 function clearTripScopedState(){
   clearDocumentsReturnContext();
   clearAccommodationVoucherFocus();
-  documentRows=[];pendingDocumentRows=[];expenseRows=[];photoRows=[];pendingPhotoRows=[];accommodationRows=[];accommodationDocumentLinks=[];accommodationSubmitting=false;accommodationLoadSequence+=1;flightRows=[];flightDocumentLinks=[];flightSubmitting=false;flightLoadSequence+=1;parkingRow=null;parkingLoadsPending=0;clearPhotoObjectUrls();closePhotoLightbox();
-  const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList',''],['accommodationList',''],['flightList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
+  documentRows=[];pendingDocumentRows=[];expenseRows=[];photoRows=[];pendingPhotoRows=[];accommodationRows=[];accommodationDocumentLinks=[];accommodationSubmitting=false;accommodationLoadSequence+=1;flightRows=[];flightDocumentLinks=[];flightSubmitting=false;flightLoadSequence+=1;activityRows=[];activityDocumentLinks=[];activitySubmitting=false;activityLoadSequence+=1;parkingRow=null;parkingLoadsPending=0;clearPhotoObjectUrls();closePhotoLightbox();
+  const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList',''],['accommodationList',''],['flightList',''],['activityList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
   [['overviewChecklist','0/0'],['overviewDocuments','0'],['overviewExpenses','0'],['documentCount','0'],['expenseCount','0'],['photoCount','0']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
-  [['genericChecklistModuleStatus','Preparatius compartits'],['genericDocumentsModuleStatus','Documents del viatge'],['genericPhotosModuleStatus','Àlbum compartit del viatge'],['genericTravelersModuleStatus','Invitacions del viatge'],['genericAccommodationModuleStatus','Cap allotjament'],['genericFlightsModuleStatus','Cap vol']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
+  [['genericChecklistModuleStatus','Preparatius compartits'],['genericDocumentsModuleStatus','Documents del viatge'],['genericPhotosModuleStatus','Àlbum compartit del viatge'],['genericTravelersModuleStatus','Invitacions del viatge'],['genericAccommodationModuleStatus','Cap allotjament'],['genericFlightsModuleStatus','Cap vol'],['genericActivitiesModuleStatus','Cap reserva ni activitat']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
   if($('genericPlaceholderTrip'))$('genericPlaceholderTrip').textContent='Viatge';
   if($('genericPlaceholderIcon'))$('genericPlaceholderIcon').textContent='✨';
   if($('genericPlaceholderTitle'))$('genericPlaceholderTitle').textContent='Mòdul del viatge';
@@ -2073,9 +2239,15 @@ function clearTripScopedState(){
   if($('accommodationEmpty'))$('accommodationEmpty').classList.add('hidden');
   if($('accommodationLoading'))$('accommodationLoading').classList.add('hidden');
   if($('saveAccommodation'))$('saveAccommodation').disabled=false;
+  if($('flightForm'))resetFlightFormUi();
+  if($('flightEmpty'))$('flightEmpty').classList.add('hidden');
+  if($('flightLoading'))$('flightLoading').classList.add('hidden');
+  if($('activityForm'))resetActivityFormUi();
+  if($('activityEmpty'))$('activityEmpty').classList.add('hidden');
+  if($('activityLoading'))$('activityLoading').classList.add('hidden');
 
   setParkingControlsDisabled(false);
-  ['appMsg','genericAppMsg','checklistMsg','documentMsg','expenseMsg','parkingMsg','accommodationMsg'].forEach(id=>{if($(id))msg(id,'')});
+  ['appMsg','genericAppMsg','checklistMsg','documentMsg','expenseMsg','parkingMsg','accommodationMsg','flightMsg','activityMsg'].forEach(id=>{if($(id))msg(id,'')});
 }
 function updateChecklistLabels(){
   const select=$('newItemCategory');if(!select)return;
@@ -2128,9 +2300,9 @@ async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
   clearTripScopedState();trip=selected;rememberSelectedTrip();updateTripPresentation();
   if(open)setAppView(tripDashboardId());else setAppView('tripsHomeView');
   if(!isLondonTrip()){await initializeGenericChecklistDefaults();if(!tripRequestIsCurrent(selected.id,generation))return false}
-  await Promise.all([loadItems(),loadDocuments(true),...(isLondonTrip()?[loadExpenses(true)]:[loadAccommodations(true)])]);if(!tripRequestIsCurrent(selected.id,generation))return false;
+  await Promise.all([loadItems(),loadDocuments(true),...(isLondonTrip()?[loadExpenses(true)]:[loadAccommodations(true),loadActivities(true)])]);if(!tripRequestIsCurrent(selected.id,generation))return false;
   if(isLondonTrip()){await ensureDefaultChecklistItems();if(!tripRequestIsCurrent(selected.id,generation))return false;addFavoriteButtons();initFlightChecklist()}
-  subscribe();subscribeDocuments();if(isLondonTrip())subscribeExpenses();else{subscribeAccommodations();subscribeFlights()}
+  subscribe();subscribeDocuments();if(isLondonTrip())subscribeExpenses();else{subscribeAccommodations();subscribeFlights();subscribeActivities()}
   if(applyDeepLink)applyPendingInitialView();
   refreshPushUi();return true;
 }
@@ -2437,6 +2609,53 @@ $('flightForm').onsubmit=async event=>{
       $('saveFlight').disabled=false;
     }
   }
+};
+
+$('addActivity').onclick=()=>openActivityForm();
+$('addFirstActivity').onclick=()=>openActivityForm();
+$('cancelActivity').onclick=closeActivityForm;
+$('activityOpenDocuments').onclick=()=>{if(!setActivityDocumentsReturnContext())return;saveActivityDraft();setAppView('documentsView')};
+$('activityForm').addEventListener('input',saveActivityDraft);$('activityForm').addEventListener('change',saveActivityDraft);
+window.addEventListener('pagehide',saveActivityDraft);
+$('activityForm').onsubmit=async event=>{
+  event.preventDefault();if(activitySubmitting||!trip||!session||isLondonTrip())return;
+  const form=$('activityForm');if(!form.reportValidity())return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,editingId=form.dataset.editId||'',originalUpdatedAt=form.dataset.originalUpdatedAt||'',originalBooking=form.dataset.originalBookingDocumentId||'',originalTicket=form.dataset.originalTicketDocumentId||'';
+  if(form.dataset.tripId!==tripId)return;
+  const timeZone=$('activityTimeZone').value.trim()||null,startValue=$('activityStartAt').value,endValue=$('activityEndAt').value;
+  let startAt=null,endAt=null;
+  try{
+    if(timeZone)new Intl.DateTimeFormat('ca-ES',{timeZone}).format(new Date());
+    if((startValue||endValue)&&!timeZone)throw new Error('Indica la zona horària de l’activitat.');
+    if(endValue&&!startValue)throw new Error('Per indicar el final, també has d’indicar l’inici.');
+    startAt=startValue?zonedLocalToIso(startValue,timeZone):null;endAt=endValue?zonedLocalToIso(endValue,timeZone):null;
+    if(startAt&&endAt&&new Date(endAt)<=new Date(startAt))throw new Error('El final ha de ser posterior a l’inici.');
+  }catch(error){msg('activityMsg',error?.message||'Revisa les dates i la zona horària.',true);return}
+  const amountText=$('activityAmount').value.trim(),currency=$('activityCurrency').value.trim().toUpperCase()||null;
+  if(amountText&&!currency){msg('activityMsg','Indica la moneda del preu.',true);return}
+  const rawWebsite=$('activityWebsite').value.trim(),website=rawWebsite?safeWebsiteUrl(rawWebsite):null;if(rawWebsite&&!website){msg('activityMsg','La web ha de ser una adreça HTTP o HTTPS vàlida.',true);return}
+  const payload={activity_type:$('activityType').value,title:$('activityTitle').value.trim(),start_at:startAt,end_at:endAt,time_zone:timeZone,venue_name:optionalText($('activityVenue').value),address:optionalText($('activityAddress').value),city:optionalText($('activityCity').value),reservation_status:$('activityStatus').value,booking_reference:optionalText($('activityReference').value),provider:optionalText($('activityProvider').value),contact_phone:optionalText($('activityPhone').value),contact_email:optionalText($('activityEmail').value),website_url:website,people_count:$('activityPeople').value?Number($('activityPeople').value):null,amount:amountText?Number(amountText):null,currency,notes:optionalText($('activityNotes').value)};
+  const requestedBooking=$('activityBookingDocument').value||'',requestedTicket=$('activityTicketDocument').value||'';
+  activitySubmitting=true;$('saveActivity').disabled=true;msg('activityMsg',editingId?'Desant els canvis…':'Desant activitat…');
+  try{
+    if(editingId){
+      if(!originalUpdatedAt)throw new Error('No s’ha pogut verificar la versió de l’activitat. Torna a obrir-la abans de desar.');
+      const currentDocuments=await fetchCurrentActivityDocuments(editingId,tripId,generation);if(currentDocuments.stale)return;
+      if(currentDocuments.booking!==originalBooking||currentDocuments.ticket!==originalTicket){await recoverActivityConflict(editingId,tripId,generation,'Els documents d’aquesta activitat han canviat mentre l’editaves. Hem carregat la versió més recent. Revisa els canvis abans de tornar a desar.');return}
+    }
+    const result=editingId?await db.from('trip_activities').update(payload).eq('id',editingId).eq('trip_id',tripId).eq('updated_at',originalUpdatedAt).select('*').maybeSingle():await db.from('trip_activities').insert({...payload,trip_id:tripId,created_by:userId}).select('*').single();
+    if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;if(result.error)throw result.error;if(editingId&&!result.data){await recoverActivityConflict(editingId,tripId,generation);return}
+    const saved=result.data;form.dataset.editId=saved.id;form.dataset.originalUpdatedAt=saved.updated_at;form.dataset.originalBookingDocumentId=originalBooking;form.dataset.originalTicketDocumentId=originalTicket;saveActivityDraft();
+    const bookingSynced=await syncActivityDocument(saved.id,'booking',requestedBooking,editingId?originalBooking:'',saved.updated_at,tripId,generation);if(!bookingSynced)return;form.dataset.originalBookingDocumentId=requestedBooking;saveActivityDraft();
+    const ticketSynced=await syncActivityDocument(saved.id,'ticket',requestedTicket,editingId?originalTicket:'',saved.updated_at,tripId,generation);if(!ticketSynced)return;form.dataset.originalTicketDocumentId=requestedTicket;saveActivityDraft();
+    if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;clearActivityDraft(tripId,userId);resetActivityFormUi();msg('activityMsg',editingId?'Activitat actualitzada.':'Activitat afegida.');await loadActivities(true);
+  }catch(error){
+    if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;
+    const savedId=form.dataset.editId||editingId;
+    if(savedId&&isActivityConflictError(error))await recoverActivityConflict(savedId,tripId,generation);
+    else if(savedId&&isActivityMissingError(error)){clearActivityDraft(tripId,userId);resetActivityFormUi();await loadActivities(true);msg('activityMsg','Aquesta activitat ja no existeix.',true)}
+    else msg('activityMsg',error?.message||'No s’ha pogut desar l’activitat.',true);
+  }finally{if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip()){activitySubmitting=false;$('saveActivity').disabled=false}}
 };
 
 $('accommodationOpenDocuments').onclick=()=>{if(!setAccommodationDocumentsReturnContext())return;clearAccommodationVoucherFocus();saveAccommodationDraft();setAppView('documentsView')};
@@ -2797,6 +3016,8 @@ function renderDocuments(docs=documentRows){
   }else{
     if(!$('accommodationFormCard').classList.contains('hidden'))renderAccommodationDocumentOptions(accommodationVoucherDraftState(readAccommodationDraft(),$('accommodationVoucher').value).documentId);
     renderAccommodations();
+    if(!$('activityFormCard').classList.contains('hidden'))renderActivityDocumentOptions($('activityBookingDocument').value,$('activityTicketDocument').value);
+    renderActivities();
   }
   focusAssociatedAccommodationVoucher(true);
 }
