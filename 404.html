@@ -2144,14 +2144,15 @@ async function initializeGenericChecklistDefaults(){
 async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}){
   const requestUserId=session?.user?.id;if(!requestUserId)return false;
   const {data,error}=await db.rpc('get_my_trips');if(error)throw error;if(session?.user?.id!==requestUserId)return false;trips=data||[];
+  if(coldStart&&!pendingInitialRoute){
+    const savedId=readSelectedTripId();if(savedId&&!trips.some(value=>value.id===savedId))forgetSelectedTrip();
+    trip=null;tripLoadGeneration+=1;await disconnectTripRealtime();clearTripScopedState();updateTripPresentation();setAppView('tripsHomeView');return true;
+  }
   const explicitRoute=!!(pendingInitialRoute&&!initialViewApplied),savedNavigation=!explicitRoute&&!preferredTripId&&!open?readNavigationState(requestUserId):null;
   const savedNavigationTrip=savedNavigation?.tripId?trips.find(value=>value.id===savedNavigation.tripId)||null:null;
   if(savedNavigation?.tripId&&!savedNavigationTrip)clearNavigationState(requestUserId);
   const restoreNavigation=!!(savedNavigationTrip&&!explicitRoute&&!preferredTripId&&!open);
-  const restoredSavedView=restoreNavigation?normalizedNavigationView(savedNavigation.view,savedNavigationTrip):null;
-  const restoreView=restoreNavigation&&coldStart
-    ?(savedNavigation.view==='tripsHomeView'?'tripsHomeView':(isLondonTrip(savedNavigationTrip)?'dashboardView':'genericDashboardView'))
-    :restoredSavedView;
+  const restoreView=restoreNavigation?normalizedNavigationView(savedNavigation.view,savedNavigationTrip):null;
   if(restoreNavigation&&savedNavigation.view!=='genericModuleView'&&!navigationViewIsValid(savedNavigation.view,savedNavigationTrip))clearNavigationState(requestUserId);
   const savedId=readSelectedTripId(),validPreferred=trips.some(value=>value.id===preferredTripId)?preferredTripId:null,validSaved=trips.some(value=>value.id===savedId)?savedId:null;
   if(savedId&&!validSaved)forgetSelectedTrip();
@@ -2178,9 +2179,9 @@ async function renderSession(next){
   $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';show('tripView');
   try{
     const coldStart=coldStartNavigationPending;
-    if(coldStart)coldStartNavigationPending=false;
     await refreshTrips({coldStart});
     if(renderGeneration!==sessionRenderGeneration)return;
+    if(coldStart)coldStartNavigationPending=false;
   }catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
 }
 const LONDON_CHECKLIST_CATEGORIES=[
