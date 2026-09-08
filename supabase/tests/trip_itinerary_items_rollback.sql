@@ -4,7 +4,8 @@ do $$
 declare
   expected_columns text[] := array[
     'id','trip_id','title','timing_kind','local_date','starts_at','ends_at',
-    'time_zone','daypart','location_name','address','city','notes','status',
+    'time_zone','daypart','approximate_start_time','approximate_end_time',
+    'location_name','address','city','notes','status',
     'is_fixed','is_optional','sort_order','created_by','updated_by',
     'created_at','updated_at'
   ];
@@ -20,6 +21,7 @@ declare
     'trip_itinerary_items_daypart_check',
     'trip_itinerary_items_timing_fields_check',
     'trip_itinerary_items_time_order_check',
+    'trip_itinerary_items_approximate_time_order_check',
     'trip_itinerary_items_location_name_check',
     'trip_itinerary_items_address_check',
     'trip_itinerary_items_city_check',
@@ -62,6 +64,8 @@ begin
         ('ends_at','timestamp with time zone',false),
         ('time_zone','text',false),
         ('daypart','text',false),
+        ('approximate_start_time','time without time zone',false),
+        ('approximate_end_time','time without time zone',false),
         ('location_name','text',false),
         ('address','text',false),
         ('city','text',false),
