@@ -888,6 +888,7 @@
             <option value="Hotel">🏨 Hotel</option>
             <option value="Excursió">🚌 Excursió</option>
             <option value="Museu">🏛️ Museu o monument</option>
+            <option value="restaurant">🍽️ Restaurant</option>
             <option value="Personal">🛂 Document personal</option>
             <option value="Altres">📎 Altres</option>
           </select>
@@ -3205,7 +3206,8 @@ let documentChannel=null;
 let documentRows=[];
 let pendingDocumentRows=[];
 const DOC_BUCKET='trip-documents';
-function categoryIcon(category){return ({Entrada:'🎟️',Vol:'✈️',Hotel:'🏨',Excursió:'🚌',Museu:'🏛️',Personal:'🛂',Altres:'📎'})[category]||'📎'}
+function categoryIcon(category){return ({Entrada:'🎟️',Vol:'✈️',Hotel:'🏨',Excursió:'🚌',Museu:'🏛️',restaurant:'🍽️',Personal:'🛂',Altres:'📎'})[category]||'📎'}
+function categoryLabel(category){return category==='restaurant'?'Restaurant':category||'Document'}
 function safeFileName(name){return name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'document'}
 async function loadDocuments(silent=false){
   if(!trip)return;
@@ -3227,7 +3229,7 @@ function renderDocuments(docs=documentRows){
   if(!isLondonTrip()&&$('genericDocumentsModuleStatus'))$('genericDocumentsModuleStatus').textContent=`${documentRows.length} ${documentRows.length===1?'document':'documents'}`;
   const list=$('documentsList'),empty=$('documentsEmpty');if(!list||!empty)return;
   empty.classList.toggle('hidden',documentRows.length>0);
-  list.innerHTML=documentRows.map(d=>`<article class="doc-card" data-doc-id="${esc(d.id)}"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(d.category||'Document')}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button><button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
+  list.innerHTML=documentRows.map(d=>`<article class="doc-card" data-doc-id="${esc(d.id)}"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(categoryLabel(d.category))}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button><button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
   list.querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>openDocument(b.dataset.openDoc,documentRows));
   list.querySelectorAll('[data-delete-doc]').forEach(b=>b.onclick=()=>deleteDocument(b.dataset.deleteDoc,documentRows));
   if(isLondonTrip()){
