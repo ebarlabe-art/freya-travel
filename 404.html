@@ -1707,7 +1707,7 @@ function setAppView(id){
   APP_VIEWS.forEach(v=>$(v)?.classList.toggle('hidden',v!==id));
   persistNavigationState(id);
   if(id==='documentsView')updateDocumentsBack();
-  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView')loadActivities();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
+  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView')loadActivityViewData();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
 }
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
 function stopLondonFlightTimer(){
@@ -2167,6 +2167,13 @@ function openActivityForm(id=''){
   const form=$('activityForm');form.reset();form.dataset.editId=row?.id||'';form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=row?.updated_at||'';form.dataset.originalBookingDocumentId=row?activityDocumentId(row.id,'booking'):'';form.dataset.originalTicketDocumentId=row?activityDocumentId(row.id,'ticket'):'';form.dataset.remoteConflict='';
   $('activityFormTitle').textContent=row?'Editar activitat':'Afegir activitat';$('activityType').value=row?.activity_type||'other';$('activityTitle').value=row?.title||'';$('activityTimeZone').value=row?.time_zone||trip.time_zone||Intl.DateTimeFormat().resolvedOptions().timeZone||'';$('activityStartAt').value=isoToZonedLocal(row?.start_at,$('activityTimeZone').value);$('activityEndAt').value=isoToZonedLocal(row?.end_at,$('activityTimeZone').value);$('activityVenue').value=row?.venue_name||'';$('activityAddress').value=row?.address||'';$('activityCity').value=row?.city||'';$('activityStatus').value=row?.reservation_status||'planning';$('activityReference').value=row?.booking_reference||'';$('activityProvider').value=row?.provider||'';$('activityPhone').value=row?.contact_phone||'';$('activityEmail').value=row?.contact_email||'';$('activityWebsite').value=row?.website_url||'';$('activityPeople').value=row?.people_count??'';$('activityAmount').value=row?.amount??'';$('activityCurrency').value=row?.currency||'';$('activityNotes').value=row?.notes||'';
   renderActivityDocumentOptions(form.dataset.originalBookingDocumentId,form.dataset.originalTicketDocumentId);setActivityFormMode(true);saveActivityDraft();$('activityTitle').focus();$('activityFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function loadActivityViewData(){
+  if(!trip||!session||isLondonTrip())return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
+  await loadDocuments(true);
+  if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId||isLondonTrip())return;
+  await loadActivities();
 }
 async function loadActivities(silent=false){
   if(!trip||isLondonTrip())return [];const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id,sequence=++activityLoadSequence;
