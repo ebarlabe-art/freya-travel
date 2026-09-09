@@ -796,7 +796,7 @@
         <section class="photo-upload-card">
           <form id="photoForm" class="photo-form">
             <input id="photoTitle" type="text" maxlength="80" placeholder="Títol o lloc (opcional)">
-            <input id="photoFile" type="file" accept="image/*" required>
+            <input id="photoFile" type="file" accept="image/*" multiple required>
             <div id="photoPreview" class="photo-preview"><img id="photoPreviewImage" alt="Previsualització"></div>
             <button id="uploadPhoto" class="photo-upload-button" type="submit">📷 Afegir a l’àlbum</button>
             <p id="photoMsg" class="photo-message"></p>
@@ -3526,56 +3526,113 @@ function openPhoto(id,rows){const p=rows.find(x=>x.id===id);if(!p||!p.signedUrl)
 function closePhotoLightbox(){$('photoLightbox').classList.add('hidden');$('photoLightboxImage').removeAttribute('src')}
 $('photoLightboxClose').onclick=closePhotoLightbox;$('photoLightbox').onclick=e=>{if(e.target===$('photoLightbox'))closePhotoLightbox()};
 function showPhotoMessage(message,isError=false){const el=$('photoMsg');if(!el)return;el.textContent=message||'';el.classList.toggle('error',isError)}
-$('photoFile').onchange=()=>{const file=$('photoFile').files[0],wrap=$('photoPreview'),img=$('photoPreviewImage');if(!file){wrap.classList.remove('visible');img.removeAttribute('src');return}clearPhotoObjectUrls();const url=URL.createObjectURL(file);photoObjectUrls.push(url);img.src=url;wrap.classList.add('visible')};
+$('photoFile').onchange=()=>{
+  const files=[...$('photoFile').files],wrap=$('photoPreview'),img=$('photoPreviewImage');
+  clearPhotoObjectUrls();
+  if(!files.length){wrap.classList.remove('visible');img.removeAttribute('src');showPhotoMessage('');return}
+  const url=URL.createObjectURL(files[0]);photoObjectUrls.push(url);img.src=url;wrap.classList.add('visible');
+  showPhotoMessage(files.length===1?'1 foto seleccionada':`${files.length} fotos seleccionades`);
+};
 $('photoForm').onsubmit=async e=>{
   e.preventDefault();if(!trip||!session)return;
+
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
-  const file=$('photoFile').files[0];if(!file)return;
-  if(!file.type.startsWith('image/')){showPhotoMessage('Selecciona una imatge.',true);return}
-  if(file.size>15*1024*1024){showPhotoMessage('La foto supera el límit de 15 MB.',true);return}
-  const title=$('photoTitle').value.trim()||`${isLondonTrip()?'Londres':trip.name} · ${new Date().toLocaleDateString('ca-ES',{day:'numeric',month:'short'})}`;
-  $('uploadPhoto').disabled=true;showPhotoMessage('Pujant la foto…');
-  const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
-  const path=`${tripId}/photos/${crypto.randomUUID()}-${safeFileName(title)}.${ext}`;
-  const up=await db.storage.from(DOC_BUCKET).upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});
-  if(up.error){if(tripRequestIsCurrent(tripId,generation)){$('uploadPhoto').disabled=false;showPhotoMessage(up.error.message,true)}return}
+  const files=[...$('photoFile').files];if(!files.length)return;
 
-  const {data:inserted,error}=await db.from('travel_documents').insert({trip_id:tripId,title,category:'Foto',file_name:file.name,file_path:path,mime_type:file.type||null,created_by:userId}).select('id,title,category,file_name,file_path,mime_type,created_at,created_by').single();
+  const invalid=files.filter(file=>!file.type.startsWith('image/'));
+  if(invalid.length){showPhotoMessage('La selecció conté algun fitxer que no és una imatge.',true);return}
 
-  if(error){
-    await db.storage.from(DOC_BUCKET).remove([path]);
-    if(tripRequestIsCurrent(tripId,generation)){$('uploadPhoto').disabled=false;showPhotoMessage(error.message,true)}
-    return;
+  const oversized=files.filter(file=>file.size>15*1024*1024);
+  if(oversized.length){showPhotoMessage(`${oversized.length} ${oversized.length===1?'foto supera':'fotos superen'} el límit de 15 MB.`,true);return}
+
+  const customTitle=$('photoTitle').value.trim();
+  const defaultTitle=`${isLondonTrip()?'Londres':trip.name} · ${new Date().toLocaleDateString('ca-ES',{day:'numeric',month:'short'})}`;
+
+  $('uploadPhoto').disabled=true;
+
+  let uploaded=0;
+  let failed=0;
+  const insertedRows=[];
+
+  for(let i=0;i<files.length;i++){
+    if(!tripRequestIsCurrent(tripId,generation))return;
+
+    const file=files[i];
+    showPhotoMessage(`Pujant ${i+1} de ${files.length}…`);
+
+    const title=customTitle
+      ? (files.length===1?customTitle:`${customTitle} · ${i+1}`)
+      : defaultTitle;
+
+    const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+    const path=`${tripId}/photos/${crypto.randomUUID()}-${safeFileName(title)}.${ext}`;
+
+    const up=await db.storage.from(DOC_BUCKET).upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});
+    if(up.error){failed+=1;continue}
+
+    const {data:inserted,error}=await db.from('travel_documents').insert({
+      trip_id:tripId,
+      title,
+      category:'Foto',
+      file_name:file.name,
+      file_path:path,
+      mime_type:file.type||null,
+      created_by:userId
+    }).select('id,title,category,file_name,file_path,mime_type,created_at,created_by').single();
+
+    if(error){
+      await db.storage.from(DOC_BUCKET).remove([path]);
+      failed+=1;
+      continue;
+    }
+
+    uploaded+=1;
+    insertedRows.push({...inserted,_pendingAt:Date.now()});
   }
 
   if(!tripRequestIsCurrent(tripId,generation))return;
 
-  $('photoForm').reset();$('photoPreview').classList.remove('visible');clearPhotoObjectUrls();$('uploadPhoto').disabled=false;
+  $('photoForm').reset();
+  $('photoPreview').classList.remove('visible');
+  clearPhotoObjectUrls();
+  $('uploadPhoto').disabled=false;
 
-  const visibleInserted={...inserted,_pendingAt:Date.now()};
-  pendingPhotoRows=[visibleInserted,...pendingPhotoRows.filter(p=>p.id!==visibleInserted.id)];
-  photoRows=[visibleInserted,...photoRows.filter(p=>p.id!==visibleInserted.id)];
+  if(insertedRows.length){
+    const ids=new Set(insertedRows.map(row=>row.id));
+    pendingPhotoRows=[...insertedRows,...pendingPhotoRows.filter(row=>!ids.has(row.id))];
+    photoRows=[...insertedRows,...photoRows.filter(row=>!ids.has(row.id))];
+    await renderPhotos(photoRows,tripId,generation);
+  }
 
-  await renderPhotos(photoRows,tripId,generation);
   if(!tripRequestIsCurrent(tripId,generation))return;
-  showPhotoMessage('Foto afegida a l’àlbum! 💜');
 
-  requestAnimationFrame(()=>{
-    if(!tripRequestIsCurrent(tripId,generation))return;
-    const card=document.querySelector(`[data-photo-id="${inserted.id}"]`);
-    if(card){
-      card.scrollIntoView({behavior:'smooth',block:'center'});
-      card.classList.add('photo-new');
-      setTimeout(()=>{
-        if(tripRequestIsCurrent(tripId,generation))card.classList.remove('photo-new');
-      },3000);
-    }
-  });
+  if(uploaded&&failed){
+    showPhotoMessage(`${uploaded} ${uploaded===1?'foto pujada':'fotos pujades'} · ${failed} ${failed===1?'error':'errors'}`,true);
+  }else if(uploaded){
+    showPhotoMessage(uploaded===1?'Foto afegida a l’àlbum! 💜':`${uploaded} fotos afegides a l’àlbum! 💜`);
+  }else{
+    showPhotoMessage('No s’ha pogut pujar cap foto.',true);
+  }
+
+  if(insertedRows.length){
+    requestAnimationFrame(()=>{
+      if(!tripRequestIsCurrent(tripId,generation))return;
+      const card=document.querySelector(`[data-photo-id="${insertedRows[0].id}"]`);
+      if(card){
+        card.scrollIntoView({behavior:'smooth',block:'center'});
+        card.classList.add('photo-new');
+        setTimeout(()=>{
+          if(tripRequestIsCurrent(tripId,generation))card.classList.remove('photo-new');
+        },3000);
+      }
+    });
+  }
 
   setTimeout(()=>{
     if(tripRequestIsCurrent(tripId,generation))loadPhotos(true);
   },1500);
 };
+
 async function deletePhoto(id,rows){
   if(!trip)return;
   const tripId=trip.id,generation=tripLoadGeneration;
