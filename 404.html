@@ -330,7 +330,7 @@
         <button class="generic-module-card is-ready" type="button" data-open="checklistView"><span class="generic-module-icon">✅</span><span class="generic-module-copy"><strong>Checklist</strong><small id="genericChecklistModuleStatus">Preparatius compartits</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card" type="button" data-generic-module="expenses"><span class="generic-module-icon">💶</span><span class="generic-module-copy"><strong>Despeses</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card is-ready" type="button" data-open="parkingView"><span class="generic-module-icon">🚗</span><span class="generic-module-copy"><strong>Aparcament</strong><small id="genericParkingModuleStatus">A punt per utilitzar</small></span><span class="generic-module-arrow">›</span></button>
-        <button class="generic-module-card" type="button" data-generic-module="weather"><span class="generic-module-icon">🌦️</span><span class="generic-module-copy"><strong>Temps</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
+        <button class="generic-module-card is-ready" type="button" data-open="weatherView"><span class="generic-module-icon">🌦️</span><span class="generic-module-copy"><strong>Temps</strong><small>Previsió del viatge</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card" type="button" data-generic-module="currency"><span class="generic-module-icon">💱</span><span class="generic-module-copy"><strong>Moneda</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card is-ready" type="button" data-open="photosView"><span class="generic-module-icon">📸</span><span class="generic-module-copy"><strong>Fotos</strong><small id="genericPhotosModuleStatus">Àlbum compartit del viatge</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card is-ready" type="button" data-generic-module="travelers"><span class="generic-module-icon">👥</span><span class="generic-module-copy"><strong>Viatgers</strong><small id="genericTravelersModuleStatus">Invitacions del viatge</small></span><span class="generic-module-arrow">›</span></button>
@@ -1090,8 +1090,8 @@
       <div class="card weather-panel">
         <div class="weather-hero">
           <div>
-            <p class="weather-hero-label">Temps a Londres</p>
-            <h2>Previsió del 6 a l’11 d’agost</h2>
+            <p class="weather-hero-label">Temps del viatge</p>
+            <h2 id="weatherPeriodTitle">Previsió del viatge</h2>
             <p class="weather-hero-copy">Resum del dia més càlid i del dia amb més probabilitat de pluja per preparar la maleta.</p>
           </div>
           <button id="refreshWeather" type="button" class="refresh-button">🔄 Actualitza</button>
@@ -1750,7 +1750,7 @@ function subscribeAccommodations(){
   accommodationChannel=db.channel('accommodations-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'trip_accommodations',filter:`trip_id=eq.${trip.id}`},reconcile).on('postgres_changes',{event:'*',schema:'public',table:'trip_accommodation_documents',filter:`trip_id=eq.${trip.id}`},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
 }
 const APP_VIEWS=['tripsHomeView','dashboardView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','checklistView','documentsView','photosView','itineraryView','parkingView']);
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView']);
 const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
   if(view==='tripsHomeView')return true;
@@ -2618,6 +2618,7 @@ function renderGenericItinerary(){
   tabs.querySelectorAll('[data-generic-itinerary-day]').forEach(button=>button.onclick=()=>{genericItinerarySelectedTripId=trip.id;genericItinerarySelectedDay=button.dataset.genericItineraryDay;renderGenericItinerary()});
   const activeTab=tabs.querySelector('.active');if(activeTab)tabs.scrollLeft=Math.max(0,activeTab.offsetLeft-(tabs.clientWidth-activeTab.offsetWidth)/2);
   bindItineraryActions($('genericItineraryContent'));bindDayMetadataEditor();
+  renderItineraryDayWeather();
 }
 function rebuildGenericItinerary(tripId=trip?.id,generation=tripLoadGeneration,userId=session?.user?.id){
   if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip()||!itinerarySourcesAreReady(tripId,generation,userId))return false;
@@ -3316,9 +3317,46 @@ $('accommodationForm').onsubmit=async event=>{
 };
 document.querySelectorAll('.day-tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.day-tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.day').forEach(x=>x.classList.toggle('active',x.id===b.dataset.day))});
 
-const WEATHER_CACHE_KEY='freya-weather-cache-v2';
 const WEATHER_TTL_MS=30*60*1000;
-const WEATHER_TARGET_DATES=['2026-08-06','2026-08-07','2026-08-08','2026-08-09','2026-08-10','2026-08-11'];
+let weatherDays=[];
+
+function weatherCacheKey(){
+  return `freya-weather-cache-v3-${trip?.id||'unknown'}`;
+}
+
+function tripWeatherDates(){
+  if(!trip?.start_date||!trip?.end_date)return [];
+  const dates=[];
+  const cursor=new Date(`${trip.start_date}T12:00:00Z`);
+  const end=new Date(`${trip.end_date}T12:00:00Z`);
+  while(cursor<=end&&dates.length<31){
+    dates.push(cursor.toISOString().slice(0,10));
+    cursor.setUTCDate(cursor.getUTCDate()+1);
+  }
+  return dates;
+}
+
+function weatherLocation(){
+  const accommodation=accommodationRows.find(row=>row.city||row.country||row.address);
+  if(accommodation){
+    const query=[accommodation.city,accommodation.region,accommodation.country].filter(Boolean).join(', ')
+      || accommodation.address;
+    if(query)return {query,label:accommodation.city||accommodation.name||trip.name};
+  }
+
+  const arrival=flightRows.find(row=>row.arrival_city)?.arrival_city;
+  if(arrival)return {query:arrival,label:arrival};
+
+  const activity=activityRows.find(row=>row.city)?.city;
+  if(activity)return {query:activity,label:activity};
+
+  const manual=manualItineraryRows.find(row=>row.city)?.city;
+  if(manual)return {query:manual,label:manual};
+
+  if(isLondonTrip())return {query:'London, United Kingdom',label:'Londres'};
+
+  return {query:trip?.name||'',label:trip?.name||'el viatge'};
+}
 
 function formatWeatherDate(date){
   const parsed=new Date(`${date}T12:00:00`);
@@ -3354,13 +3392,35 @@ function weatherIcon(code){
 }
 
 function getWeatherAdvice(rain,wind,max){
-  if(rain>=40) return 'Porteu paraigua.';
-  if(max>=25) return 'Dia càlid: porteu aigua.';
-  if(wind>=30) return 'Pot fer força vent.';
-  return 'Bon dia per caminar i descobrir Londres.';
+  if(rain>=40)return 'Porteu paraigua.';
+  if(max>=25)return 'Dia càlid: porteu aigua.';
+  if(wind>=30)return 'Pot fer força vent.';
+  return 'Bon dia per caminar i descobrir la destinació.';
+}
+
+function renderItineraryDayWeather(days=weatherDays){
+  document.querySelectorAll('.generic-day-weather-hook').forEach(hook=>{
+    const day=days.find(item=>item.date===hook.dataset.dayWeatherDate);
+
+    if(!day){
+      hook.classList.add('hidden');
+      hook.innerHTML='';
+      return;
+    }
+
+    hook.innerHTML=`<button type="button" class="ghost" data-day-weather-open style="padding:0;background:transparent;color:inherit;text-align:left;font:inherit;font-weight:750">🌦️ ${day.icon} ${day.max}° / ${day.min}° · ${day.rain}% pluja · vent ${day.wind} km/h <span style="color:#6750a4">· Veure previsió →</span></button>`;
+    hook.classList.remove('hidden');
+  });
+
+  document.querySelectorAll('[data-day-weather-open]').forEach(button=>{
+    button.onclick=()=>setAppView('weatherView');
+  });
 }
 
 function renderWeather(days,notice,updatedAt){
+  weatherDays=days||[];
+  renderItineraryDayWeather(weatherDays);
+
   const grid=$('weatherGrid');
   const status=$('weatherStatus');
   const noticeBox=$('weatherNotice');
@@ -3369,9 +3429,11 @@ function renderWeather(days,notice,updatedAt){
   const rainiestLabel=$('rainiestDayLabel');
   const rainiestSummary=$('rainiestDaySummary');
   if(!grid||!status||!noticeBox||!hottestLabel||!hottestSummary||!rainiestLabel||!rainiestSummary)return;
-  status.textContent=updatedAt?`Darrera actualització: ${updatedAt}`:'Previsió preparada per a la setmana del viatge';
+
+  status.textContent=updatedAt?`Darrera actualització: ${updatedAt}`:'Previsió preparada per als dies del viatge';
   noticeBox.classList.toggle('hidden',!notice);
   noticeBox.textContent=notice||'';
+
   if(!days.length){
     hottestLabel.textContent='—';
     hottestSummary.textContent='—';
@@ -3380,49 +3442,109 @@ function renderWeather(days,notice,updatedAt){
     grid.innerHTML='<div class="weather-card"><p class="muted">No hi ha dades disponibles per als dies del viatge.</p></div>';
     return;
   }
+
   const hottest=days.reduce((best,day)=>!best||day.max>best.max?day:best,days[0]);
   const rainiest=days.reduce((best,day)=>!best||day.rain>best.rain?day:best,days[0]);
+
   hottestLabel.textContent=hottest.label;
   hottestSummary.textContent=`Màx. ${hottest.max}° · ${hottest.description}`;
   rainiestLabel.textContent=rainiest.label;
   rainiestSummary.textContent=`${rainiest.rain}% pluja · ${rainiest.description}`;
+
   grid.innerHTML=days.map(day=>{
-    const highlight=[day.max===hottest.max? ' hottest':'', day.rain===rainiest.rain? ' rainiest':''].join('');
-    return `<article class="weather-card${highlight}"><div class="weather-top"><span class="weather-icon">${day.icon}</span><div><strong>${day.label}</strong><p>${day.description}</p></div></div><div class="weather-temp-grid"><div class="weather-temp-large"><strong>${day.max}°</strong><small>Màx</small></div><div class="weather-temp-small"><strong>${day.min}°</strong><small>Mín</small></div></div><div class="weather-facts-grid"><div><small>Pluja</small><strong>${day.rain}%</strong></div><div><small>Vent</small><strong>${day.wind !== undefined ? day.wind + ' km/h' : '—'}</strong></div><div><small>Sortida</small><strong>${day.sunrise || '—'}</strong></div><div><small>Posta</small><strong>${day.sunset || '—'}</strong></div></div><div class="weather-advice">${day.advice || 'Bon dia per caminar i descobrir Londres.'}</div></article>`;
+    const highlight=[day.max===hottest.max?' hottest':'',day.rain===rainiest.rain?' rainiest':''].join('');
+    return `<article class="weather-card${highlight}"><div class="weather-top"><span class="weather-icon">${day.icon}</span><div><strong>${day.label}</strong><p>${day.description}</p></div></div><div class="weather-temp-grid"><div class="weather-temp-large"><strong>${day.max}°</strong><small>Màx</small></div><div class="weather-temp-small"><strong>${day.min}°</strong><small>Mín</small></div></div><div class="weather-facts-grid"><div><small>Pluja</small><strong>${day.rain}%</strong></div><div><small>Vent</small><strong>${day.wind!==undefined?day.wind+' km/h':'—'}</strong></div><div><small>Sortida</small><strong>${day.sunrise||'—'}</strong></div><div><small>Posta</small><strong>${day.sunset||'—'}</strong></div></div><div class="weather-advice">${day.advice||'Bon dia per caminar i descobrir la destinació.'}</div></article>`;
   }).join('');
 }
 
+function updateWeatherHeader(locationLabel,targetDates){
+  const heroLabel=document.querySelector('#weatherView .weather-hero-label');
+  if(heroLabel)heroLabel.textContent=`Temps a ${locationLabel}`;
+
+  const periodTitle=$('weatherPeriodTitle');
+  if(periodTitle&&targetDates.length){
+    const firstDate=new Date(`${targetDates[0]}T12:00:00`);
+    const lastDate=new Date(`${targetDates[targetDates.length-1]}T12:00:00`);
+    const firstDay=firstDate.getDate();
+    const lastDay=lastDate.getDate();
+    const firstMonth=new Intl.DateTimeFormat('ca-ES',{month:'long'}).format(firstDate);
+    const lastMonth=new Intl.DateTimeFormat('ca-ES',{month:'long'}).format(lastDate);
+
+    periodTitle.textContent=firstMonth===lastMonth
+      ? `Previsió del ${firstDay} al ${lastDay} de ${lastMonth}`
+      : `Previsió del ${firstDay} de ${firstMonth} al ${lastDay} de ${lastMonth}`;
+  }
+}
+
 async function loadWeather(force=false){
-  if(!isLondonTrip())return;
+  if(!trip)return;
+
   const tripId=trip.id,generation=tripLoadGeneration;
   const status=$('weatherStatus');
   if(!status)return;
+
   status.textContent='Carregant la previsió…';
+
+  const targetDates=tripWeatherDates();
+  const location=weatherLocation();
+  updateWeatherHeader(location.label,targetDates);
+  if(!targetDates.length){
+    renderWeather([],'No hi ha dates configurades per a aquest viatge.','');
+    return;
+  }
+
   if(!force){
     try{
-      const cached=localStorage.getItem(WEATHER_CACHE_KEY);
+      const cached=localStorage.getItem(weatherCacheKey());
       if(cached){
         const parsed=JSON.parse(cached);
         if(Date.now()-parsed.savedAt<WEATHER_TTL_MS){
-          if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+          if(!tripRequestIsCurrent(tripId,generation))return;
           renderWeather(parsed.days,parsed.notice,parsed.updatedAt);
           return;
         }
       }
     }catch(_){
-      localStorage.removeItem(WEATHER_CACHE_KEY);
+      localStorage.removeItem(weatherCacheKey());
     }
   }
+
   try{
-    const response=await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.5074&longitude=-0.1278&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max,sunrise,sunset&timezone=Europe/London&forecast_days=16');
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+    if(!location.query)throw new Error('Falta la destinació del viatge');
+
+    const geoResponse=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location.query)}&count=1&language=ca&format=json`);
+    if(!tripRequestIsCurrent(tripId,generation))return;
+    if(!geoResponse.ok)throw new Error('No s’ha pogut localitzar la destinació');
+
+    const geo=await geoResponse.json();
+    const place=geo.results?.[0];
+    if(!place)throw new Error(`No s’ha pogut localitzar ${location.label}`);
+
+    const timezone=trip.time_zone||place.timezone||'auto';
+    const params=new URLSearchParams({
+      latitude:String(place.latitude),
+      longitude:String(place.longitude),
+      daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max,sunrise,sunset',
+      timezone,
+      forecast_days:'16'
+    });
+
+    const response=await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+    if(!tripRequestIsCurrent(tripId,generation))return;
     if(!response.ok)throw new Error('No s’han pogut obtenir dades de la previsió');
+
     const data=await response.json();
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+    if(!tripRequestIsCurrent(tripId,generation))return;
+
     const days=[];
-    for(const date of WEATHER_TARGET_DATES){
+
+    for(const date of targetDates){
       const index=data.daily.time.indexOf(date);
       if(index===-1)continue;
+
+      const sunrise=data.daily.sunrise[index];
+      const sunset=data.daily.sunset[index];
+
       days.push({
         date,
         label:formatWeatherDate(date),
@@ -3430,28 +3552,61 @@ async function loadWeather(force=false){
         description:weatherDescription(data.daily.weather_code[index]),
         max:Math.round(data.daily.temperature_2m_max[index]),
         min:Math.round(data.daily.temperature_2m_min[index]),
-        rain:data.daily.precipitation_probability_max[index],
+        rain:data.daily.precipitation_probability_max[index]??0,
         wind:Math.round(data.daily.windspeed_10m_max[index]),
-        sunrise:data.daily.sunrise[index],
-        sunset:data.daily.sunset[index],
-        advice:getWeatherAdvice(data.daily.precipitation_probability_max[index],Math.round(data.daily.windspeed_10m_max[index]),Math.round(data.daily.temperature_2m_max[index]))
+        sunrise:sunrise?sunrise.slice(-5):'—',
+        sunset:sunset?sunset.slice(-5):'—',
+        advice:getWeatherAdvice(data.daily.precipitation_probability_max[index]??0,Math.round(data.daily.windspeed_10m_max[index]),Math.round(data.daily.temperature_2m_max[index]))
       });
     }
-    const missing=WEATHER_TARGET_DATES.filter(date=>!days.some(day=>day.date===date));
-    const notice=missing.length?`No hi ha dades per a aquests dies encara: ${missing.join(', ')}. Es mostren els dies disponibles.`:'';
+
+    const missing=targetDates.filter(date=>!days.some(day=>day.date===date));
+    const notice=missing.length
+      ? `La previsió encara no arriba a tots els dies del viatge. Es mostren ${days.length} de ${targetDates.length} dies disponibles.`
+      : '';
+
     const updatedAt=new Date().toLocaleString('ca-ES');
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+
+    if(!tripRequestIsCurrent(tripId,generation))return;
+
+    const heroLabel=document.querySelector('#weatherView .weather-hero-label');
+    if(heroLabel)heroLabel.textContent=`Temps a ${location.label}`;
+
+    const periodTitle=$('weatherPeriodTitle');
+    if(periodTitle){
+      const first=targetDates[0];
+      const last=targetDates[targetDates.length-1];
+      const firstDate=new Date(`${first}T12:00:00`);
+      const lastDate=new Date(`${last}T12:00:00`);
+      const firstDay=firstDate.getDate();
+      const lastDay=lastDate.getDate();
+      const firstMonth=new Intl.DateTimeFormat('ca-ES',{month:'long'}).format(firstDate);
+      const lastMonth=new Intl.DateTimeFormat('ca-ES',{month:'long'}).format(lastDate);
+      periodTitle.textContent=firstMonth===lastMonth
+        ? `Previsió del ${firstDay} al ${lastDay} de ${lastMonth}`
+        : `Previsió del ${firstDay} de ${firstMonth} al ${lastDay} de ${lastMonth}`;
+    }
+
     renderWeather(days,notice,updatedAt);
-    localStorage.setItem(WEATHER_CACHE_KEY,JSON.stringify({savedAt:Date.now(),days,notice,updatedAt}));
+
+    localStorage.setItem(weatherCacheKey(),JSON.stringify({
+      savedAt:Date.now(),
+      days,
+      notice,
+      updatedAt
+    }));
   }catch(error){
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+    if(!tripRequestIsCurrent(tripId,generation))return;
+
     const message=error instanceof Error?error.message:'No s’han pogut obtenir dades de la previsió';
     status.textContent=message;
+
     const noticeBox=$('weatherNotice');
     if(noticeBox){
       noticeBox.classList.add('hidden');
       noticeBox.textContent='';
     }
+
     const grid=$('weatherGrid');
     if(grid)grid.innerHTML='<div class="weather-card"><p class="muted">No s’ha pogut carregar la previsió.</p></div>';
   }
