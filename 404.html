@@ -329,7 +329,7 @@
         <button class="generic-module-card is-ready" type="button" data-open="documentsView"><span class="generic-module-icon">📄</span><span class="generic-module-copy"><strong>Documents</strong><small id="genericDocumentsModuleStatus">Documents del viatge</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card is-ready" type="button" data-open="checklistView"><span class="generic-module-icon">✅</span><span class="generic-module-copy"><strong>Checklist</strong><small id="genericChecklistModuleStatus">Preparatius compartits</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card" type="button" data-generic-module="expenses"><span class="generic-module-icon">💶</span><span class="generic-module-copy"><strong>Despeses</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
-        <button class="generic-module-card" type="button" data-generic-module="parking"><span class="generic-module-icon">🚗</span><span class="generic-module-copy"><strong>Aparcament</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
+        <button class="generic-module-card is-ready" type="button" data-open="parkingView"><span class="generic-module-icon">🚗</span><span class="generic-module-copy"><strong>Aparcament</strong><small id="genericParkingModuleStatus">A punt per utilitzar</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card" type="button" data-generic-module="weather"><span class="generic-module-icon">🌦️</span><span class="generic-module-copy"><strong>Temps</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card" type="button" data-generic-module="currency"><span class="generic-module-icon">💱</span><span class="generic-module-copy"><strong>Moneda</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card is-ready" type="button" data-open="photosView"><span class="generic-module-icon">📸</span><span class="generic-module-copy"><strong>Fotos</strong><small id="genericPhotosModuleStatus">Àlbum compartit del viatge</small></span><span class="generic-module-arrow">›</span></button>
@@ -1462,6 +1462,10 @@ const GENERIC_MODULES={
 };
 function openGenericModule(key){
   if(!trip||isLondonTrip())return;
+  if(key==='parking'){
+    setAppView('parkingView');
+    return;
+  }
   const module=GENERIC_MODULES[key];if(!module)return;
   $('genericPlaceholderTrip').textContent=`${trip.name} · Freya Travel`;
   $('genericPlaceholderIcon').textContent=module.icon;
@@ -1746,7 +1750,7 @@ function subscribeAccommodations(){
   accommodationChannel=db.channel('accommodations-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'trip_accommodations',filter:`trip_id=eq.${trip.id}`},reconcile).on('postgres_changes',{event:'*',schema:'public',table:'trip_accommodation_documents',filter:`trip_id=eq.${trip.id}`},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
 }
 const APP_VIEWS=['tripsHomeView','dashboardView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','checklistView','documentsView','photosView','itineraryView']);
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','checklistView','documentsView','photosView','itineraryView','parkingView']);
 const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
   if(view==='tripsHomeView')return true;
@@ -2736,7 +2740,7 @@ function clearTripScopedState(){
   documentRows=[];pendingDocumentRows=[];expenseRows=[];photoRows=[];pendingPhotoRows=[];accommodationRows=[];accommodationDocumentLinks=[];accommodationSubmitting=false;accommodationLoadSequence+=1;flightRows=[];flightDocumentLinks=[];flightSubmitting=false;flightLoadSequence+=1;activityRows=[];activityDocumentLinks=[];activitySubmitting=false;activityLoadSequence+=1;manualItineraryRows=[];manualItinerarySubmitting=false;manualItineraryLoadSequence+=1;parkingRow=null;parkingLoadsPending=0;clearPhotoObjectUrls();closePhotoLightbox();
   const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList',''],['accommodationList',''],['flightList',''],['activityList',''],['genericItineraryDayTabs',''],['genericItineraryDays',''],['genericItineraryUnscheduledList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
   [['overviewChecklist','0/0'],['overviewDocuments','0'],['overviewExpenses','0'],['documentCount','0'],['expenseCount','0'],['photoCount','0']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
-  [['genericItineraryModuleStatus','Agenda del viatge'],['genericChecklistModuleStatus','Preparatius compartits'],['genericDocumentsModuleStatus','Documents del viatge'],['genericPhotosModuleStatus','Àlbum compartit del viatge'],['genericTravelersModuleStatus','Invitacions del viatge'],['genericAccommodationModuleStatus','Cap allotjament'],['genericFlightsModuleStatus','Cap vol'],['genericActivitiesModuleStatus','Cap reserva ni activitat']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
+  [['genericItineraryModuleStatus','Agenda del viatge'],['genericChecklistModuleStatus','Preparatius compartits'],['genericDocumentsModuleStatus','Documents del viatge'],['genericPhotosModuleStatus','Àlbum compartit del viatge'],['genericTravelersModuleStatus','Invitacions del viatge'],['genericAccommodationModuleStatus','Cap allotjament'],['genericFlightsModuleStatus','Cap vol'],['genericActivitiesModuleStatus','Cap reserva ni activitat'],['genericParkingModuleStatus','A punt per utilitzar']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
   if($('genericPlaceholderTrip'))$('genericPlaceholderTrip').textContent='Viatge';
   if($('genericPlaceholderIcon'))$('genericPlaceholderIcon').textContent='✨';
   if($('genericPlaceholderTitle'))$('genericPlaceholderTitle').textContent='Mòdul del viatge';
@@ -2842,7 +2846,7 @@ async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
   clearTripScopedState();trip=selected;rememberSelectedTrip();updateTripPresentation();
   if(open)setAppView(tripDashboardId());else setAppView('tripsHomeView');
   if(!isLondonTrip()){await initializeGenericChecklistDefaults();if(!tripRequestIsCurrent(selected.id,generation))return false}
-  await Promise.all([loadItems(),loadDocuments(true),...(isLondonTrip()?[loadExpenses(true)]:[loadAccommodations(true),loadActivities(true)])]);if(!tripRequestIsCurrent(selected.id,generation))return false;
+  await Promise.all([loadItems(),loadDocuments(true),...(isLondonTrip()?[loadExpenses(true)]:[loadAccommodations(true),loadActivities(true),loadParkingSummary()])]);if(!tripRequestIsCurrent(selected.id,generation))return false;
   if(isLondonTrip()){await ensureDefaultChecklistItems();if(!tripRequestIsCurrent(selected.id,generation))return false;addFavoriteButtons();initFlightChecklist()}
   subscribe();subscribeDocuments();if(isLondonTrip())subscribeExpenses();else{subscribeAccommodations();subscribeFlights();subscribeActivities();subscribeManualItineraryItems();subscribeTripDayMetadata()}
   if(applyDeepLink)applyPendingInitialView();
@@ -3962,6 +3966,23 @@ function parkingSpotLabel(row=parkingRow){
   if(!row)return '';
   return [row.floor,row.zone,row.spot].filter(Boolean).join(' · ');
 }
+async function loadParkingSummary(){
+  if(!trip||!session||isLondonTrip())return;
+  const tripId=trip.id,generation=tripLoadGeneration;
+  const {data,error}=await db.from('travel_parking').select('parking_name,floor,zone,spot,latitude,longitude,photo_path').eq('trip_id',tripId).maybeSingle();
+  if(!tripRequestIsCurrent(tripId,generation))return;
+  const status=$('genericParkingModuleStatus');
+  if(!status)return;
+  if(error){status.textContent='A punt per utilitzar';return}
+  const row=data||{};
+  const label=[row.floor,row.zone,row.spot].filter(Boolean).join(' · ');
+  if(label)status.textContent=label;
+  else if(row.parking_name)status.textContent=row.parking_name;
+  else if(row.latitude!=null&&row.longitude!=null)status.textContent='Ubicació guardada';
+  else if(row.photo_path)status.textContent='Foto guardada';
+  else status.textContent='A punt per utilitzar';
+}
+
 async function loadParking(){
   if(!trip)return;
   const tripId=trip.id,generation=tripLoadGeneration;
