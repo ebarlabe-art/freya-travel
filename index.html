@@ -1514,6 +1514,7 @@ function applyPendingInitialView(){
     ){
       setAppView('tripsHomeView');
     }else{
+      setManualItineraryFormMode(false);
       setAppView('itineraryView');
     }
     history.replaceState(null,'',window.location.pathname);
@@ -2520,7 +2521,7 @@ async function loadManualItineraryItems(silent=false){
   if(!trip||!session||isLondonTrip())return [];const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,sequence=++manualItineraryLoadSequence;if(!silent)$('genericItineraryLoading').classList.remove('hidden');
   try{const {data,error}=await db.from('trip_itinerary_items').select('*').eq('trip_id',tripId).order('local_date',{ascending:true,nullsFirst:false}).order('starts_at',{ascending:true,nullsFirst:false}).order('sort_order',{ascending:true}).order('id',{ascending:true});if(!itineraryRequestIsCurrent(tripId,generation,userId)||sequence!==manualItineraryLoadSequence||isLondonTrip())return manualItineraryRows;if(error)throw error;manualItineraryRows=data||[];markItinerarySourceReady('manual',tripId,generation,userId);
     const form=$('manualItineraryForm'),editingId=form.dataset.tripId===tripId?form.dataset.editId||'':'';
-    if(editingId){const current=manualItineraryRows.find(item=>item.id===editingId);if(!current){clearManualItineraryDraft(tripId,userId);resetManualItineraryFormUi();msg('genericItineraryMessage','Aquest element s’ha eliminat mentre l’editaves. Hem actualitzat l’itinerari.',true)}else if(current.updated_at!==(form.dataset.originalUpdatedAt||'')){form.dataset.remoteConflict='true';msg('genericItineraryMessage','Aquest element ha canviat mentre l’editaves. Els teus camps no s’han sobreescrit; desa per revisar el conflicte.',true)}}else if(!$('itineraryView').classList.contains('hidden')&&$('manualItineraryFormCard').classList.contains('hidden'))restoreManualItineraryDraft();
+    if(editingId){const current=manualItineraryRows.find(item=>item.id===editingId);if(!current){clearManualItineraryDraft(tripId,userId);resetManualItineraryFormUi();msg('genericItineraryMessage','Aquest element s’ha eliminat mentre l’editaves. Hem actualitzat l’itinerari.',true)}else if(current.updated_at!==(form.dataset.originalUpdatedAt||'')){form.dataset.remoteConflict='true';msg('genericItineraryMessage','Aquest element ha canviat mentre l’editaves. Els teus camps no s’han sobreescrit; desa per revisar el conflicte.',true)}}else if(pendingInitialRoute?.view!=='itinerary'&&!$('itineraryView').classList.contains('hidden')&&$('manualItineraryFormCard').classList.contains('hidden'))restoreManualItineraryDraft();
     return manualItineraryRows;
   }catch(error){if(itineraryRequestIsCurrent(tripId,generation,userId)&&sequence===manualItineraryLoadSequence&&!isLondonTrip())msg('genericItineraryMessage',error?.message||'No s’han pogut carregar els elements manuals.',true);return manualItineraryRows}finally{if(!silent&&itineraryRequestIsCurrent(tripId,generation,userId)&&sequence===manualItineraryLoadSequence)$('genericItineraryLoading').classList.add('hidden')}
 }
