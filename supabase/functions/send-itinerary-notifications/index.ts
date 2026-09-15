@@ -14,14 +14,17 @@ const FIRST_RETRY_DELAY_MS = 5 * 60 * 1000;
 const SECOND_RETRY_DELAY_MS = 15 * 60 * 1000;
 const MAX_LATE_MS = 45 * 60 * 1000;
 const PUSH_TIMEOUT_MS = 15 * 1000;
-const ITINERARY_URL =
+const LEGACY_ITINERARY_URL =
   "https://ebarlabe-art.github.io/freya-travel/freya-travel-v1.5/itinerary.html";
+const UNIVERSAL_APP_URL =
+  "https://ebarlabe-art.github.io/freya-travel/";
 
 type DeliveryStatus = "retry" | "sent" | "gone" | "failed" | "missed";
 
 type NotificationDeliveryRow = {
   id: string;
-  activity_id: string;
+  activity_id: string | null;
+  reminder_id: string | null;
   subscription_id: string;
   notification_kind: string;
   scheduled_for: string;
@@ -36,6 +39,49 @@ type ItineraryActivityRow = {
   notifications_enabled: boolean;
   notify_before_minutes: number;
 };
+
+type ReminderSourceKind =
+  | "flight"
+  | "accommodation"
+  | "activity"
+  | "itinerary_item";
+
+type ReminderKind =
+  | "flight_departure"
+  | "accommodation_check_in"
+  | "accommodation_check_out"
+  | "activity_start"
+  | "itinerary_exact";
+
+type TripReminderRow = {
+  id: string;
+  trip_id: string;
+  source_kind: ReminderSourceKind;
+  source_id: string;
+  reminder_kind: ReminderKind;
+  title: string;
+  event_at: string;
+  default_notify_before_minutes: number;
+  enabled: boolean;
+};
+
+type DeliveryContext = {
+  title: string;
+  body: string;
+  eventAt: string;
+  notifyBeforeMinutes: number;
+  enabled: boolean;
+  disabledErrorCode: string;
+  navigate: string;
+};
+
+const UNIVERSAL_REMINDER_KINDS = new Set<ReminderKind>([
+  "flight_departure",
+  "accommodation_check_in",
+  "accommodation_check_out",
+  "activity_start",
+  "itinerary_exact",
+]);
 
 type PushSubscriptionRow = {
   id: string;
@@ -114,11 +160,41 @@ function reminderLead(minutes: number): string {
   return `D'aquí a ${minutes} minuts`;
 }
 
-function deliveryDeadline(delivery: NotificationDeliveryRow, activity: ItineraryActivityRow): number {
-  const startsAt = Date.parse(activity.starts_at);
+function universalReminderBody(reminder: TripReminderRow): string {
+  const lead = reminderLead(reminder.default_notify_before_minutes);
+
+  switch (reminder.reminder_kind) {
+    case "flight_departure":
+      return `${lead}: surt el vol ${reminder.title}`;
+    case "accommodation_check_in":
+      return `${lead}: check-in a ${reminder.title}`;
+    case "accommodation_check_out":
+      return `${lead}: check-out de ${reminder.title}`;
+    case "activity_start":
+    case "itinerary_exact":
+      return `${lead}: ${reminder.title}`;
+  }
+}
+
+
+function buildUniversalNavigate(reminder: TripReminderRow): string {
+  const url = new URL(UNIVERSAL_APP_URL);
+  url.searchParams.set("view", "itinerary");
+  url.searchParams.set("trip", reminder.trip_id);
+  url.searchParams.set("source", reminder.source_kind);
+  url.searchParams.set("source_id", reminder.source_id);
+  url.searchParams.set("reminder", reminder.id);
+  return url.toString();
+}
+
+function deliveryDeadline(
+  delivery: NotificationDeliveryRow,
+  context: DeliveryContext,
+): number {
+  const eventAt = Date.parse(context.eventAt);
   const scheduledFor = Date.parse(delivery.scheduled_for);
-  if (!Number.isFinite(startsAt) || !Number.isFinite(scheduledFor)) return Number.NaN;
-  return Math.min(startsAt, scheduledFor + MAX_LATE_MS);
+  if (!Number.isFinite(eventAt) || !Number.isFinite(scheduledFor)) return Number.NaN;
+  return Math.min(eventAt, scheduledFor + MAX_LATE_MS);
 }
 
 function classifyPushFailure(error: unknown): PushFailure {
@@ -199,7 +275,7 @@ async function finishSent(
 async function finishPushFailure(
   admin: SupabaseClient,
   delivery: NotificationDeliveryRow,
-  activity: ItineraryActivityRow,
+  context: DeliveryContext,
   failure: PushFailure,
 ): Promise<DeliveryStatus> {
   if (!failure.transient || delivery.attempt_count >= MAX_ATTEMPTS) {
@@ -209,7 +285,7 @@ async function finishPushFailure(
   const now = Date.now();
   const delay = delivery.attempt_count === 1 ? FIRST_RETRY_DELAY_MS : SECOND_RETRY_DELAY_MS;
   const nextAttemptAt = now + delay;
-  const deadline = deliveryDeadline(delivery, activity);
+  const deadline = deliveryDeadline(delivery, context);
   if (!Number.isFinite(deadline) || nextAttemptAt >= deadline) {
     return finishDelivery(admin, delivery, "missed", "retry-window-expired");
   }
@@ -229,47 +305,101 @@ async function processDelivery(
   admin: SupabaseClient,
   delivery: NotificationDeliveryRow,
   activity: ItineraryActivityRow | undefined,
+  reminder: TripReminderRow | undefined,
   pushSubscription: PushSubscriptionRow | undefined,
   vapid: VapidConfig,
 ): Promise<DeliveryStatus> {
   if (delivery.attempt_count > MAX_ATTEMPTS) {
     return finishDelivery(admin, delivery, "failed", "max-attempts-exceeded");
   }
-  if (delivery.notification_kind !== "activity-1h") {
-    return finishDelivery(admin, delivery, "failed", "unsupported-notification-kind");
+
+  const hasLegacySource = delivery.activity_id !== null;
+  const hasUniversalSource = delivery.reminder_id !== null;
+
+  if (hasLegacySource === hasUniversalSource) {
+    return finishDelivery(admin, delivery, "failed", "invalid-delivery-source");
   }
-  if (!activity) return finishDelivery(admin, delivery, "failed", "activity-not-found");
+
+  let context: DeliveryContext;
+
+  if (hasLegacySource) {
+    if (delivery.notification_kind !== "activity-1h") {
+      return finishDelivery(admin, delivery, "failed", "unsupported-notification-kind");
+    }
+    if (!activity) {
+      return finishDelivery(admin, delivery, "failed", "activity-not-found");
+    }
+
+    context = {
+      title: activity.title,
+      body: `${reminderLead(activity.notify_before_minutes)}: ${activity.title}`,
+      eventAt: activity.starts_at,
+      notifyBeforeMinutes: activity.notify_before_minutes,
+      enabled: activity.notifications_enabled,
+      disabledErrorCode: "notifications-disabled",
+      navigate:
+        `${LEGACY_ITINERARY_URL}?activity=${encodeURIComponent(activity.stable_activity_id)}`,
+    };
+  } else {
+    if (!reminder) {
+      return finishDelivery(admin, delivery, "failed", "reminder-not-found");
+    }
+    if (!UNIVERSAL_REMINDER_KINDS.has(reminder.reminder_kind)) {
+      return finishDelivery(admin, delivery, "failed", "unsupported-reminder-kind");
+    }
+    if (delivery.notification_kind !== reminder.reminder_kind) {
+      return finishDelivery(admin, delivery, "failed", "reminder-kind-mismatch");
+    }
+
+    context = {
+      title: reminder.title,
+      body: universalReminderBody(reminder),
+      eventAt: reminder.event_at,
+      notifyBeforeMinutes: reminder.default_notify_before_minutes,
+      enabled: reminder.enabled,
+      disabledErrorCode: "reminder-disabled",
+      navigate: buildUniversalNavigate(reminder),
+    };
+  }
+
   if (!pushSubscription) {
     return finishDelivery(admin, delivery, "gone", "subscription-not-found");
   }
   if (!pushSubscription.active) {
     return finishDelivery(admin, delivery, "gone", "subscription-inactive");
   }
-  if (!activity.notifications_enabled) {
-    return finishDelivery(admin, delivery, "missed", "notifications-disabled");
+  if (!context.enabled) {
+    return finishDelivery(admin, delivery, "missed", context.disabledErrorCode);
   }
 
-  const deadline = deliveryDeadline(delivery, activity);
+  const deadline = deliveryDeadline(delivery, context);
   if (!Number.isFinite(deadline)) {
-    return finishDelivery(admin, delivery, "failed", "invalid-activity-time");
+    return finishDelivery(admin, delivery, "failed", "invalid-event-time");
   }
   if (Date.now() >= deadline) {
     return finishDelivery(admin, delivery, "missed", "delivery-expired");
   }
 
-  const navigate = `${ITINERARY_URL}?activity=${encodeURIComponent(activity.stable_activity_id)}`;
   const payload = {
     notification: {
       title: "Freya Travel",
-      body: `${reminderLead(activity.notify_before_minutes)}: ${activity.title}`,
-      navigate,
+      body: context.body,
+      navigate: context.navigate,
     },
   };
+
   const subscription: PushSubscriptionData = {
     endpoint: pushSubscription.endpoint,
     keys: { p256dh: pushSubscription.p256dh, auth: pushSubscription.auth },
   };
-  const ttl = Math.max(60, Math.min(86400, Math.floor((Date.parse(activity.starts_at) - Date.now()) / 1000)));
+
+  const ttl = Math.max(
+    60,
+    Math.min(
+      86400,
+      Math.floor((Date.parse(context.eventAt) - Date.now()) / 1000),
+    ),
+  );
 
   let delivered: boolean;
   try {
@@ -280,7 +410,12 @@ async function processDelivery(
       { ttl, timeoutMs: PUSH_TIMEOUT_MS, urgency: "normal" },
     );
   } catch (error) {
-    return finishPushFailure(admin, delivery, activity, classifyPushFailure(error));
+    return finishPushFailure(
+      admin,
+      delivery,
+      context,
+      classifyPushFailure(error),
+    );
   }
 
   if (delivered) return finishSent(admin, delivery);
@@ -289,12 +424,14 @@ async function processDelivery(
     .from("push_subscriptions")
     .update({ active: false, updated_at: new Date().toISOString() })
     .eq("id", pushSubscription.id);
+
   if (deactivateError) {
-    return finishPushFailure(admin, delivery, activity, {
+    return finishPushFailure(admin, delivery, context, {
       code: "subscription-disable-failed",
       transient: true,
     });
   }
+
   return finishDelivery(admin, delivery, "gone", "subscription-gone");
 }
 
@@ -362,28 +499,74 @@ async function handleRequest(request: Request): Promise<Response> {
   };
   if (deliveries.length === 0) return jsonResponse(summary, 200);
 
-  const activityIds = [...new Set(deliveries.map((delivery) => delivery.activity_id))];
-  const subscriptionIds = [...new Set(deliveries.map((delivery) => delivery.subscription_id))];
-  const [{ data: activityData, error: activityError }, { data: subscriptionData, error: subscriptionError }] =
-    await Promise.all([
-      admin
-        .from("itinerary_activities")
-        .select("id,stable_activity_id,title,starts_at,notifications_enabled,notify_before_minutes")
-        .in("id", activityIds),
-      admin
-        .from("push_subscriptions")
-        .select("id,endpoint,p256dh,auth,active")
-        .in("id", subscriptionIds),
-    ]);
-  if (activityError || subscriptionError) {
-    return jsonResponse({ error: "Unable to load claimed deliveries" }, 500);
+  const activityIds = [
+    ...new Set(
+      deliveries.flatMap((delivery) =>
+        delivery.activity_id ? [delivery.activity_id] : []
+      ),
+    ),
+  ];
+  const reminderIds = [
+    ...new Set(
+      deliveries.flatMap((delivery) =>
+        delivery.reminder_id ? [delivery.reminder_id] : []
+      ),
+    ),
+  ];
+  const subscriptionIds = [
+    ...new Set(deliveries.map((delivery) => delivery.subscription_id)),
+  ];
+
+  let activityData: ItineraryActivityRow[] = [];
+  let reminderData: TripReminderRow[] = [];
+
+  if (activityIds.length > 0) {
+    const { data, error } = await admin
+      .from("itinerary_activities")
+      .select(
+        "id,stable_activity_id,title,starts_at,notifications_enabled,notify_before_minutes",
+      )
+      .in("id", activityIds);
+
+    if (error) {
+      return jsonResponse({ error: "Unable to load legacy activities" }, 500);
+    }
+    activityData = (data ?? []) as ItineraryActivityRow[];
+  }
+
+  if (reminderIds.length > 0) {
+    const { data, error } = await admin
+      .from("trip_reminders")
+      .select(
+        "id,trip_id,source_kind,source_id,reminder_kind,title,event_at,default_notify_before_minutes,enabled",
+      )
+      .in("id", reminderIds);
+
+    if (error) {
+      return jsonResponse({ error: "Unable to load universal reminders" }, 500);
+    }
+    reminderData = (data ?? []) as TripReminderRow[];
+  }
+
+  const { data: subscriptionData, error: subscriptionError } = await admin
+    .from("push_subscriptions")
+    .select("id,endpoint,p256dh,auth,active")
+    .in("id", subscriptionIds);
+
+  if (subscriptionError) {
+    return jsonResponse({ error: "Unable to load push subscriptions" }, 500);
   }
 
   const activities = new Map(
-    ((activityData ?? []) as ItineraryActivityRow[]).map((activity) => [activity.id, activity]),
+    activityData.map((activity) => [activity.id, activity]),
+  );
+  const reminders = new Map(
+    reminderData.map((reminder) => [reminder.id, reminder]),
   );
   const subscriptions = new Map(
-    ((subscriptionData ?? []) as PushSubscriptionRow[]).map((subscription) => [subscription.id, subscription]),
+    ((subscriptionData ?? []) as PushSubscriptionRow[]).map(
+      (subscription) => [subscription.id, subscription],
+    ),
   );
   const vapid: VapidConfig = {
     subject: vapidSubject,
@@ -397,7 +580,12 @@ async function handleRequest(request: Request): Promise<Response> {
         return await processDelivery(
           admin,
           delivery,
-          activities.get(delivery.activity_id),
+          delivery.activity_id
+            ? activities.get(delivery.activity_id)
+            : undefined,
+          delivery.reminder_id
+            ? reminders.get(delivery.reminder_id)
+            : undefined,
           subscriptions.get(delivery.subscription_id),
           vapid,
         );
