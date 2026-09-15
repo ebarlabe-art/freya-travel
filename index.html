@@ -316,6 +316,7 @@
     <div id="genericDashboardView" class="hidden">
       <button class="dashboard-switch" type="button" data-trips-home>← Els meus viatges</button>
       <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="genericTripTitle"></h1><p id="genericTripDates"></p><div id="genericTripMeta" class="generic-meta"></div></div>
+      <div id="genericPushCard" class="install-card hidden"><div><strong>🔔 Notificacions</strong><small id="genericPushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="genericEnablePush" type="button">Activa les notificacions</button></div>
       <section class="generic-dashboard-intro">
         <div><h2>El teu viatge, a mà</h2><p>Prepara’l, viu-lo i conserva’n tots els records des d’un sol lloc.</p></div>
         <div class="generic-lifecycle" aria-label="Etapes del viatge"><span>Abans</span><span>Durant</span><span>Després</span></div>
@@ -1406,10 +1407,80 @@ const KNOWN_TICKET_KEYS=new Set(Object.keys(TICKET_DOCUMENT_TERMS));
 let requestedTicketKey=null;
 const initialRouteParams=new URLSearchParams(window.location.search);
 const initialRouteView=initialRouteParams.get('view'),initialRouteTicket=initialRouteParams.get('ticket');
-const pendingInitialRoute=initialRouteView==='tickets'&&KNOWN_TICKET_KEYS.has(initialRouteTicket)
-  ?{view:'tickets',ticketKey:initialRouteTicket}
-  :initialRouteView==='london'?{view:'london',ticketKey:null}:null;
+const UUID_ROUTE_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UNIVERSAL_REMINDER_ROUTE_KINDS={
+  flight:new Set(['flight_departure']),
+  accommodation:new Set(['accommodation_check_in','accommodation_check_out']),
+  activity:new Set(['activity_start']),
+  itinerary_item:new Set(['itinerary_exact'])
+};
+function readUniversalReminderInitialRoute(params){
+  if(params.get('view')!=='itinerary')return null;
+  const tripId=params.get('trip')||'';
+  const sourceKind=params.get('source')||'';
+  const sourceId=params.get('source_id')||'';
+  const reminderId=params.get('reminder')||'';
+  const reminderKind=params.get('kind')||'';
+  if(!UUID_ROUTE_RE.test(tripId)||!UUID_ROUTE_RE.test(sourceId))return null;
+  if(reminderId&&!UUID_ROUTE_RE.test(reminderId))return null;
+  if(!UNIVERSAL_REMINDER_ROUTE_KINDS[sourceKind]?.has(reminderKind))return null;
+  return {
+    view:'itinerary',
+    tripId,
+    sourceKind,
+    sourceId,
+    reminderId:reminderId||null,
+    reminderKind
+  };
+}
+const universalReminderInitialRoute=readUniversalReminderInitialRoute(initialRouteParams);
+const pendingInitialRoute=universalReminderInitialRoute
+  ||(initialRouteView==='tickets'&&KNOWN_TICKET_KEYS.has(initialRouteTicket)
+    ?{view:'tickets',ticketKey:initialRouteTicket}
+    :initialRouteView==='london'?{view:'london',ticketKey:null}:null);
 let initialViewApplied=false;
+let initialReminderFocusApplied=false;
+
+function universalReminderItineraryKey(route=pendingInitialRoute){
+  if(route?.view!=='itinerary')return null;
+  if(route.sourceKind==='flight'&&route.reminderKind==='flight_departure')
+    return `flight:${route.sourceId}:departure`;
+  if(route.sourceKind==='accommodation'&&route.reminderKind==='accommodation_check_in')
+    return `accommodation:${route.sourceId}:check_in`;
+  if(route.sourceKind==='accommodation'&&route.reminderKind==='accommodation_check_out')
+    return `accommodation:${route.sourceId}:check_out`;
+  if(route.sourceKind==='activity'&&route.reminderKind==='activity_start')
+    return `activity:${route.sourceId}:start`;
+  if(route.sourceKind==='itinerary_item'&&route.reminderKind==='itinerary_exact')
+    return `manual:${route.sourceId}`;
+  return null;
+}
+
+function pendingInitialReminderItineraryItem(){
+  if(
+    initialReminderFocusApplied||
+    pendingInitialRoute?.view!=='itinerary'||
+    !trip||
+    isLondonTrip()||
+    trip.id!==pendingInitialRoute.tripId
+  )return null;
+  const key=universalReminderItineraryKey();
+  return key?itineraryProjection.find(item=>item.key===key)||null:null;
+}
+
+function focusPendingInitialReminderItinerary(item=null){
+  if(initialReminderFocusApplied||pendingInitialRoute?.view!=='itinerary')return false;
+  const target=item||pendingInitialReminderItineraryItem();
+  if(!target)return false;
+  const entry=[...document.querySelectorAll('[data-itinerary-key]')]
+    .find(element=>element.dataset.itineraryKey===target.key);
+  if(!entry)return false;
+  initialReminderFocusApplied=true;
+  entry.classList.add('generic-itinerary-source-focus');
+  entry.scrollIntoView({behavior:'smooth',block:'center'});
+  setTimeout(()=>entry.classList.remove('generic-itinerary-source-focus'),3200);
+  return true;
+}
 function ticketDocumentMatches(doc,key){
   const normalize=value=>normalizeSearchText(value).replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
   const text=normalize(`${doc.title||''} ${doc.category||''} ${doc.file_name||''}`);
@@ -1434,11 +1505,29 @@ function focusRequestedTicket(){
 }
 function applyPendingInitialView(){
   if(initialViewApplied)return;
-  if(pendingInitialRoute&&!isLondonTrip()){
-    setAppView('tripsHomeView');
-    history.replaceState(null,'',window.location.pathname);initialViewApplied=true;
+
+  if(pendingInitialRoute?.view==='itinerary'){
+    if(
+      !trip||
+      isLondonTrip()||
+      trip.id!==pendingInitialRoute.tripId
+    ){
+      setAppView('tripsHomeView');
+    }else{
+      setAppView('itineraryView');
+    }
+    history.replaceState(null,'',window.location.pathname);
+    initialViewApplied=true;
     return;
   }
+
+  if(pendingInitialRoute&&!isLondonTrip()){
+    setAppView('tripsHomeView');
+    history.replaceState(null,'',window.location.pathname);
+    initialViewApplied=true;
+    return;
+  }
+
   if(pendingInitialRoute?.view==='tickets'){
     requestedTicketKey=pendingInitialRoute.ticketKey;
     setAppView('ticketsView');
@@ -1446,6 +1535,7 @@ function applyPendingInitialView(){
   }else{
     setAppView(pendingInitialRoute?.view==='london'?'dashboardView':'tripsHomeView');
   }
+
   if(pendingInitialRoute)history.replaceState(null,'',window.location.pathname);
   initialViewApplied=true;
 }
@@ -2622,7 +2712,33 @@ function renderGenericItinerary(){
 }
 function rebuildGenericItinerary(tripId=trip?.id,generation=tripLoadGeneration,userId=session?.user?.id){
   if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip()||!itinerarySourcesAreReady(tripId,generation,userId))return false;
-  itineraryProjection=normalizedItineraryProjection(tripId,generation,userId);renderGenericItinerary();return true;
+
+  itineraryProjection=normalizedItineraryProjection(tripId,generation,userId);
+
+  const reminderItem=pendingInitialReminderItineraryItem();
+  if(reminderItem?.localDate){
+    genericItinerarySelectedTripId=trip.id;
+    genericItinerarySelectedDay=reminderItem.localDate;
+  }
+
+  renderGenericItinerary();
+
+  if(reminderItem){
+    requestAnimationFrame(()=>focusPendingInitialReminderItinerary(reminderItem));
+  }else if(
+    pendingInitialRoute?.view==='itinerary'&&
+    !initialReminderFocusApplied&&
+    trip?.id===pendingInitialRoute.tripId
+  ){
+    initialReminderFocusApplied=true;
+    msg(
+      'genericItineraryMessage',
+      'El recordatori pertany a un element que ja no està disponible a l’itinerari.',
+      true
+    );
+  }
+
+  return true;
 }
 function scheduleItineraryRebuild(){
   if(itineraryLoadBatch||!trip||isLondonTrip()||$('itineraryView').classList.contains('hidden')||$('genericItineraryContent').classList.contains('hidden'))return;
@@ -2813,7 +2929,8 @@ function updateTripPresentation(){
   const london=isLondonTrip();
   $('tripTitleTop').textContent=trip?.name||'Els meus viatges';
   $('globalSearchFab').classList.toggle('hidden',!london);
-  $('pushCard').classList.toggle('hidden',!london);
+  $('pushCard').classList.toggle('hidden',!trip||!london);
+  $('genericPushCard')?.classList.toggle('hidden',!trip||london);
   updateChecklistLabels();renderTripsHome();
   if(!trip)return;
   if($('expenseDate'))$('expenseDate').value=trip.start_date||'';
@@ -2875,13 +2992,18 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
   if(restoreNavigation&&savedNavigation.view!=='genericModuleView'&&!navigationViewIsValid(savedNavigation.view,savedNavigationTrip))clearNavigationState(requestUserId);
   const savedId=readSelectedTripId(),validPreferred=trips.some(value=>value.id===preferredTripId)?preferredTripId:null,validSaved=trips.some(value=>value.id===savedId)?savedId:null;
   if(savedId&&!validSaved)forgetSelectedTrip();
-  const londonForDeepLink=pendingInitialRoute&&!initialViewApplied?trips.find(isLondonTrip)?.id:null;
-  const selectedId=londonForDeepLink||validPreferred||savedNavigationTrip?.id||validSaved||trips[0]?.id||null;
+  const deepLinkPending=!!(pendingInitialRoute&&!initialViewApplied);
+  const deepLinkTripId=deepLinkPending
+    ?pendingInitialRoute.view==='itinerary'
+      ?(trips.some(value=>value.id===pendingInitialRoute.tripId)?pendingInitialRoute.tripId:null)
+      :trips.find(isLondonTrip)?.id||null
+    :null;
+  const selectedId=deepLinkTripId||validPreferred||savedNavigationTrip?.id||validSaved||trips[0]?.id||null;
   renderTripsHome();
   if(selectedId){
     navigationRestoreInProgress=restoreNavigation;
     try{
-      const selected=await selectTrip(selectedId,{open:restoreNavigation?false:open,applyDeepLink:!!londonForDeepLink});
+      const selected=await selectTrip(selectedId,{open:restoreNavigation?false:open,applyDeepLink:deepLinkPending});
       if(!selected)return false;
       if(restoreNavigation&&session?.user?.id===requestUserId&&trip?.id===savedNavigationTrip.id)setAppView(restoreView);
     }finally{navigationRestoreInProgress=false}
@@ -4435,7 +4557,19 @@ function showUpdateToast(){
 function isIos(){return /iphone|ipad|ipod/i.test(navigator.userAgent)}
 function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
 function pushSupported(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window}
-function setPushState(text,disabled=false){const status=$('pushStatus'),button=$('enablePush');if(status)status.textContent=text;if(button)button.disabled=disabled}
+function activePushUi(){
+  const generic=!!trip&&!isLondonTrip();
+  return {
+    card:$(generic?'genericPushCard':'pushCard'),
+    status:$(generic?'genericPushStatus':'pushStatus'),
+    button:$(generic?'genericEnablePush':'enablePush')
+  };
+}
+function setPushState(text,disabled=false){
+  const {status,button}=activePushUi();
+  if(status)status.textContent=text;
+  if(button)button.disabled=disabled;
+}
 function vapidPublicKeyBytes(){
   const padding='='.repeat((4-VAPID_PUBLIC_KEY.length%4)%4),base64=(VAPID_PUBLIC_KEY+padding).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(base64);
   return Uint8Array.from(raw,char=>char.charCodeAt(0));
@@ -4476,9 +4610,8 @@ async function resumePendingPushMigration(registration){
   const state=readPushLocalState(PUSH_SUBSCRIPTION_STATE_KEY);if(state?.endpoint===pending.endpoint)clearPushLocalState(PUSH_SUBSCRIPTION_STATE_KEY);
 }
 async function refreshPushUi(){
-  if(!$('enablePush'))return;
-  if(!isLondonTrip()){$('pushCard')?.classList.add('hidden');setPushState('Disponible només per a Londres 2026.',true);return}
-  $('pushCard')?.classList.remove('hidden');
+  const ui=activePushUi();if(!ui.button)return;
+  ui.card?.classList.remove('hidden');
   if(!pushSupported()){setPushState('Aquest dispositiu o navegador no és compatible amb Web Push.',true);return}
   if(isIos()&&!isStandalone()){setPushState('No instal·lada: afegeix Freya Travel a la pantalla d’inici i obre-la des de la seva icona.',true);return}
   if(Notification.permission==='denied'){setPushState('Permís denegat. Activa les notificacions als Ajustos de l’iPhone.',true);return}
@@ -4486,14 +4619,14 @@ async function refreshPushUi(){
   const tripId=trip.id,generation=tripLoadGeneration;
   try{
     const registration=await navigator.serviceWorker.ready,subscription=await registration.pushManager.getSubscription();
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+    if(!tripRequestIsCurrent(tripId,generation))return;
     if(currentPendingPushMigration()){setPushState('Actualització de notificacions pendent. Prem el botó per continuar.',false);return}
     if(!subscription){setPushState('Prem el botó per activar les notificacions.',false);return}
     if(!pushSubscriptionUsesCurrentVapid(subscription)){setPushState('Cal actualitzar les notificacions. Prem el botó per continuar.',false);return}
     rememberCurrentPushSubscription(subscription);
     const json=subscription.toJSON(),endpoint=json.endpoint||subscription.endpoint;
     const {data,error}=await db.from('push_subscriptions').select('id').eq('user_id',session.user.id).eq('trip_id',tripId).eq('endpoint',endpoint).eq('active',true).maybeSingle();
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+    if(!tripRequestIsCurrent(tripId,generation))return;
     if(error)throw error;
     setPushState(data?'Notificacions actives.':'Subscripció pendent de guardar. Prem el botó per completar-la.',!!data);
   }catch(_){setPushState('No s’ha pogut comprovar l’estat. Torna-ho a provar.',false)}
@@ -4501,7 +4634,6 @@ async function refreshPushUi(){
 let pushActivationInProgress=false;
 async function enablePushNotifications(){
   if(pushActivationInProgress)return;
-  if(!isLondonTrip()){setPushState('Disponible només per a Londres 2026.',true);return}
   if(!pushSupported()){setPushState('Aquest dispositiu o navegador no és compatible amb Web Push.',true);return}
   if(isIos()&&!isStandalone()){setPushState('No instal·lada: afegeix Freya Travel a la pantalla d’inici i obre-la des de la seva icona.',true);return}
   if(!session||!trip){setPushState('Inicia sessió i obre un viatge abans d’activar-les.',true);return}
@@ -4511,24 +4643,24 @@ async function enablePushNotifications(){
   try{
     if(Notification.permission==='denied'){setPushState('Permís denegat. Activa les notificacions als Ajustos de l’iPhone.',true);return}
     const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+    if(!tripRequestIsCurrent(tripId,generation))return;
     if(permission!=='granted'){setPushState(permission==='denied'?'Permís denegat. Activa les notificacions als Ajustos de l’iPhone.':'No s’ha concedit el permís de notificacions.',permission==='denied');return}
     const registration=await navigator.serviceWorker.ready;
     const expectedWorker=new URL('/freya-travel/sw.js',location.origin).href;
     if(registration.active?.scriptURL!==expectedWorker)throw new Error('El service worker principal encara no està actiu. Tanca i torna a obrir Freya Travel.');
     await resumePendingPushMigration(registration);
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+    if(!tripRequestIsCurrent(tripId,generation))return;
     let subscription=await registration.pushManager.getSubscription();
     if(subscription&&!pushSubscriptionUsesCurrentVapid(subscription)){
       if(!writePushLocalState(PUSH_MIGRATION_PENDING_KEY,{stage:'unsubscribe',endpoint:subscription.endpoint,userId,tripId}))throw new Error('No s’ha pogut preparar l’actualització de notificacions. Torna-ho a provar.');
       await resumePendingPushMigration(registration);subscription=null;
     }
     if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:vapidPublicKeyBytes()});
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+    if(!tripRequestIsCurrent(tripId,generation))return;
     rememberCurrentPushSubscription(subscription);
     const json=subscription.toJSON(),keys=json.keys||{};
     if(!json.endpoint||!keys.p256dh||!keys.auth)throw new Error('La subscripció Push no ha retornat totes les claus necessàries.');
-    const {error}=await db.from('push_subscriptions').upsert({user_id:userId,trip_id:tripId,endpoint:json.endpoint,p256dh:keys.p256dh,auth:keys.auth,active:true,updated_at:new Date().toISOString()},{onConflict:'endpoint'});
+    const {error}=await db.from('push_subscriptions').upsert({user_id:userId,trip_id:tripId,endpoint:json.endpoint,p256dh:keys.p256dh,auth:keys.auth,active:true,updated_at:new Date().toISOString()},{onConflict:'endpoint,trip_id'});
     if(error)throw error;
     setPushState('Notificacions actives.',true);
   }catch(error){
@@ -4547,6 +4679,7 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredIns
 window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;updateInstallUi()});
 $('installApp').onclick=async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;updateInstallUi()};
 $('enablePush').onclick=enablePushNotifications;
+$('genericEnablePush').onclick=enablePushNotifications;
 window.addEventListener('load',()=>{updateInstallUi();refreshPushUi();initGuide()});
 window.addEventListener('pageshow',refreshPushUi);
 
