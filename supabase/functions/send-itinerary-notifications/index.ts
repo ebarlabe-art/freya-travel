@@ -184,6 +184,7 @@ function buildUniversalNavigate(reminder: TripReminderRow): string {
   url.searchParams.set("source", reminder.source_kind);
   url.searchParams.set("source_id", reminder.source_id);
   url.searchParams.set("reminder", reminder.id);
+  url.searchParams.set("kind", reminder.reminder_kind);
   return url.toString();
 }
 
