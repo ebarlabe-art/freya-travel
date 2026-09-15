@@ -4565,10 +4565,13 @@ function activePushUi(){
     button:$(generic?'genericEnablePush':'enablePush')
   };
 }
-function setPushState(text,disabled=false){
+function setPushState(text,disabled=false,hideButton=false){
   const {status,button}=activePushUi();
   if(status)status.textContent=text;
-  if(button)button.disabled=disabled;
+  if(button){
+    button.disabled=disabled;
+    button.classList.toggle('hidden',hideButton);
+  }
 }
 function vapidPublicKeyBytes(){
   const padding='='.repeat((4-VAPID_PUBLIC_KEY.length%4)%4),base64=(VAPID_PUBLIC_KEY+padding).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(base64);
@@ -4628,7 +4631,8 @@ async function refreshPushUi(){
     const {data,error}=await db.from('push_subscriptions').select('id').eq('user_id',session.user.id).eq('trip_id',tripId).eq('endpoint',endpoint).eq('active',true).maybeSingle();
     if(!tripRequestIsCurrent(tripId,generation))return;
     if(error)throw error;
-    setPushState(data?'Notificacions actives.':'Subscripció pendent de guardar. Prem el botó per completar-la.',!!data);
+    if(data)setPushState('Notificacions actives.',true,true);
+    else setPushState('Subscripció pendent de guardar. Prem el botó per completar-la.',false);
   }catch(_){setPushState('No s’ha pogut comprovar l’estat. Torna-ho a provar.',false)}
 }
 let pushActivationInProgress=false;
@@ -4662,7 +4666,7 @@ async function enablePushNotifications(){
     if(!json.endpoint||!keys.p256dh||!keys.auth)throw new Error('La subscripció Push no ha retornat totes les claus necessàries.');
     const {error}=await db.from('push_subscriptions').upsert({user_id:userId,trip_id:tripId,endpoint:json.endpoint,p256dh:keys.p256dh,auth:keys.auth,active:true,updated_at:new Date().toISOString()},{onConflict:'endpoint,trip_id'});
     if(error)throw error;
-    setPushState('Notificacions actives.',true);
+    setPushState('Notificacions actives.',true,true);
   }catch(error){
     setPushState(error?.message||'No s’han pogut activar les notificacions.',false);
   }finally{pushActivationInProgress=false}
