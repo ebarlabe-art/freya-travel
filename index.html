@@ -2695,7 +2695,7 @@ function renderGenericItinerary(){
   if(!trip||isLondonTrip())return;
   const scheduled=itineraryProjection.filter(item=>item.localDate),unscheduled=itineraryProjection.filter(item=>!item.localDate);
   const groups=new Map();scheduled.forEach(item=>{if(!groups.has(item.localDate))groups.set(item.localDate,[]);groups.get(item.localDate).push(item)});
-  const dates=genericItineraryTripDates(),today=genericItineraryToday(),selected=resolveGenericItineraryDay(dates,unscheduled.length>0),tabs=$('genericItineraryDayTabs');
+  const dates=[...new Set([...genericItineraryTripDates(),...scheduled.map(item=>item.localDate)])].sort(),today=genericItineraryToday(),selected=resolveGenericItineraryDay(dates,unscheduled.length>0),tabs=$('genericItineraryDayTabs');
   $('genericItineraryTitle').textContent=trip.name;
   tabs.innerHTML=dates.map(date=>`<button type="button" role="tab" class="generic-itinerary-day-tab ${date===selected?'active':''} ${date===today?'is-today':''}" data-generic-itinerary-day="${esc(date)}" aria-selected="${date===selected}"${date===today?' aria-current="date"':''}>${esc(genericItineraryDayTabLabel(date))}</button>`).join('')+(unscheduled.length?`<button type="button" role="tab" class="generic-itinerary-day-tab ${selected==='pending'?'active':''}" data-generic-itinerary-day="pending" aria-selected="${selected==='pending'}">Pendents</button>`:'');
   const activeItems=groups.get(selected)||[];
