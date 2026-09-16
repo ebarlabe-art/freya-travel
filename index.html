@@ -340,6 +340,24 @@
         <button class="generic-module-card is-ready" type="button" data-open="photosView"><span class="generic-module-icon">📸</span><span class="generic-module-copy"><strong>Fotos</strong><small id="genericPhotosModuleStatus">Àlbum compartit del viatge</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card is-ready" type="button" data-generic-module="travelers"><span class="generic-module-icon">👥</span><span class="generic-module-copy"><strong>Viatgers</strong><small id="genericTravelersModuleStatus">Invitacions del viatge</small></span><span class="generic-module-arrow">›</span></button>
       </div>
+      <div id="genericTripSettingsCard" class="card generic-invite-card hidden">
+        <h2>⚙️ Configuració del viatge</h2>
+        <p>Modifica les dades bàsiques del viatge. Només la persona propietària pot fer aquests canvis.</p>
+        <form id="genericTripSettingsForm" class="trip-form">
+          <div class="trip-form-grid">
+            <label class="wide">Nom del viatge<input id="genericTripName" maxlength="100" required></label>
+            <label class="wide">Zona horària de la destinació
+              <input id="genericTripTimeZone" list="tripTimeZoneOptions" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ex.: Europe/Helsinki" required>
+              <small class="muted">Utilitza una zona IANA, com Europe/Helsinki o Europe/Rome.</small>
+            </label>
+            <label>Data d’inici<input id="genericTripStartDate" type="date" required></label>
+            <label>Data de fi<input id="genericTripEndDate" type="date" required></label>
+          </div>
+          <button id="saveGenericTripSettings" type="submit">Desar canvis</button>
+        </form>
+        <p id="genericTripSettingsMsg" class="message hidden" role="status" aria-live="polite"></p>
+      </div>
+
       <div class="card generic-invite-card"><h2>Codi d’invitació</h2><p>Comparteix aquest codi per convidar algú al viatge:</p><div id="genericInviteCode" class="code"></div><p><button id="copyGenericCode" type="button" class="secondary">Copiar codi</button></p><p id="genericAppMsg" class="message hidden"></p></div>
     </div>
 
@@ -2961,6 +2979,20 @@ function updateTripPresentation(){
     $('genericTripMeta').innerHTML=`<span>🌍 ${esc(trip.time_zone||'Zona horària pendent')}</span><span>${trip.is_owner?'Creat per tu':'Viatge compartit'}</span>`;
     $('genericInviteCode').textContent=trip.invite_code||'';
     $('genericTravelersModuleStatus').textContent=trip.invite_code?'Codi d’invitació disponible':'Pendent de configurar';
+
+    const settingsCard=$('genericTripSettingsCard');
+    if(settingsCard){
+      settingsCard.classList.toggle('hidden',!trip.is_owner);
+
+      if(trip.is_owner){
+        $('genericTripName').value=trip.name||'';
+        $('genericTripStartDate').value=trip.start_date||'';
+        $('genericTripEndDate').value=trip.end_date||'';
+        $('genericTripEndDate').min=trip.start_date||'';
+        $('genericTripTimeZone').value=trip.time_zone||'';
+        msg('genericTripSettingsMsg','');
+      }
+    }
   }
 }
 async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
@@ -4276,6 +4308,81 @@ $('joinTrip').onclick=async()=>{
 };
 $('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.invite_code);msg('appMsg','Codi copiat.')}catch(_){msg('appMsg','Codi: '+trip.invite_code)}};
 $('copyGenericCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.invite_code);msg('genericAppMsg','Codi copiat.')}catch(_){msg('genericAppMsg','Codi: '+trip.invite_code)}};
+
+$('genericTripStartDate').onchange=()=>{
+  const startDate=$('genericTripStartDate').value;
+  const endDate=$('genericTripEndDate');
+
+  endDate.min=startDate;
+
+  if(!endDate.value||endDate.value<startDate){
+    endDate.value=startDate;
+  }
+};
+
+$('genericTripSettingsForm').onsubmit=async e=>{
+  e.preventDefault();
+  msg('genericTripSettingsMsg','');
+
+  if(!trip||isLondonTrip()||!trip.is_owner){
+    msg('genericTripSettingsMsg','Només la persona propietària pot editar aquest viatge.',true);
+    return;
+  }
+
+  const tripId=trip.id;
+  const name=$('genericTripName').value.trim();
+  const startDate=$('genericTripStartDate').value;
+  const endDate=$('genericTripEndDate').value;
+  const timeZone=$('genericTripTimeZone').value.trim();
+
+  if(!name||!startDate||!endDate||!timeZone){
+    msg('genericTripSettingsMsg','Completa el nom, les dates i la zona horària.',true);
+    return;
+  }
+
+  if(endDate<startDate){
+    msg('genericTripSettingsMsg','La data de fi no pot ser anterior a la data d’inici.',true);
+    return;
+  }
+
+  $('saveGenericTripSettings').disabled=true;
+
+  try{
+    const {data,error}=await db.rpc('update_trip_v1',{
+      p_trip_id:tripId,
+      p_name:name,
+      p_start_date:startDate,
+      p_end_date:endDate,
+      p_time_zone:timeZone
+    });
+
+    if(error){
+      msg('genericTripSettingsMsg',error.message,true);
+      return;
+    }
+
+    if(!data?.[0]?.id){
+      msg('genericTripSettingsMsg','No s’ha pogut confirmar l’actualització del viatge.',true);
+      return;
+    }
+
+    try{
+      await refreshTrips({preferredTripId:tripId,open:true});
+      msg('genericTripSettingsMsg','Canvis desats correctament.');
+    }catch(loadError){
+      msg(
+        'genericTripSettingsMsg',
+        'Els canvis s’han desat, però no hem pogut refrescar el viatge. Torna a Els meus viatges i obre’l de nou.',
+        true
+      );
+      console.error('Viatge actualitzat però refreshTrips ha fallat:',tripId,loadError);
+    }
+  }catch(error){
+    msg('genericTripSettingsMsg',error?.message||'No s’han pogut desar els canvis.',true);
+  }finally{
+    $('saveGenericTripSettings').disabled=false;
+  }
+};
 
 let parkingRow=null,parkingLoadsPending=0,parkingPhotoObjectUrl=null;
 async function ensureDefaultChecklistItems(){
