@@ -4369,24 +4369,111 @@ $('tripSearchStartDate').onchange=()=>{
   if(!end.value||end.value<start)end.value=start;
 };
 
-$('tripSearchForm').onsubmit=e=>{
+$('tripSearchForm').onsubmit=async e=>{
   e.preventDefault();
+  msg('tripSearchMsg','');
+
+  if(!session){
+    msg('tripSearchMsg','La sessió ha caducat. Torna a iniciar sessió.',true);
+    return;
+  }
+
+  const origin=$('tripSearchOrigin').value.trim();
+  const destination=$('tripSearchDestination').value.trim();
+  const startDate=$('tripSearchStartDate').value;
+  const endDate=$('tripSearchEndDate').value;
+  const adults=Number($('tripSearchAdults').value);
+  const cabin=$('tripSearchCabin').value;
 
   const services=[
-    $('tripSearchFlights').checked?'vols':null,
-    $('tripSearchHotels').checked?'allotjament':null,
-    $('tripSearchCars').checked?'cotxe':null
+    $('tripSearchFlights').checked?'flights':null,
+    $('tripSearchHotels').checked?'hotels':null,
+    $('tripSearchCars').checked?'cars':null
   ].filter(Boolean);
+
+  if(!origin||!destination||!startDate||!endDate){
+    msg('tripSearchMsg','Completa origen, destinació i dates.',true);
+    return;
+  }
+
+  if(endDate<startDate){
+    msg('tripSearchMsg','La tornada no pot ser anterior a l’anada.',true);
+    return;
+  }
 
   if(!services.length){
     msg('tripSearchMsg','Selecciona com a mínim què vols buscar.',true);
     return;
   }
 
-  msg(
-    'tripSearchMsg',
-    '✨ Cerca preparada. El següent pas és connectar Freya Search amb els proveïdors reals.'
-  );
+  const button=$('searchTripOptions');
+  button.disabled=true;
+  button.textContent='Buscant…';
+
+  try{
+    const {data,error}=await db.functions.invoke('travel-search',{
+      body:{
+        origin,
+        destination,
+        start_date:startDate,
+        end_date:endDate,
+        adults,
+        cabin,
+        services
+      }
+    });
+
+    if(error){
+      console.error('Freya Search error:',error);
+      msg(
+        'tripSearchMsg',
+        'No hem pogut contactar amb Freya Search: '+(error.message||'error desconegut'),
+        true
+      );
+      return;
+    }
+
+    if(!data?.ok){
+      msg('tripSearchMsg',data?.error||'Freya Search no ha pogut validar la consulta.',true);
+      return;
+    }
+
+    const providerState=[];
+
+    if(services.includes('flights')){
+      providerState.push(
+        'Skyscanner '+(data.providers?.flights?.configured?'connectat':'pendent de credencials')
+      );
+    }
+
+    if(services.includes('hotels')||services.includes('cars')){
+      providerState.push(
+        'Booking.com '+(
+          data.providers?.hotels?.configured||data.providers?.cars?.configured
+            ?'connectat'
+            :'pendent de credencials'
+        )
+      );
+    }
+
+    msg(
+      'tripSearchMsg',
+      '✅ Freya Search connectada · '+origin+' → '+destination+
+      ' · '+startDate+' → '+endDate+
+      ' · '+adults+' adult'+(adults===1?'':'s')+
+      ' · '+providerState.join(' · ')
+    );
+  }catch(error){
+    console.error('Freya Search exception:',error);
+    msg(
+      'tripSearchMsg',
+      'No hem pogut completar la cerca: '+(error?.message||'error desconegut'),
+      true
+    );
+  }finally{
+    button.disabled=false;
+    button.textContent='Buscar opcions';
+  }
 };
 $('createTripForm').onsubmit=async e=>{
   e.preventDefault();
