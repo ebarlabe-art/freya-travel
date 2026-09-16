@@ -4599,7 +4599,7 @@ function rememberCurrentPushSubscription(subscription){
 }
 function currentPendingPushMigration(){
   const pending=readPushLocalState(PUSH_MIGRATION_PENDING_KEY);
-  return pending?.endpoint&&pending?.userId===session?.user?.id&&pending?.tripId===trip?.id?pending:null;
+  return pending?.endpoint&&pending?.userId===session?.user?.id?pending:null;
 }
 async function resumePendingPushMigration(registration){
   const pending=currentPendingPushMigration();if(!pending)return;
@@ -4608,7 +4608,7 @@ async function resumePendingPushMigration(registration){
     if(current?.endpoint===pending.endpoint&&!(await current.unsubscribe()))throw new Error('No s’ha pogut retirar la subscripció anterior. Torna-ho a provar.');
     pending.stage='deactivate';writePushLocalState(PUSH_MIGRATION_PENDING_KEY,pending);
   }
-  const {error}=await db.from('push_subscriptions').update({active:false,updated_at:new Date().toISOString()}).eq('endpoint',pending.endpoint).eq('user_id',pending.userId).eq('trip_id',pending.tripId).eq('active',true);
+  const {error}=await db.from('push_subscriptions').update({active:false,updated_at:new Date().toISOString()}).eq('endpoint',pending.endpoint).eq('user_id',pending.userId).eq('active',true);
   if(error)throw new Error('La subscripció anterior s’ha retirat del dispositiu, però no s’ha pogut desactivar. Torna-ho a provar.');
   clearPushLocalState(PUSH_MIGRATION_PENDING_KEY);
   const state=readPushLocalState(PUSH_SUBSCRIPTION_STATE_KEY);if(state?.endpoint===pending.endpoint)clearPushLocalState(PUSH_SUBSCRIPTION_STATE_KEY);
@@ -4657,7 +4657,7 @@ async function enablePushNotifications(){
     if(!tripRequestIsCurrent(tripId,generation))return;
     let subscription=await registration.pushManager.getSubscription();
     if(subscription&&!pushSubscriptionUsesCurrentVapid(subscription)){
-      if(!writePushLocalState(PUSH_MIGRATION_PENDING_KEY,{stage:'unsubscribe',endpoint:subscription.endpoint,userId,tripId}))throw new Error('No s’ha pogut preparar l’actualització de notificacions. Torna-ho a provar.');
+      if(!writePushLocalState(PUSH_MIGRATION_PENDING_KEY,{stage:'unsubscribe',endpoint:subscription.endpoint,userId}))throw new Error('No s’ha pogut preparar l’actualització de notificacions. Torna-ho a provar.');
       await resumePendingPushMigration(registration);subscription=null;
     }
     if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:vapidPublicKeyBytes()});
