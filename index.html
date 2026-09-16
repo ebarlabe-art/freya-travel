@@ -4438,23 +4438,31 @@ $('tripSearchForm').onsubmit=async e=>{
       return;
     }
 
-    const providerState=[];
+    const providerNames={
+      skyscanner:'Skyscanner',
+      booking:'Booking.com',
+      expedia:'Expedia',
+      kayak:'KAYAK'
+    };
 
-    if(services.includes('flights')){
-      providerState.push(
-        'Skyscanner '+(data.providers?.flights?.configured?'connectat':'pendent de credencials')
-      );
-    }
+    const serviceNames={
+      flights:'Vols',
+      hotels:'Allotjament',
+      cars:'Cotxe'
+    };
 
-    if(services.includes('hotels')||services.includes('cars')){
-      providerState.push(
-        'Booking.com '+(
-          data.providers?.hotels?.configured||data.providers?.cars?.configured
-            ?'connectat'
-            :'pendent de credencials'
-        )
-      );
-    }
+    const providerState=services.map(service=>{
+      const sources=data.providers?.[service]?.sources||[];
+
+      if(!sources.length){
+        return serviceNames[service]+': cap proveïdor disponible';
+      }
+
+      return serviceNames[service]+': '+sources.map(source=>{
+        const name=providerNames[source.provider]||source.provider;
+        return name+' '+(source.configured?'connectat':'pendent de credencials');
+      }).join(' · ');
+    });
 
     msg(
       'tripSearchMsg',
