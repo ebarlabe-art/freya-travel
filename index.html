@@ -289,9 +289,10 @@
           <div class="trip-form-grid">
             <label class="wide">Nom o destinació<input id="tripName" maxlength="100" placeholder="Ex.: Roma" required></label>
             <label class="wide">Zona horària de la destinació
-              <input id="tripTimeZone" list="tripTimeZoneOptions" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ex.: Europe/Helsinki" required>
-              <datalist id="tripTimeZoneOptions"></datalist>
-              <small class="muted">Comença a escriure la ciutat o zona. Ex.: Helsinki → Europe/Helsinki.</small>
+              <select id="tripTimeZone" required>
+                <option value="">Selecciona una zona horària…</option>
+              </select>
+              <small class="muted">Ex.: Lapònia → Europe/Helsinki · Roma → Europe/Rome.</small>
             </label>
             <label>Data d’inici<input id="tripStartDate" type="date" required></label>
             <label>Data de fi<input id="tripEndDate" type="date" required></label>
@@ -347,8 +348,10 @@
           <div class="trip-form-grid">
             <label class="wide">Nom del viatge<input id="genericTripName" maxlength="100" required></label>
             <label class="wide">Zona horària de la destinació
-              <input id="genericTripTimeZone" list="tripTimeZoneOptions" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ex.: Europe/Helsinki" required>
-              <small class="muted">Utilitza una zona IANA, com Europe/Helsinki o Europe/Rome.</small>
+              <select id="genericTripTimeZone" required>
+                <option value="">Selecciona una zona horària…</option>
+              </select>
+              <small class="muted">Ex.: Lapònia → Europe/Helsinki · Roma → Europe/Rome.</small>
             </label>
             <label>Data d’inici<input id="genericTripStartDate" type="date" required></label>
             <label>Data de fi<input id="genericTripEndDate" type="date" required></label>
@@ -4199,15 +4202,47 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   await db.auth.signOut();
   if(password)password.value='';
 });
-function populateTripTimeZoneOptions(){
-  const list=$('tripTimeZoneOptions');
-  if(!list)return;
-  let zones=[];
+const FALLBACK_TRIP_TIME_ZONES=[
+  'Europe/Madrid','Atlantic/Canary','Europe/London','Europe/Paris',
+  'Europe/Rome','Europe/Helsinki','Europe/Athens','Europe/Berlin',
+  'America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
+  'Asia/Dubai','Asia/Colombo','Indian/Maldives','Asia/Bangkok',
+  'Asia/Singapore','Asia/Tokyo','Australia/Sydney'
+];
+
+function availableTripTimeZones(){
   try{
-    if(typeof Intl.supportedValuesOf==='function')zones=Intl.supportedValuesOf('timeZone');
+    if(typeof Intl.supportedValuesOf==='function'){
+      const zones=Intl.supportedValuesOf('timeZone');
+      if(zones?.length)return zones;
+    }
   }catch(_){}
-  list.innerHTML=zones.map(zone=>`<option value="${esc(zone)}"></option>`).join('');
+  return FALLBACK_TRIP_TIME_ZONES;
 }
+
+function populateTripTimeZoneSelect(id){
+  const select=$(id);
+  if(!select)return;
+
+  const current=select.value;
+  const zones=[...availableTripTimeZones()];
+
+  if(current&&!zones.includes(current))zones.push(current);
+
+  zones.sort();
+
+  select.innerHTML=
+    '<option value="">Selecciona una zona horària…</option>'+
+    zones.map(zone=>`<option value="${esc(zone)}">${esc(zone)}</option>`).join('');
+
+  if(current)select.value=current;
+}
+
+function populateTripTimeZoneOptions(){
+  populateTripTimeZoneSelect('tripTimeZone');
+  populateTripTimeZoneSelect('genericTripTimeZone');
+}
+
 populateTripTimeZoneOptions();
 $('tripStartDate').onchange=()=>{$('tripEndDate').min=$('tripStartDate').value;if(!$('tripEndDate').value||$('tripEndDate').value<$('tripStartDate').value)$('tripEndDate').value=$('tripStartDate').value};
 $('createTripForm').onsubmit=async e=>{
@@ -4365,17 +4400,23 @@ $('genericTripSettingsForm').onsubmit=async e=>{
       return;
     }
 
-    try{
-      await refreshTrips({preferredTripId:tripId,open:true});
-      msg('genericTripSettingsMsg','Canvis desats correctament.');
-    }catch(loadError){
-      msg(
-        'genericTripSettingsMsg',
-        'Els canvis s’han desat, però no hem pogut refrescar el viatge. Torna a Els meus viatges i obre’l de nou.',
-        true
-      );
-      console.error('Viatge actualitzat però refreshTrips ha fallat:',tripId,loadError);
-    }
+    const updated=data[0];
+
+    trips=trips.map(value=>
+      value.id===tripId
+        ? {...value,...updated,is_owner:value.is_owner}
+        : value
+    );
+
+    trip={
+      ...trip,
+      ...updated,
+      is_owner:trip.is_owner
+    };
+
+    rememberSelectedTrip();
+    updateTripPresentation();
+    msg('genericTripSettingsMsg','✅ Canvis desats correctament.');
   }catch(error){
     msg('genericTripSettingsMsg',error?.message||'No s’han pogut desar els canvis.',true);
   }finally{
