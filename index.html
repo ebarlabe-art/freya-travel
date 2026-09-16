@@ -288,7 +288,11 @@
         <form id="createTripForm" class="trip-form">
           <div class="trip-form-grid">
             <label class="wide">Nom o destinació<input id="tripName" maxlength="100" placeholder="Ex.: Roma" required></label>
-            <label class="wide">Zona horària<input id="tripTimeZone" placeholder="Europe/Rome" required></label>
+            <label class="wide">Zona horària de la destinació
+              <input id="tripTimeZone" list="tripTimeZoneOptions" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ex.: Europe/Helsinki" required>
+              <datalist id="tripTimeZoneOptions"></datalist>
+              <small class="muted">Comença a escriure la ciutat o zona. Ex.: Helsinki → Europe/Helsinki.</small>
+            </label>
             <label>Data d’inici<input id="tripStartDate" type="date" required></label>
             <label>Data de fi<input id="tripEndDate" type="date" required></label>
           </div>
@@ -4164,7 +4168,16 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   await db.auth.signOut();
   if(password)password.value='';
 });
-try{$('tripTimeZone').value=Intl.DateTimeFormat().resolvedOptions().timeZone||'Europe/Madrid'}catch(_){$('tripTimeZone').value='Europe/Madrid'}
+function populateTripTimeZoneOptions(){
+  const list=$('tripTimeZoneOptions');
+  if(!list)return;
+  let zones=[];
+  try{
+    if(typeof Intl.supportedValuesOf==='function')zones=Intl.supportedValuesOf('timeZone');
+  }catch(_){}
+  list.innerHTML=zones.map(zone=>`<option value="${esc(zone)}"></option>`).join('');
+}
+populateTripTimeZoneOptions();
 $('tripStartDate').onchange=()=>{$('tripEndDate').min=$('tripStartDate').value;if(!$('tripEndDate').value||$('tripEndDate').value<$('tripStartDate').value)$('tripEndDate').value=$('tripStartDate').value};
 $('createTripForm').onsubmit=async e=>{
   e.preventDefault();
@@ -4207,11 +4220,7 @@ $('createTripForm').onsubmit=async e=>{
     try{
       await refreshTrips({preferredTripId:createdId,open:true});
       $('createTripForm').reset();
-      try{
-        $('tripTimeZone').value=Intl.DateTimeFormat().resolvedOptions().timeZone||'Europe/Madrid';
-      }catch(_){
-        $('tripTimeZone').value='Europe/Madrid';
-      }
+      $('tripTimeZone').value='';
     }catch(loadError){
       msg(
         'tripMsg',
