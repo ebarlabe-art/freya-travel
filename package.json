@@ -7,6 +7,7 @@
     "entries:sync": "node scripts/app-entries.mjs --write",
     "entries:check": "node scripts/app-entries.mjs",
     "test:entries": "node --test scripts/app-entries.test.mjs",
+    "test:home": "node --test scripts/trip-home.test.mjs",
     "predev": "npm run entries:sync",
     "dev": "vite",
     "prebuild": "npm run entries:sync",
