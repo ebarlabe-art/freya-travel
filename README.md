@@ -1,5 +1,31 @@
 # Freya Travel 6.3 — Guia i audioguies
 
+## Entrades de l’app: font única
+
+- `index.html` és l’única font editable de l’app monolítica.
+- `404.html` és una còpia generada i versionada per al fallback de Pages.
+  Després d’editar l’app, executa `npm run entries:sync` i inclou el resultat
+  amb el canvi. `npm run entries:check` falla si divergeixen; `dev` i `build`
+  sincronitzen abans d’arrencar. CI comprova paritat i `npm run test:entries`.
+- `freya-travel-v1.5/index.html` és només un pont d’URL històrica cap a
+  `/freya-travel/`, preservant query i hash sense interpretar-los ni iniciar auth.
+- `freya-travel-v1.5/itinerary.html` continua essent l’itinerari de Londres:
+  no s’ha d’eliminar ni substituir pel pont.
+
+Assumpció de publicació: Pages publica `main` des de l’arrel. La configuració
+administrativa no es pot acreditar amb el repositori; l’HTML públic verificat
+coincidia amb l’`index.html` arrel. `deploy.yml` a l’arrel és històric, no un
+workflow actiu. El nou workflow només comprova: no publica ni modifica fitxers.
+Amb publicació directa des de branca, un check fallit no bloqueja Pages per si
+sol: cal configurar protecció de `main` amb aquest check requerit abans del merge.
+
+El service worker conserva les URL històriques al precache; el pont conserva
+aquest recurs i delega el registre/migració del worker a l’app principal.
+No canvia els manifests existents ni esborra sessions o esborranys. Les PWA ja
+instal·lades i offline poden retenir l’entrada antiga fins a recuperar connexió.
+Les rutes suportades són l’arrel amb query/hash i els HTML explícits; el fallback
+404 no implica suport de rutes arbitràries profundes amb recursos relatius.
+
 Afegeix de nou la informació cultural dels llocs i incorpora audioguies en català amb la veu del dispositiu.
 
 ## Contractes de base de dades

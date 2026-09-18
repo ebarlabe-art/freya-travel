@@ -3,7 +3,16 @@
   "private": true,
   "version": "2.2.0",
   "type": "module",
-  "scripts": {"dev":"vite","build":"tsc -b && vite build","preview":"vite preview"},
+  "scripts": {
+    "entries:sync": "node scripts/app-entries.mjs --write",
+    "entries:check": "node scripts/app-entries.mjs",
+    "test:entries": "node --test scripts/app-entries.test.mjs",
+    "predev": "npm run entries:sync",
+    "dev": "vite",
+    "prebuild": "npm run entries:sync",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {"@supabase/supabase-js":"^2.49.4","react":"^19.0.0","react-dom":"^19.0.0"},
   "devDependencies": {"@types/react":"^19.0.10","@types/react-dom":"^19.0.4","@vitejs/plugin-react":"^4.4.1","typescript":"^5.7.2","vite":"^6.1.0"}
 }

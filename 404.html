@@ -33,7 +33,29 @@
     .trip-open{width:100%;font-size:1rem;padding:15px;border-radius:16px}
     .new-trip-card{margin-top:14px;border:2px dashed #d6c7e7;background:rgba(255,255,255,.6);border-radius:24px;padding:20px;text-align:center}
     .new-trip-card button{background:#eee8f4;color:#4f378b}.new-trip-card p{color:var(--muted);margin:8px 0 14px}.new-trip-card h2{margin:4px 0 8px}.trip-form{display:grid;gap:12px;text-align:left;margin-top:16px}.trip-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.trip-form label{display:grid;gap:6px;color:#51465a;font-weight:700}.trip-form .wide{grid-column:1/-1}.trip-form input{font-weight:400}.trip-empty{background:#fff;border:1px dashed #cdbdde;border-radius:22px;padding:22px;text-align:center;color:var(--muted)}.join-trip{display:flex;gap:10px;margin-top:20px}.join-trip input{flex:1}.generic-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.generic-meta span{background:rgba(255,255,255,.16);border-radius:999px;padding:7px 10px;font-size:.84rem}
-    .generic-dashboard-intro{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:24px 2px 14px}.generic-dashboard-intro h2{margin:0 0 5px;font-size:1.45rem}.generic-dashboard-intro p{margin:0;color:var(--muted);line-height:1.45}.generic-lifecycle{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.generic-lifecycle span{background:#eee8f4;color:#4f378b;border-radius:999px;padding:7px 9px;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+    .trip-create-methods{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}
+    .trip-create-method{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;text-align:left;background:#fff;color:#2f2736;border:1px solid var(--line);border-radius:18px;padding:16px;min-height:88px}
+    .trip-create-method:hover{border-color:#bba8d2}
+    .trip-create-method.active{border-color:#7b5bad;box-shadow:0 0 0 3px rgba(103,80,164,.12);background:#faf7fd}
+    .trip-create-method-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:15px;background:#eee8f4;font-size:1.45rem}
+    .trip-create-method strong{display:block;color:#352a40}
+    .trip-create-method small{display:block;color:var(--muted);font-weight:500;line-height:1.35;margin-top:4px}
+    .trip-search-panel{margin-top:16px;padding-top:4px}
+    .trip-search-intro{text-align:left;margin:0 0 14px}
+    .trip-search-intro h3{margin:0 0 5px;font-size:1.2rem}
+    .trip-search-intro p{margin:0;color:var(--muted);line-height:1.45}
+    .trip-search-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;text-align:left}
+    .trip-search-grid label{display:grid;gap:6px;color:#51465a;font-weight:700;min-width:0}
+    .trip-search-grid .wide{grid-column:1/-1}
+    .trip-search-grid input,.trip-search-grid select{width:100%;min-width:0;min-height:44px;border:1px solid #cac4d0;border-radius:14px;padding:12px 13px;background:#fff;color:#1f1b24;font:inherit;font-weight:400}
+    .trip-search-services{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+    .trip-search-services label{display:flex;align-items:center;gap:8px;background:#f8f4fb;border:1px solid var(--line);border-radius:14px;padding:11px 12px}
+    .trip-search-services input{width:18px;height:18px;min-height:auto}
+    .trip-search-actions{grid-column:1/-1;display:flex;gap:10px}
+    .trip-search-actions button{flex:1}
+    .trip-search-note{margin:12px 0 0;text-align:left;font-size:.88rem;color:var(--muted)}
+
+        .generic-dashboard-intro{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:24px 2px 14px}.generic-dashboard-intro h2{margin:0 0 5px;font-size:1.45rem}.generic-dashboard-intro p{margin:0;color:var(--muted);line-height:1.45}.generic-lifecycle{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.generic-lifecycle span{background:#eee8f4;color:#4f378b;border-radius:999px;padding:7px 9px;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
     .generic-module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.generic-module-card{position:relative;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:13px;min-height:102px;padding:17px;background:#fff;color:#1f1b24;border:1px solid var(--line);border-radius:21px;text-align:left;box-shadow:0 9px 24px rgba(49,42,59,.055);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}.generic-module-card:hover{transform:translateY(-1px);border-color:#c9b9dc;box-shadow:0 13px 29px rgba(49,42,59,.09)}.generic-module-card:active{transform:translateY(0)}.generic-module-icon{width:48px;height:48px;display:grid;place-items:center;border-radius:16px;background:#f3eef9;font-size:1.55rem}.generic-module-copy{min-width:0}.generic-module-copy strong{display:block;font-size:1rem}.generic-module-copy small{display:block;color:var(--muted);line-height:1.35;margin-top:5px}.generic-module-card.is-ready .generic-module-icon{background:#e8f4ec}.generic-module-arrow{color:#826aa8;font-size:1.2rem}.generic-placeholder{max-width:620px;margin:20px auto 0}.generic-placeholder-card{background:linear-gradient(145deg,#fff,#f8f3fc);border:1px solid var(--line);border-radius:26px;padding:26px;box-shadow:0 16px 42px rgba(49,42,59,.08)}.generic-placeholder-icon{width:62px;height:62px;display:grid;place-items:center;background:#eee8f4;border-radius:20px;font-size:2rem}.generic-placeholder-card h2{font-size:1.65rem;margin:18px 0 8px}.generic-placeholder-card p{color:var(--muted);line-height:1.6;margin:0}.generic-placeholder-state{display:inline-block;margin-top:18px;background:#eee8f4;color:#4f378b;border-radius:999px;padding:8px 11px;font-size:.8rem;font-weight:800}.generic-invite-card{margin-top:18px}
     .generic-itinerary-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;background:linear-gradient(135deg,#4f378b,#8d6bc2);color:#fff;border-radius:26px;padding:24px;margin:12px 0 16px;box-shadow:0 18px 42px rgba(79,55,139,.2)}.generic-itinerary-hero h2{margin:4px 0 7px;font-size:1.75rem}.generic-itinerary-hero p{margin:0;color:rgba(255,255,255,.84);line-height:1.5}.generic-itinerary-hero button{background:#fff;color:#4f378b;white-space:nowrap}.generic-itinerary-hero-actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}.generic-itinerary-hero-actions button:first-child{background:#f2eaff}.generic-itinerary-loading{text-align:center;padding:24px;color:var(--muted)}.generic-itinerary-empty{background:#fff;border:1px dashed #cdbdde;border-radius:22px;padding:28px 20px;text-align:center;color:var(--muted)}.generic-itinerary-empty strong{display:block;color:#2c2631;font-size:1.12rem;margin-bottom:7px}.generic-itinerary-day-tabs{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin;padding:1px 1px 10px;margin-bottom:8px}.generic-itinerary-day-tab{flex:0 0 auto;min-width:64px;min-height:44px;white-space:nowrap;background:#fff;color:#4f378b;border:1px solid #d8cde5;padding:10px 13px}.generic-itinerary-day-tab.is-today:not(.active){background:#f5effb;border-color:#9275bb}.generic-itinerary-day-tab.active{background:var(--purple);border-color:var(--purple);color:#fff;box-shadow:0 6px 15px rgba(103,80,164,.22)}.generic-itinerary-days{display:grid;gap:20px}.generic-itinerary-day h3{margin:0 0 9px;padding:0 3px;font-size:1.16rem;color:#3f3150;text-transform:capitalize}.generic-itinerary-timeline{display:grid;gap:8px;position:relative}.generic-itinerary-entry{display:grid;grid-template-columns:54px minmax(0,1fr);gap:10px;align-items:start;min-width:0}.generic-itinerary-time{padding-top:14px;color:#6750a4;font-weight:850;font-variant-numeric:tabular-nums;text-align:right}.generic-itinerary-card{min-width:0;background:#fff;border:1px solid var(--line);border-radius:18px;padding:13px 14px;box-shadow:0 7px 20px rgba(49,42,59,.055)}.generic-itinerary-card.cancelled{opacity:.66}.generic-itinerary-main{display:flex;align-items:flex-start;gap:10px;min-width:0}.generic-itinerary-icon{width:38px;height:38px;display:grid;place-items:center;flex:0 0 auto;border-radius:12px;background:#f3eef9;font-size:1.2rem}.generic-itinerary-copy{min-width:0}.generic-itinerary-copy small{display:block;color:var(--muted);font-weight:750;margin-bottom:3px}.generic-itinerary-copy strong{display:block;font-size:1rem;line-height:1.3;overflow-wrap:anywhere}.generic-itinerary-copy p{margin:4px 0 0;color:var(--muted);line-height:1.4;font-size:.88rem;overflow-wrap:anywhere}.generic-itinerary-status,.generic-itinerary-tag{display:inline-block;margin:7px 5px 0 0;border-radius:999px;padding:4px 8px;background:#eee8f4;color:#4f378b;font-size:.72rem;font-weight:800}.generic-itinerary-tag{background:#f5f1f8;color:#675c70}.generic-itinerary-status.confirmed,.generic-itinerary-status.reserved,.generic-itinerary-status.completed{background:#e7f5ec;color:#247642}.generic-itinerary-status.cancelled{background:#ffdad6;color:#8c1d18}.generic-itinerary-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.generic-itinerary-actions button,.generic-itinerary-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border:0;border-radius:11px;padding:9px 11px;background:#eee8f4;color:#4f378b;font:inherit;font-size:.84rem;font-weight:780;text-decoration:none;cursor:pointer}.generic-itinerary-actions .source-action{background:#6750a4;color:#fff}.generic-itinerary-unscheduled{margin-top:8px}.generic-itinerary-unscheduled h3{margin:0 0 5px;font-size:1.08rem}.generic-itinerary-unscheduled>p{margin:0 0 11px;color:var(--muted)}.generic-itinerary-source-focus{outline:3px solid rgba(103,80,164,.28);outline-offset:3px}.manual-itinerary-form-card{margin:0;background:#fff}.manual-itinerary-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.manual-itinerary-form label{display:grid;gap:6px;font-weight:750;color:#44394d}.manual-itinerary-form .wide,.manual-itinerary-flags,.manual-itinerary-form-actions{grid-column:1/-1}.manual-itinerary-flags{display:flex;gap:12px;flex-wrap:wrap}.manual-itinerary-flags label{display:flex;align-items:center;gap:8px;min-height:44px;background:#f7f3fa;border-radius:13px;padding:9px 12px}.manual-itinerary-flags input{width:20px;height:20px}.manual-itinerary-form-actions{display:flex;gap:10px;justify-content:flex-end}.manual-itinerary-form-help{grid-column:1/-1;margin:-3px 0 0;color:var(--muted);font-size:.86rem}.manual-itinerary-form input,.manual-itinerary-form select,.manual-itinerary-form textarea{width:100%;min-width:0;min-height:44px;border:1px solid #cac4d0;border-radius:14px;padding:12px 13px;background:#fff;color:#1f1b24;font:inherit;font-weight:400}.manual-itinerary-form textarea{min-height:100px;resize:vertical}
     .accommodation-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;background:linear-gradient(135deg,#4f378b,#8d6bc2);color:#fff;border-radius:26px;padding:24px;margin:12px 0 16px;box-shadow:0 18px 42px rgba(79,55,139,.2)}.accommodation-hero h2{margin:4px 0 7px;font-size:1.7rem}.accommodation-hero p{margin:0;color:rgba(255,255,255,.83);line-height:1.5}.accommodation-hero button{background:#fff;color:#4f378b;white-space:nowrap}.accommodation-list{display:grid;gap:14px}.accommodation-card{background:#fff;border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:0 12px 30px rgba(49,42,59,.07)}.accommodation-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.accommodation-identity{display:flex;align-items:flex-start;gap:13px;min-width:0}.accommodation-icon{width:48px;height:48px;display:grid;place-items:center;flex:0 0 auto;border-radius:16px;background:#f3eef9;font-size:1.5rem}.accommodation-card h3{margin:1px 0 5px;font-size:1.2rem;overflow-wrap:anywhere}.accommodation-place{color:var(--muted);line-height:1.45;overflow-wrap:anywhere}.accommodation-status{display:inline-flex;border-radius:999px;padding:6px 9px;font-size:.75rem;font-weight:800;white-space:nowrap;background:#eee8f4;color:#4f378b}.accommodation-status.confirmed{background:#e7f5ec;color:#247642}.accommodation-status.cancelled{background:#ffdad6;color:#8c1d18}.accommodation-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:16px}.accommodation-fact{background:#faf8fd;border-radius:15px;padding:11px 12px;min-width:0}.accommodation-fact small{display:block;color:var(--muted);margin-bottom:4px}.accommodation-fact strong{display:block;overflow-wrap:anywhere}.accommodation-notes{margin:13px 0 0;color:var(--muted);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}.accommodation-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.accommodation-actions button,.accommodation-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border:0;border-radius:12px;padding:10px 12px;font:inherit;font-weight:750;text-decoration:none;cursor:pointer;background:#eee8f4;color:#4f378b}.accommodation-actions .primary-action{background:#6750a4;color:#fff}.accommodation-actions .danger-action{background:#ffdad6;color:#8c1d18}.accommodation-empty{text-align:center;background:#fff;border:1px dashed #cdbdde;border-radius:24px;padding:30px 20px;color:var(--muted)}.accommodation-empty strong{display:block;color:#2c2631;font-size:1.15rem;margin-bottom:7px}.accommodation-empty button{margin-top:14px}.accommodation-form-card h3{margin-top:0}.accommodation-form{display:grid;grid-template-columns:1fr 1fr;gap:13px}.accommodation-form label{display:grid;gap:6px;color:#51465a;font-weight:700;min-width:0}.accommodation-form label.wide,.accommodation-voucher-field{grid-column:1/-1}.accommodation-voucher-field{display:grid;gap:6px}.accommodation-form input,.accommodation-form select,.accommodation-form textarea{width:100%;min-width:0;min-height:44px;border:1px solid #cac4d0;border-radius:14px;padding:12px 13px;background:#fff;color:#1f1b24;font:inherit;font-weight:400}.accommodation-form textarea{min-height:100px;resize:vertical}.accommodation-form-help{grid-column:1/-1;color:var(--muted);font-size:.88rem;line-height:1.45}.accommodation-form-actions{grid-column:1/-1;display:flex;gap:10px}.accommodation-form-actions button{flex:1}.accommodation-document-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.accommodation-document-help{padding:11px 12px;background:#faf8fd;border-radius:13px;color:var(--muted);font-size:.87rem;font-weight:400;flex:1 1 220px}.accommodation-documents-action{min-height:44px;white-space:nowrap}.accommodation-message{margin:14px 0}.accommodation-loading{text-align:center;padding:24px;color:var(--muted)}
@@ -46,7 +68,7 @@
     .departure-action span{display:block;font-size:1.5rem;margin-bottom:7px}.departure-action strong{display:block}.departure-action small{display:block;color:var(--muted);margin-top:3px}
     .trips-footer{text-align:center;color:#8a8190;font-size:.82rem;margin-top:24px}
     .dashboard-switch{background:#fff;color:#4f378b;border:1px solid #d6c7e7;padding:10px 14px;border-radius:14px;margin:12px 0 4px;box-shadow:0 4px 12px rgba(49,42,59,.06);font-weight:700}
-    @media(max-width:560px){.trips-hero h1{font-size:1.95rem}.trip-stats{grid-template-columns:1fr}.departure-grid,.trip-form-grid,.generic-module-grid{grid-template-columns:1fr}.trip-form .wide{grid-column:auto}.join-trip{flex-direction:column}.generic-dashboard-intro,.accommodation-hero,.generic-itinerary-hero{align-items:flex-start;flex-direction:column}.generic-lifecycle{justify-content:flex-start}.generic-module-card{min-height:94px}.accommodation-hero button,.generic-itinerary-hero button,.generic-itinerary-hero-actions{width:100%}.generic-itinerary-hero-actions{flex-direction:column}.accommodation-form,.accommodation-facts,.manual-itinerary-form{grid-template-columns:1fr}.accommodation-form label.wide,.accommodation-voucher-field,.accommodation-form-help,.accommodation-form-actions,.manual-itinerary-form .wide,.manual-itinerary-flags,.manual-itinerary-form-actions,.manual-itinerary-form-help{grid-column:auto}.accommodation-card-head{flex-direction:column}.accommodation-actions>*{flex:1 1 135px}.accommodation-document-row{align-items:stretch;flex-direction:column}.accommodation-documents-action{width:100%}.accommodation-form-actions,.manual-itinerary-form-actions{flex-direction:column}.manual-itinerary-form-actions button{width:100%}.generic-itinerary-entry{grid-template-columns:48px minmax(0,1fr);gap:8px}.generic-itinerary-time{font-size:.88rem}.generic-itinerary-card{padding:12px}.generic-itinerary-actions>*{flex:1 1 130px}}
+    @media(max-width:560px){.trips-hero h1{font-size:1.95rem}.trip-stats{grid-template-columns:1fr}.departure-grid,.trip-form-grid,.generic-module-grid,.trip-create-methods,.trip-search-grid{grid-template-columns:1fr}.trip-form .wide,.trip-search-grid .wide,.trip-search-services,.trip-search-actions{grid-column:auto}.trip-search-services{grid-template-columns:1fr}.trip-search-actions{flex-direction:column}.join-trip{flex-direction:column}.generic-dashboard-intro,.accommodation-hero,.generic-itinerary-hero{align-items:flex-start;flex-direction:column}.generic-lifecycle{justify-content:flex-start}.generic-module-card{min-height:94px}.accommodation-hero button,.generic-itinerary-hero button,.generic-itinerary-hero-actions{width:100%}.generic-itinerary-hero-actions{flex-direction:column}.accommodation-form,.accommodation-facts,.manual-itinerary-form{grid-template-columns:1fr}.accommodation-form label.wide,.accommodation-voucher-field,.accommodation-form-help,.accommodation-form-actions,.manual-itinerary-form .wide,.manual-itinerary-flags,.manual-itinerary-form-actions,.manual-itinerary-form-help{grid-column:auto}.accommodation-card-head{flex-direction:column}.accommodation-actions>*{flex:1 1 135px}.accommodation-document-row{align-items:stretch;flex-direction:column}.accommodation-documents-action{width:100%}.accommodation-form-actions,.manual-itinerary-form-actions{flex-direction:column}.manual-itinerary-form-actions button{width:100%}.generic-itinerary-entry{grid-template-columns:48px minmax(0,1fr);gap:8px}.generic-itinerary-time{font-size:.88rem}.generic-itinerary-card{padding:12px}.generic-itinerary-actions>*{flex:1 1 130px}}
 
     .dashboard-head{background:linear-gradient(135deg,#6750a4,#9b72cf);color:#fff;border-radius:28px;padding:26px;margin:16px 0}.dashboard-head h1{margin:5px 0 8px}.dashboard-head p{margin:4px 0;color:#f1eaff}.countdown{font-size:1.15rem;font-weight:800;margin-top:14px}.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}.menu-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;text-align:left;color:#1f1b24;min-height:112px}.menu-card .icon{font-size:30px;display:block;margin-bottom:8px}.menu-card strong{display:block;font-size:1.06rem}.menu-card small{display:block;color:#79747e;margin-top:4px}.menu-card.disabled{opacity:.62}.back{margin-bottom:12px}.day-tabs{display:flex;gap:8px;overflow:auto;padding-bottom:8px}.day-tab{white-space:nowrap;background:#fff;color:#4f378b;border:1px solid var(--line);padding:10px 12px}.day-tab.active{background:var(--purple);color:#fff}.day{display:none}.day.active{display:block}.day-title{background:linear-gradient(135deg,#7657ad,#4f378b);color:#fff;border-radius:24px;padding:22px;margin:12px 0 16px}.day-title h2{margin:4px 0}.timeline{list-style:none;padding:0;margin:0;position:relative}.timeline:before{content:"";position:absolute;left:49px;top:12px;bottom:12px;width:2px;background:#d9cdef}.event{display:grid;grid-template-columns:70px 1fr;gap:12px;padding:8px 0;position:relative}.event time{font-weight:800;color:#6750a4;font-variant-numeric:tabular-nums}.event div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px 14px;position:relative}.event div:before{content:"";position:absolute;left:-28px;top:17px;width:10px;height:10px;border-radius:50%;background:#6750a4;border:3px solid #f7f5fb}.event strong{display:block}.event p{margin:4px 0 0;color:#625b71;font-size:.92rem}.badge{display:inline-block;background:#e7f5ec;color:#247642;border-radius:999px;padding:4px 8px;font-size:.75rem;font-weight:800;margin-top:7px}.map-link{display:inline-block;margin-top:10px;text-decoration:none;background:var(--soft);color:#4f378b;border-radius:12px;padding:10px 12px;font-weight:700}.footer{text-align:center;color:#79747e;font-size:.84rem;margin-top:28px}
     .weather-panel{position:relative;background:linear-gradient(180deg,#4f3290,#6b4ebd 48%,#8d79e8);color:#fff;border:0;box-shadow:0 32px 80px rgba(60,31,112,.18);overflow:hidden}
@@ -283,17 +305,97 @@
       <div id="tripsList" class="trip-list"></div>
 
       <section class="new-trip-card">
-        <div style="font-size:2rem">🧭</div><h2>A on vols anar?</h2>
-        <p>Crea un espai nou amb les dates i la zona horària de la destinació.</p>
-        <form id="createTripForm" class="trip-form">
-          <div class="trip-form-grid">
-            <label class="wide">Nom o destinació<input id="tripName" maxlength="100" placeholder="Ex.: Roma" required></label>
-            <label class="wide">Zona horària<input id="tripTimeZone" placeholder="Europe/Rome" required></label>
-            <label>Data d’inici<input id="tripStartDate" type="date" required></label>
-            <label>Data de fi<input id="tripEndDate" type="date" required></label>
+        <div style="font-size:2rem">🧭</div>
+        <h2>Com vols crear aquest viatge?</h2>
+        <p>Pots començar tu mateixa o deixar que Freya busqui opcions abans de crear-lo.</p>
+
+        <div class="trip-create-methods" role="group" aria-label="Manera de crear el viatge">
+          <button id="createTripManualMethod" class="trip-create-method active" type="button" aria-pressed="true">
+            <span class="trip-create-method-icon">✍️</span>
+            <span><strong>Crear manualment</strong><small>Ja saps on vas i vols preparar el viatge directament.</small></span>
+          </button>
+
+          <button id="createTripSearchMethod" class="trip-create-method" type="button" aria-pressed="false">
+            <span class="trip-create-method-icon">✨</span>
+            <span><strong>Buscar amb Freya</strong><small>Compara vols, allotjament i transport abans de crear-lo.</small></span>
+          </button>
+        </div>
+
+        <div id="createTripManualPanel">
+          <form id="createTripForm" class="trip-form">
+            <div class="trip-form-grid">
+              <label class="wide">Nom o destinació<input id="tripName" maxlength="100" placeholder="Ex.: Roma" required></label>
+              <label class="wide">Zona horària de la destinació
+                <select id="tripTimeZone" required>
+                  <option value="">Selecciona una zona horària…</option>
+                </select>
+                <small class="muted">Ex.: Lapònia → Europe/Helsinki · Roma → Europe/Rome.</small>
+              </label>
+              <label>Data d’inici<input id="tripStartDate" type="date" required></label>
+              <label>Data de fi<input id="tripEndDate" type="date" required></label>
+            </div>
+            <button id="createTrip" type="submit">Crear viatge</button>
+          </form>
+        </div>
+
+        <div id="createTripSearchPanel" class="trip-search-panel hidden">
+          <div class="trip-search-intro">
+            <h3>✨ Buscar amb Freya</h3>
+            <p>Digue’m d’on surts i què tens al cap. Buscarem opcions abans de crear el viatge definitiu.</p>
           </div>
-          <button id="createTrip" type="submit">Crear viatge</button>
-        </form>
+
+          <form id="tripSearchForm" class="trip-search-grid">
+            <label>Origen
+              <input id="tripSearchOrigin" maxlength="120" placeholder="Ex.: Barcelona" required>
+            </label>
+
+            <label>Destinació
+              <input id="tripSearchDestination" maxlength="120" placeholder="Ex.: Rovaniemi" required>
+            </label>
+
+            <label>Data d’anada
+              <input id="tripSearchStartDate" type="date" required>
+            </label>
+
+            <label>Data de tornada
+              <input id="tripSearchEndDate" type="date" required>
+            </label>
+
+            <label>Adults
+              <select id="tripSearchAdults">
+                <option value="1">1 adult</option>
+                <option value="2" selected>2 adults</option>
+                <option value="3">3 adults</option>
+                <option value="4">4 adults</option>
+                <option value="5">5 adults</option>
+                <option value="6">6 adults</option>
+              </select>
+            </label>
+
+            <label>Cabina
+              <select id="tripSearchCabin">
+                <option value="economy">Econòmica</option>
+                <option value="premium_economy">Premium Economy</option>
+                <option value="business">Business</option>
+                <option value="first">First</option>
+              </select>
+            </label>
+
+            <div class="trip-search-services" aria-label="Què vols buscar?">
+              <label><input id="tripSearchFlights" type="checkbox" checked> ✈️ Vols</label>
+              <label><input id="tripSearchHotels" type="checkbox" checked> 🏨 Allotjament</label>
+              <label><input id="tripSearchCars" type="checkbox"> 🚗 Cotxe</label>
+            </div>
+
+            <div class="trip-search-actions">
+              <button id="searchTripOptions" type="submit">Buscar opcions</button>
+            </div>
+          </form>
+
+          <p class="trip-search-note">Els resultats es compararan abans de crear cap viatge o reserva.</p>
+          <p id="tripSearchMsg" class="message hidden" role="status" aria-live="polite"></p>
+        </div>
+
         <div class="join-trip"><input id="inviteInput" placeholder="Codi d’invitació" aria-label="Codi d’invitació"><button id="joinTrip" type="button">Unir-m’hi</button></div>
         <p id="tripMsg" class="message hidden" role="status" aria-live="polite"></p>
       </section>
@@ -316,6 +418,7 @@
     <div id="genericDashboardView" class="hidden">
       <button class="dashboard-switch" type="button" data-trips-home>← Els meus viatges</button>
       <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="genericTripTitle"></h1><p id="genericTripDates"></p><div id="genericTripMeta" class="generic-meta"></div></div>
+      <div id="genericPushCard" class="install-card hidden"><div><strong>🔔 Notificacions</strong><small id="genericPushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="genericEnablePush" type="button">Activa les notificacions</button></div>
       <section class="generic-dashboard-intro">
         <div><h2>El teu viatge, a mà</h2><p>Prepara’l, viu-lo i conserva’n tots els records des d’un sol lloc.</p></div>
         <div class="generic-lifecycle" aria-label="Etapes del viatge"><span>Abans</span><span>Durant</span><span>Després</span></div>
@@ -335,6 +438,26 @@
         <button class="generic-module-card is-ready" type="button" data-open="photosView"><span class="generic-module-icon">📸</span><span class="generic-module-copy"><strong>Fotos</strong><small id="genericPhotosModuleStatus">Àlbum compartit del viatge</small></span><span class="generic-module-arrow">›</span></button>
         <button class="generic-module-card is-ready" type="button" data-generic-module="travelers"><span class="generic-module-icon">👥</span><span class="generic-module-copy"><strong>Viatgers</strong><small id="genericTravelersModuleStatus">Invitacions del viatge</small></span><span class="generic-module-arrow">›</span></button>
       </div>
+      <div id="genericTripSettingsCard" class="card generic-invite-card hidden">
+        <h2>⚙️ Configuració del viatge</h2>
+        <p>Modifica les dades bàsiques del viatge. Només la persona propietària pot fer aquests canvis.</p>
+        <form id="genericTripSettingsForm" class="trip-form">
+          <div class="trip-form-grid">
+            <label class="wide">Nom del viatge<input id="genericTripName" maxlength="100" required></label>
+            <label class="wide">Zona horària de la destinació
+              <select id="genericTripTimeZone" required>
+                <option value="">Selecciona una zona horària…</option>
+              </select>
+              <small class="muted">Ex.: Lapònia → Europe/Helsinki · Roma → Europe/Rome.</small>
+            </label>
+            <label>Data d’inici<input id="genericTripStartDate" type="date" required></label>
+            <label>Data de fi<input id="genericTripEndDate" type="date" required></label>
+          </div>
+          <button id="saveGenericTripSettings" type="submit">Desar canvis</button>
+        </form>
+        <p id="genericTripSettingsMsg" class="message hidden" role="status" aria-live="polite"></p>
+      </div>
+
       <div class="card generic-invite-card"><h2>Codi d’invitació</h2><p>Comparteix aquest codi per convidar algú al viatge:</p><div id="genericInviteCode" class="code"></div><p><button id="copyGenericCode" type="button" class="secondary">Copiar codi</button></p><p id="genericAppMsg" class="message hidden"></p></div>
     </div>
 
@@ -1406,10 +1529,80 @@ const KNOWN_TICKET_KEYS=new Set(Object.keys(TICKET_DOCUMENT_TERMS));
 let requestedTicketKey=null;
 const initialRouteParams=new URLSearchParams(window.location.search);
 const initialRouteView=initialRouteParams.get('view'),initialRouteTicket=initialRouteParams.get('ticket');
-const pendingInitialRoute=initialRouteView==='tickets'&&KNOWN_TICKET_KEYS.has(initialRouteTicket)
-  ?{view:'tickets',ticketKey:initialRouteTicket}
-  :initialRouteView==='london'?{view:'london',ticketKey:null}:null;
+const UUID_ROUTE_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UNIVERSAL_REMINDER_ROUTE_KINDS={
+  flight:new Set(['flight_departure']),
+  accommodation:new Set(['accommodation_check_in','accommodation_check_out']),
+  activity:new Set(['activity_start']),
+  itinerary_item:new Set(['itinerary_exact'])
+};
+function readUniversalReminderInitialRoute(params){
+  if(params.get('view')!=='itinerary')return null;
+  const tripId=params.get('trip')||'';
+  const sourceKind=params.get('source')||'';
+  const sourceId=params.get('source_id')||'';
+  const reminderId=params.get('reminder')||'';
+  const reminderKind=params.get('kind')||'';
+  if(!UUID_ROUTE_RE.test(tripId)||!UUID_ROUTE_RE.test(sourceId))return null;
+  if(reminderId&&!UUID_ROUTE_RE.test(reminderId))return null;
+  if(!UNIVERSAL_REMINDER_ROUTE_KINDS[sourceKind]?.has(reminderKind))return null;
+  return {
+    view:'itinerary',
+    tripId,
+    sourceKind,
+    sourceId,
+    reminderId:reminderId||null,
+    reminderKind
+  };
+}
+const universalReminderInitialRoute=readUniversalReminderInitialRoute(initialRouteParams);
+const pendingInitialRoute=universalReminderInitialRoute
+  ||(initialRouteView==='tickets'&&KNOWN_TICKET_KEYS.has(initialRouteTicket)
+    ?{view:'tickets',ticketKey:initialRouteTicket}
+    :initialRouteView==='london'?{view:'london',ticketKey:null}:null);
 let initialViewApplied=false;
+let initialReminderFocusApplied=false;
+
+function universalReminderItineraryKey(route=pendingInitialRoute){
+  if(route?.view!=='itinerary')return null;
+  if(route.sourceKind==='flight'&&route.reminderKind==='flight_departure')
+    return `flight:${route.sourceId}:departure`;
+  if(route.sourceKind==='accommodation'&&route.reminderKind==='accommodation_check_in')
+    return `accommodation:${route.sourceId}:check_in`;
+  if(route.sourceKind==='accommodation'&&route.reminderKind==='accommodation_check_out')
+    return `accommodation:${route.sourceId}:check_out`;
+  if(route.sourceKind==='activity'&&route.reminderKind==='activity_start')
+    return `activity:${route.sourceId}:start`;
+  if(route.sourceKind==='itinerary_item'&&route.reminderKind==='itinerary_exact')
+    return `manual:${route.sourceId}`;
+  return null;
+}
+
+function pendingInitialReminderItineraryItem(){
+  if(
+    initialReminderFocusApplied||
+    pendingInitialRoute?.view!=='itinerary'||
+    !trip||
+    isLondonTrip()||
+    trip.id!==pendingInitialRoute.tripId
+  )return null;
+  const key=universalReminderItineraryKey();
+  return key?itineraryProjection.find(item=>item.key===key)||null:null;
+}
+
+function focusPendingInitialReminderItinerary(item=null){
+  if(initialReminderFocusApplied||pendingInitialRoute?.view!=='itinerary')return false;
+  const target=item||pendingInitialReminderItineraryItem();
+  if(!target)return false;
+  const entry=[...document.querySelectorAll('[data-itinerary-key]')]
+    .find(element=>element.dataset.itineraryKey===target.key);
+  if(!entry)return false;
+  initialReminderFocusApplied=true;
+  entry.classList.add('generic-itinerary-source-focus');
+  entry.scrollIntoView({behavior:'smooth',block:'center'});
+  setTimeout(()=>entry.classList.remove('generic-itinerary-source-focus'),3200);
+  return true;
+}
 function ticketDocumentMatches(doc,key){
   const normalize=value=>normalizeSearchText(value).replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
   const text=normalize(`${doc.title||''} ${doc.category||''} ${doc.file_name||''}`);
@@ -1434,11 +1627,30 @@ function focusRequestedTicket(){
 }
 function applyPendingInitialView(){
   if(initialViewApplied)return;
-  if(pendingInitialRoute&&!isLondonTrip()){
-    setAppView('tripsHomeView');
-    history.replaceState(null,'',window.location.pathname);initialViewApplied=true;
+
+  if(pendingInitialRoute?.view==='itinerary'){
+    if(
+      !trip||
+      isLondonTrip()||
+      trip.id!==pendingInitialRoute.tripId
+    ){
+      setAppView('tripsHomeView');
+    }else{
+      setManualItineraryFormMode(false);
+      setAppView('itineraryView');
+    }
+    history.replaceState(null,'',window.location.pathname);
+    initialViewApplied=true;
     return;
   }
+
+  if(pendingInitialRoute&&!isLondonTrip()){
+    setAppView('tripsHomeView');
+    history.replaceState(null,'',window.location.pathname);
+    initialViewApplied=true;
+    return;
+  }
+
   if(pendingInitialRoute?.view==='tickets'){
     requestedTicketKey=pendingInitialRoute.ticketKey;
     setAppView('ticketsView');
@@ -1446,6 +1658,7 @@ function applyPendingInitialView(){
   }else{
     setAppView(pendingInitialRoute?.view==='london'?'dashboardView':'tripsHomeView');
   }
+
   if(pendingInitialRoute)history.replaceState(null,'',window.location.pathname);
   initialViewApplied=true;
 }
@@ -2430,7 +2643,7 @@ async function loadManualItineraryItems(silent=false){
   if(!trip||!session||isLondonTrip())return [];const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,sequence=++manualItineraryLoadSequence;if(!silent)$('genericItineraryLoading').classList.remove('hidden');
   try{const {data,error}=await db.from('trip_itinerary_items').select('*').eq('trip_id',tripId).order('local_date',{ascending:true,nullsFirst:false}).order('starts_at',{ascending:true,nullsFirst:false}).order('sort_order',{ascending:true}).order('id',{ascending:true});if(!itineraryRequestIsCurrent(tripId,generation,userId)||sequence!==manualItineraryLoadSequence||isLondonTrip())return manualItineraryRows;if(error)throw error;manualItineraryRows=data||[];markItinerarySourceReady('manual',tripId,generation,userId);
     const form=$('manualItineraryForm'),editingId=form.dataset.tripId===tripId?form.dataset.editId||'':'';
-    if(editingId){const current=manualItineraryRows.find(item=>item.id===editingId);if(!current){clearManualItineraryDraft(tripId,userId);resetManualItineraryFormUi();msg('genericItineraryMessage','Aquest element s’ha eliminat mentre l’editaves. Hem actualitzat l’itinerari.',true)}else if(current.updated_at!==(form.dataset.originalUpdatedAt||'')){form.dataset.remoteConflict='true';msg('genericItineraryMessage','Aquest element ha canviat mentre l’editaves. Els teus camps no s’han sobreescrit; desa per revisar el conflicte.',true)}}else if(!$('itineraryView').classList.contains('hidden')&&$('manualItineraryFormCard').classList.contains('hidden'))restoreManualItineraryDraft();
+    if(editingId){const current=manualItineraryRows.find(item=>item.id===editingId);if(!current){clearManualItineraryDraft(tripId,userId);resetManualItineraryFormUi();msg('genericItineraryMessage','Aquest element s’ha eliminat mentre l’editaves. Hem actualitzat l’itinerari.',true)}else if(current.updated_at!==(form.dataset.originalUpdatedAt||'')){form.dataset.remoteConflict='true';msg('genericItineraryMessage','Aquest element ha canviat mentre l’editaves. Els teus camps no s’han sobreescrit; desa per revisar el conflicte.',true)}}else if(pendingInitialRoute?.view!=='itinerary'&&!$('itineraryView').classList.contains('hidden')&&$('manualItineraryFormCard').classList.contains('hidden'))restoreManualItineraryDraft();
     return manualItineraryRows;
   }catch(error){if(itineraryRequestIsCurrent(tripId,generation,userId)&&sequence===manualItineraryLoadSequence&&!isLondonTrip())msg('genericItineraryMessage',error?.message||'No s’han pogut carregar els elements manuals.',true);return manualItineraryRows}finally{if(!silent&&itineraryRequestIsCurrent(tripId,generation,userId)&&sequence===manualItineraryLoadSequence)$('genericItineraryLoading').classList.add('hidden')}
 }
@@ -2605,7 +2818,7 @@ function renderGenericItinerary(){
   if(!trip||isLondonTrip())return;
   const scheduled=itineraryProjection.filter(item=>item.localDate),unscheduled=itineraryProjection.filter(item=>!item.localDate);
   const groups=new Map();scheduled.forEach(item=>{if(!groups.has(item.localDate))groups.set(item.localDate,[]);groups.get(item.localDate).push(item)});
-  const dates=genericItineraryTripDates(),today=genericItineraryToday(),selected=resolveGenericItineraryDay(dates,unscheduled.length>0),tabs=$('genericItineraryDayTabs');
+  const dates=[...new Set([...genericItineraryTripDates(),...scheduled.map(item=>item.localDate)])].sort(),today=genericItineraryToday(),selected=resolveGenericItineraryDay(dates,unscheduled.length>0),tabs=$('genericItineraryDayTabs');
   $('genericItineraryTitle').textContent=trip.name;
   tabs.innerHTML=dates.map(date=>`<button type="button" role="tab" class="generic-itinerary-day-tab ${date===selected?'active':''} ${date===today?'is-today':''}" data-generic-itinerary-day="${esc(date)}" aria-selected="${date===selected}"${date===today?' aria-current="date"':''}>${esc(genericItineraryDayTabLabel(date))}</button>`).join('')+(unscheduled.length?`<button type="button" role="tab" class="generic-itinerary-day-tab ${selected==='pending'?'active':''}" data-generic-itinerary-day="pending" aria-selected="${selected==='pending'}">Pendents</button>`:'');
   const activeItems=groups.get(selected)||[];
@@ -2622,7 +2835,33 @@ function renderGenericItinerary(){
 }
 function rebuildGenericItinerary(tripId=trip?.id,generation=tripLoadGeneration,userId=session?.user?.id){
   if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip()||!itinerarySourcesAreReady(tripId,generation,userId))return false;
-  itineraryProjection=normalizedItineraryProjection(tripId,generation,userId);renderGenericItinerary();return true;
+
+  itineraryProjection=normalizedItineraryProjection(tripId,generation,userId);
+
+  const reminderItem=pendingInitialReminderItineraryItem();
+  if(reminderItem?.localDate){
+    genericItinerarySelectedTripId=trip.id;
+    genericItinerarySelectedDay=reminderItem.localDate;
+  }
+
+  renderGenericItinerary();
+
+  if(reminderItem){
+    requestAnimationFrame(()=>focusPendingInitialReminderItinerary(reminderItem));
+  }else if(
+    pendingInitialRoute?.view==='itinerary'&&
+    !initialReminderFocusApplied&&
+    trip?.id===pendingInitialRoute.tripId
+  ){
+    initialReminderFocusApplied=true;
+    msg(
+      'genericItineraryMessage',
+      'El recordatori pertany a un element que ja no està disponible a l’itinerari.',
+      true
+    );
+  }
+
+  return true;
 }
 function scheduleItineraryRebuild(){
   if(itineraryLoadBatch||!trip||isLondonTrip()||$('itineraryView').classList.contains('hidden')||$('genericItineraryContent').classList.contains('hidden'))return;
@@ -2813,7 +3052,8 @@ function updateTripPresentation(){
   const london=isLondonTrip();
   $('tripTitleTop').textContent=trip?.name||'Els meus viatges';
   $('globalSearchFab').classList.toggle('hidden',!london);
-  $('pushCard').classList.toggle('hidden',!london);
+  $('pushCard').classList.toggle('hidden',!trip||!london);
+  $('genericPushCard')?.classList.toggle('hidden',!trip||london);
   updateChecklistLabels();renderTripsHome();
   if(!trip)return;
   if($('expenseDate'))$('expenseDate').value=trip.start_date||'';
@@ -2839,6 +3079,19 @@ function updateTripPresentation(){
     $('genericTripMeta').innerHTML=`<span>🌍 ${esc(trip.time_zone||'Zona horària pendent')}</span><span>${trip.is_owner?'Creat per tu':'Viatge compartit'}</span>`;
     $('genericInviteCode').textContent=trip.invite_code||'';
     $('genericTravelersModuleStatus').textContent=trip.invite_code?'Codi d’invitació disponible':'Pendent de configurar';
+
+    const settingsCard=$('genericTripSettingsCard');
+    if(settingsCard){
+      settingsCard.classList.toggle('hidden',!trip.is_owner);
+
+      if(trip.is_owner){
+        $('genericTripName').value=trip.name||'';
+        $('genericTripStartDate').value=trip.start_date||'';
+        $('genericTripEndDate').value=trip.end_date||'';
+        $('genericTripEndDate').min=trip.start_date||'';
+        $('genericTripTimeZone').value=trip.time_zone||'';
+      }
+    }
   }
 }
 async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
@@ -2875,13 +3128,18 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
   if(restoreNavigation&&savedNavigation.view!=='genericModuleView'&&!navigationViewIsValid(savedNavigation.view,savedNavigationTrip))clearNavigationState(requestUserId);
   const savedId=readSelectedTripId(),validPreferred=trips.some(value=>value.id===preferredTripId)?preferredTripId:null,validSaved=trips.some(value=>value.id===savedId)?savedId:null;
   if(savedId&&!validSaved)forgetSelectedTrip();
-  const londonForDeepLink=pendingInitialRoute&&!initialViewApplied?trips.find(isLondonTrip)?.id:null;
-  const selectedId=londonForDeepLink||validPreferred||savedNavigationTrip?.id||validSaved||trips[0]?.id||null;
+  const deepLinkPending=!!(pendingInitialRoute&&!initialViewApplied);
+  const deepLinkTripId=deepLinkPending
+    ?pendingInitialRoute.view==='itinerary'
+      ?(trips.some(value=>value.id===pendingInitialRoute.tripId)?pendingInitialRoute.tripId:null)
+      :trips.find(isLondonTrip)?.id||null
+    :null;
+  const selectedId=deepLinkTripId||validPreferred||savedNavigationTrip?.id||validSaved||trips[0]?.id||null;
   renderTripsHome();
   if(selectedId){
     navigationRestoreInProgress=restoreNavigation;
     try{
-      const selected=await selectTrip(selectedId,{open:restoreNavigation?false:open,applyDeepLink:!!londonForDeepLink});
+      const selected=await selectTrip(selectedId,{open:restoreNavigation?false:open,applyDeepLink:deepLinkPending});
       if(!selected)return false;
       if(restoreNavigation&&session?.user?.id===requestUserId&&trip?.id===savedNavigationTrip.id)setAppView(restoreView);
     }finally{navigationRestoreInProgress=false}
@@ -4041,8 +4299,190 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   await db.auth.signOut();
   if(password)password.value='';
 });
-try{$('tripTimeZone').value=Intl.DateTimeFormat().resolvedOptions().timeZone||'Europe/Madrid'}catch(_){$('tripTimeZone').value='Europe/Madrid'}
+const FALLBACK_TRIP_TIME_ZONES=[
+  'Europe/Madrid','Atlantic/Canary','Europe/London','Europe/Paris',
+  'Europe/Rome','Europe/Helsinki','Europe/Athens','Europe/Berlin',
+  'America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
+  'Asia/Dubai','Asia/Colombo','Indian/Maldives','Asia/Bangkok',
+  'Asia/Singapore','Asia/Tokyo','Australia/Sydney'
+];
+
+function availableTripTimeZones(){
+  try{
+    if(typeof Intl.supportedValuesOf==='function'){
+      const zones=Intl.supportedValuesOf('timeZone');
+      if(zones?.length)return zones;
+    }
+  }catch(_){}
+  return FALLBACK_TRIP_TIME_ZONES;
+}
+
+function populateTripTimeZoneSelect(id){
+  const select=$(id);
+  if(!select)return;
+
+  const current=select.value;
+  const zones=[...availableTripTimeZones()];
+
+  if(current&&!zones.includes(current))zones.push(current);
+
+  zones.sort();
+
+  select.innerHTML=
+    '<option value="">Selecciona una zona horària…</option>'+
+    zones.map(zone=>`<option value="${esc(zone)}">${esc(zone)}</option>`).join('');
+
+  if(current)select.value=current;
+}
+
+function populateTripTimeZoneOptions(){
+  populateTripTimeZoneSelect('tripTimeZone');
+  populateTripTimeZoneSelect('genericTripTimeZone');
+}
+
+populateTripTimeZoneOptions();
+function setTripCreationMethod(method){
+  const manual=method==='manual';
+
+  $('createTripManualPanel').classList.toggle('hidden',!manual);
+  $('createTripSearchPanel').classList.toggle('hidden',manual);
+
+  $('createTripManualMethod').classList.toggle('active',manual);
+  $('createTripSearchMethod').classList.toggle('active',!manual);
+
+  $('createTripManualMethod').setAttribute('aria-pressed',String(manual));
+  $('createTripSearchMethod').setAttribute('aria-pressed',String(!manual));
+
+  msg('tripMsg','');
+  msg('tripSearchMsg','');
+}
+
+$('createTripManualMethod').onclick=()=>setTripCreationMethod('manual');
+$('createTripSearchMethod').onclick=()=>setTripCreationMethod('search');
+
 $('tripStartDate').onchange=()=>{$('tripEndDate').min=$('tripStartDate').value;if(!$('tripEndDate').value||$('tripEndDate').value<$('tripStartDate').value)$('tripEndDate').value=$('tripStartDate').value};
+
+$('tripSearchStartDate').onchange=()=>{
+  const start=$('tripSearchStartDate').value;
+  const end=$('tripSearchEndDate');
+  end.min=start;
+  if(!end.value||end.value<start)end.value=start;
+};
+
+$('tripSearchForm').onsubmit=async e=>{
+  e.preventDefault();
+  msg('tripSearchMsg','');
+
+  if(!session){
+    msg('tripSearchMsg','La sessió ha caducat. Torna a iniciar sessió.',true);
+    return;
+  }
+
+  const origin=$('tripSearchOrigin').value.trim();
+  const destination=$('tripSearchDestination').value.trim();
+  const startDate=$('tripSearchStartDate').value;
+  const endDate=$('tripSearchEndDate').value;
+  const adults=Number($('tripSearchAdults').value);
+  const cabin=$('tripSearchCabin').value;
+
+  const services=[
+    $('tripSearchFlights').checked?'flights':null,
+    $('tripSearchHotels').checked?'hotels':null,
+    $('tripSearchCars').checked?'cars':null
+  ].filter(Boolean);
+
+  if(!origin||!destination||!startDate||!endDate){
+    msg('tripSearchMsg','Completa origen, destinació i dates.',true);
+    return;
+  }
+
+  if(endDate<startDate){
+    msg('tripSearchMsg','La tornada no pot ser anterior a l’anada.',true);
+    return;
+  }
+
+  if(!services.length){
+    msg('tripSearchMsg','Selecciona com a mínim què vols buscar.',true);
+    return;
+  }
+
+  const button=$('searchTripOptions');
+  button.disabled=true;
+  button.textContent='Buscant…';
+
+  try{
+    const {data,error}=await db.functions.invoke('travel-search',{
+      body:{
+        origin,
+        destination,
+        start_date:startDate,
+        end_date:endDate,
+        adults,
+        cabin,
+        services
+      }
+    });
+
+    if(error){
+      console.error('Freya Search error:',error);
+      msg(
+        'tripSearchMsg',
+        'No hem pogut contactar amb Freya Search: '+(error.message||'error desconegut'),
+        true
+      );
+      return;
+    }
+
+    if(!data?.ok){
+      msg('tripSearchMsg',data?.error||'Freya Search no ha pogut validar la consulta.',true);
+      return;
+    }
+
+    const providerNames={
+      skyscanner:'Skyscanner',
+      booking:'Booking.com',
+      expedia:'Expedia',
+      kayak:'KAYAK'
+    };
+
+    const serviceNames={
+      flights:'Vols',
+      hotels:'Allotjament',
+      cars:'Cotxe'
+    };
+
+    const providerState=services.map(service=>{
+      const sources=data.providers?.[service]?.sources||[];
+
+      if(!sources.length){
+        return serviceNames[service]+': cap proveïdor disponible';
+      }
+
+      return serviceNames[service]+': '+sources.map(source=>{
+        const name=providerNames[source.provider]||source.provider;
+        return name+' '+(source.configured?'connectat':'pendent de credencials');
+      }).join(' · ');
+    });
+
+    msg(
+      'tripSearchMsg',
+      '✅ Freya Search connectada · '+origin+' → '+destination+
+      ' · '+startDate+' → '+endDate+
+      ' · '+adults+' adult'+(adults===1?'':'s')+
+      ' · '+providerState.join(' · ')
+    );
+  }catch(error){
+    console.error('Freya Search exception:',error);
+    msg(
+      'tripSearchMsg',
+      'No hem pogut completar la cerca: '+(error?.message||'error desconegut'),
+      true
+    );
+  }finally{
+    button.disabled=false;
+    button.textContent='Buscar opcions';
+  }
+};
 $('createTripForm').onsubmit=async e=>{
   e.preventDefault();
   msg('tripMsg','');
@@ -4084,11 +4524,7 @@ $('createTripForm').onsubmit=async e=>{
     try{
       await refreshTrips({preferredTripId:createdId,open:true});
       $('createTripForm').reset();
-      try{
-        $('tripTimeZone').value=Intl.DateTimeFormat().resolvedOptions().timeZone||'Europe/Madrid';
-      }catch(_){
-        $('tripTimeZone').value='Europe/Madrid';
-      }
+      $('tripTimeZone').value='';
     }catch(loadError){
       msg(
         'tripMsg',
@@ -4144,6 +4580,87 @@ $('joinTrip').onclick=async()=>{
 };
 $('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.invite_code);msg('appMsg','Codi copiat.')}catch(_){msg('appMsg','Codi: '+trip.invite_code)}};
 $('copyGenericCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.invite_code);msg('genericAppMsg','Codi copiat.')}catch(_){msg('genericAppMsg','Codi: '+trip.invite_code)}};
+
+$('genericTripStartDate').onchange=()=>{
+  const startDate=$('genericTripStartDate').value;
+  const endDate=$('genericTripEndDate');
+
+  endDate.min=startDate;
+
+  if(!endDate.value||endDate.value<startDate){
+    endDate.value=startDate;
+  }
+};
+
+$('genericTripSettingsForm').onsubmit=async e=>{
+  e.preventDefault();
+  msg('genericTripSettingsMsg','');
+
+  if(!trip||isLondonTrip()||!trip.is_owner){
+    msg('genericTripSettingsMsg','Només la persona propietària pot editar aquest viatge.',true);
+    return;
+  }
+
+  const tripId=trip.id;
+  const name=$('genericTripName').value.trim();
+  const startDate=$('genericTripStartDate').value;
+  const endDate=$('genericTripEndDate').value;
+  const timeZone=$('genericTripTimeZone').value.trim();
+
+  if(!name||!startDate||!endDate||!timeZone){
+    msg('genericTripSettingsMsg','Completa el nom, les dates i la zona horària.',true);
+    return;
+  }
+
+  if(endDate<startDate){
+    msg('genericTripSettingsMsg','La data de fi no pot ser anterior a la data d’inici.',true);
+    return;
+  }
+
+  $('saveGenericTripSettings').disabled=true;
+
+  try{
+    const {data,error}=await db.rpc('update_trip_v1',{
+      p_trip_id:tripId,
+      p_name:name,
+      p_start_date:startDate,
+      p_end_date:endDate,
+      p_time_zone:timeZone
+    });
+
+    if(error){
+      msg('genericTripSettingsMsg',error.message,true);
+      return;
+    }
+
+    if(!data?.[0]?.id){
+      msg('genericTripSettingsMsg','No s’ha pogut confirmar l’actualització del viatge.',true);
+      return;
+    }
+
+    const updated=data[0];
+
+    trips=trips.map(value=>
+      value.id===tripId
+        ? {...value,...updated,is_owner:value.is_owner}
+        : value
+    );
+
+    trip={
+      ...trip,
+      ...updated,
+      is_owner:trip.is_owner
+    };
+
+    rememberSelectedTrip();
+    updateTripPresentation();
+    msg('genericTripSettingsMsg','✅ Canvis desats correctament.');
+  }catch(error){
+    msg('genericTripSettingsMsg',error?.message||'No s’han pogut desar els canvis.',true);
+  }finally{
+    $('saveGenericTripSettings').disabled=false;
+  }
+};
 
 let parkingRow=null,parkingLoadsPending=0,parkingPhotoObjectUrl=null;
 async function ensureDefaultChecklistItems(){
@@ -4435,7 +4952,22 @@ function showUpdateToast(){
 function isIos(){return /iphone|ipad|ipod/i.test(navigator.userAgent)}
 function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
 function pushSupported(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window}
-function setPushState(text,disabled=false){const status=$('pushStatus'),button=$('enablePush');if(status)status.textContent=text;if(button)button.disabled=disabled}
+function activePushUi(){
+  const generic=!!trip&&!isLondonTrip();
+  return {
+    card:$(generic?'genericPushCard':'pushCard'),
+    status:$(generic?'genericPushStatus':'pushStatus'),
+    button:$(generic?'genericEnablePush':'enablePush')
+  };
+}
+function setPushState(text,disabled=false,hideButton=false){
+  const {status,button}=activePushUi();
+  if(status)status.textContent=text;
+  if(button){
+    button.disabled=disabled;
+    button.classList.toggle('hidden',hideButton);
+  }
+}
 function vapidPublicKeyBytes(){
   const padding='='.repeat((4-VAPID_PUBLIC_KEY.length%4)%4),base64=(VAPID_PUBLIC_KEY+padding).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(base64);
   return Uint8Array.from(raw,char=>char.charCodeAt(0));
@@ -4461,7 +4993,7 @@ function rememberCurrentPushSubscription(subscription){
 }
 function currentPendingPushMigration(){
   const pending=readPushLocalState(PUSH_MIGRATION_PENDING_KEY);
-  return pending?.endpoint&&pending?.userId===session?.user?.id&&pending?.tripId===trip?.id?pending:null;
+  return pending?.endpoint&&pending?.userId===session?.user?.id?pending:null;
 }
 async function resumePendingPushMigration(registration){
   const pending=currentPendingPushMigration();if(!pending)return;
@@ -4470,15 +5002,14 @@ async function resumePendingPushMigration(registration){
     if(current?.endpoint===pending.endpoint&&!(await current.unsubscribe()))throw new Error('No s’ha pogut retirar la subscripció anterior. Torna-ho a provar.');
     pending.stage='deactivate';writePushLocalState(PUSH_MIGRATION_PENDING_KEY,pending);
   }
-  const {error}=await db.from('push_subscriptions').update({active:false,updated_at:new Date().toISOString()}).eq('endpoint',pending.endpoint).eq('user_id',pending.userId).eq('trip_id',pending.tripId).eq('active',true);
+  const {error}=await db.from('push_subscriptions').update({active:false,updated_at:new Date().toISOString()}).eq('endpoint',pending.endpoint).eq('user_id',pending.userId).eq('active',true);
   if(error)throw new Error('La subscripció anterior s’ha retirat del dispositiu, però no s’ha pogut desactivar. Torna-ho a provar.');
   clearPushLocalState(PUSH_MIGRATION_PENDING_KEY);
   const state=readPushLocalState(PUSH_SUBSCRIPTION_STATE_KEY);if(state?.endpoint===pending.endpoint)clearPushLocalState(PUSH_SUBSCRIPTION_STATE_KEY);
 }
 async function refreshPushUi(){
-  if(!$('enablePush'))return;
-  if(!isLondonTrip()){$('pushCard')?.classList.add('hidden');setPushState('Disponible només per a Londres 2026.',true);return}
-  $('pushCard')?.classList.remove('hidden');
+  const ui=activePushUi();if(!ui.button)return;
+  ui.card?.classList.remove('hidden');
   if(!pushSupported()){setPushState('Aquest dispositiu o navegador no és compatible amb Web Push.',true);return}
   if(isIos()&&!isStandalone()){setPushState('No instal·lada: afegeix Freya Travel a la pantalla d’inici i obre-la des de la seva icona.',true);return}
   if(Notification.permission==='denied'){setPushState('Permís denegat. Activa les notificacions als Ajustos de l’iPhone.',true);return}
@@ -4486,22 +5017,22 @@ async function refreshPushUi(){
   const tripId=trip.id,generation=tripLoadGeneration;
   try{
     const registration=await navigator.serviceWorker.ready,subscription=await registration.pushManager.getSubscription();
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+    if(!tripRequestIsCurrent(tripId,generation))return;
     if(currentPendingPushMigration()){setPushState('Actualització de notificacions pendent. Prem el botó per continuar.',false);return}
     if(!subscription){setPushState('Prem el botó per activar les notificacions.',false);return}
     if(!pushSubscriptionUsesCurrentVapid(subscription)){setPushState('Cal actualitzar les notificacions. Prem el botó per continuar.',false);return}
     rememberCurrentPushSubscription(subscription);
     const json=subscription.toJSON(),endpoint=json.endpoint||subscription.endpoint;
     const {data,error}=await db.from('push_subscriptions').select('id').eq('user_id',session.user.id).eq('trip_id',tripId).eq('endpoint',endpoint).eq('active',true).maybeSingle();
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+    if(!tripRequestIsCurrent(tripId,generation))return;
     if(error)throw error;
-    setPushState(data?'Notificacions actives.':'Subscripció pendent de guardar. Prem el botó per completar-la.',!!data);
+    if(data)setPushState('Notificacions actives.',true,true);
+    else setPushState('Subscripció pendent de guardar. Prem el botó per completar-la.',false);
   }catch(_){setPushState('No s’ha pogut comprovar l’estat. Torna-ho a provar.',false)}
 }
 let pushActivationInProgress=false;
 async function enablePushNotifications(){
   if(pushActivationInProgress)return;
-  if(!isLondonTrip()){setPushState('Disponible només per a Londres 2026.',true);return}
   if(!pushSupported()){setPushState('Aquest dispositiu o navegador no és compatible amb Web Push.',true);return}
   if(isIos()&&!isStandalone()){setPushState('No instal·lada: afegeix Freya Travel a la pantalla d’inici i obre-la des de la seva icona.',true);return}
   if(!session||!trip){setPushState('Inicia sessió i obre un viatge abans d’activar-les.',true);return}
@@ -4511,26 +5042,26 @@ async function enablePushNotifications(){
   try{
     if(Notification.permission==='denied'){setPushState('Permís denegat. Activa les notificacions als Ajustos de l’iPhone.',true);return}
     const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+    if(!tripRequestIsCurrent(tripId,generation))return;
     if(permission!=='granted'){setPushState(permission==='denied'?'Permís denegat. Activa les notificacions als Ajustos de l’iPhone.':'No s’ha concedit el permís de notificacions.',permission==='denied');return}
     const registration=await navigator.serviceWorker.ready;
     const expectedWorker=new URL('/freya-travel/sw.js',location.origin).href;
     if(registration.active?.scriptURL!==expectedWorker)throw new Error('El service worker principal encara no està actiu. Tanca i torna a obrir Freya Travel.');
     await resumePendingPushMigration(registration);
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+    if(!tripRequestIsCurrent(tripId,generation))return;
     let subscription=await registration.pushManager.getSubscription();
     if(subscription&&!pushSubscriptionUsesCurrentVapid(subscription)){
-      if(!writePushLocalState(PUSH_MIGRATION_PENDING_KEY,{stage:'unsubscribe',endpoint:subscription.endpoint,userId,tripId}))throw new Error('No s’ha pogut preparar l’actualització de notificacions. Torna-ho a provar.');
+      if(!writePushLocalState(PUSH_MIGRATION_PENDING_KEY,{stage:'unsubscribe',endpoint:subscription.endpoint,userId}))throw new Error('No s’ha pogut preparar l’actualització de notificacions. Torna-ho a provar.');
       await resumePendingPushMigration(registration);subscription=null;
     }
     if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:vapidPublicKeyBytes()});
-    if(!tripRequestIsCurrent(tripId,generation)||!isLondonTrip())return;
+    if(!tripRequestIsCurrent(tripId,generation))return;
     rememberCurrentPushSubscription(subscription);
     const json=subscription.toJSON(),keys=json.keys||{};
     if(!json.endpoint||!keys.p256dh||!keys.auth)throw new Error('La subscripció Push no ha retornat totes les claus necessàries.');
-    const {error}=await db.from('push_subscriptions').upsert({user_id:userId,trip_id:tripId,endpoint:json.endpoint,p256dh:keys.p256dh,auth:keys.auth,active:true,updated_at:new Date().toISOString()},{onConflict:'endpoint'});
+    const {error}=await db.from('push_subscriptions').upsert({user_id:userId,trip_id:tripId,endpoint:json.endpoint,p256dh:keys.p256dh,auth:keys.auth,active:true,updated_at:new Date().toISOString()},{onConflict:'endpoint,trip_id'});
     if(error)throw error;
-    setPushState('Notificacions actives.',true);
+    setPushState('Notificacions actives.',true,true);
   }catch(error){
     setPushState(error?.message||'No s’han pogut activar les notificacions.',false);
   }finally{pushActivationInProgress=false}
@@ -4547,6 +5078,7 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredIns
 window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;updateInstallUi()});
 $('installApp').onclick=async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;updateInstallUi()};
 $('enablePush').onclick=enablePushNotifications;
+$('genericEnablePush').onclick=enablePushNotifications;
 window.addEventListener('load',()=>{updateInstallUi();refreshPushUi();initGuide()});
 window.addEventListener('pageshow',refreshPushUi);
 
