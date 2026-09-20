@@ -279,6 +279,10 @@
     .trip-home-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.trip-home-actions a,.trip-home-actions button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;max-width:100%;padding:11px 14px;border-radius:12px;font:inherit;font-weight:700;text-decoration:none;background:#eee8f4;color:#4f378b;white-space:normal;overflow-wrap:anywhere}
     .trip-home summary{cursor:pointer;padding:14px 0;min-height:44px;font-weight:700}.trip-home li{margin:8px 0;overflow-wrap:anywhere}.trip-home ul{padding-left:22px}
     @media(max-width:420px){.trip-home-card{padding:14px}.trip-home-actions>*{flex:1 1 135px}}
+    .trip-home-card.trip-progress-done,.generic-itinerary-card.trip-progress-done{border-color:#76ad92;background:#f0f8f3}
+    .trip-progress-action{min-height:44px;min-width:76px;font-weight:700;white-space:normal}
+    .trip-progress-action:disabled{opacity:.65;cursor:wait}
+    .trip-progress-badge{display:inline-block;margin:6px 5px;padding:4px 9px;border-radius:20px;background:#d3eddd;color:#205b3e;font-size:.78rem;font-weight:800}
   </style>
 </head>
 <body>
@@ -1736,7 +1740,7 @@ const MANUAL_ITINERARY_DRAFT_VERSION=1;
 const MANUAL_ITINERARY_DRAFT_FIELDS=['manualItineraryTitle','manualItineraryTimingKind','manualItineraryDate','manualItineraryDaypart','manualItineraryStartAt','manualItineraryEndAt','manualItineraryApproximateStartTime','manualItineraryApproximateEndTime','manualItineraryTimeZone','manualItineraryLocation','manualItineraryAddress','manualItineraryCity','manualItineraryFixed','manualItineraryOptional','manualItineraryStatus','manualItineraryNotes'];
 const ACCOMMODATION_DRAFT_VERSION=1;
 const ACCOMMODATION_DRAFT_FIELDS=['accommodationType','accommodationName','accommodationAddress','accommodationCity','accommodationPostalCode','accommodationRegion','accommodationCountry','accommodationCheckIn','accommodationCheckOut','accommodationStatus','accommodationProvider','accommodationReference','accommodationPhone','accommodationEmail','accommodationWebsite','accommodationRoom','accommodationVoucher','accommodationNotes'];
-const ACCOMMODATION_SELECT='id,trip_id,accommodation_type,name,address,location_text,city,postal_code,region,country,latitude,longitude,check_in_at,check_out_at,time_zone,booking_reference,booking_provider,reservation_status,phone,email,website_url,room_number,notes,created_by,updated_by,created_at,updated_at';
+const ACCOMMODATION_SELECT='id,trip_id,accommodation_type,name,address,location_text,city,postal_code,region,country,latitude,longitude,check_in_at,check_out_at,time_zone,booking_reference,booking_provider,reservation_status,phone,email,website_url,room_number,notes,check_in_completed_at,check_out_completed_at,created_by,updated_by,created_at,updated_at';
 const ACCOMMODATION_TYPES={hotel:{icon:'🏨',label:'Hotel'},apartment:{icon:'🏠',label:'Apartament'},house:{icon:'🏡',label:'Casa'},hostel:{icon:'🛏️',label:'Hostal'},resort:{icon:'🌴',label:'Resort'},other:{icon:'📍',label:'Allotjament'}};
 const ACCOMMODATION_STATUSES={planning:'En planificació',confirmed:'Confirmat',cancelled:'Cancel·lat'};
 const ACTIVITY_TYPES={restaurant:{icon:'🍽️',label:'Restaurant'},attraction:{icon:'🎡',label:'Atracció'},tour:{icon:'🗺️',label:'Tour o visita'},excursion:{icon:'🥾',label:'Excursió'},museum:{icon:'🏛️',label:'Museu'},show:{icon:'🎭',label:'Espectacle'},experience:{icon:'✨',label:'Experiència'},beach:{icon:'🏖️',label:'Platja'},transport_activity:{icon:'🚐',label:'Activitat de transport'},other:{icon:'📍',label:'Altres'}};
@@ -2668,7 +2672,77 @@ function subscribeManualItineraryItems(){
   if(!trip||!session||isLondonTrip())return;if(manualItineraryChannel)db.removeChannel(manualItineraryChannel);const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,reconcile=()=>{if(itineraryRequestIsCurrent(tripId,generation,userId)&&!isLondonTrip())loadManualItineraryItems(true)};manualItineraryChannel=db.channel('manual-itinerary-'+tripId).on('postgres_changes',{event:'*',schema:'public',table:'trip_itinerary_items',filter:`trip_id=eq.${tripId}`},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
 }
 
+// TRIP_PROGRESS_START — shared generic Home / Itinerary controls.
+const tripProgressRequests=new Map();
+function tripProgressButton(item){
+  if(!item.sourceUpdatedAt||item.isCancelled&&!item.isCompleted)return '';
+  const busy=tripProgressRequests.has(item.key);
+  return `<button type="button" class="trip-progress-action" data-trip-progress="${esc(item.key)}" data-progress-version="${esc(item.sourceUpdatedAt)}" data-completed="${!item.isCompleted}" ${busy?'disabled aria-busy="true"':''}>${busy?'Desant…':item.isCompleted?'Desfer':item.sourceType==='flight'?'✓ Vol fet':'✓ Fet'}</button>`;
+}
+function tripProgressLabel(item){
+  if(item.sourceType==='manual'&&item.isCompleted)return '✓ Fet';
+  const reservation=item.reservationStatus?itineraryStatusLabel(item.reservationStatus):item.isCancelled?'Cancel·lat':'Planificat';
+  return `${reservation}${item.isCompleted?' · ✓ Fet':''}`;
+}
+function tripProgressStatusHtml(item){
+  const status=item.reservationStatus||(item.isCancelled?'cancelled':item.isCompleted?'':'planned');
+  return `${status?`<span class="generic-itinerary-status ${esc(status)}">${esc(itineraryStatusLabel(status))}</span>`:''}${item.isCompleted?'<span class="trip-progress-badge">✓ Fet</span>':''}`;
+}
+function bindTripProgress(container,projection,messageId){
+  const tripId=trip?.id,generation=tripLoadGeneration,userId=session?.user?.id;
+  container.querySelectorAll('[data-trip-progress]').forEach(button=>button.onclick=()=>{
+    if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return;
+    const item=projection.find(item=>item.key===button.dataset.tripProgress);
+    if(item)setTripEventCompleted(item,button.dataset.completed==='true',messageId);
+  });
+}
+function invalidateTripProgressLoads(type){
+  if(type==='activity')activityLoadSequence+=1;
+  else if(type==='flight')flightLoadSequence+=1;
+  else if(type==='accommodation')accommodationLoadSequence+=1;
+  else if(type==='manual')manualItineraryLoadSequence+=1;
+}
+async function setTripEventCompleted(item,completed,messageId){
+  if(!trip||!session||isLondonTrip()||item.tripId!==trip.id||tripProgressRequests.has(item.key)||completed&&item.isCancelled)return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,request={};
+  const current=()=>itineraryRequestIsCurrent(tripId,generation,userId)&&!isLondonTrip();
+  const loaders={activity:loadActivities,flight:loadFlights,accommodation:loadAccommodations,manual:loadManualItineraryItems};
+  const loader=loaders[item.sourceType];if(!loader||!item.sourceUpdatedAt)return;
+  tripProgressRequests.set(item.key,request);msg(messageId,'');scheduleItineraryRebuild();
+  try{
+    const {data,error}=await db.rpc('set_trip_event_completed',{p_trip_id:tripId,p_source_type:item.sourceType,p_source_id:item.sourceId,p_source_event:item.sourceEvent,p_completed:completed,p_expected_updated_at:item.sourceUpdatedAt});
+    if(!current())return;
+    if(error){
+      if(error.code==='40001'||error.code==='P0002'){
+        invalidateTripProgressLoads(item.sourceType);
+        await loader(true);if(!current())return;
+        msg(messageId,'L’element ha canviat. Hem actualitzat el planning; revisa’l abans de tornar-ho a provar.',true);return;
+      }
+      throw error;
+    }
+    invalidateTripProgressLoads(item.sourceType);
+    // Never replace a newer Realtime row with an older RPC response. Apply only
+    // against the exact original version; the guarded loader reconciles all races.
+    const row=tripHomeSourceRow(item);
+    if(data?.trip_id===tripId&&data.source_id===item.sourceId&&data.row?.trip_id===tripId&&data.row.id===item.sourceId&&row.updated_at===item.sourceUpdatedAt){
+      Object.assign(row,data.row);scheduleItineraryRebuild();
+    }
+    await loader(true);if(!current())return;
+    msg(messageId,itinerarySourcesAreReady()?'': 'El canvi s’ha desat, però falta refrescar el planning. No cal repetir-lo.',!itinerarySourcesAreReady());
+  }catch(error){if(current())msg(messageId,'No s’ha pogut confirmar el canvi. Refresca el planning abans de tornar-ho a provar.',true)}
+  finally{
+    if(tripProgressRequests.get(item.key)===request)tripProgressRequests.delete(item.key);
+    if(current())scheduleItineraryRebuild();
+  }
+}
+// TRIP_PROGRESS_END
+
 // TRIP_HOME_PURE_START — no DOM, session, network or mutable application state.
+function normalizedTripProgress(item,row){
+  const manual=item.sourceType==='manual';
+  const completedAt=manual?null:row[item.sourceType==='accommodation'?`${item.sourceEvent}_completed_at`:'completed_at']||null;
+  return {...item,reservationStatus:manual?null:row.reservation_status||row.flight_status||'planning',isCancelled:(manual?row.status:row.reservation_status||row.flight_status)==='cancelled',isCompleted:manual?row.status==='completed':!!completedAt,completedAt};
+}
 function tripHomeLocalDate(value,timeZone){
   if(!timeZone)return null;
   const date=new Date(value);if(!Number.isFinite(date.getTime()))return null;
@@ -2685,18 +2759,21 @@ function deriveTripHomeState(snapshot,now){
   const state={phase,today,daysUntil:phase==='future'?Math.round((Date.parse(value.start_date)-Date.parse(today))/86400000):null,ready:snapshot.ready===true,current:[],next:null,nextCoincidences:[],nextDay:[],todayItems:[],flexible:[],unscheduled:[],points:[],dayFinished:false,pendingChecklist:snapshot.checklist===null?null:(snapshot.checklist||[]).filter(item=>!item.done&&!item.dismissed)};
   if(!state.ready||!today||!Number.isFinite(time))return state;
   const items=(snapshot.items||[]).filter(item=>item.tripId===value.id);
-  const ongoing=item=>!['cancelled','completed'].includes(item.status);
+  const ongoing=item=>!item.isCancelled&&!item.isCompleted;
   const instant=item=>item.timingKind==='exact'&&item.startsAt?Date.parse(item.startsAt):NaN;
   const chronological=(a,b)=>instant(a)-instant(b)||String(a.key).localeCompare(String(b.key));
   const localDay=item=>Number.isFinite(instant(item))?tripHomeLocalDate(instant(item),value.time_zone):item.localDate;
   const exact=items.filter(item=>ongoing(item)&&Number.isFinite(instant(item))).sort(chronological);
   state.todayItems=items.filter(item=>localDay(item)===today);
+  state.completedToday=items.filter(item=>item.isCompleted&&(item.completedAt?tripHomeLocalDate(item.completedAt,value.time_zone)===today:localDay(item)===today));
+  state.completedOther=items.filter(item=>item.isCompleted&&!state.completedToday.includes(item));
+  state.pastUnmarked=items.filter(item=>ongoing(item)&&(item.timingKind==='exact'&&item.endsAt&&item.sourceType!=='accommodation'?Date.parse(item.endsAt)<=time:localDay(item)&&localDay(item)<today));
   state.flexible=state.todayItems.filter(item=>ongoing(item)&&item.timingKind!=='exact');
   state.unscheduled=items.filter(item=>ongoing(item)&&!localDay(item));
   state.points=exact.filter(item=>localDay(item)===today&&instant(item)<=time&&(!item.endsAt||item.sourceType==='accommodation'));
   if(phase==='active')state.current=exact.filter(item=>item.sourceType!=='accommodation'&&instant(item)<=time&&Number.isFinite(Date.parse(item.endsAt))&&time<Date.parse(item.endsAt)).sort((a,b)=>Date.parse(a.endsAt)-Date.parse(b.endsAt)||chronological(a,b));
   const upcoming=exact.filter(item=>instant(item)>time);
-  state.next=(phase==='future'?upcoming.filter(item=>['reserved','confirmed'].includes(item.status)):upcoming)[0]||null;
+  state.next=(phase==='future'?upcoming.filter(item=>['reserved','confirmed'].includes(item.reservationStatus)):upcoming)[0]||null;
   if(state.next)state.nextCoincidences=upcoming.filter(item=>item.key!==state.next.key&&instant(item)===instant(state.next));
   const futureDays=items.filter(item=>ongoing(item)&&localDay(item)>today).sort((a,b)=>localDay(a).localeCompare(localDay(b))||(a.localOrder||0)-(b.localOrder||0));
   if(futureDays.length)state.nextDay=futureDays.filter(item=>localDay(item)===localDay(futureDays[0]));
@@ -2716,7 +2793,7 @@ function loadAgendaSource(type,loader,refresh){
   if(!trip||!session||isLondonTrip())return Promise.resolve([]);
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,key=itinerarySourceMarker(type,tripId,generation,userId);
   const existing=agendaRequests.get(key);
-  if(existing){if(refresh)existing.again=true;return existing.promise}
+  if(existing){if(refresh){existing.again=true;invalidateTripProgressLoads(type)}return existing.promise}
   const request={again:false,promise:null};
   agendaRequests.set(key,request);
   request.promise=(async()=>{
@@ -2755,7 +2832,7 @@ function tripHomeCard(item,label){
   const location=item.sourceType==='flight'?[row.departure_airport_name,row.departure_airport_code,row.departure_city].filter(Boolean).join(' · '):item.subtitle||row.venue_name||row.location_name||'';
   const timing=item.timingKind==='exact'?`${item.endsAt&&item.sourceType!=='accommodation'?'':'Previst a les '}${item.timeLabel}`:item.timeLabel||'Sense hora';
   const documents=(item.sourceType==='manual'?[]:itineraryDocumentsFor(item.sourceType,item.sourceId)).map(document=>({...document,documentId:document.documentId||(item.sourceType==='accommodation'?accommodationVoucherDocumentId(item.sourceId):item.sourceType==='activity'?activityDocumentId(item.sourceId,document.role):'')})).filter(document=>document.documentId);
-  return `<article class="trip-home-card"><small class="trip-home-label">${esc(label)}</small><h3>${esc(item.title)}</h3><p class="trip-home-time">${esc([item.localDate,timing,item.timeZone].filter(Boolean).join(' · '))}</p>${item.endsAt&&item.sourceType!=='accommodation'?`<p>${esc((item.details||[]).find(detail=>/^(Fins|Arribada)/.test(detail))||'')}</p>`:''}${location?`<p>📍 ${esc(location)}</p>`:''}<small>${esc(itineraryStatusLabel(item.status))}</small>${note?`<p>${esc(note.length>220?note.slice(0,217)+'…':note)}</p>`:''}<div class="trip-home-actions">${item.mapUrl?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">📍 Com arribar</a>`:''}${documents.map(document=>`<button type="button" data-home-document="${esc(document.documentId)}" data-home-key="${esc(item.key)}">${esc(document.label)}</button>`).join('')}${phone?`<a href="tel:${esc(phone)}">📞 Trucar</a>`:''}${website?`<a href="${esc(website)}" target="_blank" rel="noopener">🌐 Web</a>`:''}<button type="button" data-home-source="${esc(item.key)}">${item.sourceType==='manual'?'Veure al planning':esc(itinerarySourceLabel(item.sourceType))}</button></div></article>`;
+  return `<article class="trip-home-card ${item.isCompleted?'trip-progress-done':''}"><small class="trip-home-label">${esc(label)}</small><h3>${esc(item.title)}</h3><p class="trip-home-time">${esc([item.localDate,timing,item.timeZone].filter(Boolean).join(' · '))}</p>${item.endsAt&&item.sourceType!=='accommodation'?`<p>${esc((item.details||[]).find(detail=>/^(Fins|Arribada)/.test(detail))||'')}</p>`:''}${location?`<p>📍 ${esc(location)}</p>`:''}${tripProgressStatusHtml(item)}${note?`<p>${esc(note.length>220?note.slice(0,217)+'…':note)}</p>`:''}<div class="trip-home-actions">${tripProgressButton(item)}${item.mapUrl?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">📍 Com arribar</a>`:''}${documents.map(document=>`<button type="button" data-home-document="${esc(document.documentId)}" data-home-key="${esc(item.key)}">${esc(document.label)}</button>`).join('')}${phone?`<a href="tel:${esc(phone)}">📞 Trucar</a>`:''}${website?`<a href="${esc(website)}" target="_blank" rel="noopener">🌐 Web</a>`:''}<button type="button" data-home-source="${esc(item.key)}">${item.sourceType==='manual'?'Veure al planning':esc(itinerarySourceLabel(item.sourceType))}</button></div></article>`;
 }
 function renderTripHome(){
   if(!trip||!session||isLondonTrip()||!$('tripHomeContent'))return;
@@ -2777,9 +2854,14 @@ function renderTripHome(){
     if(state.points.length)html+=`<details><summary>Previsions amb hora d’avui · sense durada coneguda (${state.points.length})</summary>${state.points.map(item=>tripHomeCard(item,'PREVIST · no confirma realització')).join('')}</details>`;
     if(state.dayFinished){
       html+='<h3>Sense més compromisos amb hora avui</h3><p>Això no vol dir que tots els plans s’hagin completat.</p>';
-      html+=state.todayItems.length?`<details><summary>Planning d’avui · ${state.todayItems.length} elements</summary><ul>${state.todayItems.map(item=>`<li>${esc(item.timeLabel||'Sense hora')} · ${esc(item.title)} — ${esc(itineraryStatusLabel(item.status))}</li>`).join('')}</ul></details>`:'<p>No hi ha plans datats per avui.</p>';
+      html+=state.todayItems.length?`<details><summary>Planning d’avui · ${state.todayItems.length} elements</summary><ul>${state.todayItems.map(item=>`<li>${esc(item.timeLabel||'Sense hora')} · ${esc(item.title)} — ${esc(tripProgressLabel(item))}</li>`).join('')}</ul></details>`:'<p>No hi ha plans datats per avui.</p>';
       if(state.nextDay.length)html+=`<h3>Avanç del pròxim dia amb plans</h3><ul>${state.nextDay.map(item=>`<li>${esc(item.localDate)} · ${esc(item.timeLabel||'Sense hora')} · ${esc(item.title)}</li>`).join('')}</ul>`;
     }
+  }
+  if(ready){
+    if(state.completedToday?.length)html+=`<h3>Fet avui</h3><p>Marcat pels participants · al planning manual, agrupat pel dia del pla.</p>${state.completedToday.map(item=>tripHomeCard(item,'✓ FET · Desfer disponible')).join('')}`;
+    if(state.completedOther?.length)html+=`<details><summary>Altres elements fets · ${state.completedOther.length}</summary>${state.completedOther.map(item=>tripHomeCard(item,'✓ FET')).join('')}</details>`;
+    if(state.pastUnmarked?.length)html+=`<details><summary>Plans passats · sense marcar com a fets (${state.pastUnmarked.length})</summary>${state.pastUnmarked.map(item=>tripHomeCard(item,'PASSAT · sense marcar com a fet')).join('')}</details>`;
   }
   if(state.phase!=='past')html+=state.pendingChecklist===null?'<p>Preparatius no disponibles encara. Consulta la checklist.</p>':`<details ${state.phase==='future'?'open':''}><summary>✅ ${state.pendingChecklist.length} preparatius pendents</summary>${state.pendingChecklist.length?`<ul>${state.pendingChecklist.slice(0,5).map(item=>`<li>${esc(item.text)}</li>`).join('')}</ul>`:'<p>La checklist no té tasques pendents.</p>'}</details>`;
   html+='<div class="trip-home-actions"><button type="button" data-home-view="itineraryView">Veure tot el planning</button>'+(state.phase!=='past'?'<button type="button" data-home-view="checklistView">Obrir checklist</button>':'')+'</div>';
@@ -2788,6 +2870,7 @@ function renderTripHome(){
   if(container._homeHtml===html)return;container._homeHtml=html;container.innerHTML=html;
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   const current=()=>itineraryRequestIsCurrent(tripId,generation,userId)&&!isLondonTrip();
+  bindTripProgress(container,projection,'tripHomeMessage');
   container.querySelectorAll('[data-home-view]').forEach(button=>button.onclick=()=>{if(current()){clearItinerarySourceContext();setAppView(button.dataset.homeView)}});
   container.querySelectorAll('[data-home-retry]').forEach(button=>button.onclick=()=>{if(current()){ensureTripAgenda(true);loadItems();renderTripHome()}});
   container.querySelectorAll('[data-home-source]').forEach(button=>button.onclick=()=>{
@@ -2814,6 +2897,7 @@ function updateTripHomeClock(){
 document.addEventListener('visibilitychange',updateTripHomeClock);
 window.addEventListener('pageshow',updateTripHomeClock);
 function clearTripHomeState(){
+  tripProgressRequests.clear();
   if(tripHomeTimer)clearInterval(tripHomeTimer);tripHomeTimer=null;tripHomeChecklist=null;tripHomeChecklistSequence+=1;tripHomeItineraryFocus=null;agendaBatch=null;tripHomeAgendaAttempted=false;agendaRequests.clear();
   if($('tripHomeContent')){$('tripHomeContent').innerHTML='';$('tripHomeContent')._homeHtml=null}
   if($('tripHomeMessage'))msg('tripHomeMessage','');
@@ -2901,6 +2985,7 @@ function normalizedItineraryProjection(tripId,generation,userId=session?.user?.i
     const details=[];if(end)details.push(end.date===localDate?`Fins a les ${end.time}`:`Fins a ${itineraryDayHeading(end.date)}, ${end.time}`);if(row.notes)details.push(row.notes);
     items.push({key:`manual:${row.id}`,tripId,sourceType:'manual',sourceId:row.id,sourceEvent:'manual',title:row.title,eyebrow:'Planning manual',subtitle:[row.location_name,row.city].filter(Boolean).join(' · '),details,icon:'📝',startsAt:row.starts_at||null,endsAt:row.ends_at||null,timeZone:timing?.timeZone||itineraryTimeZone(row.time_zone),localDate,timeLabel,timingKind:row.timing_kind,localOrder,sortInstant:timing?.instant??Number.MAX_SAFE_INTEGER,sortOrder:Number(row.sort_order)||0,status:row.status||'planned',sourceUpdatedAt:row.updated_at||'',mapUrl:manualItineraryMapUrl(row),documents:[],tags:[row.is_optional?'Opcional':'',row.is_fixed?'Fix':'Flexible'].filter(Boolean)});
   });
+  for(let index=0;index<items.length;index++)items[index]=normalizedTripProgress(items[index],tripHomeSourceRow(items[index]));
   const timingRank={all_day:0,date:1,daypart:2,approximate:2,exact:3,unscheduled:4};
   return items.sort((a,b)=>{const dateOrder=(a.localDate||'9999-12-31').localeCompare(b.localDate||'9999-12-31');if(dateOrder)return dateOrder;const timeOrder=a.timingKind==='exact'&&b.timingKind==='exact'?a.sortInstant-b.sortInstant:a.localOrder-b.localOrder;return timeOrder||(timingRank[a.timingKind]??5)-(timingRank[b.timingKind]??5)||a.sortOrder-b.sortOrder||a.key.localeCompare(b.key)});
 }
@@ -2908,9 +2993,10 @@ function itineraryStatusLabel(status){return {planning:'En planificació',planne
 function itinerarySourceLabel(type){return {flight:'Obrir vol',accommodation:'Obrir allotjament',activity:'Obrir activitat',manual:'Editar planning'}[type]||'Obrir font'}
 function renderItineraryItem(item,unscheduled=false){
   const details=[item.subtitle,...item.details].filter(Boolean);
-  return `<article class="generic-itinerary-entry" data-itinerary-key="${esc(item.key)}"><div class="generic-itinerary-time ${item.timingKind==='approximate'?'approximate':''}">${unscheduled?'':esc(item.timeLabel)}</div><div class="generic-itinerary-card ${item.status==='cancelled'?'cancelled':''}"><div class="generic-itinerary-main"><div class="generic-itinerary-icon">${item.icon}</div><div class="generic-itinerary-copy"><small>${esc(item.eyebrow)}</small><strong>${esc(item.title)}</strong>${details.map(detail=>`<p>${esc(detail)}</p>`).join('')}<span class="generic-itinerary-status ${esc(item.status)}">${esc(itineraryStatusLabel(item.status))}</span>${(item.tags||[]).map(tag=>`<span class="generic-itinerary-tag">${esc(tag)}</span>`).join('')}</div></div><div class="generic-itinerary-actions">${item.documents.map(document=>`<button type="button" data-itinerary-document="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}" data-itinerary-document-role="${esc(document.role)}" ${document.documentId?`data-itinerary-document-id="${esc(document.documentId)}"`:''}>${esc(document.label)}</button>`).join('')}${item.mapUrl?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">📍 Maps</a>`:''}<button type="button" class="source-action" data-itinerary-source="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}">${esc(itinerarySourceLabel(item.sourceType))}</button>${item.sourceType==='manual'?`<button type="button" data-delete-manual-itinerary="${esc(item.sourceId)}">Elimina</button>`:''}</div></div></article>`;
+  return `<article class="generic-itinerary-entry" data-itinerary-key="${esc(item.key)}"><div class="generic-itinerary-time ${item.timingKind==='approximate'?'approximate':''}">${unscheduled?'':esc(item.timeLabel)}</div><div class="generic-itinerary-card ${item.isCancelled?'cancelled':''} ${item.isCompleted?'trip-progress-done':''}"><div class="generic-itinerary-main"><div class="generic-itinerary-icon">${item.icon}</div><div class="generic-itinerary-copy"><small>${esc(item.eyebrow)}</small><strong>${esc(item.title)}</strong>${details.map(detail=>`<p>${esc(detail)}</p>`).join('')}${tripProgressStatusHtml(item)}${(item.tags||[]).map(tag=>`<span class="generic-itinerary-tag">${esc(tag)}</span>`).join('')}</div></div><div class="generic-itinerary-actions">${tripProgressButton(item)}${item.documents.map(document=>`<button type="button" data-itinerary-document="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}" data-itinerary-document-role="${esc(document.role)}" ${document.documentId?`data-itinerary-document-id="${esc(document.documentId)}"`:''}>${esc(document.label)}</button>`).join('')}${item.mapUrl?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">📍 Maps</a>`:''}<button type="button" class="source-action" data-itinerary-source="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}">${esc(itinerarySourceLabel(item.sourceType))}</button>${item.sourceType==='manual'?`<button type="button" data-delete-manual-itinerary="${esc(item.sourceId)}">Elimina</button>`:''}</div></div></article>`;
 }
 function bindItineraryActions(container){
+  bindTripProgress(container,itineraryProjection,'genericItineraryMessage');
   container.querySelectorAll('[data-itinerary-document]').forEach(button=>button.onclick=()=>{
     const type=button.dataset.itineraryDocument,id=button.dataset.itinerarySourceId,role=button.dataset.itineraryDocumentRole;
     if(type==='flight')openFlightDocument(id,role,button.dataset.itineraryDocumentId||'');else if(type==='accommodation')openAccommodationVoucher(id);else openActivityDocument(id,role);

@@ -9,7 +9,7 @@ const context=vm.createContext({Intl,Date});
 vm.runInContext(pure,context);
 const derive=(snapshot,now)=>context.deriveTripHomeState(snapshot,now);
 const trip={id:'a',start_date:'2026-09-10',end_date:'2026-09-12',time_zone:'Europe/Madrid'};
-const item=(key,fields={})=>({key,tripId:'a',sourceType:'activity',sourceId:key,title:key,timingKind:'exact',startsAt:'2026-09-10T10:00:00Z',endsAt:'2026-09-10T11:00:00Z',localDate:'2026-09-10',localOrder:720,status:'confirmed',...fields});
+const item=(key,fields={})=>({key,tripId:'a',sourceType:'activity',sourceId:key,sourceEvent:'start',sourceUpdatedAt:'2026-09-01T00:00:00Z',title:key,timingKind:'exact',startsAt:'2026-09-10T10:00:00Z',endsAt:'2026-09-10T11:00:00Z',localDate:'2026-09-10',localOrder:720,status:'confirmed',reservationStatus:fields.status||'confirmed',isCompleted:fields.status==='completed',isCancelled:fields.status==='cancelled',completedAt:null,...fields});
 const snapshot=(items=[],fields={})=>({trip,ready:true,items,checklist:[],...fields});
 const keys=items=>Array.from(items,item=>item.key);
 
@@ -96,6 +96,7 @@ function loaderHarness(){
     itineraryRequestIsCurrent:(id,generation,user)=>sandbox.trip?.id===id&&sandbox.tripLoadGeneration===generation&&sandbox.session?.user?.id===user,
     renderTripHome:()=>renders.push(`${sandbox.session?.user?.id}:${sandbox.trip?.id}:${sandbox.tripLoadGeneration}`),
     scheduleItineraryRebuild:()=>{},loadTripDayMetadata:async()=>[],
+    invalidateTripProgressLoads:()=>{},
   });
   for(const [type,name] of [['flight','fetchAgendaFlights'],['activity','fetchAgendaActivities'],['accommodation','fetchAgendaAccommodations'],['manual','fetchAgendaManualItems']])sandbox[name]=()=>{
     const id=sandbox.trip.id,generation=sandbox.tripLoadGeneration,user=sandbox.session.user.id;
@@ -168,6 +169,7 @@ function renderHarness(items,options={}){
     itinerarySourceLabel:type=>`Obrir ${type}`,
   });
   vm.runInContext(pure,sandbox);
+  vm.runInContext(html.split('// TRIP_PROGRESS_START')[1].split('// TRIP_PROGRESS_END')[0].replace(/^ —[^\n]*\n/,''),sandbox);
   vm.runInContext(html.match(/^function esc\(s\).*$/m)[0],sandbox);
   vm.runInContext(html.slice(html.indexOf('function safeWebsiteUrl'),html.indexOf('function compactLocationParts')),sandbox);
   vm.runInContext(html.slice(html.indexOf('function tripHomeSourceRow'),html.indexOf('function updateTripHomeClock')),sandbox);
@@ -200,4 +202,12 @@ test('past render offers existing gallery/planning, never fictitious album creat
 });
 test('London render leaves Home untouched',()=>{
   const {content}=renderHarness([item('a')],{london:true});assert.equal(content,'');
+});
+test('completed Home card stays visible in Fet avui with undo and a distinct reservation badge',()=>{
+  const {content}=renderHarness([item('done',{isCompleted:true,completedAt:'2026-09-10T10:15:00Z'})]);
+  assert.match(content,/<h3>Fet avui<\/h3>/);assert.match(content,/Desfer/);assert.match(content,/trip-progress-badge/);assert.match(content,/generic-itinerary-status confirmed/);assert.doesNotMatch(content,/ARA · previst/);
+});
+test('past trip still exposes completed items and undo, not just gallery',()=>{
+  const {content}=renderHarness([item('done',{isCompleted:true,completedAt:'2026-09-09T10:15:00Z'})],{trip:{...trip,start_date:'2026-09-08',end_date:'2026-09-09'}});
+  assert.match(content,/Altres elements fets/);assert.match(content,/Desfer/);assert.match(content,/Fotos del viatge/);
 });

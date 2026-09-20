@@ -7,7 +7,7 @@ declare
     'venue_name','address','city','latitude','longitude','reservation_status',
     'booking_reference','provider','contact_phone','contact_email','website_url',
     'people_count','amount','currency','notes','created_by','updated_by',
-    'created_at','updated_at'
+    'created_at','updated_at','completed_at'
   ];
 begin
   if to_regclass('public.trip_activities') is null
