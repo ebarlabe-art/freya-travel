@@ -167,6 +167,7 @@ function renderHarness(items,options={}){
     activityDocumentId:(id,role)=>options.activityDocuments?.[`${id}:${role}`]||'',
     itineraryStatusLabel:status=>status,
     itinerarySourceLabel:type=>`Obrir ${type}`,
+    bindContextPhotoActions:()=>{}, // Actual contextual action tested in photos-v2.test.mjs.
   });
   vm.runInContext(pure,sandbox);
   vm.runInContext(html.split('// TRIP_PROGRESS_START')[1].split('// TRIP_PROGRESS_END')[0].replace(/^ —[^\n]*\n/,''),sandbox);

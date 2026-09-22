@@ -283,6 +283,14 @@
     .trip-progress-action{min-height:44px;min-width:76px;font-weight:700;white-space:normal}
     .trip-progress-action:disabled{opacity:.65;cursor:wait}
     .trip-progress-badge{display:inline-block;margin:6px 5px;padding:4px 9px;border-radius:20px;background:#d3eddd;color:#205b3e;font-size:.78rem;font-weight:800}
+    #photoUploadV2 input,#photoUploadV2 select,#photoContextEditor input,#photoContextEditor select{width:100%;max-width:100%;min-width:0;box-sizing:border-box;padding:12px;border:1px solid #d7c8e7;border-radius:12px;font:inherit;background:white;color:inherit}
+    #photoUploadV2 label,#photoContextEditor label{display:grid;gap:6px;min-width:0;font-size:14px}
+    .photo-context-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+    .photo-queue-item{display:grid;grid-template-columns:88px minmax(0,1fr);gap:12px;border-top:1px solid #e5d9ef;padding:16px 0;overflow-wrap:anywhere}
+    .photo-queue-item>img{width:88px;height:88px;object-fit:cover;border-radius:12px}.photo-queue-item fieldset{border:0;margin:0;padding:0;min-width:0}
+    #photoUploadV2 button,#photoContextEditor button,.photo-context-edit{min-height:44px;padding:10px 14px;border-radius:12px}.photo-context-edit{margin:0 12px 12px;background:#f3eaf8;color:#542870;border:1px solid #d7c8e7}
+    #photoContextEditor{padding:16px;border:1px solid #d7c8e7;border-radius:18px;margin-bottom:18px;background:#fff}#photoQueueMessage,#photoContextMessage{overflow-wrap:anywhere}
+    @media(max-width:520px){.photo-context-fields{grid-template-columns:minmax(0,1fr)}.photo-queue-item{grid-template-columns:minmax(0,1fr)}.photo-queue-item>img{width:100%;height:180px}}
   </style>
 </head>
 <body>
@@ -931,6 +939,14 @@
           <p id="photoHeroCopy">Pugeu fotografies des del mòbil i compartiu-les entre l’Eva i en Xesc. Apareixeran aquí al moment.</p>
         </section>
         <section class="photo-upload-card">
+          <section id="photoUploadV2" class="hidden" aria-label="Pujada de fotos">
+            <h3>Afegir fotos</h3><p>Fins a 20 fotos per lot · JPEG, PNG o WebP · màxim 15 MB cadascuna. Mantén Freya oberta fins que acabin. No es garanteix la pujada en segon pla.</p>
+            <div id="photoBatchContext"></div>
+            <label>Selecciona fotos<input id="photoFilesV2" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+            <p id="photoQueueMessage" role="status" aria-live="polite"></p>
+            <div id="photoQueueList"></div>
+            <div class="trip-home-actions"><button id="photoQueueUpload" type="button">Pujar pendents</button><button id="photoQueueClear" type="button">Tancar lot</button></div>
+          </section>
           <form id="photoForm" class="photo-form">
             <input id="photoTitle" type="text" maxlength="80" placeholder="Títol o lloc (opcional)">
             <input id="photoFile" type="file" accept="image/*" multiple required>
@@ -941,6 +957,7 @@
         </section>
         <section>
           <div class="photo-toolbar"><h2>Els vostres records</h2><span id="photoCountLabel" class="photo-count">0 fotos</span></div>
+          <div id="photoContextEditor" class="hidden"></div>
           <div id="photosList" class="photo-grid"></div>
           <div id="photosEmpty" class="photo-empty">Encara no hi ha cap foto. La primera serà l’inici del vostre àlbum de Londres. 💜</div>
         </section>
@@ -2871,6 +2888,7 @@ function renderTripHome(){
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   const current=()=>itineraryRequestIsCurrent(tripId,generation,userId)&&!isLondonTrip();
   bindTripProgress(container,projection,'tripHomeMessage');
+  bindContextPhotoActions(container,projection);
   container.querySelectorAll('[data-home-view]').forEach(button=>button.onclick=()=>{if(current()){clearItinerarySourceContext();setAppView(button.dataset.homeView)}});
   container.querySelectorAll('[data-home-retry]').forEach(button=>button.onclick=()=>{if(current()){ensureTripAgenda(true);loadItems();renderTripHome()}});
   container.querySelectorAll('[data-home-source]').forEach(button=>button.onclick=()=>{
@@ -2997,6 +3015,7 @@ function renderItineraryItem(item,unscheduled=false){
 }
 function bindItineraryActions(container){
   bindTripProgress(container,itineraryProjection,'genericItineraryMessage');
+  bindContextPhotoActions(container,itineraryProjection);
   container.querySelectorAll('[data-itinerary-document]').forEach(button=>button.onclick=()=>{
     const type=button.dataset.itineraryDocument,id=button.dataset.itinerarySourceId,role=button.dataset.itineraryDocumentRole;
     if(type==='flight')openFlightDocument(id,role,button.dataset.itineraryDocumentId||'');else if(type==='accommodation')openAccommodationVoucher(id);else openActivityDocument(id,role);
@@ -3233,6 +3252,7 @@ function clearGenericItineraryState(){
   document.querySelectorAll('.generic-itinerary-source-focus').forEach(card=>card.classList.remove('generic-itinerary-source-focus'));
 }
 function clearTripScopedState(){
+  resetPhotoV2();
   clearDocumentsReturnContext();
   clearAccommodationVoucherFocus();
   clearGenericItineraryState();
@@ -4167,6 +4187,177 @@ addFavoriteButtons();renderFavorites();
 
 
 
+// PHOTO_V2_START — generic trips only; legacy London uploader stays below.
+let photoQueue=[],photoMetadata=[],photoContextDraft=null,photoBatchContext={local_date:null,activity_id:null,itinerary_item_id:null};
+let photoQueueRunning=false,photoV2LoadSequence=0,photoV2RenderSequence=0;
+function photoScope(){return {tripId:trip?.id,userId:session?.user?.id,generation:tripLoadGeneration}}
+function photoScopeCurrent(scope){return !!scope?.tripId&&!!scope.userId&&session?.user?.id===scope.userId&&tripRequestIsCurrent(scope.tripId,scope.generation)&&!isLondonTrip()}
+function photoFileError(file){return !['image/jpeg','image/png','image/webp'].includes(file.type)?'Format no compatible. Tria JPEG, PNG o WebP; converteix HEIC/HEIF abans de seleccionar-lo.':!file.size?'El fitxer és buit.':file.size>15*1024*1024?'La foto supera 15 MB.':''}
+function photoStablePath(scope,id,type){return `${scope.tripId}/photos/${scope.userId}/${id}.${{'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[type]||'invalid'}`}
+function photoContextValue(value={}){return {local_date:value.local_date||null,activity_id:value.activity_id||null,itinerary_item_id:value.itinerary_item_id||null}}
+function orderedGenericPhotos(rows,metadata){
+  const byId=new Map(metadata.map(row=>[row.document_id,row])),batchTimes=new Map();
+  rows.forEach(row=>{const batch=byId.get(row.id)?.upload_batch_id;if(batch)batchTimes.set(batch,Math.max(batchTimes.get(batch)||0,Date.parse(row.created_at)||0))});
+  return rows.slice().sort((a,b)=>{
+    const ma=byId.get(a.id),mb=byId.get(b.id),ba=ma?.upload_batch_id,bb=mb?.upload_batch_id;
+    if(ba&&ba===bb)return ma.selection_index-mb.selection_index;
+    return (bb?batchTimes.get(bb):Date.parse(b.created_at)||0)-(ba?batchTimes.get(ba):Date.parse(a.created_at)||0)||String(ba||a.id).localeCompare(String(bb||b.id));
+  });
+}
+function resetPhotoV2(){
+  photoMetadataUnavailable=true;
+  photoQueue.forEach(job=>{if(job.preview)URL.revokeObjectURL(job.preview)});photoQueue=[];photoMetadata=[];photoContextDraft=null;photoBatchContext=photoContextValue();photoQueueRunning=false;photoV2LoadSequence++;photoV2RenderSequence++;
+  for(const id of ['photoQueueList','photoQueueMessage','photoBatchContext','photoContextEditor'])if($(id))$(id).innerHTML='';
+  if($('photoFilesV2'))$('photoFilesV2').value='';if($('photoContextEditor'))$('photoContextEditor').classList.add('hidden');
+}
+function photoContextFields(value,prefix){
+  const selected=value.activity_id?`activity:${value.activity_id}`:value.itinerary_item_id?`manual:${value.itinerary_item_id}`:'';
+  const sources=[...activityRows.filter(row=>row.trip_id===trip?.id).map(row=>({value:`activity:${row.id}`,label:`Activitat · ${row.title}`})),...manualItineraryRows.filter(row=>row.trip_id===trip?.id).map(row=>({value:`manual:${row.id}`,label:`Planning · ${row.title}`}))];
+  if(selected&&!sources.some(source=>source.value===selected))sources.push({value:selected,label:'Font no disponible — pots desvincular-la'});
+  return `<div class="photo-context-fields"><label>Dia (opcional)<input type="date" data-photo-date="${esc(prefix)}" value="${esc(value.local_date||'')}"></label><label>Activitat o planning (opcional)<select data-photo-source="${esc(prefix)}"><option value="">Sense vincular</option>${sources.map(source=>`<option value="${esc(source.value)}" ${source.value===selected?'selected':''}>${esc(source.label)}</option>`).join('')}</select></label></div>`;
+}
+function bindPhotoContext(container,value,changed){
+  container.querySelector('[data-photo-date]').onchange=e=>{value.local_date=e.target.value||null;changed?.()};
+  container.querySelector('[data-photo-source]').onchange=e=>{const [type,id]=e.target.value.split(':');value.activity_id=type==='activity'?id:null;value.itinerary_item_id=type==='manual'?id:null;changed?.()};
+}
+function photoContextLabel(metadata){
+  if(!metadata)return photoMetadataUnavailable?'Context no disponible':'Sense context assignat';
+  const source=metadata.activity_id?activityRows.find(row=>row.id===metadata.activity_id&&row.trip_id===trip?.id):metadata.itinerary_item_id?manualItineraryRows.find(row=>row.id===metadata.itinerary_item_id&&row.trip_id===trip?.id):null;
+  return [metadata.local_date,source?.title||(metadata.activity_id||metadata.itinerary_item_id?'Font vinculada':'')].filter(Boolean).join(' · ')||'Sense context assignat';
+}
+function photoContextAction(item){return ['activity','manual'].includes(item.sourceType)?`<button type="button" data-add-context-photos="${esc(item.key)}">📷 Afegir fotos</button>`:''}
+function bindContextPhotoActions(container,items){
+  if(isLondonTrip())return;
+  items.filter(item=>['activity','manual'].includes(item.sourceType)).forEach(item=>{
+    const anchor=[...container.querySelectorAll('[data-home-source],[data-itinerary-source]')].find(button=>button.dataset.homeSource===item.key||(button.dataset.itinerarySource===item.sourceType&&button.dataset.itinerarySourceId===item.sourceId));
+    const actions=anchor?.parentElement;if(actions&&!actions.querySelector('[data-add-context-photos]'))actions.insertAdjacentHTML('beforeend',photoContextAction(item));
+  });
+  const scope=photoScope();container.querySelectorAll('[data-add-context-photos]').forEach(button=>button.onclick=()=>{
+    if(!photoScopeCurrent(scope))return;const item=items.find(item=>item.key===button.dataset.addContextPhotos&&item.tripId===scope.tripId);if(!item||!['activity','manual'].includes(item.sourceType))return;
+    photoBatchContext={local_date:item.localDate||null,activity_id:item.sourceType==='activity'?item.sourceId:null,itinerary_item_id:item.sourceType==='manual'?item.sourceId:null};setAppView('photosView');
+  });
+}
+function preparePhotoV2(){
+  const generic=!!trip&&!isLondonTrip();$('photoUploadV2').classList.toggle('hidden',!generic);$('photoForm').classList.toggle('hidden',generic);if(!generic)return;
+  renderPhotoQueue();const scope=photoScope();ensureTripAgenda().then(()=>{if(photoScopeCurrent(scope)){renderPhotoQueue();renderGenericPhotos()}});
+}
+function renderPhotoQueue(){
+  if(!trip||isLondonTrip())return;
+  const batch=$('photoBatchContext');batch.innerHTML='<p>Context proposat per a les properes fotos. Revisa’l: no s’infereix per hora ni ubicació.</p>'+photoContextFields(photoBatchContext,'batch');bindPhotoContext(batch,photoBatchContext);
+  $('photoQueueList').innerHTML=photoQueue.map(job=>`<article class="photo-queue-item" data-photo-job="${esc(job.id)}">${job.preview?`<img src="${esc(job.preview)}" loading="lazy" decoding="async" alt="Previsualització de ${esc(job.file.name)}">`:''}<div><strong>${esc(job.file.name)}</strong><p role="status">${esc({pending:'Pendent',uploading:'Pujant…',uploaded:'Pujada',error:'Error'}[job.status])}${job.error?` · ${esc(job.error)}`:''}</p>${job.status!=='uploaded'?`<label>Títol<input data-photo-title maxlength="160" value="${esc(job.title)}" ${job.status==='uploading'?'disabled':''}></label><fieldset ${job.status==='uploading'?'disabled':''}>${photoContextFields(job.context,job.id)}</fieldset>`:`<p>${esc(photoContextLabel(job.metadata))}</p>`}${job.status==='error'&&!job.invalid?'<button type="button" data-photo-retry>Reintenta aquesta foto</button>':''}</div></article>`).join('');
+  $('photoQueueList').querySelectorAll('[data-photo-job]').forEach(card=>{const job=photoQueue.find(job=>job.id===card.dataset.photoJob);if(job.status!=='uploaded'){bindPhotoContext(card,job.context);card.querySelector('[data-photo-title]').oninput=e=>job.title=e.target.value}const retry=card.querySelector('[data-photo-retry]');if(retry){retry.disabled=photoQueueRunning;retry.onclick=()=>runPhotoQueue(job.id)}});
+  $('photoQueueUpload').disabled=photoQueueRunning||!photoQueue.some(job=>job.status==='pending');$('photoQueueClear').disabled=photoQueueRunning;$('photoFilesV2').disabled=photoQueueRunning;
+}
+function selectPhotoFiles(files){
+  const scope=photoScope();if(!photoScopeCurrent(scope)||photoQueueRunning)return;
+  // A full batch is a deliberate boundary: never silently discard extra selections.
+  if(files.length+photoQueue.length>20){$('photoQueueMessage').textContent='Màxim 20 fotos per lot. Tanca el lot o selecciona menys fotos.';return}
+  const batchId=photoQueue[0]?.batchId||crypto.randomUUID();let skipped=0;
+  for(const file of files){
+    if(photoQueue.some(job=>job.file.name===file.name&&job.file.size===file.size&&job.file.lastModified===file.lastModified)){skipped++;continue}
+    const id=crypto.randomUUID(),error=photoFileError(file);
+    photoQueue.push({id,batchId,index:photoQueue.length,scope,file,path:photoStablePath(scope,id,file.type),title:file.name.slice(0,160),context:photoContextValue(photoBatchContext),status:error?'error':'pending',invalid:!!error,error,preview:error?'':URL.createObjectURL(file),uploaded:false});
+  }
+  $('photoQueueMessage').textContent=skipped?`${skipped} seleccions repetides ignorades en aquest lot.`:'Revisa el context de cada foto abans de pujar.';renderPhotoQueue();
+}
+// Injectable I/O makes ambiguous responses, retries and scope switches testable.
+function photoRequestWithTimeout(request,wait=120000){
+  let timer;return Promise.race([request,new Promise((resolve,reject)=>{timer=setTimeout(()=>reject(new Error('La connexió no ha respost. Pots reintentar amb la mateixa identitat; no tornis a seleccionar la foto.')),wait)})]).finally(()=>clearTimeout(timer));
+}
+async function executePhotoJob(job,io,current){
+  if(!current())return;
+  job.status='uploading';job.error='';io.changed();
+  try{
+    if(!job.uploaded){
+      const result=await photoRequestWithTimeout(io.upload(job));if(!current())return;
+      // Only this immutable random path can be reused. Never upsert/overwrite it.
+      if(result.error&&!['409','Duplicate'].includes(String(result.error.statusCode||result.error.code)))throw result.error;
+      job.uploaded=true;
+    }
+    const result=await photoRequestWithTimeout(io.finalize(job));if(!current())return;if(result.error)throw result.error;
+    job.status='uploaded';job.metadata=result.data.metadata;job.error='';
+  }catch(error){if(current()){job.status='error';job.error=error?.message||'No s’ha pogut completar. Reintenta aquesta foto.'}}
+  finally{if(current())io.changed()}
+}
+async function uploadPhotoV2Object(job,current){
+  const image=new Image();image.src=job.preview;
+  try{await image.decode()}catch{throw new Error('No es pot llegir aquesta imatge. Exporta-la com a JPEG, PNG o WebP vàlid.')}
+  finally{image.removeAttribute('src')}
+  if(!current())return {error:new Error('Pujada interrompuda pel canvi de viatge o usuari.')};
+  return db.storage.from(DOC_BUCKET).upload(job.path,job.file,{contentType:job.file.type,upsert:false});
+}
+async function runPhotoQueue(onlyId=null){
+  const scope=photoScope();if(!photoScopeCurrent(scope)||photoQueueRunning)return;
+  photoQueueRunning=true;renderPhotoQueue();const current=()=>photoScopeCurrent(scope);
+  try{
+    const jobs=photoQueue.filter(job=>onlyId?job.id===onlyId&&job.status==='error'&&!job.invalid:job.status==='pending');
+    for(const job of jobs){
+      if(!current())return;
+      await executePhotoJob(job,{changed:renderPhotoQueue,upload:job=>uploadPhotoV2Object(job,current),finalize:job=>db.rpc('finalize_trip_photo',{p_trip_id:scope.tripId,p_document_id:job.id,p_title:job.title.trim()||job.file.name.slice(0,160),p_file_name:job.file.name,p_mime_type:job.file.type,p_upload_batch_id:job.batchId,p_selection_index:job.index,p_local_date:job.context.local_date,p_activity_id:job.context.activity_id,p_itinerary_item_id:job.context.itinerary_item_id})},current);
+      if(!current())return;
+    }
+    await photoRequestWithTimeout(loadGenericPhotos());if(!current())return;
+    $('photoQueueMessage').textContent='Les fotos pujades s’han conservat. Els errors es poden reintentar individualment amb la mateixa identitat.';
+  }catch(error){if(current())$('photoQueueMessage').textContent=error.message||'No s’ha pogut refrescar l’àlbum. El lot es conserva.'}
+  finally{if(current()){photoQueueRunning=false;renderPhotoQueue()}}
+}
+async function loadGenericPhotos(silent=false){
+  const scope=photoScope(),sequence=++photoV2LoadSequence;if(!photoScopeCurrent(scope))return;
+  try{
+    const [documents,metadata]=await Promise.all([db.from('travel_documents').select('id,trip_id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',scope.tripId).eq('category','Foto').order('created_at',{ascending:false}),db.from('trip_photo_metadata').select('*').eq('trip_id',scope.tripId)]);
+    if(!photoScopeCurrent(scope)||sequence!==photoV2LoadSequence)return;
+    if(documents.error)throw documents.error;
+    photoMetadata=metadata.error?[]:metadata.data||[];photoRows=orderedGenericPhotos(documents.data||[],photoMetadata);
+    if(metadata.error)$('photoQueueMessage').textContent='No s’ha pogut carregar el context de les fotos. Reobre Fotos abans d’editar-lo.';
+    // Never let a failed metadata read masquerade as a legacy NULL CAS baseline.
+    photoMetadataUnavailable=!!metadata.error;
+    if(photoContextDraft&&!photoRows.some(row=>row.id===photoContextDraft.id)){photoContextDraft=null;renderPhotoContextEditor()}
+    await renderGenericPhotos(scope);
+  }catch(error){if(photoScopeCurrent(scope)&&sequence===photoV2LoadSequence&&!silent)$('photoQueueMessage').textContent=error.message||'No s’han pogut carregar les fotos.'}
+}
+let photoMetadataUnavailable=true;
+async function renderGenericPhotos(scope=photoScope()){
+  const sequence=++photoV2RenderSequence;if(!photoScopeCurrent(scope))return;
+  const rows=photoRows.slice(),signed=await Promise.all(rows.map(async row=>{try{const result=await db.storage.from(DOC_BUCKET).createSignedUrl(row.file_path,3600);return {...row,signedUrl:result.data?.signedUrl||''}}catch{return {...row,signedUrl:''}}}));
+  if(!photoScopeCurrent(scope)||sequence!==photoV2RenderSequence)return;
+  $('photoCountLabel').textContent=`${rows.length} fotos`;if($('genericPhotosModuleStatus'))$('genericPhotosModuleStatus').textContent=`${rows.length} fotos`;$('photosEmpty').classList.toggle('hidden',rows.length>0);
+  $('photosList').innerHTML=signed.map(row=>`<article class="photo-card" data-photo-id="${esc(row.id)}"><button class="photo-open" type="button" data-photo-open="${esc(row.id)}">${row.signedUrl?`<img src="${esc(row.signedUrl)}" alt="${esc(row.title)}" loading="lazy">`:'<p>Imatge temporalment no disponible</p>'}<div class="photo-info"><strong>${esc(row.title)}</strong><small>${esc(photoDate(row.created_at))} · pujada</small><p>${esc(photoContextLabel(photoMetadata.find(metadata=>metadata.document_id===row.id)))}</p></div></button><button type="button" class="photo-context-edit" data-edit-photo="${esc(row.id)}" ${photoMetadataUnavailable?'disabled':''}>Edita context</button><button class="photo-delete" type="button" data-photo-delete="${esc(row.id)}" aria-label="Eliminar foto">🗑</button></article>`).join('');
+  $('photosList').querySelectorAll('[data-photo-open]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))openPhoto(button.dataset.photoOpen,signed)});
+  $('photosList').querySelectorAll('[data-edit-photo]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))openPhotoContextEditor(button.dataset.editPhoto)});
+  $('photosList').querySelectorAll('[data-photo-delete]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))deleteGenericPhoto(button.dataset.photoDelete)});
+}
+function openPhotoContextEditor(id){
+  if(!photoScopeCurrent(photoScope())||photoMetadataUnavailable||!photoRows.some(row=>row.id===id))return;
+  const metadata=photoMetadata.find(row=>row.document_id===id);photoContextDraft={id,scope:photoScope(),version:metadata?.updated_at||null,context:photoContextValue(metadata),saving:false};renderPhotoContextEditor();$('photoContextEditor').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function renderPhotoContextEditor(){
+  const box=$('photoContextEditor'),draft=photoContextDraft;box.classList.toggle('hidden',!draft);if(!draft){box.innerHTML='';return}
+  box.innerHTML=`<form id="editPhotoContextForm"><h3>Context de la foto</h3>${photoContextFields(draft.context,'edit')}<p id="photoContextMessage" role="status"></p><div class="trip-home-actions"><button type="button" id="cancelPhotoContext">Cancel·la</button><button type="submit">Desa context</button></div></form>`;bindPhotoContext(box,draft.context);$('cancelPhotoContext').onclick=()=>{photoContextDraft=null;renderPhotoContextEditor()};$('editPhotoContextForm').onsubmit=savePhotoContext;
+}
+async function savePhotoContext(event){
+  event.preventDefault();const draft=photoContextDraft;if(!draft||draft.saving||!photoScopeCurrent(draft.scope))return;draft.saving=true;
+  const current=()=>photoScopeCurrent(draft.scope)&&photoContextDraft===draft;
+  try{
+    const result=await photoRequestWithTimeout(db.rpc('set_trip_photo_context',{p_trip_id:draft.scope.tripId,p_document_id:draft.id,p_expected_updated_at:draft.version,p_local_date:draft.context.local_date,p_activity_id:draft.context.activity_id,p_itinerary_item_id:draft.context.itinerary_item_id}));
+    if(!current())return;if(result.error)throw result.error;
+    photoContextDraft=null;renderPhotoContextEditor();await loadGenericPhotos();
+  }catch(error){if(current())$('photoContextMessage').textContent=error.code==='40001'?'Un altre participant ha canviat el context. Cancel·la i reobre’l per veure la versió actual.':error.message||'No s’ha pogut desar.'}
+  finally{if(current())draft.saving=false}
+}
+async function deleteGenericPhoto(id){
+  const scope=photoScope(),row=photoRows.find(row=>row.id===id);if(!row||!photoScopeCurrent(scope)||!confirm(`Eliminar «${row.title}»?`))return;
+  try{
+    // Delete authoritative row first (metadata cascades); never keep a row whose object we intentionally removed.
+    const result=await db.from('travel_documents').delete().eq('id',id).eq('trip_id',scope.tripId);if(!photoScopeCurrent(scope))return;if(result.error)throw result.error;
+    const cleanup=await db.storage.from(DOC_BUCKET).remove([row.file_path]);if(!photoScopeCurrent(scope))return;
+    await loadGenericPhotos();if(!photoScopeCurrent(scope))return;
+    $('photoQueueMessage').textContent=cleanup.error?'Foto eliminada de l’àlbum; no s’ha pogut netejar el fitxer de Storage.':'Foto eliminada.';
+  }catch(error){if(photoScopeCurrent(scope))$('photoQueueMessage').textContent=error.message||'No s’ha pogut eliminar.'}
+}
+$('photoFilesV2').onchange=e=>{selectPhotoFiles([...e.target.files]);e.target.value=''};
+$('photoQueueUpload').onclick=()=>runPhotoQueue();
+$('photoQueueClear').onclick=()=>{if(photoQueueRunning)return;if(photoQueue.some(job=>job.status!=='uploaded')&&!confirm('Tancar el lot? Les fotos no completades s’hauran de tornar a seleccionar. Una resposta perduda podria haver desat una foto: revisa l’àlbum abans de tornar-la a pujar.'))return;photoQueue.forEach(job=>{if(job.preview)URL.revokeObjectURL(job.preview)});photoQueue=[];$('photoQueueMessage').textContent='';renderPhotoQueue()};
+// PHOTO_V2_END
 let photoRows=[];
 let pendingPhotoRows=[];
 let photoObjectUrls=[];
@@ -4174,6 +4365,7 @@ function clearPhotoObjectUrls(){photoObjectUrls.forEach(url=>URL.revokeObjectURL
 function photoDate(value){if(!value)return '';return new Date(value).toLocaleDateString('ca-ES',{day:'numeric',month:'short',year:'numeric'})}
 async function loadPhotos(silent=false){
   if(!trip)return;
+  preparePhotoV2();if(!isLondonTrip())return loadGenericPhotos(silent);
   const tripId=trip.id,generation=tripLoadGeneration;
   const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',tripId).eq('category','Foto').order('created_at',{ascending:false});
   if(!tripRequestIsCurrent(tripId,generation))return;
@@ -4185,6 +4377,7 @@ async function loadPhotos(silent=false){
   await renderPhotos(photoRows,tripId,generation);
 }
 async function renderPhotos(rows=photoRows,tripId=trip?.id,generation=tripLoadGeneration){
+  if(!isLondonTrip())return renderGenericPhotos();
   const list=$('photosList'),empty=$('photosEmpty'),count=$('photoCount'),label=$('photoCountLabel');if(!list||!empty)return;
   if(count)count.textContent=rows.length;if(label)label.textContent=`${rows.length} ${rows.length===1?'foto':'fotos'}`;
   if(!isLondonTrip()&&$('genericPhotosModuleStatus'))$('genericPhotosModuleStatus').textContent=`${rows.length} ${rows.length===1?'foto':'fotos'}`;
@@ -4209,6 +4402,7 @@ $('photoFile').onchange=()=>{
 };
 $('photoForm').onsubmit=async e=>{
   e.preventDefault();if(!trip||!session)return;
+  if(!isLondonTrip())return;
 
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   const files=[...$('photoFile').files];if(!files.length)return;
@@ -4402,7 +4596,9 @@ function refreshTravelDocumentsForRealtime(payload,tripId,generation){
 function subscribeDocuments(){
   if(!trip)return;if(documentChannel)db.removeChannel(documentChannel);
   const subscribedTripId=trip.id,subscribedGeneration=tripLoadGeneration;
-  documentChannel=db.channel('documents-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'travel_documents',filter:`trip_id=eq.${trip.id}`},payload=>refreshTravelDocumentsForRealtime(payload,subscribedTripId,subscribedGeneration)).subscribe(status=>{if(status==='SUBSCRIBED'&&tripRequestIsCurrent(subscribedTripId,subscribedGeneration)){loadDocuments(true);loadPhotos(true)}});
+  documentChannel=db.channel('documents-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'travel_documents',filter:`trip_id=eq.${trip.id}`},payload=>refreshTravelDocumentsForRealtime(payload,subscribedTripId,subscribedGeneration));
+  if(!isLondonTrip()){const scope=photoScope();documentChannel.on('postgres_changes',{event:'*',schema:'public',table:'trip_photo_metadata',filter:`trip_id=eq.${trip.id}`},()=>{if(photoScopeCurrent(scope))loadGenericPhotos(true)})}
+  documentChannel.subscribe(status=>{if(status==='SUBSCRIBED'&&tripRequestIsCurrent(subscribedTripId,subscribedGeneration)){loadDocuments(true);loadPhotos(true)}});
 }
 $('documentForm').onsubmit=async e=>{
   e.preventDefault();if(!trip||!session)return;
