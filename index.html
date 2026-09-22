@@ -4195,6 +4195,36 @@ function photoScopeCurrent(scope){return !!scope?.tripId&&!!scope.userId&&sessio
 function photoFileError(file){return !['image/jpeg','image/png','image/webp'].includes(file.type)?'Format no compatible. Tria JPEG, PNG o WebP; converteix HEIC/HEIF abans de seleccionar-lo.':!file.size?'El fitxer és buit.':file.size>15*1024*1024?'La foto supera 15 MB.':''}
 function photoStablePath(scope,id,type){return `${scope.tripId}/photos/${scope.userId}/${id}.${{'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[type]||'invalid'}`}
 function photoContextValue(value={}){return {local_date:value.local_date||null,activity_id:value.activity_id||null,itinerary_item_id:value.itinerary_item_id||null}}
+function photoContextsEqual(a,b){return JSON.stringify(photoContextValue(a))===JSON.stringify(photoContextValue(b))}
+function pendingPhotoContextJobs(){return photoQueue.filter(job=>job.status==='pending'&&!job.finalizationContext)}
+function renderPhotoBatchAction(){
+  const box=$('photoBatchActions');if(!box)return;
+  const pending=pendingPhotoContextJobs(),different=pending.some(job=>!photoContextsEqual(job.context,photoBatchContext));
+  box.innerHTML=different?`<button type="button" data-apply-photo-context ${photoQueueRunning?'disabled':''}>Aplicar a totes les fotos pendents</button><p>Les fotos personalitzades individualment es conserven. No afecta fotos pujades ni reintents.</p>`:'';
+  const button=box.querySelector('[data-apply-photo-context]'),scope=photoScope();if(button)button.onclick=()=>{if(photoScopeCurrent(scope))applyPhotoBatchContext()};
+}
+function applyPhotoBatchContext(){
+  if(!photoScopeCurrent(photoScope())||photoQueueRunning)return;
+  let applied=0,preserved=0;
+  pendingPhotoContextJobs().forEach(job=>{if(job.contextCustomized){preserved++;return}job.context=photoContextValue(photoBatchContext);applied++});
+  renderPhotoQueue();$('photoQueueMessage').textContent=`Context aplicat a ${applied} fotos pendents. ${preserved} fotos amb context personalitzat conservades.`;
+}
+function savedPhotoContextHtml(job){
+  const metadata=photoMetadataUnavailable?null:photoMetadata.find(row=>row.document_id===job.id);
+  return `<p>${esc(metadata?photoContextLabel(metadata):'Context desat pendent de verificar; refresca Fotos si no apareix.')}</p><button type="button" data-correct-photo="${esc(job.id)}" ${!metadata||!photoRows.some(row=>row.id===job.id)?'disabled':''}>Edita context de la foto desada</button>`;
+}
+function refreshSavedPhotoContexts(){
+  if(!photoScopeCurrent(photoScope()))return;const scope=photoScope();
+  let recovered=false;
+  if(!photoMetadataUnavailable)photoQueue.forEach(job=>{
+    if(job.status==='error'&&job.finalizationContext&&photoRows.some(row=>row.id===job.id)&&photoMetadata.some(row=>row.document_id===job.id&&row.upload_batch_id===job.batchId&&row.selection_index===job.index)){
+      job.status='uploaded';job.error='';recovered=true;
+    }
+  });
+  if(recovered){renderPhotoQueue();return}
+  $('photoQueueList').querySelectorAll('[data-saved-photo-context]').forEach(box=>{const job=photoQueue.find(job=>job.id===box.dataset.savedPhotoContext);if(job)box.innerHTML=savedPhotoContextHtml(job)});
+  $('photoQueueList').querySelectorAll('[data-correct-photo]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))openPhotoContextEditor(button.dataset.correctPhoto)});
+}
 function orderedGenericPhotos(rows,metadata){
   const byId=new Map(metadata.map(row=>[row.document_id,row])),batchTimes=new Map();
   rows.forEach(row=>{const batch=byId.get(row.id)?.upload_batch_id;if(batch)batchTimes.set(batch,Math.max(batchTimes.get(batch)||0,Date.parse(row.created_at)||0))});
@@ -4243,9 +4273,10 @@ function preparePhotoV2(){
 }
 function renderPhotoQueue(){
   if(!trip||isLondonTrip())return;
-  const batch=$('photoBatchContext');batch.innerHTML='<p>Context proposat per a les properes fotos. Revisa’l: no s’infereix per hora ni ubicació.</p>'+photoContextFields(photoBatchContext,'batch');bindPhotoContext(batch,photoBatchContext);
-  $('photoQueueList').innerHTML=photoQueue.map(job=>`<article class="photo-queue-item" data-photo-job="${esc(job.id)}">${job.preview?`<img src="${esc(job.preview)}" loading="lazy" decoding="async" alt="Previsualització de ${esc(job.file.name)}">`:''}<div><strong>${esc(job.file.name)}</strong><p role="status">${esc({pending:'Pendent',uploading:'Pujant…',uploaded:'Pujada',error:'Error'}[job.status])}${job.error?` · ${esc(job.error)}`:''}</p>${job.status!=='uploaded'?`<label>Títol<input data-photo-title maxlength="160" value="${esc(job.title)}" ${job.status==='uploading'?'disabled':''}></label><fieldset ${job.status==='uploading'?'disabled':''}>${photoContextFields(job.context,job.id)}</fieldset>`:`<p>${esc(photoContextLabel(job.metadata))}</p>`}${job.status==='error'&&!job.invalid?'<button type="button" data-photo-retry>Reintenta aquesta foto</button>':''}</div></article>`).join('');
-  $('photoQueueList').querySelectorAll('[data-photo-job]').forEach(card=>{const job=photoQueue.find(job=>job.id===card.dataset.photoJob);if(job.status!=='uploaded'){bindPhotoContext(card,job.context);card.querySelector('[data-photo-title]').oninput=e=>job.title=e.target.value}const retry=card.querySelector('[data-photo-retry]');if(retry){retry.disabled=photoQueueRunning;retry.onclick=()=>runPhotoQueue(job.id)}});
+  const batch=$('photoBatchContext');batch.innerHTML='<p>Context proposat per a les properes fotos. Per actualitzar les ja seleccionades, aplica’l explícitament als pendents.</p>'+photoContextFields(photoBatchContext,'batch')+'<div id="photoBatchActions"></div>';bindPhotoContext(batch,photoBatchContext,renderPhotoBatchAction);renderPhotoBatchAction();
+  $('photoQueueList').innerHTML=photoQueue.map(job=>`<article class="photo-queue-item" data-photo-job="${esc(job.id)}">${job.preview?`<img src="${esc(job.preview)}" loading="lazy" decoding="async" alt="Previsualització de ${esc(job.file.name)}">`:''}<div><strong>${esc(job.file.name)}</strong><p role="status">${esc({pending:'Pendent',uploading:'Pujant…',uploaded:'Pujada',error:'Error'}[job.status])}${job.error?` · ${esc(job.error)}`:''}</p>${job.status!=='uploaded'?`<label>Títol<input data-photo-title maxlength="160" value="${esc(job.title)}" ${job.status==='uploading'?'disabled':''}></label><fieldset ${job.status==='uploading'||job.finalizationContext?'disabled':''}>${photoContextFields(job.finalizationContext||job.context,job.id)}</fieldset><small data-photo-personalized>${job.contextCustomized?'Context personalitzat: no es reemplaçarà en aplicar el context superior.':''}</small>${job.finalizationContext?'<p>La finalització pot haver-se desat. El reintent recupera el resultat amb el mateix context; després podràs corregir-lo amb «Edita context».</p>':''}`:`<div data-saved-photo-context="${esc(job.id)}">${savedPhotoContextHtml(job)}</div>`}${job.status==='error'&&!job.invalid?'<button type="button" data-photo-retry>Reintenta la pujada / verifica el resultat</button>':''}</div></article>`).join('');
+  $('photoQueueList').querySelectorAll('[data-photo-job]').forEach(card=>{const job=photoQueue.find(job=>job.id===card.dataset.photoJob);if(job.status!=='uploaded'){if(!job.finalizationContext)bindPhotoContext(card,job.context,()=>{job.contextCustomized=true;card.querySelector('[data-photo-personalized]').textContent='Context personalitzat: no es reemplaçarà en aplicar el context superior.';renderPhotoBatchAction()});card.querySelector('[data-photo-title]').oninput=e=>job.title=e.target.value}const retry=card.querySelector('[data-photo-retry]');if(retry){retry.disabled=photoQueueRunning;const scope=photoScope();retry.onclick=()=>{if(photoScopeCurrent(scope))runPhotoQueue(job.id)}}});
+  refreshSavedPhotoContexts();
   $('photoQueueUpload').disabled=photoQueueRunning||!photoQueue.some(job=>job.status==='pending');$('photoQueueClear').disabled=photoQueueRunning;$('photoFilesV2').disabled=photoQueueRunning;
 }
 function selectPhotoFiles(files){
@@ -4274,8 +4305,14 @@ async function executePhotoJob(job,io,current){
       if(result.error&&!['409','Duplicate'].includes(String(result.error.statusCode||result.error.code)))throw result.error;
       job.uploaded=true;
     }
-    const result=await photoRequestWithTimeout(io.finalize(job));if(!current())return;if(result.error)throw result.error;
-    job.status='uploaded';job.metadata=result.data.metadata;job.error='';
+    job.finalizationContext??=photoContextValue(job.context);
+    const result=await photoRequestWithTimeout(io.finalize(job));if(!current())return;
+    if(result.error){
+      // Explicit transaction rejection is safe to correct; network/timeout is not.
+      if(['23503','23514','22023','42501','P0002'].includes(result.error.code))job.finalizationContext=null;
+      throw result.error;
+    }
+    job.status='uploaded';job.error='';
   }catch(error){if(current()){job.status='error';job.error=error?.message||'No s’ha pogut completar. Reintenta aquesta foto.'}}
   finally{if(current())io.changed()}
 }
@@ -4293,7 +4330,7 @@ async function runPhotoQueue(onlyId=null){
     const jobs=photoQueue.filter(job=>onlyId?job.id===onlyId&&job.status==='error'&&!job.invalid:job.status==='pending');
     for(const job of jobs){
       if(!current())return;
-      await executePhotoJob(job,{changed:renderPhotoQueue,upload:job=>uploadPhotoV2Object(job,current),finalize:job=>db.rpc('finalize_trip_photo',{p_trip_id:scope.tripId,p_document_id:job.id,p_title:job.title.trim()||job.file.name.slice(0,160),p_file_name:job.file.name,p_mime_type:job.file.type,p_upload_batch_id:job.batchId,p_selection_index:job.index,p_local_date:job.context.local_date,p_activity_id:job.context.activity_id,p_itinerary_item_id:job.context.itinerary_item_id})},current);
+      await executePhotoJob(job,{changed:renderPhotoQueue,upload:job=>uploadPhotoV2Object(job,current),finalize:job=>db.rpc('finalize_trip_photo',{p_trip_id:scope.tripId,p_document_id:job.id,p_title:job.title.trim()||job.file.name.slice(0,160),p_file_name:job.file.name,p_mime_type:job.file.type,p_upload_batch_id:job.batchId,p_selection_index:job.index,p_local_date:job.finalizationContext.local_date,p_activity_id:job.finalizationContext.activity_id,p_itinerary_item_id:job.finalizationContext.itinerary_item_id})},current);
       if(!current())return;
     }
     await photoRequestWithTimeout(loadGenericPhotos());if(!current())return;
@@ -4311,6 +4348,7 @@ async function loadGenericPhotos(silent=false){
     if(metadata.error)$('photoQueueMessage').textContent='No s’ha pogut carregar el context de les fotos. Reobre Fotos abans d’editar-lo.';
     // Never let a failed metadata read masquerade as a legacy NULL CAS baseline.
     photoMetadataUnavailable=!!metadata.error;
+    refreshSavedPhotoContexts();
     if(photoContextDraft&&!photoRows.some(row=>row.id===photoContextDraft.id)){photoContextDraft=null;renderPhotoContextEditor()}
     await renderGenericPhotos(scope);
   }catch(error){if(photoScopeCurrent(scope)&&sequence===photoV2LoadSequence&&!silent)$('photoQueueMessage').textContent=error.message||'No s’han pogut carregar les fotos.'}

@@ -5,12 +5,12 @@ import {readFileSync} from 'node:fs';
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const code=html.split('// PHOTO_V2_START')[1].split('// PHOTO_V2_END')[0].replace(/^ —[^\n]*\n/,'');
 function harness(){
- const nodes=new Map();const element=id=>{if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',value:'',classList:{add(){},toggle(){}},querySelectorAll:()=>[],querySelector:()=>({})});return nodes.get(id)};
+ const nodes=new Map();const element=id=>{if(!nodes.has(id)){const children=new Map();nodes.set(id,{innerHTML:'',textContent:'',value:'',classList:{add(){},toggle(){}},querySelectorAll:()=>[],querySelector:selector=>{if(!children.has(selector))children.set(selector,{});return children.get(selector)}})}return nodes.get(id)};
  let n=0;const s=vm.createContext({console,setTimeout,clearTimeout,URL:{createObjectURL:()=>`blob:${++n}`,revokeObjectURL:()=>{}},crypto:{randomUUID:()=>`id-${++n}`},$:element,trip:{id:'a'},session:{user:{id:'u'}},tripLoadGeneration:1,isLondonTrip:()=>false,activityRows:[],manualItineraryRows:[],esc:v=>String(v??''),setAppView:view=>s.view=view});
  s.tripRequestIsCurrent=(id,generation)=>s.trip?.id===id&&s.tripLoadGeneration===generation;
  s.DOC_BUCKET='trip-documents';
- vm.runInContext(code,s);s.renderPhotoQueue=()=>{};
- return {s,nodes,get:expression=>vm.runInContext(expression,s)};
+ vm.runInContext(code,s);const renderQueue=s.renderPhotoQueue;s.renderPhotoQueue=()=>{};
+ return {s,nodes,element,renderQueue,get:expression=>vm.runInContext(expression,s)};
 }
 const job=()=>({id:'photo-id',path:'a/photos/u/photo-id.jpg',status:'pending',uploaded:false,context:{},file:{name:'a.jpg'},error:''});
 const success={data:{metadata:{document_id:'photo-id',updated_at:'version'}}};
@@ -62,6 +62,79 @@ test('context preselection remains editable, independent per photo, reset clears
  const {s,get}=harness();vm.runInContext("photoBatchContext={local_date:'2026-09-22',activity_id:'source',itinerary_item_id:null}",s);
  s.selectPhotoFiles([{name:'one',type:'image/png',size:1}]);vm.runInContext("photoBatchContext.activity_id='other'",s);assert.equal(get('photoQueue[0].context.activity_id'),'source');
  s.resetPhotoV2();assert.equal(get('photoQueue.length'),0);assert.equal(get('photoContextDraft'),null);assert.equal(get('photoBatchContext.activity_id'),null);
+});
+const selectedFile={name:'test.jpg',type:'image/jpeg',size:10,lastModified:1};
+function changeBatch(h,date,source){
+ const box=h.element('photoBatchContext');box.querySelector('[data-photo-date]').onchange({target:{value:date}});box.querySelector('[data-photo-source]').onchange({target:{value:source}});
+}
+test('files selected before context: visible explicit action applies it and redraws individual fields',()=>{
+ const h=harness();h.s.renderPhotoQueue=h.renderQueue;h.s.selectPhotoFiles([selectedFile]);
+ changeBatch(h,'2026-09-13','activity:one');assert.equal(h.get('photoQueue[0].context.local_date'),null);
+ assert.match(h.element('photoBatchActions').innerHTML,/Aplicar a totes les fotos pendents/);
+ h.element('photoBatchActions').querySelector('[data-apply-photo-context]').onclick();
+ assert.equal(h.get('photoQueue[0].context.local_date'),'2026-09-13');assert.equal(h.get('photoQueue[0].context.activity_id'),'one');
+ assert.match(h.element('photoQueueList').innerHTML,/value="2026-09-13"/);assert.match(h.element('photoQueueList').innerHTML,/value="activity:one" selected/);
+ assert.match(h.element('photoQueueMessage').textContent,/1 fotos pendents/);
+});
+test('context chosen before files is copied, including planning, without automatic later changes',()=>{
+ const h=harness();h.s.renderPhotoQueue=h.renderQueue;h.renderQueue();changeBatch(h,'2026-09-14','manual:plan');h.s.selectPhotoFiles([selectedFile]);
+ assert.equal(h.get('photoQueue[0].context.itinerary_item_id'),'plan');assert.equal(h.get('photoQueue[0].context.activity_id'),null);
+ changeBatch(h,'2026-09-15','');assert.equal(h.get('photoQueue[0].context.local_date'),'2026-09-14');
+});
+test('individual selector marks customization; batch action preserves it and reports skipped photos',()=>{
+ const h=harness();h.s.selectPhotoFiles([selectedFile,{...selectedFile,name:'two.jpg'}]);
+ const card=h.element('individual');card.dataset={photoJob:h.get('photoQueue[0].id')};h.element('photoQueueList').querySelectorAll=selector=>selector==='[data-photo-job]'?[card]:[];h.s.renderPhotoQueue=h.renderQueue;h.renderQueue();
+ card.querySelector('[data-photo-source]').onchange({target:{value:'manual:personal'}});
+ assert.equal(h.get('photoQueue[0].contextCustomized'),true);assert.match(card.querySelector('[data-photo-personalized]').textContent,/personalitzat/);
+ changeBatch(h,'2026-09-13','activity:batch');h.s.applyPhotoBatchContext();
+ assert.equal(h.get('photoQueue[0].context.itinerary_item_id'),'personal');assert.equal(h.get('photoQueue[0].context.local_date'),null);assert.equal(h.get('photoQueue[1].context.activity_id'),'batch');
+ assert.match(h.element('photoQueueList').innerHTML,/value="manual:personal" selected/);assert.match(h.element('photoQueueMessage').textContent,/1 fotos amb context personalitzat conservades/);
+});
+test('batch action cannot touch errors, uploaded photos or in-flight requests; stale button cannot cross trips',()=>{
+ const h=harness();h.s.renderPhotoQueue=h.renderQueue;h.s.selectPhotoFiles([selectedFile]);changeBatch(h,'2026-09-13','activity:one');
+ const click=h.element('photoBatchActions').querySelector('[data-apply-photo-context]').onclick;h.s.trip.id='b';click();assert.equal(h.get('photoQueue[0].context.activity_id'),null);h.s.trip.id='a';
+ for(const status of ['error','uploaded','uploading']){vm.runInContext(`photoQueue[0].status='${status}'`,h.s);h.s.applyPhotoBatchContext();assert.equal(h.get('photoQueue[0].context.activity_id'),null)}
+ vm.runInContext("photoQueue[0].status='pending';photoQueueRunning=true",h.s);h.s.applyPhotoBatchContext();assert.equal(h.get('photoQueue[0].context.activity_id'),null);
+});
+function savedContextHarness(){
+ const h=harness();vm.runInContext("let photoRows=[];photoQueue=[{id:'photo',status:'uploaded',file:{name:'photo.jpg'},metadata:{local_date:null},context:{}}]",h.s);
+ const box=h.element('saved-context');box.dataset={savedPhotoContext:'photo'};h.element('photoQueueList').querySelectorAll=selector=>selector==='[data-saved-photo-context]'?[box]:[];
+ h.s.photoDate=String;h.s.activityRows=[{trip_id:'a',id:'source',title:'Activitat actual'}];h.s.manualItineraryRows=[{trip_id:'a',id:'plan',title:'Planning actual'}];
+ const state={row:{document_id:'photo',trip_id:'a',local_date:'2026-09-13',activity_id:'source',itinerary_item_id:null,updated_at:'v1'}};
+ h.s.db={from:table=>{const result=Promise.resolve({data:table==='travel_documents'?[{id:'photo',title:'photo',file_path:'path'}]:[{...state.row}]});const q={select:()=>q,eq:()=>q,order:()=>result,then:(...args)=>result.then(...args)};return q},storage:{from:()=>({createSignedUrl:async()=>({data:{signedUrl:'signed'}})})}};
+ return {...h,state,box};
+}
+test('successful CAS correction refreshes both queue and gallery from backend, not stale job.metadata',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();assert.match(h.box.innerHTML,/Activitat actual/);assert.match(h.element('photosList').innerHTML,/Activitat actual/);
+ vm.runInContext("photoContextDraft={id:'photo',scope:photoScope(),version:'v1',saving:false,context:{local_date:'2026-09-14',activity_id:null,itinerary_item_id:'plan'}}",h.s);
+ h.s.db.rpc=async(name,payload)=>{assert.equal(name,'set_trip_photo_context');assert.equal(payload.p_expected_updated_at,'v1');h.state.row={...h.state.row,local_date:payload.p_local_date,activity_id:null,itinerary_item_id:'plan',updated_at:'v2'};return {data:h.state.row}};
+ await h.s.savePhotoContext({preventDefault(){}});assert.equal(h.get('photoContextDraft'),null);
+ for(const rendered of [h.box.innerHTML,h.element('photosList').innerHTML]){assert.match(rendered,/2026-09-14 · Planning actual/);assert.doesNotMatch(rendered,/Activitat actual/)}
+});
+test('Realtime refresh updates saved representations but preserves a stale open editor and its CAS baseline',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();vm.runInContext("photoContextDraft={id:'photo',scope:photoScope(),version:'v1',saving:false,context:{local_date:'2026-09-12',activity_id:'source',itinerary_item_id:null}}",h.s);
+ h.state.row={...h.state.row,local_date:'2026-09-16',activity_id:null,itinerary_item_id:'plan',updated_at:'v2'};
+ await h.s.loadGenericPhotos(true);assert.match(h.box.innerHTML,/2026-09-16 · Planning actual/);assert.match(h.element('photosList').innerHTML,/2026-09-16 · Planning actual/);
+ assert.equal(h.get('photoContextDraft.version'),'v1');assert.equal(h.get('photoContextDraft.context.local_date'),'2026-09-12');
+});
+test('ambiguous finalization retry keeps original payload/identity; does not become a context update',async()=>{
+ const h=harness(),calls=[];h.s.uploadPhotoV2Object=async()=>({});h.s.loadGenericPhotos=async()=>{};
+ h.s.db={rpc:async(name,payload)=>{calls.push({name,...payload});return calls.length===1?{error:{message:'lost response'}}:success}};
+ h.s.selectPhotoFiles([selectedFile]);vm.runInContext("photoQueue[0].context.local_date='2026-09-13'",h.s);await h.s.runPhotoQueue();
+ assert.equal(h.get('photoQueue[0].status'),'error');assert.equal(h.get('photoQueue[0].finalizationContext.local_date'),'2026-09-13');
+ // Even a detached control cannot alter the retry snapshot after an uncertain commit.
+ vm.runInContext("photoQueue[0].context.local_date='2026-09-20'",h.s);h.renderQueue();assert.match(h.element('photoQueueList').innerHTML,/<fieldset disabled>/);assert.match(h.element('photoQueueList').innerHTML,/mateix context/);
+ await h.s.runPhotoQueue(h.get('photoQueue[0].id'));assert.deepEqual(calls[0],calls[1]);assert.equal(h.get('photoQueue[0].status'),'uploaded');assert.equal(h.get('photoQueue[0].metadata'),undefined);
+});
+test('explicit FK rejection unlocks correction without changing retry object identity',async()=>{
+ const h=harness(),j=job();j.context={activity_id:'deleted'};j.uploaded=true;
+ await h.s.executePhotoJob(j,{changed(){},finalize:async()=>({error:{code:'23503',message:'source deleted'}})},()=>true);
+ assert.equal(j.finalizationContext,null);j.context={activity_id:'replacement'};
+ await h.s.executePhotoJob(j,{changed(){},finalize:async value=>{assert.equal(value.finalizationContext.activity_id,'replacement');return success}},()=>true);assert.equal(j.status,'uploaded');assert.equal(j.path,'a/photos/u/photo-id.jpg');
+});
+test('backend confirmation of an ambiguous upload promotes it to correction flow, without reupload',async()=>{
+ const h=savedContextHarness();vm.runInContext("photoQueue[0].status='error';photoQueue[0].finalizationContext={};photoQueue[0].batchId='batch';photoQueue[0].index=0",h.s);h.state.row.upload_batch_id='batch';h.state.row.selection_index=0;
+ h.s.renderPhotoQueue=h.renderQueue;await h.s.loadGenericPhotos();assert.equal(h.get('photoQueue[0].status'),'uploaded');assert.match(h.element('photoQueueList').innerHTML,/Edita context de la foto desada/);assert.doesNotMatch(h.element('photoQueueList').innerHTML,/data-photo-retry/);
 });
 test('gallery preserves selection order inside batches, newest batches first; legacy rows remain visible',()=>{
  const {s}=harness();const rows=[{id:'first',created_at:'2026-09-22T10:00:00Z'},{id:'last',created_at:'2026-09-22T10:01:00Z'},{id:'old',created_at:'2026-09-21T00:00:00Z'}];
