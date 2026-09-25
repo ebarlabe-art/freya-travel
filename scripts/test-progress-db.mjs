@@ -61,6 +61,36 @@ async function concurrentPhotos(){
   if(count!=='t')throw new Error('Photo concurrent retry duplicated/overwrote data');
   console.log('PASS photo independent concurrent sessions: retry idempotent, member stale CAS rejected');
 }
+async function concurrentBriefs(){
+  const user='30000000-0000-4000-8000-000000000001',brief='30000000-0000-4000-8000-000000000002';
+  sql(`insert into auth.users(id) values ('${user}');`);
+  const call=(operation,revision,patch='{}')=>`select public.apply_trip_brief_patch_v1('${brief}','${operation}',${revision},'${patch}'::jsonb);`;
+  function client(command,onOutput=()=>{}){
+    const child=spawn('docker',['exec','-i',container,'psql','-X','-v','ON_ERROR_STOP=1','-v','VERBOSITY=verbose','-U','postgres','-d',database]);let output='';
+    child.stdout.on('data',data=>{output+=data;onOutput(output)});child.stderr.on('data',data=>{output+=data});child.stdin.end(command);
+    return new Promise((resolve,reject)=>{child.on('error',reject);child.on('close',code=>resolve({code,output}))});
+  }
+  async function race(firstCommand,secondCommand,conflict){
+    let second;
+    const prefix=`begin; set local role authenticated; select set_config('request.jwt.claim.sub','${user}',true);`;
+    const first=await client(`${prefix} ${firstCommand} select 'BRIEF_LOCK_HELD'; select pg_sleep(0.4); commit;`,output=>{
+      if(!second&&output.includes('BRIEF_LOCK_HELD'))second=client(`${prefix} ${secondCommand} commit;`);
+    });
+    if(first.code!==0||!second)throw new Error(`Brief first client failed: ${first.output}`);
+    const result=await second;
+    if(conflict?result.code===0||!result.output.includes('40001'):result.code!==0)throw new Error(`Brief second client failed: ${result.output}`);
+  }
+  const create=call('30000000-0000-4000-8000-000000000003',0);
+  await race(create,create,false);
+  sql(`select set_config('request.jwt.claim.sub','${user}',false); ${[1,2,3,4].map(v=>call(`30000000-0000-4000-8000-00000000001${v}`,v)).join(' ')}`);
+  const patch='{"decisions":{"origin":{"field":"origin","scope":"global","origin":"explicit_user","knowledge":"known","strength":"hard","value":{"places":["Barcelona"]}}}}';
+  await race(call('30000000-0000-4000-8000-000000000020',5,patch),call('30000000-0000-4000-8000-000000000021',5),true);
+  const update=call('30000000-0000-4000-8000-000000000022',6);
+  await race(update,update,false);
+  const state=docker(['psql','-X','-At','-U','postgres','-d',database,'-c',`select count(*)=1 and bool_and(revision=7 and document#>>'{decisions,origin,strength}'='hard') from public.trip_briefs where id='${brief}'`]).trim();
+  if(state!=='t')throw new Error('Concurrent brief mutation duplicated or overwrote data');
+  console.log('PASS brief independent sessions: duplicate create/update idempotent; A revision 5 rejected after B revision 6; hard preserved');
+}
 let created=false;
 try{
   sql(`create database ${database};`,'postgres');created=true;
@@ -90,6 +120,7 @@ try{
   if(failures.length)throw new Error(`${failures.length} SQL suites failed: ${failures.join(', ')}`);
   await concurrentCommands();
   await concurrentPhotos();
+  await concurrentBriefs();
 }finally{
   if(created){sql(`drop database ${database};`,'postgres');console.log(`Removed disposable database ${database}`)}
 }
