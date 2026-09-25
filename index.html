@@ -289,6 +289,7 @@
     .photo-queue-item{display:grid;grid-template-columns:88px minmax(0,1fr);gap:12px;border-top:1px solid #e5d9ef;padding:16px 0;overflow-wrap:anywhere}
     .photo-queue-item>img{width:88px;height:88px;object-fit:cover;border-radius:12px}.photo-queue-item fieldset{border:0;margin:0;padding:0;min-width:0}
     #photoUploadV2 button,#photoContextEditor button,.photo-context-edit{min-height:44px;padding:10px 14px;border-radius:12px}.photo-context-edit{margin:0 12px 12px;background:#f3eaf8;color:#542870;border:1px solid #d7c8e7}
+    .photo-summary{min-width:0;max-width:100%;text-align:left}.photo-summary .photo-summary-line{color:#3d294c;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;margin:0;font-size:14px}.photo-summary .photo-summary-caption{margin-top:4px;color:#746a7b;font-weight:400}.photo-summary .photo-summary-empty{color:#746a7b;font-weight:400}
     #photoContextEditor{padding:16px;border:1px solid #d7c8e7;border-radius:18px;margin-bottom:18px;background:#fff}#photoQueueMessage,#photoContextMessage{overflow-wrap:anywhere}
     @media(max-width:520px){.photo-context-fields{grid-template-columns:minmax(0,1fr)}.photo-queue-item{grid-template-columns:minmax(0,1fr)}.photo-queue-item>img{width:100%;height:180px}}
   </style>
@@ -2824,7 +2825,7 @@ function loadAgendaSource(type,loader,refresh){
     return result;
   })().finally(()=>{
     if(agendaRequests.get(key)===request)agendaRequests.delete(key);
-    if(itineraryRequestIsCurrent(tripId,generation,userId)){scheduleItineraryRebuild();renderTripHome()}
+    if(itineraryRequestIsCurrent(tripId,generation,userId)){scheduleItineraryRebuild();renderTripHome();if(typeof refreshPhotoSummaries==='function')refreshPhotoSummaries()}
   });
   return request.promise;
 }
@@ -4211,7 +4212,8 @@ function applyPhotoBatchContext(){
 }
 function savedPhotoContextHtml(job){
   const metadata=photoMetadataUnavailable?null:photoMetadata.find(row=>row.document_id===job.id);
-  return `<p>${esc(metadata?photoContextLabel(metadata):'Context desat pendent de verificar; refresca Fotos si no apareix.')}</p><button type="button" data-correct-photo="${esc(job.id)}" ${!metadata||!photoRows.some(row=>row.id===job.id)?'disabled':''}>Edita context de la foto desada</button>`;
+  const row=photoRows.find(row=>row.id===job.id);
+  return `<div class="photo-summary">${row?photoSummaryHtml(row):'<p>Foto desada pendent de verificar; refresca Fotos.</p>'}</div><button type="button" data-correct-photo="${esc(job.id)}" ${!metadata||!photoRows.some(row=>row.id===job.id)?'disabled':''}>Edita context de la foto desada</button>`;
 }
 function refreshSavedPhotoContexts(){
   if(!photoScopeCurrent(photoScope()))return;const scope=photoScope();
@@ -4251,9 +4253,23 @@ function bindPhotoContext(container,value,changed){
   container.querySelector('[data-photo-source]').onchange=e=>{const [type,id]=e.target.value.split(':');value.activity_id=type==='activity'?id:null;value.itinerary_item_id=type==='manual'?id:null;changed?.()};
 }
 function photoContextLabel(metadata){
-  if(!metadata)return photoMetadataUnavailable?'Context no disponible':'Sense context assignat';
+  if(photoMetadataUnavailable)return 'Context no disponible';
+  if(!metadata)return 'Sense context';
   const source=metadata.activity_id?activityRows.find(row=>row.id===metadata.activity_id&&row.trip_id===trip?.id):metadata.itinerary_item_id?manualItineraryRows.find(row=>row.id===metadata.itinerary_item_id&&row.trip_id===trip?.id):null;
-  return [metadata.local_date,source?.title||(metadata.activity_id||metadata.itinerary_item_id?'Font vinculada':'')].filter(Boolean).join(' · ')||'Sense context assignat';
+  const date=metadata.local_date?new Date(metadata.local_date+'T12:00:00Z'):null;
+  const day=date&&Number.isFinite(date.getTime())?date.toLocaleDateString('ca-ES',{day:'numeric',month:'short',timeZone:'UTC'}).replace(/ de /,' ').replace(/\./g,''):'';
+  const title=source?.title?.trim()||'',place=source?.location_name?.trim()||'';
+  const extra=place&&!title.toLocaleLowerCase('ca').includes(place.toLocaleLowerCase('ca'))?place:'';
+  return [day,title||(metadata.activity_id||metadata.itinerary_item_id?'Font vinculada':''),extra].filter(Boolean).join(' · ')||'Sense context';
+}
+function photoSummaryHtml(row){
+  const context=photoContextLabel(photoMetadata.find(metadata=>metadata.document_id===row.id)),caption=(row.title||'').trim();
+  return `<strong class="photo-summary-line ${context==='Sense context'?'photo-summary-empty':''}" title="${esc(context)}">${esc(context)}</strong>${caption?`<span class="photo-summary-line photo-summary-caption" title="${esc(caption)}">${esc(caption)}</span>`:''}`;
+}
+function refreshPhotoSummaries(){
+  if(!photoScopeCurrent(photoScope()))return;
+  $('photosList').querySelectorAll('[data-photo-summary]').forEach(box=>{const row=photoRows.find(row=>row.id===box.dataset.photoSummary);if(row)box.innerHTML=photoSummaryHtml(row)});
+  refreshSavedPhotoContexts();
 }
 function photoContextAction(item){return ['activity','manual'].includes(item.sourceType)?`<button type="button" data-add-context-photos="${esc(item.key)}">📷 Afegir fotos</button>`:''}
 function bindContextPhotoActions(container,items){
@@ -4348,7 +4364,7 @@ async function loadGenericPhotos(silent=false){
     if(metadata.error)$('photoQueueMessage').textContent='No s’ha pogut carregar el context de les fotos. Reobre Fotos abans d’editar-lo.';
     // Never let a failed metadata read masquerade as a legacy NULL CAS baseline.
     photoMetadataUnavailable=!!metadata.error;
-    refreshSavedPhotoContexts();
+    refreshPhotoSummaries();
     if(photoContextDraft&&!photoRows.some(row=>row.id===photoContextDraft.id)){photoContextDraft=null;renderPhotoContextEditor()}
     await renderGenericPhotos(scope);
   }catch(error){if(photoScopeCurrent(scope)&&sequence===photoV2LoadSequence&&!silent)$('photoQueueMessage').textContent=error.message||'No s’han pogut carregar les fotos.'}
@@ -4359,25 +4375,47 @@ async function renderGenericPhotos(scope=photoScope()){
   const rows=photoRows.slice(),signed=await Promise.all(rows.map(async row=>{try{const result=await db.storage.from(DOC_BUCKET).createSignedUrl(row.file_path,3600);return {...row,signedUrl:result.data?.signedUrl||''}}catch{return {...row,signedUrl:''}}}));
   if(!photoScopeCurrent(scope)||sequence!==photoV2RenderSequence)return;
   $('photoCountLabel').textContent=`${rows.length} fotos`;if($('genericPhotosModuleStatus'))$('genericPhotosModuleStatus').textContent=`${rows.length} fotos`;$('photosEmpty').classList.toggle('hidden',rows.length>0);
-  $('photosList').innerHTML=signed.map(row=>`<article class="photo-card" data-photo-id="${esc(row.id)}"><button class="photo-open" type="button" data-photo-open="${esc(row.id)}">${row.signedUrl?`<img src="${esc(row.signedUrl)}" alt="${esc(row.title)}" loading="lazy">`:'<p>Imatge temporalment no disponible</p>'}<div class="photo-info"><strong>${esc(row.title)}</strong><small>${esc(photoDate(row.created_at))} · pujada</small><p>${esc(photoContextLabel(photoMetadata.find(metadata=>metadata.document_id===row.id)))}</p></div></button><button type="button" class="photo-context-edit" data-edit-photo="${esc(row.id)}" ${photoMetadataUnavailable?'disabled':''}>Edita context</button><button class="photo-delete" type="button" data-photo-delete="${esc(row.id)}" aria-label="Eliminar foto">🗑</button></article>`).join('');
+  $('photosList').innerHTML=signed.map(row=>`<article class="photo-card" data-photo-id="${esc(row.id)}"><button class="photo-open" type="button" data-photo-open="${esc(row.id)}">${row.signedUrl?`<img src="${esc(row.signedUrl)}" alt="${esc(row.title)}" loading="lazy">`:'<p>Imatge temporalment no disponible</p>'}<div class="photo-info photo-summary" data-photo-summary="${esc(row.id)}">${photoSummaryHtml(row)}</div></button><button type="button" class="photo-context-edit" data-edit-photo="${esc(row.id)}" ${photoMetadataUnavailable?'disabled':''}>Edita context</button><button class="photo-delete" type="button" data-photo-delete="${esc(row.id)}" aria-label="Eliminar foto">🗑</button></article>`).join('');
   $('photosList').querySelectorAll('[data-photo-open]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))openPhoto(button.dataset.photoOpen,signed)});
   $('photosList').querySelectorAll('[data-edit-photo]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))openPhotoContextEditor(button.dataset.editPhoto)});
   $('photosList').querySelectorAll('[data-photo-delete]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))deleteGenericPhoto(button.dataset.photoDelete)});
 }
 function openPhotoContextEditor(id){
   if(!photoScopeCurrent(photoScope())||photoMetadataUnavailable||!photoRows.some(row=>row.id===id))return;
-  const metadata=photoMetadata.find(row=>row.document_id===id);photoContextDraft={id,scope:photoScope(),version:metadata?.updated_at||null,context:photoContextValue(metadata),saving:false};renderPhotoContextEditor();$('photoContextEditor').scrollIntoView({behavior:'smooth',block:'center'});
+  const metadata=photoMetadata.find(row=>row.document_id===id);photoContextDraft={id,scope:photoScope(),version:metadata?.updated_at||null,context:photoContextValue(metadata),title:photoRows.find(row=>row.id===id).title,originalTitle:photoRows.find(row=>row.id===id).title,saving:false,titleSaving:false};renderPhotoContextEditor();$('photoContextEditor').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function renderPhotoContextEditor(){
   const box=$('photoContextEditor'),draft=photoContextDraft;box.classList.toggle('hidden',!draft);if(!draft){box.innerHTML='';return}
-  box.innerHTML=`<form id="editPhotoContextForm"><h3>Context de la foto</h3>${photoContextFields(draft.context,'edit')}<p id="photoContextMessage" role="status"></p><div class="trip-home-actions"><button type="button" id="cancelPhotoContext">Cancel·la</button><button type="submit">Desa context</button></div></form>`;bindPhotoContext(box,draft.context);$('cancelPhotoContext').onclick=()=>{photoContextDraft=null;renderPhotoContextEditor()};$('editPhotoContextForm').onsubmit=savePhotoContext;
+  box.innerHTML=`<form id="editPhotoTitleForm"><label>Títol / comentari<input id="editPhotoTitle" maxlength="160" required value="${esc(draft.title)}"></label><button type="submit">Desa títol</button><p id="photoTitleMessage" role="status"></p></form><form id="editPhotoContextForm"><h3>Context de la foto</h3>${photoContextFields(draft.context,'edit')}<p id="photoContextMessage" role="status"></p><div class="trip-home-actions"><button type="button" id="cancelPhotoContext">Cancel·la</button><button type="submit">Desa context</button></div></form>`;bindPhotoContext(box,draft.context);$('editPhotoTitle').oninput=e=>draft.title=e.target.value;$('editPhotoTitleForm').onsubmit=savePhotoTitle;$('cancelPhotoContext').onclick=()=>{photoContextDraft=null;renderPhotoContextEditor()};$('editPhotoContextForm').onsubmit=savePhotoContext;
+}
+async function savePhotoTitle(event){
+  event.preventDefault();const draft=photoContextDraft;
+  if(!draft||draft.titleSaving||draft.saving||!photoScopeCurrent(draft.scope))return;
+  const title=draft.title.trim();if(!title||title.length>160)return;
+  draft.titleSaving=true;
+  const current=()=>photoScopeCurrent(draft.scope)&&photoContextDraft===draft;
+  try{
+    // Existing document UPDATE/RLS, guarded by the original title (no new backend contract).
+    const result=await photoRequestWithTimeout(db.from('travel_documents').update({title}).eq('trip_id',draft.scope.tripId).eq('id',draft.id).eq('category','Foto').eq('title',draft.originalTitle).select('id,title').maybeSingle());
+    if(!current())return;if(result.error)throw result.error;
+    if(!result.data)throw new Error('El títol ha canviat o la foto ja no existeix. Cancel·la i reobre per revisar-la.');
+    draft.originalTitle=result.data.title;
+    if(draft.title.trim()===result.data.title){draft.title=result.data.title;$('editPhotoTitle').value=draft.title}
+    const row=photoRows.find(row=>row.id===draft.id);if(row)row.title=result.data.title;
+    refreshPhotoSummaries();$('photoTitleMessage').textContent='Títol desat.';
+    await loadGenericPhotos(true);
+  }catch(error){if(current())$('photoTitleMessage').textContent=error.message||'No s’ha pogut desar el títol.'}
+  finally{if(current())draft.titleSaving=false}
 }
 async function savePhotoContext(event){
-  event.preventDefault();const draft=photoContextDraft;if(!draft||draft.saving||!photoScopeCurrent(draft.scope))return;draft.saving=true;
+  event.preventDefault();const draft=photoContextDraft;if(!draft||draft.saving||draft.titleSaving||!photoScopeCurrent(draft.scope))return;
+  if(draft.title!==undefined&&draft.title!==draft.originalTitle){$('photoContextMessage').textContent='Desa primer el títol modificat, o restaura’l, abans de desar el context.';return}
+  draft.saving=true;
   const current=()=>photoScopeCurrent(draft.scope)&&photoContextDraft===draft;
   try{
     const result=await photoRequestWithTimeout(db.rpc('set_trip_photo_context',{p_trip_id:draft.scope.tripId,p_document_id:draft.id,p_expected_updated_at:draft.version,p_local_date:draft.context.local_date,p_activity_id:draft.context.activity_id,p_itinerary_item_id:draft.context.itinerary_item_id}));
     if(!current())return;if(result.error)throw result.error;
+    if(result.data){photoMetadata=photoMetadata.filter(row=>row.document_id!==draft.id);photoMetadata.push(result.data);refreshPhotoSummaries()}
     photoContextDraft=null;renderPhotoContextEditor();await loadGenericPhotos();
   }catch(error){if(current())$('photoContextMessage').textContent=error.code==='40001'?'Un altre participant ha canviat el context. Cancel·la i reobre’l per veure la versió actual.':error.message||'No s’ha pogut desar.'}
   finally{if(current())draft.saving=false}

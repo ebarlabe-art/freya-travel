@@ -6,7 +6,7 @@ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const code=html.split('// PHOTO_V2_START')[1].split('// PHOTO_V2_END')[0].replace(/^ —[^\n]*\n/,'');
 function harness(){
  const nodes=new Map();const element=id=>{if(!nodes.has(id)){const children=new Map();nodes.set(id,{innerHTML:'',textContent:'',value:'',classList:{add(){},toggle(){}},querySelectorAll:()=>[],querySelector:selector=>{if(!children.has(selector))children.set(selector,{});return children.get(selector)}})}return nodes.get(id)};
- let n=0;const s=vm.createContext({console,setTimeout,clearTimeout,URL:{createObjectURL:()=>`blob:${++n}`,revokeObjectURL:()=>{}},crypto:{randomUUID:()=>`id-${++n}`},$:element,trip:{id:'a'},session:{user:{id:'u'}},tripLoadGeneration:1,isLondonTrip:()=>false,activityRows:[],manualItineraryRows:[],esc:v=>String(v??''),setAppView:view=>s.view=view});
+ let n=0;const s=vm.createContext({console,setTimeout,clearTimeout,URL:{createObjectURL:()=>`blob:${++n}`,revokeObjectURL:()=>{}},crypto:{randomUUID:()=>`id-${++n}`},$:element,trip:{id:'a'},session:{user:{id:'u'}},tripLoadGeneration:1,isLondonTrip:()=>false,activityRows:[],manualItineraryRows:[],photoRows:[],esc:v=>String(v??''),setAppView:view=>s.view=view});
  s.tripRequestIsCurrent=(id,generation)=>s.trip?.id===id&&s.tripLoadGeneration===generation;
  s.DOC_BUCKET='trip-documents';
  vm.runInContext(code,s);const renderQueue=s.renderPhotoQueue;s.renderPhotoQueue=()=>{};
@@ -100,8 +100,8 @@ function savedContextHarness(){
  const h=harness();vm.runInContext("let photoRows=[];photoQueue=[{id:'photo',status:'uploaded',file:{name:'photo.jpg'},metadata:{local_date:null},context:{}}]",h.s);
  const box=h.element('saved-context');box.dataset={savedPhotoContext:'photo'};h.element('photoQueueList').querySelectorAll=selector=>selector==='[data-saved-photo-context]'?[box]:[];
  h.s.photoDate=String;h.s.activityRows=[{trip_id:'a',id:'source',title:'Activitat actual'}];h.s.manualItineraryRows=[{trip_id:'a',id:'plan',title:'Planning actual'}];
- const state={row:{document_id:'photo',trip_id:'a',local_date:'2026-09-13',activity_id:'source',itinerary_item_id:null,updated_at:'v1'}};
- h.s.db={from:table=>{const result=Promise.resolve({data:table==='travel_documents'?[{id:'photo',title:'photo',file_path:'path'}]:[{...state.row}]});const q={select:()=>q,eq:()=>q,order:()=>result,then:(...args)=>result.then(...args)};return q},storage:{from:()=>({createSignedUrl:async()=>({data:{signedUrl:'signed'}})})}};
+ const state={title:'photo',row:{document_id:'photo',trip_id:'a',local_date:'2026-09-13',activity_id:'source',itinerary_item_id:null,updated_at:'v1'}};
+ h.s.db={from:table=>{const result=Promise.resolve({data:table==='travel_documents'?[{id:'photo',title:state.title,file_path:'path'}]:[{...state.row}]});const q={select:()=>q,eq:()=>q,order:()=>result,then:(...args)=>result.then(...args)};return q},storage:{from:()=>({createSignedUrl:async()=>({data:{signedUrl:'signed'}})})}};
  return {...h,state,box};
 }
 test('successful CAS correction refreshes both queue and gallery from backend, not stale job.metadata',async()=>{
@@ -109,12 +109,12 @@ test('successful CAS correction refreshes both queue and gallery from backend, n
  vm.runInContext("photoContextDraft={id:'photo',scope:photoScope(),version:'v1',saving:false,context:{local_date:'2026-09-14',activity_id:null,itinerary_item_id:'plan'}}",h.s);
  h.s.db.rpc=async(name,payload)=>{assert.equal(name,'set_trip_photo_context');assert.equal(payload.p_expected_updated_at,'v1');h.state.row={...h.state.row,local_date:payload.p_local_date,activity_id:null,itinerary_item_id:'plan',updated_at:'v2'};return {data:h.state.row}};
  await h.s.savePhotoContext({preventDefault(){}});assert.equal(h.get('photoContextDraft'),null);
- for(const rendered of [h.box.innerHTML,h.element('photosList').innerHTML]){assert.match(rendered,/2026-09-14 · Planning actual/);assert.doesNotMatch(rendered,/Activitat actual/)}
+ for(const rendered of [h.box.innerHTML,h.element('photosList').innerHTML]){assert.match(rendered,/14 set · Planning actual/);assert.doesNotMatch(rendered,/Activitat actual/)}
 });
 test('Realtime refresh updates saved representations but preserves a stale open editor and its CAS baseline',async()=>{
  const h=savedContextHarness();await h.s.loadGenericPhotos();vm.runInContext("photoContextDraft={id:'photo',scope:photoScope(),version:'v1',saving:false,context:{local_date:'2026-09-12',activity_id:'source',itinerary_item_id:null}}",h.s);
  h.state.row={...h.state.row,local_date:'2026-09-16',activity_id:null,itinerary_item_id:'plan',updated_at:'v2'};
- await h.s.loadGenericPhotos(true);assert.match(h.box.innerHTML,/2026-09-16 · Planning actual/);assert.match(h.element('photosList').innerHTML,/2026-09-16 · Planning actual/);
+ await h.s.loadGenericPhotos(true);assert.match(h.box.innerHTML,/16 set · Planning actual/);assert.match(h.element('photosList').innerHTML,/16 set · Planning actual/);
  assert.equal(h.get('photoContextDraft.version'),'v1');assert.equal(h.get('photoContextDraft.context.local_date'),'2026-09-12');
 });
 test('ambiguous finalization retry keeps original payload/identity; does not become a context update',async()=>{
@@ -196,4 +196,82 @@ test('no localStorage/automatic context inference; legacy London uploader remain
  assert.match(html,/preparePhotoV2\(\);if\(!isLondonTrip\(\)\)return loadGenericPhotos/);
  assert.match(html,/function clearTripScopedState\(\)\{\s*resetPhotoV2\(\)/);
  assert.match(html,/if\(!isLondonTrip\(\)\)return;\s*const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;\s*const files=\[\.\.\.\$\('photoFile'\)/);
+});
+
+test('compact summary: day/activity, day/planning, manual planning location and no duplicate place',()=>{
+ const h=harness();vm.runInContext('photoMetadataUnavailable=false',h.s);
+ h.s.activityRows=[{trip_id:'a',id:'activity',title:'Cala Comte',location_name:'Cala Comte'}];
+ h.s.manualItineraryRows=[{trip_id:'a',id:'plan',title:'Sopar',location_name:'Can Rafalet'}];
+ assert.equal(h.s.photoContextLabel({local_date:'2026-09-13',activity_id:'activity'}),'13 set · Cala Comte');
+ assert.equal(h.s.photoContextLabel({local_date:'2026-09-12',itinerary_item_id:'plan'}),'12 set · Sopar · Can Rafalet');
+ h.s.manualItineraryRows[0].title='';
+ assert.equal(h.s.photoContextLabel({itinerary_item_id:'plan'}),'Font vinculada · Can Rafalet');
+});
+test('caption-only, context-only, legacy and empty photos keep a compact authoritative summary',()=>{
+ const h=harness();vm.runInContext("photoMetadataUnavailable=false;photoMetadata=[{document_id:'day',local_date:'2026-09-13'}]",h.s);
+ assert.match(h.s.photoSummaryHtml({id:'day',title:''}),/>13 set</);
+ assert.doesNotMatch(h.s.photoSummaryHtml({id:'day',title:''}),/photo-summary-caption/);
+ assert.match(h.s.photoSummaryHtml({id:'legacy',title:'Record antic'}),/Sense context.*Record antic/);
+ assert.match(h.s.photoSummaryHtml({id:'empty'}),/Sense context/);
+ assert.doesNotMatch(h.s.photoSummaryHtml({id:'empty'}),/undefined|null|photo-summary-caption/);
+ const long='Última tarda a Eivissa '.repeat(30);
+ assert.ok(h.s.photoSummaryHtml({id:'caption',title:long}).includes(long.trim()));
+ assert.match(html,/\.photo-summary \.photo-summary-line\{color:#3d294c;/);
+ assert.match(html,/\.photo-summary \.photo-summary-line\{[^}]*overflow:hidden;[^}]*text-overflow:ellipsis;[^}]*white-space:nowrap/);
+});
+test('remote context removal and title changes update queue/gallery, never the open draft',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();
+ vm.runInContext("photoContextDraft={id:'photo',scope:photoScope(),version:'v1',title:'Esborrany',originalTitle:'photo',context:{activity_id:'source'}}",h.s);
+ h.state.title='Comentari remot';h.state.row={document_id:'photo',updated_at:'v2'};
+ await h.s.loadGenericPhotos(true);
+ for(const rendered of [h.box.innerHTML,h.element('photosList').innerHTML]){
+  assert.match(rendered,/Sense context/);assert.match(rendered,/Comentari remot/);assert.doesNotMatch(rendered,/Activitat actual/);
+ }
+ assert.equal(h.get('photoContextDraft.title'),'Esborrany');assert.equal(h.get('photoContextDraft.version'),'v1');
+});
+test('title save uses existing document field and original-value guard, then reconciles both representations',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();const from=h.s.db.from;let update,filters=[];
+ vm.runInContext("photoContextDraft={id:'photo',scope:photoScope(),version:'v1',title:'Última tarda',originalTitle:'photo',context:{},saving:false,titleSaving:false}",h.s);
+ h.s.db.from=table=>{
+  const q={update:value=>{update=value;return q},eq:(key,value)=>{filters.push([key,value]);return q},select:()=>q,maybeSingle:async()=>{h.state.title=update.title;return {data:{id:'photo',title:update.title}}}};
+  return {...from(table),update:q.update};
+ };
+ await h.s.savePhotoTitle({preventDefault(){}});
+ assert.equal(update.title,'Última tarda');assert.deepEqual(filters,[['trip_id','a'],['id','photo'],['category','Foto'],['title','photo']]);
+ for(const rendered of [h.box.innerHTML,h.element('photosList').innerHTML])assert.match(rendered,/Última tarda/);
+ assert.equal(h.get('photoContextDraft.version'),'v1');assert.equal(h.get('photoContextDraft.originalTitle'),'Última tarda');
+});
+test('failed/conflicting title saves never display unconfirmed text and preserve draft',async()=>{
+ for(const response of [{error:{message:'offline'}},{data:null}]){
+  const h=savedContextHarness();await h.s.loadGenericPhotos();
+  vm.runInContext("photoContextDraft={id:'photo',scope:photoScope(),title:'No confirmat',originalTitle:'photo',context:{},saving:false}",h.s);
+  const q={update:()=>q,eq:()=>q,select:()=>q,maybeSingle:async()=>response};h.s.db.from=()=>q;
+  await h.s.savePhotoTitle({preventDefault(){}});
+  assert.doesNotMatch(h.element('photosList').innerHTML,/No confirmat/);assert.equal(h.get('photoContextDraft.title'),'No confirmat');
+  assert.ok(h.element('photoTitleMessage').textContent);assert.equal(h.get('photoContextDraft.titleSaving'),false);
+ }
+});
+test('confirmed context paints existing cards before any signed URL refresh finishes',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();const box={dataset:{photoSummary:'photo'},innerHTML:''};
+ h.element('photosList').querySelectorAll=selector=>selector==='[data-photo-summary]'?[box]:[];
+ vm.runInContext("photoContextDraft={id:'photo',scope:photoScope(),version:'v1',context:{local_date:null,activity_id:null,itinerary_item_id:null},saving:false}",h.s);
+ h.s.db.rpc=async()=>({data:{document_id:'photo',updated_at:'v2'}});
+ let finish;h.s.loadGenericPhotos=()=>new Promise(resolve=>finish=resolve);
+ const saving=h.s.savePhotoContext({preventDefault(){}});await new Promise(resolve=>setImmediate(resolve));
+ assert.match(box.innerHTML,/Sense context/);assert.match(h.box.innerHTML,/Sense context/);
+ finish();await saving;
+});
+
+test('context save never closes an unsaved title draft',async()=>{
+ const h=savedContextHarness();vm.runInContext("photoContextDraft={id:'photo',scope:photoScope(),title:'Pendent',originalTitle:'photo',context:{},saving:false}",h.s);
+ h.s.db.rpc=()=>assert.fail('must save title explicitly first');
+ await h.s.savePhotoContext({preventDefault(){}});
+ assert.equal(h.get('photoContextDraft.title'),'Pendent');assert.match(h.element('photoContextMessage').textContent,/Desa primer/);
+});
+test('source rename refreshes existing summaries without resigning images or touching editor',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();const box={dataset:{photoSummary:'photo'},innerHTML:''};
+ h.element('photosList').querySelectorAll=selector=>selector==='[data-photo-summary]'?[box]:[];
+ h.s.activityRows[0].title='Nou nom';h.s.db.storage.from=()=>assert.fail('no image refresh needed');
+ h.s.refreshPhotoSummaries();
+ assert.match(box.innerHTML,/Nou nom/);assert.match(h.box.innerHTML,/Nou nom/);
 });

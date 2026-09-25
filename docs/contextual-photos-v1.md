@@ -33,3 +33,61 @@ London keeps its previous uploader and gallery. All new controls/RPCs are generi
 - No migration has been applied remotely by this work. No commit/push/deploy is part of this implementation.
 
 Deferred: durable resumable queue, orphan reconciliation/tombstones across deletion/retry and session restart, image derivatives/memory tuning, capture-time metadata, album/story editing. These require separate scope approval.
+
+## Gallery visibility micro-sprint (frontend only)
+
+Audit: the generic gallery already read canonical metadata, but displayed upload
+date ahead of context and did not constrain its context/title text. The completed
+queue displayed context but omitted the saved title. The only caption authority
+is `travel_documents.title` (also used as the initial filename-based title).
+There is no independent caption or manual photo-location field.
+
+The compact summary shared by generic gallery and completed queue now shows:
+- Short calendar date from `trip_photo_metadata.local_date`, followed by the
+  linked activity/planning title, and its existing `location_name` when distinct.
+- The saved document title on an optional second line.
+- “Sense context” when metadata is absent/empty; “Context no disponible” when
+  its read fails, which must not be mistaken for an empty context.
+
+Both lines have CSS ellipsis and explicit readable colors. Full text remains in
+the DOM/title attribute; no persisted text is truncated. Upload dates are no
+longer presented as the photo's day. No date/location is inferred.
+
+Title correction uses the existing document UPDATE permission/RLS (confirmed
+read-only on remote) with trip/id/category and original-title equality filters.
+It has its own save action, separate from the unchanged metadata CAS RPC. A
+zero-row update leaves the draft intact with a conflict message. Context saving
+requires saving or restoring any modified title first, avoiding draft loss. The table has
+no title revision field: this equality guard cannot detect an A→B→A history.
+No new RPC, schema field, migration or Storage change is required.
+
+Red team:
+- Summaries always read `photoRows` + `photoMetadata`, never `job.metadata`.
+- Confirmed save responses refresh visible text before waiting for signed URLs;
+  failed writes never optimistically display the draft as saved.
+- Existing Realtime reloads refresh queue/gallery and keep open title/context
+  drafts and their original baselines. Agenda source reloads refresh summaries
+  too, including renamed sources. Removed context is rendered as empty.
+- Text-only refresh does not replace images. Full photo reconciliation retains
+  the existing signed-URL/load sequence protections and full gallery rendering;
+  actual network/image flicker still requires device E2E.
+- Legacy photos without metadata remain visible. No backfill.
+- Ordering remains newest upload batches first, selection order within each
+  batch, legacy fallback by upload timestamp. It is intentionally not a day sort.
+- London renderer/uploader, lightbox, deletion and batch/retry semantics remain
+  unchanged. All summary styles are scoped to the new generic summary class.
+
+Verification: 125 JavaScript tests pass, including summary variants, removal,
+remote title/context refresh, guarded title success/failure, immediate confirmed
+context updates, original upload/batch/retry/CAS tests, syntax/unique IDs and
+byte-identical entries. Full disposable SQL suite passes (13 rollback suites,
+existing concurrency checks; Cron scheduling intentionally skipped by runner).
+Chrome layout fixture uses real summary functions/CSS at a 296px gallery width
+(320px screen content) for long source/caption, empty caption and legacy cases.
+Physical iPhone/PWA and two authenticated members over real Realtime remain E2E.
+
+Deferred only: day sorting/grouping, independent caption field, and versioned or
+atomic title/context editing would be separate work. None implemented here.
+
+Build and entry parity pass. The local node_modules needed the matching macOS
+Rollup/esbuild optional binaries; package manifests and lockfile are unchanged.
