@@ -90,6 +90,15 @@ async function concurrentBriefs(){
   const state=docker(['psql','-X','-At','-U','postgres','-d',database,'-c',`select count(*)=1 and bool_and(revision=7 and document#>>'{decisions,origin,strength}'='hard') from public.trip_briefs where id='${brief}'`]).trim();
   if(state!=='t')throw new Error('Concurrent brief mutation duplicated or overwrote data');
   console.log('PASS brief independent sessions: duplicate create/update idempotent; A revision 5 rejected after B revision 6; hard preserved');
+  const interestPatch=JSON.stringify({decisions:{snow:{field:'interest.snow',scope:'global',origin:'explicit_user',knowledge:'known',strength:'hard',value:true},spa:{field:'hotel.amenity.spa',scope:'global',origin:'explicit_user',knowledge:'known',strength:'preference',value:true}}});
+  const add=call('30000000-0000-4000-8000-000000000030',7,interestPatch);
+  await race(add,add,false);
+  const choice=value=>JSON.stringify({decisions:{multi:{field:'destination.multidestination',scope:'global',origin:'explicit_user',knowledge:'known',strength:'preference',value}}});
+  await race(call('30000000-0000-4000-8000-000000000031',8,choice(true)),call('30000000-0000-4000-8000-000000000032',8,choice(false)),true);
+  const extended=docker(['psql','-X','-At','-U','postgres','-d',database,'-c',`select revision=9 and document#>>'{decisions,snow,strength}'='hard' and document#>>'{decisions,multi,value}'='true' from public.trip_briefs where id='${brief}'`]).trim();
+  if(extended!=='t')throw new Error('TB-01.1 concurrency failed');
+  console.log('PASS TB-01.1 independent sessions: new-field duplicate retry and opposing CAS; hard interest preserved');
+
 }
 let created=false;
 try{
@@ -105,7 +114,9 @@ try{
     if(name==='20260922170531_contextual_photos_v1.sql'){
       sql("insert into public.travel_documents(trip_id,title,category,file_name,file_path,mime_type,created_by) values ('9035e47f-f16c-4fa3-83fd-873bd98dc221','Legacy photo snapshot','Foto','legacy.jpg','9035e47f-f16c-4fa3-83fd-873bd98dc221/photos/legacy.jpg','image/jpeg','00000000-0000-4000-8000-000000000001'); create table public.photo_before_snapshot as select to_jsonb(d) as row from public.travel_documents d;");
     }
+    if(name.endsWith('_trip_brief_contract_v1_1.sql'))file('supabase/tests/brief_contract_before_migration.sql');
     file(`supabase/migrations/${name}`);
+    if(name.endsWith('_trip_brief_contract_v1_1.sql'))file('supabase/tests/brief_contract_after_migration.sql');
     if(name==='20260918174037_shared_trip_progress.sql')file('supabase/tests/progress_after_migration.sql');
     if(name==='20260922170531_contextual_photos_v1.sql'){
       sql("do $$ begin if exists((select row from public.photo_before_snapshot except select to_jsonb(d) from public.travel_documents d) union all (select to_jsonb(d) from public.travel_documents d except select row from public.photo_before_snapshot)) or exists(select 1 from public.trip_photo_metadata) then raise exception 'Photo migration changed existing data'; end if; end $$; drop table public.photo_before_snapshot;");

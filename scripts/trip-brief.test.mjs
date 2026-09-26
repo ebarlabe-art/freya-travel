@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { briefSchemaV1, emptyBriefDocument, resolveBriefDecision, prepareBriefPatch, applyBriefPatch, readBrief } from '../domain/trip-brief.mjs';
 const decision = (scope, value, origin = 'explicit_user') => ({ field: 'hotel.comfort', scope, origin, knowledge: 'known', strength: 'preference', value });
-test('schema in migration is the frozen version of the domain contract', () => {
- const sql = readFileSync(new URL('../supabase/migrations/20260925190440_trip_briefs_v1.sql',import.meta.url),'utf8');
+test('effective schema-v1 extension matches the new migration, historical migration remains a snapshot', () => {
+ const sql = readFileSync(new URL('../supabase/migrations/20260926195848_trip_brief_contract_v1_1.sql',import.meta.url),'utf8');
  assert.deepEqual(JSON.parse(sql.split('$json$')[1]), briefSchemaV1);
 });
 test('scope overrides preserve global defaults; nearest explicit wins', () => {

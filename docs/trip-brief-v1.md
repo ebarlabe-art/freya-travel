@@ -1,8 +1,9 @@
-# TB-01 · Trip Brief persistence (schema v1)
+# TB-01 / TB-01.1 · Trip Brief persistence (schema v1)
 
-Local implementation only. No UI integration, AI, proposals, search, offers,
-booking, budget engine, trip creation, handoff or Realtime. The current app does
-not import `domain/trip-brief.mjs`. London and generic trips use unchanged code.
+TB-01 persistence is used by the published TB-02 Builder. TB-01.1 is a local,
+additive contract revision, not yet applied remotely. It adds no TB-03 UI, AI,
+proposals, search, booking, budget engine, trip creation, handoff or Realtime.
+London and generic trips use unchanged code.
 
 ## Focused audit / Red Team decisions
 
@@ -76,7 +77,8 @@ edit. No AI service or automatic mutation authority is implemented.
 ### Typed fields
 
 The complete machine-readable catalog is `valueSchemas` in
-`domain/trip-brief.mjs`, frozen into the migration and checked by a parity test.
+`domain/trip-brief.mjs`. The original TB-01 migration is an immutable historical
+snapshot; a parity test checks the effective schema against the new TB-01.1 migration.
 
 - `dates`: exact start/end OR earliest/latest window; strict real dates and order.
   `dates.flexibility_days` is separately recorded, never applied automatically.
@@ -162,8 +164,10 @@ quota/retention policy must explicitly preserve replay identities or reject old
 commands, never silently forget them.
 
 Every new successful command advances revision, even a no-op. Schema version and
-revision have different purposes. Schema v1 is frozen; future schemas need an
-explicit migration/upgrade, not a change that reinterprets stored decisions.
+revision have different purposes. The Product Owner approved TB-01.1 as an
+additive schema-v1 revision: old field meanings and data remain unchanged.
+Extensions require an explicit migration and compatibility review; a change that
+reinterprets stored decisions would require a separate version/upgrade policy.
 
 ## Security and consent limits
 
@@ -192,3 +196,93 @@ Owner deletion cascades briefs and receipts via auth FK.
   and A revision 5 rejected after B commits revision 6.
 
 No remote migration, commit, push or deploy is part of TB-01.
+
+
+## TB-01.1 — independent structural decisions
+
+Migration: `20260926195848_trip_brief_contract_v1_1.sql` (generated with Supabase CLI).
+The migration replaces only the schema/validator definitions, adds private pure
+normalization/catalog helpers, and validates existing documents without writing
+any row or receipt. It leaves schema_version=1, the mutation RPC definition,
+ownership/RLS, grants, receipts, CAS and hard confirmations unchanged.
+
+Known interests use closed stable fields: interest.christmas,
+interest.christmas_markets, interest.snow, interest.snow_activities,
+interest.gastronomy, interest.culture, interest.nature, interest.spa_relaxation,
+interest.nightlife, interest.shopping, interest.special_places.
+Known amenities use hotel.amenity.spa, hotel.amenity.pool,
+hotel.amenity.parking, hotel.amenity.gym.
+For both families, known requires value=true and an independent strength.
+Deselection is an explicit removal, not an invented negative preference.
+Unknown has neither value nor strength; indifferent has strength but no value.
+Existing hard removal/weakening still requires the exact decision ID in
+p_confirm_hard. Non-explicit origins cannot be hard.
+
+`destination.multidestination` is a boolean when known; false and true remain
+separate from indifferent/unknown. It is never derived from destination count.
+Budget, baggage and experience.styles retain their existing aggregate strengths.
+
+### Free interests and normalization
+
+`interest.free.<32 lowercase hexadecimal UUID digits>` identifies a free interest.
+`createFreeInterest` generates a random UUID, never a text-derived field name.
+`label` is mandatory identity metadata on that family only, in every knowledge
+branch; it is raw nonblank text up to 80 Unicode codepoints. The label is retained
+for unknown/indifferent, can be explicitly edited (with hard confirmation where
+needed), and is never normalized or merged in stored data. Other decision fields
+cannot accept a label property. Render labels as escaped text, never markup.
+
+Normalization for equality only: NFKC, collapse the ECMAScript whitespace set to
+ASCII spaces, trim, Unicode lowercase. SQL uses explicit `und-x-icu`, UTF8;
+these prerequisites are checked by function creation, never silently replaced.
+JavaScript mirrors this for preflight; database validation is authoritative.
+The tests include compatibility width, composed/decomposed accents, whitespace,
+dotted I and contextual Greek sigma. Accents are not removed, and synonyms are
+not inferred. Recheck the corpus when upgrading ICU/Unicode runtimes.
+
+Free interests with equal normalized labels cannot coexist in one scope or along
+an ancestor chain under different UUIDs (including unknown/unconfirmed entries).
+Otherwise a new ID could bypass an inherited hard. A single free field cannot
+have different normalized labels in different scopes. Independent sibling scopes
+can hold different free IDs with the same label. Repeated IDs by scope continue
+to use the existing exact-field inheritance/hard rules.
+
+Known/free collisions compare only catalog spellings: each catalog ID with
+underscores replaced by spaces, and its explicit Catalan display label. These
+are frozen into a private SQL helper and tested against the JS catalog. A free
+label matching a present known interest on the same chain is rejected, never
+silently converted. No semantic equivalence between unrelated phrases is claimed.
+
+The existing limits remain: 200 decisions, 50 scopes, 30 travelers, 128 KiB
+serialized document and patch set/remove bound, and the original receipt bound.
+At most 30 new interest-family decisions are allowed per scope, counting known,
+unknown and indifferent entries. Existing legacy lists keep their original limits.
+
+### Legacy and deployment order
+
+Legacy interests and hotel.amenities remain fully valid and editable. There is no
+migration of their values. A legacy family and its new family cannot coexist in
+the same scope or an ancestor/descendant chain, in either direction. Different
+families (legacy interests + new amenities, for example) do not conflict.
+Independent sibling scopes can use different representations.
+
+A future explicit conversion can atomically remove a legacy decision and add
+individual decisions through the same RPC, confirming any affected hard; tests
+exercise this boundary, but no conversion workflow or automatic rewrite is added.
+An unrelated edit preserves legacy decisions and their strengths exactly.
+
+Deployment order is mandatory: apply the DB validator migration first, verify,
+then publish clients capable of writing new fields. Old clients using partial
+patches preserve unfamiliar fields. Older strict validators cannot validate new
+fields; do not deploy such clients as authoritative writers for TB-01.1.
+Rolling back to the old validator after new-field writes is unsafe; it would
+require a separately approved data-aware plan, not a destructive down migration.
+
+Before/after migration tests preserve complete legacy rows (hard/preference/
+flexible plus empty), revisions/timestamps and receipts byte-for-byte in JSONB,
+and verify the RPC definition is identical. Additional rollback tests cover all
+new types, limits, duplicates, coexistence, ownership, partial edits, explicit
+hard conversion, stale CAS and retry after later revisions. Independent-session
+tests race new-field duplicate operations and opposing multidestination edits.
+The remote audit saw 4 empty v1 Briefs and no legacy interests; implementation and
+verification touch only a disposable local database, never those remote rows.

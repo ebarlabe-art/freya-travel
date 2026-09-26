@@ -1,4 +1,4 @@
-// TB-01: domain contract only; deliberately not loaded by the current app.
+// TB-01.1: additive schema-v1 contract. Deploy the database validator before clients.
 const text = (max = 200) => ({ type: 'string', minLength: 1, maxLength: max, pattern: '\\S' });
 const integer = (min, max) => ({ type: 'integer', minimum: min, maximum: max });
 const enumeration = (...values) => ({ enum: values });
@@ -16,7 +16,27 @@ const budget = { oneOf: [
   object({ mode: { const: 'price_discovery' }, includes: list(text(80)) }, ['mode']),
   ...['target', 'maximum', 'target_stretch'].map(mode => object({ mode: { const: mode }, currency, amount: money, ...(mode === 'target_stretch' ? { stretch: money } : {}), includes: list(text(80)) }, ['mode', 'currency', 'amount', ...(mode === 'target_stretch' ? ['stretch'] : [])])),
 ] };
+export const interestCatalog = Object.freeze({
+  christmas:'Nadal', christmas_markets:'Mercats de Nadal', snow:'Neu',
+  snow_activities:'Activitats de neu', gastronomy:'Gastronomia', culture:'Cultura',
+  nature:'Natura', spa_relaxation:'Relax / spa', nightlife:'Nit / plans especials',
+  shopping:'Compres', special_places:'Llocs especials',
+});
+export const hotelAmenityCatalog = Object.freeze({spa:'Spa', pool:'Piscina', parking:'Pàrquing', gym:'Gimnàs'});
+export const freeInterestPattern = '^interest\\.free\\.[0-9a-f]{32}$';
+// Equality only: never rewrite labels, remove accents, infer synonyms or generate IDs.
+export function normalizeInterestLabel(label) {
+  return label.normalize('NFKC').replace(/\s+/gu, ' ').trim().toLowerCase();
+}
+export function createFreeInterest(label, {scope='global', strength='preference'} = {}) {
+  if(typeof label!=='string'||[...label].length>80||!normalizeInterestLabel(label))throw new Error('Interest label must contain 1–80 characters');
+  if(!['hard','preference','flexible'].includes(strength))throw new Error('Invalid interest strength');
+  return {field:`interest.free.${crypto.randomUUID().replaceAll('-','')}`, label, scope, origin:'explicit_user', knowledge:'known', strength, value:true};
+}
 export const valueSchemas = {
+  ...Object.fromEntries(Object.keys(interestCatalog).map(key=>[`interest.${key}`,{const:true}])),
+  ...Object.fromEntries(Object.keys(hotelAmenityCatalog).map(key=>[`hotel.amenity.${key}`,{const:true}])),
+  'destination.multidestination': boolean,
   dates: { oneOf: [object({ mode: { const: 'exact' }, start: date, end: date }), object({ mode: { const: 'window' }, earliest: date, latest: date })] },
   'dates.flexibility_days': integer(0, 365),
   origin: object({ places: list(text(120)) }),
@@ -40,7 +60,7 @@ export const valueSchemas = {
   notes: text(2000),
 };
 const fields = Object.keys(valueSchemas);
-const field = { anyOf: [{ enum: fields }, { type: 'string', pattern: '^custom\\.[a-z][a-z0-9_]{0,49}$' }] };
+const field = { anyOf: [{ enum: fields }, {type:'string',pattern:freeInterestPattern}, { type: 'string', pattern: '^custom\\.[a-z][a-z0-9_]{0,49}$' }] };
 const common = { field, scope: { anyOf: [{ const: 'global' }, id] }, origin: enumeration('explicit_user', 'interpreted_from_user', 'system_default') };
 const decision = { oneOf: [
   object({ ...common, knowledge: { const: 'unknown' } }),
@@ -50,6 +70,16 @@ const decision = { oneOf: [
     { if: { properties: { field: { pattern: '^custom\\.' } } }, then: { properties: { value: text(1000) } } },
   ] },
 ] };
+// A free interest's label is identity metadata, retained for unknown/indifferent.
+// Other fields cannot acquire labels, preserving the closed legacy contract.
+for (const variant of decision.oneOf) {
+  variant.properties.label=text(80);
+  variant.allOf=[...(variant.allOf||[]),{
+    if:{properties:{field:{pattern:freeInterestPattern}}},
+    then:{required:['label'],...(variant.properties.knowledge.const==='known'?{properties:{value:{const:true}}}:{})},
+    else:{not:{required:['label']}},
+  }];
+}
 const map = (item, max) => ({ type: 'object', propertyNames: id, maxProperties: max, additionalProperties: item });
 export const briefSchemaV1 = {
   $schema: 'http://json-schema.org/draft-07/schema#',
