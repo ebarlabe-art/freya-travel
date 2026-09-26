@@ -300,6 +300,7 @@
     #photoDetailControls .photo-summary-line{color:white}#photoDetailControls .photo-summary-caption{color:#eee}
 
     @media(max-width:520px){.photo-context-fields{grid-template-columns:minmax(0,1fr)}.photo-queue-item{grid-template-columns:minmax(0,1fr)}.photo-queue-item>img{width:100%;height:180px}}
+    .home-doors{display:grid;gap:12px;margin:24px 0}.home-doors button{min-height:64px;text-align:left;padding:18px;font-size:1.1rem;white-space:normal}.trips-home>button{min-height:44px}#homeUndated{margin-top:28px}#homeUndated>h2{font-size:1.1rem;color:#71627d}
     .builder-tabs{display:flex;gap:8px;margin:18px 0}.builder-tabs button{flex:1;min-height:48px;white-space:normal}.builder-tabs [aria-current="page"]{outline:3px solid #b49acb;outline-offset:2px}
     .builder-doors{display:grid;gap:12px}.builder-doors button,#builderBriefList button{display:block;width:100%;text-align:left;padding:18px;min-height:64px;white-space:normal;overflow-wrap:anywhere;background:#f0e9f7;color:#452c5c}.builder-doors span,#builderBriefList small{display:block;margin-top:6px;font-weight:400}#builderBriefList{display:grid;gap:10px}
     #manualTripView input,#manualTripView select{box-sizing:border-box;width:100%;min-height:44px;padding:10px;font-size:16px}
@@ -333,31 +334,29 @@
         <p>Cada aventura té el seu espai, sense perdre mai els records de les anteriors.</p>
       </section>
 
-<nav class="builder-tabs" aria-label="Home"><button type="button" data-home-view="tripsHomeView">Els meus viatges</button><button type="button" data-home-view="designTripView">Dissenya un viatge</button></nav>
-      <div class="trips-section-title"><h2>Viatges</h2><span id="tripCountLabel">0 viatges</span></div>
-      <div id="tripsList" class="trip-list"></div>
-
-      <section class="new-trip-card"><h2>Uneix-te a un viatge</h2><div class="join-trip"><input id="inviteInput" placeholder="Codi d’invitació" aria-label="Codi d’invitació"><button id="joinTrip" type="button">Unir-m’hi</button></div><p id="joinTripMsg" class="message hidden" role="status"></p></section>
-
-      <section id="londonDepartureCenter" class="departure-center hidden">
-        <h2>🧳 Centre de sortida</h2>
-        <p>Tot el que necessiteu abans de marxar, a un sol toc.</p>
-        <div class="departure-grid">
-          <button class="departure-action" type="button" data-quick-view="flightsView"><span>✈️</span><strong>Vols</strong><small>Horaris i preparatius</small></button>
-          <button class="departure-action" type="button" data-quick-view="documentsView"><span>📄</span><strong>Documents</strong><small>Entrades, reserves i QR</small></button>
-          <button class="departure-action" type="button" data-quick-view="parkingView"><span>🚗</span><strong>Aparcament</strong><small>Reserva, plaça, foto i GPS</small></button>
-          <button class="departure-action" type="button" data-quick-view="checklistView"><span>✅</span><strong>Checklist</strong><small>Maletes, casa i els dos gats</small></button>
-          <button class="departure-action" type="button" data-quick-view="weatherView"><span>🌦️</span><strong>Temps</strong><small>Previsió per al viatge</small></button>
-          <button class="departure-action" type="button" onclick="window.location.href='freya-travel-v1.5/itinerary.html'"><span>📅</span><strong>Itinerari</strong><small>El programa dia a dia</small></button>
-        </div>
-      </section>
-      <div class="trips-footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.7 · Galeria de fotos</div>
+      <section id="homeActive" class="hidden"><h2>En curs</h2><div id="activeTripsList" class="trip-list"></div></section>
+      <nav class="home-doors" aria-label="Els meus viatges">
+        <button type="button" data-home-view="upcomingTripsView">✈️ Propers</button>
+        <button type="button" data-home-view="designTripView">✨ Dissenya un viatge</button>
+        <button type="button" data-home-view="constructionView">🧭 En construcció</button>
+        <button type="button" data-home-view="joinTripView">👥 Uneix-te a un viatge</button>
+        <button type="button" data-home-view="pastTripsView">📚 Passats</button>
+      </nav>
+      <p id="homeTripsEmpty" class="muted hidden">Encara no tens cap viatge. Dissenya’n un o uneix-te a un viatge.</p>
+      <section id="homeUndated" class="hidden"><h2>Dates pendents</h2><div id="undatedTripsList" class="trip-list"></div></section>
     </div>
-    <div id="designTripView" class="hidden trips-home">
-      <h1>Dissenya un viatge</h1><nav class="builder-tabs" aria-label="Home"><button type="button" data-home-view="tripsHomeView">Els meus viatges</button><button type="button" data-home-view="designTripView">Dissenya un viatge</button></nav>
+    <div id="upcomingTripsView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>✈️ Propers</h1><div id="upcomingTripsList" class="trip-list"></div></div>
+    <div id="pastTripsView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>📚 Passats</h1><div id="pastTripsList" class="trip-list"></div></div>
+    <div id="joinTripView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><section class="new-trip-card"><h2>Uneix-te a un viatge</h2><div class="join-trip"><input id="inviteInput" placeholder="Codi d’invitació" aria-label="Codi d’invitació"><button id="joinTrip" type="button">Unir-m’hi</button></div><p id="joinTripMsg" class="message hidden" role="status"></p></section></div>
+    <div id="constructionView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>🧭 En construcció</h1>
       <section id="builderContinue" class="new-trip-card hidden"><h2>Continua dissenyant</h2><div id="builderBriefList"></div></section>
       <p id="builderListMessage" role="status"></p><button id="builderListRetry" type="button">Actualitza esborranys</button>
       <button id="builderPendingRetry" type="button" class="hidden">Verifica l’operació pendent</button>
+    </div>
+    <div id="designTripView" class="hidden trips-home">
+      <button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>Dissenya un viatge</h1>
+      <p id="builderStartMessage" role="status"></p>
+      <button type="button" id="builderStartRetry" class="hidden">Verifica l’operació pendent</button>
       <section class="new-trip-card"><h2>Comença un viatge nou</h2><div class="builder-doors">
         <button type="button" data-builder-mode="inspire"><strong>✨ Inspira’m</strong><span>No sé on anar. Ajuda’m a trobar el viatge.</span></button>
         <button type="button" data-builder-mode="destination"><strong>📍 Ja sé on vull anar</strong><span>Tinc destinació. Ajuda’m a construir-lo.</span></button>
@@ -383,7 +382,7 @@
       <p id="tripMsg" class="message hidden" role="status" aria-live="polite"></p>
     </section></div>
     <div id="builderView" class="hidden trips-home">
-      <button type="button" data-builder-back="designTripView">← Tornar</button>
+      <button type="button" data-builder-back="constructionView">← Tornar</button>
       <h1 id="builderHeading">Continua dissenyant</h1>
       <p id="builderKnown"></p><p id="builderPrompt"></p>
       <form id="builderNotesForm"><label for="builderNotes">Explica’ns el viatge que tens al cap</label><textarea id="builderNotes" rows="7" maxlength="2000" placeholder="Vull neu, ambient de Nadal i alguna activitat especial…"></textarea><button id="builderSave" type="submit">Desa la idea</button></form>
@@ -1959,14 +1958,23 @@ function subscribeAccommodations(){
 // TRAVEL_BUILDER_UI_START — home-only navigation; operational trips remain separate.
 let builderApiPromise=null,builderController=null,builderRow=null,builderBase='',builderBusy=false,builderConflict=false,builderEpoch=0,builderListSequence=0;
 function loadBuilderApi(){return builderApiPromise??=import('./domain/travel-builder.mjs').catch(error=>{builderApiPromise=null;throw error})}
-function homeTripGroups(values,today){
-  if(!today){const d=new Date();today=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-  const groups=[{label:'En curs',rows:[]},{label:'Propers',rows:[]},{label:'Passats',rows:[]}];
-  values.forEach(row=>groups[row.start_date&&row.end_date&&row.start_date<=today&&row.end_date>=today?0:row.end_date&&row.end_date<today?2:1].rows.push(row));
-  groups.forEach((group,i)=>group.rows.sort((a,b)=>i===2?String(b.end_date||'').localeCompare(a.end_date||''):String(a.start_date||'9999').localeCompare(b.start_date||'9999')));
+function homeTripPhase(value,now=new Date()){
+  const valid=date=>typeof date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(Date.parse(date))&&new Date(date+'T00:00:00Z').toISOString().slice(0,10)===date;
+  if(!valid(value.start_date)||!valid(value.end_date)||value.start_date>value.end_date||!value.time_zone)return 'undated';
+  try{
+    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:value.time_zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(now));
+    const part=type=>parts.find(p=>p.type===type).value;
+    const today=`${part('year')}-${part('month')}-${part('day')}`;
+    return today<value.start_date?'upcoming':today>value.end_date?'past':'active';
+  }catch{return 'undated'}
+}
+function homeTripGroups(values,now=new Date()){
+  const groups=[{key:'active',label:'En curs',rows:[]},{key:'upcoming',label:'Propers',rows:[]},{key:'past',label:'Passats',rows:[]},{key:'undated',label:'Dates pendents',rows:[]}];
+  values.forEach(row=>groups.find(g=>g.key===homeTripPhase(row,now)).rows.push(row));
+  groups.forEach(group=>group.rows.sort((a,b)=>group.key==='past'?String(b.end_date||'').localeCompare(a.end_date||''):String(a.start_date||'').localeCompare(b.start_date||'')));
   return groups.filter(group=>group.rows.length);
 }
-function resetBuilderUi(){builderEpoch++;builderListSequence++;builderController=null;builderRow=null;builderBase='';builderBusy=false;builderConflict=false;$('builderNotes').value='';$('builderBriefList').innerHTML='';$('builderKnown').textContent='';$('builderMessage').textContent=''}
+function resetBuilderUi(){if(typeof homeTripReturn!=='undefined')homeTripReturn=null;builderEpoch++;builderListSequence++;builderController=null;builderRow=null;builderBase='';builderBusy=false;builderConflict=false;$('builderNotes').value='';$('builderStartMessage').textContent='';$('builderBriefList').innerHTML='';$('builderKnown').textContent='';$('builderMessage').textContent=''}
 function builderCurrent(owner,epoch){return session?.user?.id===owner&&builderEpoch===epoch}
 async function getBuilderController(){
   const owner=session?.user?.id,epoch=builderEpoch;if(!owner)throw new Error('Torna a iniciar sessió.');
@@ -1976,7 +1984,7 @@ async function getBuilderController(){
 }
 function builderDirty(){return visibleAppView()==='builderView'&&builderRow&&$('builderNotes').value!==builderBase}
 function canLeaveBuilder(){return !builderBusy&&(!builderDirty()||confirm('Sortir sense desar els canvis de la idea?'))}
-function builderHistory(view,depth=(history.state?.builderNav?.depth||0)+1){return {owner:session?.user?.id,view,depth}}
+function builderHistory(view,depth=(history.state?.builderNav?.depth||0)+1){return {owner:session?.user?.id,view,depth,parent:view==='builderView'?(history.state?.builderNav?.parent||(['designTripView','constructionView'].includes(visibleAppView())?visibleAppView():'constructionView')):null}}
 function navigateBuilder(view,push=true){
   if(!session||!canLeaveBuilder())return;
   if(view!=='builderView'&&builderController){try{builderController.clearRoute()}catch(error){$('builderMessage').textContent=error.message;return}}
@@ -1984,24 +1992,26 @@ function navigateBuilder(view,push=true){
     if(!history.state?.builderNav)history.replaceState({...history.state,builderNav:builderHistory(visibleAppView(),0)},'');
     history.pushState({builderNav:builderHistory(view)},'');
   }
-  setAppView(view);if(view==='designTripView')loadBuilderList();
+  setAppView(view);if(!push&&history.state?.builderNav?.view!==view)history.replaceState({builderNav:builderHistory(view,0)},'');if(view==='constructionView')loadBuilderList();if(view==='designTripView')getBuilderController().then(()=>renderBuilderControls()).catch(error=>$('builderStartMessage').textContent=error.message);
 }
 function builderBack(fallback){
   if(!canLeaveBuilder())return;
+  if(visibleAppView()==='builderView')fallback=history.state?.builderNav?.parent||fallback;
   if(history.state?.builderNav?.owner===session?.user?.id&&history.state.builderNav.depth>0)history.back();else navigateBuilder(fallback,false);
 }
 window.addEventListener('popstate',event=>{
-  if(!['tripsHomeView','designTripView','manualTripView','builderView'].includes(visibleAppView()))return;
+  if(!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(visibleAppView()))return;
   if(typeof photoNavigation!=='undefined'&&photoNavigation||event.state?.freyaPhoto)return;
   const target=event.state?.builderNav;
-  if(!target||target.owner!==session?.user?.id||!['tripsHomeView','designTripView','manualTripView','builderView'].includes(target.view))return;
+  if(!target||target.owner!==session?.user?.id||!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(target.view))return;
   if(!canLeaveBuilder()){history.pushState({builderNav:builderHistory(visibleAppView())},'');return}
-  if(target.view==='builderView'){navigateBuilder('designTripView',false);return} // Forward never manufactures a new brief.
+  if(target.view==='builderView'){navigateBuilder('constructionView',false);return} // Forward never manufactures a new brief.
   navigateBuilder(target.view,false);
 });
 function renderBuilderControls(){
   const pending=!!builderController?.state.pending;
   document.querySelectorAll('[data-builder-mode]').forEach(button=>button.disabled=builderBusy||pending);
+  $('builderStartRetry').classList.toggle('hidden',!pending);$('builderStartRetry').disabled=builderBusy;
   $('builderPendingRetry').classList.toggle('hidden',!pending);$('builderPendingRetry').disabled=builderBusy;
   $('builderRetry').classList.toggle('hidden',!pending);$('builderRetry').disabled=builderBusy;
   $('builderNotes').disabled=builderBusy||pending||!builderRow||builderConflict;
@@ -2019,11 +2029,12 @@ async function loadBuilderList(){
     $('builderContinue').classList.toggle('hidden',!rows.length);
     $('builderBriefList').innerHTML=rows.map(row=>`<button type="button" data-resume-brief="${esc(row.id)}"><strong>${esc(api.briefLabel(row))}</strong><small>Actualitzat ${esc(new Date(row.updated_at).toLocaleString('ca-ES'))}</small></button>`).join('');
     $('builderBriefList').querySelectorAll('[data-resume-brief]').forEach(button=>button.onclick=()=>resumeBuilder(button.dataset.resumeBrief));
-    $('builderListMessage').textContent=controller.state.pending?'Hi ha una operació pendent de verificar. Reintenta-la abans de començar-ne una altra.':'';
+    $('builderListMessage').textContent=controller.state.pending?'Hi ha una operació pendent de verificar. Reintenta-la abans de començar-ne una altra.':rows.length?'':'Encara no tens cap viatge en construcció.';
     renderBuilderControls();
   }catch(error){if(builderCurrent(owner,epoch)&&sequence===builderListSequence)$('builderListMessage').textContent=error.message||'No s’han pogut carregar els esborranys.'}
 }
 function showBuilderRow(api,row,mode){
+  $('builderStartMessage').textContent='';
   builderRow=row;builderConflict=false;
   const notes=api.briefNotes(row);builderBase=notes?.decision.knowledge==='known'?notes.decision.value:'';
   $('builderNotes').value=builderBase;
@@ -2052,11 +2063,11 @@ async function runBuilderPending(){
 }
 async function startBuilder(mode){
   if(builderBusy)return;
-  const owner=session?.user?.id,epoch=builderEpoch;builderBusy=true;$('builderListMessage').textContent='Preparant l’esborrany…';renderBuilderControls();
+  const owner=session?.user?.id,epoch=builderEpoch;builderBusy=true;$('builderStartMessage').textContent='Preparant l’esborrany…';renderBuilderControls();
   try{
     const {controller,api}=await getBuilderController();controller.prepareStart(mode);
     builderRow=null;builderBase='';$('builderNotes').value='';$('builderKnown').textContent='';$('builderHeading').textContent=api.builderModes[mode].title;enterBuilderView();
-  }catch(error){if(builderCurrent(owner,epoch)){$('builderListMessage').textContent=error.message;builderBusy=false;renderBuilderControls()}return}
+  }catch(error){if(builderCurrent(owner,epoch)){$('builderStartMessage').textContent=error.message;builderBusy=false;renderBuilderControls()}return}
   if(!builderCurrent(owner,epoch))return;builderBusy=false;await runBuilderPending();
 }
 async function resumeBuilder(id,mode='resume',restore=false){
@@ -2069,7 +2080,7 @@ async function resumeBuilder(id,mode='resume',restore=false){
     controller.route(id,mode);
     if(restore){history.replaceState({builderNav:builderHistory('builderView',0)},'');setAppView('builderView')}else enterBuilderView();
     showBuilderRow(api,row,mode);
-  }catch(error){if(builderCurrent(owner,epoch)){if(error.code==='BRIEF_UNAVAILABLE'){builderController?.clearRoute();if(restore)setAppView('designTripView')}$('builderListMessage').textContent=error.message;$('builderMessage').textContent=error.message;builderConflict=true}}
+  }catch(error){if(builderCurrent(owner,epoch)){if(error.code==='BRIEF_UNAVAILABLE'){builderController?.clearRoute();if(restore)setAppView('constructionView')}$('builderListMessage').textContent=error.message;$('builderMessage').textContent=error.message;builderConflict=true}}
   finally{if(builderCurrent(owner,epoch)){builderBusy=false;renderBuilderControls()}}
 }
 async function saveBuilderNotes(event){
@@ -2088,21 +2099,22 @@ async function restoreBuilderSession(){
     const {controller}=await getBuilderController();
     if(controller.state.pending){const api=await loadBuilderApi();$('builderHeading').textContent=api.builderModes[controller.state.pending.mode]?.title||'Continua dissenyant';setAppView('builderView');history.replaceState({builderNav:builderHistory('builderView',0)},'');$('builderMessage').textContent='Hi ha un desament pendent. Reintenta la mateixa operació per recuperar-ne el resultat.';renderBuilderControls()}
     else if(controller.state.route)await resumeBuilder(controller.state.route.id,controller.state.route.mode,true);
+    else await restoreHomeRoute();
   }catch(error){$('builderListMessage').textContent=error.message}
 }
 document.querySelectorAll('[data-home-view]').forEach(button=>button.onclick=()=>navigateBuilder(button.dataset.homeView));
 document.querySelectorAll('[data-builder-back]').forEach(button=>button.onclick=()=>builderBack(button.dataset.builderBack));
 document.querySelectorAll('[data-builder-mode]').forEach(button=>button.onclick=()=>startBuilder(button.dataset.builderMode));
-$('builderListRetry').onclick=loadBuilderList;$('builderPendingRetry').onclick=$('builderRetry').onclick=runBuilderPending;
+$('builderStartRetry').onclick=runBuilderPending;$('builderListRetry').onclick=loadBuilderList;$('builderPendingRetry').onclick=$('builderRetry').onclick=runBuilderPending;
 $('builderNotesForm').onsubmit=saveBuilderNotes;
 $('builderReload').onclick=()=>{if(builderRow&&(!builderDirty()||confirm('Recarregar descartarà el text no desat. Continuar?'))){builderBase=$('builderNotes').value;resumeBuilder(builderRow.id,builderController.state.route?.mode||'resume')}};
 // TRAVEL_BUILDER_UI_END
 
-const APP_VIEWS=['tripsHomeView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView']);
+const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView']);
 const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
-  if(['tripsHomeView','designTripView','manualTripView','builderView'].includes(view))return true;
+  if(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(view))return true;
   if(!value)return false;
   return (isLondonTrip(value)?LONDON_ALLOWED_VIEWS:GENERIC_ALLOWED_VIEWS).has(view);
 }
@@ -2113,21 +2125,22 @@ function normalizedNavigationView(view,value=trip){
   return isLondonTrip(value)?'dashboardView':'genericDashboardView';
 }
 function persistNavigationState(view){
-  if(['designTripView','manualTripView','builderView'].includes(view))return;
+  if(['upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(view))return;
   const userId=session?.user?.id,key=navigationStateStorageKey(userId);if(!key||navigationRestoreInProgress)return;
   const safeView=normalizedNavigationView(view,trip),state={tripId:trip?.id||null,view:safeView,savedAt:Date.now()};
   try{localStorage.setItem(key,JSON.stringify(state))}catch(_){}
 }
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
 function setAppView(id){
-  if(!trip&&!['tripsHomeView','designTripView','manualTripView','builderView'].includes(id))id='tripsHomeView';
+  if(!trip&&!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id))id='tripsHomeView';
   if(isLondonTrip()&&['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView'].includes(id))id='dashboardView';
   if(!isLondonTrip()&&!GENERIC_ALLOWED_VIEWS.has(id))id='genericDashboardView';
   if(id==='itineraryView')configureItineraryContent();
   APP_VIEWS.forEach(v=>$(v)?.classList.toggle('hidden',v!==id));
   document.querySelectorAll('[data-home-view]').forEach(button=>button.setAttribute('aria-current',button.dataset.homeView===id?'page':'false'));
+  if(['dashboardView','genericDashboardView'].includes(id)){const label=homeTripReturn?.owner===session?.user?.id?({upcomingTripsView:'Propers',pastTripsView:'Passats',manualTripView:'Afegeix el viatge manualment',joinTripView:'Uneix-te a un viatge'})[homeTripReturn.parent]:null;[$('backToTrips'),...document.querySelectorAll('[data-trips-home]')].forEach(button=>{if(button)button.textContent='← '+(label||'Els meus viatges')})}
   persistNavigationState(id);
-  updateTripHomeClock();
+  updateTripHomeClock();updateHomeClock();
   if(id==='documentsView')updateDocumentsBack();
   if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView')loadActivityViewData();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
 }
@@ -3426,15 +3439,58 @@ function updateChecklistLabels(){
   select.innerHTML=checklistCategories().map(category=>`<option value="${esc(category.id)}">${esc(category.icon)} ${esc(category.label)}</option>`).join('');
 }
 function renderTripsHome(){
-  $('tripCountLabel').textContent=`${trips.length} ${trips.length===1?'viatge':'viatges'}`;
-  const groups=homeTripGroups(trips);
-  $('tripsList').innerHTML=trips.length?groups.map(group=>`<h2 class="trip-group-heading">${group.label}</h2>`+group.rows.map(value=>{
+  const groups=homeTripGroups(trips),rows=key=>groups.find(g=>g.key===key)?.rows||[];
+  $('homeActive').classList.toggle('hidden',!rows('active').length);
+  $('homeUndated').classList.toggle('hidden',!rows('undated').length);
+  $('homeTripsEmpty').classList.toggle('hidden',!!trips.length);
+  for(const [key,id] of [['active','activeTripsList'],['upcoming','upcomingTripsList'],['past','pastTripsList'],['undated','undatedTripsList']]){
+    $(id).innerHTML=rows(key).length?rows(key).map(value=>{
     const duration=tripDuration(value),london=isLondonTrip(value),selected=value.id===trip?.id;
-    return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(tripStatus(value))}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button></article>`;
-  }).join('')).join(''):'<div class="trip-empty"><strong>Encara no tens cap viatge.</strong><br>Dissenya’n un o uneix-t’hi amb un codi d’invitació.</div>';
-  $('tripsList').querySelectorAll('[data-select-trip]').forEach(button=>button.onclick=()=>selectTrip(button.dataset.selectTrip,{open:true}));
-  $('londonDepartureCenter').classList.toggle('hidden',!isLondonTrip());
+    return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(({active:'En curs',upcoming:'En preparació',past:'Completat',undated:'Dates pendents'})[key])}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button></article>`;
+
+    }).join(''):`<p class="muted">${key==='upcoming'?'Encara no tens viatges propers.':key==='past'?'Encara no tens viatges passats.':''}</p>`;
+    $(id).querySelectorAll('[data-select-trip]').forEach(button=>button.onclick=()=>openHomeTrip(button.dataset.selectTrip));
+  }
 }
+// HOME-01 navigation is scoped to category entry/detail; Photos retains its own history.
+let homeTripReturn=null,homeClockTimer=null;
+function recordHomeTripEntry(id){
+  const parent=visibleAppView();
+  if(!['tripsHomeView','upcomingTripsView','pastTripsView','manualTripView','joinTripView'].includes(parent))return;
+  homeTripReturn={owner:session?.user?.id,parent,id};
+  if(!history.state?.builderNav)history.replaceState({builderNav:builderHistory(parent,0)},'');
+  history.pushState({homeTripDetail:homeTripReturn},'');
+}
+async function openHomeTrip(id){recordHomeTripEntry(id);await selectTrip(id,{open:true})}
+function returnFromHomeTrip(){
+  if(homeTripReturn?.owner===session?.user?.id){
+    if(history.state?.homeTripDetail){history.back();return}
+    navigateBuilder(homeTripReturn.parent,false);return;
+  }
+  navigateBuilder('tripsHomeView',false);
+}
+async function restoreHomeRoute(){
+  const detail=history.state?.homeTripDetail,nav=history.state?.builderNav;
+  if(detail?.owner===session?.user?.id&&trips.some(t=>t.id===detail.id)){
+    homeTripReturn=detail;await selectTrip(detail.id,{open:true});return;
+  }
+  if(nav?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView'].includes(nav.view))navigateBuilder(nav.view,false);
+}
+window.addEventListener('popstate',event=>{
+  if(typeof photoNavigation!=='undefined'&&photoNavigation||event.state?.freyaPhoto)return;
+  const view=visibleAppView(),nav=event.state?.builderNav,detail=event.state?.homeTripDetail;
+  if(homeTripReturn?.owner===session?.user?.id&&['dashboardView','genericDashboardView'].includes(view)&&nav?.owner===session?.user?.id&&nav.view===homeTripReturn.parent)navigateBuilder(nav.view,false);
+  else if(detail?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','manualTripView','joinTripView'].includes(view)&&trips.some(t=>t.id===detail.id)){homeTripReturn=detail;selectTrip(detail.id,{open:true})}
+});
+function updateHomeClock(){
+  clearTimeout(homeClockTimer);
+  if(!session||document.visibilityState==='hidden'||!['tripsHomeView','upcomingTripsView','pastTripsView'].includes(visibleAppView()))return;
+  renderTripsHome();
+  // IANA offsets are minute-aligned for current trips; repaint at the next minute boundary.
+  homeClockTimer=setTimeout(updateHomeClock,60000-Date.now()%60000+20);
+}
+document.addEventListener('visibilitychange',updateHomeClock);
+window.addEventListener('pageshow',updateHomeClock);
 function updateTripPresentation(){
   const london=isLondonTrip();
   $('tripTitleTop').textContent=trip?.name||'Els meus viatges';
@@ -3504,6 +3560,7 @@ async function initializeGenericChecklistDefaults(){
 async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}){
   const requestUserId=session?.user?.id;if(!requestUserId)return false;
   const {data,error}=await db.rpc('get_my_trips');if(error)throw error;if(session?.user?.id!==requestUserId)return false;trips=data||[];
+  if(open&&preferredTripId&&trips.some(t=>t.id===preferredTripId))recordHomeTripEntry(preferredTripId);
   if(coldStart&&!pendingInitialRoute){
     const savedId=readSelectedTripId();if(savedId&&!trips.some(value=>value.id===savedId))forgetSelectedTrip();
     trip=null;tripLoadGeneration+=1;await disconnectTripRealtime();clearTripScopedState();updateTripPresentation();setAppView('tripsHomeView');return true;
@@ -3639,7 +3696,7 @@ async function loadItems(){
 async function toggleItem(id,done){if(!trip)return;const tripId=trip.id,generation=tripLoadGeneration;const {error}=await db.from('checklist_items').update({done}).eq('id',id).eq('trip_id',tripId);if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
 async function deleteItem(id,templateKey=''){if(!trip)return;const tripId=trip.id,generation=tripLoadGeneration,dismissTemplate=!isLondonTrip()&&!!templateKey;const query=dismissTemplate?db.from('checklist_items').update({dismissed:true}).eq('id',id).eq('trip_id',tripId):db.from('checklist_items').delete().eq('id',id).eq('trip_id',tripId);const {error}=await query;if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
 document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.open==='documentsView'){clearDocumentsReturnContext();clearAccommodationVoucherFocus()}if(['genericFlightsView','accommodationView','activitiesView','itineraryView'].includes(b.dataset.open))clearItinerarySourceContext();setAppView(b.dataset.open)});
-$('backToTrips').onclick=()=>setAppView('tripsHomeView');document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=()=>setAppView('tripsHomeView'));document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-generic-module]').forEach(b=>b.onclick=()=>openGenericModule(b.dataset.genericModule));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView(tripDashboardId()));document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
+$('backToTrips').onclick=returnFromHomeTrip;document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=returnFromHomeTrip);document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-generic-module]').forEach(b=>b.onclick=()=>openGenericModule(b.dataset.genericModule));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView(tripDashboardId()));document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
 document.querySelectorAll('[data-source-back]').forEach(button=>button.onclick=handleItinerarySourceBack);
 $('refreshGenericItinerary').onclick=()=>loadGenericItinerary(true);
 $('addManualItineraryItem').onclick=()=>openManualItineraryForm();

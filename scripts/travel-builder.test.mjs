@@ -109,7 +109,7 @@ test('logout during slow create cannot paint next user UI',async()=>{
 });
 test('Home groups active/future/past without changing trip data or selection',()=>{
  const h=harness(),trips=[{id:'past',start_date:'2026-01-01',end_date:'2026-01-02'},{id:'future',start_date:'2027-01-01',end_date:'2027-01-02'},{id:'now',start_date:'2026-09-25',end_date:'2026-09-27'}];
- const before=JSON.stringify(trips),groups=h.s.homeTripGroups(trips,'2026-09-26');
+ trips.forEach(t=>t.time_zone='Europe/Madrid');const before=JSON.stringify(trips),groups=h.s.homeTripGroups(trips,'2026-09-26T12:00:00Z');
  assert.equal(groups.map(g=>g.label).join(','),'En curs,Propers,Passats');assert.equal(groups[0].rows[0].id,'now');assert.equal(JSON.stringify(trips),before);
 });
 test('separate views, complete manual form, old Search entry removed, backend intact',()=>{
