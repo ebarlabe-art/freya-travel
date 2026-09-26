@@ -306,7 +306,23 @@
     #manualTripView input,#manualTripView select{box-sizing:border-box;width:100%;min-height:44px;padding:10px;font-size:16px}
     #builderView textarea{display:block;box-sizing:border-box;width:100%;max-width:100%;padding:14px;margin:12px 0;font:inherit;font-size:16px;border:1px solid #bba8cc;border-radius:14px;resize:vertical}
     #builderView button,#manualTripView button,#designTripView button{min-height:44px}#builderKnown,#builderMessage,#builderListMessage{overflow-wrap:anywhere}.trip-group-heading{grid-column:1/-1;margin-bottom:0}
-  </style>
+
+/* TB-03: scoped progressive Builder, 44px targets and naturally scrolling actions. */
+#builderLive{min-width:0}#builderView{padding-bottom:max(32px,env(safe-area-inset-bottom))}
+#builderView button,#builderView select,#builderView input{min-height:44px;max-width:100%}
+#builderLive label,#builderNotesPanel label{display:grid;gap:6px;margin:12px 0}
+#builderLive input,#builderLive select,#builderLive textarea,#builderNotes{box-sizing:border-box;width:100%;font:inherit;padding:11px;border:1px solid #9aa5b1;border-radius:10px;background:#fff;color:#17263a}
+#builderLive fieldset{min-width:0;border:1px solid #d4dde8;border-radius:12px;margin:14px 0;padding:12px}
+#builderLive legend{font-weight:700}#builderLive button{white-space:normal;overflow-wrap:anywhere}
+#builderLive button:focus-visible,#builderLive input:focus-visible,#builderLive select:focus-visible{outline:3px solid #155ba8;outline-offset:2px}
+.live-card,.live-editor{border:1px solid #d4dde8;border-radius:16px;padding:16px;margin:16px 0;background:#fff}
+.live-card h2,.live-editor h2{font-size:1.12rem;margin:0 0 12px}.live-card button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;background:#f3f6fa;color:#17263a;border:0;margin:5px 0;padding:10px;border-radius:10px}
+.live-card button span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}.live-card small{flex:none;font-size:12px}.live-card summary{padding:14px 0;cursor:pointer}
+.live-chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.live-chips button{flex:1 1 auto;padding:10px 12px;border:1px solid #718096;border-radius:20px;background:white;color:#17263a}.live-chips button[aria-pressed=true]{background:#174d79;color:white;border-color:#174d79}
+.live-editor summary{min-height:44px;display:flex;align-items:center;cursor:pointer}.live-editor summary::after{content:"⌄";margin-left:auto}
+.live-interest{border-top:1px solid #d4dde8;margin-top:14px;padding-top:14px}.live-interest button{background:#fff;color:#833333;border:1px solid #ba7777}
+#builderLive [data-live-error]{color:#922d2d}#builderView button:disabled{opacity:.6;cursor:wait}
+</style>
 </head>
 <body>
 <main class="shell">
@@ -384,11 +400,15 @@
     <div id="builderView" class="hidden trips-home">
       <button type="button" data-builder-back="constructionView">← Tornar</button>
       <h1 id="builderHeading">Continua dissenyant</h1>
-      <p id="builderKnown"></p><p id="builderPrompt"></p>
-      <form id="builderNotesForm"><label for="builderNotes">Explica’ns el viatge que tens al cap</label><textarea id="builderNotes" rows="7" maxlength="2000" placeholder="Vull neu, ambient de Nadal i alguna activitat especial…"></textarea><button id="builderSave" type="submit">Desa la idea</button></form>
+      <p id="builderKnown" class="hidden"></p><p id="builderPrompt"></p>
+      <div id="builderLive"></div>
+      <div id="builderNotesPanel" class="hidden">
+      <form id="builderNotesForm"><label for="builderNotes">Explica’ns el viatge que tens al cap</label><textarea id="builderNotes" rows="4" maxlength="2000" placeholder="Vull neu, ambient de Nadal i alguna activitat especial…"></textarea><button id="builderSave" type="submit">Desa la idea</button></form>
       <p>Desem el teu text tal com l’escrius. Encara no generem propostes ni interpretem la idea.</p>
+      </div>
       <p id="builderMessage" role="status" aria-live="polite"></p>
       <button id="builderRetry" type="button" class="hidden">Reintenta la mateixa operació</button>
+      <button type="button" id="builderReview" class="hidden">Revisar</button>
       <button id="builderReload" type="button" class="hidden">Recarrega l’esborrany</button>
     </div>
 
@@ -1956,7 +1976,7 @@ function subscribeAccommodations(){
   accommodationChannel=db.channel('accommodations-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'trip_accommodations',filter:`trip_id=eq.${trip.id}`},reconcile).on('postgres_changes',{event:'*',schema:'public',table:'trip_accommodation_documents',filter:`trip_id=eq.${trip.id}`},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
 }
 // TRAVEL_BUILDER_UI_START — home-only navigation; operational trips remain separate.
-let builderApiPromise=null,builderController=null,builderRow=null,builderBase='',builderBusy=false,builderConflict=false,builderEpoch=0,builderListSequence=0;
+let builderApiPromise=null,builderController=null,builderRow=null,builderBase='',builderBusy=false,builderConflict=false,builderEpoch=0,builderListSequence=0,builderLive=null;
 function loadBuilderApi(){return builderApiPromise??=import('./domain/travel-builder.mjs').catch(error=>{builderApiPromise=null;throw error})}
 function homeTripPhase(value,now=new Date()){
   const valid=date=>typeof date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(Date.parse(date))&&new Date(date+'T00:00:00Z').toISOString().slice(0,10)===date;
@@ -1974,7 +1994,7 @@ function homeTripGroups(values,now=new Date()){
   groups.forEach(group=>group.rows.sort((a,b)=>group.key==='past'?String(b.end_date||'').localeCompare(a.end_date||''):String(a.start_date||'').localeCompare(b.start_date||'')));
   return groups.filter(group=>group.rows.length);
 }
-function resetBuilderUi(){if(typeof homeTripReturn!=='undefined')homeTripReturn=null;builderEpoch++;builderListSequence++;builderController=null;builderRow=null;builderBase='';builderBusy=false;builderConflict=false;$('builderNotes').value='';$('builderStartMessage').textContent='';$('builderBriefList').innerHTML='';$('builderKnown').textContent='';$('builderMessage').textContent=''}
+function resetBuilderUi(){builderLive?.clear();builderLive=null;if(typeof homeTripReturn!=='undefined')homeTripReturn=null;builderEpoch++;builderListSequence++;builderController=null;builderRow=null;builderBase='';builderBusy=false;builderConflict=false;$('builderNotes').value='';$('builderStartMessage').textContent='';$('builderBriefList').innerHTML='';$('builderKnown').textContent='';$('builderMessage').textContent=''}
 function builderCurrent(owner,epoch){return session?.user?.id===owner&&builderEpoch===epoch}
 async function getBuilderController(){
   const owner=session?.user?.id,epoch=builderEpoch;if(!owner)throw new Error('Torna a iniciar sessió.');
@@ -1982,11 +2002,11 @@ async function getBuilderController(){
   if(builderController?.owner!==owner)builderController=new api.BuilderSession(db,owner,sessionStorage);
   return {api,controller:builderController,owner,epoch};
 }
-function builderDirty(){return visibleAppView()==='builderView'&&builderRow&&$('builderNotes').value!==builderBase}
+function builderDirty(){return visibleAppView()==='builderView'&&builderRow&&($('builderNotes').value!==builderBase||builderLive?.dirty)}
 function canLeaveBuilder(){return !builderBusy&&(!builderDirty()||confirm('Sortir sense desar els canvis de la idea?'))}
 function builderHistory(view,depth=(history.state?.builderNav?.depth||0)+1){return {owner:session?.user?.id,view,depth,parent:view==='builderView'?(history.state?.builderNav?.parent||(['designTripView','constructionView'].includes(visibleAppView())?visibleAppView():'constructionView')):null}}
-function navigateBuilder(view,push=true){
-  if(!session||!canLeaveBuilder())return;
+function navigateBuilder(view,push=true,leaveChecked=false){
+  if(!session||!leaveChecked&&!canLeaveBuilder())return;
   if(view!=='builderView'&&builderController){try{builderController.clearRoute()}catch(error){$('builderMessage').textContent=error.message;return}}
   if(push){
     if(!history.state?.builderNav)history.replaceState({...history.state,builderNav:builderHistory(visibleAppView(),0)},'');
@@ -1995,7 +2015,7 @@ function navigateBuilder(view,push=true){
   setAppView(view);if(!push&&history.state?.builderNav?.view!==view)history.replaceState({builderNav:builderHistory(view,0)},'');if(view==='constructionView')loadBuilderList();if(view==='designTripView')getBuilderController().then(()=>renderBuilderControls()).catch(error=>$('builderStartMessage').textContent=error.message);
 }
 function builderBack(fallback){
-  if(!canLeaveBuilder())return;
+  if(builderBusy)return;
   if(visibleAppView()==='builderView')fallback=history.state?.builderNav?.parent||fallback;
   if(history.state?.builderNav?.owner===session?.user?.id&&history.state.builderNav.depth>0)history.back();else navigateBuilder(fallback,false);
 }
@@ -2005,11 +2025,13 @@ window.addEventListener('popstate',event=>{
   const target=event.state?.builderNav;
   if(!target||target.owner!==session?.user?.id||!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(target.view))return;
   if(!canLeaveBuilder()){history.pushState({builderNav:builderHistory(visibleAppView())},'');return}
-  if(target.view==='builderView'){navigateBuilder('constructionView',false);return} // Forward never manufactures a new brief.
-  navigateBuilder(target.view,false);
+  if(target.view==='builderView'){navigateBuilder('constructionView',false,true);return} // Forward never manufactures a new brief.
+  navigateBuilder(target.view,false,true);
 });
 function renderBuilderControls(){
   const pending=!!builderController?.state.pending;
+  builderLive?.setLocked(builderBusy||pending||!builderRow||builderConflict);
+  $('builderReview').classList.toggle('hidden',!builderConflict);
   document.querySelectorAll('[data-builder-mode]').forEach(button=>button.disabled=builderBusy||pending);
   $('builderStartRetry').classList.toggle('hidden',!pending);$('builderStartRetry').disabled=builderBusy;
   $('builderPendingRetry').classList.toggle('hidden',!pending);$('builderPendingRetry').disabled=builderBusy;
@@ -2042,6 +2064,8 @@ function showBuilderRow(api,row,mode){
   const facts=api.briefKnownFacts(row);$('builderKnown').textContent=facts.length?'Ja sabem: '+facts.join(' · '):'Viatge en preparació';
   const destinationKnown=Object.values(row.document.decisions).some(d=>d.field==='destination'&&d.scope==='global'&&d.knowledge==='known'&&d.origin==='explicit_user'&&d.value.places?.length);
   $('builderPrompt').textContent=mode==='destination'&&destinationKnown?'Què més t’agradaria fer en aquest viatge?':api.builderModes[mode]?.prompt||'Pots continuar la idea sense repetir les dades que ja coneixem.';
+  if(!builderLive&&$('builderLive').querySelector)builderLive=new api.LiveBriefEditor($('builderLive'),{save:saveBuilderStructured,isBlocked:()=>builderBusy||!!builderController?.state.pending||builderConflict||!builderRow,openNotes:open=>$('builderNotesPanel').classList.toggle('hidden',!open),canSwitch:()=>!builderBusy&&!builderController?.state.pending&&($('builderNotes').value===builderBase||confirm('El text encara no està desat. Vols continuar editant un altre bloc?'))});
+  builderLive?.update(row,mode);
   $('builderMessage').textContent='';renderBuilderControls();
 }
 function enterBuilderView(){
@@ -2049,7 +2073,7 @@ function enterBuilderView(){
 }
 function builderFailure(error){
   if(['40001','42501','22023','23514'].includes(error.code)){builderController?.discardRejected();builderConflict=true}
-  $('builderMessage').textContent=error.code==='40001'?'El Brief ha canviat en un altre dispositiu. El teu text es conserva aquí; copia’l si el necessites abans de recarregar.':error.message||'No s’ha pogut desar.';
+  $('builderMessage').textContent=error.code==='40001'?'Aquest viatge s’ha actualitzat en un altre lloc. Recarrega o revisa els canvis que havies preparat.':error.message||'No s’ha pogut desar.';
 }
 async function runBuilderPending(){
   if(builderBusy)return;
@@ -2066,7 +2090,7 @@ async function startBuilder(mode){
   const owner=session?.user?.id,epoch=builderEpoch;builderBusy=true;$('builderStartMessage').textContent='Preparant l’esborrany…';renderBuilderControls();
   try{
     const {controller,api}=await getBuilderController();controller.prepareStart(mode);
-    builderRow=null;builderBase='';$('builderNotes').value='';$('builderKnown').textContent='';$('builderHeading').textContent=api.builderModes[mode].title;enterBuilderView();
+    builderLive?.clear();builderRow=null;builderBase='';$('builderNotes').value='';$('builderKnown').textContent='';$('builderHeading').textContent=api.builderModes[mode].title;enterBuilderView();
   }catch(error){if(builderCurrent(owner,epoch)){$('builderStartMessage').textContent=error.message;builderBusy=false;renderBuilderControls()}return}
   if(!builderCurrent(owner,epoch))return;builderBusy=false;await runBuilderPending();
 }
@@ -2077,17 +2101,26 @@ async function resumeBuilder(id,mode='resume',restore=false){
     const {api,controller}=await getBuilderController();
     if(controller.state.pending)throw new Error('Verifica primer l’operació pendent.');
     const row=await api.withBriefTimeout(api.loadOwnedBrief(db,owner,id));if(!builderCurrent(owner,epoch))return;
-    controller.route(id,mode);
+    controller.route(id,mode);builderLive?.clear();
     if(restore){history.replaceState({builderNav:builderHistory('builderView',0)},'');setAppView('builderView')}else enterBuilderView();
     showBuilderRow(api,row,mode);
   }catch(error){if(builderCurrent(owner,epoch)){if(error.code==='BRIEF_UNAVAILABLE'){builderController?.clearRoute();if(restore)setAppView('constructionView')}$('builderListMessage').textContent=error.message;$('builderMessage').textContent=error.message;builderConflict=true}}
   finally{if(builderCurrent(owner,epoch)){builderBusy=false;renderBuilderControls()}}
+}
+async function saveBuilderStructured(command){
+  if(builderBusy||builderConflict||!builderRow)return;
+  if($('builderNotes').value!==builderBase)throw new Error('Desa primer el text de La teva idea.');
+  const owner=session?.user?.id,epoch=builderEpoch;
+  const {controller}=await getBuilderController();if(!builderCurrent(owner,epoch))return;
+  controller.prepareCommand(builderRow,command);await runBuilderPending();
+  renderBuilderControls();
 }
 async function saveBuilderNotes(event){
   event.preventDefault();if(builderBusy||!builderRow||builderConflict)return;
   const owner=session?.user?.id,epoch=builderEpoch;
   try{
     const {api,controller}=await getBuilderController();if(!builderCurrent(owner,epoch))return;
+    if(builderLive?.dirty)throw new Error('Desa o descarta primer els canvis del bloc obert.');
     const text=$('builderNotes').value;if(text===builderBase)return;
     const hard=api.briefNotes(builderRow)?.decision.strength==='hard';
     if(hard&&!confirm('Confirmes que vols modificar aquestes notes protegides?'))return;
@@ -2107,7 +2140,8 @@ document.querySelectorAll('[data-builder-back]').forEach(button=>button.onclick=
 document.querySelectorAll('[data-builder-mode]').forEach(button=>button.onclick=()=>startBuilder(button.dataset.builderMode));
 $('builderStartRetry').onclick=runBuilderPending;$('builderListRetry').onclick=loadBuilderList;$('builderPendingRetry').onclick=$('builderRetry').onclick=runBuilderPending;
 $('builderNotesForm').onsubmit=saveBuilderNotes;
-$('builderReload').onclick=()=>{if(builderRow&&(!builderDirty()||confirm('Recarregar descartarà el text no desat. Continuar?'))){builderBase=$('builderNotes').value;resumeBuilder(builderRow.id,builderController.state.route?.mode||'resume')}};
+$('builderReview').onclick=()=>{$('builderMessage').textContent='Revisa els valors locals del bloc i copia el text que vulguis conservar abans de recarregar. No s’ha sobreescrit el viatge.';builderLive?.review()};
+$('builderReload').onclick=()=>{if(builderRow&&(!builderDirty()||confirm('Recarregar descartarà el text no desat. Continuar?'))){builderBase=$('builderNotes').value;if(builderLive)builderLive.dirty=false;resumeBuilder(builderRow.id,builderController.state.route?.mode||'resume')}};
 // TRAVEL_BUILDER_UI_END
 
 const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];

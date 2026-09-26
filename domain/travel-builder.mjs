@@ -1,3 +1,4 @@
+export {LiveBriefEditor} from './live-trip-brief.mjs';
 import {prepareBriefPatch, applyBriefPatch, readBrief, resolveBriefDecision} from './trip-brief.mjs';
 
 export const builderModes = {
@@ -65,6 +66,11 @@ export class BuilderSession {
   prepareSave(row,text,confirmed){
     if(this.state.pending)throw new Error('Hi ha un desament pendent de verificar.');
     this.state.pending={kind:'notes',mode:this.state.route?.mode||'resume',command:notesPatch(row,text,confirmed)};this.persist();
+  }
+  prepareCommand(row,command){
+    if(this.state.pending)throw new Error('Hi ha un desament pendent de verificar.');
+    if(row.owner_id!==this.owner||command.p_brief_id!==row.id||command.p_expected_revision!==row.revision)throw new Error('La sessió o revisió ha canviat.');
+    this.state.pending={kind:'structured',mode:this.state.route?.mode||'resume',command:structuredClone(command)};this.persist();
   }
   async execute(){
     const pending=this.state.pending;if(!pending)throw new Error('No hi ha cap operació pendent.');

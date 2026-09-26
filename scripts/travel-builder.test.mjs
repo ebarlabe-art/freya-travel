@@ -91,7 +91,7 @@ test('CAS conflict keeps typed text and requires explicit reload; deleted brief 
  h.$('builderNotes').value='Text local';h.s.db.rpc=async()=>({error:{code:'40001',message:'Conflict'}});
  await h.s.saveBuilderNotes({preventDefault(){}});
  assert.equal(h.$('builderNotes').value,'Text local');assert.equal(h.get('builderConflict'),true);
- assert.equal(h.$('builderSave').disabled,true);assert.match(h.$('builderMessage').textContent,/altre dispositiu/);
+ assert.equal(h.$('builderSave').disabled,true);assert.match(h.$('builderMessage').textContent,/altre lloc/);
  const other=harness();other.s.db=server().client;await other.s.resumeBuilder('deleted');assert.equal(other.get('builderRow'),null);
  assert.match(other.$('builderListMessage').textContent,/no està disponible/);
 });
