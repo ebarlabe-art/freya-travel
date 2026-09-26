@@ -300,6 +300,11 @@
     #photoDetailControls .photo-summary-line{color:white}#photoDetailControls .photo-summary-caption{color:#eee}
 
     @media(max-width:520px){.photo-context-fields{grid-template-columns:minmax(0,1fr)}.photo-queue-item{grid-template-columns:minmax(0,1fr)}.photo-queue-item>img{width:100%;height:180px}}
+    .builder-tabs{display:flex;gap:8px;margin:18px 0}.builder-tabs button{flex:1;min-height:48px;white-space:normal}.builder-tabs [aria-current="page"]{outline:3px solid #b49acb;outline-offset:2px}
+    .builder-doors{display:grid;gap:12px}.builder-doors button,#builderBriefList button{display:block;width:100%;text-align:left;padding:18px;min-height:64px;white-space:normal;overflow-wrap:anywhere;background:#f0e9f7;color:#452c5c}.builder-doors span,#builderBriefList small{display:block;margin-top:6px;font-weight:400}#builderBriefList{display:grid;gap:10px}
+    #manualTripView input,#manualTripView select{box-sizing:border-box;width:100%;min-height:44px;padding:10px;font-size:16px}
+    #builderView textarea{display:block;box-sizing:border-box;width:100%;max-width:100%;padding:14px;margin:12px 0;font:inherit;font-size:16px;border:1px solid #bba8cc;border-radius:14px;resize:vertical}
+    #builderView button,#manualTripView button,#designTripView button{min-height:44px}#builderKnown,#builderMessage,#builderListMessage{overflow-wrap:anywhere}.trip-group-heading{grid-column:1/-1;margin-bottom:0}
   </style>
 </head>
 <body>
@@ -328,104 +333,11 @@
         <p>Cada aventura té el seu espai, sense perdre mai els records de les anteriors.</p>
       </section>
 
+<nav class="builder-tabs" aria-label="Home"><button type="button" data-home-view="tripsHomeView">Els meus viatges</button><button type="button" data-home-view="designTripView">Dissenya un viatge</button></nav>
       <div class="trips-section-title"><h2>Viatges</h2><span id="tripCountLabel">0 viatges</span></div>
       <div id="tripsList" class="trip-list"></div>
 
-      <section class="new-trip-card">
-        <div style="font-size:2rem">🧭</div>
-        <h2>Com vols crear aquest viatge?</h2>
-        <p>Pots començar tu mateixa o deixar que Freya busqui opcions abans de crear-lo.</p>
-
-        <div class="trip-create-methods" role="group" aria-label="Manera de crear el viatge">
-          <button id="createTripManualMethod" class="trip-create-method active" type="button" aria-pressed="true">
-            <span class="trip-create-method-icon">✍️</span>
-            <span><strong>Crear manualment</strong><small>Ja saps on vas i vols preparar el viatge directament.</small></span>
-          </button>
-
-          <button id="createTripSearchMethod" class="trip-create-method" type="button" aria-pressed="false">
-            <span class="trip-create-method-icon">✨</span>
-            <span><strong>Buscar amb Freya</strong><small>Compara vols, allotjament i transport abans de crear-lo.</small></span>
-          </button>
-        </div>
-
-        <div id="createTripManualPanel">
-          <form id="createTripForm" class="trip-form">
-            <div class="trip-form-grid">
-              <label class="wide">Nom o destinació<input id="tripName" maxlength="100" placeholder="Ex.: Roma" required></label>
-              <label class="wide">Zona horària de la destinació
-                <select id="tripTimeZone" required>
-                  <option value="">Selecciona una zona horària…</option>
-                </select>
-                <small class="muted">Ex.: Lapònia → Europe/Helsinki · Roma → Europe/Rome.</small>
-              </label>
-              <label>Data d’inici<input id="tripStartDate" type="date" required></label>
-              <label>Data de fi<input id="tripEndDate" type="date" required></label>
-            </div>
-            <button id="createTrip" type="submit">Crear viatge</button>
-          </form>
-        </div>
-
-        <div id="createTripSearchPanel" class="trip-search-panel hidden">
-          <div class="trip-search-intro">
-            <h3>✨ Buscar amb Freya</h3>
-            <p>Digue’m d’on surts i què tens al cap. Buscarem opcions abans de crear el viatge definitiu.</p>
-          </div>
-
-          <form id="tripSearchForm" class="trip-search-grid">
-            <label>Origen
-              <input id="tripSearchOrigin" maxlength="120" placeholder="Ex.: Barcelona" required>
-            </label>
-
-            <label>Destinació
-              <input id="tripSearchDestination" maxlength="120" placeholder="Ex.: Rovaniemi" required>
-            </label>
-
-            <label>Data d’anada
-              <input id="tripSearchStartDate" type="date" required>
-            </label>
-
-            <label>Data de tornada
-              <input id="tripSearchEndDate" type="date" required>
-            </label>
-
-            <label>Adults
-              <select id="tripSearchAdults">
-                <option value="1">1 adult</option>
-                <option value="2" selected>2 adults</option>
-                <option value="3">3 adults</option>
-                <option value="4">4 adults</option>
-                <option value="5">5 adults</option>
-                <option value="6">6 adults</option>
-              </select>
-            </label>
-
-            <label>Cabina
-              <select id="tripSearchCabin">
-                <option value="economy">Econòmica</option>
-                <option value="premium_economy">Premium Economy</option>
-                <option value="business">Business</option>
-                <option value="first">First</option>
-              </select>
-            </label>
-
-            <div class="trip-search-services" aria-label="Què vols buscar?">
-              <label><input id="tripSearchFlights" type="checkbox" checked> ✈️ Vols</label>
-              <label><input id="tripSearchHotels" type="checkbox" checked> 🏨 Allotjament</label>
-              <label><input id="tripSearchCars" type="checkbox"> 🚗 Cotxe</label>
-            </div>
-
-            <div class="trip-search-actions">
-              <button id="searchTripOptions" type="submit">Buscar opcions</button>
-            </div>
-          </form>
-
-          <p class="trip-search-note">Els resultats es compararan abans de crear cap viatge o reserva.</p>
-          <p id="tripSearchMsg" class="message hidden" role="status" aria-live="polite"></p>
-        </div>
-
-        <div class="join-trip"><input id="inviteInput" placeholder="Codi d’invitació" aria-label="Codi d’invitació"><button id="joinTrip" type="button">Unir-m’hi</button></div>
-        <p id="tripMsg" class="message hidden" role="status" aria-live="polite"></p>
-      </section>
+      <section class="new-trip-card"><h2>Uneix-te a un viatge</h2><div class="join-trip"><input id="inviteInput" placeholder="Codi d’invitació" aria-label="Codi d’invitació"><button id="joinTrip" type="button">Unir-m’hi</button></div><p id="joinTripMsg" class="message hidden" role="status"></p></section>
 
       <section id="londonDepartureCenter" class="departure-center hidden">
         <h2>🧳 Centre de sortida</h2>
@@ -441,6 +353,46 @@
       </section>
       <div class="trips-footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.7 · Galeria de fotos</div>
     </div>
+    <div id="designTripView" class="hidden trips-home">
+      <h1>Dissenya un viatge</h1><nav class="builder-tabs" aria-label="Home"><button type="button" data-home-view="tripsHomeView">Els meus viatges</button><button type="button" data-home-view="designTripView">Dissenya un viatge</button></nav>
+      <section id="builderContinue" class="new-trip-card hidden"><h2>Continua dissenyant</h2><div id="builderBriefList"></div></section>
+      <p id="builderListMessage" role="status"></p><button id="builderListRetry" type="button">Actualitza esborranys</button>
+      <button id="builderPendingRetry" type="button" class="hidden">Verifica l’operació pendent</button>
+      <section class="new-trip-card"><h2>Comença un viatge nou</h2><div class="builder-doors">
+        <button type="button" data-builder-mode="inspire"><strong>✨ Inspira’m</strong><span>No sé on anar. Ajuda’m a trobar el viatge.</span></button>
+        <button type="button" data-builder-mode="destination"><strong>📍 Ja sé on vull anar</strong><span>Tinc destinació. Ajuda’m a construir-lo.</span></button>
+        <button type="button" data-builder-mode="idea"><strong>🧭 Tinc una idea</strong><span>Sé més o menys què vull. Ajuda’m a donar-li forma.</span></button>
+      </div></section>
+      <section class="new-trip-card"><p>Ja tens el viatge muntat?</p><button type="button" data-home-view="manualTripView">Afegeix-lo manualment</button></section>
+    </div>
+    <div id="manualTripView" class="hidden trips-home"><button type="button" data-builder-back="designTripView">← Tornar</button><section class="new-trip-card"><h1>Afegeix el viatge manualment</h1>
+          <form id="createTripForm" class="trip-form">
+            <div class="trip-form-grid">
+              <label class="wide">Nom o destinació<input id="tripName" maxlength="100" placeholder="Ex.: Roma" required></label>
+              <label class="wide">Zona horària de la destinació
+                <select id="tripTimeZone" required>
+                  <option value="">Selecciona una zona horària…</option>
+                </select>
+                <small class="muted">Ex.: Lapònia → Europe/Helsinki · Roma → Europe/Rome.</small>
+              </label>
+              <label>Data d’inici<input id="tripStartDate" type="date" required></label>
+              <label>Data de fi<input id="tripEndDate" type="date" required></label>
+            </div>
+            <button id="createTrip" type="submit">Crear viatge</button>
+          </form>
+      <p id="tripMsg" class="message hidden" role="status" aria-live="polite"></p>
+    </section></div>
+    <div id="builderView" class="hidden trips-home">
+      <button type="button" data-builder-back="designTripView">← Tornar</button>
+      <h1 id="builderHeading">Continua dissenyant</h1>
+      <p id="builderKnown"></p><p id="builderPrompt"></p>
+      <form id="builderNotesForm"><label for="builderNotes">Explica’ns el viatge que tens al cap</label><textarea id="builderNotes" rows="7" maxlength="2000" placeholder="Vull neu, ambient de Nadal i alguna activitat especial…"></textarea><button id="builderSave" type="submit">Desa la idea</button></form>
+      <p>Desem el teu text tal com l’escrius. Encara no generem propostes ni interpretem la idea.</p>
+      <p id="builderMessage" role="status" aria-live="polite"></p>
+      <button id="builderRetry" type="button" class="hidden">Reintenta la mateixa operació</button>
+      <button id="builderReload" type="button" class="hidden">Recarrega l’esborrany</button>
+    </div>
+
 
     <div id="genericDashboardView" class="hidden">
       <button class="dashboard-switch" type="button" data-trips-home>← Els meus viatges</button>
@@ -2004,11 +1956,153 @@ function subscribeAccommodations(){
   const reconcile=()=>{if(tripRequestIsCurrent(subscribedTripId,subscribedGeneration)&&!isLondonTrip())loadAccommodations(true)};
   accommodationChannel=db.channel('accommodations-'+trip.id).on('postgres_changes',{event:'*',schema:'public',table:'trip_accommodations',filter:`trip_id=eq.${trip.id}`},reconcile).on('postgres_changes',{event:'*',schema:'public',table:'trip_accommodation_documents',filter:`trip_id=eq.${trip.id}`},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
 }
-const APP_VIEWS=['tripsHomeView','dashboardView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView']);
+// TRAVEL_BUILDER_UI_START — home-only navigation; operational trips remain separate.
+let builderApiPromise=null,builderController=null,builderRow=null,builderBase='',builderBusy=false,builderConflict=false,builderEpoch=0,builderListSequence=0;
+function loadBuilderApi(){return builderApiPromise??=import('./domain/travel-builder.mjs').catch(error=>{builderApiPromise=null;throw error})}
+function homeTripGroups(values,today){
+  if(!today){const d=new Date();today=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+  const groups=[{label:'En curs',rows:[]},{label:'Propers',rows:[]},{label:'Passats',rows:[]}];
+  values.forEach(row=>groups[row.start_date&&row.end_date&&row.start_date<=today&&row.end_date>=today?0:row.end_date&&row.end_date<today?2:1].rows.push(row));
+  groups.forEach((group,i)=>group.rows.sort((a,b)=>i===2?String(b.end_date||'').localeCompare(a.end_date||''):String(a.start_date||'9999').localeCompare(b.start_date||'9999')));
+  return groups.filter(group=>group.rows.length);
+}
+function resetBuilderUi(){builderEpoch++;builderListSequence++;builderController=null;builderRow=null;builderBase='';builderBusy=false;builderConflict=false;$('builderNotes').value='';$('builderBriefList').innerHTML='';$('builderKnown').textContent='';$('builderMessage').textContent=''}
+function builderCurrent(owner,epoch){return session?.user?.id===owner&&builderEpoch===epoch}
+async function getBuilderController(){
+  const owner=session?.user?.id,epoch=builderEpoch;if(!owner)throw new Error('Torna a iniciar sessió.');
+  const api=await loadBuilderApi();if(!builderCurrent(owner,epoch))throw new Error('La sessió ha canviat.');
+  if(builderController?.owner!==owner)builderController=new api.BuilderSession(db,owner,sessionStorage);
+  return {api,controller:builderController,owner,epoch};
+}
+function builderDirty(){return visibleAppView()==='builderView'&&builderRow&&$('builderNotes').value!==builderBase}
+function canLeaveBuilder(){return !builderBusy&&(!builderDirty()||confirm('Sortir sense desar els canvis de la idea?'))}
+function builderHistory(view,depth=(history.state?.builderNav?.depth||0)+1){return {owner:session?.user?.id,view,depth}}
+function navigateBuilder(view,push=true){
+  if(!session||!canLeaveBuilder())return;
+  if(view!=='builderView'&&builderController){try{builderController.clearRoute()}catch(error){$('builderMessage').textContent=error.message;return}}
+  if(push){
+    if(!history.state?.builderNav)history.replaceState({...history.state,builderNav:builderHistory(visibleAppView(),0)},'');
+    history.pushState({builderNav:builderHistory(view)},'');
+  }
+  setAppView(view);if(view==='designTripView')loadBuilderList();
+}
+function builderBack(fallback){
+  if(!canLeaveBuilder())return;
+  if(history.state?.builderNav?.owner===session?.user?.id&&history.state.builderNav.depth>0)history.back();else navigateBuilder(fallback,false);
+}
+window.addEventListener('popstate',event=>{
+  if(!['tripsHomeView','designTripView','manualTripView','builderView'].includes(visibleAppView()))return;
+  if(typeof photoNavigation!=='undefined'&&photoNavigation||event.state?.freyaPhoto)return;
+  const target=event.state?.builderNav;
+  if(!target||target.owner!==session?.user?.id||!['tripsHomeView','designTripView','manualTripView','builderView'].includes(target.view))return;
+  if(!canLeaveBuilder()){history.pushState({builderNav:builderHistory(visibleAppView())},'');return}
+  if(target.view==='builderView'){navigateBuilder('designTripView',false);return} // Forward never manufactures a new brief.
+  navigateBuilder(target.view,false);
+});
+function renderBuilderControls(){
+  const pending=!!builderController?.state.pending;
+  document.querySelectorAll('[data-builder-mode]').forEach(button=>button.disabled=builderBusy||pending);
+  $('builderPendingRetry').classList.toggle('hidden',!pending);$('builderPendingRetry').disabled=builderBusy;
+  $('builderRetry').classList.toggle('hidden',!pending);$('builderRetry').disabled=builderBusy;
+  $('builderNotes').disabled=builderBusy||pending||!builderRow||builderConflict;
+  $('builderSave').disabled=builderBusy||pending||!builderRow||builderConflict;
+  $('builderReload').classList.toggle('hidden',!builderRow);$('builderReload').disabled=builderBusy;
+  document.querySelectorAll('[data-builder-back]').forEach(button=>button.disabled=builderBusy);
+}
+async function loadBuilderList(){
+  const sequence=++builderListSequence,owner=session?.user?.id,epoch=builderEpoch;
+  $('builderBriefList').innerHTML='';$('builderContinue').classList.add('hidden');$('builderListMessage').textContent='Carregant esborranys…';
+  try{
+    const {api,controller}=await getBuilderController();
+    const rows=await api.withBriefTimeout(api.listOpenBriefs(db,owner,()=>builderCurrent(owner,epoch)&&sequence===builderListSequence));
+    if(!builderCurrent(owner,epoch)||sequence!==builderListSequence)return;
+    $('builderContinue').classList.toggle('hidden',!rows.length);
+    $('builderBriefList').innerHTML=rows.map(row=>`<button type="button" data-resume-brief="${esc(row.id)}"><strong>${esc(api.briefLabel(row))}</strong><small>Actualitzat ${esc(new Date(row.updated_at).toLocaleString('ca-ES'))}</small></button>`).join('');
+    $('builderBriefList').querySelectorAll('[data-resume-brief]').forEach(button=>button.onclick=()=>resumeBuilder(button.dataset.resumeBrief));
+    $('builderListMessage').textContent=controller.state.pending?'Hi ha una operació pendent de verificar. Reintenta-la abans de començar-ne una altra.':'';
+    renderBuilderControls();
+  }catch(error){if(builderCurrent(owner,epoch)&&sequence===builderListSequence)$('builderListMessage').textContent=error.message||'No s’han pogut carregar els esborranys.'}
+}
+function showBuilderRow(api,row,mode){
+  builderRow=row;builderConflict=false;
+  const notes=api.briefNotes(row);builderBase=notes?.decision.knowledge==='known'?notes.decision.value:'';
+  $('builderNotes').value=builderBase;
+  $('builderHeading').textContent=api.builderModes[mode]?.title||'Continua dissenyant';
+  const facts=api.briefKnownFacts(row);$('builderKnown').textContent=facts.length?'Ja sabem: '+facts.join(' · '):'Viatge en preparació';
+  const destinationKnown=Object.values(row.document.decisions).some(d=>d.field==='destination'&&d.scope==='global'&&d.knowledge==='known'&&d.origin==='explicit_user'&&d.value.places?.length);
+  $('builderPrompt').textContent=mode==='destination'&&destinationKnown?'Què més t’agradaria fer en aquest viatge?':api.builderModes[mode]?.prompt||'Pots continuar la idea sense repetir les dades que ja coneixem.';
+  $('builderMessage').textContent='';renderBuilderControls();
+}
+function enterBuilderView(){
+  if(visibleAppView()!=='builderView'){history.pushState({builderNav:builderHistory('builderView')},'');setAppView('builderView')}
+}
+function builderFailure(error){
+  if(['40001','42501','22023','23514'].includes(error.code)){builderController?.discardRejected();builderConflict=true}
+  $('builderMessage').textContent=error.code==='40001'?'El Brief ha canviat en un altre dispositiu. El teu text es conserva aquí; copia’l si el necessites abans de recarregar.':error.message||'No s’ha pogut desar.';
+}
+async function runBuilderPending(){
+  if(builderBusy)return;
+  const owner=session?.user?.id,epoch=builderEpoch;builderBusy=true;renderBuilderControls();
+  try{
+    const {api,controller}=await getBuilderController();if(!builderCurrent(owner,epoch))return;enterBuilderView();$('builderMessage').textContent='Verificant el desament…';
+    const row=await controller.execute();if(!builderCurrent(owner,epoch))return;
+    showBuilderRow(api,row,controller.state.route.mode);$('builderMessage').textContent='Esborrany desat.';
+  }catch(error){if(builderCurrent(owner,epoch))builderFailure(error)}
+  finally{if(builderCurrent(owner,epoch)){builderBusy=false;renderBuilderControls()}}
+}
+async function startBuilder(mode){
+  if(builderBusy)return;
+  const owner=session?.user?.id,epoch=builderEpoch;builderBusy=true;$('builderListMessage').textContent='Preparant l’esborrany…';renderBuilderControls();
+  try{
+    const {controller,api}=await getBuilderController();controller.prepareStart(mode);
+    builderRow=null;builderBase='';$('builderNotes').value='';$('builderKnown').textContent='';$('builderHeading').textContent=api.builderModes[mode].title;enterBuilderView();
+  }catch(error){if(builderCurrent(owner,epoch)){$('builderListMessage').textContent=error.message;builderBusy=false;renderBuilderControls()}return}
+  if(!builderCurrent(owner,epoch))return;builderBusy=false;await runBuilderPending();
+}
+async function resumeBuilder(id,mode='resume',restore=false){
+  if(builderBusy||!canLeaveBuilder())return;
+  const owner=session?.user?.id,epoch=builderEpoch;builderBusy=true;renderBuilderControls();
+  try{
+    const {api,controller}=await getBuilderController();
+    if(controller.state.pending)throw new Error('Verifica primer l’operació pendent.');
+    const row=await api.withBriefTimeout(api.loadOwnedBrief(db,owner,id));if(!builderCurrent(owner,epoch))return;
+    controller.route(id,mode);
+    if(restore){history.replaceState({builderNav:builderHistory('builderView',0)},'');setAppView('builderView')}else enterBuilderView();
+    showBuilderRow(api,row,mode);
+  }catch(error){if(builderCurrent(owner,epoch)){if(error.code==='BRIEF_UNAVAILABLE'){builderController?.clearRoute();if(restore)setAppView('designTripView')}$('builderListMessage').textContent=error.message;$('builderMessage').textContent=error.message;builderConflict=true}}
+  finally{if(builderCurrent(owner,epoch)){builderBusy=false;renderBuilderControls()}}
+}
+async function saveBuilderNotes(event){
+  event.preventDefault();if(builderBusy||!builderRow||builderConflict)return;
+  const owner=session?.user?.id,epoch=builderEpoch;
+  try{
+    const {api,controller}=await getBuilderController();if(!builderCurrent(owner,epoch))return;
+    const text=$('builderNotes').value;if(text===builderBase)return;
+    const hard=api.briefNotes(builderRow)?.decision.strength==='hard';
+    if(hard&&!confirm('Confirmes que vols modificar aquestes notes protegides?'))return;
+    controller.prepareSave(builderRow,text,hard);await runBuilderPending();
+  }catch(error){if(builderCurrent(owner,epoch)){$('builderMessage').textContent=error.message;renderBuilderControls()}}
+}
+async function restoreBuilderSession(){
+  try{
+    const {controller}=await getBuilderController();
+    if(controller.state.pending){const api=await loadBuilderApi();$('builderHeading').textContent=api.builderModes[controller.state.pending.mode]?.title||'Continua dissenyant';setAppView('builderView');history.replaceState({builderNav:builderHistory('builderView',0)},'');$('builderMessage').textContent='Hi ha un desament pendent. Reintenta la mateixa operació per recuperar-ne el resultat.';renderBuilderControls()}
+    else if(controller.state.route)await resumeBuilder(controller.state.route.id,controller.state.route.mode,true);
+  }catch(error){$('builderListMessage').textContent=error.message}
+}
+document.querySelectorAll('[data-home-view]').forEach(button=>button.onclick=()=>navigateBuilder(button.dataset.homeView));
+document.querySelectorAll('[data-builder-back]').forEach(button=>button.onclick=()=>builderBack(button.dataset.builderBack));
+document.querySelectorAll('[data-builder-mode]').forEach(button=>button.onclick=()=>startBuilder(button.dataset.builderMode));
+$('builderListRetry').onclick=loadBuilderList;$('builderPendingRetry').onclick=$('builderRetry').onclick=runBuilderPending;
+$('builderNotesForm').onsubmit=saveBuilderNotes;
+$('builderReload').onclick=()=>{if(builderRow&&(!builderDirty()||confirm('Recarregar descartarà el text no desat. Continuar?'))){builderBase=$('builderNotes').value;resumeBuilder(builderRow.id,builderController.state.route?.mode||'resume')}};
+// TRAVEL_BUILDER_UI_END
+
+const APP_VIEWS=['tripsHomeView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView']);
 const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
-  if(view==='tripsHomeView')return true;
+  if(['tripsHomeView','designTripView','manualTripView','builderView'].includes(view))return true;
   if(!value)return false;
   return (isLondonTrip(value)?LONDON_ALLOWED_VIEWS:GENERIC_ALLOWED_VIEWS).has(view);
 }
@@ -2019,17 +2113,19 @@ function normalizedNavigationView(view,value=trip){
   return isLondonTrip(value)?'dashboardView':'genericDashboardView';
 }
 function persistNavigationState(view){
+  if(['designTripView','manualTripView','builderView'].includes(view))return;
   const userId=session?.user?.id,key=navigationStateStorageKey(userId);if(!key||navigationRestoreInProgress)return;
   const safeView=normalizedNavigationView(view,trip),state={tripId:trip?.id||null,view:safeView,savedAt:Date.now()};
   try{localStorage.setItem(key,JSON.stringify(state))}catch(_){}
 }
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
 function setAppView(id){
-  if(!trip&&id!=='tripsHomeView')id='tripsHomeView';
+  if(!trip&&!['tripsHomeView','designTripView','manualTripView','builderView'].includes(id))id='tripsHomeView';
   if(isLondonTrip()&&['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView'].includes(id))id='dashboardView';
   if(!isLondonTrip()&&!GENERIC_ALLOWED_VIEWS.has(id))id='genericDashboardView';
   if(id==='itineraryView')configureItineraryContent();
   APP_VIEWS.forEach(v=>$(v)?.classList.toggle('hidden',v!==id));
+  document.querySelectorAll('[data-home-view]').forEach(button=>button.setAttribute('aria-current',button.dataset.homeView===id?'page':'false'));
   persistNavigationState(id);
   updateTripHomeClock();
   if(id==='documentsView')updateDocumentsBack();
@@ -3331,10 +3427,11 @@ function updateChecklistLabels(){
 }
 function renderTripsHome(){
   $('tripCountLabel').textContent=`${trips.length} ${trips.length===1?'viatge':'viatges'}`;
-  $('tripsList').innerHTML=trips.length?trips.map(value=>{
+  const groups=homeTripGroups(trips);
+  $('tripsList').innerHTML=trips.length?groups.map(group=>`<h2 class="trip-group-heading">${group.label}</h2>`+group.rows.map(value=>{
     const duration=tripDuration(value),london=isLondonTrip(value),selected=value.id===trip?.id;
     return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(tripStatus(value))}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button></article>`;
-  }).join(''):'<div class="trip-empty"><strong>Encara no tens cap viatge.</strong><br>Crea’n un o uneix-t’hi amb un codi d’invitació.</div>';
+  }).join('')).join(''):'<div class="trip-empty"><strong>Encara no tens cap viatge.</strong><br>Dissenya’n un o uneix-t’hi amb un codi d’invitació.</div>';
   $('tripsList').querySelectorAll('[data-select-trip]').forEach(button=>button.onclick=()=>selectTrip(button.dataset.selectTrip,{open:true}));
   $('londonDepartureCenter').classList.toggle('hidden',!isLondonTrip());
 }
@@ -3441,6 +3538,7 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
 }
 async function renderSession(next){
   const renderGeneration=++sessionRenderGeneration,nextUserId=next?.user?.id||null;
+  if(nextUserId!==session?.user?.id)resetBuilderUi();
   if(nextUserId&&lastAuthenticatedUserId&&nextUserId!==lastAuthenticatedUserId){clearNavigationState(lastAuthenticatedUserId);clearDocumentsReturnContext();clearAccommodationVoucherFocus();clearGenericItineraryState()}
   if(nextUserId)lastAuthenticatedUserId=nextUserId;session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');
   if(!session){if(lastAuthenticatedUserId)clearNavigationState(lastAuthenticatedUserId);lastAuthenticatedUserId=null;trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();clearGenericItineraryState();await disconnectTripRealtime();clearTripScopedState();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
@@ -3449,7 +3547,7 @@ async function renderSession(next){
     const coldStart=coldStartNavigationPending;
     await refreshTrips({coldStart});
     if(renderGeneration!==sessionRenderGeneration)return;
-    if(coldStart)coldStartNavigationPending=false;
+    if(coldStart){coldStartNavigationPending=false;if(!pendingInitialRoute)await restoreBuilderSession()}
   }catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
 }
 const LONDON_CHECKLIST_CATEGORIES=[
@@ -5000,148 +5098,7 @@ function populateTripTimeZoneOptions(){
 }
 
 populateTripTimeZoneOptions();
-function setTripCreationMethod(method){
-  const manual=method==='manual';
-
-  $('createTripManualPanel').classList.toggle('hidden',!manual);
-  $('createTripSearchPanel').classList.toggle('hidden',manual);
-
-  $('createTripManualMethod').classList.toggle('active',manual);
-  $('createTripSearchMethod').classList.toggle('active',!manual);
-
-  $('createTripManualMethod').setAttribute('aria-pressed',String(manual));
-  $('createTripSearchMethod').setAttribute('aria-pressed',String(!manual));
-
-  msg('tripMsg','');
-  msg('tripSearchMsg','');
-}
-
-$('createTripManualMethod').onclick=()=>setTripCreationMethod('manual');
-$('createTripSearchMethod').onclick=()=>setTripCreationMethod('search');
-
 $('tripStartDate').onchange=()=>{$('tripEndDate').min=$('tripStartDate').value;if(!$('tripEndDate').value||$('tripEndDate').value<$('tripStartDate').value)$('tripEndDate').value=$('tripStartDate').value};
-
-$('tripSearchStartDate').onchange=()=>{
-  const start=$('tripSearchStartDate').value;
-  const end=$('tripSearchEndDate');
-  end.min=start;
-  if(!end.value||end.value<start)end.value=start;
-};
-
-$('tripSearchForm').onsubmit=async e=>{
-  e.preventDefault();
-  msg('tripSearchMsg','');
-
-  if(!session){
-    msg('tripSearchMsg','La sessió ha caducat. Torna a iniciar sessió.',true);
-    return;
-  }
-
-  const origin=$('tripSearchOrigin').value.trim();
-  const destination=$('tripSearchDestination').value.trim();
-  const startDate=$('tripSearchStartDate').value;
-  const endDate=$('tripSearchEndDate').value;
-  const adults=Number($('tripSearchAdults').value);
-  const cabin=$('tripSearchCabin').value;
-
-  const services=[
-    $('tripSearchFlights').checked?'flights':null,
-    $('tripSearchHotels').checked?'hotels':null,
-    $('tripSearchCars').checked?'cars':null
-  ].filter(Boolean);
-
-  if(!origin||!destination||!startDate||!endDate){
-    msg('tripSearchMsg','Completa origen, destinació i dates.',true);
-    return;
-  }
-
-  if(endDate<startDate){
-    msg('tripSearchMsg','La tornada no pot ser anterior a l’anada.',true);
-    return;
-  }
-
-  if(!services.length){
-    msg('tripSearchMsg','Selecciona com a mínim què vols buscar.',true);
-    return;
-  }
-
-  const button=$('searchTripOptions');
-  button.disabled=true;
-  button.textContent='Buscant…';
-
-  try{
-    const {data,error}=await db.functions.invoke('travel-search',{
-      body:{
-        origin,
-        destination,
-        start_date:startDate,
-        end_date:endDate,
-        adults,
-        cabin,
-        services
-      }
-    });
-
-    if(error){
-      console.error('Freya Search error:',error);
-      msg(
-        'tripSearchMsg',
-        'No hem pogut contactar amb Freya Search: '+(error.message||'error desconegut'),
-        true
-      );
-      return;
-    }
-
-    if(!data?.ok){
-      msg('tripSearchMsg',data?.error||'Freya Search no ha pogut validar la consulta.',true);
-      return;
-    }
-
-    const providerNames={
-      skyscanner:'Skyscanner',
-      booking:'Booking.com',
-      expedia:'Expedia',
-      kayak:'KAYAK'
-    };
-
-    const serviceNames={
-      flights:'Vols',
-      hotels:'Allotjament',
-      cars:'Cotxe'
-    };
-
-    const providerState=services.map(service=>{
-      const sources=data.providers?.[service]?.sources||[];
-
-      if(!sources.length){
-        return serviceNames[service]+': cap proveïdor disponible';
-      }
-
-      return serviceNames[service]+': '+sources.map(source=>{
-        const name=providerNames[source.provider]||source.provider;
-        return name+' '+(source.configured?'connectat':'pendent de credencials');
-      }).join(' · ');
-    });
-
-    msg(
-      'tripSearchMsg',
-      '✅ Freya Search connectada · '+origin+' → '+destination+
-      ' · '+startDate+' → '+endDate+
-      ' · '+adults+' adult'+(adults===1?'':'s')+
-      ' · '+providerState.join(' · ')
-    );
-  }catch(error){
-    console.error('Freya Search exception:',error);
-    msg(
-      'tripSearchMsg',
-      'No hem pogut completar la cerca: '+(error?.message||'error desconegut'),
-      true
-    );
-  }finally{
-    button.disabled=false;
-    button.textContent='Buscar opcions';
-  }
-};
 $('createTripForm').onsubmit=async e=>{
   e.preventDefault();
   msg('tripMsg','');
@@ -5200,11 +5157,11 @@ $('createTripForm').onsubmit=async e=>{
 };
 
 $('joinTrip').onclick=async()=>{
-  msg('tripMsg','');
+  msg('joinTripMsg','');
 
   const code=$('inviteInput').value.trim().toUpperCase();
   if(!code){
-    msg('tripMsg','Escriu un codi d’invitació.',true);
+    msg('joinTripMsg','Escriu un codi d’invitació.',true);
     return;
   }
 
@@ -5214,7 +5171,7 @@ $('joinTrip').onclick=async()=>{
     const {data,error}=await db.rpc('join_trip_v2',{p_invite_code:code});
 
     if(error){
-      msg('tripMsg',error.message,true);
+      msg('joinTripMsg',error.message,true);
       return;
     }
 
@@ -5225,14 +5182,14 @@ $('joinTrip').onclick=async()=>{
       $('inviteInput').value='';
     }catch(loadError){
       msg(
-        'tripMsg',
+        'joinTripMsg',
         'T’has unit al viatge, però no hem pogut actualitzar la llista. No cal repetir el codi: refresca els viatges o torna a entrar a Freya.',
         true
       );
       console.error('Join correcte però refreshTrips ha fallat:',joinedId,loadError);
     }
   }catch(error){
-    msg('tripMsg',error?.message||'No t’has pogut unir al viatge.',true);
+    msg('joinTripMsg',error?.message||'No t’has pogut unir al viatge.',true);
   }finally{
     $('joinTrip').disabled=false;
   }
