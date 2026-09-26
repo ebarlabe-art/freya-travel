@@ -290,7 +290,15 @@
     .photo-queue-item>img{width:88px;height:88px;object-fit:cover;border-radius:12px}.photo-queue-item fieldset{border:0;margin:0;padding:0;min-width:0}
     #photoUploadV2 button,#photoContextEditor button,.photo-context-edit{min-height:44px;padding:10px 14px;border-radius:12px}.photo-context-edit{margin:0 12px 12px;background:#f3eaf8;color:#542870;border:1px solid #d7c8e7}
     .photo-summary{min-width:0;max-width:100%;text-align:left}.photo-summary .photo-summary-line{color:#3d294c;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;margin:0;font-size:14px}.photo-summary .photo-summary-caption{margin-top:4px;color:#746a7b;font-weight:400}.photo-summary .photo-summary-empty{color:#746a7b;font-weight:400}
-    #photoContextEditor{padding:16px;border:1px solid #d7c8e7;border-radius:18px;margin-bottom:18px;background:#fff}#photoQueueMessage,#photoContextMessage{overflow-wrap:anywhere}
+    #photoContextEditor{position:fixed;inset:0;width:100%;max-width:none;height:100dvh;max-height:100dvh;box-sizing:border-box;margin:0;padding:calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));border:0;border-radius:0;background:#fff;color:#33223f;overflow-y:auto;overscroll-behavior:contain}
+    #photoContextEditor::backdrop{background:#fff}.photo-editor-content{max-width:560px;margin:auto}.photo-editor-preview{display:block;max-width:100%;width:auto;max-height: min(28dvh,220px);object-fit:contain;border-radius:14px;margin:12px auto}.photo-editor-fields{border:0;padding:0;margin:0;min-width:0}
+    #photoContextEditor input{font-size:16px}#photoQueueMessage,#photoContextMessage,#photoTitleMessage{overflow-wrap:anywhere}
+    body:has(#photoContextEditor[open]),body:has(#photoLightbox.photo-detail-active:not(.hidden)){overflow:hidden}
+    .photo-lightbox.photo-detail-active{flex-direction:column;gap:12px;padding-top:calc(72px + env(safe-area-inset-top));padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+    .photo-lightbox.photo-detail-active img{max-height:60dvh;object-fit:contain;min-height:0}
+    #photoDetailControls{max-width:560px;width:100%;color:white;overflow-wrap:anywhere}#photoDetailControls button{min-height:44px;padding:12px 18px;background:white;color:#542870}
+    #photoDetailControls .photo-summary-line{color:white}#photoDetailControls .photo-summary-caption{color:#eee}
+
     @media(max-width:520px){.photo-context-fields{grid-template-columns:minmax(0,1fr)}.photo-queue-item{grid-template-columns:minmax(0,1fr)}.photo-queue-item>img{width:100%;height:180px}}
   </style>
 </head>
@@ -958,7 +966,7 @@
         </section>
         <section>
           <div class="photo-toolbar"><h2>Els vostres records</h2><span id="photoCountLabel" class="photo-count">0 fotos</span></div>
-          <div id="photoContextEditor" class="hidden"></div>
+
           <div id="photosList" class="photo-grid"></div>
           <div id="photosEmpty" class="photo-empty">Encara no hi ha cap foto. La primera serà l’inici del vostre àlbum de Londres. 💜</div>
         </section>
@@ -967,9 +975,11 @@
     <div id="photoLightbox" class="photo-lightbox hidden" role="dialog" aria-modal="true" aria-label="Foto ampliada">
       <button id="photoLightboxClose" class="photo-lightbox-close" type="button" aria-label="Tancar">×</button>
       <img id="photoLightboxImage" alt="Foto del viatge">
+      <div id="photoDetailControls" class="hidden"></div>
     </div>
 
 
+    <dialog id="photoContextEditor" class="hidden" aria-label="Editar foto"></dialog>
     <div id="parkingView" class="hidden">
       <button class="ghost back" data-back>← Torna al tauler</button>
       <div class="parking-shell">
@@ -4191,6 +4201,7 @@ addFavoriteButtons();renderFavorites();
 // PHOTO_V2_START — generic trips only; legacy London uploader stays below.
 let photoQueue=[],photoMetadata=[],photoContextDraft=null,photoBatchContext={local_date:null,activity_id:null,itinerary_item_id:null};
 let photoQueueRunning=false,photoV2LoadSequence=0,photoV2RenderSequence=0;
+let photoNavigation=null,photoSignedRows=[],photoHistoryPending=false,photoReturnPosition=null;
 function photoScope(){return {tripId:trip?.id,userId:session?.user?.id,generation:tripLoadGeneration}}
 function photoScopeCurrent(scope){return !!scope?.tripId&&!!scope.userId&&session?.user?.id===scope.userId&&tripRequestIsCurrent(scope.tripId,scope.generation)&&!isLondonTrip()}
 function photoFileError(file){return !['image/jpeg','image/png','image/webp'].includes(file.type)?'Format no compatible. Tria JPEG, PNG o WebP; converteix HEIC/HEIF abans de seleccionar-lo.':!file.size?'El fitxer és buit.':file.size>15*1024*1024?'La foto supera 15 MB.':''}
@@ -4237,6 +4248,7 @@ function orderedGenericPhotos(rows,metadata){
   });
 }
 function resetPhotoV2(){
+  resetPhotoNavigation();
   photoMetadataUnavailable=true;
   photoQueue.forEach(job=>{if(job.preview)URL.revokeObjectURL(job.preview)});photoQueue=[];photoMetadata=[];photoContextDraft=null;photoBatchContext=photoContextValue();photoQueueRunning=false;photoV2LoadSequence++;photoV2RenderSequence++;
   for(const id of ['photoQueueList','photoQueueMessage','photoBatchContext','photoContextEditor'])if($(id))$(id).innerHTML='';
@@ -4270,6 +4282,7 @@ function refreshPhotoSummaries(){
   if(!photoScopeCurrent(photoScope()))return;
   $('photosList').querySelectorAll('[data-photo-summary]').forEach(box=>{const row=photoRows.find(row=>row.id===box.dataset.photoSummary);if(row)box.innerHTML=photoSummaryHtml(row)});
   refreshSavedPhotoContexts();
+  renderGenericPhotoDetail();
 }
 function photoContextAction(item){return ['activity','manual'].includes(item.sourceType)?`<button type="button" data-add-context-photos="${esc(item.key)}">📷 Afegir fotos</button>`:''}
 function bindContextPhotoActions(container,items){
@@ -4365,7 +4378,7 @@ async function loadGenericPhotos(silent=false){
     // Never let a failed metadata read masquerade as a legacy NULL CAS baseline.
     photoMetadataUnavailable=!!metadata.error;
     refreshPhotoSummaries();
-    if(photoContextDraft&&!photoRows.some(row=>row.id===photoContextDraft.id)){photoContextDraft=null;renderPhotoContextEditor()}
+    reconcilePhotoNavigation();
     await renderGenericPhotos(scope);
   }catch(error){if(photoScopeCurrent(scope)&&sequence===photoV2LoadSequence&&!silent)$('photoQueueMessage').textContent=error.message||'No s’han pogut carregar les fotos.'}
 }
@@ -4375,18 +4388,129 @@ async function renderGenericPhotos(scope=photoScope()){
   const rows=photoRows.slice(),signed=await Promise.all(rows.map(async row=>{try{const result=await db.storage.from(DOC_BUCKET).createSignedUrl(row.file_path,3600);return {...row,signedUrl:result.data?.signedUrl||''}}catch{return {...row,signedUrl:''}}}));
   if(!photoScopeCurrent(scope)||sequence!==photoV2RenderSequence)return;
   $('photoCountLabel').textContent=`${rows.length} fotos`;if($('genericPhotosModuleStatus'))$('genericPhotosModuleStatus').textContent=`${rows.length} fotos`;$('photosEmpty').classList.toggle('hidden',rows.length>0);
+  photoSignedRows=signed;
   $('photosList').innerHTML=signed.map(row=>`<article class="photo-card" data-photo-id="${esc(row.id)}"><button class="photo-open" type="button" data-photo-open="${esc(row.id)}">${row.signedUrl?`<img src="${esc(row.signedUrl)}" alt="${esc(row.title)}" loading="lazy">`:'<p>Imatge temporalment no disponible</p>'}<div class="photo-info photo-summary" data-photo-summary="${esc(row.id)}">${photoSummaryHtml(row)}</div></button><button type="button" class="photo-context-edit" data-edit-photo="${esc(row.id)}" ${photoMetadataUnavailable?'disabled':''}>Edita context</button><button class="photo-delete" type="button" data-photo-delete="${esc(row.id)}" aria-label="Eliminar foto">🗑</button></article>`).join('');
   $('photosList').querySelectorAll('[data-photo-open]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))openPhoto(button.dataset.photoOpen,signed)});
   $('photosList').querySelectorAll('[data-edit-photo]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))openPhotoContextEditor(button.dataset.editPhoto)});
   $('photosList').querySelectorAll('[data-photo-delete]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))deleteGenericPhoto(button.dataset.photoDelete)});
 }
+function pushPhotoHistory(level){
+  history.pushState({...history.state,freyaPhoto:{token:photoNavigation.token,level}},'');
+}
+function backPhotoHistory(level,steps=1){
+  const marker=history.state?.freyaPhoto;
+  if(marker?.token===photoNavigation?.token&&marker?.level===level){photoHistoryPending=true;history.go(-steps)}
+}
+function handlePhotoHistory(){
+  photoHistoryPending=false;const nav=photoNavigation;
+  if(!nav){if(photoReturnPosition){restorePhotoAfterHistory(photoReturnPosition);photoReturnPosition=null}return}
+  if(!photoScopeCurrent(nav.scope))return;
+  const marker=history.state?.freyaPhoto;
+  if(marker?.token===nav.token&&marker.level==='editor')return;
+  if(photoContextDraft){
+    leavePhotoEditor(false,true);
+    if(photoContextDraft){pushPhotoHistory('editor');return}
+  }
+  if(marker?.token===nav.token&&marker.level==='photo')openGenericPhoto(nav.id);
+  else closeGenericPhoto(true);
+}
+window.addEventListener('popstate',handlePhotoHistory);
+function resetPhotoNavigation(){
+  photoNavigation=null;photoSignedRows=[];
+  if($('photoContextEditor')?.open)$('photoContextEditor').close();
+  $('photoLightbox')?.classList.add('hidden');
+  $('photoLightbox')?.classList.remove('photo-detail-active');
+  $('photoDetailControls')?.classList.add('hidden');
+}
+function restorePhotoPosition(nav){
+  if(!nav||!photoScopeCurrent(nav.scope))return;
+  window.scrollTo(0,nav.scrollY);
+  const card=Array.from($('photosList').querySelectorAll('[data-photo-id]')).find(node=>node.dataset.photoId===nav.id);
+  if(card){const rect=card.getBoundingClientRect();if(rect.top<0||rect.bottom>window.innerHeight)card.scrollIntoView({block:'center',behavior:'auto'});card.querySelector('[data-photo-open]')?.focus({preventScroll:true})}
+}
+function restorePhotoAfterHistory(nav){
+  // Browser history restores its own scroll after popstate; identity restoration runs afterwards.
+  window.requestAnimationFrame(()=>{if(!photoNavigation&&!photoContextDraft)restorePhotoPosition(nav)});
+}
+function closeGenericPhoto(fromHistory=false){
+  const nav=photoNavigation;if(!nav)return;
+  if(!fromHistory)backPhotoHistory('photo');
+  resetPhotoNavigation();restorePhotoPosition(nav);
+  if(photoHistoryPending)photoReturnPosition=nav;else restorePhotoAfterHistory(nav);
+}
+function renderGenericPhotoDetail(){
+  const nav=photoNavigation;if(!nav||!photoScopeCurrent(nav.scope))return;
+  const row=photoRows.find(row=>row.id===nav.id);if(!row)return;
+  const box=$('photoDetailControls');box.classList.remove('hidden');
+  box.innerHTML=`<div class="photo-summary">${photoSummaryHtml(row)}</div><button type="button" id="editOpenedPhoto" ${photoMetadataUnavailable?'disabled':''}>Editar foto</button>`;
+  $('editOpenedPhoto').onclick=()=>openPhotoContextEditor(nav.id);
+}
+async function loadPhotoNavigationPreview(nav){
+  if(nav.signedUrl)return;
+  try{
+    const row=photoRows.find(row=>row.id===nav.id);if(!row)return;
+    const result=await db.storage.from(DOC_BUCKET).createSignedUrl(row.file_path,3600);
+    if(photoNavigation!==nav||!photoScopeCurrent(nav.scope))return;
+    nav.signedUrl=result.data?.signedUrl||'';
+    if(nav.signedUrl){$('photoLightboxImage').src=nav.signedUrl;const preview=$('photoEditorPreview');if(preview&&photoContextDraft?.id===nav.id){preview.src=nav.signedUrl;preview.classList.remove('hidden')}}
+  }catch(_){/* Keep context editable if the image is temporarily unavailable. */}
+}
+function openGenericPhoto(id,rows=photoSignedRows){
+  if(!photoScopeCurrent(photoScope())||!photoRows.some(row=>row.id===id))return;
+  if(photoContextDraft||photoHistoryPending)return;
+  if(photoNavigation?.id!==id){photoNavigation={id,token:crypto.randomUUID(),scope:photoScope(),scrollY:window.scrollY,signedUrl:rows.find(row=>row.id===id)?.signedUrl||''};pushPhotoHistory('photo')}
+  $('photoLightboxImage').removeAttribute('src');
+  if(photoNavigation.signedUrl)$('photoLightboxImage').src=photoNavigation.signedUrl;
+  $('photoLightbox').classList.add('photo-detail-active');$('photoLightbox').classList.remove('hidden');
+  renderGenericPhotoDetail();$('photoLightboxClose').focus({preventScroll:true});loadPhotoNavigationPreview(photoNavigation);
+}
+function reconcilePhotoNavigation(){
+  const id=photoContextDraft?.id||photoNavigation?.id;
+  if(id&&!photoRows.some(row=>row.id===id)){
+    const nav=photoNavigation;if(nav)backPhotoHistory(photoContextDraft?'editor':'photo',photoContextDraft?2:1);photoContextDraft=null;renderPhotoContextEditor();resetPhotoNavigation();restorePhotoPosition(nav);if(photoHistoryPending)photoReturnPosition=nav;else restorePhotoAfterHistory(nav);
+    $('photoQueueMessage').textContent='Aquesta foto ja no és a la galeria.';
+  }
+}
+function photoEditorDirty(draft=photoContextDraft){
+  return !!draft&&(draft.title!==draft.originalTitle||!photoContextsEqual(draft.context,draft.originalContext));
+}
+function leavePhotoEditor(saved=false,fromHistory=false){
+  const draft=photoContextDraft;if(!draft)return;
+  if(!saved&&(draft.submitting||draft.saving||draft.titleSaving))return;
+  if(!saved&&photoEditorDirty(draft)&&!confirm('Descartar els canvis no desats de la foto?'))return;
+  photoContextDraft=null;renderPhotoContextEditor();
+  if(photoNavigation&&photoScopeCurrent(photoNavigation.scope)){openGenericPhoto(draft.id);if(!fromHistory)backPhotoHistory('editor')}
+}
 function openPhotoContextEditor(id){
-  if(!photoScopeCurrent(photoScope())||photoMetadataUnavailable||!photoRows.some(row=>row.id===id))return;
-  const metadata=photoMetadata.find(row=>row.document_id===id);photoContextDraft={id,scope:photoScope(),version:metadata?.updated_at||null,context:photoContextValue(metadata),title:photoRows.find(row=>row.id===id).title,originalTitle:photoRows.find(row=>row.id===id).title,saving:false,titleSaving:false};renderPhotoContextEditor();$('photoContextEditor').scrollIntoView({behavior:'smooth',block:'center'});
+  if(photoHistoryPending||photoContextDraft||!photoScopeCurrent(photoScope())||photoMetadataUnavailable||!photoRows.some(row=>row.id===id))return;
+  openGenericPhoto(id);
+  const row=photoRows.find(row=>row.id===id),metadata=photoMetadata.find(row=>row.document_id===id);
+  photoContextDraft={id,scope:photoScope(),version:metadata?.updated_at||null,context:photoContextValue(metadata),originalContext:photoContextValue(metadata),title:row.title,originalTitle:row.title,saving:false,titleSaving:false,submitting:false};
+  pushPhotoHistory('editor');$('photoLightbox').classList.add('hidden');renderPhotoContextEditor();
 }
 function renderPhotoContextEditor(){
-  const box=$('photoContextEditor'),draft=photoContextDraft;box.classList.toggle('hidden',!draft);if(!draft){box.innerHTML='';return}
-  box.innerHTML=`<form id="editPhotoTitleForm"><label>Títol / comentari<input id="editPhotoTitle" maxlength="160" required value="${esc(draft.title)}"></label><button type="submit">Desa títol</button><p id="photoTitleMessage" role="status"></p></form><form id="editPhotoContextForm"><h3>Context de la foto</h3>${photoContextFields(draft.context,'edit')}<p id="photoContextMessage" role="status"></p><div class="trip-home-actions"><button type="button" id="cancelPhotoContext">Cancel·la</button><button type="submit">Desa context</button></div></form>`;bindPhotoContext(box,draft.context);$('editPhotoTitle').oninput=e=>draft.title=e.target.value;$('editPhotoTitleForm').onsubmit=savePhotoTitle;$('cancelPhotoContext').onclick=()=>{photoContextDraft=null;renderPhotoContextEditor()};$('editPhotoContextForm').onsubmit=savePhotoContext;
+  const box=$('photoContextEditor'),draft=photoContextDraft;box.classList.toggle('hidden',!draft);
+  if(!draft){if(box.open)box.close();box.innerHTML='';return}
+  box.innerHTML=`<div class="photo-editor-content"><button type="button" id="photoEditorBack">← Tornar</button><h2>Editar foto</h2><img id="photoEditorPreview" class="photo-editor-preview ${photoNavigation?.signedUrl?'':'hidden'}" ${photoNavigation?.signedUrl?`src="${esc(photoNavigation.signedUrl)}"`:''} alt="Foto que estàs editant"><form id="editPhotoContextForm"><fieldset id="photoEditorFields" class="photo-editor-fields"><h3>Context</h3>${photoContextFields(draft.context,'edit')}<label>Comentari / títol<input id="editPhotoTitle" maxlength="160" required value="${esc(draft.title)}"></label><p id="photoTitleMessage" role="status"></p><p id="photoContextMessage" role="status"></p><div class="trip-home-actions"><button type="button" id="cancelPhotoContext">Cancel·la</button><button type="submit">Desar canvis</button></div></fieldset></form></div>`;
+  bindPhotoContext(box,draft.context);$('editPhotoTitle').oninput=e=>draft.title=e.target.value;
+  $('photoEditorBack').onclick=$('cancelPhotoContext').onclick=()=>leavePhotoEditor();
+  box.oncancel=event=>{event.preventDefault();leavePhotoEditor()};
+  $('editPhotoContextForm').onsubmit=savePhotoChanges;
+  if(!box.open)box.showModal();box.scrollTop=0;$('photoEditorBack').focus({preventScroll:true});
+}
+async function savePhotoChanges(event){
+  event.preventDefault();const draft=photoContextDraft;
+  if(!draft||draft.submitting||draft.saving||draft.titleSaving||!photoScopeCurrent(draft.scope))return;
+  if(!draft.title?.trim())return;
+  draft.submitting=true;$('photoEditorFields').disabled=true;$('photoEditorBack').disabled=true;
+  try{
+    if(draft.title!==draft.originalTitle&&!await savePhotoTitle(event))return;
+    if(photoContextDraft!==draft||!photoScopeCurrent(draft.scope))return;
+    if(!photoContextsEqual(draft.context,draft.originalContext)&&!await savePhotoContext(event,true))return;
+    if(photoContextDraft===draft&&photoScopeCurrent(draft.scope))leavePhotoEditor(true);
+  }finally{
+    if(photoContextDraft===draft){draft.submitting=false;$('photoEditorFields').disabled=false;$('photoEditorBack').disabled=false}
+  }
 }
 async function savePhotoTitle(event){
   event.preventDefault();const draft=photoContextDraft;
@@ -4403,11 +4527,11 @@ async function savePhotoTitle(event){
     if(draft.title.trim()===result.data.title){draft.title=result.data.title;$('editPhotoTitle').value=draft.title}
     const row=photoRows.find(row=>row.id===draft.id);if(row)row.title=result.data.title;
     refreshPhotoSummaries();$('photoTitleMessage').textContent='Títol desat.';
-    await loadGenericPhotos(true);
+    await loadGenericPhotos(true);return true;
   }catch(error){if(current())$('photoTitleMessage').textContent=error.message||'No s’ha pogut desar el títol.'}
   finally{if(current())draft.titleSaving=false}
 }
-async function savePhotoContext(event){
+async function savePhotoContext(event,keepOpen=false){
   event.preventDefault();const draft=photoContextDraft;if(!draft||draft.saving||draft.titleSaving||!photoScopeCurrent(draft.scope))return;
   if(draft.title!==undefined&&draft.title!==draft.originalTitle){$('photoContextMessage').textContent='Desa primer el títol modificat, o restaura’l, abans de desar el context.';return}
   draft.saving=true;
@@ -4416,7 +4540,9 @@ async function savePhotoContext(event){
     const result=await photoRequestWithTimeout(db.rpc('set_trip_photo_context',{p_trip_id:draft.scope.tripId,p_document_id:draft.id,p_expected_updated_at:draft.version,p_local_date:draft.context.local_date,p_activity_id:draft.context.activity_id,p_itinerary_item_id:draft.context.itinerary_item_id}));
     if(!current())return;if(result.error)throw result.error;
     if(result.data){photoMetadata=photoMetadata.filter(row=>row.document_id!==draft.id);photoMetadata.push(result.data);refreshPhotoSummaries()}
-    photoContextDraft=null;renderPhotoContextEditor();await loadGenericPhotos();
+    if(result.data){draft.version=result.data.updated_at;draft.originalContext=photoContextValue(result.data)}
+    if(!keepOpen)leavePhotoEditor(true);
+    await loadGenericPhotos();return true;
   }catch(error){if(current())$('photoContextMessage').textContent=error.code==='40001'?'Un altre participant ha canviat el context. Cancel·la i reobre’l per veure la versió actual.':error.message||'No s’ha pogut desar.'}
   finally{if(current())draft.saving=false}
 }
@@ -4465,8 +4591,8 @@ async function renderPhotos(rows=photoRows,tripId=trip?.id,generation=tripLoadGe
   list.querySelectorAll('[data-photo-open]').forEach(btn=>btn.onclick=()=>openPhoto(btn.dataset.photoOpen,signed));
   list.querySelectorAll('[data-photo-delete]').forEach(btn=>btn.onclick=()=>deletePhoto(btn.dataset.photoDelete,rows));
 }
-function openPhoto(id,rows){const p=rows.find(x=>x.id===id);if(!p||!p.signedUrl)return;$('photoLightboxImage').src=p.signedUrl;$('photoLightbox').classList.remove('hidden')}
-function closePhotoLightbox(){$('photoLightbox').classList.add('hidden');$('photoLightboxImage').removeAttribute('src')}
+function openPhoto(id,rows){if(!isLondonTrip())return openGenericPhoto(id,rows);const p=rows.find(x=>x.id===id);if(!p||!p.signedUrl)return;$('photoLightboxImage').src=p.signedUrl;$('photoLightbox').classList.remove('hidden')}
+function closePhotoLightbox(){if(photoNavigation)return closeGenericPhoto();$('photoLightbox').classList.add('hidden');$('photoLightboxImage').removeAttribute('src')}
 $('photoLightboxClose').onclick=closePhotoLightbox;$('photoLightbox').onclick=e=>{if(e.target===$('photoLightbox'))closePhotoLightbox()};
 function showPhotoMessage(message,isError=false){const el=$('photoMsg');if(!el)return;el.textContent=message||'';el.classList.toggle('error',isError)}
 $('photoFile').onchange=()=>{

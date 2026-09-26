@@ -91,3 +91,68 @@ atomic title/context editing would be separate work. None implemented here.
 
 Build and entry parity pass. The local node_modules needed the matching macOS
 Rollup/esbuild optional binaries; package manifests and lockfile are unchanged.
+
+## PHOTOS-NAV-01 — dedicated editor and return identity (local)
+
+Confirmed cause: the editor container lived above the gallery and
+`openPhotoContextEditor` used `scrollIntoView`. The old lightbox only stored an
+image URL. Neither editor completion nor lightbox closing retained a return
+document identity.
+
+Flow: gallery → photo detail/lightbox → dedicated full-screen native dialog →
+save/cancel → same photo detail → gallery. The gallery's existing Edit button
+and the completed queue shortcut enter the same editor with the same return
+photo; there is one form, no duplicate persistence implementation.
+
+The dialog sits outside the gallery layout, traps focus using native modal
+semantics, has its own scroll, a bounded preview (28dvh/220px), 44px controls,
+16px inputs, safe-area padding and dynamic viewport height. Underlying gallery
+scroll is locked while either generic detail or editor is open. London keeps
+the legacy lightbox branch and styling.
+
+Identity: a scoped in-memory navigation record holds document ID, trip/user/
+generation, signed preview URL, navigation token and gallery scrollY. Return
+restores the approximate scroll, then locates the card by document ID and makes
+it visible if the layout has shifted. A post-history animation frame repeats
+this after the browser's native scroll restoration. Stale preview results cannot
+paint another photo/trip. Metadata/title still come from authoritative rows.
+
+Back: a photo-local History API stack adds photo and editor entries without
+changing the URL or replacing the general navigation infrastructure. Back in
+the editor returns to the photo; Back from the photo returns to the gallery.
+The visible Back button, Cancel and Escape share the same exit logic. Dirty
+drafts require explicit discard confirmation; active saves cannot be abandoned
+through this local flow. Rapid reopening waits for the history transition.
+No global dirty-state router or persisted photo route is introduced. Forward
+after the in-memory photo session is discarded, hard reload/deep linking, and
+closing the browser/tab are not draft-restoration features of this package.
+
+Save: the single “Desar canvis” action calls the existing guarded title UPDATE
+and context CAS helpers, only for changed fields. These remain two independent
+backend operations, not an atomic transaction. If title succeeds and context
+fails, the editor stays open, shows title success plus context error, preserves
+the context CAS baseline, and does not repeat the confirmed title on retry.
+Unchanged/confirmed drafts return to the same photo; card and detail show
+confirmed data. The earlier micro-sprint's separate save buttons are superseded.
+
+Red team / regressions:
+- Remote updates refresh card/detail but never replace the open draft/baselines.
+- Remote deletion closes the unavailable photo safely, restores gallery context
+  and explains its disappearance. An image read failure leaves editing usable.
+- Duplicate submits are ignored; fields/Back disabled while saving; errors
+  re-enable controls. Scope resets close the modal and ignore late responses.
+- Legacy photos retain a NULL metadata CAS baseline. Upload queue, batch context,
+  retries and the London uploader/renderer are not rewritten.
+- Browser test found that native history scrolling could override card recovery;
+  the post-popstate restoration fixes this and has a regression test.
+
+Verification: 139/139 JavaScript tests; 13 SQL rollback suites and 4 concurrency
+checks PASS (disposable local DB only, Cron scheduling skipped by its runner).
+Chrome local fixture with simulated persistence passed 10 checks: modal,
+save-return identity, confirmed title, card visibility after deep scroll,
+legacy CAS, both Back levels, layout, bounded preview and no horizontal overflow.
+That headless browser reported a 500px viewport minimum; it is not an iPhone
+keyboard/safe-area E2E. The additional in-app visual inspection was blocked by
+the browser's local-file access policy. Physical narrow-screen/PWA validation,
+keyboard behavior and real two-user Realtime remain the release E2E gate.
+No migration, RPC, Storage, photo schema or Travel Builder changes.

@@ -5,8 +5,8 @@ import {readFileSync} from 'node:fs';
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const code=html.split('// PHOTO_V2_START')[1].split('// PHOTO_V2_END')[0].replace(/^ —[^\n]*\n/,'');
 function harness(){
- const nodes=new Map();const element=id=>{if(!nodes.has(id)){const children=new Map();nodes.set(id,{innerHTML:'',textContent:'',value:'',classList:{add(){},toggle(){}},querySelectorAll:()=>[],querySelector:selector=>{if(!children.has(selector))children.set(selector,{});return children.get(selector)}})}return nodes.get(id)};
- let n=0;const s=vm.createContext({console,setTimeout,clearTimeout,URL:{createObjectURL:()=>`blob:${++n}`,revokeObjectURL:()=>{}},crypto:{randomUUID:()=>`id-${++n}`},$:element,trip:{id:'a'},session:{user:{id:'u'}},tripLoadGeneration:1,isLondonTrip:()=>false,activityRows:[],manualItineraryRows:[],photoRows:[],esc:v=>String(v??''),setAppView:view=>s.view=view});
+ const nodes=new Map();const element=id=>{if(!nodes.has(id)){const children=new Map();nodes.set(id,{innerHTML:'',textContent:'',value:'',open:false,showModal(){this.open=true},close(){this.open=false},focus(){this.focused=true},removeAttribute(name){delete this[name]},scrollIntoView(){this.scrolled=true},classList:{add(){},remove(){},toggle(){}},querySelectorAll:()=>[],querySelector:selector=>{if(!children.has(selector))children.set(selector,{});return children.get(selector)}})}return nodes.get(id)};
+ let n=0;const s=vm.createContext({console,setTimeout,clearTimeout,confirm:()=>true,history:{state:null,pushState(state){this.state=state},go(){}},window:{requestAnimationFrame:fn=>fn(),addEventListener(){},scrollY:2400,innerHeight:700,scrollTo(x,y){this.scrollY=y}},URL:{createObjectURL:()=>`blob:${++n}`,revokeObjectURL:()=>{}},crypto:{randomUUID:()=>`id-${++n}`},$:element,trip:{id:'a'},session:{user:{id:'u'}},tripLoadGeneration:1,isLondonTrip:()=>false,activityRows:[],manualItineraryRows:[],photoRows:[],esc:v=>String(v??''),setAppView:view=>s.view=view});
  s.tripRequestIsCurrent=(id,generation)=>s.trip?.id===id&&s.tripLoadGeneration===generation;
  s.DOC_BUCKET='trip-documents';
  vm.runInContext(code,s);const renderQueue=s.renderPhotoQueue;s.renderPhotoQueue=()=>{};
@@ -274,4 +274,123 @@ test('source rename refreshes existing summaries without resigning images or tou
  h.s.activityRows[0].title='Nou nom';h.s.db.storage.from=()=>assert.fail('no image refresh needed');
  h.s.refreshPhotoSummaries();
  assert.match(box.innerHTML,/Nou nom/);assert.match(h.box.innerHTML,/Nou nom/);
+});
+
+test('photo navigation opens dedicated modal with identity, preview and no gallery scroll',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();h.s.openGenericPhoto('photo',[{id:'photo',signedUrl:'signed-photo'}]);
+ assert.equal(h.get('photoNavigation.id'),'photo');assert.equal(h.get('photoNavigation.scrollY'),2400);
+ assert.equal(h.element('photoLightboxImage').src,'signed-photo');
+ h.s.openPhotoContextEditor('photo');
+ assert.equal(h.get('photoContextDraft.id'),'photo');assert.equal(h.element('photoContextEditor').open,true);
+ assert.match(h.element('photoContextEditor').innerHTML,/Desar canvis/);
+ assert.equal(h.element('photoContextEditor').scrolled,undefined);assert.equal(h.s.window.scrollY,2400);
+ assert.match(html,/<dialog id="photoContextEditor"/);assert.match(html,/height:100dvh/);
+ assert.match(html,/max-height: min\(28dvh,220px\)/);
+});
+test('cancel and Escape never persist, confirm dirty state and return to same photo',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();h.s.openPhotoContextEditor('photo');
+ h.s.db.rpc=()=>assert.fail('cancel must not persist');
+ vm.runInContext("photoContextDraft.title='Canvi pendent'",h.s);h.s.confirm=()=>false;
+ h.s.leavePhotoEditor();assert.equal(h.element('photoContextEditor').open,true);
+ h.s.confirm=()=>true;h.element('photoContextEditor').oncancel({preventDefault(){}});
+ assert.equal(h.get('photoContextDraft'),null);assert.equal(h.element('photoContextEditor').open,false);
+ assert.equal(h.get('photoNavigation.id'),'photo');assert.equal(h.s.window.scrollY,2400);
+});
+test('combined save reuses title and CAS persistence and returns to confirmed same photo',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();const from=h.s.db.from;let titleCalls=0,contextCalls=0;
+ h.s.openPhotoContextEditor('photo');
+ vm.runInContext("photoContextDraft.title='Desat';photoContextDraft.context.local_date='2026-09-15'",h.s);
+ h.s.db.from=table=>{const q={update:value=>{h.state.title=value.title;titleCalls++;return q},eq:()=>q,select:()=>q,maybeSingle:async()=>({data:{id:'photo',title:h.state.title}})};return {...from(table),update:q.update}};
+ h.s.db.rpc=async(name,payload)=>{contextCalls++;assert.equal(payload.p_expected_updated_at,'v1');h.state.row={...h.state.row,local_date:payload.p_local_date,updated_at:'v2'};return {data:h.state.row}};
+ await h.s.savePhotoChanges({preventDefault(){}});
+ assert.equal(titleCalls,1);assert.equal(contextCalls,1);assert.equal(h.get('photoContextDraft'),null);
+ assert.equal(h.get('photoNavigation.id'),'photo');assert.equal(h.element('photoContextEditor').open,false);
+ for(const rendered of [h.element('photosList').innerHTML,h.element('photoDetailControls').innerHTML])assert.match(rendered,/15 set.*Desat/);
+});
+test('double submit and return during save do not send twice or abandon in-flight draft',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();h.s.openPhotoContextEditor('photo');
+ vm.runInContext("photoContextDraft.context.local_date='2026-09-15'",h.s);
+ let finish,calls=0;h.s.db.rpc=()=>{calls++;return new Promise(resolve=>finish=resolve)};
+ const pending=h.s.savePhotoChanges({preventDefault(){}});await h.s.savePhotoChanges({preventDefault(){}});h.s.leavePhotoEditor();
+ assert.equal(calls,1);assert.equal(h.element('photoContextEditor').open,true);assert.equal(h.element('photoEditorFields').disabled,true);
+ finish({error:{code:'40001'}});await pending;
+ assert.equal(h.element('photoEditorFields').disabled,false);assert.equal(h.get('photoContextDraft.version'),'v1');
+ assert.match(h.element('photoContextMessage').textContent,/altre participant/);
+});
+test('remote deletion during editor safely closes it and explains the missing photo',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();h.s.openPhotoContextEditor('photo');
+ vm.runInContext('photoRows=[]',h.s);h.s.reconcilePhotoNavigation();
+ assert.equal(h.get('photoContextDraft'),null);assert.equal(h.get('photoNavigation'),null);
+ assert.equal(h.element('photoContextEditor').open,false);assert.match(h.element('photoQueueMessage').textContent,/ja no/);
+});
+test('return restores scroll and uses stable card identity after layout change',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();h.s.openPhotoContextEditor('photo');h.s.leavePhotoEditor();
+ const button={focus(){this.focused=true}},card={dataset:{photoId:'photo'},getBoundingClientRect:()=>({top:900,bottom:1150}),scrollIntoView(){this.scrolled=true},querySelector:()=>button};
+ h.element('photosList').querySelectorAll=selector=>selector==='[data-photo-id]'?[card]:[];
+ h.s.window.scrollY=0;h.s.closeGenericPhoto();
+ assert.equal(h.s.window.scrollY,2400);assert.equal(card.scrolled,true);assert.equal(button.focused,true);
+});
+test('legacy photo uses NULL CAS baseline; consecutive edits keep independent identity',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();
+ vm.runInContext("photoRows.push({id:'legacy',title:'Antiga',file_path:'old'})",h.s);
+ h.s.openPhotoContextEditor('photo');h.s.leavePhotoEditor();h.s.history.state={freyaPhoto:{token:h.get('photoNavigation.token'),level:'photo'}};h.s.handlePhotoHistory();h.s.closeGenericPhoto();h.s.handlePhotoHistory();h.s.openPhotoContextEditor('legacy');
+ assert.equal(h.get('photoContextDraft.version'),null);assert.equal(h.get('photoContextDraft.id'),'legacy');
+ assert.equal(h.get('photoNavigation.id'),'legacy');assert.equal(h.get('photoContextDraft.title'),'Antiga');
+ h.s.openPhotoContextEditor('photo');assert.equal(h.get('photoContextDraft.id'),'legacy');
+ h.s.resetPhotoV2();assert.equal(h.get('photoNavigation'),null);assert.equal(h.element('photoContextEditor').open,false);
+});
+test('Realtime preserves modal draft and preview while updating canonical detail',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();h.s.openPhotoContextEditor('photo');
+ vm.runInContext("photoContextDraft.title='Local';photoContextDraft.context.local_date='2026-09-11'",h.s);
+ h.state.title='Remot';h.state.row={...h.state.row,updated_at:'v2',local_date:'2026-09-16'};
+ await h.s.loadGenericPhotos(true);
+ assert.equal(h.element('photoContextEditor').open,true);assert.equal(h.get('photoContextDraft.title'),'Local');
+ assert.equal(h.get('photoContextDraft.version'),'v1');assert.match(h.element('photoDetailControls').innerHTML,/Remot/);
+});
+
+test('browser Back goes editor to photo to gallery; dirty rejection restores editor entry',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();h.s.openPhotoContextEditor('photo');
+ const token=h.get('photoNavigation.token');vm.runInContext("photoContextDraft.title='Dirty'",h.s);h.s.confirm=()=>false;
+ h.s.history.state={freyaPhoto:{token,level:'photo'}};h.s.handlePhotoHistory();
+ assert.equal(h.s.history.state.freyaPhoto.level,'editor');assert.equal(h.element('photoContextEditor').open,true);
+ h.s.confirm=()=>true;h.s.history.state={freyaPhoto:{token,level:'photo'}};h.s.handlePhotoHistory();
+ assert.equal(h.get('photoContextDraft'),null);assert.equal(h.get('photoNavigation.id'),'photo');
+ h.s.history.state=null;h.s.handlePhotoHistory();assert.equal(h.get('photoNavigation'),null);assert.equal(h.s.window.scrollY,2400);
+});
+test('rapid return then edit waits for local history transition before opening another draft',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();h.s.openPhotoContextEditor('photo');h.s.leavePhotoEditor();
+ h.s.openPhotoContextEditor('photo');assert.equal(h.get('photoContextDraft'),null);
+ h.s.history.state={freyaPhoto:{token:h.get('photoNavigation.token'),level:'photo'}};h.s.handlePhotoHistory();
+ h.s.openPhotoContextEditor('photo');assert.equal(h.get('photoContextDraft.id'),'photo');
+});
+test('partial save keeps editor and confirmed title, preserves failed context CAS for retry',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();h.s.openPhotoContextEditor('photo');const from=h.s.db.from;
+ vm.runInContext("photoContextDraft.title='Títol confirmat';photoContextDraft.context.local_date='2026-09-20'",h.s);
+ h.s.db.from=table=>{const q={update:value=>{h.state.title=value.title;return q},eq:()=>q,select:()=>q,maybeSingle:async()=>({data:{id:'photo',title:h.state.title}})};return {...from(table),update:q.update}};
+ h.s.db.rpc=async()=>({error:{code:'40001'}});
+ await h.s.savePhotoChanges({preventDefault(){}});
+ assert.equal(h.element('photoContextEditor').open,true);assert.equal(h.get('photoContextDraft.originalTitle'),'Títol confirmat');
+ assert.equal(h.get('photoContextDraft.version'),'v1');assert.equal(h.get('photoContextDraft.context.local_date'),'2026-09-20');
+ assert.match(h.element('photoTitleMessage').textContent,/desat/);assert.match(h.element('photoContextMessage').textContent,/altre participant/);
+ assert.equal(h.element('photoEditorFields').disabled,false);
+});
+test('post-popstate restoration happens after browser scroll restoration',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();h.s.openGenericPhoto('photo');
+ h.s.closeGenericPhoto();h.s.window.scrollY=0;let frame;
+ h.s.window.requestAnimationFrame=fn=>frame=fn;h.s.handlePhotoHistory();h.s.window.scrollY=100;
+ assert.equal(typeof frame,'function');frame();assert.equal(h.s.window.scrollY,2400);
+});
+test('late preview cannot paint after a different photo is selected or scope resets',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();
+ vm.runInContext("photoSignedRows=[];photoRows.push({id:'other',title:'Altra',file_path:'other'})",h.s);
+ let finish;h.s.db.storage.from=()=>({createSignedUrl:()=>new Promise(resolve=>finish=resolve)});
+ h.s.openGenericPhoto('photo');const complete=finish;
+ h.s.resetPhotoV2();h.element('photoLightboxImage').src='new-scope';complete({data:{signedUrl:'old-scope'}});
+ await new Promise(resolve=>setImmediate(resolve));assert.equal(h.element('photoLightboxImage').src,'new-scope');
+});
+test('generic navigation dispatch leaves London lightbox implementation intact',()=>{
+ assert.match(html,/function openPhoto\(id,rows\)\{if\(!isLondonTrip\(\)\)return openGenericPhoto\(id,rows\);const p=rows.find/);
+ assert.match(html,/function closePhotoLightbox\(\)\{if\(photoNavigation\)return closeGenericPhoto\(\);/);
+ assert.match(html,/\.photo-lightbox\.photo-detail-active/);
+ assert.doesNotMatch(code,/setAppView\('photosView'\).*scroll/);
 });
