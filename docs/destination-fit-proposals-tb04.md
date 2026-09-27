@@ -89,3 +89,13 @@ remote migration and deployment are not authorized. The previously approved sing
 Responses call already passed strict Candidate validation; implementation adds no
 real model calls. Future rollout: compatible DB first, configured Edge second,
 client/PWA last, with explicit authorization at that time.
+
+## TB-04.1 local follow-up
+
+- A lost/uncertain response retains the exact operation. Read reconciliation precedes replay. A failed retry is acknowledged only after its generation attempt advanced or its exact receipt was returned; reading the previous failed attempt is insufficient.
+- Confirmed terminal failure closes local pending state. Only another explicit user click allocates a new retry operation. No automatic model retry.
+- Brief CTA is `✨ Proposa’m viatges`: with no current generation it goes directly through processing to alternatives. Refresh/Back/read never manufacture a generation. Timeout has specific copy. Brief reload appears only for conflict/reconciliation.
+- Existing DB lease remains 90s. Provider budget is 70s = 90s lease minus 10s lease reserve minus two 5s RPC budgets. The attempt cancellation deadline is at most 80s and shrinks to lease expiry minus 10s on delayed claims. Auth/RPC calls are bounded to 5s; finishing/failure persistence remains inside the lease reserve. This fits the documented 150s Supabase HTTP idle/free wall-clock limit. No schema change required.
+- One structured server log per claimed attempt: generation ID, attempt number, total duration, stage, sanitized error code and nullable validated provider request ID. No notes, snapshot, model output, tokens or credentials. Timeouts before response headers have no request ID.
+- No claim of real-world latency coverage: a response beyond 70s still times out explicitly. Virtual-clock tests cover a 55s successful response and the 70s abort. No new paid/model call required for this local correction.
+- PWA cache version bumped for the modified cached frontend module; fetch strategies and precache list unchanged.

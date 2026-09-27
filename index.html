@@ -412,7 +412,7 @@
       <button id="builderRetry" type="button" class="hidden">Reintenta la mateixa operació</button>
       <button type="button" id="builderReview" class="hidden">Revisar</button>
       <button id="builderReload" type="button" class="hidden">Recarrega l’esborrany</button>
-      <button id="builderProposals" type="button">Explora alternatives</button>
+      <button id="builderProposals" type="button">✨ Proposa’m viatges</button>
       </div>
       <section id="proposalPanel" class="hidden" aria-label="Alternatives de viatge"><button id="proposalBack" type="button">← Torna al Brief</button><h2 id="proposalHeading">Alternatives</h2><p id="proposalMessage" role="status" aria-live="polite"></p><div id="proposalContent"></div><button id="proposalGenerate" type="button">Genera alternatives</button></section>
     </div>
@@ -2047,7 +2047,7 @@ function renderBuilderControls(){
   $('builderRetry').classList.toggle('hidden',!pending);$('builderRetry').disabled=builderBusy;
   $('builderNotes').disabled=builderBusy||pending||!builderRow||builderConflict;
   $('builderSave').disabled=builderBusy||pending||!builderRow||builderConflict;
-  $('builderReload').classList.toggle('hidden',!builderRow);$('builderReload').disabled=builderBusy;
+  $('builderReload').classList.toggle('hidden',!builderRow||!builderConflict);$('builderReload').disabled=builderBusy;
   document.querySelectorAll('[data-builder-back]').forEach(button=>button.disabled=builderBusy);
 }
 async function loadBuilderList(){
@@ -2157,7 +2157,7 @@ $('builderReload').onclick=()=>{if(builderRow&&(!builderDirty()||confirm('Recarr
 // TB04_PROPOSAL_UI_START — nested Builder screens, no operational navigation.
 let proposalOpen=false,proposalSession=null,proposalResult=null,proposalDetail=null,proposalTimer=null,proposalSequence=0;
 function resetProposalUi(){proposalSequence++;if(proposalTimer!==null)clearTimeout(proposalTimer);proposalTimer=null;proposalOpen=false;proposalSession=null;proposalResult=null;proposalDetail=null;$('proposalPanel').classList.add('hidden');$('builderEditorPanel').classList.toggle('hidden',false);$('proposalContent').textContent='';$('proposalMessage').textContent='';}
-async function openBuilderProposals(push=true,detail=null){
+async function openBuilderProposals(push=true,detail=null,direct=false){
  if(!builderRow||builderBusy)return;
  if(!proposalOpen&&builderDirty()){$('builderMessage').textContent='Desa o descarta els canvis abans d’explorar alternatives.';return;}
  const owner=session?.user?.id,epoch=builderEpoch,sequence=++proposalSequence;
@@ -2166,8 +2166,11 @@ async function openBuilderProposals(push=true,detail=null){
   if(!proposalSession)proposalSession=new api.ProposalSession(db,owner,sessionStorage,()=>builderCurrent(owner,epoch));
   proposalOpen=true;proposalDetail=detail;$('builderEditorPanel').classList.add('hidden');$('proposalPanel').classList.remove('hidden');
   if(push)history.pushState({builderNav:{...builderHistory('builderView'),proposal:{brief:builderRow.id,detail}}},'');
-  $('proposalMessage').textContent='Carregant alternatives…';
+  $('proposalHeading').textContent=detail?'Detall de proposta':'Alternatives';$('proposalBack').textContent=detail?'← Torna a alternatives':'← Torna al Brief';
+  $('proposalContent').textContent='';$('proposalGenerate').classList.add('hidden');$('proposalMessage').textContent=direct?'Preparant alternatives…':'Carregant alternatives…';
   proposalResult=await proposalSession.read(builderRow.id);if(!builderCurrent(owner,epoch)||sequence!==proposalSequence||!proposalOpen)return;
+  if(proposalResult.brief_revision!==undefined&&proposalResult.brief_revision!==builderRow.revision){builderConflict=true;renderBuilderControls();}
+  if(direct&&!detail&&(!proposalResult.generation||proposalResult.stale||proposalResult.generation.status==='obsolete')){await generateBuilderProposals();return;}
   $('proposalMessage').textContent='';$('proposalHeading').textContent=detail?'Detall de proposta':'Alternatives';$('proposalBack').textContent=detail?'← Torna a alternatives':'← Torna al Brief';
   $('proposalContent').innerHTML=api.renderProposalResult(proposalResult,detail);
   $('proposalContent').querySelectorAll('[data-proposal-id]').forEach(button=>button.onclick=()=>openBuilderProposals(true,button.dataset.proposalId));
@@ -2178,16 +2181,18 @@ async function openBuilderProposals(push=true,detail=null){
   clearTimeout(proposalTimer);if(working)proposalTimer=setTimeout(()=>{if(proposalOpen&&!document.hidden&&builderCurrent(owner,epoch))openBuilderProposals(false,proposalDetail)},3000);
  }catch(error){if(builderCurrent(owner,epoch)&&sequence===proposalSequence)$('proposalMessage').textContent=error.message||'No s’han pogut carregar les alternatives.';}
 }
-$('builderProposals').onclick=()=>openBuilderProposals();
+$('builderProposals').onclick=()=>openBuilderProposals(true,null,true);
 $('proposalBack').onclick=()=>{if(history.state?.builderNav?.proposal)history.back();else resetProposalUi()};
-$('proposalGenerate').onclick=async()=>{
+async function generateBuilderProposals(){
  if(!proposalSession||proposalSession.busy)return;
  const owner=session?.user?.id,epoch=builderEpoch;
- $('proposalGenerate').disabled=true;$('proposalMessage').textContent='Preparant alternatives…';
- try{await proposalSession.generate({...builderRow,revision:proposalResult?.brief_revision||builderRow.revision},proposalResult);if(builderCurrent(owner,epoch)&&proposalOpen)await openBuilderProposals(false,proposalDetail);}
- catch(error){if(builderCurrent(owner,epoch)){$('proposalMessage').textContent=error.message;$('proposalGenerate').textContent='Reintenta la mateixa petició';}}
- finally{if(builderCurrent(owner,epoch))$('proposalGenerate').disabled=false;}
-};
+ const activeSession=proposalSession;
+ $('proposalGenerate').classList.remove('hidden');$('proposalGenerate').disabled=true;$('proposalGenerate').textContent='Processant…';$('proposalMessage').textContent='Preparant alternatives…';
+ try{await proposalSession.generate({...builderRow,revision:proposalResult?.brief_revision||builderRow.revision},proposalResult);if(builderCurrent(owner,epoch)&&proposalOpen&&proposalSession===activeSession)await openBuilderProposals(false,proposalDetail);}
+ catch(error){if(builderCurrent(owner,epoch)&&proposalOpen&&proposalSession===activeSession){if(error.code==='brief_or_attempt_changed'){builderConflict=true;renderBuilderControls();}$('proposalMessage').textContent=error.message;$('proposalGenerate').textContent='Reintenta la mateixa petició';}}
+ finally{if(builderCurrent(owner,epoch)&&proposalSession===activeSession)$('proposalGenerate').disabled=false;}
+}
+$('proposalGenerate').onclick=generateBuilderProposals;
 window.addEventListener('focus',()=>{if(proposalOpen&&visibleAppView()==='builderView')openBuilderProposals(false,proposalDetail)});
 // TB04_PROPOSAL_UI_END
 // TRAVEL_BUILDER_UI_END

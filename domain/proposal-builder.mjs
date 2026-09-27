@@ -10,7 +10,7 @@ export function renderProposalResult(result,selected=null){
  const stale=result.stale||generation.status==='obsolete';
  const banner=stale?'<p role="status">El Brief ha canviat. Aquestes alternatives corresponen a una revisió anterior.</p>':'';
  if(['pending','running'].includes(generation.status))return banner+'<p role="status">Preparant alternatives… Pots tornar-hi més tard.</p>';
- if(generation.status==='failed')return banner+'<p role="alert">No s’han pogut generar les alternatives per una fallada tècnica. Pots reintentar-ho.</p>';
+ if(generation.status==='failed')return banner+'<p role="alert">'+(generation.error_code==='provider_timeout'?'La generació ha trigat massa. Pots tornar-ho a provar.':'No s’han pogut generar les alternatives per una fallada tècnica. Pots reintentar-ho.')+'</p>';
  if(generation.status==='no_results')return banner+`<p>${generation.result_reason==='incompatible'?'Les alternatives suggerides contradiuen imprescindibles del Brief.':'Falta informació o no s’han pogut proposar alternatives suficients.'}</p>`;
  const rows=result.proposals||[];
  const one=selected&&rows.find(p=>p.id===selected);
@@ -24,27 +24,42 @@ export function renderProposalResult(result,selected=null){
 }
 export class ProposalSession{
  constructor(client,owner,storage,isCurrent=()=>true){this.client=client;this.owner=owner;this.storage=storage;this.isCurrent=isCurrent;this.key='freya-proposals-v1:'+owner;this.pending=JSON.parse(storage.getItem(this.key)||'null');this.busy=false;}
- async read(briefId){const {data,error}=await this.client.rpc('get_proposals_v1',{p_brief:briefId});if(error)throw error;if(!this.isCurrent())throw Error('La sessió ha canviat.');return data;}
+ clearPending(){const stored=JSON.parse(this.storage.getItem(this.key)||'null');if(stored?.body.operation_id===this.pending?.body.operation_id)this.storage.removeItem(this.key);this.pending=null;}
+ reconcile(result,acknowledged=false){
+  const p=this.pending,g=result?.generation;if(!p||!g)return;
+  const matches=p.body.action==='retry'?g.id===p.body.generation_id:g.brief_revision===p.body.revision&&g.id!==p.baseline_id;
+  const advanced=p.body.action==='generate'||Number.isInteger(p.baseline_attempt)&&g.attempt_number>p.baseline_attempt;
+  if(matches&&['failed','completed','no_results','obsolete'].includes(g.status)&&(acknowledged||advanced))this.clearPending();
+ }
+ async read(briefId){const {data,error}=await this.client.rpc('get_proposals_v1',{p_brief:briefId});if(error)throw error;if(!this.isCurrent())throw Error('La sessió ha canviat.');if(this.pending?.brief_id===briefId)this.reconcile(data);return data;}
  async generate(row,result){
   if(this.busy)return;
   if(!this.isCurrent()||row.owner_id!==this.owner)throw Error('La sessió ha canviat.');
-  const stale=result?.stale||result?.generation?.status==='obsolete';
-  const action=!stale&&result?.generation?'retry':'generate';
   if(this.pending&&this.pending.brief_id!==row.id)throw Error('Verifica l’operació pendent de l’altre esborrany.');
-  if(!this.pending){this.pending={brief_id:row.id,body:action==='generate'?{action,brief_id:row.id,revision:row.revision,operation_id:crypto.randomUUID()}:{action,generation_id:result.generation.id,operation_id:crypto.randomUUID()}};this.storage.setItem(this.key,JSON.stringify(this.pending));}
   this.busy=true;
   try{
+   // An uncertain action is read/replayed first, never replaced by another action.
+   if(this.pending){result=await this.read(row.id);if(!this.pending)return result;}
+   const stale=result?.stale||result?.generation?.status==='obsolete';
+   const action=!stale&&result?.generation?'retry':'generate';
+   if(!this.pending){this.pending={brief_id:row.id,baseline_id:result?.generation?.id??null,baseline_attempt:result?.generation?.attempt_number??0,body:action==='generate'?{action,brief_id:row.id,revision:row.revision,operation_id:crypto.randomUUID()}:{action,generation_id:result.generation.id,operation_id:crypto.randomUUID()}};this.storage.setItem(this.key,JSON.stringify(this.pending));}
    const {data,error}=await this.client.functions.invoke('proposal-engine',{body:this.pending.body});
    if(!this.isCurrent())return;
    if(error||data?.error){
     let rejected=data?.error;
     if(!rejected&&error?.context?.json)try{rejected=(await error.context.clone().json()).error}catch{}
     if(!this.isCurrent())return;
-    if(['brief_or_attempt_changed','unavailable','unauthorized','invalid_request'].includes(rejected)){this.storage.removeItem(this.key);this.pending=null;throw Error('El Brief o la sessió han canviat. Recarrega abans de continuar.');}
+    if(['brief_or_attempt_changed','unavailable','unauthorized','invalid_request'].includes(rejected)){this.clearPending();throw Object.assign(Error('El Brief o la sessió han canviat. Recarrega abans de continuar.'),{code:rejected});}
+    // A known failed attempt can end pending state; a failed read cannot.
+    try{const authoritative=await this.read(row.id);if(!this.pending)return authoritative;}catch{}
     throw Error('No s’ha pogut completar la petició. Reintenta per verificar-ne el resultat.');
    }
-   this.storage.removeItem(this.key);this.pending=null;
-   return await this.read(row.id);
+   const authoritative=await this.read(row.id);
+   if(!this.isCurrent())return;
+   if(data?.generation_id===authoritative.generation?.id)this.reconcile(authoritative,true);
+   // A successful receipt also resolves acceptance while an attempt is running.
+   if(data?.generation_id===authoritative.generation?.id||data?.status==='completed')this.clearPending();
+   return authoritative;
   }finally{this.busy=false;}
  }
 }

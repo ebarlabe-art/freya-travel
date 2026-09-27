@@ -63,10 +63,10 @@ export async function evaluateCandidate(candidate,snapshot,verifier=pendingFactu
  }
  return {schema_version:1,candidate:structuredClone(candidate),evaluations,verification:claims};
 }
-export async function runProposalEngine({snapshot,generator,verifier=pendingFactualVerifier,now=Date.now()}){
+export async function runProposalEngine({snapshot,generator,verifier=pendingFactualVerifier,now=Date.now(),signal}){
  // Snapshot comes exclusively from the server's immutable DB generation row.
  const input=structuredClone(snapshot);
- const batch=validateCandidateBatch(await generator.generate({snapshot:structuredClone(input)}),input);
+ const batch=validateCandidateBatch(await generator.generate({snapshot:structuredClone(input),signal}),input);
  const proposals=[],seen=new Set();let rejected=0;
  for(const candidate of batch.candidates){
   const document=await evaluateCandidate(candidate,input,verifier,now);

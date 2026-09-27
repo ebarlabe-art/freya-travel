@@ -164,3 +164,22 @@ test('diagnostics propagate through adapter only when opted in; zero real networ
   await assert.rejects(adapter.generate({snapshot:brief()}),e=>e.code==='invalid_candidate'&&Boolean(e.diagnostic)===diagnostics);
  }
 });
+
+test('valid 55s provider response survives former 45s cutoff (virtual time)',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});let aborted=false;
+ const adapter=generator(async(_,{signal})=>new Promise((resolve,reject)=>{signal.addEventListener('abort',()=>{aborted=true;reject(Error('aborted'))});setTimeout(()=>resolve(reply(fixture())),55000)}));
+ const promise=adapter.generate({snapshot:brief()});t.mock.timers.tick(46000);assert.equal(aborted,false);t.mock.timers.tick(9000);assert.equal((await promise).candidates.length,1);
+});
+test('70s provider deadline aborts once with no invisible retry (virtual time)',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});let calls=0;
+ const adapter=generator(async(_,{signal})=>{calls++;return new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(Error('aborted'))))});
+ const promise=assert.rejects(adapter.generate({snapshot:brief()}),{code:'provider_timeout'});t.mock.timers.tick(70000);await promise;assert.equal(calls,1);
+});
+test('attempt deadline cancels provider earlier than its own timeout',async()=>{
+ const controller=new AbortController();const adapter=generator(async(_,{signal})=>new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(Error('aborted')))));
+ const promise=assert.rejects(adapter.generate({snapshot:brief(),signal:controller.signal}),{code:'provider_timeout'});controller.abort();await promise;
+});
+test('safe provider diagnostics retain request ID but never content or credentials',async()=>{
+ const records=[];const adapter=createOpenAIResponsesGenerator({apiKey:'SECRET',model:'test',onDiagnostic:r=>records.push(r),fetchImpl:async()=>({...reply(fixture()),headers:new Headers({'x-request-id':'req_example123'})})});
+ await adapter.generate({snapshot:brief()});assert.equal(records.at(-1).stage,'validation');assert.equal(records.at(-1).provider_request_id,'req_example123');assert.doesNotMatch(JSON.stringify(records),/SECRET|destination|snapshot/);
+});
