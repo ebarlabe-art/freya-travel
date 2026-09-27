@@ -2,6 +2,7 @@
 // Supabase container. No URL, project ref, production credentials or remote CLI.
 import {spawn,spawnSync} from 'node:child_process';
 import {readFileSync,readdirSync} from 'node:fs';
+import {testProposals} from './proposals-db.mjs';
 const container='supabase_db_freya-travel';
 const database=`freya_progress_test_${process.pid}`;
 function docker(args,input){
@@ -115,7 +116,9 @@ try{
       sql("insert into public.travel_documents(trip_id,title,category,file_name,file_path,mime_type,created_by) values ('9035e47f-f16c-4fa3-83fd-873bd98dc221','Legacy photo snapshot','Foto','legacy.jpg','9035e47f-f16c-4fa3-83fd-873bd98dc221/photos/legacy.jpg','image/jpeg','00000000-0000-4000-8000-000000000001'); create table public.photo_before_snapshot as select to_jsonb(d) as row from public.travel_documents d;");
     }
     if(name.endsWith('_trip_brief_contract_v1_1.sql'))file('supabase/tests/brief_contract_before_migration.sql');
+    if(name.endsWith('_proposal_foundation_v1.sql'))file('supabase/tests/proposals_before_migration.sql');
     file(`supabase/migrations/${name}`);
+    if(name.endsWith('_proposal_foundation_v1.sql'))file('supabase/tests/proposals_after_migration.sql');
     if(name.endsWith('_trip_brief_contract_v1_1.sql'))file('supabase/tests/brief_contract_after_migration.sql');
     if(name==='20260918174037_shared_trip_progress.sql')file('supabase/tests/progress_after_migration.sql');
     if(name==='20260922170531_contextual_photos_v1.sql'){
@@ -132,6 +135,7 @@ try{
   await concurrentCommands();
   await concurrentPhotos();
   await concurrentBriefs();
+  await testProposals({sql,docker,database,container});
 }finally{
   if(created){sql(`drop database ${database};`,'postgres');console.log(`Removed disposable database ${database}`)}
 }

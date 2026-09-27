@@ -322,6 +322,7 @@
 .live-editor summary{min-height:44px;display:flex;align-items:center;cursor:pointer}.live-editor summary::after{content:"⌄";margin-left:auto}
 .live-interest{border-top:1px solid #d4dde8;margin-top:14px;padding-top:14px}.live-interest button{background:#fff;color:#833333;border:1px solid #ba7777}
 #builderLive [data-live-error]{color:#922d2d}#builderView button:disabled{opacity:.6;cursor:wait}
+#proposalPanel {overflow-wrap:anywhere} #proposalPanel button {min-height:44px;max-width:100%} #proposalContent .card {margin:12px 0;padding:16px} #proposalContent ol,#proposalContent ul {padding-left:22px}
 </style>
 </head>
 <body>
@@ -398,18 +399,22 @@
       <p id="tripMsg" class="message hidden" role="status" aria-live="polite"></p>
     </section></div>
     <div id="builderView" class="hidden trips-home">
+      <div id="builderEditorPanel">
       <button type="button" data-builder-back="constructionView">← Tornar</button>
       <h1 id="builderHeading">Continua dissenyant</h1>
       <p id="builderKnown" class="hidden"></p><p id="builderPrompt"></p>
       <div id="builderLive"></div>
       <div id="builderNotesPanel" class="hidden">
       <form id="builderNotesForm"><label for="builderNotes">Explica’ns el viatge que tens al cap</label><textarea id="builderNotes" rows="4" maxlength="2000" placeholder="Vull neu, ambient de Nadal i alguna activitat especial…"></textarea><button id="builderSave" type="submit">Desa la idea</button></form>
-      <p>Desem el teu text tal com l’escrius. Encara no generem propostes ni interpretem la idea.</p>
+      <p>Desem el teu text tal com l’escrius. Pots explorar alternatives quan vulguis, amb el Brief desat.</p>
       </div>
       <p id="builderMessage" role="status" aria-live="polite"></p>
       <button id="builderRetry" type="button" class="hidden">Reintenta la mateixa operació</button>
       <button type="button" id="builderReview" class="hidden">Revisar</button>
       <button id="builderReload" type="button" class="hidden">Recarrega l’esborrany</button>
+      <button id="builderProposals" type="button">Explora alternatives</button>
+      </div>
+      <section id="proposalPanel" class="hidden" aria-label="Alternatives de viatge"><button id="proposalBack" type="button">← Torna al Brief</button><h2 id="proposalHeading">Alternatives</h2><p id="proposalMessage" role="status" aria-live="polite"></p><div id="proposalContent"></div><button id="proposalGenerate" type="button">Genera alternatives</button></section>
     </div>
 
 
@@ -1994,7 +1999,7 @@ function homeTripGroups(values,now=new Date()){
   groups.forEach(group=>group.rows.sort((a,b)=>group.key==='past'?String(b.end_date||'').localeCompare(a.end_date||''):String(a.start_date||'').localeCompare(b.start_date||'')));
   return groups.filter(group=>group.rows.length);
 }
-function resetBuilderUi(){builderLive?.clear();builderLive=null;if(typeof homeTripReturn!=='undefined')homeTripReturn=null;builderEpoch++;builderListSequence++;builderController=null;builderRow=null;builderBase='';builderBusy=false;builderConflict=false;$('builderNotes').value='';$('builderStartMessage').textContent='';$('builderBriefList').innerHTML='';$('builderKnown').textContent='';$('builderMessage').textContent=''}
+function resetBuilderUi(){resetProposalUi();builderLive?.clear();builderLive=null;if(typeof homeTripReturn!=='undefined')homeTripReturn=null;builderEpoch++;builderListSequence++;builderController=null;builderRow=null;builderBase='';builderBusy=false;builderConflict=false;$('builderNotes').value='';$('builderStartMessage').textContent='';$('builderBriefList').innerHTML='';$('builderKnown').textContent='';$('builderMessage').textContent=''}
 function builderCurrent(owner,epoch){return session?.user?.id===owner&&builderEpoch===epoch}
 async function getBuilderController(){
   const owner=session?.user?.id,epoch=builderEpoch;if(!owner)throw new Error('Torna a iniciar sessió.');
@@ -2007,6 +2012,7 @@ function canLeaveBuilder(){return !builderBusy&&(!builderDirty()||confirm('Sorti
 function builderHistory(view,depth=(history.state?.builderNav?.depth||0)+1){return {owner:session?.user?.id,view,depth,parent:view==='builderView'?(history.state?.builderNav?.parent||(['designTripView','constructionView'].includes(visibleAppView())?visibleAppView():'constructionView')):null}}
 function navigateBuilder(view,push=true,leaveChecked=false){
   if(!session||!leaveChecked&&!canLeaveBuilder())return;
+  if(view!=='builderView'&&proposalOpen)resetProposalUi();
   if(view!=='builderView'&&builderController){try{builderController.clearRoute()}catch(error){$('builderMessage').textContent=error.message;return}}
   if(push){
     if(!history.state?.builderNav)history.replaceState({...history.state,builderNav:builderHistory(visibleAppView(),0)},'');
@@ -2023,6 +2029,8 @@ window.addEventListener('popstate',event=>{
   if(!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(visibleAppView()))return;
   if(typeof photoNavigation!=='undefined'&&photoNavigation||event.state?.freyaPhoto)return;
   const target=event.state?.builderNav;
+  if(target?.owner===session?.user?.id&&target.view==='builderView'&&target.proposal&&builderRow?.id===target.proposal.brief){openBuilderProposals(false,target.proposal.detail);return}
+  if(proposalOpen&&target?.view==='builderView'&&target.owner===session?.user?.id){resetProposalUi();return}
   if(!target||target.owner!==session?.user?.id||!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(target.view))return;
   if(!canLeaveBuilder()){history.pushState({builderNav:builderHistory(visibleAppView())},'');return}
   if(target.view==='builderView'){navigateBuilder('constructionView',false,true);return} // Forward never manufactures a new brief.
@@ -2030,6 +2038,7 @@ window.addEventListener('popstate',event=>{
 });
 function renderBuilderControls(){
   const pending=!!builderController?.state.pending;
+  $('builderProposals').disabled=builderBusy||pending||!builderRow||builderConflict;
   builderLive?.setLocked(builderBusy||pending||!builderRow||builderConflict);
   $('builderReview').classList.toggle('hidden',!builderConflict);
   document.querySelectorAll('[data-builder-mode]').forEach(button=>button.disabled=builderBusy||pending);
@@ -2056,6 +2065,7 @@ async function loadBuilderList(){
   }catch(error){if(builderCurrent(owner,epoch)&&sequence===builderListSequence)$('builderListMessage').textContent=error.message||'No s’han pogut carregar els esborranys.'}
 }
 function showBuilderRow(api,row,mode){
+  resetProposalUi();
   $('builderStartMessage').textContent='';
   builderRow=row;builderConflict=false;
   const notes=api.briefNotes(row);builderBase=notes?.decision.knowledge==='known'?notes.decision.value:'';
@@ -2128,10 +2138,12 @@ async function saveBuilderNotes(event){
   }catch(error){if(builderCurrent(owner,epoch)){$('builderMessage').textContent=error.message;renderBuilderControls()}}
 }
 async function restoreBuilderSession(){
+  const proposalHistory=history.state?.builderNav;
+  const proposalRestore=history.state?.builderNav?.owner===session?.user?.id?history.state?.builderNav?.proposal:null;
   try{
     const {controller}=await getBuilderController();
     if(controller.state.pending){const api=await loadBuilderApi();$('builderHeading').textContent=api.builderModes[controller.state.pending.mode]?.title||'Continua dissenyant';setAppView('builderView');history.replaceState({builderNav:builderHistory('builderView',0)},'');$('builderMessage').textContent='Hi ha un desament pendent. Reintenta la mateixa operació per recuperar-ne el resultat.';renderBuilderControls()}
-    else if(controller.state.route)await resumeBuilder(controller.state.route.id,controller.state.route.mode,true);
+    else if(controller.state.route){await resumeBuilder(controller.state.route.id,controller.state.route.mode,true);if(proposalRestore?.brief===builderRow?.id){history.replaceState({builderNav:proposalHistory},'');await openBuilderProposals(false,proposalRestore.detail);}}
     else await restoreHomeRoute();
   }catch(error){$('builderListMessage').textContent=error.message}
 }
@@ -2142,6 +2154,42 @@ $('builderStartRetry').onclick=runBuilderPending;$('builderListRetry').onclick=l
 $('builderNotesForm').onsubmit=saveBuilderNotes;
 $('builderReview').onclick=()=>{$('builderMessage').textContent='Revisa els valors locals del bloc i copia el text que vulguis conservar abans de recarregar. No s’ha sobreescrit el viatge.';builderLive?.review()};
 $('builderReload').onclick=()=>{if(builderRow&&(!builderDirty()||confirm('Recarregar descartarà el text no desat. Continuar?'))){builderBase=$('builderNotes').value;if(builderLive)builderLive.dirty=false;resumeBuilder(builderRow.id,builderController.state.route?.mode||'resume')}};
+// TB04_PROPOSAL_UI_START — nested Builder screens, no operational navigation.
+let proposalOpen=false,proposalSession=null,proposalResult=null,proposalDetail=null,proposalTimer=null,proposalSequence=0;
+function resetProposalUi(){proposalSequence++;if(proposalTimer!==null)clearTimeout(proposalTimer);proposalTimer=null;proposalOpen=false;proposalSession=null;proposalResult=null;proposalDetail=null;$('proposalPanel').classList.add('hidden');$('builderEditorPanel').classList.toggle('hidden',false);$('proposalContent').textContent='';$('proposalMessage').textContent='';}
+async function openBuilderProposals(push=true,detail=null){
+ if(!builderRow||builderBusy)return;
+ if(!proposalOpen&&builderDirty()){$('builderMessage').textContent='Desa o descarta els canvis abans d’explorar alternatives.';return;}
+ const owner=session?.user?.id,epoch=builderEpoch,sequence=++proposalSequence;
+ try{
+  const api=await import('./domain/proposal-builder.mjs');if(!builderCurrent(owner,epoch)||sequence!==proposalSequence)return;
+  if(!proposalSession)proposalSession=new api.ProposalSession(db,owner,sessionStorage,()=>builderCurrent(owner,epoch));
+  proposalOpen=true;proposalDetail=detail;$('builderEditorPanel').classList.add('hidden');$('proposalPanel').classList.remove('hidden');
+  if(push)history.pushState({builderNav:{...builderHistory('builderView'),proposal:{brief:builderRow.id,detail}}},'');
+  $('proposalMessage').textContent='Carregant alternatives…';
+  proposalResult=await proposalSession.read(builderRow.id);if(!builderCurrent(owner,epoch)||sequence!==proposalSequence||!proposalOpen)return;
+  $('proposalMessage').textContent='';$('proposalHeading').textContent=detail?'Detall de proposta':'Alternatives';$('proposalBack').textContent=detail?'← Torna a alternatives':'← Torna al Brief';
+  $('proposalContent').innerHTML=api.renderProposalResult(proposalResult,detail);
+  $('proposalContent').querySelectorAll('[data-proposal-id]').forEach(button=>button.onclick=()=>openBuilderProposals(true,button.dataset.proposalId));
+  const g=proposalResult.generation,working=g&&['pending','running'].includes(g.status);
+  $('proposalGenerate').classList.toggle('hidden',!!detail||!!g&&!proposalResult.stale&&['completed','no_results'].includes(g.status));
+  $('proposalGenerate').disabled=!!proposalSession.busy;
+  $('proposalGenerate').textContent=proposalSession.pending?'Verifica la petició pendent':proposalResult.stale?'Genera amb el Brief actual':working?'Reprèn si la generació s’ha interromput':g?'Reintenta':'Genera alternatives';
+  clearTimeout(proposalTimer);if(working)proposalTimer=setTimeout(()=>{if(proposalOpen&&!document.hidden&&builderCurrent(owner,epoch))openBuilderProposals(false,proposalDetail)},3000);
+ }catch(error){if(builderCurrent(owner,epoch)&&sequence===proposalSequence)$('proposalMessage').textContent=error.message||'No s’han pogut carregar les alternatives.';}
+}
+$('builderProposals').onclick=()=>openBuilderProposals();
+$('proposalBack').onclick=()=>{if(history.state?.builderNav?.proposal)history.back();else resetProposalUi()};
+$('proposalGenerate').onclick=async()=>{
+ if(!proposalSession||proposalSession.busy)return;
+ const owner=session?.user?.id,epoch=builderEpoch;
+ $('proposalGenerate').disabled=true;$('proposalMessage').textContent='Preparant alternatives…';
+ try{await proposalSession.generate({...builderRow,revision:proposalResult?.brief_revision||builderRow.revision},proposalResult);if(builderCurrent(owner,epoch)&&proposalOpen)await openBuilderProposals(false,proposalDetail);}
+ catch(error){if(builderCurrent(owner,epoch)){$('proposalMessage').textContent=error.message;$('proposalGenerate').textContent='Reintenta la mateixa petició';}}
+ finally{if(builderCurrent(owner,epoch))$('proposalGenerate').disabled=false;}
+};
+window.addEventListener('focus',()=>{if(proposalOpen&&visibleAppView()==='builderView')openBuilderProposals(false,proposalDetail)});
+// TB04_PROPOSAL_UI_END
 // TRAVEL_BUILDER_UI_END
 
 const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];

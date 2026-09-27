@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "now": "2026-09-27T12:00:00Z",
+  "snapshot": {
+    "decisions": {
+      "snow": {
+        "field": "interest.snow",
+        "scope": "global",
+        "origin": "explicit_user",
+        "knowledge": "known",
+        "strength": "hard",
+        "value": true
+      },
+      "duration": {
+        "field": "duration",
+        "scope": "global",
+        "origin": "explicit_user",
+        "knowledge": "known",
+        "strength": "preference",
+        "value": {
+          "unit": "nights",
+          "min": 3,
+          "max": 3
+        }
+      }
+    },
+    "scopes": {},
+    "travelers": {
+      "adult": {
+        "kind": "adult"
+      }
+    }
+  },
+  "batch": {
+    "candidates": [
+      {
+        "title": "Alternativa de prova",
+        "summary": "Disseny sintètic, sense inventari comercial.",
+        "route": {
+          "stops": [
+            {
+              "id": "stop_a",
+              "destination": "Destinació A",
+              "nights": 3,
+              "start_date": null,
+              "end_date": null
+            }
+          ],
+          "legs": []
+        },
+        "components": [
+          {
+            "id": "experience_a",
+            "kind": "experience",
+            "subject_id": "stop_a",
+            "description": "Passeig suggerit",
+            "claim_ids": [
+              "claim_snow"
+            ]
+          }
+        ],
+        "experience_blocks": [
+          {
+            "id": "block_a",
+            "title": "Experiència a",
+            "suggestion": "Activitat proposada per explorar.",
+            "decision_ids": [
+              "snow"
+            ],
+            "component_ids": [
+              "experience_a"
+            ],
+            "claim_ids": [
+              "claim_snow"
+            ]
+          },
+          {
+            "id": "block_b",
+            "title": "Experiència b",
+            "suggestion": "Activitat proposada per explorar.",
+            "decision_ids": [
+              "snow"
+            ],
+            "component_ids": [
+              "experience_a"
+            ],
+            "claim_ids": [
+              "claim_snow"
+            ]
+          },
+          {
+            "id": "block_c",
+            "title": "Experiència c",
+            "suggestion": "Activitat proposada per explorar.",
+            "decision_ids": [
+              "snow"
+            ],
+            "component_ids": [
+              "experience_a"
+            ],
+            "claim_ids": [
+              "claim_snow"
+            ]
+          }
+        ],
+        "reasons": [
+          {
+            "decision_id": "snow",
+            "explanation": "Explorar una experiència de neu, pendent de verificar.",
+            "claim_ids": [
+              "claim_snow"
+            ]
+          }
+        ],
+        "tradeoffs": [],
+        "claims": [
+          {
+            "id": "claim_snow",
+            "subject_id": "stop_a",
+            "statement": "Possible neu.",
+            "decision_ids": [
+              "snow"
+            ],
+            "verification_needed": "Cal una font factual vigent."
+          }
+        ],
+        "scope_bindings": []
+      }
+    ]
+  }
+}

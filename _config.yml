@@ -1,0 +1,14 @@
+# GitHub Pages source publishing: server code and synthetic test fixtures are not public assets.
+exclude:
+  - supabase
+  - scripts
+  - node_modules
+  - docs
+  - dist
+  - supabase.sql
+  - supabase-expenses-v2.sql
+  - .env
+  - .env.local
+  - .env.example
+  - deploy.yml
+  - domain/trip-proposal.mjs
