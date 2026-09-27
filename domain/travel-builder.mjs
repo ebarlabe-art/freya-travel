@@ -77,7 +77,7 @@ export class BuilderSession {
     this.persist(); // Fail closed if the pending identity cannot survive refresh.
     const result=await withBriefTimeout(applyBriefPatch(this.client,pending.command));
     const row=result.brief;
-    if(row?.owner_id!==this.owner||row.schema_version!==1||row.trip_id!==null)throw new Error('Resposta del Brief no vàlida.');
+    if(row?.owner_id!==this.owner||row.schema_version!==1||row.trip_id!==null)throw new Error('Resposta del resum del viatge no vàlida.');
     const next={...this.state,route:{id:row.id,mode:pending.mode}};delete next.pending;
     this.storage.setItem(this.key,JSON.stringify(next));this.state=next;return row;
   }

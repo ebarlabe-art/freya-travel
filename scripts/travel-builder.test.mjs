@@ -9,8 +9,8 @@ const row=(id='brief',fields={})=>({id,owner_id:'u',schema_version:1,trip_id:nul
 const memory=()=>{const map=new Map();return {getItem:k=>map.get(k)||null,setItem:(k,v)=>map.set(k,v)}};
 const known=(field,value)=>({field,scope:'global',knowledge:'known',origin:'explicit_user',strength:'preference',value});
 function harness(){
- const nodes=new Map();const $=id=>{if(!nodes.has(id))nodes.set(id,{value:'',textContent:'',innerHTML:'',disabled:false,classList:{add(){},toggle(){},contains(){return false}},querySelectorAll:()=>[],setAttribute(){}});return nodes.get(id)};
- const listeners={};const context=vm.createContext({console,Date,session:{user:{id:'u'}},sessionStorage:memory(),confirm:()=>true,history:{state:null,length:1,pushState(s){this.state=s;this.length++},replaceState(s){this.state=s},back(){this.backCalled=true}},window:{addEventListener:(event,fn)=>listeners[event]=fn},document:{querySelectorAll:()=>[]},$,esc:v=>String(v??''),db:{},visibleAppView:()=>context.view||'designTripView',setAppView:view=>context.view=view});
+ const nodes=new Map();const $=id=>{if(!nodes.has(id))nodes.set(id,{value:'',textContent:'',innerHTML:'',disabled:false,classList:{add(){},toggle(){},contains(){return false}},querySelectorAll:()=>[],setAttribute(){},removeAttribute(){}});return nodes.get(id)};
+ const listeners={};const context=vm.createContext({setInterval,clearInterval,console,Date,session:{user:{id:'u'}},sessionStorage:memory(),confirm:()=>true,history:{state:null,length:1,pushState(s){this.state=s;this.length++},replaceState(s){this.state=s},back(){this.backCalled=true}},window:{addEventListener:(event,fn)=>listeners[event]=fn},document:{querySelectorAll:()=>[]},$,esc:v=>String(v??''),db:{},visibleAppView:()=>context.view||'designTripView',setAppView:view=>context.view=view});
  vm.runInContext(code,context);context.loadBuilderApi=async()=>api;
  return {s:context,$,listeners,get:value=>vm.runInContext(value,context)};
 }

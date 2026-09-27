@@ -1,5 +1,5 @@
-const CACHE='freya-travel-tb041-v1';
-const ASSETS=['./domain/proposal-builder.mjs','./domain/live-trip-brief.mjs','./domain/travel-builder.mjs','./domain/trip-brief.mjs','./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./itinerary.html','./freya-travel-v1.5/index.html','./freya-travel-v1.5/itinerary.html'];
+const CACHE='freya-travel-tb042-v1';
+const ASSETS=['./domain/proposal-refinement.mjs','./domain/proposal-builder.mjs','./domain/live-trip-brief.mjs','./domain/travel-builder.mjs','./domain/trip-brief.mjs','./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./itinerary.html','./freya-travel-v1.5/index.html','./freya-travel-v1.5/itinerary.html'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',event=>{

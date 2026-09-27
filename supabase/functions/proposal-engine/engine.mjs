@@ -4,6 +4,7 @@ import {pendingFactualVerifier} from './factual-verifier.mjs';
 export const ENGINE_VERSION='tb04-engine-v1';
 export const POLICY_VERSION='tb04-policy-v1';
 const normalize=value=>value.normalize('NFKC').trim().replace(/\s+/gu,' ').toLowerCase();
+export const routeIdentity=route=>JSON.stringify(route.stops.map(s=>normalize(s.destination)));
 export async function fingerprintCandidate(candidate){
  const s=candidate.route.stops;
  // Identity ignores generated IDs, marketing text, claim phrasing and block order.
@@ -63,16 +64,16 @@ export async function evaluateCandidate(candidate,snapshot,verifier=pendingFactu
  }
  return {schema_version:1,candidate:structuredClone(candidate),evaluations,verification:claims};
 }
-export async function runProposalEngine({snapshot,generator,verifier=pendingFactualVerifier,now=Date.now(),signal}){
+export async function runProposalEngine({snapshot,generator,verifier=pendingFactualVerifier,now=Date.now(),signal,round}){
  // Snapshot comes exclusively from the server's immutable DB generation row.
  const input=structuredClone(snapshot);
- const batch=validateCandidateBatch(await generator.generate({snapshot:structuredClone(input),signal}),input);
- const proposals=[],seen=new Set();let rejected=0;
+ const batch=validateCandidateBatch(await generator.generate({snapshot:structuredClone(input),signal,round}),input);
+ const proposals=[],seen=new Set((round?.excluded_routes??[]).map(r=>r.fingerprint)),routes=new Set((round?.excluded_routes??[]).map(r=>routeIdentity(r.route)));let rejected=0;
  for(const candidate of batch.candidates){
   const document=await evaluateCandidate(candidate,input,verifier,now);
   if(document.evaluations.some(e=>e.strength==='hard'&&e.state==='violated')){rejected++;continue;}
-  const fingerprint=await fingerprintCandidate(candidate);if(seen.has(fingerprint))continue;seen.add(fingerprint);
+  const fingerprint=await fingerprintCandidate(candidate);const route=routeIdentity(candidate.route);if(seen.has(fingerprint)||routes.has(route)){continue;}seen.add(fingerprint);routes.add(route);
   proposals.push({fingerprint,document});
  }
- return {status:proposals.length?'completed':'no_results',result_reason:proposals.length?null:rejected===batch.candidates.length&&rejected>0?'incompatible':'insufficient_information',proposals};
+ return {status:proposals.length?'completed':'no_results',result_reason:proposals.length?null:round?.is_exploration?'no_new_alternatives':rejected===batch.candidates.length&&rejected>0?'incompatible':'insufficient_information',proposals};
 }

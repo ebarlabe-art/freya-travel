@@ -2,6 +2,7 @@
 // Supabase container. No URL, project ref, production credentials or remote CLI.
 import {spawn,spawnSync} from 'node:child_process';
 import {readFileSync,readdirSync} from 'node:fs';
+import {beforeRounds,afterRounds,testRounds} from './proposal-rounds-db.mjs';
 import {testProposals} from './proposals-db.mjs';
 const container='supabase_db_freya-travel';
 const database=`freya_progress_test_${process.pid}`;
@@ -117,7 +118,9 @@ try{
     }
     if(name.endsWith('_trip_brief_contract_v1_1.sql'))file('supabase/tests/brief_contract_before_migration.sql');
     if(name.endsWith('_proposal_foundation_v1.sql'))file('supabase/tests/proposals_before_migration.sql');
+    if(name.endsWith('_proposal_exploration_rounds_v1.sql'))await beforeRounds({sql,docker,database});
     file(`supabase/migrations/${name}`);
+    if(name.endsWith('_proposal_exploration_rounds_v1.sql'))afterRounds({sql,docker,database});
     if(name.endsWith('_proposal_foundation_v1.sql'))file('supabase/tests/proposals_after_migration.sql');
     if(name.endsWith('_trip_brief_contract_v1_1.sql'))file('supabase/tests/brief_contract_after_migration.sql');
     if(name==='20260918174037_shared_trip_progress.sql')file('supabase/tests/progress_after_migration.sql');
@@ -136,6 +139,7 @@ try{
   await concurrentPhotos();
   await concurrentBriefs();
   await testProposals({sql,docker,database,container});
+  await testRounds({sql,docker,database,container});
 }finally{
   if(created){sql(`drop database ${database};`,'postgres');console.log(`Removed disposable database ${database}`)}
 }
