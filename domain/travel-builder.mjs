@@ -31,7 +31,7 @@ export async function listOpenBriefs(client,owner,current=()=>true) {
 }
 export async function loadOwnedBrief(client,owner,id) {
   const row=await readBrief(client,id);
-  if(!row||row.owner_id!==owner||row.trip_id!==null||row.schema_version!==1){const error=new Error('Aquest esborrany ja no està disponible.');error.code='BRIEF_UNAVAILABLE';throw error}
+  if(!row||row.owner_id!==owner||row.schema_version!==1){const error=new Error('Aquest esborrany ja no està disponible.');error.code='BRIEF_UNAVAILABLE';throw error}
   return row;
 }
 export function notesPatch(row,text,confirmHard=false) {
@@ -77,7 +77,7 @@ export class BuilderSession {
     this.persist(); // Fail closed if the pending identity cannot survive refresh.
     const result=await withBriefTimeout(applyBriefPatch(this.client,pending.command));
     const row=result.brief;
-    if(row?.owner_id!==this.owner||row.schema_version!==1||row.trip_id!==null)throw new Error('Resposta del resum del viatge no vàlida.');
+    if(row?.owner_id!==this.owner||row.schema_version!==1)throw new Error('Resposta del resum del viatge no vàlida.');
     const next={...this.state,route:{id:row.id,mode:pending.mode}};delete next.pending;
     this.storage.setItem(this.key,JSON.stringify(next));this.state=next;return row;
   }

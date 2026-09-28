@@ -696,7 +696,7 @@
       <section id="activityFormCard" class="card accommodation-form-card hidden">
         <h3 id="activityFormTitle">Afegir activitat</h3>
         <form id="activityForm" class="accommodation-form">
-          <label>Tipus<select id="activityType" required><option value="restaurant">Restaurant</option><option value="attraction">Atracció</option><option value="tour">Tour o visita</option><option value="excursion">Excursió</option><option value="museum">Museu</option><option value="show">Espectacle</option><option value="experience">Experiència</option><option value="beach">Platja</option><option value="transport_activity">Activitat de transport</option><option value="other">Altres</option></select></label>
+          <label>Tipus<select id="activityType" required><option value="restaurant">Restaurant</option><option value="attraction">Atracció</option><option value="tour">Tour o visita</option><option value="excursion">Excursió</option><option value="museum">Museu</option><option value="show">Espectacle</option><option value="experience">Experiència</option><option value="beach">Platja</option><option value="transport_activity">Activitat de transport</option><option value="transport">Transport</option><option value="other">Altres</option></select></label>
           <label>Nom<input id="activityTitle" maxlength="200" required placeholder="Nom de l’activitat"></label>
           <label>Inici (opcional)<input id="activityStartAt" type="datetime-local"></label>
           <label>Final (opcional)<input id="activityEndAt" type="datetime-local"></label>
@@ -1751,7 +1751,7 @@ const ACCOMMODATION_DRAFT_FIELDS=['accommodationType','accommodationName','accom
 const ACCOMMODATION_SELECT='id,trip_id,accommodation_type,name,address,location_text,city,postal_code,region,country,latitude,longitude,check_in_at,check_out_at,time_zone,booking_reference,booking_provider,reservation_status,phone,email,website_url,room_number,notes,check_in_completed_at,check_out_completed_at,created_by,updated_by,created_at,updated_at';
 const ACCOMMODATION_TYPES={hotel:{icon:'🏨',label:'Hotel'},apartment:{icon:'🏠',label:'Apartament'},house:{icon:'🏡',label:'Casa'},hostel:{icon:'🛏️',label:'Hostal'},resort:{icon:'🌴',label:'Resort'},other:{icon:'📍',label:'Allotjament'}};
 const ACCOMMODATION_STATUSES={planning:'En planificació',confirmed:'Confirmat',cancelled:'Cancel·lat'};
-const ACTIVITY_TYPES={restaurant:{icon:'🍽️',label:'Restaurant'},attraction:{icon:'🎡',label:'Atracció'},tour:{icon:'🗺️',label:'Tour o visita'},excursion:{icon:'🥾',label:'Excursió'},museum:{icon:'🏛️',label:'Museu'},show:{icon:'🎭',label:'Espectacle'},experience:{icon:'✨',label:'Experiència'},beach:{icon:'🏖️',label:'Platja'},transport_activity:{icon:'🚐',label:'Activitat de transport'},other:{icon:'📍',label:'Altres'}};
+const ACTIVITY_TYPES={transport:{icon:'🚐',label:'Transport'},restaurant:{icon:'🍽️',label:'Restaurant'},attraction:{icon:'🎡',label:'Atracció'},tour:{icon:'🗺️',label:'Tour o visita'},excursion:{icon:'🥾',label:'Excursió'},museum:{icon:'🏛️',label:'Museu'},show:{icon:'🎭',label:'Espectacle'},experience:{icon:'✨',label:'Experiència'},beach:{icon:'🏖️',label:'Platja'},transport_activity:{icon:'🚐',label:'Activitat de transport'},other:{icon:'📍',label:'Altres'}};
 const ACTIVITY_STATUSES={planning:'En planificació',reserved:'Reservat',confirmed:'Confirmat',cancelled:'Cancel·lat'};
 const ACTIVITY_DRAFT_VERSION=1;
 const ACTIVITY_DRAFT_FIELDS=['activityType','activityTitle','activityStartAt','activityEndAt','activityTimeZone','activityVenue','activityAddress','activityCity','activityStatus','activityReference','activityProvider','activityPhone','activityEmail','activityWebsite','activityPeople','activityAmount','activityCurrency','activityBookingDocument','activityTicketDocument','activityNotes'];
@@ -1976,7 +1976,7 @@ async function deleteAccommodation(id,button){
   if(!trip||isLondonTrip())return;
   const row=accommodationRows.find(item=>item.id===id);if(!row||!confirm(`Eliminar «${row.name}»? El document associat es conservarà.`))return;
   const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id,wasBeingEdited=$('accommodationForm').dataset.editId===id;button.disabled=true;msg('accommodationMsg','Eliminant allotjament…');
-  try{const {error}=await db.from('trip_accommodations').delete().eq('id',id).eq('trip_id',tripId);if(!error&&wasBeingEdited)clearAccommodationDraft(tripId,userId);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;if(error)throw error;if(wasBeingEdited)closeAccommodationForm();msg('accommodationMsg','Allotjament eliminat.');await loadAccommodations(true)}catch(error){if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip()){button.disabled=false;msg('accommodationMsg',error?.message||'No s’ha pogut eliminar l’allotjament.',true)}}
+  try{const {error}=await db.from('trip_accommodations').delete().eq('id',id).eq('trip_id',tripId);if(!error&&wasBeingEdited)clearAccommodationDraft(tripId,userId);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;if(error)throw error;if(wasBeingEdited)closeAccommodationForm();msg('accommodationMsg','Allotjament eliminat.');await loadAccommodations(true)}catch(error){if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip()){button.disabled=false;msg('accommodationMsg',error?.code==='23503'&&error?.message?.includes('trip_proposal_component_links')?'Aquesta peça conserva l’origen del viatge. Pots cancel·lar-la des d’Editar, però no eliminar-la.':(error?.message||'No s’ha pogut eliminar l’allotjament.'),true)}}
 }
 function subscribeAccommodations(){
   if(!trip||isLondonTrip())return;if(accommodationChannel)db.removeChannel(accommodationChannel);
@@ -2106,6 +2106,7 @@ async function runBuilderPending(){
   try{
     const {api,controller}=await getBuilderController();if(!builderCurrent(owner,epoch))return;enterBuilderView();$('builderMessage').textContent='Verificant el desament…';
     const row=await controller.execute();if(!builderCurrent(owner,epoch))return;
+    if(row.trip_id){await openFormalizedTrip(row.id);return;}
     showBuilderRow(api,row,controller.state.route.mode);$('builderMessage').textContent='Esborrany desat.';
   }catch(error){if(builderCurrent(owner,epoch))builderFailure(error)}
   finally{if(builderCurrent(owner,epoch)){builderBusy=false;renderBuilderControls()}}
@@ -2126,6 +2127,7 @@ async function resumeBuilder(id,mode='resume',restore=false){
     const {api,controller}=await getBuilderController();
     if(controller.state.pending)throw new Error('Verifica primer l’operació pendent.');
     const row=await api.withBriefTimeout(api.loadOwnedBrief(db,owner,id));if(!builderCurrent(owner,epoch))return;
+    if(row.trip_id){await openFormalizedTrip(row.id);return;}
     controller.route(id,mode);builderLive?.clear();
     if(restore){history.replaceState({builderNav:builderHistory('builderView',0)},'');setAppView('builderView')}else enterBuilderView();
     showBuilderRow(api,row,mode);
@@ -2210,6 +2212,7 @@ async function openBuilderProposals(push=true,detail=null,direct=false,generatio
   $('proposalMessage').textContent='';$('proposalHeading').textContent=detail?'Detall de proposta':'Alternatives';$('proposalBack').textContent=detail?'← Torna a alternatives':'← Torna al resum del viatge';
   $('proposalContent').innerHTML=api.renderProposalResult(proposalResult,detail);
   $('proposalContent').querySelectorAll('[data-proposal-id]').forEach(button=>button.onclick=()=>openBuilderProposals(true,button.dataset.proposalId,false,proposalResult.generation.id));
+  if(detail){const selected=proposalResult.proposals.find(p=>p.id===detail);if(selected){const button=document.createElement('button');button.type='button';button.id='proposalBuild';button.textContent='Construir aquest viatge';button.onclick=()=>openHandoffReview(selected);$('proposalContent').append(button);}}
   if(!detail&&proposalResult.generation){
    const adjacent=await proposalSession.adjacent(builderRow.id,proposalResult.generation.id);if(!builderCurrent(owner,epoch)||sequence!==proposalSequence)return;
    $('proposalHistory').classList.toggle('hidden',historical||!adjacent.previous);
@@ -2234,6 +2237,23 @@ async function generateBuilderProposals(refinement){
  try{await proposalSession.generate({...builderRow,revision:proposalResult?.brief_revision||builderRow.revision},proposalResult,refinement);if(builderCurrent(owner,epoch)&&proposalOpen&&proposalSession===activeSession){history.replaceState({builderNav:{...builderHistory('builderView'),proposal:{brief:builderRow.id,detail:null,generation:null,mode:'results'}}},'');await openBuilderProposals(false);}}
  catch(error){if(builderCurrent(owner,epoch)&&proposalOpen&&proposalSession===activeSession){if(error.code==='brief_or_attempt_changed'){builderConflict=true;renderBuilderControls();}$('proposalMessage').textContent=error.message;$('proposalGenerate').textContent='Reintenta la mateixa petició';}}
  finally{if(builderCurrent(owner,epoch)&&proposalSession===activeSession){$('proposalGenerate').disabled=false;if(!['pending','running'].includes(proposalResult?.generation?.status))stopProposalLoading();}}
+}
+async function handoffController(){const owner=session?.user?.id,epoch=builderEpoch;const api=await import('./domain/proposal-handoff.mjs');if(!builderCurrent(owner,epoch))throw Error('La sessió ha canviat.');return {api,controller:new api.HandoffSession(db,owner,localStorage,()=>builderCurrent(owner,epoch)),owner,epoch};}
+async function openFormalizedTrip(briefId){const {controller,owner,epoch}=await handoffController();const result=await controller.read(briefId);if(!result)throw Error('No s’ha pogut recuperar el viatge construït.');if(controller.pending?.p_brief_id===briefId)controller.clear();leaveBuilderPointer();builderController?.clearRoute();resetProposalUi();await refreshTrips({preferredTripId:result.trip_id,open:true});if(builderCurrent(owner,epoch))history.replaceState(null,'');}
+async function openHandoffReview(proposal){
+ const sequence=proposalSequence;const {api,controller,owner,epoch}=await handoffController();
+ try{
+  const existing=await controller.read(builderRow.id);if(!builderCurrent(owner,epoch)||sequence!==proposalSequence||!proposalOpen)return;
+  if(existing){$('proposalContent').innerHTML='<p>El viatge ja està construït.</p><button id="handoffOpen" type="button">Obrir el viatge</button>';$('handoffOpen').onclick=()=>openFormalizedTrip(builderRow.id);return;}
+  if(controller.pending&&controller.pending.p_brief_id!==builderRow.id)throw Error('Verifica primer la construcció pendent de l’altre viatge.');
+  if(proposalResult.stale)throw Error('El resum ha canviat. Revisa les alternatives abans de construir.');
+  proposalMode='handoff';clearTimeout(proposalTimer);
+  $('proposalContent').innerHTML=api.renderHandoffForm(builderRow,proposalResult,proposal);
+  const form=$('handoffForm');const pending=!!controller.pending;
+  if(pending){form.querySelectorAll('input,select').forEach(n=>n.disabled=true);form.querySelector('[type="submit"]').textContent='Verifica la construcció pendent';form.noValidate=true;}
+  $('handoffCancel').onclick=()=>openBuilderProposals(false,proposal.id,false,proposalResult.generation.id);
+  form.onsubmit=async event=>{event.preventDefault();if(controller.busy)return;const button=form.querySelector('[type="submit"]');button.disabled=true;$('handoffMessage').textContent='Construint el viatge…';try{if(!controller.pending)controller.prepare(builderRow,proposalResult,proposal,api.handoffDetails(form));await controller.execute();if(builderCurrent(owner,epoch)&&proposalOpen)await openFormalizedTrip(builderRow.id);}catch(error){if(builderCurrent(owner,epoch)&&$('handoffMessage')){$('handoffMessage').textContent=controller.pending?'No s’ha pogut verificar el resultat. Reintenta la mateixa petició.':error.code==='40001'?'El resum o l’alternativa han canviat. Recarrega abans de continuar.':error.message;button.disabled=false;button.textContent=controller.pending?'Verifica la construcció pendent':'Crear el viatge amb peces previstes';}}};
+ }catch(error){if(builderCurrent(owner,epoch))$('proposalMessage').textContent=error.message;}
 }
 $('proposalGenerate').onclick=()=>generateBuilderProposals();
 $('proposalMore').onclick=()=>openBuilderProposals(true,null,false,null,'refine');
@@ -2750,7 +2770,7 @@ async function deleteFlight(id,button){
   }catch(error){
     if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip()){
       button.disabled=false;
-      msg('flightMsg',error?.message||'No s’ha pogut eliminar el vol.',true);
+      msg('flightMsg',error?.code==='23503'&&error?.message?.includes('trip_proposal_component_links')?'Aquesta peça conserva l’origen del viatge. Pots cancel·lar-la des d’Editar, però no eliminar-la.':(error?.message||'No s’ha pogut eliminar el vol.'),true);
     }
   }
 }
@@ -2883,7 +2903,7 @@ async function openActivityDocument(activityId,role){
   if(!trip||isLondonTrip())return;const tripId=trip.id,generation=tripLoadGeneration,documentId=activityDocumentId(activityId,role);if(!documentId)return;let document=documentRows.find(item=>item.id===documentId);if(!document){const documents=await loadDocuments(true);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;document=(documents||[]).find(item=>item.id===documentId)}if(!document){msg('activityMsg','El document associat ja no està disponible.',true);return}await openDocument(documentId,documentRows);
 }
 async function deleteActivity(id,button){
-  if(!trip||isLondonTrip())return;const row=activityRows.find(item=>item.id===id);if(!row||!confirm(`Eliminar «${row.title}»? Els documents es conservaran.`))return;const tripId=trip.id,generation=tripLoadGeneration,wasBeingEdited=$('activityForm').dataset.editId===id;button.disabled=true;msg('activityMsg','Eliminant activitat…');try{const {error}=await db.from('trip_activities').delete().eq('id',id).eq('trip_id',tripId);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;if(error)throw error;if(wasBeingEdited){clearActivityDraft(tripId);resetActivityFormUi()}msg('activityMsg','Activitat eliminada.');await loadActivities(true)}catch(error){if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip()){button.disabled=false;msg('activityMsg',error?.message||'No s’ha pogut eliminar l’activitat.',true)}}
+  if(!trip||isLondonTrip())return;const row=activityRows.find(item=>item.id===id);if(!row||!confirm(`Eliminar «${row.title}»? Els documents es conservaran.`))return;const tripId=trip.id,generation=tripLoadGeneration,wasBeingEdited=$('activityForm').dataset.editId===id;button.disabled=true;msg('activityMsg','Eliminant activitat…');try{const {error}=await db.from('trip_activities').delete().eq('id',id).eq('trip_id',tripId);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;if(error)throw error;if(wasBeingEdited){clearActivityDraft(tripId);resetActivityFormUi()}msg('activityMsg','Activitat eliminada.');await loadActivities(true)}catch(error){if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip()){button.disabled=false;msg('activityMsg',error?.code==='23503'&&error?.message?.includes('trip_proposal_component_links')?'Aquesta peça conserva l’origen del viatge. Pots cancel·lar-la des d’Editar, però no eliminar-la.':(error?.message||'No s’ha pogut eliminar l’activitat.'),true)}}
 }
 function subscribeActivities(){
   if(!trip||isLondonTrip())return;if(activityChannel)db.removeChannel(activityChannel);const tripId=trip.id,generation=tripLoadGeneration,reconcile=()=>{if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip())loadActivities(true)};activityChannel=db.channel('activities-'+tripId).on('postgres_changes',{event:'*',schema:'public',table:'trip_activities',filter:`trip_id=eq.${tripId}`},reconcile).on('postgres_changes',{event:'*',schema:'public',table:'trip_activity_documents',filter:`trip_id=eq.${tripId}`},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
