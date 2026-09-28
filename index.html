@@ -370,6 +370,7 @@
     <div id="pastTripsView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>📚 Passats</h1><div id="pastTripsList" class="trip-list"></div></div>
     <div id="joinTripView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><section class="new-trip-card"><h2>Uneix-te a un viatge</h2><div class="join-trip"><input id="inviteInput" placeholder="Codi d’invitació" aria-label="Codi d’invitació"><button id="joinTrip" type="button">Unir-m’hi</button></div><p id="joinTripMsg" class="message hidden" role="status"></p></section></div>
     <div id="constructionView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>🧭 En construcció</h1>
+      <div id="constructionTripsList" class="trip-list"></div>
       <section id="builderContinue" class="new-trip-card hidden"><h2>Continua dissenyant</h2><div id="builderBriefList"></div></section>
       <p id="builderListMessage" role="status"></p><button id="builderListRetry" type="button">Actualitza esborranys</button>
       <button id="builderPendingRetry" type="button" class="hidden">Verifica l’operació pendent</button>
@@ -1998,8 +1999,8 @@ function homeTripPhase(value,now=new Date()){
   }catch{return 'undated'}
 }
 function homeTripGroups(values,now=new Date()){
-  const groups=[{key:'active',label:'En curs',rows:[]},{key:'upcoming',label:'Propers',rows:[]},{key:'past',label:'Passats',rows:[]},{key:'undated',label:'Dates pendents',rows:[]}];
-  values.forEach(row=>groups.find(g=>g.key===homeTripPhase(row,now)).rows.push(row));
+  const groups=[{key:'active',label:'En curs',rows:[]},{key:'upcoming',label:'Propers',rows:[]},{key:'past',label:'Passats',rows:[]},{key:'undated',label:'Dates pendents',rows:[]},{key:'construction',label:'En construcció',rows:[]}];
+  values.forEach(row=>{const phase=homeTripPhase(row,now);groups.find(g=>g.key===(phase==='undated'&&row.tb_handoff?'construction':phase)).rows.push(row)});
   groups.forEach(group=>group.rows.sort((a,b)=>group.key==='past'?String(b.end_date||'').localeCompare(a.end_date||''):String(a.start_date||'').localeCompare(b.start_date||'')));
   return groups.filter(group=>group.rows.length);
 }
@@ -2075,7 +2076,7 @@ async function loadBuilderList(){
     $('builderContinue').classList.toggle('hidden',!rows.length);
     $('builderBriefList').innerHTML=rows.map(row=>`<button type="button" data-resume-brief="${esc(row.id)}"><strong>${esc(api.briefLabel(row))}</strong><small>Actualitzat ${esc(new Date(row.updated_at).toLocaleString('ca-ES'))}</small></button>`).join('');
     $('builderBriefList').querySelectorAll('[data-resume-brief]').forEach(button=>button.onclick=()=>builderPointer()?.brief===button.dataset.resumeBrief?resumeBuilderPointer():resumeBuilder(button.dataset.resumeBrief));
-    $('builderListMessage').textContent=controller.state.pending?'Hi ha una operació pendent de verificar. Reintenta-la abans de començar-ne una altra.':rows.length?'':'Encara no tens cap viatge en construcció.';
+    $('builderListMessage').textContent=controller.state.pending?'Hi ha una operació pendent de verificar. Reintenta-la abans de començar-ne una altra.':rows.length||trips.some(t=>t.tb_handoff&&homeTripPhase(t)==='undated')?'':'Encara no tens cap viatge en construcció.';
     renderBuilderControls();
   }catch(error){if(builderCurrent(owner,epoch)&&sequence===builderListSequence)$('builderListMessage').textContent=error.message||'No s’han pogut carregar els esborranys.'}
 }
@@ -3600,10 +3601,10 @@ function renderTripsHome(){
   $('homeActive').classList.toggle('hidden',!rows('active').length);
   $('homeUndated').classList.toggle('hidden',!rows('undated').length);
   $('homeTripsEmpty').classList.toggle('hidden',!!trips.length);
-  for(const [key,id] of [['active','activeTripsList'],['upcoming','upcomingTripsList'],['past','pastTripsList'],['undated','undatedTripsList']]){
+  for(const [key,id] of [['active','activeTripsList'],['upcoming','upcomingTripsList'],['past','pastTripsList'],['undated','undatedTripsList'],['construction','constructionTripsList']]){
     $(id).innerHTML=rows(key).length?rows(key).map(value=>{
     const duration=tripDuration(value),london=isLondonTrip(value),selected=value.id===trip?.id;
-    return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(({active:'En curs',upcoming:'En preparació',past:'Completat',undated:'Dates pendents'})[key])}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button></article>`;
+    return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(({active:'En curs',upcoming:'En preparació',past:'Completat',undated:'Dates pendents',construction:'En construcció'})[key])}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button></article>`;
 
     }).join(''):`<p class="muted">${key==='upcoming'?'Encara no tens viatges propers.':key==='past'?'Encara no tens viatges passats.':''}</p>`;
     $(id).querySelectorAll('[data-select-trip]').forEach(button=>button.onclick=()=>openHomeTrip(button.dataset.selectTrip));
@@ -3613,7 +3614,7 @@ function renderTripsHome(){
 let homeTripReturn=null,homeClockTimer=null;
 function recordHomeTripEntry(id){
   const parent=visibleAppView();
-  if(!['tripsHomeView','upcomingTripsView','pastTripsView','manualTripView','joinTripView'].includes(parent))return;
+  if(!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','manualTripView','joinTripView'].includes(parent))return;
   homeTripReturn={owner:session?.user?.id,parent,id};
   if(!history.state?.builderNav)history.replaceState({builderNav:builderHistory(parent,0)},'');
   history.pushState({homeTripDetail:homeTripReturn},'');
@@ -3637,7 +3638,7 @@ window.addEventListener('popstate',event=>{
   if(typeof photoNavigation!=='undefined'&&photoNavigation||event.state?.freyaPhoto)return;
   const view=visibleAppView(),nav=event.state?.builderNav,detail=event.state?.homeTripDetail;
   if(homeTripReturn?.owner===session?.user?.id&&['dashboardView','genericDashboardView'].includes(view)&&nav?.owner===session?.user?.id&&nav.view===homeTripReturn.parent)navigateBuilder(nav.view,false);
-  else if(detail?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','manualTripView','joinTripView'].includes(view)&&trips.some(t=>t.id===detail.id)){homeTripReturn=detail;selectTrip(detail.id,{open:true})}
+  else if(detail?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','manualTripView','joinTripView'].includes(view)&&trips.some(t=>t.id===detail.id)){homeTripReturn=detail;selectTrip(detail.id,{open:true})}
 });
 function updateHomeClock(){
   clearTimeout(homeClockTimer);
@@ -3714,9 +3715,21 @@ async function initializeGenericChecklistDefaults(){
   if(!tripRequestIsCurrent(tripId,generation))return;
   if(error)msg('checklistMsg','No s’ha pogut preparar la checklist universal: '+error.message,true);
 }
+async function loadHomeTrips(client,owner,current){
+  const {data,error}=await client.rpc('get_my_trips');if(error)throw error;
+  const handoffs=new Set();
+  for(let offset=0;;offset+=100){
+    if(!current())return null;
+    const result=await client.from('trip_proposal_handoffs').select('trip_id').eq('owner_id',owner).order('id').range(offset,offset+99);
+    if(result.error)throw result.error;
+    for(const row of result.data||[])handoffs.add(row.trip_id);
+    if((result.data||[]).length<100)break;
+  }
+  return current()?(data||[]).map(row=>({...row,tb_handoff:handoffs.has(row.id)})):null;
+}
 async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}){
   const requestUserId=session?.user?.id;if(!requestUserId)return false;
-  const {data,error}=await db.rpc('get_my_trips');if(error)throw error;if(session?.user?.id!==requestUserId)return false;trips=data||[];
+  const loaded=await loadHomeTrips(db,requestUserId,()=>session?.user?.id===requestUserId);if(!loaded)return false;trips=loaded;
   if(open&&preferredTripId&&trips.some(t=>t.id===preferredTripId))recordHomeTripEntry(preferredTripId);
   if(coldStart&&!pendingInitialRoute){
     const savedId=readSelectedTripId();if(savedId&&!trips.some(value=>value.id===savedId))forgetSelectedTrip();

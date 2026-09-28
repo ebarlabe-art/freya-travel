@@ -72,3 +72,18 @@ test('classification is independent of the device timezone',()=>{
  const program=code+";console.log(homeTripPhase("+JSON.stringify(trip())+",'2026-09-09T22:30:00Z'))";
  for(const TZ of ['Pacific/Honolulu','Asia/Tokyo','Europe/London'])assert.equal(execFileSync(process.execPath,['--input-type=module','-e',program],{encoding:'utf8',env:{...process.env,TZ}}).trim(),'active');
 });
+
+test('TB handoff classifies undated trip once; legacy and dated TB keep temporal rules',()=>{
+ const {s,$}=harness();s.trips=[trip({id:'tb',tb_handoff:true,start_date:null,end_date:null}),trip({id:'legacy',start_date:null,end_date:null})];
+ s.renderTripsHome();assert.equal(($('constructionTripsList').innerHTML.match(/data-select-trip=/g)||[]).length,1);assert.doesNotMatch($('undatedTripsList').innerHTML,/data-select-trip="tb"/);assert.match($('undatedTripsList').innerHTML,/legacy/);
+ for(const phase of ['upcoming','active','past']){const now={upcoming:'2026-09-09',active:'2026-09-11',past:'2026-09-13'}[phase];assert.equal(s.homeTripGroups([trip({tb_handoff:true})],now)[0].key,phase)}
+ assert.equal(s.homeTripGroups([]).length,0);
+ s.view='constructionView';s.recordHomeTripEntry('tb');assert.equal(s.history.state.homeTripDetail.parent,'constructionView');
+});
+test('fresh Home loads recover handoff provenance without persisted client state; user switch discards results',async()=>{
+ const code=html.slice(html.indexOf('async function loadHomeTrips('),html.indexOf('async function refreshTrips('));const ctx=vm.createContext({});vm.runInContext(code,ctx);
+ let reads=0;const client={rpc:async()=>({data:[trip({start_date:null,end_date:null})]}),from:name=>{assert.equal(name,'trip_proposal_handoffs');const q={select:()=>q,eq:()=>q,order:()=>q,range:async()=>{reads++;return {data:[{trip_id:'t'}]}}};return q}};
+ for(let i=0;i<3;i++){const rows=await ctx.loadHomeTrips(client,'owner',()=>true);assert.equal(rows[0].tb_handoff,true);assert.equal(harness().s.homeTripGroups(rows)[0].key,'construction')}
+ assert.equal(reads,3);assert.equal(await ctx.loadHomeTrips(client,'owner',()=>false),null);
+ client.from=()=>{const q={select:()=>q,eq:()=>q,order:()=>q,range:async()=>({data:[]})};return q};assert.equal((await ctx.loadHomeTrips(client,'owner',()=>true))[0].tb_handoff,false);
+});
