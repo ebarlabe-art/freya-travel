@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
 import {runProposalEngine} from '../supabase/functions/proposal-engine/engine.mjs';
 import {validateRefinement,contextualRefinements} from '../domain/proposal-refinement.mjs';
-import {ProposalSession,renderRefinement,renderHistory,renderProposalResult,loadingMessages} from '../domain/proposal-builder.mjs';
+import {ProposalSession,renderRefinement,renderProposalResult,loadingMessages} from '../domain/proposal-builder.mjs';
 import {createProposalHandler} from '../supabase/functions/proposal-engine/handler.mjs';
 const fixture=()=>JSON.parse(readFileSync(new URL('../supabase/functions/proposal-engine/test-fixtures/golden-v1.json',import.meta.url),'utf8'));
 const run=(f,round)=>runProposalEngine({snapshot:f.snapshot,round,generator:{generate:async()=>f.batch}});
@@ -35,7 +35,6 @@ test('history and refinement escape data, preserve earlier result and show real 
  const f=fixture(),initial=await run(f),result={generation:{id:'old',status:'completed',round_number:1},historical:true,proposals:[{id:'p',...initial.proposals[0]}]};const before=structuredClone(result);
  assert.match(renderProposalResult(result,'p'),/Cerca anterior · ronda 1/);assert.deepEqual(result,before);
  const form=renderRefinement({document:f.snapshot},result);assert.match(form,/Què voldries que canviés/);assert.match(form,/Explica-m’ho tu/);assert.match(form,/data-review-decision="snow"/);assert.doesNotMatch(form,/data-review-decision="duration"/);
- assert.doesNotMatch(renderHistory({rounds:[{id:'<unsafe>',round_number:1,proposal_count:1}],next_before:null},'current'),/<unsafe>/);
 });
 test('visible proposal Catalan has no Brief and loading honors reduced motion',async()=>{
  const f=fixture(),r=await run(f);for(const state of ['completed','failed','no_results','running'])assert.doesNotMatch(renderProposalResult({stale:true,generation:{status:state},proposals:[{id:'p',...r.proposals[0]}]}),/\bBrief\b/);
@@ -56,4 +55,13 @@ test('Edge explore_more validates closed request and uses server context from cl
  const body={action:'explore_more',brief_id:crypto.randomUUID(),revision:1,previous_generation_id:crypto.randomUUID(),operation_id:crypto.randomUUID(),refinement:{chips:['calmer'],text:''}};
  assert.equal((await h(new Request('http://local',{method:'POST',body:JSON.stringify(body)}))).status,200);assert.equal(seen.is_exploration,true);assert.equal(calls[0],'explore_more_proposals_v1');
  assert.equal((await h(new Request('http://local',{method:'POST',body:JSON.stringify({...body,excluded_routes:[]})}))).status,400);
+});
+
+test('adjacent round navigation spans backend pagination without generating',async()=>{
+ const calls=[],pages={first:{rounds:[{id:'3'},{id:'2'}],next_before:2},2:{rounds:[{id:'1'}],next_before:null}};
+ const session=new ProposalSession({rpc:async(name,args)=>{assert.equal(name,'list_proposal_history_v1');calls.push(args);return {data:pages[args.p_before??'first']}}},'owner',{getItem:()=>null});
+ assert.deepEqual(await session.adjacent('brief','2'),{previous:{id:'1'},next:{id:'3'}});
+ assert.deepEqual(await session.adjacent('brief','1'),{previous:null,next:{id:'2'}});
+ assert.deepEqual(await session.adjacent('brief','3'),{previous:{id:'2'},next:null});
+ assert.ok(calls.every(c=>c.p_brief==='brief'));
 });

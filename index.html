@@ -2013,9 +2013,20 @@ async function getBuilderController(){
 }
 function builderDirty(){return visibleAppView()==='builderView'&&builderRow&&($('builderNotes').value!==builderBase||builderLive?.dirty)}
 function canLeaveBuilder(){return !builderBusy&&(!builderDirty()||confirm('Sortir sense desar els canvis de la idea?'))}
+// Only navigation identifiers are durable; all content is reloaded from Supabase.
+function builderPointer(){try{const p=JSON.parse(localStorage.getItem('freya-builder-nav-v1:'+session?.user?.id)||'null');return p&&typeof p.brief==='string'?p:null}catch{return null}}
+function rememberBuilder(proposal=null){if(!session?.user?.id||!builderRow)return;try{localStorage.setItem('freya-builder-nav-v1:'+session.user.id,JSON.stringify({active:true,brief:builderRow.id,revision:proposal?.revision??builderRow.revision,proposal:proposal?{brief:builderRow.id,generation:proposal.generation,detail:proposal.detail||null,mode:proposal.mode||'results'}:null}))}catch{}}
+function leaveBuilderPointer(){const p=builderPointer();if(p)try{localStorage.setItem('freya-builder-nav-v1:'+session.user.id,JSON.stringify({...p,active:false}))}catch{}}
+async function resumeBuilderPointer(p=builderPointer()){
+ if(!p)return;const parent=visibleAppView()==='designTripView'?'designTripView':null;await resumeBuilder(p.brief,'resume',true);
+ if(parent&&history.state?.builderNav)history.replaceState({builderNav:{...history.state.builderNav,parent}},'');
+ if(builderRow?.id===p.brief&&p.proposal)await openBuilderProposals(false,p.proposal.detail,false,p.proposal.generation,p.proposal.mode);
+}
 function builderHistory(view,depth=(history.state?.builderNav?.depth||0)+1){return {owner:session?.user?.id,view,depth,parent:view==='builderView'?(history.state?.builderNav?.parent||(['designTripView','constructionView'].includes(visibleAppView())?visibleAppView():'constructionView')):null}}
 function navigateBuilder(view,push=true,leaveChecked=false){
   if(!session||!leaveChecked&&!canLeaveBuilder())return;
+  if(view==='designTripView'&&visibleAppView()==='tripsHomeView'&&builderPointer()){history.pushState({builderNav:builderHistory('designTripView')},'');setAppView('designTripView');resumeBuilderPointer();return;}
+  if(view!=='builderView')leaveBuilderPointer();
   if(view!=='builderView'&&proposalOpen)resetProposalUi();
   if(view!=='builderView'&&builderController){try{builderController.clearRoute()}catch(error){$('builderMessage').textContent=error.message;return}}
   if(push){
@@ -2034,7 +2045,7 @@ window.addEventListener('popstate',event=>{
   if(typeof photoNavigation!=='undefined'&&photoNavigation||event.state?.freyaPhoto)return;
   const target=event.state?.builderNav;
   if(target?.owner===session?.user?.id&&target.view==='builderView'&&target.proposal&&builderRow?.id===target.proposal.brief){openBuilderProposals(false,target.proposal.detail,false,target.proposal.generation,target.proposal.mode,target.proposal.before);return}
-  if(proposalOpen&&target?.view==='builderView'&&target.owner===session?.user?.id){resetProposalUi();return}
+  if(proposalOpen&&target?.view==='builderView'&&target.owner===session?.user?.id){resetProposalUi();rememberBuilder();return}
   if(!target||target.owner!==session?.user?.id||!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(target.view))return;
   if(!canLeaveBuilder()){history.pushState({builderNav:builderHistory(visibleAppView())},'');return}
   if(target.view==='builderView'){navigateBuilder('constructionView',false,true);return} // Forward never manufactures a new brief.
@@ -2063,7 +2074,7 @@ async function loadBuilderList(){
     if(!builderCurrent(owner,epoch)||sequence!==builderListSequence)return;
     $('builderContinue').classList.toggle('hidden',!rows.length);
     $('builderBriefList').innerHTML=rows.map(row=>`<button type="button" data-resume-brief="${esc(row.id)}"><strong>${esc(api.briefLabel(row))}</strong><small>Actualitzat ${esc(new Date(row.updated_at).toLocaleString('ca-ES'))}</small></button>`).join('');
-    $('builderBriefList').querySelectorAll('[data-resume-brief]').forEach(button=>button.onclick=()=>resumeBuilder(button.dataset.resumeBrief));
+    $('builderBriefList').querySelectorAll('[data-resume-brief]').forEach(button=>button.onclick=()=>builderPointer()?.brief===button.dataset.resumeBrief?resumeBuilderPointer():resumeBuilder(button.dataset.resumeBrief));
     $('builderListMessage').textContent=controller.state.pending?'Hi ha una operació pendent de verificar. Reintenta-la abans de començar-ne una altra.':rows.length?'':'Encara no tens cap viatge en construcció.';
     renderBuilderControls();
   }catch(error){if(builderCurrent(owner,epoch)&&sequence===builderListSequence)$('builderListMessage').textContent=error.message||'No s’han pogut carregar els esborranys.'}
@@ -2080,7 +2091,7 @@ function showBuilderRow(api,row,mode){
   $('builderPrompt').textContent=mode==='destination'&&destinationKnown?'Què més t’agradaria fer en aquest viatge?':api.builderModes[mode]?.prompt||'Pots continuar la idea sense repetir les dades que ja coneixem.';
   if(!builderLive&&$('builderLive').querySelector)builderLive=new api.LiveBriefEditor($('builderLive'),{save:saveBuilderStructured,isBlocked:()=>builderBusy||!!builderController?.state.pending||builderConflict||!builderRow,openNotes:open=>$('builderNotesPanel').classList.toggle('hidden',!open),canSwitch:()=>!builderBusy&&!builderController?.state.pending&&($('builderNotes').value===builderBase||confirm('El text encara no està desat. Vols continuar editant un altre bloc?'))});
   builderLive?.update(row,mode);
-  $('builderMessage').textContent='';renderBuilderControls();
+  $('builderMessage').textContent='';renderBuilderControls();rememberBuilder();
 }
 function enterBuilderView(){
   if(visibleAppView()!=='builderView'){history.pushState({builderNav:builderHistory('builderView')},'');setAppView('builderView')}
@@ -2142,11 +2153,13 @@ async function saveBuilderNotes(event){
   }catch(error){if(builderCurrent(owner,epoch)){$('builderMessage').textContent=error.message;renderBuilderControls()}}
 }
 async function restoreBuilderSession(){
+  const durable=builderPointer();
   const proposalHistory=history.state?.builderNav;
   const proposalRestore=history.state?.builderNav?.owner===session?.user?.id?history.state?.builderNav?.proposal:null;
   try{
     const {controller}=await getBuilderController();
     if(controller.state.pending){const api=await loadBuilderApi();$('builderHeading').textContent=api.builderModes[controller.state.pending.mode]?.title||'Continua dissenyant';setAppView('builderView');history.replaceState({builderNav:builderHistory('builderView',0)},'');$('builderMessage').textContent='Hi ha un desament pendent. Reintenta la mateixa operació per recuperar-ne el resultat.';renderBuilderControls()}
+    else if(durable){if(durable.active)await resumeBuilderPointer(durable);else await restoreHomeRoute();}
     else if(controller.state.route){await resumeBuilder(controller.state.route.id,controller.state.route.mode,true);if(proposalRestore?.brief===builderRow?.id){history.replaceState({builderNav:proposalHistory},'');await openBuilderProposals(false,proposalRestore.detail,false,proposalRestore.generation,proposalRestore.mode,proposalRestore.before);}}
     else await restoreHomeRoute();
   }catch(error){$('builderListMessage').textContent=error.message}
@@ -2177,27 +2190,31 @@ async function openBuilderProposals(push=true,detail=null,direct=false,generatio
   proposalResult=await proposalSession.read(builderRow.id,generation);if(!builderCurrent(owner,epoch)||sequence!==proposalSequence||!proposalOpen)return;
   if(proposalResult.brief_revision!==undefined&&proposalResult.brief_revision!==builderRow.revision){builderConflict=true;renderBuilderControls();}
   if(direct&&!detail&&mode==='results'&&(!proposalResult.generation||proposalResult.stale||proposalResult.generation.status==='obsolete')){await generateBuilderProposals();return;}
+  if(mode==='history'){const adjacent=await proposalSession.adjacent(builderRow.id,proposalResult.generation?.id);return openBuilderProposals(false,null,false,adjacent.previous?.id||proposalResult.generation?.id);}
+  proposalGeneration=proposalResult.generation?.id||generation;
+  const pointer={brief:builderRow.id,revision:proposalResult.generation?.brief_revision??builderRow.revision,generation:proposalGeneration,detail,mode};
+  history.replaceState({builderNav:{...builderHistory('builderView',history.state?.builderNav?.depth||0),proposal:pointer}},'');rememberBuilder(pointer);
   const historical=!!proposalResult.historical;
   $('proposalCurrent').classList.toggle('hidden',!historical&&mode==='results');
   $('proposalHistory').classList.toggle('hidden',!proposalResult.generation||mode==='history');
   if(mode!=='results'){
    stopProposalLoading();$('proposalMessage').textContent='';$('proposalHeading').textContent=mode==='history'?'Alternatives anteriors':'Refina la cerca';
-   if(mode==='history'){
-    const historyRows=await proposalSession.history(builderRow.id,before);if(!builderCurrent(owner,epoch)||sequence!==proposalSequence)return;
-    $('proposalContent').innerHTML=api.renderHistory(historyRows,proposalResult.current_generation_id||proposalResult.generation?.id);
-    $('proposalContent').querySelectorAll('[data-history-generation]').forEach(b=>b.onclick=()=>openBuilderProposals(true,null,false,b.dataset.historyGeneration));
-    $('proposalContent').querySelector('[data-history-before]')?.addEventListener('click',e=>openBuilderProposals(true,null,false,null,'history',Number(e.currentTarget.dataset.historyBefore)));
-   }else{
+   {
     $('proposalContent').innerHTML=api.renderRefinement(builderRow,proposalResult);
     $('proposalFreeText').onclick=()=>{$('proposalTextLabel').classList.remove('hidden');$('proposalRefinementText').focus()};
     $('proposalRefinementForm').onsubmit=e=>{e.preventDefault();const chips=[...document.querySelectorAll('[name="refinementChip"]:checked')].map(c=>c.value),text=$('proposalRefinementText').value.trim();if(!chips.length&&!text){$('proposalMessage').textContent='Tria què voldries canviar o explica-m’ho.';return;}generateBuilderProposals({chips,text});};
-    $('proposalContent').querySelectorAll('[data-review-decision]').forEach(b=>b.onclick=async()=>{const id=b.dataset.reviewDecision;const decision=builderRow.document.decisions[id];const field=decision?.field;resetProposalUi();const api=await import('./domain/live-trip-brief.mjs');if(decision?.scope!=='global'){$('builderMessage').textContent='Aquest imprescindible és específic d’una part del viatge i es conserva. L’edició per àmbit encara no està disponible.';return;}builderLive?.open(api.blockFor(field),field);$('builderMessage').textContent='Revisa aquest imprescindible al resum. Només s’aplicarà quan desis i confirmis el canvi.';});
+    $('proposalContent').querySelectorAll('[data-review-decision]').forEach(b=>b.onclick=async()=>{const id=b.dataset.reviewDecision;const decision=builderRow.document.decisions[id];const field=decision?.field;resetProposalUi();rememberBuilder();const api=await import('./domain/live-trip-brief.mjs');if(decision?.scope!=='global'){$('builderMessage').textContent='Aquest imprescindible és específic d’una part del viatge i es conserva. L’edició per àmbit encara no està disponible.';return;}builderLive?.open(api.blockFor(field),field);$('builderMessage').textContent='Revisa aquest imprescindible al resum. Només s’aplicarà quan desis i confirmis el canvi.';});
    }
    return;
   }
   $('proposalMessage').textContent='';$('proposalHeading').textContent=detail?'Detall de proposta':'Alternatives';$('proposalBack').textContent=detail?'← Torna a alternatives':'← Torna al resum del viatge';
   $('proposalContent').innerHTML=api.renderProposalResult(proposalResult,detail);
   $('proposalContent').querySelectorAll('[data-proposal-id]').forEach(button=>button.onclick=()=>openBuilderProposals(true,button.dataset.proposalId,false,proposalResult.generation.id));
+  if(!detail&&proposalResult.generation){
+   const adjacent=await proposalSession.adjacent(builderRow.id,proposalResult.generation.id);if(!builderCurrent(owner,epoch)||sequence!==proposalSequence)return;
+   $('proposalHistory').classList.toggle('hidden',historical||!adjacent.previous);
+   if(historical){const nav=document.createElement('div');nav.className='proposal-round-nav';nav.innerHTML=`${adjacent.previous?'<button type="button" data-round-previous>← Alternatives anteriors</button>':''}${adjacent.next?'<button type="button" data-round-next>Alternatives següents →</button>':''}`;$('proposalContent').prepend(nav);nav.querySelector('[data-round-previous]')?.addEventListener('click',()=>openBuilderProposals(true,null,false,adjacent.previous.id));nav.querySelector('[data-round-next]')?.addEventListener('click',()=>openBuilderProposals(true,null,false,adjacent.next.id));}
+  }
   const g=proposalResult.generation,working=g&&['pending','running'].includes(g.status);
   $('proposalMore').classList.toggle('hidden',historical||!!detail||!g||!['completed','no_results'].includes(g.status));
   if(working||proposalSession.busy)startProposalLoading();else stopProposalLoading();
@@ -2208,7 +2225,7 @@ async function openBuilderProposals(push=true,detail=null,direct=false,generatio
  }catch(error){if(builderCurrent(owner,epoch)&&sequence===proposalSequence){stopProposalLoading();$('proposalMessage').textContent=error.message||'No s’han pogut carregar les alternatives.';}}
 }
 $('builderProposals').onclick=()=>openBuilderProposals(true,null,true);
-$('proposalBack').onclick=()=>{if(history.state?.builderNav?.proposal)history.back();else resetProposalUi()};
+$('proposalBack').onclick=()=>{if(history.state?.builderNav?.proposal&&history.state.builderNav.depth>0)history.back();else if(proposalDetail)openBuilderProposals(false,null,false,proposalGeneration);else{resetProposalUi();history.replaceState({builderNav:builderHistory('builderView',0)},'');rememberBuilder();}};
 async function generateBuilderProposals(refinement){
  if(!proposalSession||proposalSession.busy)return;
  const owner=session?.user?.id,epoch=builderEpoch;
@@ -2220,7 +2237,7 @@ async function generateBuilderProposals(refinement){
 }
 $('proposalGenerate').onclick=()=>generateBuilderProposals();
 $('proposalMore').onclick=()=>openBuilderProposals(true,null,false,null,'refine');
-$('proposalHistory').onclick=()=>openBuilderProposals(true,null,false,null,'history');
+$('proposalHistory').onclick=async()=>{const adjacent=await proposalSession.adjacent(builderRow.id,proposalResult.generation.id);if(adjacent.previous)openBuilderProposals(true,null,false,adjacent.previous.id)};
 $('proposalCurrent').onclick=()=>openBuilderProposals(true);
 
 window.addEventListener('focus',()=>{if(proposalOpen&&visibleAppView()==='builderView'&&proposalMode==='results')openBuilderProposals(false,proposalDetail,false,proposalGeneration)});
@@ -2248,6 +2265,7 @@ function persistNavigationState(view){
   try{localStorage.setItem(key,JSON.stringify(state))}catch(_){}
 }
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
+function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent=home?'':session?.user?.email||'';}
 function setAppView(id){
   if(!trip&&!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id))id='tripsHomeView';
   if(isLondonTrip()&&['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView'].includes(id))id='dashboardView';
@@ -2256,6 +2274,8 @@ function setAppView(id){
   APP_VIEWS.forEach(v=>$(v)?.classList.toggle('hidden',v!==id));
   document.querySelectorAll('[data-home-view]').forEach(button=>button.setAttribute('aria-current',button.dataset.homeView===id?'page':'false'));
   if(['dashboardView','genericDashboardView'].includes(id)){const label=homeTripReturn?.owner===session?.user?.id?({upcomingTripsView:'Propers',pastTripsView:'Passats',manualTripView:'Afegeix el viatge manualment',joinTripView:'Uneix-te a un viatge'})[homeTripReturn.parent]:null;[$('backToTrips'),...document.querySelectorAll('[data-trips-home]')].forEach(button=>{if(button)button.textContent='← '+(label||'Els meus viatges')})}
+  renderContextHeader(id);
+  if(id!=='builderView'&&typeof coldStartNavigationPending!=='undefined'&&!coldStartNavigationPending)leaveBuilderPointer();
   persistNavigationState(id);
   updateTripHomeClock();updateHomeClock();
   if(id==='documentsView')updateDocumentsBack();
@@ -3610,7 +3630,7 @@ document.addEventListener('visibilitychange',updateHomeClock);
 window.addEventListener('pageshow',updateHomeClock);
 function updateTripPresentation(){
   const london=isLondonTrip();
-  $('tripTitleTop').textContent=trip?.name||'Els meus viatges';
+  renderContextHeader(visibleAppView());
   $('globalSearchFab').classList.toggle('hidden',!london);
   $('pushCard').classList.toggle('hidden',!trip||!london);
   $('genericPushCard')?.classList.toggle('hidden',!trip||london);

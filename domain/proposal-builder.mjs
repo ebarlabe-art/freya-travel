@@ -10,7 +10,7 @@ export function renderProposalResult(result,selected=null){
  const generation=result?.generation;
  if(!generation)return '<p>Encara no has explorat alternatives per a aquest resum del viatge.</p>';
  const stale=result.stale||generation.status==='obsolete';
- const banner=(result.historical?`<p role="status">Cerca anterior · ronda ${esc(generation.round_number??'anterior')}</p>`:'')+(stale?'<p role="status">El resum del viatge ha canviat. Aquestes alternatives corresponen a una revisió anterior.</p>':'');
+ const banner=(result.historical?`<p role="status">Cerca anterior · ronda ${esc(generation.round_number??'anterior')}</p>`:'<p>Alternatives actuals</p>')+(stale?'<p role="status">El resum del viatge ha canviat. Aquestes alternatives corresponen a una revisió anterior.</p>':'');
  if(['pending','running'].includes(generation.status))return banner+'<p role="status">Preparant alternatives… Pots tornar-hi més tard.</p>';
  if(generation.status==='failed')return banner+'<p role="alert">'+(generation.error_code==='provider_timeout'?'La generació ha trigat massa. Pots tornar-ho a provar.':generation.error_code==='invalid_candidate'?'No he pogut validar les alternatives rebudes. Pots tornar-ho a provar.':'No s’han pogut generar les alternatives per una fallada tècnica. Pots reintentar-ho.')+'</p>';
  if(generation.status==='no_results')return banner+`<p>${generation.result_reason==='no_new_alternatives'?'No he trobat alternatives noves que respectin el que m’has demanat.':generation.result_reason==='incompatible'?'Les alternatives suggerides contradiuen imprescindibles del resum del viatge.':'Falta informació o no s’han pogut proposar alternatives suficients.'}</p>`;
@@ -34,6 +34,11 @@ export class ProposalSession{
   if(matches&&['failed','completed','no_results','obsolete'].includes(g.status)&&(acknowledged||advanced))this.clearPending();
  }
  async history(briefId,before=null){const {data,error}=await this.client.rpc('list_proposal_history_v1',{p_brief:briefId,p_before:before});if(error)throw error;if(!this.isCurrent())throw Error('La sessió ha canviat.');return data;}
+ async adjacent(briefId,generationId){
+  let before=null,newer=null,found=false,next=null;const cursors=new Set();
+  do{const page=await this.history(briefId,before);for(const row of page.rounds){if(found)return {previous:row,next};if(row.id===generationId){found=true;next=newer;}newer=row;}before=page.next_before;if(before&&cursors.has(before))throw Error('Historial no disponible.');cursors.add(before);}while(before);
+  return {previous:null,next};
+ }
  async read(briefId,generationId=null){const {data,error}=await this.client.rpc('get_proposals_v1',{p_brief:briefId,...(generationId?{p_generation:generationId}:{})});if(error)throw error;if(!this.isCurrent())throw Error('La sessió ha canviat.');if(this.pending?.brief_id===briefId)this.reconcile(data);return data;}
  async generate(row,result,refinement){
   if(this.busy)return;
@@ -72,7 +77,4 @@ export const loadingMessages=['Estic buscant idees que encaixin amb el teu viatg
 export function renderRefinement(row,result){
  const hard=Object.entries(row.document.decisions).filter(([,d])=>d.strength==='hard');
  return `<form id="proposalRefinementForm"><h3>Què voldries que canviés?</h3><div class="proposal-chips">${contextualRefinements(row.document,result.proposals).map(([key,label])=>`<label><input type="checkbox" name="refinementChip" value="${key}"> ${esc(label)}</label>`).join('')}</div><button type="button" id="proposalFreeText">✍️ Explica-m’ho tu</button><label id="proposalTextLabel" class="hidden">Què canviaries?<textarea id="proposalRefinementText" maxlength="1000" rows="3"></textarea></label><p>Això orienta la cerca; no modifica les prioritats ni els imprescindibles del resum.</p><button type="submit">Busca alternatives diferents</button></form><section><h3>Per trobar opcions diferents, què estaries disposada a flexibilitzar?</h3>${hard.length?'<p>Tria un imprescindible per revisar-lo al resum. Cap canvi s’aplica sense confirmar-lo.</p>':'<p>Pots revisar les prioritats al resum del viatge.</p>'}<ul>${hard.map(([id,d])=>`<li>${esc(decisionLabel(d))} <button type="button" data-review-decision="${esc(id)}">Revisa aquest imprescindible</button></li>`).join('')}</ul></section>`;
-}
-export function renderHistory(history,current){
- return '<h3>Alternatives anteriors</h3>'+history.rounds.map(g=>`<button type="button" data-history-generation="${esc(g.id)}" ${g.id===current?'disabled':''}>Ronda ${esc(g.round_number)} · ${esc(g.proposal_count)} alternatives${g.id===current?' · Actual':''}</button>`).join('')+(history.next_before?`<button type="button" data-history-before="${esc(history.next_before)}">Veure cerques més antigues</button>`:'');
 }
