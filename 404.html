@@ -407,6 +407,7 @@
       <div id="builderEditorPanel">
       <button type="button" data-builder-back="constructionView">← Tornar</button>
       <h1 id="builderHeading">Continua dissenyant</h1>
+      <button type="button" id="builderPlacesOpen">Verifica les ubicacions</button><div id="builderPlaces"></div>
       <p id="builderKnown" class="hidden"></p><p id="builderPrompt"></p>
       <div id="builderLive"></div>
       <div id="builderNotesPanel" class="hidden">
@@ -2004,7 +2005,7 @@ function homeTripGroups(values,now=new Date()){
   groups.forEach(group=>group.rows.sort((a,b)=>group.key==='past'?String(b.end_date||'').localeCompare(a.end_date||''):String(a.start_date||'').localeCompare(b.start_date||'')));
   return groups.filter(group=>group.rows.length);
 }
-function resetBuilderUi(){resetProposalUi();builderLive?.clear();builderLive=null;if(typeof homeTripReturn!=='undefined')homeTripReturn=null;builderEpoch++;builderListSequence++;builderController=null;builderRow=null;builderBase='';builderBusy=false;builderConflict=false;$('builderNotes').value='';$('builderStartMessage').textContent='';$('builderBriefList').innerHTML='';$('builderKnown').textContent='';$('builderMessage').textContent=''}
+function resetBuilderUi(){if($('builderPlaces'))$('builderPlaces').innerHTML='';resetProposalUi();builderLive?.clear();builderLive=null;if(typeof homeTripReturn!=='undefined')homeTripReturn=null;builderEpoch++;builderListSequence++;builderController=null;builderRow=null;builderBase='';builderBusy=false;builderConflict=false;$('builderNotes').value='';$('builderStartMessage').textContent='';$('builderBriefList').innerHTML='';$('builderKnown').textContent='';$('builderMessage').textContent=''}
 function builderCurrent(owner,epoch){return session?.user?.id===owner&&builderEpoch===epoch}
 async function getBuilderController(){
   const owner=session?.user?.id,epoch=builderEpoch;if(!owner)throw new Error('Torna a iniciar sessió.');
@@ -2093,6 +2094,8 @@ function showBuilderRow(api,row,mode){
   if(!builderLive&&$('builderLive').querySelector)builderLive=new api.LiveBriefEditor($('builderLive'),{save:saveBuilderStructured,isBlocked:()=>builderBusy||!!builderController?.state.pending||builderConflict||!builderRow,openNotes:open=>$('builderNotesPanel').classList.toggle('hidden',!open),canSwitch:()=>!builderBusy&&!builderController?.state.pending&&($('builderNotes').value===builderBase||confirm('El text encara no està desat. Vols continuar editant un altre bloc?'))});
   builderLive?.update(row,mode);
   $('builderMessage').textContent='';renderBuilderControls();rememberBuilder();
+  if($('builderPlacesOpen'))$('builderPlacesOpen').onclick=async()=>{if(builderDirty()||builderBusy){$('builderMessage').textContent='Desa els canvis abans de verificar ubicacions.';return;}const owner=session.user.id,epoch=builderEpoch,original=builderRow;const places=await import('./domain/place-resolution-ui.mjs');await places.mountBriefPlaces($('builderPlaces'),{client:db,row:original,current:()=>builderCurrent(owner,epoch)&&builderRow===original,onConfirmed:async()=>{await resumeBuilder(original.id);$('builderPlaces').innerHTML='';}});};
+
 }
 function enterBuilderView(){
   if(visibleAppView()!=='builderView'){history.pushState({builderNav:builderHistory('builderView')},'');setAppView('builderView')}
@@ -2213,7 +2216,7 @@ async function openBuilderProposals(push=true,detail=null,direct=false,generatio
   $('proposalMessage').textContent='';$('proposalHeading').textContent=detail?'Detall de proposta':'Alternatives';$('proposalBack').textContent=detail?'← Torna a alternatives':'← Torna al resum del viatge';
   $('proposalContent').innerHTML=api.renderProposalResult(proposalResult,detail);
   $('proposalContent').querySelectorAll('[data-proposal-id]').forEach(button=>button.onclick=()=>openBuilderProposals(true,button.dataset.proposalId,false,proposalResult.generation.id));
-  if(detail){const selected=proposalResult.proposals.find(p=>p.id===detail);if(selected){const button=document.createElement('button');button.type='button';button.id='proposalBuild';button.textContent='Construir aquest viatge';button.onclick=()=>openHandoffReview(selected);$('proposalContent').append(button);}}
+  if(detail){const selected=proposalResult.proposals.find(p=>p.id===detail);if(selected){const button=document.createElement('button');button.type='button';button.id='proposalBuild';button.textContent='Construir aquest viatge';const geographicNotice=document.createElement('p');geographicNotice.className='muted';geographicNotice.textContent='Les ubicacions factuals es comproven abans de construir. Si n’hi ha de pendents, et demanarem quin lloc vols dir.';$('proposalContent').append(geographicNotice);button.onclick=()=>openHandoffReview(selected);$('proposalContent').append(button);}}
   if(!detail&&proposalResult.generation){
    const adjacent=await proposalSession.adjacent(builderRow.id,proposalResult.generation.id);if(!builderCurrent(owner,epoch)||sequence!==proposalSequence)return;
    $('proposalHistory').classList.toggle('hidden',historical||!adjacent.previous);
@@ -2250,10 +2253,12 @@ async function openHandoffReview(proposal){
   if(proposalResult.stale)throw Error('El resum ha canviat. Revisa les alternatives abans de construir.');
   proposalMode='handoff';clearTimeout(proposalTimer);
   $('proposalContent').innerHTML=api.renderHandoffForm(builderRow,proposalResult,proposal);
-  const form=$('handoffForm');const pending=!!controller.pending;
+  const form=$('handoffForm');const pending=!!controller.pending;form.onsubmit=event=>event.preventDefault();form.querySelector('[type="submit"]').disabled=true;
+  const placeUi=await import('./domain/place-resolution-ui.mjs');const geography=await placeUi.mountProposalPlaces($('handoffPlaces'),{client:db,row:builderRow,proposal,current:()=>builderCurrent(owner,epoch)&&proposalOpen});if(!builderCurrent(owner,epoch)||!proposalOpen)return;
   if(pending){form.querySelectorAll('input,select').forEach(n=>n.disabled=true);form.querySelector('[type="submit"]').textContent='Verifica la construcció pendent';form.noValidate=true;}
   $('handoffCancel').onclick=()=>openBuilderProposals(false,proposal.id,false,proposalResult.generation.id);
-  form.onsubmit=async event=>{event.preventDefault();if(controller.busy)return;const button=form.querySelector('[type="submit"]');button.disabled=true;$('handoffMessage').textContent='Construint el viatge…';try{if(!controller.pending)controller.prepare(builderRow,proposalResult,proposal,api.handoffDetails(form));await controller.execute();if(builderCurrent(owner,epoch)&&proposalOpen)await openFormalizedTrip(builderRow.id);}catch(error){if(builderCurrent(owner,epoch)&&$('handoffMessage')){$('handoffMessage').textContent=controller.pending?'No s’ha pogut verificar el resultat. Reintenta la mateixa petició.':error.code==='40001'?'El resum o l’alternativa han canviat. Recarrega abans de continuar.':error.message;button.disabled=false;button.textContent=controller.pending?'Verifica la construcció pendent':'Crear el viatge amb peces previstes';}}};
+  form.onsubmit=async event=>{event.preventDefault();if(controller.busy)return;const button=form.querySelector('[type="submit"]');button.disabled=true;$('handoffMessage').textContent='Construint el viatge…';try{if(!controller.pending)controller.prepare(builderRow,proposalResult,proposal,{...api.handoffDetails(form),...geography.details()});await controller.execute();if(builderCurrent(owner,epoch)&&proposalOpen)await openFormalizedTrip(builderRow.id);}catch(error){if(builderCurrent(owner,epoch)&&$('handoffMessage')){$('handoffMessage').textContent=controller.pending?'No s’ha pogut verificar el resultat. Reintenta la mateixa petició.':error.code==='40001'?'El resum o l’alternativa han canviat. Recarrega abans de continuar.':error.message;button.disabled=false;button.textContent=controller.pending?'Verifica la construcció pendent':'Crear el viatge amb peces previstes';}}};
+  form.querySelector('[type="submit"]').disabled=false;
  }catch(error){if(builderCurrent(owner,epoch))$('proposalMessage').textContent=error.message;}
 }
 $('proposalGenerate').onclick=()=>generateBuilderProposals();

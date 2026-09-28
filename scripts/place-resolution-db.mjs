@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
+import {runProposalEngine} from '../supabase/functions/proposal-engine/engine.mjs';
+import {normalizeGeoapify} from '../supabase/functions/place-resolution/providers/geoapify.mjs';
+import {placeConfig} from '../supabase/functions/place-resolution/config.mjs';
+export async function testPlaces({docker,database}){
+const q=s=>docker(['psql','-X','-At','-v','ON_ERROR_STOP=1','-U','postgres','-d',database,'-c',s]).trim();
+const lit=v=>"'"+String(typeof v==='object'?JSON.stringify(v):v).replaceAll("'","''")+"'";
+const call=(n,a)=>`select public.${n}(${a.map(lit).join(',')});`;
+const json=s=>JSON.parse(q(s).split('\n').find(l=>l.startsWith('{')||l.startsWith('[')));
+const owner=crypto.randomUUID(),other=crypto.randomUUID(),brief=crypto.randomUUID();q(`insert into auth.users(id) values('${owner}'),('${other}');`);
+const as=(user,s)=>`set role authenticated;select set_config('request.jwt.claim.sub','${user}',false);${s}`;
+const svc=(n,a)=>json('set role service_role;'+call(n,a));
+const f=JSON.parse(readFileSync(new URL('../supabase/functions/proposal-engine/test-fixtures/golden-v1.json',import.meta.url)));
+json(as(owner,call('apply_trip_brief_patch_v1',[brief,crypto.randomUUID(),0,f.snapshot])));
+const batch=structuredClone(f.batch);batch.candidates[0].components.push({id:'hotel_a',kind:'accommodation',subject_id:'stop_a',description:'Synthetic unknown hotel',claim_ids:[]});
+const gen=svc('request_proposals_v1',[owner,brief,1,crypto.randomUUID(),'test:geo']);const attempt=svc('claim_proposal_generation_v1',[owner,gen.id]);const result=await runProposalEngine({snapshot:f.snapshot,generator:{generate:async()=>batch}});svc('finish_proposal_generation_v1',[owner,gen.id,attempt.attempt_token,result]);
+const rows=json(as(owner,call('get_proposals_v1',[brief,gen.id]))),proposal=rows.proposals[0];
+const subject={brief_id:brief,proposal_id:proposal.id,key:'stop_a'},query={text:'Synthetic base',language:'ca'};
+const c=svc('claim_place_query_v1',[owner,query,placeConfig()]);assert.equal(svc('claim_place_query_v1',[owner,query,placeConfig()]).pending,true);
+const place=normalizeGeoapify({name:'Synthetic base',result_type:'city',lat:48,lon:11,country_code:'de',place_id:'synthetic-a',timezone:{name:'Europe/Berlin'},datasource:{sourcename:'test',attribution:'Synthetic'}});
+q('set role service_role;'+call('finish_place_query_v1',[owner,c.query_hash,c.token,[place],86400]));assert.equal(svc('claim_place_query_v1',[owner,query,placeConfig()]).cached,true);
+const args=[owner,subject,c.token,c.query_hash,0,0,1,crypto.randomUUID(),900],binding=svc('confirm_place_v1',args);assert.equal(svc('confirm_place_v1',args).id,binding.id);
+assert.throws(()=>svc('confirm_place_v1',[other,...args.slice(1)]));assert.throws(()=>svc('confirm_place_v1',[...args.slice(0,7),crypto.randomUUID(),900]));
+assert.equal(json(as(owner,call('get_place_bindings_v1',[subject])))[0].place.timezone,'Europe/Berlin');assert.throws(()=>json(as(other,call('get_place_bindings_v1',[subject]))));
+assert.throws(()=>q(as(owner,'delete from public.place_versions')));assert.throws(()=>q(`update public.place_versions set canonical_name='Rewrite'`));
+const details={name:'Synthetic geographic trip',start_date:null,end_date:null,acknowledge_unresolved:true,principal_stop_id:'stop_a',bindings:{stop_a:binding.id},components:{experience_a:{target:'activity'},hotel_a:{target:'accommodation'}}};
+const hargs=[brief,1,proposal.id,gen.id,gen.snapshot_hash,crypto.randomUUID(),details];
+const apply=a=>json(as(owner,call('formalize_trip_proposal_v2',a)));
+const out=apply(hargs);assert.equal(apply(hargs).replayed,true);assert.equal(apply([...hargs.slice(0,5),crypto.randomUUID(),details]).trip_id,out.trip_id);
+assert.throws(()=>apply([...hargs.slice(0,6),{...details,name:'Changed'}]));
+const stored=json(`select jsonb_build_object('timezone',(select time_zone from public.trips where id='${out.trip_id}'),'hotels',(select jsonb_agg(jsonb_build_object('timezone',time_zone,'lat',latitude,'status',reservation_status)) from public.trip_accommodations where trip_id='${out.trip_id}'),'trips',(select count(*) from public.trip_proposal_handoffs where brief_id='${brief}'));`);
+assert.equal(stored.timezone,'Europe/Berlin');assert.equal(stored.trips,1);assert.deepEqual(stored.hotels,[{timezone:'Europe/Berlin',lat:null,status:'planning'}]);
+assert.throws(()=>svc('confirm_place_v1',[...args.slice(0,5),1,2,crypto.randomUUID(),900]));
+q('set role service_role;select public.sync_trip_reminders();');assert.equal(q(`select count(*) from public.trip_reminders where trip_id='${out.trip_id}' and enabled`),'0');
+console.log('PASS place SQL: cache lease/hit; ownership/RLS; immutable snapshot; binding CAS/receipt; geographic handoff; replay/new operation convergence; no hotel coordinates; frozen Brief; planning reminders excluded');
+}

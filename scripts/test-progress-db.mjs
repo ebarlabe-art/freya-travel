@@ -4,6 +4,7 @@ import {spawn,spawnSync} from 'node:child_process';
 import {readFileSync,readdirSync} from 'node:fs';
 import {beforeRounds,afterRounds,testRounds} from './proposal-rounds-db.mjs';
 import {testHandoff,beforeHandoff,afterHandoff} from './proposal-handoff-db.mjs';
+import {testPlaces} from './place-resolution-db.mjs';
 import {testProposals} from './proposals-db.mjs';
 const container='supabase_db_freya-travel';
 const database=`freya_progress_test_${process.pid}`;
@@ -111,6 +112,7 @@ try{
   file('supabase/tests/local_progress_travel_baseline.sql');
   for(const name of readdirSync('supabase/migrations').filter(name=>name.endsWith('.sql')).sort()){
     // Do not install/run any Cron job in the test container.
+    if(name.endsWith('_place_resolution_v1.sql'))continue;
     if(name==='20260901144811_schedule_itinerary_notifications.sql'){console.log(`SKIP Cron scheduling only: ${name}`);continue}
     if(name==='20260903172118_identify_london_2026_experience.sql')sql("insert into auth.users(id) values ('00000000-0000-4000-8000-000000000001'); insert into public.trips(id,name,owner_id) values ('9035e47f-f16c-4fa3-83fd-873bd98dc221','Local migration precondition fixture','00000000-0000-4000-8000-000000000001');");
     if(name==='20260918174037_shared_trip_progress.sql')file('supabase/tests/progress_before_migration.sql');
@@ -144,6 +146,11 @@ try{
   await testProposals({sql,docker,database,container});
   await testRounds({sql,docker,database,container});
   await testHandoff({sql,docker,database,container});
+  const beforePlaces=beforeHandoff({docker,database});
+  file('supabase/migrations/20260928215001_place_resolution_v1.sql');
+  afterHandoff({docker,database},beforePlaces.replaceAll('to_jsonb(x)',"(to_jsonb(x)-'place_snapshot')"));
+  sql("do $$begin if exists(select 1 from public.proposal_generations where place_snapshot is not null) then raise exception 'Legacy generation geography backfilled';end if;end$$;");
+  await testPlaces({docker,database});
 }finally{
   if(created){sql(`drop database ${database};`,'postgres');console.log(`Removed disposable database ${database}`)}
 }
