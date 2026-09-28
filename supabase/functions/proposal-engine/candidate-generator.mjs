@@ -39,7 +39,10 @@ export function createOpenAIResponsesGenerator({apiKey,model,fetchImpl=fetch,tim
         stage='validation';report();
         return validateCandidateBatch(batch,snapshot,{diagnostics});
       } catch(error) {
-        if(error instanceof ProposalError)throw error;
+        if(error instanceof ProposalError){
+          if(error.diagnostic){try{onDiagnostic(error.diagnostic)}catch{}}
+          throw error;
+        }
         throw new ProposalError(controller.signal.aborted?'provider_timeout':'provider_transport_error');
       } finally {clearTimeout(timer);signal?.removeEventListener('abort',abort)}
     },
