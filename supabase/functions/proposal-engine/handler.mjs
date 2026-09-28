@@ -8,8 +8,8 @@ export function createProposalHandler({authenticate,rpc,makeGenerator,logAttempt
   if(request.method==='OPTIONS')return new Response(null,{headers:cors});
   const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:cors});
   if(request.method!=='POST')return reply({error:'method_not_allowed'},405);
-  let owner,claim,timer,started,stage='claim',providerRequestId=null,errorCode=null;
-  const diagnostic=d=>{if(['provider_request','provider_response','validation'].includes(d.stage))stage=d.stage;if(typeof d.provider_request_id==='string'&&/^req_[a-zA-Z0-9_-]{1,100}$/.test(d.provider_request_id))providerRequestId=d.provider_request_id;};
+  let owner,claim,timer,started,stage='claim',providerRequestId=null,errorCode=null,validationDiagnostic=null;
+  const diagnostic=d=>{if(['provider_request','provider_response','validation','schema','invariant','limit','brief'].includes(d.stage))stage=d.stage;if(typeof d.provider_request_id==='string'&&/^req_[a-zA-Z0-9_-]{1,100}$/.test(d.provider_request_id))providerRequestId=d.provider_request_id;if(['schema','invariant','limit','brief'].includes(d.stage)&&typeof d.path==='string'&&typeof d.code==='string'&&typeof d.message==='string'&&typeof d.rule==='string')validationDiagnostic={stage:d.stage,path:d.path.slice(0,240),code:d.code.slice(0,80),message:d.message.slice(0,240),rule:d.rule.slice(0,80)};};
   try{
    owner=await authenticate(request.headers.get('Authorization'));if(!owner)return reply({error:'unauthorized'},401);
    const raw=await request.text();if(raw.length>4096)return reply({error:'invalid_request'},400);
@@ -42,7 +42,7 @@ export function createProposalHandler({authenticate,rpc,makeGenerator,logAttempt
    return reply({error:code},code==='invalid_request'?400:code==='unavailable'?403:code==='brief_or_attempt_changed'?409:500);
   }finally{
    clearTimeout(timer);
-   if(claim)try{logAttempt({event:'proposal_attempt',generation_id:claim.id,attempt_number:claim.attempt_number,duration_ms:Date.now()-(started??Date.now()),stage,error_code:errorCode,provider_request_id:providerRequestId})}catch{}
+   if(claim)try{logAttempt({event:'proposal_attempt',generation_id:claim.id,attempt_number:claim.attempt_number,duration_ms:Date.now()-(started??Date.now()),stage,error_code:errorCode,provider_request_id:providerRequestId,...(validationDiagnostic?{validation_diagnostic:validationDiagnostic}:{})})}catch{}
   }
  };
 }
