@@ -19,7 +19,7 @@ export function createProposalHandler({authenticate,rpc,makeGenerator,logAttempt
    if(Object.keys(body).some(k=>!keys.includes(k)))return reply({error:'invalid_request'},400);
    if(body.action==='explore_more'&&(!uuid(body.previous_generation_id)||!validateRefinement(body.refinement)))return reply({error:'invalid_request'},400);
    if(body.action!=='retry'?(!uuid(body.brief_id)||!Number.isSafeInteger(body.revision)||body.revision<1):!uuid(body.generation_id))return reply({error:'invalid_request'},400);
-   const generator=makeGenerator({onDiagnostic:diagnostic});const config=generator.configuration;
+   const generator=makeGenerator({onDiagnostic:diagnostic,diagnostics:true});const config=generator.configuration;
    const version=[config.provider,config.api,config.adapter_version,config.model].join(':');
    const generation=body.action==='explore_more'?await rpc('explore_more_proposals_v1',{p_owner:owner,p_brief:body.brief_id,p_revision:body.revision,p_previous:body.previous_generation_id,p_refinement:body.refinement,p_operation:body.operation_id,p_generator:version}):body.action==='generate'?await rpc('request_proposals_v1',{p_owner:owner,p_brief:body.brief_id,p_revision:body.revision,p_operation:body.operation_id,p_generator:version}):await rpc('retry_proposals_v1',{p_owner:owner,p_generation:body.generation_id,p_operation:body.operation_id});
    if(generation.generator_version!==version)return reply({error:'configuration_changed'},409);
