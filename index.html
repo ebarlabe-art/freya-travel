@@ -5785,7 +5785,7 @@ if('serviceWorker' in navigator){
       const registrations=await navigator.serviceWorker.getRegistrations();
       await Promise.all(registrations.filter(item=>item.scope===legacyScope).map(item=>item.unregister()));
       if('caches' in window)await caches.delete('freya-travel-v1.5');
-      const registration=await navigator.serviceWorker.register('/freya-travel/sw.js',{scope:'/freya-travel/'});
+      const registration=await navigator.serviceWorker.register('/freya-travel/sw.js',{scope:'/freya-travel/',updateViaCache:'none'});await registration.update().catch(()=>{});
       registration.addEventListener('updatefound',()=>{
         const worker=registration.installing;if(!worker)return;
         worker.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)showUpdateToast()});
