@@ -1,4 +1,19 @@
 export type TravelSearchService = 'flights' | 'hotels' | 'cars';
+export type TravelSearchPreferenceStrength = 'hard' | 'preference' | 'flexible';
+export type TravelSearchPreferenceKey =
+  | 'max_stops'
+  | 'max_duration_minutes'
+  | 'alternative_airports'
+  | 'low_cost'
+  | 'departure_window'
+  | 'arrival_window';
+
+export type TravelSearchPreference = {
+  key: TravelSearchPreferenceKey;
+  decision_id: string;
+  strength: TravelSearchPreferenceStrength;
+  value: unknown;
+};
 
 export type TravelSearchQuery = {
   origin: string;
@@ -6,8 +21,13 @@ export type TravelSearchQuery = {
   start_date: string;
   end_date: string;
   adults: number;
+  children_ages: number[];
   cabin: string;
   services: TravelSearchService[];
+  market: string;
+  locale: string;
+  currency: string;
+  preferences: TravelSearchPreference[];
 };
 
 export type TravelSearchResult = {
@@ -30,4 +50,6 @@ export type ProviderSearchResponse = {
   configured: boolean;
   results: TravelSearchResult[];
   error?: string;
+  applied_preferences?: TravelSearchPreferenceKey[];
+  unapplied_preferences?: TravelSearchPreferenceKey[];
 };
