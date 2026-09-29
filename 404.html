@@ -1869,6 +1869,11 @@ function safeWebsiteUrl(value){
   try{const parsed=new URL(/^[a-z][a-z0-9+.-]*:/i.test(raw)?raw:`https://${raw}`);return ['http:','https:'].includes(parsed.protocol)&&parsed.href.length<=2048?parsed.href:null}catch(_){return null}
 }
 function safePhone(value){const normalized=String(value||'').replace(/[^\d+*#,;]/g,'');return normalized&&/[0-9]/.test(normalized)?normalized:null}
+let tbConfirmationApiPromise=null;
+function tbConfirmationApi(){
+  if(!tbConfirmationApiPromise)tbConfirmationApiPromise=import('./domain/tb-confirmation.mjs');
+  return tbConfirmationApiPromise;
+}
 function compactLocationParts(values){const seen=new Set();return values.map(value=>String(value||'').trim()).filter(value=>{const key=value.toLocaleLowerCase('ca');if(!value||seen.has(key))return false;seen.add(key);return true})}
 function accommodationLocationLines(row){
   const structured=compactLocationParts([row.city,row.postal_code,row.region,row.country]);
@@ -3956,6 +3961,11 @@ $('flightForm').onsubmit=async event=>{
     return clean||null;
   };
 
+  const desiredStatus=$('flightStatus').value,currentFlight=editId?flightRows.find(item=>item.id===editId):null;
+  const tbApi=editId?await tbConfirmationApi():null;
+  const tbComponentId=editId?await tbApi.findTbComponent(db,{tripId,sourceKind:'flight',sourceId:editId}):null;
+  const confirmingTb=!!tbComponentId&&desiredStatus==='confirmed';
+
   const payload={
     airline:nullable($('flightAirline').value),
     flight_number:nullable($('flightNumber').value),
@@ -3974,7 +3984,7 @@ $('flightForm').onsubmit=async event=>{
     arrival_terminal:nullable($('flightArrivalTerminal').value),
     seat:nullable($('flightSeat').value),
     baggage:nullable($('flightBaggage').value),
-    flight_status:$('flightStatus').value,
+    flight_status:confirmingTb?(currentFlight?.flight_status||'planning'):desiredStatus,
     notes:nullable($('flightNotes').value)
   };
 
@@ -4027,16 +4037,24 @@ $('flightForm').onsubmit=async event=>{
     $('flightFormTitle').textContent='Editar vol';
     saveFlightDraft();
 
-    await syncFlightDocument(
-      flight.id,
-      'booking',
-      bookingDocumentId,
-      editId?originalBooking:'',
-      flight.updated_at,
-      tripId,
-      generation
-    );
-    form.dataset.originalBookingDocumentId=bookingDocumentId;
+    if(confirmingTb){
+      const confirmation=await tbApi.confirmTbComponent(db,{tripId,componentId:tbComponentId,expectedUpdatedAt:flight.updated_at,expectedEvidenceDocumentId:editId?originalBooking:null,evidenceDocumentId:bookingDocumentId||null,evidenceRole:bookingDocumentId?'booking':null});
+      flight.updated_at=confirmation?.source_updated_at||flight.updated_at;
+      form.dataset.originalUpdatedAt=flight.updated_at;
+      form.dataset.originalBookingDocumentId=bookingDocumentId;
+      saveFlightDraft();
+    }else{
+      await syncFlightDocument(
+        flight.id,
+        'booking',
+        bookingDocumentId,
+        editId?originalBooking:'',
+        flight.updated_at,
+        tripId,
+        generation
+      );
+      form.dataset.originalBookingDocumentId=bookingDocumentId;
+    }
 
     await syncFlightDocumentSet(
       flight.id,
@@ -4127,7 +4145,11 @@ $('activityForm').onsubmit=async event=>{
   const amountText=$('activityAmount').value.trim(),currency=$('activityCurrency').value.trim().toUpperCase()||null;
   if(amountText&&!currency){msg('activityMsg','Indica la moneda del preu.',true);return}
   const rawWebsite=$('activityWebsite').value.trim(),website=rawWebsite?safeWebsiteUrl(rawWebsite):null;if(rawWebsite&&!website){msg('activityMsg','La web ha de ser una adreça HTTP o HTTPS vàlida.',true);return}
-  const payload={activity_type:$('activityType').value,title:$('activityTitle').value.trim(),start_at:startAt,end_at:endAt,time_zone:timeZone,venue_name:optionalText($('activityVenue').value),address:optionalText($('activityAddress').value),city:optionalText($('activityCity').value),reservation_status:$('activityStatus').value,booking_reference:optionalText($('activityReference').value),provider:optionalText($('activityProvider').value),contact_phone:optionalText($('activityPhone').value),contact_email:optionalText($('activityEmail').value),website_url:website,people_count:$('activityPeople').value?Number($('activityPeople').value):null,amount:amountText?Number(amountText):null,currency,notes:optionalText($('activityNotes').value)};
+  const desiredStatus=$('activityStatus').value,currentActivity=editingId?activityRows.find(item=>item.id===editingId):null;
+  const tbApi=editingId?await tbConfirmationApi():null;
+  const tbComponentId=editingId?await tbApi.findTbComponent(db,{tripId,sourceKind:'activity',sourceId:editingId}):null;
+  const confirmingTb=!!tbComponentId&&desiredStatus==='confirmed';
+  const payload={activity_type:$('activityType').value,title:$('activityTitle').value.trim(),start_at:startAt,end_at:endAt,time_zone:timeZone,venue_name:optionalText($('activityVenue').value),address:optionalText($('activityAddress').value),city:optionalText($('activityCity').value),reservation_status:confirmingTb?(currentActivity?.reservation_status||'planning'):desiredStatus,booking_reference:optionalText($('activityReference').value),provider:optionalText($('activityProvider').value),contact_phone:optionalText($('activityPhone').value),contact_email:optionalText($('activityEmail').value),website_url:website,people_count:$('activityPeople').value?Number($('activityPeople').value):null,amount:amountText?Number(amountText):null,currency,notes:optionalText($('activityNotes').value)};
   const requestedBooking=$('activityBookingDocument').value||'',requestedTicket=$('activityTicketDocument').value||'';
   activitySubmitting=true;$('saveActivity').disabled=true;msg('activityMsg',editingId?'Desant els canvis…':'Desant activitat…');
   try{
@@ -4139,8 +4161,23 @@ $('activityForm').onsubmit=async event=>{
     const result=editingId?await db.from('trip_activities').update(payload).eq('id',editingId).eq('trip_id',tripId).eq('updated_at',originalUpdatedAt).select('*').maybeSingle():await db.from('trip_activities').insert({...payload,trip_id:tripId,created_by:userId}).select('*').single();
     if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;if(result.error)throw result.error;if(editingId&&!result.data){await recoverActivityConflict(editingId,tripId,generation);return}
     const saved=result.data;form.dataset.editId=saved.id;form.dataset.originalUpdatedAt=saved.updated_at;form.dataset.originalBookingDocumentId=originalBooking;form.dataset.originalTicketDocumentId=originalTicket;saveActivityDraft();
-    const bookingSynced=await syncActivityDocument(saved.id,'booking',requestedBooking,editingId?originalBooking:'',saved.updated_at,tripId,generation);if(!bookingSynced)return;form.dataset.originalBookingDocumentId=requestedBooking;saveActivityDraft();
-    const ticketSynced=await syncActivityDocument(saved.id,'ticket',requestedTicket,editingId?originalTicket:'',saved.updated_at,tripId,generation);if(!ticketSynced)return;form.dataset.originalTicketDocumentId=requestedTicket;saveActivityDraft();
+    let confirmedEvidenceRole=null;
+    if(confirmingTb){
+      confirmedEvidenceRole=requestedBooking?'booking':requestedTicket?'ticket':null;
+      const evidenceDocumentId=confirmedEvidenceRole==='booking'?requestedBooking:confirmedEvidenceRole==='ticket'?requestedTicket:null;
+      const expectedEvidenceDocumentId=confirmedEvidenceRole==='booking'?(editingId?originalBooking:null):confirmedEvidenceRole==='ticket'?(editingId?originalTicket:null):null;
+      const confirmation=await tbApi.confirmTbComponent(db,{tripId,componentId:tbComponentId,expectedUpdatedAt:saved.updated_at,expectedEvidenceDocumentId,evidenceDocumentId,evidenceRole:confirmedEvidenceRole});
+      saved.updated_at=confirmation?.source_updated_at||saved.updated_at;
+      form.dataset.originalUpdatedAt=saved.updated_at;
+    }
+    if(confirmedEvidenceRole!=='booking'){
+      const bookingSynced=await syncActivityDocument(saved.id,'booking',requestedBooking,editingId?originalBooking:'',saved.updated_at,tripId,generation);if(!bookingSynced)return;
+    }
+    form.dataset.originalBookingDocumentId=requestedBooking;saveActivityDraft();
+    if(confirmedEvidenceRole!=='ticket'){
+      const ticketSynced=await syncActivityDocument(saved.id,'ticket',requestedTicket,editingId?originalTicket:'',saved.updated_at,tripId,generation);if(!ticketSynced)return;
+    }
+    form.dataset.originalTicketDocumentId=requestedTicket;saveActivityDraft();
     if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;clearActivityDraft(tripId,userId);resetActivityFormUi();msg('activityMsg',editingId?'Activitat actualitzada.':'Activitat afegida.');await loadActivities(true);
   }catch(error){
     if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;
@@ -4166,7 +4203,11 @@ $('accommodationForm').onsubmit=async event=>{
     const checkIn=zonedLocalToIso($('accommodationCheckIn').value,timeZone),checkOut=zonedLocalToIso($('accommodationCheckOut').value,timeZone);
     if(checkIn&&checkOut&&new Date(checkOut)<=new Date(checkIn))throw new Error('El check-out ha de ser posterior al check-in.');
     const rawWebsite=$('accommodationWebsite').value.trim(),website=rawWebsite?safeWebsiteUrl(rawWebsite):null;if(rawWebsite&&!website)throw new Error('La web ha de ser una adreça HTTP o HTTPS vàlida.');
-    const payload={accommodation_type:$('accommodationType').value,name:$('accommodationName').value.trim(),address:optionalText($('accommodationAddress').value),location_text:optionalText(form.dataset.legacyLocationText),city:optionalText($('accommodationCity').value),postal_code:optionalText($('accommodationPostalCode').value),region:optionalText($('accommodationRegion').value),country:optionalText($('accommodationCountry').value),check_in_at:checkIn,check_out_at:checkOut,time_zone:timeZone,booking_reference:optionalText($('accommodationReference').value),booking_provider:optionalText($('accommodationProvider').value),reservation_status:$('accommodationStatus').value,phone:optionalText($('accommodationPhone').value),email:optionalText($('accommodationEmail').value),website_url:website,room_number:optionalText($('accommodationRoom').value),notes:optionalText($('accommodationNotes').value)};
+    const desiredStatus=$('accommodationStatus').value,currentAccommodation=editingId?accommodationRows.find(item=>item.id===editingId):null;
+    const tbApi=editingId?await tbConfirmationApi():null;
+    const tbComponentId=editingId?await tbApi.findTbComponent(db,{tripId,sourceKind:'accommodation',sourceId:editingId}):null;
+    const confirmingTb=!!tbComponentId&&desiredStatus==='confirmed';
+    const payload={accommodation_type:$('accommodationType').value,name:$('accommodationName').value.trim(),address:optionalText($('accommodationAddress').value),location_text:optionalText(form.dataset.legacyLocationText),city:optionalText($('accommodationCity').value),postal_code:optionalText($('accommodationPostalCode').value),region:optionalText($('accommodationRegion').value),country:optionalText($('accommodationCountry').value),check_in_at:checkIn,check_out_at:checkOut,time_zone:timeZone,booking_reference:optionalText($('accommodationReference').value),booking_provider:optionalText($('accommodationProvider').value),reservation_status:confirmingTb?(currentAccommodation?.reservation_status||'planning'):desiredStatus,phone:optionalText($('accommodationPhone').value),email:optionalText($('accommodationEmail').value),website_url:website,room_number:optionalText($('accommodationRoom').value),notes:optionalText($('accommodationNotes').value)};
     accommodationSubmitting=true;$('saveAccommodation').disabled=true;msg('accommodationMsg',editingId?'Desant els canvis…':'Desant allotjament…');
     if(editingId){
       if(!originalUpdatedAt)throw new Error('No s’ha pogut verificar la versió de l’allotjament. Torna a obrir-lo abans de desar.');
@@ -4178,7 +4219,15 @@ $('accommodationForm').onsubmit=async event=>{
     if(result.error)throw result.error;
     if(editingId&&!result.data){await recoverAccommodationConflict(editingId,tripId,generation);return}
     savedAccommodation=result.data;form.dataset.editId=savedAccommodation.id;form.dataset.originalUpdatedAt=savedAccommodation.updated_at;form.dataset.originalVoucherDocumentId=originalVoucherDocumentId||'';saveAccommodationDraft();
-    const voucherSynced=await syncAccommodationVoucher(savedAccommodation.id,requestedVoucherDocumentId,originalVoucherDocumentId,savedAccommodation.updated_at,tripId,generation,userId);if(!voucherSynced)return;
+    if(confirmingTb){
+      const confirmation=await tbApi.confirmTbComponent(db,{tripId,componentId:tbComponentId,expectedUpdatedAt:savedAccommodation.updated_at,expectedEvidenceDocumentId:originalVoucherDocumentId,evidenceDocumentId:requestedVoucherDocumentId,evidenceRole:requestedVoucherDocumentId?'voucher':null});
+      savedAccommodation.updated_at=confirmation?.source_updated_at||savedAccommodation.updated_at;
+      form.dataset.originalUpdatedAt=savedAccommodation.updated_at;
+      form.dataset.originalVoucherDocumentId=requestedVoucherDocumentId||'';
+      saveAccommodationDraft();
+    }else{
+      const voucherSynced=await syncAccommodationVoucher(savedAccommodation.id,requestedVoucherDocumentId,originalVoucherDocumentId,savedAccommodation.updated_at,tripId,generation,userId);if(!voucherSynced)return;
+    }
     if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;
     closeAccommodationForm();msg('accommodationMsg',editingId?'Allotjament actualitzat.':'Allotjament afegit.');await loadAccommodations(true);
   }catch(error){
