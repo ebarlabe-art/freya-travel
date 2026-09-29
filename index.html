@@ -2532,6 +2532,7 @@ async function runBuildFlightSearch(){
 $('buildFlightSearchForm').onsubmit=event=>{event.preventDefault();runBuildFlightSearch()};$('buildFlightSearchClose').onclick=closeBuildFlightSearch;
 async function loadBuildView(){
   if(!trip||isLondonTrip()||!trip.tb_handoff||!$('buildView'))return;
+  closeBuildFlightSearch();
   const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id,sequence=++buildLoadSequence;
   msg('buildMessage','Carregant les peces del viatge…');
   try{
