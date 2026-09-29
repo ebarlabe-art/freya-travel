@@ -4242,6 +4242,7 @@ $('addActivity').onclick=()=>openActivityForm();
 $('addFirstActivity').onclick=()=>openActivityForm();
 $('cancelActivity').onclick=closeActivityForm;
 $('activityOpenDocuments').onclick=()=>{if(!setActivityDocumentsReturnContext())return;saveActivityDraft();setAppView('documentsView')};
+['activity','flight','accommodation'].forEach(prefix=>{const input=$(prefix+'CostCurrency');if(input)input.addEventListener('input',()=>input.setCustomValidity(''))});
 $('activityForm').addEventListener('input',saveActivityDraft);$('activityForm').addEventListener('change',saveActivityDraft);
 $('activityBookingDocument').addEventListener('change',()=>reconcileActivityDocumentRoles('booking'));
 $('activityTicketDocument').addEventListener('change',()=>reconcileActivityDocumentRoles('ticket'));
