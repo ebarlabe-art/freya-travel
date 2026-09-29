@@ -2479,16 +2479,13 @@ function buildPriceTag(component){return `<span class="build-tag ${esc(component
 function buildStatusTag(component){return `<span class="build-tag ${esc(component.status.key)}">${esc(component.status.label)}</span>`}
 function renderBuild(data,tripId,generation,userId){
   if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId||visibleAppView()!=='buildView')return;
-  $('buildProgress').innerHTML=[
-    ['Peces',data.counts.total],
-    ['Pendents',data.counts.pending],
-    ['Reservades',data.counts.reserved],
-    ['Confirmades',data.counts.confirmed],
-  ].map(([label,value])=>`<div class="build-progress-card"><strong>${value}</strong><small>${esc(label)}</small></div>`).join('');
+  buildCurrentData=data;
+  $('buildProgress').innerHTML=[['Peces',data.counts.total],['Pendents',data.counts.pending],['Reservades',data.counts.reserved],['Confirmades',data.counts.confirmed]].map(([label,value])=>`<div class="build-progress-card"><strong>${value}</strong><small>${esc(label)}</small></div>`).join('');
   const budget=data.budget||{},currencies=Array.isArray(budget.currencies)?budget.currencies:[];
   const target=budget.settings?.target_amount!=null&&budget.settings?.currency?`${Number(budget.settings.target_amount).toFixed(2)} ${esc(budget.settings.currency)}`:null;
   $('buildBudget').innerHTML=`<h3>💶 Pressupost viu</h3>${currencies.length?`<div class="build-budget-lines">${currencies.map(row=>`<div class="build-budget-line"><span>${esc(row.currency)}</span><strong>${esc(new Intl.NumberFormat('ca-ES',{style:'currency',currency:row.currency,maximumFractionDigits:2}).format(Number(row.total||0)))}</strong></div>`).join('')}</div>`:'<p>Encara no hi ha cap preu conegut.</p>'}${target?`<p>Objectiu: <strong>${target}</strong></p>`:''}${budget.provisional?`<p class="build-budget-warning">Pressupost provisional · ${Number(budget.unknown_components||0)} peces sense preu i ${Number(budget.unknown_required_costs||0)} costos obligatoris pendents.</p>`:''}`;
-  $('buildGroups').innerHTML=data.groups.length?data.groups.map(group=>`<details class="build-group" open><summary><span>${esc(group.icon)} ${esc(group.label)}</span><small>${group.components.length} ${group.components.length===1?'peça':'peces'}</small></summary><div class="build-group-list">${group.components.map(component=>`<article class="build-component"><div class="build-component-head"><div><small>${esc(component.kind_label)}</small><h4>${esc(component.title)}</h4></div></div>${component.note?`<p>${esc(component.note.length>220?component.note.slice(0,217)+'…':component.note)}</p>`:''}<div class="build-tags">${buildStatusTag(component)}${buildPriceTag(component)}</div>${component.unknown_required_costs.length?`<p>⚠️ Costos obligatoris pendents: ${esc(component.unknown_required_costs.join(' · '))}</p>`:''}<div class="build-component-actions"><button type="button" data-build-kind="${esc(component.kind)}" data-build-source="${esc(component.source_id)}">Obre la peça</button></div></article>`).join('')}</div></details>`).join(''):'<div class="build-empty">Aquest viatge no té peces de proposta vinculades.</div>';
+  $('buildGroups').innerHTML=data.groups.length?data.groups.map(group=>`<details class="build-group" open><summary><span>${esc(group.icon)} ${esc(group.label)}</span><small>${group.components.length} ${group.components.length===1?'peça':'peces'}</small></summary><div class="build-group-list">${group.components.map(component=>`<article class="build-component"><div class="build-component-head"><div><small>${esc(component.kind_label)}</small><h4>${esc(component.title)}</h4></div></div>${component.note?`<p>${esc(component.note.length>220?component.note.slice(0,217)+'…':component.note)}</p>`:''}<div class="build-tags">${buildStatusTag(component)}${buildPriceTag(component)}</div>${component.unknown_required_costs.length?`<p>⚠️ Costos obligatoris pendents: ${esc(component.unknown_required_costs.join(' · '))}</p>`:''}<div class="build-component-actions"><button type="button" data-build-kind="${esc(component.kind)}" data-build-source="${esc(component.source_id)}">Obre la peça</button>${component.kind==='flight'&&component.status.key!=='cancelled'?`<button type="button" class="secondary" data-build-search-flight="${esc(component.component_id)}">🔎 Buscar opcions de vol</button>`:''}</div></article>`).join('')}</div></details>`).join(''):'<div class="build-empty">Aquest viatge no té peces de proposta vinculades.</div>';
+  $('buildGroups').querySelectorAll('[data-build-search-flight]').forEach(button=>button.onclick=()=>openBuildFlightSearch(button.dataset.buildSearchFlight));
   $('buildGroups').querySelectorAll('[data-build-source]').forEach(button=>button.onclick=async()=>{
     if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId)return;
     const kind=button.dataset.buildKind,id=button.dataset.buildSource;
@@ -2497,6 +2494,42 @@ function renderBuild(data,tripId,generation,userId){
     else{setAppView('activitiesView');await loadActivities(true);if(tripRequestIsCurrent(tripId,generation))openActivityForm(id)}
   });
 }
+async function openBuildFlightSearch(componentId){
+  const component=buildCurrentData?.components?.find(item=>item.component_id===componentId&&item.kind==='flight');
+  if(!component||!buildCurrentData?.brief){msg('buildMessage','No puc recuperar el resum original d’aquesta peça.',true);return}
+  buildSearchComponentId=componentId;
+  const panel=$('buildFlightSearch'),seed=component.search_seed||{},culture=buildSearchCulture(),api=await travelSearchApi(),defaults=api.flightSearchDefaultsFromBrief(buildCurrentData.brief);
+  $('buildFlightOrigin').value=seed.origin||'';$('buildFlightDestination').value=seed.destination||'';$('buildFlightDate').value=buildFlightSeedDate(seed);
+  $('buildFlightAdults').value=String(defaults.adults||1);$('buildFlightChildren').value=(defaults.children_ages||[]).join(', ');$('buildFlightCabin').value='economy';setCurrencyValue('buildFlightCurrency',culture.currency||'',false);
+  $('buildFlightResults').innerHTML='';$('buildFlightSearchSummary').textContent='';msg('buildFlightSearchMessage','');panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeBuildFlightSearch(){buildSearchComponentId=null;$('buildFlightSearch')?.classList.add('hidden');if($('buildFlightResults'))$('buildFlightResults').innerHTML='';msg('buildFlightSearchMessage','')}
+function formatFlightLocal(value){if(!value)return '';const m=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);return m?`${m[3]}/${m[2]} · ${m[4]}:${m[5]}`:value}
+function durationLabel(minutes){const value=Number(minutes);if(!Number.isFinite(value))return '';const h=Math.floor(value/60),m=value%60;return [h?`${h} h`:'',m?`${m} min`:''].filter(Boolean).join(' ')}
+function renderFlightOffers(data){
+  const results=Array.isArray(data?.results)?data.results:[],sources=data?.providers?.flights?.sources||[],skyscanner=sources.find(source=>source.provider==='skyscanner');
+  if(!results.length){$('buildFlightResults').innerHTML='';if(skyscanner&&!skyscanner.configured){msg('buildFlightSearchMessage','La cerca està preparada, però Skyscanner encara no està connectat amb credencials de partner.',true);return}if(skyscanner?.error==='unsupported_hard_preferences'){msg('buildFlightSearchMessage','No mostro resultats perquè el proveïdor no pot aplicar una preferència imprescindible del viatge. No la ignoraré silenciosament.',true);return}if(skyscanner?.error){msg('buildFlightSearchMessage','El proveïdor de vols no ha pogut completar la cerca: '+skyscanner.error,true);return}msg('buildFlightSearchMessage','No s’han trobat opcions per aquesta cerca.',true);return}
+  msg('buildFlightSearchMessage',`${results.length} opcions trobades. Encara no n’has seleccionat cap.`);
+  $('buildFlightResults').innerHTML=results.map(result=>{
+    const raw=result.raw||{},carriers=Array.isArray(raw.carrier_names)?raw.carrier_names.join(' · '):'',stops=raw.stop_count==null?'':raw.stop_count===0?'Directe':raw.stop_count===1?'1 escala':`${raw.stop_count} escales`,duration=durationLabel(raw.duration_minutes),times=[formatFlightLocal(raw.departure_local),formatFlightLocal(raw.arrival_local)].filter(Boolean).join(' → '),agents=Array.isArray(raw.agent_names)?raw.agent_names.join(' · '):'';
+    const price=result.price?new Intl.NumberFormat('ca-ES',{style:'currency',currency:result.price.currency,maximumFractionDigits:2}).format(result.price.amount):'Preu no disponible';
+    return `<article class="build-flight-result"><h4>${esc(carriers||result.title||'Opció de vol')}</h4><div class="build-flight-result-meta">${times?`<span>🕒 ${esc(times)}</span>`:''}${duration?`<span>· ${esc(duration)}</span>`:''}${stops?`<span>· ${esc(stops)}</span>`:''}</div><div class="build-flight-result-price">${esc(price)}</div>${agents?`<p>Oferta via ${esc(agents)}</p>`:''}${result.deeplink?`<a href="${esc(result.deeplink)}" target="_blank" rel="noopener">Veure oferta</a>`:`<p class="build-flight-result-note">Aquesta opció no té un únic enllaç de reserva verificat.</p>`}</article>`;
+  }).join('');
+}
+async function runBuildFlightSearch(){
+  if(!trip||!buildSearchComponentId||!buildCurrentData?.brief)return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id,button=$('buildFlightSearchSubmit');button.disabled=true;$('buildFlightResults').innerHTML='';msg('buildFlightSearchMessage','Buscant opcions reals…');
+  try{
+    const api=await travelSearchApi(),culture=buildSearchCulture(),childrenAges=parseChildAges($('buildFlightChildren').value);
+    const compiled=api.compileFlightLegSearch(buildCurrentData.brief,{origin:$('buildFlightOrigin').value,destination:$('buildFlightDestination').value,startDate:$('buildFlightDate').value,adults:Number($('buildFlightAdults').value),childrenAges,market:culture.market,locale:culture.locale,currency:$('buildFlightCurrency').value,cabin:$('buildFlightCabin').value});
+    if(!compiled.ready)throw new Error('Completa origen, destinació, data, viatgers i moneda abans de buscar.');
+    $('buildFlightSearchSummary').innerHTML=`Buscant <strong>${esc(compiled.query.origin)} → ${esc(compiled.query.destination)}</strong> · ${esc(compiled.query.start_date)} · ${compiled.query.adults} adult${compiled.query.adults===1?'':'s'}${compiled.query.children_ages.length?` · menors: ${esc(compiled.query.children_ages.join(', '))}`:''}`;
+    const {data,error}=await db.functions.invoke('travel-search',{body:compiled.query});
+    if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId||buildSearchComponentId==null)return;if(error)throw error;renderFlightOffers(data);
+  }catch(error){if(tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId)msg('buildFlightSearchMessage',error?.message||'No s’ha pogut completar la cerca de vols.',true)}
+  finally{if(tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId)button.disabled=false}
+}
+$('buildFlightSearchForm').onsubmit=event=>{event.preventDefault();runBuildFlightSearch()};$('buildFlightSearchClose').onclick=closeBuildFlightSearch;
 async function loadBuildView(){
   if(!trip||isLondonTrip()||!trip.tb_handoff||!$('buildView'))return;
   const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id,sequence=++buildLoadSequence;
