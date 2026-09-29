@@ -102,8 +102,10 @@ export function createSkyscannerFlightsAdapter({apiKey,fetchImpl=fetch,timeoutMs
       ]);
       const legs=[
         {originPlaceId:placeId(origin),destinationPlaceId:placeId(destination),date:dateObject(query.start_date)},
-        {originPlaceId:placeId(destination),destinationPlaceId:placeId(origin),date:dateObject(query.end_date)},
       ];
+      if(query.trip_type==='round_trip'){
+        legs.push({originPlaceId:placeId(destination),destinationPlaceId:placeId(origin),date:dateObject(query.end_date)});
+      }
       const create=await requestJson(fetchImpl,`${API}/flights/live/search/create`,apiKey,{query:{market:query.market,locale:query.locale,currency:query.currency,queryLegs:legs,adults:query.adults,childrenAges:query.children_ages||[],cabinClass:CABIN[query.cabin]}},timeoutMs);
       const payloads=[create],token=create?.sessionToken;
       let latest=create;
