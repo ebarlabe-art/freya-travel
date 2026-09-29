@@ -479,7 +479,8 @@
           <button class="generic-module-card is-ready" type="button" data-open="weatherView"><span class="generic-module-icon">🌦️</span><span class="generic-module-copy"><strong>Temps</strong><small>Previsió del viatge</small></span><span class="generic-module-arrow">›</span></button>
           <button class="generic-module-card" type="button" data-generic-module="currency"><span class="generic-module-icon">💱</span><span class="generic-module-copy"><strong>Moneda</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
           <button class="generic-module-card is-ready" type="button" data-open="photosView"><span class="generic-module-icon">📸</span><span class="generic-module-copy"><strong>Fotos</strong><small id="genericPhotosModuleStatus">Àlbum compartit del viatge</small></span><span class="generic-module-arrow">›</span></button>
-          <button class="generic-module-card is-ready" type="button" data-generic-module="travelers"><span class="generic-module-icon">👥</span><span class="generic-module-copy"><strong>Viatgers</strong><small id="genericTravelersModuleStatus">Invitacions del viatge</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericTravelersToggle" class="generic-module-card is-ready" type="button"><span class="generic-module-icon">👥</span><span class="generic-module-copy"><strong>Viatgers</strong><small id="genericTravelersModuleStatus">Invitacions del viatge</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericTripSettingsToggle" class="generic-module-card is-ready hidden" type="button"><span class="generic-module-icon">⚙️</span><span class="generic-module-copy"><strong>Configuració</strong><small>Nom, dates i zona horària</small></span><span class="generic-module-arrow">›</span></button>
         </div>
       </section>
       <div id="genericTripSettingsCard" class="card generic-invite-card hidden">
@@ -502,7 +503,7 @@
         <p id="genericTripSettingsMsg" class="message hidden" role="status" aria-live="polite"></p>
       </div>
 
-      <div class="card generic-invite-card"><h2>Codi d’invitació</h2><p>Comparteix aquest codi per convidar algú al viatge:</p><div id="genericInviteCode" class="code"></div><p><button id="copyGenericCode" type="button" class="secondary">Copiar codi</button></p><p id="genericAppMsg" class="message hidden"></p></div>
+      <div id="genericTravelersCard" class="card generic-invite-card hidden"><h2>👥 Viatgers</h2><p>Comparteix aquest codi per convidar algú al viatge:</p><div id="genericInviteCode" class="code"></div><p><button id="copyGenericCode" type="button" class="secondary">Copiar codi</button></p><p id="genericAppMsg" class="message hidden"></p></div>
     </div>
 
     <div id="buildView" class="hidden">
@@ -3564,6 +3565,14 @@ function renderTripHome(){
   const projection=ready?normalizedItineraryProjection(trip.id,tripLoadGeneration,session.user.id):[];
   const state=deriveTripHomeState({trip,ready,items:projection,checklist:tripHomeChecklist},new Date());
   const heading={future:`Falten ${state.daysUntil} ${state.daysUntil===1?'dia':'dies'}`,active:'El teu viatge, ara',past:'Un viatge per recordar',setup:'Prepara el teu viatge'}[state.phase];
+  const home=$('tripHome');
+  const preTrip=state.phase==='future'||state.phase==='setup';
+  if(home)home.classList.toggle('hidden',preTrip);
+  if(preTrip){
+    const container=$('tripHomeContent');
+    if(container){container.innerHTML='';container._homeHtml=null}
+    return;
+  }
   const loading=!!agendaBatch||agendaRequests.size>0||Object.values(itinerarySourceReady).every(value=>value===null)&&!tripHomeAgendaAttempted;
   let html=`<header class="trip-home-heading"><h2>${esc(heading)}</h2><p>${state.phase==='active'?'Segons el planning · els horaris no confirmen que hi siguis.':state.phase==='future'?'Els propers compromisos i tot el que falta preparar.':state.phase==='past'?'Torna a les fotos, les notes i els llocs del viatge.':'Completa les dates i la zona horària per situar el planning.'}</p></header>`;
   if(state.phase==='past')html+='<div class="trip-home-actions"><button type="button" data-home-view="photosView">📸 Fotos del viatge</button><button type="button" data-home-view="itineraryView">📅 Planning i records</button></div>';
@@ -4113,17 +4122,17 @@ function updateTripPresentation(){
     $('genericInviteCode').textContent=trip.invite_code||'';
     $('genericTravelersModuleStatus').textContent=trip.invite_code?'Codi d’invitació disponible':'Pendent de configurar';
 
-    const settingsCard=$('genericTripSettingsCard');
-    if(settingsCard){
-      settingsCard.classList.toggle('hidden',!trip.is_owner);
+    const settingsCard=$('genericTripSettingsCard'),settingsToggle=$('genericTripSettingsToggle'),travelersCard=$('genericTravelersCard');
+    if(settingsToggle)settingsToggle.classList.toggle('hidden',!trip.is_owner);
+    if(settingsCard)settingsCard.classList.add('hidden');
+    if(travelersCard)travelersCard.classList.add('hidden');
+    if(settingsCard&&trip.is_owner){
 
-      if(trip.is_owner){
         $('genericTripName').value=trip.name||'';
         $('genericTripStartDate').value=trip.start_date||'';
         $('genericTripEndDate').value=trip.end_date||'';
         $('genericTripEndDate').min=trip.start_date||'';
         $('genericTripTimeZone').value=trip.time_zone||'';
-      }
     }
   }
 }
@@ -4324,6 +4333,18 @@ $('manualItineraryForm').onsubmit=async event=>{
   }catch(error){if(itineraryRequestIsCurrent(tripId,generation,userId)&&!isLondonTrip())msg('genericItineraryMessage',error?.message||'No s’ha pogut desar l’element.',true)}finally{if(itineraryRequestIsCurrent(tripId,generation,userId)&&!isLondonTrip()){manualItinerarySubmitting=false;$('saveManualItinerary').disabled=false}}
 };
 $('documentsBack').onclick=handleDocumentsBack;
+$('genericTripSettingsToggle').onclick=()=>{
+  const card=$('genericTripSettingsCard');if(!card||!trip?.is_owner)return;
+  const opening=card.classList.contains('hidden');
+  card.classList.toggle('hidden',!opening);
+  if(opening){$('genericTravelersCard')?.classList.add('hidden');card.scrollIntoView({behavior:'smooth',block:'start'})}
+};
+$('genericTravelersToggle').onclick=()=>{
+  const card=$('genericTravelersCard');if(!card)return;
+  const opening=card.classList.contains('hidden');
+  card.classList.toggle('hidden',!opening);
+  if(opening){$('genericTripSettingsCard')?.classList.add('hidden');card.scrollIntoView({behavior:'smooth',block:'start'})}
+};
 $('addAccommodation').onclick=()=>openAccommodationForm();$('addFirstAccommodation').onclick=()=>openAccommodationForm();$('cancelAccommodation').onclick=closeAccommodationForm;
 $('addFlight').onclick=()=>openFlightForm();
 $('addFirstFlight').onclick=()=>openFlightForm();
