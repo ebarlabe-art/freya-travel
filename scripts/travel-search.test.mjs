@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {emptyBriefDocument} from '../domain/trip-brief.mjs';
-import {compileFlightLegSearch,compileFlightSearchFromBrief} from '../domain/travel-search.mjs';
+import {compileFlightLegSearch,compileFlightSearchFromBrief,flightSearchDefaultsFromBrief} from '../domain/travel-search.mjs';
 import {createSkyscannerFlightsAdapter,parseSkyscannerResults,selectSkyscannerPlace,skyscannerPrice} from '../supabase/functions/travel-search/providers/skyscanner-core.mjs';
 
 function known(field,value,strength='preference'){return {field,scope:'global',origin:'explicit_user',knowledge:'known',strength,value}}
@@ -85,4 +85,12 @@ test('Skyscanner one-way search sends exactly one query leg',async()=>{
  const q=compileFlightLegSearch(baseBrief(),{origin:'Barcelona',destination:'Riga',startDate:'2026-12-26',adults:1,childrenAges:[],market:'ES',locale:'ca-ES',currency:'EUR',cabin:'economy'}).query;
  await createSkyscannerFlightsAdapter({apiKey:'test',fetchImpl,pollDelayMs:0}).search(q);
  assert.equal(calls[2].body.query.queryLegs.length,1);
+});
+
+test('TB-08.2 traveler defaults never invent an adult',()=>{
+ const d=emptyBriefDocument();
+ const defaults=flightSearchDefaultsFromBrief(d);
+ assert.equal(defaults.adults,0);
+ assert.equal(defaults.children_count,0);
+ assert.ok(defaults.traveler_blockers.some(x=>x.code==='adult_traveler_required'));
 });
