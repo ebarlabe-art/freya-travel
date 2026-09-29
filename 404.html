@@ -2022,7 +2022,7 @@ function openAccommodationForm(id=''){
   const originalVoucherDocumentId=row?accommodationVoucherDocumentId(row.id):'';
   const form=$('accommodationForm');form.reset();form.dataset.editId=row?.id||'';form.dataset.timeZone=timeZone;form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=row?.updated_at||'';form.dataset.originalVoucherDocumentId=originalVoucherDocumentId;form.dataset.voucherTouched='false';form.dataset.legacyLocationText=row?.location_text||'';form.dataset.remoteConflict='';
   $('accommodationFormTitle').textContent=row?'Editar allotjament':'Afegir allotjament';$('accommodationType').value=row?.accommodation_type||'hotel';$('accommodationName').value=row?.name||'';$('accommodationAddress').value=row?.address||'';$('accommodationCity').value=row?.city||'';$('accommodationPostalCode').value=row?.postal_code||'';$('accommodationRegion').value=row?.region||'';$('accommodationCountry').value=row?.country||'';$('accommodationCheckIn').value=isoToZonedLocal(row?.check_in_at,timeZone);$('accommodationCheckOut').value=isoToZonedLocal(row?.check_out_at,timeZone);$('accommodationStatus').value=row?.reservation_status||'planning';$('accommodationProvider').value=row?.booking_provider||'';$('accommodationReference').value=row?.booking_reference||'';$('accommodationPhone').value=row?.phone||'';$('accommodationEmail').value=row?.email||'';$('accommodationWebsite').value=row?.website_url||'';$('accommodationRoom').value=row?.room_number||'';$('accommodationNotes').value=row?.notes||'';
-  $('accommodationTimeZoneHelp').textContent=`Hores guardades en la zona ${timeZone}.`;renderAccommodationDocumentOptions(originalVoucherDocumentId);setAccommodationFormMode(true);saveAccommodationDraft();$('accommodationName').focus();$('accommodationFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+  $('accommodationTimeZoneHelp').textContent=`Hores guardades en la zona ${timeZone}.`;renderAccommodationDocumentOptions(originalVoucherDocumentId);setAccommodationFormMode(true);saveAccommodationDraft();$('accommodationName').focus();$('accommodationFormCard').scrollIntoView({behavior:'smooth',block:'start'});loadTbCostForm(form,'accommodation',row?.id||'','accommodation').catch(error=>msg('accommodationMsg',error?.message||'No s’ha pogut carregar el cost.',true));
 }
 async function fetchCurrentAccommodationVoucher(accommodationId,tripId,generation){
   const {data,error}=await db.from('trip_accommodation_documents').select('document_id').eq('trip_id',tripId).eq('accommodation_id',accommodationId).eq('document_role','voucher').maybeSingle();
@@ -2652,6 +2652,7 @@ function openFlightForm(id=''){
   $('flightAirline').focus();
   $('flightFormCard').scrollIntoView({behavior:'smooth',block:'start'});
   saveFlightDraft();
+  loadTbCostForm(form,'flight',row?.id||'','flight').catch(error=>msg('flightMsg',error?.message||'No s’ha pogut carregar el cost.',true));
 }
 
 async function fetchAgendaFlights(silent=false){
@@ -2968,7 +2969,7 @@ function openActivityForm(id=''){
   clearActivityDraft();
   const form=$('activityForm');form.reset();form.dataset.editId=row?.id||'';form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=row?.updated_at||'';form.dataset.originalBookingDocumentId=row?activityDocumentId(row.id,'booking'):'';form.dataset.originalTicketDocumentId=row?activityDocumentId(row.id,'ticket'):'';form.dataset.remoteConflict='';
   $('activityFormTitle').textContent=row?'Editar activitat':'Afegir activitat';$('activityType').value=row?.activity_type||'other';$('activityTitle').value=row?.title||'';$('activityTimeZone').value=row?.time_zone||trip.time_zone||Intl.DateTimeFormat().resolvedOptions().timeZone||'';$('activityStartAt').value=isoToZonedLocal(row?.start_at,$('activityTimeZone').value);$('activityEndAt').value=isoToZonedLocal(row?.end_at,$('activityTimeZone').value);$('activityVenue').value=row?.venue_name||'';$('activityAddress').value=row?.address||'';$('activityCity').value=row?.city||'';$('activityStatus').value=row?.reservation_status||'planning';$('activityReference').value=row?.booking_reference||'';$('activityProvider').value=row?.provider||'';$('activityPhone').value=row?.contact_phone||'';$('activityEmail').value=row?.contact_email||'';$('activityWebsite').value=row?.website_url||'';$('activityPeople').value=row?.people_count??'';$('activityAmount').value=row?.amount??'';$('activityCurrency').value=row?.currency||'';$('activityNotes').value=row?.notes||'';
-  renderActivityDocumentOptions(form.dataset.originalBookingDocumentId,form.dataset.originalTicketDocumentId);setActivityFormMode(true);saveActivityDraft();$('activityTitle').focus();$('activityFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+  renderActivityDocumentOptions(form.dataset.originalBookingDocumentId,form.dataset.originalTicketDocumentId);setActivityFormMode(true);saveActivityDraft();$('activityTitle').focus();$('activityFormCard').scrollIntoView({behavior:'smooth',block:'start'});loadTbCostForm(form,'activity',row?.id||'','activity').catch(error=>msg('activityMsg',error?.message||'No s’ha pogut carregar el cost.',true));
 }
 async function loadActivityViewData(){
   if(!trip||!session||isLondonTrip())return;
@@ -4129,7 +4130,8 @@ $('flightForm').onsubmit=async event=>{
     saveFlightDraft();
 
     if(confirmingTb){
-      const confirmation=await tbApi.confirmTbComponent(db,{tripId,componentId:tbComponentId,expectedUpdatedAt:flight.updated_at,expectedEvidenceDocumentId:editId?originalBooking:null,evidenceDocumentId:bookingDocumentId||null,evidenceRole:bookingDocumentId?'booking':null});
+      const budgetApi=await tbBudgetApi(),cost=readTbCostForm(form,'flight');
+      const confirmation=cost?await budgetApi.confirmComponentWithCost(db,{tripId,componentId:tbComponentId,expectedUpdatedAt:flight.updated_at,expectedEvidenceDocumentId:editId?originalBooking:null,evidenceDocumentId:bookingDocumentId||null,evidenceRole:bookingDocumentId?'booking':null,costExpectedRevision:cost.expectedRevision,expectedAmount:cost.expectedAmount,confirmedAmount:cost.confirmedAmount,currency:cost.currency,expectedQuality:cost.expectedQuality,verifiedAt:cost.verifiedAt,scope:cost.scope,unknownRequiredCosts:cost.unknownRequiredCosts,excludedCosts:cost.excludedCosts,costEvidenceDocumentId:bookingDocumentId||null}):await tbApi.confirmTbComponent(db,{tripId,componentId:tbComponentId,expectedUpdatedAt:flight.updated_at,expectedEvidenceDocumentId:editId?originalBooking:null,evidenceDocumentId:bookingDocumentId||null,evidenceRole:bookingDocumentId?'booking':null});
       flight.updated_at=confirmation?.source_updated_at||flight.updated_at;
       form.dataset.originalUpdatedAt=flight.updated_at;
       form.dataset.originalBookingDocumentId=bookingDocumentId;
@@ -4188,6 +4190,7 @@ $('flightForm').onsubmit=async event=>{
       return;
     }
 
+    if(tbComponentId&&!confirmingTb)await saveTbCostForForm(form,'flight',bookingDocumentId||null);
     clearFlightDraft(tripId,userId);resetFlightFormUi();
     msg('flightMsg',editId?'Vol actualitzat.':'Vol afegit.');
 
@@ -4236,13 +4239,13 @@ $('activityForm').onsubmit=async event=>{
     if(startAt&&endAt&&new Date(endAt)<=new Date(startAt))throw new Error('El final ha de ser posterior a l’inici.');
   }catch(error){msg('activityMsg',error?.message||'Revisa les dates i la zona horària.',true);return}
   const amountText=$('activityAmount').value.trim(),currency=$('activityCurrency').value.trim().toUpperCase()||null;
-  if(amountText&&!currency){msg('activityMsg','Indica la moneda del preu.',true);return}
+  if(!form.dataset.tbComponentId&&amountText&&!currency){msg('activityMsg','Indica la moneda del preu.',true);return}
   const rawWebsite=$('activityWebsite').value.trim(),website=rawWebsite?safeWebsiteUrl(rawWebsite):null;if(rawWebsite&&!website){msg('activityMsg','La web ha de ser una adreça HTTP o HTTPS vàlida.',true);return}
   const desiredStatus=$('activityStatus').value,currentActivity=editingId?activityRows.find(item=>item.id===editingId):null;
   const tbApi=editingId?await tbConfirmationApi():null;
   const tbComponentId=editingId?await tbApi.findTbComponent(db,{tripId,sourceKind:'activity',sourceId:editingId}):null;
   const confirmingTb=!!tbComponentId&&desiredStatus==='confirmed';
-  const payload={activity_type:$('activityType').value,title:$('activityTitle').value.trim(),start_at:startAt,end_at:endAt,time_zone:timeZone,venue_name:optionalText($('activityVenue').value),address:optionalText($('activityAddress').value),city:optionalText($('activityCity').value),reservation_status:confirmingTb?(currentActivity?.reservation_status||'planning'):desiredStatus,booking_reference:optionalText($('activityReference').value),provider:optionalText($('activityProvider').value),contact_phone:optionalText($('activityPhone').value),contact_email:optionalText($('activityEmail').value),website_url:website,people_count:$('activityPeople').value?Number($('activityPeople').value):null,amount:amountText?Number(amountText):null,currency,notes:optionalText($('activityNotes').value)};
+  const tbCost=readTbCostForm(form,'activity');const payload={activity_type:$('activityType').value,title:$('activityTitle').value.trim(),start_at:startAt,end_at:endAt,time_zone:timeZone,venue_name:optionalText($('activityVenue').value),address:optionalText($('activityAddress').value),city:optionalText($('activityCity').value),reservation_status:confirmingTb?(currentActivity?.reservation_status||'planning'):desiredStatus,booking_reference:optionalText($('activityReference').value),provider:optionalText($('activityProvider').value),contact_phone:optionalText($('activityPhone').value),contact_email:optionalText($('activityEmail').value),website_url:website,people_count:$('activityPeople').value?Number($('activityPeople').value):null,amount:tbCost?(currentActivity?.amount??null):(amountText?Number(amountText):null),currency:tbCost?(currentActivity?.currency??null):currency,notes:optionalText($('activityNotes').value)};
   const requestedBooking=$('activityBookingDocument').value||'',requestedTicket=$('activityTicketDocument').value||'';
   if(requestedBooking&&requestedBooking===requestedTicket){msg('activityMsg','El mateix document no pot constar alhora com a reserva i entrada.',true);return}
   activitySubmitting=true;$('saveActivity').disabled=true;msg('activityMsg',editingId?'Desant els canvis…':'Desant activitat…');
@@ -4260,7 +4263,8 @@ $('activityForm').onsubmit=async event=>{
       confirmedEvidenceRole=requestedBooking?'booking':requestedTicket?'ticket':null;
       const evidenceDocumentId=confirmedEvidenceRole==='booking'?requestedBooking:confirmedEvidenceRole==='ticket'?requestedTicket:null;
       const expectedEvidenceDocumentId=confirmedEvidenceRole==='booking'?(editingId?originalBooking:null):confirmedEvidenceRole==='ticket'?(editingId?originalTicket:null):null;
-      const confirmation=await tbApi.confirmTbComponent(db,{tripId,componentId:tbComponentId,expectedUpdatedAt:saved.updated_at,expectedEvidenceDocumentId,evidenceDocumentId,evidenceRole:confirmedEvidenceRole});
+      const budgetApi=await tbBudgetApi(),cost=readTbCostForm(form,'activity');
+      const confirmation=cost?await budgetApi.confirmComponentWithCost(db,{tripId,componentId:tbComponentId,expectedUpdatedAt:saved.updated_at,expectedEvidenceDocumentId,evidenceDocumentId?expectedEvidenceDocumentId:null,evidenceDocumentId,evidenceRole:confirmedEvidenceRole,costExpectedRevision:cost.expectedRevision,expectedAmount:cost.expectedAmount,confirmedAmount:cost.confirmedAmount,currency:cost.currency,expectedQuality:cost.expectedQuality,verifiedAt:cost.verifiedAt,scope:cost.scope,unknownRequiredCosts:cost.unknownRequiredCosts,excludedCosts:cost.excludedCosts,costEvidenceDocumentId:evidenceDocumentId}):await tbApi.confirmTbComponent(db,{tripId,componentId:tbComponentId,expectedUpdatedAt:saved.updated_at,expectedEvidenceDocumentId:evidenceDocumentId?expectedEvidenceDocumentId:null,evidenceDocumentId,evidenceRole:confirmedEvidenceRole});
       saved.updated_at=confirmation?.source_updated_at||saved.updated_at;
       form.dataset.originalUpdatedAt=saved.updated_at;
     }
@@ -4272,7 +4276,7 @@ $('activityForm').onsubmit=async event=>{
       const ticketSynced=await syncActivityDocument(saved.id,'ticket',requestedTicket,editingId?originalTicket:'',saved.updated_at,tripId,generation);if(!ticketSynced)return;
     }
     form.dataset.originalTicketDocumentId=requestedTicket;saveActivityDraft();
-    if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;clearActivityDraft(tripId,userId);resetActivityFormUi();msg('activityMsg',editingId?'Activitat actualitzada.':'Activitat afegida.');await loadActivities(true);
+    if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;if(tbComponentId&&!confirmingTb){const costSaved=await saveTbCostForForm(form,'activity',requestedBooking||requestedTicket||null);if(costSaved?.source_updated_at)saved.updated_at=costSaved.source_updated_at;}clearActivityDraft(tripId,userId);resetActivityFormUi();msg('activityMsg',editingId?'Activitat actualitzada.':'Activitat afegida.');await loadActivities(true);
   }catch(error){
     if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;
     const savedId=form.dataset.editId||editingId;
@@ -4314,7 +4318,8 @@ $('accommodationForm').onsubmit=async event=>{
     if(editingId&&!result.data){await recoverAccommodationConflict(editingId,tripId,generation);return}
     savedAccommodation=result.data;form.dataset.editId=savedAccommodation.id;form.dataset.originalUpdatedAt=savedAccommodation.updated_at;form.dataset.originalVoucherDocumentId=originalVoucherDocumentId||'';saveAccommodationDraft();
     if(confirmingTb){
-      const confirmation=await tbApi.confirmTbComponent(db,{tripId,componentId:tbComponentId,expectedUpdatedAt:savedAccommodation.updated_at,expectedEvidenceDocumentId:originalVoucherDocumentId,evidenceDocumentId:requestedVoucherDocumentId,evidenceRole:requestedVoucherDocumentId?'voucher':null});
+      const budgetApi=await tbBudgetApi(),cost=readTbCostForm(form,'accommodation');
+      const confirmation=cost?await budgetApi.confirmComponentWithCost(db,{tripId,componentId:tbComponentId,expectedUpdatedAt:savedAccommodation.updated_at,expectedEvidenceDocumentId:originalVoucherDocumentId,evidenceDocumentId:requestedVoucherDocumentId,evidenceRole:requestedVoucherDocumentId?'voucher':null,costExpectedRevision:cost.expectedRevision,expectedAmount:cost.expectedAmount,confirmedAmount:cost.confirmedAmount,currency:cost.currency,expectedQuality:cost.expectedQuality,verifiedAt:cost.verifiedAt,scope:cost.scope,unknownRequiredCosts:cost.unknownRequiredCosts,excludedCosts:cost.excludedCosts,costEvidenceDocumentId:requestedVoucherDocumentId}):await tbApi.confirmTbComponent(db,{tripId,componentId:tbComponentId,expectedUpdatedAt:savedAccommodation.updated_at,expectedEvidenceDocumentId:originalVoucherDocumentId,evidenceDocumentId:requestedVoucherDocumentId,evidenceRole:requestedVoucherDocumentId?'voucher':null});
       savedAccommodation.updated_at=confirmation?.source_updated_at||savedAccommodation.updated_at;
       form.dataset.originalUpdatedAt=savedAccommodation.updated_at;
       form.dataset.originalVoucherDocumentId=requestedVoucherDocumentId||'';
@@ -4323,6 +4328,7 @@ $('accommodationForm').onsubmit=async event=>{
       const voucherSynced=await syncAccommodationVoucher(savedAccommodation.id,requestedVoucherDocumentId,originalVoucherDocumentId,savedAccommodation.updated_at,tripId,generation,userId);if(!voucherSynced)return;
     }
     if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;
+    if(tbComponentId&&!confirmingTb)await saveTbCostForForm(form,'accommodation',requestedVoucherDocumentId);
     closeAccommodationForm();msg('accommodationMsg',editingId?'Allotjament actualitzat.':'Allotjament afegit.');await loadAccommodations(true);
   }catch(error){
     if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip()){
