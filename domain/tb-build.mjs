@@ -33,7 +33,7 @@ function money(amount,currency){
   if(amount===null||amount===undefined||!currency)return null;
   return {amount:Number(amount),currency:String(currency)};
 }
-export function projectBuild({links=[],costs=[],budget=null,flights=[],accommodations=[],activities=[]}={}){
+export function projectBuild({links=[],costs=[],budget=null,flights=[],accommodations=[],activities=[],brief=null}={}){
   const rows={flight:new Map(flights.map(r=>[r.id,r])),accommodation:new Map(accommodations.map(r=>[r.id,r])),activity:new Map(activities.map(r=>[r.id,r]))};
   const byCost=new Map(costs.map(c=>[c.component_id,c]));
   const components=links.map(link=>{
@@ -57,6 +57,12 @@ export function projectBuild({links=[],costs=[],budget=null,flights=[],accommoda
       price:money(cost?.confirmed_amount??cost?.expected_amount,cost?.currency),
       unknown_required_costs:Array.isArray(cost?.unknown_required_costs)?cost.unknown_required_costs:[],
       excluded_costs:Array.isArray(cost?.excluded_costs)?cost.excluded_costs:[],
+      search_seed:kind==='flight'?{
+        origin:row?.departure_airport_code||row?.departure_city||'',
+        destination:row?.arrival_airport_code||row?.arrival_city||'',
+        departure_at:row?.departure_at||null,
+        departure_time_zone:row?.departure_time_zone||null,
+      }:null,
     };
   }).filter(Boolean);
   const groups=[
@@ -68,6 +74,7 @@ export function projectBuild({links=[],costs=[],budget=null,flights=[],accommoda
     components,
     groups,
     budget:budget||{currencies:[],settings:null,total_components:components.length,unknown_components:components.length,unknown_required_costs:0,provisional:true},
+    brief,
     counts:{
       total:components.length,
       confirmed:components.filter(c=>c.status.key==='confirmed').length,
@@ -79,14 +86,15 @@ export function projectBuild({links=[],costs=[],budget=null,flights=[],accommoda
 }
 
 export async function loadBuild(client,tripId){
-  const [links,costs,budget,flights,accommodations,activities]=await Promise.all([
+  const [links,costs,budget,flights,accommodations,activities,brief]=await Promise.all([
     client.from('trip_proposal_component_links').select('component_id,trip_id,accommodation_id,flight_id,activity_id').eq('trip_id',tripId),
     client.from('trip_component_costs').select('component_id,expected_amount,confirmed_amount,currency,unknown_required_costs,excluded_costs').eq('trip_id',tripId),
     client.rpc('get_trip_budget_v1',{p_trip_id:tripId}),
-    client.from('trip_flights').select('id,airline,flight_number,departure_airport_code,departure_city,arrival_airport_code,arrival_city,flight_status,notes').eq('trip_id',tripId),
+    client.from('trip_flights').select('id,airline,flight_number,departure_airport_code,departure_city,arrival_airport_code,arrival_city,departure_at,departure_time_zone,flight_status,notes').eq('trip_id',tripId),
     client.from('trip_accommodations').select('id,name,reservation_status,notes').eq('trip_id',tripId),
     client.from('trip_activities').select('id,title,activity_type,reservation_status,notes').eq('trip_id',tripId),
+    client.from('trip_briefs').select('document').eq('trip_id',tripId).maybeSingle(),
   ]);
-  for(const result of [links,costs,budget,flights,accommodations,activities])if(result.error)throw result.error;
-  return projectBuild({links:links.data||[],costs:costs.data||[],budget:budget.data||null,flights:flights.data||[],accommodations:accommodations.data||[],activities:activities.data||[]});
+  for(const result of [links,costs,budget,flights,accommodations,activities,brief])if(result.error)throw result.error;
+  return projectBuild({links:links.data||[],costs:costs.data||[],budget:budget.data||null,flights:flights.data||[],accommodations:accommodations.data||[],activities:activities.data||[],brief:brief.data?.document||null});
 }

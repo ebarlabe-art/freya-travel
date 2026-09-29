@@ -19,7 +19,8 @@ export type TravelSearchQuery = {
   origin: string;
   destination: string;
   start_date: string;
-  end_date: string;
+  end_date: string | null;
+  trip_type: 'one_way' | 'round_trip';
   adults: number;
   children_ages: number[];
   cabin: string;

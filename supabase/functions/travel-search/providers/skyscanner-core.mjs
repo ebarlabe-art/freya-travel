@@ -34,12 +34,18 @@ function unsupportedHard(query,supported=new Set()){
 function bookingLinks(option){
   return [...new Set((option?.items||[]).map(i=>i?.deepLink).filter(x=>typeof x==='string'&&/^https:\/\//.test(x)))];
 }
+function localDateTime(value){
+  if(!value||![value.year,value.month,value.day,value.hour,value.minute].every(Number.isFinite))return null;
+  const pad=n=>String(n).padStart(2,'0');
+  return `${value.year}-${pad(value.month)}-${pad(value.day)}T${pad(value.hour)}:${pad(value.minute)}`;
+}
 export function parseSkyscannerResults(payloads,query,resolution){
   let map=new Map();
   for(const payload of payloads){
     if(payload?.action==='RESULT_ACTION_NOT_MODIFIED'||payload?.action==='RESULT_ACTION_OMITTED')continue;
     if(payload?.action==='RESULT_ACTION_REPLACED')map=new Map();
-    const itineraries=payload?.content?.results?.itineraries||{};
+    const results=payload?.content?.results||{};
+    const itineraries=results.itineraries||{},legs=results.legs||{},carriers=results.carriers||{},agents=results.agents||{};
     for(const [id,itinerary] of Object.entries(itineraries)){
       const options=Array.isArray(itinerary?.pricingOptions)?itinerary.pricingOptions:[];
       let best=null;
@@ -50,6 +56,9 @@ export function parseSkyscannerResults(payloads,query,resolution){
       }
       if(!best)continue;
       const links=bookingLinks(best.option);
+      const legId=Array.isArray(itinerary?.legIds)?itinerary.legIds[0]:null,leg=legId?legs[legId]:null;
+      const carrierNames=[...new Set((leg?.marketingCarrierIds||[]).map(cid=>carriers[cid]?.name).filter(Boolean))];
+      const agentNames=[...new Set((best.option?.agentIds||[]).map(aid=>agents[aid]?.name).filter(Boolean))];
       map.set(id,{
         id,
         provider:'skyscanner',
@@ -62,6 +71,12 @@ export function parseSkyscannerResults(payloads,query,resolution){
           booking_links:links,
           transfer_type:best.option?.transferType||null,
           leg_ids:Array.isArray(itinerary?.legIds)?itinerary.legIds:[],
+          departure_local:localDateTime(leg?.departureDateTime),
+          arrival_local:localDateTime(leg?.arrivalDateTime),
+          duration_minutes:Number.isFinite(leg?.durationInMinutes)?leg.durationInMinutes:null,
+          stop_count:Number.isFinite(leg?.stopCount)?leg.stopCount:null,
+          carrier_names:carrierNames,
+          agent_names:agentNames,
           resolved_origin:resolution.origin,
           resolved_destination:resolution.destination,
         },
@@ -102,8 +117,10 @@ export function createSkyscannerFlightsAdapter({apiKey,fetchImpl=fetch,timeoutMs
       ]);
       const legs=[
         {originPlaceId:placeId(origin),destinationPlaceId:placeId(destination),date:dateObject(query.start_date)},
-        {originPlaceId:placeId(destination),destinationPlaceId:placeId(origin),date:dateObject(query.end_date)},
       ];
+      if(query.trip_type==='round_trip'){
+        legs.push({originPlaceId:placeId(destination),destinationPlaceId:placeId(origin),date:dateObject(query.end_date)});
+      }
       const create=await requestJson(fetchImpl,`${API}/flights/live/search/create`,apiKey,{query:{market:query.market,locale:query.locale,currency:query.currency,queryLegs:legs,adults:query.adults,childrenAges:query.children_ages||[],cabinClass:CABIN[query.cabin]}},timeoutMs);
       const payloads=[create],token=create?.sessionToken;
       let latest=create;
