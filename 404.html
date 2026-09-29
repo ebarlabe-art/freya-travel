@@ -509,12 +509,12 @@
       <button class="ghost back" data-back>← Torna al tauler</button>
       <section class="build-hero"><small>🧩 Build</small><h2>Construeix aquest viatge</h2><p>Revisa les peces de la proposta, el seu estat i el pressupost. Als vols pendents ja pots obrir una cerca d’ofertes reals sense modificar encara la peça.</p></section>
       <p id="buildMessage" class="message hidden" role="status" aria-live="polite"></p>
+      <section id="buildBudget" class="build-budget"></section>
       <section class="build-flight-entry" aria-label="Vols">
         <div><h3>✈️ Vols</h3><p>Busca vols encara que el viatge no tingui cap tram creat prèviament.</p></div>
         <button id="buildOpenFlightSearch" type="button">🔎 Buscar vols</button>
       </section>
       <p id="buildProgress" class="build-progress-summary"></p>
-      <section id="buildBudget" class="build-budget"></section>
       <div id="buildGroups" class="build-groups"></div>
       <section id="buildFlightSearch" class="card build-flight-search hidden" aria-label="Cerca d’opcions de vol">
         <h3>🔎 Buscar opcions de vol</h3>
@@ -525,6 +525,7 @@
           <label>Data<input id="buildFlightDate" type="date" required></label>
           <label>Cabina<select id="buildFlightCabin"><option value="economy">Econòmica</option><option value="premium_economy">Premium economy</option><option value="business">Business</option><option value="first">First</option></select></label>
           <label>Adults<input id="buildFlightAdults" type="number" min="1" max="8" inputmode="numeric" required></label>
+          <label>Menors<input id="buildFlightChildrenCount" type="number" min="0" max="8" inputmode="numeric" value="0" required></label>
           <label>Edats dels menors<input id="buildFlightChildren" maxlength="80" placeholder="Ex.: 8, 12"></label>
           <label class="wide">Moneda<select id="buildFlightCurrency" data-currency-select required></select></label>
           <div class="build-flight-form-actions"><button id="buildFlightSearchSubmit" type="submit">Cerca vols</button><button id="buildFlightSearchClose" type="button" class="secondary">Tanca</button></div>
@@ -2515,7 +2516,7 @@ async function openBuildFlightSearch(componentId=null){
   buildSearchComponentId=componentId||'adhoc';
   const panel=$('buildFlightSearch'),seed=component?.search_seed||{},culture=buildSearchCulture(),api=await travelSearchApi(),defaults=api.flightSearchDefaultsFromBrief(buildCurrentData.brief);
   $('buildFlightOrigin').value=seed.origin||'';$('buildFlightDestination').value=seed.destination||'';$('buildFlightDate').value=buildFlightSeedDate(seed);
-  $('buildFlightAdults').value=defaults.adults?String(defaults.adults):'';$('buildFlightChildren').value=(defaults.children_ages||[]).length===defaults.children_count?(defaults.children_ages||[]).join(', '):'';$('buildFlightCabin').value='economy';setCurrencyValue('buildFlightCurrency',component?.price?.currency||culture.currency||'',false);
+  $('buildFlightAdults').value=defaults.adults?String(defaults.adults):'';$('buildFlightChildrenCount').value=String(defaults.children_count||0);$('buildFlightChildren').value=(defaults.children_ages||[]).length===defaults.children_count?(defaults.children_ages||[]).join(', '):'';$('buildFlightCabin').value='economy';setCurrencyValue('buildFlightCurrency',component?.price?.currency||culture.currency||'',false);
   $('buildFlightSearchIntro').textContent=component?'Confirma el tram i la data abans de buscar. La cerca no modifica ni reserva la peça.':'Indica origen, destinació i data. Aquesta cerca és independent del transport local i no modifica el viatge fins que seleccionis una opció en una fase posterior.';
   $('buildFlightResults').innerHTML='';$('buildFlightSearchSummary').textContent='';msg('buildFlightSearchMessage','');panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -2536,7 +2537,9 @@ async function runBuildFlightSearch(){
   if(!trip||!buildSearchComponentId||!buildCurrentData?.brief)return;
   const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id,button=$('buildFlightSearchSubmit');button.disabled=true;$('buildFlightResults').innerHTML='';msg('buildFlightSearchMessage','Buscant opcions reals…');
   try{
-    const api=await travelSearchApi(),culture=buildSearchCulture(),childrenAges=parseChildAges($('buildFlightChildren').value);
+    const api=await travelSearchApi(),culture=buildSearchCulture(),childrenAges=parseChildAges($('buildFlightChildren').value),childrenCount=Number($('buildFlightChildrenCount').value);
+    if(!Number.isInteger(childrenCount)||childrenCount<0||childrenCount>8)throw new Error('Indica un nombre de menors entre 0 i 8.');
+    if(childrenAges.length!==childrenCount)throw new Error(childrenCount?'Indica una edat per a cada menor.':'Si no viatgen menors, deixa les edats en blanc.');
     const compiled=api.compileFlightLegSearch(buildCurrentData.brief,{origin:$('buildFlightOrigin').value,destination:$('buildFlightDestination').value,startDate:$('buildFlightDate').value,adults:Number($('buildFlightAdults').value),childrenAges,market:culture.market,locale:culture.locale,currency:$('buildFlightCurrency').value,cabin:$('buildFlightCabin').value});
     if(!compiled.ready)throw new Error('Completa origen, destinació, data, viatgers i moneda abans de buscar.');
     $('buildFlightSearchSummary').innerHTML=`Buscant <strong>${esc(compiled.query.origin)} → ${esc(compiled.query.destination)}</strong> · ${esc(compiled.query.start_date)} · ${compiled.query.adults} adult${compiled.query.adults===1?'':'s'}${compiled.query.children_ages.length?` · menors: ${esc(compiled.query.children_ages.join(', '))}`:''}`;

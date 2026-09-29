@@ -94,3 +94,10 @@ test('TB-08.2 traveler defaults never invent an adult',()=>{
  assert.equal(defaults.children_count,0);
  assert.ok(defaults.traveler_blockers.some(x=>x.code==='adult_traveler_required'));
 });
+
+test('flight leg search validates culture without recursion',()=>{
+ const d=baseBrief();
+ const r=compileFlightLegSearch(d,{origin:'Barcelona',destination:'Riga',startDate:'2026-12-26',adults:2,childrenAges:[8],market:'ES',locale:'ca-ES',currency:'EUR',cabin:'economy'});
+ assert.equal(r.ready,true);
+ assert.equal(r.query.children_ages.length,1);
+});
