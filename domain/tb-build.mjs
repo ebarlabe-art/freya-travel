@@ -1,7 +1,7 @@
 const kindMeta={
   flight:{group:'transport',label:'Vol',icon:'✈️',view:'genericFlightsView'},
   accommodation:{group:'accommodation',label:'Allotjament',icon:'🏨',view:'accommodationView'},
-  activity:{group:'activity',label:'Activitat / transport local',icon:'🎟️',view:'activitiesView'},
+  activity:{group:'activity',label:'Activitat',icon:'🎟️',view:'activitiesView'},
 };
 const statusMeta={
   planning:{key:'planning',label:'Pendent de buscar'},
@@ -42,12 +42,13 @@ export function projectBuild({links=[],costs=[],budget=null,flights=[],accommoda
     const id=sourceId(link,kind),row=rows[kind].get(id)||{},cost=byCost.get(link.component_id)||null;
     const rawStatus=sourceStatus(row,kind)||'planning',status=statusMeta[rawStatus]||statusMeta.planning;
     const price=costState(cost);
+    const localTransport=kind==='activity'&&['transport','transport_activity'].includes(row?.activity_type);
     return {
       component_id:link.component_id,
       kind,
-      group:kindMeta[kind].group,
-      icon:kindMeta[kind].icon,
-      kind_label:kindMeta[kind].label,
+      group:localTransport?'local_transport':kindMeta[kind].group,
+      icon:localTransport?'🚇':kindMeta[kind].icon,
+      kind_label:localTransport?'Transport local':kindMeta[kind].label,
       view:kindMeta[kind].view,
       source_id:id,
       title:sourceTitle(row,kind),
@@ -66,9 +67,10 @@ export function projectBuild({links=[],costs=[],budget=null,flights=[],accommoda
     };
   }).filter(Boolean);
   const groups=[
-    {key:'transport',label:'Transport',icon:'✈️'},
+    {key:'transport',label:'Vols i trajectes',icon:'✈️'},
     {key:'accommodation',label:'Allotjament',icon:'🏨'},
-    {key:'activity',label:'Activitats i transport local',icon:'🎟️'},
+    {key:'local_transport',label:'Transport local',icon:'🚇'},
+    {key:'activity',label:'Activitats',icon:'🎟️'},
   ].map(group=>({...group,components:components.filter(c=>c.group===group.key)})).filter(group=>group.components.length);
   return {
     components,
