@@ -482,7 +482,7 @@
       <section class="card"><h3>Objectiu del viatge</h3><form id="budgetSettingsForm" class="accommodation-form">
         <label>Objectiu<input id="budgetTarget" type="number" min="0" step="0.01" inputmode="decimal"></label>
         <label>Màxim<input id="budgetMaximum" type="number" min="0" step="0.01" inputmode="decimal"></label>
-        <label>Moneda<input id="budgetCurrency" maxlength="3" pattern="[A-Za-z]{3}" placeholder="EUR"></label>
+        <label>Moneda<select id="budgetCurrency" data-currency-select></select></label>
         <div class="accommodation-form-actions wide"><button id="saveBudgetSettings" type="submit">Desar pressupost</button></div>
       </form></section>
     </div>
@@ -537,7 +537,7 @@
             <h4>💶 Cost del component</h4><p>El confirmat substitueix el previst al pressupost; no se sumen tots dos.</p>
             <label>Preu previst<input id="accommodationExpectedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
             <label>Preu confirmat<input id="accommodationConfirmedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
-            <label>Moneda<input id="accommodationCostCurrency" maxlength="3" pattern="[A-Za-z]{3}" placeholder="EUR"></label>
+            <label>Moneda<select id="accommodationCostCurrency" data-currency-select></select></label>
             <input id="accommodationPriceQuality" type="hidden" value="unknown">
             <label class="wide">Què inclou<input id="accommodationPriceScope" maxlength="500" placeholder="Total del grup, nits, equipatge, impostos..."></label>
             <label class="wide">Costos obligatoris encara desconeguts<textarea id="accommodationUnknownCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
@@ -698,7 +698,7 @@
             <h4>💶 Cost del component</h4><p>Indica el cost comercial total d’aquest component; no el multipliquis pels trams.</p>
             <label>Preu previst<input id="flightExpectedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
             <label>Preu confirmat<input id="flightConfirmedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
-            <label>Moneda<input id="flightCostCurrency" maxlength="3" pattern="[A-Za-z]{3}" placeholder="EUR"></label>
+            <label>Moneda<select id="flightCostCurrency" data-currency-select></select></label>
             <input id="flightPriceQuality" type="hidden" value="unknown">
             <label class="wide">Què inclou<input id="flightPriceScope" maxlength="500" placeholder="Total del grup, nits, equipatge, impostos..."></label>
             <label class="wide">Costos obligatoris encara desconeguts<textarea id="flightUnknownCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
@@ -747,12 +747,12 @@
           <label>Correu<input id="activityEmail" type="email" maxlength="254" placeholder="contacte@example.com"></label>
           <label class="wide">Web<input id="activityWebsite" type="url" maxlength="2048" placeholder="https://..."></label>
           <div id="activityLegacyPriceFields" style="display:contents">          <label>Preu<input id="activityAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
-          <label>Moneda<input id="activityCurrency" maxlength="3" pattern="[A-Za-z]{3}" placeholder="EUR"></label></div>
+          <label>Moneda<select id="activityCurrency" data-currency-select></select></label></div>
           <section id="activityCostPanel" class="tb-cost-panel hidden">
             <h4>💶 Cost del component</h4><p>El preu confirmat substitueix el previst. Aquest és el cost que alimenta el pressupost.</p>
             <label>Preu previst<input id="activityExpectedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
             <label>Preu confirmat<input id="activityConfirmedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
-            <label>Moneda<input id="activityCostCurrency" maxlength="3" pattern="[A-Za-z]{3}" placeholder="EUR"></label>
+            <label>Moneda<select id="activityCostCurrency" data-currency-select></select></label>
             <input id="activityPriceQuality" type="hidden" value="unknown">
             <label class="wide">Què inclou<input id="activityPriceScope" maxlength="500" placeholder="Total del grup, nits, equipatge, impostos..."></label>
             <label class="wide">Costos obligatoris encara desconeguts<textarea id="activityUnknownCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
@@ -1922,6 +1922,41 @@ function tbBudgetApi(){
   if(!tbBudgetApiPromise)tbBudgetApiPromise=import('./domain/tb-budget.mjs');
   return tbBudgetApiPromise;
 }
+const CURRENCY_OPTIONS=[
+  ['EUR','Euro'],['GBP','Lliura esterlina'],['USD','Dòlar dels EUA'],['CHF','Franc suís'],['JPY','Ien japonès'],['CAD','Dòlar canadenc'],['AUD','Dòlar australià'],['SEK','Corona sueca'],['NOK','Corona noruega'],['DKK','Corona danesa'],['PLN','Zloty polonès'],['CZK','Corona txeca'],['HUF','Fòrint hongarès'],
+  ['AED','Dírham dels Emirats Àrabs Units'],['AFN','Afghani afganès'],['ALL','Lek albanès'],['AMD','Dram armeni'],['ANG','Florí de les Antilles Neerlandeses'],['AOA','Kwanza angolès'],['ARS','Peso argentí'],['AWG','Florí d’Aruba'],['AZN','Manat azerbaidjanès'],['BAM','Marc convertible de Bòsnia i Hercegovina'],['BBD','Dòlar de Barbados'],['BDT','Taka de Bangla Desh'],['BHD','Dinar de Bahrain'],['BIF','Franc de Burundi'],['BMD','Dòlar de Bermudes'],['BND','Dòlar de Brunei'],['BOB','Boliviano'],['BRL','Real brasiler'],['BSD','Dòlar de les Bahames'],['BTN','Ngultrum de Bhutan'],['BWP','Pula de Botswana'],['BYN','Ruble belarús'],['BZD','Dòlar de Belize'],['CDF','Franc congolès'],['CLP','Peso xilè'],['CNY','Iuan renminbi'],['COP','Peso colombià'],['CRC','Colón costa-riqueny'],['CUP','Peso cubà'],['CVE','Escut capverdià'],['DJF','Franc de Djibouti'],['DOP','Peso dominicà'],['DZD','Dinar algerià'],['EGP','Lliura egípcia'],['ERN','Nakfa eritreu'],['ETB','Birr etíop'],['FJD','Dòlar de Fiji'],['FKP','Lliura de les Malvines'],['GEL','Lari georgià'],['GHS','Cedi ghanès'],['GIP','Lliura de Gibraltar'],['GMD','Dalasi gambià'],['GNF','Franc guineà'],['GTQ','Quetzal guatemalenc'],['GYD','Dòlar de Guyana'],['HKD','Dòlar de Hong Kong'],['HNL','Lempira hondurenya'],['HTG','Gourde haitià'],['IDR','Rupia indonèsia'],['ILS','Nou xéquel israelià'],['INR','Rupia índia'],['IQD','Dinar iraquià'],['IRR','Rial iranià'],['ISK','Corona islandesa'],['JMD','Dòlar jamaicà'],['JOD','Dinar jordà'],['KES','Xíling kenyà'],['KGS','Som kirguís'],['KHR','Riel cambodjà'],['KMF','Franc comorià'],['KPW','Won nord-coreà'],['KRW','Won sud-coreà'],['KWD','Dinar kuwaitià'],['KYD','Dòlar de les Illes Caiman'],['KZT','Tenge kazakh'],['LAK','Kip laosià'],['LBP','Lliura libanesa'],['LKR','Rupia de Sri Lanka'],['LRD','Dòlar liberià'],['LSL','Loti de Lesotho'],['LYD','Dinar libi'],['MAD','Dírham marroquí'],['MDL','Leu moldau'],['MGA','Ariary malgaix'],['MKD','Denar macedoni'],['MMK','Kyat de Myanmar'],['MNT','Tögrög mongol'],['MOP','Pataca de Macau'],['MRU','Ouguiya maurità'],['MUR','Rupia mauriciana'],['MVR','Rufiyaa de les Maldives'],['MWK','Kwacha malawià'],['MXN','Peso mexicà'],['MYR','Ringgit malaisi'],['MZN','Metical moçambiquès'],['NAD','Dòlar namibià'],['NGN','Naira nigeriana'],['NIO','Córdoba nicaragüenc'],['NPR','Rupia nepalesa'],['NZD','Dòlar neozelandès'],['OMR','Rial omanita'],['PAB','Balboa panameny'],['PEN','Sol peruà'],['PGK','Kina de Papua Nova Guinea'],['PHP','Peso filipí'],['PKR','Rupia pakistanesa'],['PYG','Guaraní paraguaià'],['QAR','Rial qatarià'],['RON','Leu romanès'],['RSD','Dinar serbi'],['RUB','Ruble rus'],['RWF','Franc ruandès'],['SAR','Rial saudita'],['SBD','Dòlar de les Illes Salomó'],['SCR','Rupia de les Seychelles'],['SDG','Lliura sudanesa'],['SGD','Dòlar de Singapur'],['SHP','Lliura de Santa Helena'],['SLE','Leone de Sierra Leone'],['SOS','Xíling somali'],['SRD','Dòlar de Surinam'],['SSP','Lliura del Sudan del Sud'],['STN','Dobra de São Tomé i Príncipe'],['SYP','Lliura siriana'],['SZL','Lilangeni d’Eswatini'],['THB','Baht tailandès'],['TJS','Somoni tadjik'],['TMT','Manat turcman'],['TND','Dinar tunisià'],['TOP','Paʻanga tongalès'],['TRY','Lira turca'],['TTD','Dòlar de Trinitat i Tobago'],['TWD','Nou dòlar taiwanès'],['TZS','Xíling tanzà'],['UAH','Hrívnia ucraïnesa'],['UGX','Xíling ugandès'],['UYU','Peso uruguaià'],['UZS','Som uzbek'],['VES','Bolívar veneçolà'],['VND','Dong vietnamita'],['VUV','Vatu de Vanuatu'],['WST','Tala samoà'],['XAF','Franc CFA d’Àfrica Central'],['XCD','Dòlar del Carib Oriental'],['XOF','Franc CFA d’Àfrica Occidental'],['XPF','Franc CFP'],['YER','Rial iemenita'],['ZAR','Rand sud-africà'],['ZMW','Kwacha zambià']
+];
+const COMMON_CURRENCIES=new Set(['EUR','GBP','USD','CHF','JPY','CAD','AUD','SEK','NOK','DKK','PLN','CZK','HUF']);
+function tripDefaultCurrency(){
+  const tz=trip?.time_zone||'';
+  const map={
+    'Europe/Madrid':'EUR','Europe/Paris':'EUR','Europe/Rome':'EUR','Europe/Berlin':'EUR','Europe/Amsterdam':'EUR','Europe/Brussels':'EUR','Europe/Vienna':'EUR','Europe/Lisbon':'EUR','Europe/Helsinki':'EUR','Europe/Tallinn':'EUR','Europe/Riga':'EUR','Europe/Vilnius':'EUR','Europe/Dublin':'EUR','Europe/Athens':'EUR','Europe/Luxembourg':'EUR','Europe/Bratislava':'EUR','Europe/Ljubljana':'EUR','Europe/Zagreb':'EUR',
+    'Europe/London':'GBP','Europe/Zurich':'CHF','Europe/Stockholm':'SEK','Europe/Oslo':'NOK','Europe/Copenhagen':'DKK','Europe/Warsaw':'PLN','Europe/Prague':'CZK','Europe/Budapest':'HUF','Europe/Bucharest':'RON','Europe/Reykjavik':'ISK','Europe/Istanbul':'TRY',
+    'Asia/Tokyo':'JPY','Asia/Seoul':'KRW','Asia/Bangkok':'THB','Asia/Singapore':'SGD','Asia/Dubai':'AED','Asia/Colombo':'LKR','Indian/Maldives':'MVR',
+    'America/New_York':'USD','America/Chicago':'USD','America/Denver':'USD','America/Los_Angeles':'USD','America/Toronto':'CAD','America/Vancouver':'CAD','America/Mexico_City':'MXN',
+    'Australia/Sydney':'AUD','Australia/Melbourne':'AUD','Pacific/Auckland':'NZD'
+  };
+  return map[tz]||'';
+}
+function currencyOptionsHtml(){
+  const preferred=CURRENCY_OPTIONS.filter(([code])=>COMMON_CURRENCIES.has(code));
+  const others=CURRENCY_OPTIONS.filter(([code])=>!COMMON_CURRENCIES.has(code)).sort((a,b)=>a[1].localeCompare(b[1],'ca'));
+  const options=rows=>rows.map(([code,label])=>`<option value="${code}">${code} · ${label}</option>`).join('');
+  return '<option value="">Selecciona moneda…</option><optgroup label="Més habituals">'+options(preferred)+'</optgroup><optgroup label="Altres monedes">'+options(others)+'</optgroup>';
+}
+function populateCurrencySelects(){
+  const html=currencyOptionsHtml();
+  document.querySelectorAll('[data-currency-select]').forEach(select=>{const current=select.value;select.innerHTML=html;if(current)select.value=current});
+}
+function setCurrencyValue(id,value='',useTripDefault=false){
+  const select=$(id);if(!select)return;
+  const desired=String(value||'').toUpperCase()||(useTripDefault?tripDefaultCurrency():'');
+  if(desired&&!CURRENCY_OPTIONS.some(([code])=>code===desired)){
+    const option=document.createElement('option');option.value=desired;option.textContent=desired;select.appendChild(option);
+  }
+  select.value=desired;
+}
+populateCurrencySelects();
 function costNumber(id){const value=$(id)?.value?.trim();return value===''?null:Number(value)}
 function costScope(text){const value=String(text||'').trim();return value?{description:value}:{}}
 async function loadTbCostForm(form,sourceKind,sourceId,prefix){
@@ -1935,7 +1970,7 @@ async function loadTbCostForm(form,sourceKind,sourceId,prefix){
     const cost=await api.loadComponentCost(db,{tripId:trip.id,componentId});
     form.dataset.tbComponentId=componentId;form.dataset.costRevision=String(cost?.revision||0);form.dataset.costVerifiedAt=cost?.verified_at||'';form.dataset.costOriginalQuality=cost?.expected_quality||'unknown';form.dataset.costOriginalExpectedAmount=cost?.expected_amount==null?'':String(cost.expected_amount);
     if(panel)panel.classList.remove('hidden');if(prefix==='activity'&&$('activityLegacyPriceFields'))$('activityLegacyPriceFields').style.display='none';
-    $(prefix+'ExpectedAmount').value=cost?.expected_amount??'';$(prefix+'ConfirmedAmount').value=cost?.confirmed_amount??'';$(prefix+'CostCurrency').value=cost?.currency||'';$(prefix+'PriceQuality').value=cost?.expected_quality||'unknown';$(prefix+'PriceScope').value=cost?.scope?.description||'';$(prefix+'UnknownCosts').value=(cost?.unknown_required_costs||[]).join('\n');$(prefix+'ExcludedCosts').value=(cost?.excluded_costs||[]).join('\n');
+    $(prefix+'ExpectedAmount').value=cost?.expected_amount??'';$(prefix+'ConfirmedAmount').value=cost?.confirmed_amount??'';setCurrencyValue(prefix+'CostCurrency',cost?.currency||'',true);$(prefix+'PriceQuality').value=cost?.expected_quality||'unknown';$(prefix+'PriceScope').value=cost?.scope?.description||'';$(prefix+'UnknownCosts').value=(cost?.unknown_required_costs||[]).join('\n');$(prefix+'ExcludedCosts').value=(cost?.excluded_costs||[]).join('\n');
     return {api,componentId,cost};
   }finally{form.dataset.costLoading=''}
 }
@@ -1967,7 +2002,7 @@ async function saveTbCostForForm(form,prefix,evidenceDocumentId=null){
 }
 async function loadBudgetView(){
   if(!trip||isLondonTrip())return;const tripId=trip.id,generation=tripLoadGeneration;
-  try{const api=await tbBudgetApi(),budget=await api.loadBudget(db,tripId);if(!tripRequestIsCurrent(tripId,generation))return;const settings=budget.settings||{};$('budgetSettingsForm').dataset.revision=String(settings.revision||0);$('budgetTarget').value=settings.target_amount??'';$('budgetMaximum').value=settings.maximum_amount??'';$('budgetCurrency').value=settings.currency||'';
+  try{const api=await tbBudgetApi(),budget=await api.loadBudget(db,tripId);if(!tripRequestIsCurrent(tripId,generation))return;const settings=budget.settings||{};$('budgetSettingsForm').dataset.revision=String(settings.revision||0);$('budgetTarget').value=settings.target_amount??'';$('budgetMaximum').value=settings.maximum_amount??'';setCurrencyValue('budgetCurrency',settings.currency||'',true);
   $('budgetSummary').innerHTML=`<div class="budget-summary-card"><small>Components amb preu</small><strong>${budget.total_components-budget.unknown_components} / ${budget.total_components}</strong></div><div class="budget-summary-card"><small>Components sense preu</small><strong>${budget.unknown_components}</strong></div><div class="budget-summary-card"><small>Costos obligatoris desconeguts</small><strong>${budget.unknown_required_costs}</strong></div><div class="budget-summary-card"><small>Estat del total</small><strong class="${budget.provisional?'budget-provisional':''}">${budget.provisional?'Provisional':'Complet'}</strong></div>`;
   const target=settings.target_amount==null?null:Number(settings.target_amount),maximum=settings.maximum_amount==null?null:Number(settings.maximum_amount),settingsCurrency=settings.currency||null;
   $('budgetCurrencies').innerHTML=(budget.currencies||[]).length?(budget.currencies||[]).map(row=>{const total=Number(row.total),same=settingsCurrency===row.currency,marginTarget=same&&target!=null?target-total:null,marginMax=same&&maximum!=null?maximum-total:null,margin=[marginTarget!=null?`Objectiu: ${money(Math.abs(marginTarget),row.currency)} ${marginTarget>=0?'disponibles':'per sobre'}`:'',marginMax!=null?`Màxim: ${money(Math.abs(marginMax),row.currency)} ${marginMax>=0?'de marge':'excedit'}`:''].filter(Boolean).join(' · ');return `<div class="budget-currency-row"><div><strong>${esc(money(total,row.currency))}</strong><small> · confirmat ${esc(money(row.confirmed_total,row.currency))} · previst ${esc(money(row.expected_total,row.currency))}${margin?` · ${esc(margin)}`:''}${budget.provisional?' · marge provisional':''}</small></div><span>${esc(row.currency)}</span></div>`}).join(''):'<p class="muted">Encara no hi ha cap component amb preu.</p>';const status=(budget.currencies||[]).map(row=>money(row.total,row.currency)).join(' · ');if($('genericBudgetModuleStatus'))$('genericBudgetModuleStatus').textContent=status||(budget.unknown_components?budget.unknown_components+' components sense preu':'Cost del viatge');msg('budgetMsg','');
