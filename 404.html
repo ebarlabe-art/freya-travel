@@ -2296,7 +2296,7 @@ function persistNavigationState(view){
   try{localStorage.setItem(key,JSON.stringify(state))}catch(_){}
 }
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
-function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent=home?'':session?.user?.email||'';}
+function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent='';}
 function setAppView(id){
   if(!trip&&!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id))id='tripsHomeView';
   if(isLondonTrip()&&['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView'].includes(id))id='dashboardView';
@@ -3779,7 +3779,7 @@ async function renderSession(next){
   if(nextUserId&&lastAuthenticatedUserId&&nextUserId!==lastAuthenticatedUserId){clearNavigationState(lastAuthenticatedUserId);clearDocumentsReturnContext();clearAccommodationVoucherFocus();clearGenericItineraryState()}
   if(nextUserId)lastAuthenticatedUserId=nextUserId;session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');
   if(!session){if(lastAuthenticatedUserId)clearNavigationState(lastAuthenticatedUserId);lastAuthenticatedUserId=null;trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();clearGenericItineraryState();await disconnectTripRealtime();clearTripScopedState();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
-  $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent=session.user.email||'';show('tripView');
+  $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent='';show('tripView');
   try{
     const coldStart=coldStartNavigationPending;
     await refreshTrips({coldStart});
