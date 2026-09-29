@@ -2034,15 +2034,15 @@ populateCurrencySelects();
 function costNumber(id){const value=$(id)?.value?.trim();return value===''?null:Number(value)}
 function costScope(text){const value=String(text||'').trim();return value?{description:value}:{}}
 async function loadTbCostForm(form,sourceKind,sourceId,prefix){
-  form.dataset.tbComponentId='';form.dataset.costRevision='0';form.dataset.costVerifiedAt='';form.dataset.costOriginalQuality='unknown';form.dataset.costOriginalExpectedAmount='';form.dataset.costLoading=sourceId?'true':'';
+  form.dataset.tbComponentId='';form.dataset.budgetComponentKind='';form.dataset.costRevision='0';form.dataset.costVerifiedAt='';form.dataset.costOriginalQuality='unknown';form.dataset.costOriginalExpectedAmount='';form.dataset.costLoading=sourceId?'true':'';
   const panel=$(prefix+'CostPanel');if(panel)panel.classList.add('hidden');
   if(prefix==='activity'&&$('activityLegacyPriceFields'))$('activityLegacyPriceFields').style.display='contents';
   if(!sourceId)return null;
   try{
-    const api=await tbBudgetApi(),componentId=await api.findTbComponent(db,{tripId:trip.id,sourceKind,sourceId});
-    if(!componentId)return null;
-    const cost=await api.loadComponentCost(db,{tripId:trip.id,componentId});
-    form.dataset.tbComponentId=componentId;form.dataset.costRevision=String(cost?.revision||0);form.dataset.costVerifiedAt=cost?.verified_at||'';form.dataset.costOriginalQuality=cost?.expected_quality||'unknown';form.dataset.costOriginalExpectedAmount=cost?.expected_amount==null?'':String(cost.expected_amount);
+    const api=await tbBudgetApi(),budgetComponent=await api.findBudgetComponent(db,{tripId:trip.id,sourceKind,sourceId});
+    if(!budgetComponent)return null;
+    const componentId=budgetComponent.componentId,cost=await api.loadComponentCost(db,{tripId:trip.id,componentId});
+    form.dataset.tbComponentId=componentId;form.dataset.budgetComponentKind=budgetComponent.kind;form.dataset.costRevision=String(cost?.revision||0);form.dataset.costVerifiedAt=cost?.verified_at||'';form.dataset.costOriginalQuality=cost?.expected_quality||'unknown';form.dataset.costOriginalExpectedAmount=cost?.expected_amount==null?'':String(cost.expected_amount);
     if(panel)panel.classList.remove('hidden');if(prefix==='activity'&&$('activityLegacyPriceFields'))$('activityLegacyPriceFields').style.display='none';
     $(prefix+'ExpectedAmount').value=cost?.expected_amount??'';$(prefix+'ConfirmedAmount').value=cost?.confirmed_amount??'';setCurrencyValue(prefix+'CostCurrency',cost?.currency||'',true);$(prefix+'PriceQuality').value=cost?.expected_quality||'unknown';$(prefix+'PriceScope').value=cost?.scope?.description||'';$(prefix+'UnknownCosts').value=(cost?.unknown_required_costs||[]).join('\n');$(prefix+'ExcludedCosts').value=(cost?.excluded_costs||[]).join('\n');
     return {api,componentId,cost};
@@ -2586,6 +2586,11 @@ async function selectBuildFlightOffer(resultId){
   $('flightStatus').value='planning';
   const offerPrice=result.price&&Number.isFinite(Number(result.price.amount))?Number(result.price.amount):null;
   const offerCurrency=result.price?.currency||'';
+  const selectedForm=$('flightForm');
+  selectedForm.dataset.selectedFromSearch='true';
+  selectedForm.dataset.selectedOfferAmount=offerPrice==null?'':String(offerPrice);
+  selectedForm.dataset.selectedOfferCurrency=offerCurrency||'';
+  selectedForm.dataset.selectedOfferDeeplink=result.deeplink||'';
   if($('flightCostPanel')&&!$('flightCostPanel').classList.contains('hidden')&&offerPrice!=null){
     $('flightExpectedAmount').value=String(offerPrice);
     setCurrencyValue('flightCostCurrency',offerCurrency,true);
@@ -2854,6 +2859,7 @@ function resetFlightFormUi(){
   form.dataset.originalBoardingDocumentIds='[]';
   form.dataset.originalBaggageDocumentIds='[]';
   form.dataset.remoteConflict='';
+  form.dataset.selectedFromSearch='';form.dataset.selectedOfferAmount='';form.dataset.selectedOfferCurrency='';form.dataset.selectedOfferDeeplink='';
   flightCompletedUploadKeys=new Set();
   $('flightBoardingFiles').value='';$('flightBaggageFiles').value='';
   $('flightBoardingFileSelection').innerHTML='';$('flightBaggageFileSelection').innerHTML='';
@@ -2903,6 +2909,7 @@ async function openFlightForm(id=''){
   form.dataset.originalBoardingDocumentIds=JSON.stringify(row?flightDocumentIds(row.id,'boarding_pass'):[]);
   form.dataset.originalBaggageDocumentIds=JSON.stringify(row?flightDocumentIds(row.id,'baggage_tag'):[]);
   form.dataset.remoteConflict='';
+  form.dataset.selectedFromSearch='';form.dataset.selectedOfferAmount='';form.dataset.selectedOfferCurrency='';form.dataset.selectedOfferDeeplink='';
 
   $('flightFormTitle').textContent=row?'Editar vol':'Afegir vol';
   $('flightAirline').value=row?.airline||'';
@@ -4378,8 +4385,9 @@ $('flightForm').onsubmit=async event=>{
   };
 
   const desiredStatus=$('flightStatus').value,currentFlight=editId?flightRows.find(item=>item.id===editId):null;
-  const tbApi=editId?await tbConfirmationApi():null;
-  const tbComponentId=editId?await tbApi.findTbComponent(db,{tripId,sourceKind:'flight',sourceId:editId}):null;
+  const tbApi=editId?await tbConfirmationApi():null,budgetApi=await tbBudgetApi();
+  let budgetComponent=editId?await budgetApi.findBudgetComponent(db,{tripId,sourceKind:'flight',sourceId:editId}):null;
+  let tbComponentId=budgetComponent?.kind==='proposal'?budgetComponent.componentId:null;
   const confirmingTb=!!tbComponentId&&desiredStatus==='confirmed';
 
   const payload={
@@ -4448,6 +4456,19 @@ $('flightForm').onsubmit=async event=>{
       flight=data;
     }
 
+    if(!editId&&form.dataset.selectedFromSearch==='true'){
+      const standalone=await budgetApi.ensureStandaloneBudgetComponent(db,{tripId,sourceKind:'flight',sourceId:flight.id});
+      budgetComponent={componentId:standalone.component_id,kind:'standalone'};
+      await loadTbCostForm(form,'flight',flight.id,'flight');
+      const selectedAmount=form.dataset.selectedOfferAmount===''?null:Number(form.dataset.selectedOfferAmount);
+      const selectedCurrency=form.dataset.selectedOfferCurrency||'';
+      if(selectedAmount!=null&&Number.isFinite(selectedAmount)){
+        $('flightExpectedAmount').value=String(selectedAmount);
+        setCurrencyValue('flightCostCurrency',selectedCurrency,true);
+        $('flightPriceScope').value='Oferta seleccionada al cercador de vols';
+      }
+    }
+
     form.dataset.editId=flight.id;
     form.dataset.originalUpdatedAt=flight.updated_at;
     $('flightFormTitle').textContent='Editar vol';
@@ -4514,7 +4535,13 @@ $('flightForm').onsubmit=async event=>{
       return;
     }
 
-    if(tbComponentId&&!confirmingTb)await saveTbCostForForm(form,'flight',bookingDocumentId||null);
+    const budgetComponentId=form.dataset.tbComponentId||budgetComponent?.componentId||'';
+    if(budgetComponentId&&!confirmingTb){
+      if(form.dataset.budgetComponentKind==='standalone'&&desiredStatus==='confirmed'&&costNumber('flightConfirmedAmount')==null&&costNumber('flightExpectedAmount')!=null){
+        $('flightConfirmedAmount').value=$('flightExpectedAmount').value;
+      }
+      await saveTbCostForForm(form,'flight',bookingDocumentId||null);
+    }
     clearFlightDraft(tripId,userId);resetFlightFormUi();
     msg('flightMsg',editId?'Vol actualitzat.':'Vol afegit.');
 
