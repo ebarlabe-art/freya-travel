@@ -6178,18 +6178,29 @@ $('parkingRemovePhoto').onclick=async()=>{
 $('itemForm').onsubmit=async e=>{e.preventDefault();if(!trip||!session)return;const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,text=$('newItem').value.trim(),category=$('newItemCategory').value||'other',london=isLondonTrip();if(!text)return;const payload=london?{trip_id:tripId,text:`[[cat:${category}]] ${text}`,created_by:userId}:{trip_id:tripId,text,category,created_by:userId};const {error}=await db.from('checklist_items').insert(payload);if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else{$('newItem').value='';msg('checklistMsg','');loadItems()}};
 
 if('serviceWorker' in navigator){
+  let swReloading=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(swReloading)return;
+    swReloading=true;
+    location.reload();
+  });
   window.addEventListener('load',async()=>{
     try{
       const legacyScope=new URL('/freya-travel/freya-travel-v1.5/',location.origin).href;
       const registrations=await navigator.serviceWorker.getRegistrations();
       await Promise.all(registrations.filter(item=>item.scope===legacyScope).map(item=>item.unregister()));
       if('caches' in window)await caches.delete('freya-travel-v1.5');
-      const registration=await navigator.serviceWorker.register('/freya-travel/sw.js',{scope:'/freya-travel/',updateViaCache:'none'});await registration.update().catch(()=>{});
+      const registration=await navigator.serviceWorker.register('/freya-travel/sw.js',{scope:'/freya-travel/',updateViaCache:'none'});
+      const checkUpdate=()=>registration.update().catch(()=>{});
+      await checkUpdate();
       registration.addEventListener('updatefound',()=>{
         const worker=registration.installing;if(!worker)return;
         worker.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)showUpdateToast()});
       });
-      setInterval(()=>registration.update().catch(()=>{}),60*60*1000);
+      document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate()});
+      window.addEventListener('pageshow',checkUpdate);
+      window.addEventListener('focus',checkUpdate);
+      setInterval(checkUpdate,15*60*1000);
     }catch(_){ }
   });
 }
