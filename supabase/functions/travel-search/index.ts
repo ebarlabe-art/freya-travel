@@ -18,6 +18,15 @@ const corsHeaders = {
 
 const allowedServices: TravelSearchService[] = ['flights', 'hotels', 'cars'];
 const allowedCabins = ['economy', 'premium_economy', 'business', 'first'];
+const allowedPreferenceKeys = [
+  'max_stops',
+  'max_duration_minutes',
+  'alternative_airports',
+  'low_cost',
+  'departure_window',
+  'arrival_window',
+];
+const allowedPreferenceStrengths = ['hard', 'preference', 'flexible'];
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -177,6 +186,8 @@ function summarizeProviders(
       configured: response.configured,
       error: response.error || null,
       result_count: response.results.length,
+      applied_preferences: response.applied_preferences || [],
+      unapplied_preferences: response.unapplied_preferences || [],
     })),
   };
 }
@@ -203,7 +214,12 @@ Deno.serve(async (req: Request) => {
   const startDate = String(body?.start_date || '').trim();
   const endDate = String(body?.end_date || '').trim();
   const adults = Number(body?.adults || 0);
-  const cabin = String(body?.cabin || 'economy');
+  const childrenAges = Array.isArray(body?.children_ages) ? body.children_ages.map(Number) : [];
+  const cabin = String(body?.cabin || '');
+  const market = String(body?.market || '').trim();
+  const locale = String(body?.locale || '').trim();
+  const currency = String(body?.currency || '').trim();
+  const preferences = Array.isArray(body?.preferences) ? body.preferences : [];
   const services = uniqueServices(
     Array.isArray(body?.services) ? body.services : [],
   );
@@ -220,8 +236,15 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'End date cannot be before start date' }, 400);
   }
 
-  if (!Number.isInteger(adults) || adults < 1 || adults > 9) {
+  if (!Number.isInteger(adults) || adults < 1 || adults > 8) {
     return json({ error: 'Invalid number of adults' }, 400);
+  }
+
+  if (
+    childrenAges.length > 8 ||
+    childrenAges.some((age) => !Number.isInteger(age) || age < 0 || age > 17)
+  ) {
+    return json({ error: 'Invalid children ages' }, 400);
   }
 
   if (!allowedCabins.includes(cabin)) {
@@ -232,14 +255,37 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Select at least one search service' }, 400);
   }
 
+  if (!/^[A-Z]{2}$/.test(market) || !/^[a-z]{2}-[A-Z]{2}$/.test(locale) || !/^[A-Z]{3}$/.test(currency)) {
+    return json({ error: 'Invalid search culture' }, 400);
+  }
+
+  if (
+    preferences.length > 20 ||
+    preferences.some((item) =>
+      !item ||
+      typeof item !== 'object' ||
+      !allowedPreferenceKeys.includes(item.key) ||
+      typeof item.decision_id !== 'string' ||
+      !/^[a-z][a-z0-9_-]{0,63}$/.test(item.decision_id) ||
+      !allowedPreferenceStrengths.includes(item.strength)
+    )
+  ) {
+    return json({ error: 'Invalid search preferences' }, 400);
+  }
+
   const query: TravelSearchQuery = {
     origin,
     destination,
     start_date: startDate,
     end_date: endDate,
     adults,
+    children_ages: childrenAges,
     cabin,
     services,
+    market,
+    locale,
+    currency,
+    preferences,
   };
 
   const responses = await Promise.all(searchTasks(query));
