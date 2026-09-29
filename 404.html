@@ -2866,11 +2866,22 @@ function resetActivityFormUi(){
 }
 function closeActivityForm(){clearActivityDraft($('activityForm').dataset.tripId||trip?.id);resetActivityFormUi()}
 function renderActivityDocumentOptions(selectedBooking='',selectedTicket=''){
-  const render=(select,selected)=>{
+  if(selectedBooking&&selectedTicket===selectedBooking)selectedTicket='';
+  const render=(select,selected,excluded)=>{
     if(!select)return;const available=documentRows.some(document=>document.id===selected);
-    select.innerHTML='<option value="">Sense document associat</option>'+(!available&&selected?`<option value="${esc(selected)}">Document associat · no disponible</option>`:'')+documentRows.map(document=>`<option value="${esc(document.id)}">${esc(document.title||document.file_name||'Document')}</option>`).join('');select.value=selected||'';
+    select.innerHTML='<option value="">Sense document associat</option>'+(!available&&selected?`<option value="${esc(selected)}">Document associat · no disponible</option>`:'')+documentRows.filter(document=>document.id===selected||document.id!==excluded).map(document=>`<option value="${esc(document.id)}">${esc(document.title||document.file_name||'Document')}</option>`).join('');select.value=selected||'';
   };
-  render($('activityBookingDocument'),selectedBooking);render($('activityTicketDocument'),selectedTicket);
+  render($('activityBookingDocument'),selectedBooking,selectedTicket);render($('activityTicketDocument'),selectedTicket,selectedBooking);
+}
+function reconcileActivityDocumentRoles(changedRole){
+  const booking=$('activityBookingDocument'),ticket=$('activityTicketDocument');if(!booking||!ticket)return;
+  const changed=changedRole==='booking'?booking:ticket,other=changedRole==='booking'?ticket:booking;
+  if(changed.value&&changed.value===other.value){
+    other.value='';
+    msg('activityMsg',changedRole==='booking'?'Aquest document ja no consta també com a entrada.':'Aquest document ja no consta també com a reserva.');
+  }
+  renderActivityDocumentOptions(booking.value,ticket.value);
+  saveActivityDraft();
 }
 function openActivityForm(id=''){
   if(!trip||isLondonTrip())return;const row=id?activityRows.find(item=>item.id===id):null;if(id&&!row)return;
@@ -4127,6 +4138,8 @@ $('addFirstActivity').onclick=()=>openActivityForm();
 $('cancelActivity').onclick=closeActivityForm;
 $('activityOpenDocuments').onclick=()=>{if(!setActivityDocumentsReturnContext())return;saveActivityDraft();setAppView('documentsView')};
 $('activityForm').addEventListener('input',saveActivityDraft);$('activityForm').addEventListener('change',saveActivityDraft);
+$('activityBookingDocument').addEventListener('change',()=>reconcileActivityDocumentRoles('booking'));
+$('activityTicketDocument').addEventListener('change',()=>reconcileActivityDocumentRoles('ticket'));
 window.addEventListener('pagehide',saveActivityDraft);
 $('activityForm').onsubmit=async event=>{
   event.preventDefault();if(activitySubmitting||!trip||!session||isLondonTrip())return;
@@ -4151,6 +4164,7 @@ $('activityForm').onsubmit=async event=>{
   const confirmingTb=!!tbComponentId&&desiredStatus==='confirmed';
   const payload={activity_type:$('activityType').value,title:$('activityTitle').value.trim(),start_at:startAt,end_at:endAt,time_zone:timeZone,venue_name:optionalText($('activityVenue').value),address:optionalText($('activityAddress').value),city:optionalText($('activityCity').value),reservation_status:confirmingTb?(currentActivity?.reservation_status||'planning'):desiredStatus,booking_reference:optionalText($('activityReference').value),provider:optionalText($('activityProvider').value),contact_phone:optionalText($('activityPhone').value),contact_email:optionalText($('activityEmail').value),website_url:website,people_count:$('activityPeople').value?Number($('activityPeople').value):null,amount:amountText?Number(amountText):null,currency,notes:optionalText($('activityNotes').value)};
   const requestedBooking=$('activityBookingDocument').value||'',requestedTicket=$('activityTicketDocument').value||'';
+  if(requestedBooking&&requestedBooking===requestedTicket){msg('activityMsg','El mateix document no pot constar alhora com a reserva i entrada.',true);return}
   activitySubmitting=true;$('saveActivity').disabled=true;msg('activityMsg',editingId?'Desant els canvis…':'Desant activitat…');
   try{
     if(editingId){
