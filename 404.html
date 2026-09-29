@@ -62,7 +62,7 @@
     .build-hero{background:linear-gradient(135deg,#4f378b,#8d6bc2);color:#fff;border-radius:26px;padding:24px;margin:12px 0 16px;box-shadow:0 18px 42px rgba(79,55,139,.18)}
     .build-hero h2{margin:5px 0 7px;font-size:1.7rem}.build-hero p{margin:0;color:rgba(255,255,255,.86);line-height:1.5}
     .build-progress-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 16px}
-    .build-progress-card{background:#fff;border:1px solid var(--line);border-radius:17px;padding:13px;text-align:center}.build-progress-card strong{display:block;font-size:1.25rem}.build-progress-card small{display:block;color:var(--muted);margin-top:3px}.build-flight-entry{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 16px;padding:18px;border:1px solid #cbb9df;border-radius:20px;background:linear-gradient(135deg,#fff,#f4edfb)}.build-flight-entry h3{margin:0 0 5px}.build-flight-entry p{margin:0;color:var(--muted);line-height:1.4}.build-flight-entry button{flex:0 0 auto}
+    .build-progress-summary{margin:0 0 12px;color:var(--muted);font-size:.92rem}.build-flight-entry{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 16px;padding:18px;border:1px solid #cbb9df;border-radius:20px;background:linear-gradient(135deg,#fff,#f4edfb)}.build-flight-entry h3{margin:0 0 5px}.build-flight-entry p{margin:0;color:var(--muted);line-height:1.4}.build-flight-entry button{flex:0 0 auto}
     .build-budget{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px;margin-bottom:15px}.build-budget h3{margin:0 0 10px}.build-budget-lines{display:grid;gap:8px}.build-budget-line{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;background:#f8f4fb;border-radius:13px}.build-budget-warning{margin:10px 0 0;color:#8a5a00;font-weight:700;font-size:.88rem}
     .build-groups{display:grid;gap:12px}.build-group{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden}.build-group>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 17px;font-weight:850;list-style:none}.build-group>summary::-webkit-details-marker{display:none}.build-group>summary small{color:var(--muted);font-weight:650}
     .build-group-list{display:grid;gap:10px;padding:0 12px 12px}.build-component{border:1px solid #e2dae9;border-radius:16px;padding:14px;background:#fcfafd}.build-component-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.build-component h4{margin:0 0 4px}.build-component p{margin:6px 0 0;color:var(--muted);line-height:1.4;font-size:.9rem}
@@ -513,7 +513,7 @@
         <div><h3>✈️ Vols</h3><p>Busca vols encara que el viatge no tingui cap tram creat prèviament.</p></div>
         <button id="buildOpenFlightSearch" type="button">🔎 Buscar vols</button>
       </section>
-      <div id="buildProgress" class="build-progress-grid"></div>
+      <p id="buildProgress" class="build-progress-summary"></p>
       <section id="buildBudget" class="build-budget"></section>
       <div id="buildGroups" class="build-groups"></div>
       <section id="buildFlightSearch" class="card build-flight-search hidden" aria-label="Cerca d’opcions de vol">
@@ -2494,7 +2494,7 @@ function buildStatusTag(component){return `<span class="build-tag ${esc(componen
 function renderBuild(data,tripId,generation,userId){
   if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId||visibleAppView()!=='buildView')return;
   buildCurrentData=data;
-  $('buildProgress').innerHTML=[['Peces',data.counts.total],['Pendents',data.counts.pending],['Reservades',data.counts.reserved],['Confirmades',data.counts.confirmed]].map(([label,value])=>`<div class="build-progress-card"><strong>${value}</strong><small>${esc(label)}</small></div>`).join('');
+  $('buildProgress').textContent=data.counts.pending?(`Et queden ${data.counts.pending} ${data.counts.pending===1?'cosa':'coses'} per completar.`):'';
   const budget=data.budget||{},currencies=Array.isArray(budget.currencies)?budget.currencies:[];
   const target=budget.settings?.target_amount!=null&&budget.settings?.currency?`${Number(budget.settings.target_amount).toFixed(2)} ${esc(budget.settings.currency)}`:null;
   $('buildBudget').innerHTML=`<h3>💶 Pressupost viu</h3>${currencies.length?`<div class="build-budget-lines">${currencies.map(row=>`<div class="build-budget-line"><span>${esc(row.currency)}</span><strong>${esc(new Intl.NumberFormat('ca-ES',{style:'currency',currency:row.currency,maximumFractionDigits:2}).format(Number(row.total||0)))}</strong></div>`).join('')}</div>`:'<p>Encara no hi ha cap preu conegut.</p>'}${target?`<p>Objectiu: <strong>${target}</strong></p>`:''}${budget.provisional?`<p class="build-budget-warning">Pressupost provisional · ${Number(budget.unknown_components||0)} peces sense preu i ${Number(budget.unknown_required_costs||0)} costos obligatoris pendents.</p>`:''}`;
