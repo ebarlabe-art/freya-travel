@@ -32,8 +32,9 @@ export function compileFlightSearchFromBrief(document,{market,locale,currency,ca
 
   const origin=onePlace(explicitKnown(document,'origin'),'origin_required',blockers);
   const destinationDecision=explicitKnown(document,'destination');
-  const destination=destinationDecision?.value?.mode==='open'?null:onePlace(destinationDecision,'destination_required',blockers);
-  if(destinationDecision?.value?.mode==='open')blockers.push({code:'destination_required',field:'destination'});
+  let destination=null;
+  if(!destinationDecision||destinationDecision.value?.mode!=='known')blockers.push({code:'destination_required',field:'destination'});
+  else destination=onePlace(destinationDecision,'destination_required',blockers);
 
   const dates=explicitKnown(document,'dates');
   let startDate=null,endDate=null;
@@ -45,7 +46,7 @@ export function compileFlightSearchFromBrief(document,{market,locale,currency,ca
   const adults=travelers.filter(t=>t.kind==='adult').length;
   const children=travelers.filter(t=>t.kind==='child');
   if(!travelers.length||adults<1)blockers.push({code:'adult_traveler_required',field:'travelers'});
-  if(adults+children.length>9)blockers.push({code:'too_many_travelers',field:'travelers'});
+  if(adults>8||children.length>8)blockers.push({code:'too_many_travelers',field:'travelers'});
   const childrenAges=[];
   for(const child of children){
     if(!Number.isInteger(child.age))blockers.push({code:'child_age_required',field:'travelers'});
