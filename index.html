@@ -2500,7 +2500,7 @@ async function openBuildFlightSearch(componentId){
   buildSearchComponentId=componentId;
   const panel=$('buildFlightSearch'),seed=component.search_seed||{},culture=buildSearchCulture(),api=await travelSearchApi(),defaults=api.flightSearchDefaultsFromBrief(buildCurrentData.brief);
   $('buildFlightOrigin').value=seed.origin||'';$('buildFlightDestination').value=seed.destination||'';$('buildFlightDate').value=buildFlightSeedDate(seed);
-  $('buildFlightAdults').value=String(defaults.adults||1);$('buildFlightChildren').value=(defaults.children_ages||[]).join(', ');$('buildFlightCabin').value='economy';setCurrencyValue('buildFlightCurrency',component.price?.currency||culture.currency||'',false);
+  $('buildFlightAdults').value=defaults.adults?String(defaults.adults):'';$('buildFlightChildren').value=(defaults.children_ages||[]).length===defaults.children_count?(defaults.children_ages||[]).join(', '):'';$('buildFlightCabin').value='economy';setCurrencyValue('buildFlightCurrency',component.price?.currency||culture.currency||'',false);
   $('buildFlightResults').innerHTML='';$('buildFlightSearchSummary').textContent='';msg('buildFlightSearchMessage','');panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function closeBuildFlightSearch(){buildSearchComponentId=null;$('buildFlightSearch')?.classList.add('hidden');if($('buildFlightResults'))$('buildFlightResults').innerHTML='';msg('buildFlightSearchMessage','')}
