@@ -12,7 +12,7 @@ test('TB-08.1 projection keeps operational state separate from price state',()=>
   links,
   flights:[{id:'f1',airline:'Air Test',flight_number:'AT1',departure_airport_code:'BCN',arrival_airport_code:'RIX',flight_status:'planning',notes:'Vol proposat'}],
   accommodations:[{id:'h1',name:'Hotel Test',reservation_status:'confirmed',notes:'Centre'}],
-  activities:[{id:'a1',title:'Museu',reservation_status:'reserved',notes:'Visita'}],
+  activities:[{id:'a1',title:'Museu',activity_type:'museum',reservation_status:'reserved',notes:'Visita'}],
   costs:[
    {component_id:'flight_a',expected_amount:120,confirmed_amount:null,currency:'EUR',unknown_required_costs:[],excluded_costs:[]},
    {component_id:'hotel_a',expected_amount:300,confirmed_amount:280,currency:'EUR',unknown_required_costs:[],excluded_costs:[]},
@@ -38,4 +38,20 @@ test('cancelled and unknown cost are explicit',()=>{
  assert.equal(p.components[0].status.key,'cancelled');
  assert.equal(p.components[0].price_state.label,'Preu pendent');
  assert.equal(p.budget.provisional,true);
+});
+
+test('TB-08.2b separates local transport from activities',()=>{
+ const p=projectBuild({
+  links:[
+   {component_id:'activity_a',flight_id:null,accommodation_id:null,activity_id:'a1'},
+   {component_id:'transport_a',flight_id:null,accommodation_id:null,activity_id:'a2'},
+  ],
+  activities:[
+   {id:'a1',title:'Museu',activity_type:'museum',reservation_status:'planning'},
+   {id:'a2',title:'Trasllat aeroport',activity_type:'transport',reservation_status:'planning'},
+  ],
+ });
+ assert.deepEqual(p.groups.map(g=>g.key),['local_transport','activity']);
+ assert.equal(p.components.find(c=>c.source_id==='a1').kind_label,'Activitat');
+ assert.equal(p.components.find(c=>c.source_id==='a2').kind_label,'Transport local');
 });
