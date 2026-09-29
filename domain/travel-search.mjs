@@ -115,5 +115,5 @@ export function flightSearchDefaultsFromBrief(document){
   if(!document||typeof document!=='object'||!document.decisions||!document.scopes||!document.travelers)throw new Error('Invalid Trip Brief document');
   const blockers=[];
   const {adults,childrenAges}=briefTravelers(document,blockers);
-  return {adults:adults||1,children_ages:childrenAges,preferences:flightPreferences(document),traveler_blockers:blockers};
+  return {adults,children_ages:childrenAges,children_count:Object.values(document.travelers).filter(t=>t.kind==='child').length,preferences:flightPreferences(document),traveler_blockers:blockers};
 }
