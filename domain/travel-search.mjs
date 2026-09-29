@@ -47,7 +47,10 @@ function briefTravelers(document,blockers){
   return {adults,childrenAges};
 }
 function searchCulture(blockers,{market,locale,currency,cabin}={}){
-  searchCulture(blockers,{market,locale,currency,cabin});
+  if(typeof market!=='string'||!/^[A-Z]{2}$/.test(market))blockers.push({code:'market_required',field:'market'});
+  if(typeof locale!=='string'||!/^[a-z]{2}-[A-Z]{2}$/.test(locale))blockers.push({code:'locale_required',field:'locale'});
+  if(typeof currency!=='string'||!/^[A-Z]{3}$/.test(currency))blockers.push({code:'currency_required',field:'currency'});
+  if(!CABINS.has(cabin))blockers.push({code:'cabin_required',field:'cabin'});
 }
 const ISO_DATE=/^20\d{2}-\d{2}-\d{2}$/;
 function validDate(value){if(typeof value!=='string'||!ISO_DATE.test(value))return false;const d=new Date(value+'T00:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===value}
