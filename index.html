@@ -2456,8 +2456,24 @@ window.addEventListener('focus',()=>{if(proposalOpen&&visibleAppView()==='builde
 // TB04_PROPOSAL_UI_END
 // TRAVEL_BUILDER_UI_END
 
-let tbBuildApiPromise=null,buildLoadSequence=0;
+let tbBuildApiPromise=null,travelSearchApiPromise=null,buildLoadSequence=0,buildCurrentData=null,buildSearchComponentId=null;
 function tbBuildApi(){return tbBuildApiPromise??=import('./domain/tb-build.mjs').catch(error=>{tbBuildApiPromise=null;throw error})}
+function travelSearchApi(){return travelSearchApiPromise??=import('./domain/travel-search.mjs').catch(error=>{travelSearchApiPromise=null;throw error})}
+function buildSearchCulture(){
+  const raw=String(navigator.language||'ca-ES'),locale=/^[a-z]{2}-[A-Z]{2}$/.test(raw)?raw:'ca-ES';
+  return {locale,market:locale.slice(-2),currency:tripDefaultCurrency()||'EUR'};
+}
+function buildFlightSeedDate(seed){
+  if(!seed?.departure_at)return '';
+  const value=isoToZonedLocal(seed.departure_at,seed.departure_time_zone||trip?.time_zone||'UTC');
+  return value?value.slice(0,10):'';
+}
+function parseChildAges(value){
+  const text=String(value||'').trim();if(!text)return [];
+  const ages=text.split(',').map(x=>Number(x.trim()));
+  if(ages.some(x=>!Number.isInteger(x)||x<0||x>17)||ages.length>8)throw new Error('Indica les edats dels menors separades per comes, entre 0 i 17 anys.');
+  return ages;
+}
 function buildMoney(value){return value?new Intl.NumberFormat('ca-ES',{style:'currency',currency:value.currency,maximumFractionDigits:2}).format(value.amount):'Preu pendent'}
 function buildPriceTag(component){return `<span class="build-tag ${esc(component.price_state.key)}">${esc(component.price_state.label)}${component.price?' · '+esc(buildMoney(component.price)):''}</span>`}
 function buildStatusTag(component){return `<span class="build-tag ${esc(component.status.key)}">${esc(component.status.label)}</span>`}
