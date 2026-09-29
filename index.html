@@ -1925,22 +1925,25 @@ function tbBudgetApi(){
 function costNumber(id){const value=$(id)?.value?.trim();return value===''?null:Number(value)}
 function costScope(text){const value=String(text||'').trim();return value?{description:value}:{}}
 async function loadTbCostForm(form,sourceKind,sourceId,prefix){
-  form.dataset.tbComponentId='';form.dataset.costRevision='0';
+  form.dataset.tbComponentId='';form.dataset.costRevision='0';form.dataset.costVerifiedAt='';form.dataset.costOriginalQuality='unknown';form.dataset.costLoading=sourceId?'true':'';
   const panel=$(prefix+'CostPanel');if(panel)panel.classList.add('hidden');
   if(prefix==='activity'&&$('activityLegacyPriceFields'))$('activityLegacyPriceFields').style.display='contents';
   if(!sourceId)return null;
-  const api=await tbBudgetApi(),componentId=await api.findTbComponent(db,{tripId:trip.id,sourceKind,sourceId});
-  if(!componentId)return null;
-  const cost=await api.loadComponentCost(db,{tripId:trip.id,componentId});
-  form.dataset.tbComponentId=componentId;form.dataset.costRevision=String(cost?.revision||0);
-  if(panel)panel.classList.remove('hidden');if(prefix==='activity'&&$('activityLegacyPriceFields'))$('activityLegacyPriceFields').style.display='none';
-  $(prefix+'ExpectedAmount').value=cost?.expected_amount??'';$(prefix+'ConfirmedAmount').value=cost?.confirmed_amount??'';$(prefix+'CostCurrency').value=cost?.currency||'';$(prefix+'PriceQuality').value=cost?.expected_quality||'unknown';$(prefix+'PriceScope').value=cost?.scope?.description||'';$(prefix+'UnknownCosts').value=(cost?.unknown_required_costs||[]).join('\n');$(prefix+'ExcludedCosts').value=(cost?.excluded_costs||[]).join('\n');
-  return {api,componentId,cost};
+  try{
+    const api=await tbBudgetApi(),componentId=await api.findTbComponent(db,{tripId:trip.id,sourceKind,sourceId});
+    if(!componentId)return null;
+    const cost=await api.loadComponentCost(db,{tripId:trip.id,componentId});
+    form.dataset.tbComponentId=componentId;form.dataset.costRevision=String(cost?.revision||0);form.dataset.costVerifiedAt=cost?.verified_at||'';form.dataset.costOriginalQuality=cost?.expected_quality||'unknown';
+    if(panel)panel.classList.remove('hidden');if(prefix==='activity'&&$('activityLegacyPriceFields'))$('activityLegacyPriceFields').style.display='none';
+    $(prefix+'ExpectedAmount').value=cost?.expected_amount??'';$(prefix+'ConfirmedAmount').value=cost?.confirmed_amount??'';$(prefix+'CostCurrency').value=cost?.currency||'';$(prefix+'PriceQuality').value=cost?.expected_quality||'unknown';$(prefix+'PriceScope').value=cost?.scope?.description||'';$(prefix+'UnknownCosts').value=(cost?.unknown_required_costs||[]).join('\n');$(prefix+'ExcludedCosts').value=(cost?.excluded_costs||[]).join('\n');
+    return {api,componentId,cost};
+  }finally{form.dataset.costLoading=''}
 }
 function readTbCostForm(form,prefix){
   const componentId=form.dataset.tbComponentId||'';if(!componentId)return null;
   const expectedAmount=costNumber(prefix+'ExpectedAmount'),confirmedAmount=costNumber(prefix+'ConfirmedAmount'),currency=$(prefix+'CostCurrency').value.trim().toUpperCase()||null,expectedQuality=expectedAmount==null?'unknown':$(prefix+'PriceQuality').value;
-  return {componentId,expectedRevision:Number(form.dataset.costRevision||0),expectedAmount,confirmedAmount,currency,expectedQuality,verifiedAt:expectedQuality==='verified'?new Date().toISOString():null,scope:costScope($(prefix+'PriceScope').value),unknownRequiredCosts:$(prefix+'UnknownCosts').value.split(/\n+/).map(x=>x.trim()).filter(Boolean),excludedCosts:$(prefix+'ExcludedCosts').value.split(/\n+/).map(x=>x.trim()).filter(Boolean)};
+  const verifiedAt=expectedQuality==='verified'?(form.dataset.costOriginalQuality==='verified'&&form.dataset.costVerifiedAt?form.dataset.costVerifiedAt:new Date().toISOString()):null;
+  return {componentId,expectedRevision:Number(form.dataset.costRevision||0),expectedAmount,confirmedAmount,currency,expectedQuality,verifiedAt,scope:costScope($(prefix+'PriceScope').value),unknownRequiredCosts:$(prefix+'UnknownCosts').value.split(/\n+/).map(x=>x.trim()).filter(Boolean),excludedCosts:$(prefix+'ExcludedCosts').value.split(/\n+/).map(x=>x.trim()).filter(Boolean)};
 }
 async function saveTbCostForForm(form,prefix,evidenceDocumentId=null){
   const cost=readTbCostForm(form,prefix);if(!cost)return null;const api=await tbBudgetApi(),saved=await api.saveComponentCost(db,{tripId:trip.id,...cost,evidenceDocumentId});form.dataset.costRevision=String(saved?.revision||cost.expectedRevision);return saved;
@@ -1949,7 +1952,8 @@ async function loadBudgetView(){
   if(!trip||isLondonTrip())return;const tripId=trip.id,generation=tripLoadGeneration;
   try{const api=await tbBudgetApi(),budget=await api.loadBudget(db,tripId);if(!tripRequestIsCurrent(tripId,generation))return;const settings=budget.settings||{};$('budgetSettingsForm').dataset.revision=String(settings.revision||0);$('budgetTarget').value=settings.target_amount??'';$('budgetMaximum').value=settings.maximum_amount??'';$('budgetCurrency').value=settings.currency||'';
   $('budgetSummary').innerHTML=`<div class="budget-summary-card"><small>Components amb preu</small><strong>${budget.total_components-budget.unknown_components} / ${budget.total_components}</strong></div><div class="budget-summary-card"><small>Components sense preu</small><strong>${budget.unknown_components}</strong></div><div class="budget-summary-card"><small>Costos obligatoris desconeguts</small><strong>${budget.unknown_required_costs}</strong></div><div class="budget-summary-card"><small>Estat del total</small><strong class="${budget.provisional?'budget-provisional':''}">${budget.provisional?'Provisional':'Complet'}</strong></div>`;
-  $('budgetCurrencies').innerHTML=(budget.currencies||[]).length?(budget.currencies||[]).map(row=>`<div class="budget-currency-row"><div><strong>${esc(money(row.total,row.currency))}</strong><small> · confirmat ${esc(money(row.confirmed_total,row.currency))} · previst ${esc(money(row.expected_total,row.currency))}</small></div><span>${esc(row.currency)}</span></div>`).join(''):'<p class="muted">Encara no hi ha cap component amb preu.</p>';const status=(budget.currencies||[]).map(row=>money(row.total,row.currency)).join(' · ');if($('genericBudgetModuleStatus'))$('genericBudgetModuleStatus').textContent=status||(budget.unknown_components?budget.unknown_components+' components sense preu':'Cost del viatge');msg('budgetMsg','');
+  const target=settings.target_amount==null?null:Number(settings.target_amount),maximum=settings.maximum_amount==null?null:Number(settings.maximum_amount),settingsCurrency=settings.currency||null;
+  $('budgetCurrencies').innerHTML=(budget.currencies||[]).length?(budget.currencies||[]).map(row=>{const total=Number(row.total),same=settingsCurrency===row.currency,marginTarget=same&&target!=null?target-total:null,marginMax=same&&maximum!=null?maximum-total:null,margin=[marginTarget!=null?`Objectiu: ${money(Math.abs(marginTarget),row.currency)} ${marginTarget>=0?'disponibles':'per sobre'}`:'',marginMax!=null?`Màxim: ${money(Math.abs(marginMax),row.currency)} ${marginMax>=0?'de marge':'excedit'}`:''].filter(Boolean).join(' · ');return `<div class="budget-currency-row"><div><strong>${esc(money(total,row.currency))}</strong><small> · confirmat ${esc(money(row.confirmed_total,row.currency))} · previst ${esc(money(row.expected_total,row.currency))}${margin?` · ${esc(margin)}`:''}${budget.provisional?' · marge provisional':''}</small></div><span>${esc(row.currency)}</span></div>`}).join(''):'<p class="muted">Encara no hi ha cap component amb preu.</p>';const status=(budget.currencies||[]).map(row=>money(row.total,row.currency)).join(' · ');if($('genericBudgetModuleStatus'))$('genericBudgetModuleStatus').textContent=status||(budget.unknown_components?budget.unknown_components+' components sense preu':'Cost del viatge');msg('budgetMsg','');
   }catch(error){if(tripRequestIsCurrent(tripId,generation))msg('budgetMsg',error?.message||'No s’ha pogut carregar el pressupost.',true)}
 }
 function compactLocationParts(values){const seen=new Set();return values.map(value=>String(value||'').trim()).filter(value=>{const key=value.toLocaleLowerCase('ca');if(!value||seen.has(key))return false;seen.add(key);return true})}
@@ -4011,6 +4015,7 @@ $('flightForm').onsubmit=async event=>{
 
   const form=$('flightForm');
   if(!form.reportValidity())return;
+  if(form.dataset.costLoading==='true'){msg('flightMsg','Espera un moment: estem carregant el cost del component.',true);return}
 
   const tripId=trip.id;
   const generation=tripLoadGeneration;
@@ -4226,7 +4231,7 @@ $('activityTicketDocument').addEventListener('change',()=>reconcileActivityDocum
 window.addEventListener('pagehide',saveActivityDraft);
 $('activityForm').onsubmit=async event=>{
   event.preventDefault();if(activitySubmitting||!trip||!session||isLondonTrip())return;
-  const form=$('activityForm');if(!form.reportValidity())return;
+  const form=$('activityForm');if(!form.reportValidity())return;if(form.dataset.costLoading==='true'){msg('activityMsg','Espera un moment: estem carregant el cost del component.',true);return}
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,editingId=form.dataset.editId||'',originalUpdatedAt=form.dataset.originalUpdatedAt||'',originalBooking=form.dataset.originalBookingDocumentId||'',originalTicket=form.dataset.originalTicketDocumentId||'';
   if(form.dataset.tripId!==tripId)return;
   const timeZone=$('activityTimeZone').value.trim()||null,startValue=$('activityStartAt').value,endValue=$('activityEndAt').value;
@@ -4291,7 +4296,7 @@ $('accommodationForm').addEventListener('input',saveAccommodationDraft);$('accom
 $('accommodationVoucher').addEventListener('change',()=>{$('accommodationForm').dataset.voucherTouched='true';saveAccommodationDraft()});
 $('accommodationForm').onsubmit=async event=>{
   event.preventDefault();if(accommodationSubmitting||!trip||!session||isLondonTrip())return;
-  const form=$('accommodationForm');if(!form.reportValidity())return;
+  const form=$('accommodationForm');if(!form.reportValidity())return;if(form.dataset.costLoading==='true'){msg('accommodationMsg','Espera un moment: estem carregant el cost del component.',true);return}
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,editingId=form.dataset.editId||'',timeZone=form.dataset.timeZone||trip.time_zone;
   const originalUpdatedAt=form.dataset.originalUpdatedAt||'',originalVoucherDocumentId=form.dataset.originalVoucherDocumentId||null,requestedVoucherDocumentId=$('accommodationVoucher').value||null;
   if(form.dataset.tripId!==tripId)return;
