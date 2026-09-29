@@ -46,8 +46,6 @@ begin
   where trip_id=old.trip_id and source_kind=tg_argv[0] and source_id=old.id;
 
   if cid is not null then
-    delete from public.trip_component_costs
-    where trip_id=old.trip_id and component_id=cid;
     delete from public.trip_standalone_component_links
     where trip_id=old.trip_id and component_id=cid;
   end if;
