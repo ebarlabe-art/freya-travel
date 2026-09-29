@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {emptyBriefDocument} from '../domain/trip-brief.mjs';
-import {compileFlightSearchFromBrief} from '../domain/travel-search.mjs';
+import {compileFlightLegSearch,compileFlightSearchFromBrief} from '../domain/travel-search.mjs';
 import {createSkyscannerFlightsAdapter,parseSkyscannerResults,selectSkyscannerPlace,skyscannerPrice} from '../supabase/functions/travel-search/providers/skyscanner-core.mjs';
 
 function known(field,value,strength='preference'){return {field,scope:'global',origin:'explicit_user',knowledge:'known',strength,value}}
@@ -16,7 +16,7 @@ function baseBrief(){
 test('Brief compiler requires explicit exact route/dates/travelers and preserves flight preferences',()=>{
  const d=baseBrief();d.decisions.s=known('flight.max_stops',0,'hard');
  const r=compileFlightSearchFromBrief(d,{market:'ES',locale:'ca-ES',currency:'EUR',cabin:'economy'});
- assert.equal(r.ready,true);assert.equal(r.query.origin,'Barcelona');assert.equal(r.query.destination,'Riga');assert.equal(r.query.adults,1);assert.deepEqual(r.query.children_ages,[12]);
+ assert.equal(r.ready,true);assert.equal(r.query.origin,'Barcelona');assert.equal(r.query.destination,'Riga');assert.equal(r.query.trip_type,'round_trip');assert.equal(r.query.adults,1);assert.deepEqual(r.query.children_ages,[12]);
  assert.deepEqual(r.query.preferences[0],{key:'max_stops',decision_id:'s',strength:'hard',value:0});
 });
 test('unconfirmed interpretation is never promoted into a provider query',()=>{
@@ -63,4 +63,26 @@ test('multiple booking links are preserved but not misrepresented as one deeplin
  const q={currency:'EUR'},payload={content:{results:{itineraries:{a:{legIds:[],pricingOptions:[{price:{amount:'100',unit:'PRICE_UNIT_WHOLE'},items:[{deepLink:'https://example.test/a'},{deepLink:'https://example.test/b'}]}]}}}}};
  const rows=parseSkyscannerResults([payload],q,{origin:{name:'A'},destination:{name:'B'}});
  assert.equal(rows[0].deeplink,undefined);assert.deepEqual(rows[0].raw.booking_links,['https://example.test/a','https://example.test/b']);
+});
+
+test('TB-08.2 compiles a one-way leg without manufacturing a return date',()=>{
+ const d=baseBrief();
+ const r=compileFlightLegSearch(d,{origin:'Barcelona',destination:'Riga',startDate:'2026-12-26',adults:2,childrenAges:[],market:'ES',locale:'ca-ES',currency:'EUR',cabin:'economy'});
+ assert.equal(r.ready,true);
+ assert.equal(r.query.trip_type,'one_way');
+ assert.equal(r.query.end_date,null);
+ assert.equal(r.query.origin,'Barcelona');
+ assert.equal(r.query.destination,'Riga');
+});
+test('Skyscanner one-way search sends exactly one query leg',async()=>{
+ const responses=[
+  {places:[{entityId:'BCN_ENTITY',name:'Barcelona',iataCode:'BCN',type:'PLACE_TYPE_CITY'}]},
+  {places:[{entityId:'RIX_ENTITY',name:'Riga',iataCode:'RIX',type:'PLACE_TYPE_CITY'}]},
+  {sessionToken:'sess',status:'RESULT_STATUS_COMPLETE',content:{results:{itineraries:{}}}},
+ ];
+ const calls=[];
+ const fetchImpl=async(url,options)=>{calls.push({url,body:options.body&&JSON.parse(options.body)});return {ok:true,status:200,json:async()=>responses.shift()}};
+ const q=compileFlightLegSearch(baseBrief(),{origin:'Barcelona',destination:'Riga',startDate:'2026-12-26',adults:1,childrenAges:[],market:'ES',locale:'ca-ES',currency:'EUR',cabin:'economy'}).query;
+ await createSkyscannerFlightsAdapter({apiKey:'test',fetchImpl,pollDelayMs:0}).search(q);
+ assert.equal(calls[2].body.query.queryLegs.length,1);
 });
