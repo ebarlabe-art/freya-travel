@@ -538,7 +538,7 @@
             <label>Preu previst<input id="accommodationExpectedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
             <label>Preu confirmat<input id="accommodationConfirmedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
             <label>Moneda<input id="accommodationCostCurrency" maxlength="3" pattern="[A-Za-z]{3}" placeholder="EUR"></label>
-            <label>Qualitat del previst<select id="accommodationPriceQuality"><option value="unknown">Desconegut</option><option value="estimated">Estimat</option><option value="verified">Verificat</option></select></label>
+            <input id="accommodationPriceQuality" type="hidden" value="unknown">
             <label class="wide">Què inclou<input id="accommodationPriceScope" maxlength="500" placeholder="Total del grup, nits, equipatge, impostos..."></label>
             <label class="wide">Costos obligatoris encara desconeguts<textarea id="accommodationUnknownCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
             <label class="wide">Costos exclosos<textarea id="accommodationExcludedCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
@@ -699,7 +699,7 @@
             <label>Preu previst<input id="flightExpectedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
             <label>Preu confirmat<input id="flightConfirmedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
             <label>Moneda<input id="flightCostCurrency" maxlength="3" pattern="[A-Za-z]{3}" placeholder="EUR"></label>
-            <label>Qualitat del previst<select id="flightPriceQuality"><option value="unknown">Desconegut</option><option value="estimated">Estimat</option><option value="verified">Verificat</option></select></label>
+            <input id="flightPriceQuality" type="hidden" value="unknown">
             <label class="wide">Què inclou<input id="flightPriceScope" maxlength="500" placeholder="Total del grup, nits, equipatge, impostos..."></label>
             <label class="wide">Costos obligatoris encara desconeguts<textarea id="flightUnknownCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
             <label class="wide">Costos exclosos<textarea id="flightExcludedCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
@@ -753,7 +753,7 @@
             <label>Preu previst<input id="activityExpectedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
             <label>Preu confirmat<input id="activityConfirmedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
             <label>Moneda<input id="activityCostCurrency" maxlength="3" pattern="[A-Za-z]{3}" placeholder="EUR"></label>
-            <label>Qualitat del previst<select id="activityPriceQuality"><option value="unknown">Desconegut</option><option value="estimated">Estimat</option><option value="verified">Verificat</option></select></label>
+            <input id="activityPriceQuality" type="hidden" value="unknown">
             <label class="wide">Què inclou<input id="activityPriceScope" maxlength="500" placeholder="Total del grup, nits, equipatge, impostos..."></label>
             <label class="wide">Costos obligatoris encara desconeguts<textarea id="activityUnknownCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
             <label class="wide">Costos exclosos<textarea id="activityExcludedCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
@@ -1925,7 +1925,7 @@ function tbBudgetApi(){
 function costNumber(id){const value=$(id)?.value?.trim();return value===''?null:Number(value)}
 function costScope(text){const value=String(text||'').trim();return value?{description:value}:{}}
 async function loadTbCostForm(form,sourceKind,sourceId,prefix){
-  form.dataset.tbComponentId='';form.dataset.costRevision='0';form.dataset.costVerifiedAt='';form.dataset.costOriginalQuality='unknown';form.dataset.costLoading=sourceId?'true':'';
+  form.dataset.tbComponentId='';form.dataset.costRevision='0';form.dataset.costVerifiedAt='';form.dataset.costOriginalQuality='unknown';form.dataset.costOriginalExpectedAmount='';form.dataset.costLoading=sourceId?'true':'';
   const panel=$(prefix+'CostPanel');if(panel)panel.classList.add('hidden');
   if(prefix==='activity'&&$('activityLegacyPriceFields'))$('activityLegacyPriceFields').style.display='contents';
   if(!sourceId)return null;
@@ -1933,7 +1933,7 @@ async function loadTbCostForm(form,sourceKind,sourceId,prefix){
     const api=await tbBudgetApi(),componentId=await api.findTbComponent(db,{tripId:trip.id,sourceKind,sourceId});
     if(!componentId)return null;
     const cost=await api.loadComponentCost(db,{tripId:trip.id,componentId});
-    form.dataset.tbComponentId=componentId;form.dataset.costRevision=String(cost?.revision||0);form.dataset.costVerifiedAt=cost?.verified_at||'';form.dataset.costOriginalQuality=cost?.expected_quality||'unknown';
+    form.dataset.tbComponentId=componentId;form.dataset.costRevision=String(cost?.revision||0);form.dataset.costVerifiedAt=cost?.verified_at||'';form.dataset.costOriginalQuality=cost?.expected_quality||'unknown';form.dataset.costOriginalExpectedAmount=cost?.expected_amount==null?'':String(cost.expected_amount);
     if(panel)panel.classList.remove('hidden');if(prefix==='activity'&&$('activityLegacyPriceFields'))$('activityLegacyPriceFields').style.display='none';
     $(prefix+'ExpectedAmount').value=cost?.expected_amount??'';$(prefix+'ConfirmedAmount').value=cost?.confirmed_amount??'';$(prefix+'CostCurrency').value=cost?.currency||'';$(prefix+'PriceQuality').value=cost?.expected_quality||'unknown';$(prefix+'PriceScope').value=cost?.scope?.description||'';$(prefix+'UnknownCosts').value=(cost?.unknown_required_costs||[]).join('\n');$(prefix+'ExcludedCosts').value=(cost?.excluded_costs||[]).join('\n');
     return {api,componentId,cost};
@@ -1941,8 +1941,25 @@ async function loadTbCostForm(form,sourceKind,sourceId,prefix){
 }
 function readTbCostForm(form,prefix){
   const componentId=form.dataset.tbComponentId||'';if(!componentId)return null;
-  const expectedAmount=costNumber(prefix+'ExpectedAmount'),confirmedAmount=costNumber(prefix+'ConfirmedAmount'),currency=$(prefix+'CostCurrency').value.trim().toUpperCase()||null,expectedQuality=expectedAmount==null?'unknown':$(prefix+'PriceQuality').value;
-  const verifiedAt=expectedQuality==='verified'?(form.dataset.costOriginalQuality==='verified'&&form.dataset.costVerifiedAt?form.dataset.costVerifiedAt:new Date().toISOString()):null;
+  const expectedAmount=costNumber(prefix+'ExpectedAmount'),confirmedAmount=costNumber(prefix+'ConfirmedAmount');
+  const currencyInput=$(prefix+'CostCurrency'),currency=currencyInput.value.trim().toUpperCase()||null;
+  const hasPrice=expectedAmount!=null||confirmedAmount!=null;
+  currencyInput.setCustomValidity('');
+  if(hasPrice&&!currency){
+    currencyInput.setCustomValidity('Indica la moneda del preu, per exemple EUR.');
+    currencyInput.reportValidity();
+    throw new Error('Indica la moneda del preu, per exemple EUR.');
+  }
+  if(currency&&!/^[A-Z]{3}$/.test(currency)){
+    currencyInput.setCustomValidity('La moneda ha de tenir tres lletres, per exemple EUR.');
+    currencyInput.reportValidity();
+    throw new Error('La moneda ha de tenir tres lletres, per exemple EUR.');
+  }
+  const originalExpected=form.dataset.costOriginalExpectedAmount||'';
+  const preservesVerified=expectedAmount!=null&&form.dataset.costOriginalQuality==='verified'&&originalExpected!==''&&String(expectedAmount)===String(Number(originalExpected));
+  const expectedQuality=expectedAmount==null?'unknown':preservesVerified?'verified':'estimated';
+  const verifiedAt=expectedQuality==='verified'&&form.dataset.costVerifiedAt?form.dataset.costVerifiedAt:null;
+  $(prefix+'PriceQuality').value=expectedQuality;
   return {componentId,expectedRevision:Number(form.dataset.costRevision||0),expectedAmount,confirmedAmount,currency,expectedQuality,verifiedAt,scope:costScope($(prefix+'PriceScope').value),unknownRequiredCosts:$(prefix+'UnknownCosts').value.split(/\n+/).map(x=>x.trim()).filter(Boolean),excludedCosts:$(prefix+'ExcludedCosts').value.split(/\n+/).map(x=>x.trim()).filter(Boolean)};
 }
 async function saveTbCostForForm(form,prefix,evidenceDocumentId=null){
@@ -4231,7 +4248,7 @@ $('activityTicketDocument').addEventListener('change',()=>reconcileActivityDocum
 window.addEventListener('pagehide',saveActivityDraft);
 $('activityForm').onsubmit=async event=>{
   event.preventDefault();if(activitySubmitting||!trip||!session||isLondonTrip())return;
-  const form=$('activityForm');if(!form.reportValidity())return;if(form.dataset.costLoading==='true'){msg('activityMsg','Espera un moment: estem carregant el cost del component.',true);return}
+  const form=$('activityForm');if(!form.reportValidity())return;if(form.dataset.costLoading==='true'){msg('activityMsg','Espera un moment: estem carregant el cost del component.',true);return};if(form.dataset.tbComponentId){try{readTbCostForm(form,'activity')}catch(error){msg('activityMsg',error?.message||'Revisa les dades del cost.',true);return}}
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,editingId=form.dataset.editId||'',originalUpdatedAt=form.dataset.originalUpdatedAt||'',originalBooking=form.dataset.originalBookingDocumentId||'',originalTicket=form.dataset.originalTicketDocumentId||'';
   if(form.dataset.tripId!==tripId)return;
   const timeZone=$('activityTimeZone').value.trim()||null,startValue=$('activityStartAt').value,endValue=$('activityEndAt').value;
@@ -4296,7 +4313,7 @@ $('accommodationForm').addEventListener('input',saveAccommodationDraft);$('accom
 $('accommodationVoucher').addEventListener('change',()=>{$('accommodationForm').dataset.voucherTouched='true';saveAccommodationDraft()});
 $('accommodationForm').onsubmit=async event=>{
   event.preventDefault();if(accommodationSubmitting||!trip||!session||isLondonTrip())return;
-  const form=$('accommodationForm');if(!form.reportValidity())return;if(form.dataset.costLoading==='true'){msg('accommodationMsg','Espera un moment: estem carregant el cost del component.',true);return}
+  const form=$('accommodationForm');if(!form.reportValidity())return;if(form.dataset.costLoading==='true'){msg('accommodationMsg','Espera un moment: estem carregant el cost del component.',true);return};if(form.dataset.tbComponentId){try{readTbCostForm(form,'accommodation')}catch(error){msg('accommodationMsg',error?.message||'Revisa les dades del cost.',true);return}}
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,editingId=form.dataset.editId||'',timeZone=form.dataset.timeZone||trip.time_zone;
   const originalUpdatedAt=form.dataset.originalUpdatedAt||'',originalVoucherDocumentId=form.dataset.originalVoucherDocumentId||null,requestedVoucherDocumentId=$('accommodationVoucher').value||null;
   if(form.dataset.tripId!==tripId)return;
