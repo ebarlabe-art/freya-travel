@@ -212,7 +212,9 @@ Deno.serve(async (req: Request) => {
   const origin = String(body?.origin || '').trim();
   const destination = String(body?.destination || '').trim();
   const startDate = String(body?.start_date || '').trim();
-  const endDate = String(body?.end_date || '').trim();
+  const endDateRaw = body?.end_date;
+  const endDate = endDateRaw == null || endDateRaw === '' ? null : String(endDateRaw).trim();
+  const tripType = String(body?.trip_type || '').trim();
   const adults = Number(body?.adults || 0);
   const childrenAges = Array.isArray(body?.children_ages) ? body.children_ages.map(Number) : [];
   const cabin = String(body?.cabin || '');
@@ -224,15 +226,23 @@ Deno.serve(async (req: Request) => {
     Array.isArray(body?.services) ? body.services : [],
   );
 
-  if (!origin || !destination || !startDate || !endDate) {
+  if (!origin || !destination || !startDate) {
     return json({ error: 'Missing required search fields' }, 400);
   }
 
-  if (!isIsoDate(startDate) || !isIsoDate(endDate)) {
+  if (!['one_way', 'round_trip'].includes(tripType)) {
+    return json({ error: 'Invalid trip type' }, 400);
+  }
+
+  if (!isIsoDate(startDate) || (tripType === 'round_trip' && (!endDate || !isIsoDate(endDate)))) {
     return json({ error: 'Invalid date format' }, 400);
   }
 
-  if (endDate < startDate) {
+  if (tripType === 'one_way' && endDate !== null) {
+    return json({ error: 'One-way search cannot include an end date' }, 400);
+  }
+
+  if (tripType === 'round_trip' && endDate! < startDate) {
     return json({ error: 'End date cannot be before start date' }, 400);
   }
 
@@ -278,6 +288,7 @@ Deno.serve(async (req: Request) => {
     destination,
     start_date: startDate,
     end_date: endDate,
+    trip_type: tripType as 'one_way' | 'round_trip',
     adults,
     children_ages: childrenAges,
     cabin,
