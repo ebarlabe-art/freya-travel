@@ -4066,6 +4066,7 @@ $('flightForm').onsubmit=async event=>{
   if(flightSubmitting||!trip||!session||isLondonTrip())return;
 
   const form=$('flightForm');
+  $('flightCostCurrency')?.setCustomValidity('');
   if(!form.reportValidity())return;
   if(form.dataset.costLoading==='true'){msg('flightMsg','Espera un moment: estem carregant el cost del component.',true);return}
 
@@ -4277,14 +4278,14 @@ $('addActivity').onclick=()=>openActivityForm();
 $('addFirstActivity').onclick=()=>openActivityForm();
 $('cancelActivity').onclick=closeActivityForm;
 $('activityOpenDocuments').onclick=()=>{if(!setActivityDocumentsReturnContext())return;saveActivityDraft();setAppView('documentsView')};
-['activity','flight','accommodation'].forEach(prefix=>{const input=$(prefix+'CostCurrency');if(input)input.addEventListener('input',()=>input.setCustomValidity(''))});
+['activity','flight','accommodation'].forEach(prefix=>{const input=$(prefix+'CostCurrency');if(input){const clear=()=>input.setCustomValidity('');input.addEventListener('input',clear);input.addEventListener('change',clear)}});
 $('activityForm').addEventListener('input',saveActivityDraft);$('activityForm').addEventListener('change',saveActivityDraft);
 $('activityBookingDocument').addEventListener('change',()=>reconcileActivityDocumentRoles('booking'));
 $('activityTicketDocument').addEventListener('change',()=>reconcileActivityDocumentRoles('ticket'));
 window.addEventListener('pagehide',saveActivityDraft);
 $('activityForm').onsubmit=async event=>{
   event.preventDefault();if(activitySubmitting||!trip||!session||isLondonTrip())return;
-  const form=$('activityForm');if(!form.reportValidity())return;if(form.dataset.costLoading==='true'){msg('activityMsg','Espera un moment: estem carregant el cost del component.',true);return};if(form.dataset.tbComponentId){try{readTbCostForm(form,'activity')}catch(error){msg('activityMsg',error?.message||'Revisa les dades del cost.',true);return}}
+  const form=$('activityForm');$('activityCostCurrency')?.setCustomValidity('');if(!form.reportValidity())return;if(form.dataset.costLoading==='true'){msg('activityMsg','Espera un moment: estem carregant el cost del component.',true);return};if(form.dataset.tbComponentId){try{readTbCostForm(form,'activity')}catch(error){msg('activityMsg',error?.message||'Revisa les dades del cost.',true);return}}
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,editingId=form.dataset.editId||'',originalUpdatedAt=form.dataset.originalUpdatedAt||'',originalBooking=form.dataset.originalBookingDocumentId||'',originalTicket=form.dataset.originalTicketDocumentId||'';
   if(form.dataset.tripId!==tripId)return;
   const timeZone=$('activityTimeZone').value.trim()||null,startValue=$('activityStartAt').value,endValue=$('activityEndAt').value;
@@ -4349,7 +4350,7 @@ $('accommodationForm').addEventListener('input',saveAccommodationDraft);$('accom
 $('accommodationVoucher').addEventListener('change',()=>{$('accommodationForm').dataset.voucherTouched='true';saveAccommodationDraft()});
 $('accommodationForm').onsubmit=async event=>{
   event.preventDefault();if(accommodationSubmitting||!trip||!session||isLondonTrip())return;
-  const form=$('accommodationForm');if(!form.reportValidity())return;if(form.dataset.costLoading==='true'){msg('accommodationMsg','Espera un moment: estem carregant el cost del component.',true);return};if(form.dataset.tbComponentId){try{readTbCostForm(form,'accommodation')}catch(error){msg('accommodationMsg',error?.message||'Revisa les dades del cost.',true);return}}
+  const form=$('accommodationForm');$('accommodationCostCurrency')?.setCustomValidity('');if(!form.reportValidity())return;if(form.dataset.costLoading==='true'){msg('accommodationMsg','Espera un moment: estem carregant el cost del component.',true);return};if(form.dataset.tbComponentId){try{readTbCostForm(form,'accommodation')}catch(error){msg('accommodationMsg',error?.message||'Revisa les dades del cost.',true);return}}
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,editingId=form.dataset.editId||'',timeZone=form.dataset.timeZone||trip.time_zone;
   const originalUpdatedAt=form.dataset.originalUpdatedAt||'',originalVoucherDocumentId=form.dataset.originalVoucherDocumentId||null,requestedVoucherDocumentId=$('accommodationVoucher').value||null;
   if(form.dataset.tripId!==tripId)return;
