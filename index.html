@@ -73,7 +73,7 @@
     .build-flight-form input,.build-flight-form select{width:100%;min-height:44px;border:1px solid #cac4d0;border-radius:14px;padding:11px 12px;background:#fff;color:#1f1b24;font:inherit;font-weight:400}
     .build-flight-form-actions{grid-column:1/-1;display:flex;gap:9px;flex-wrap:wrap}.build-flight-results{display:grid;gap:10px;margin-top:14px}
     .build-flight-result{border:1px solid #e2dae9;border-radius:16px;padding:14px;background:#fcfafd}.build-flight-result h4{margin:0 0 5px}.build-flight-result-meta{display:flex;gap:7px;flex-wrap:wrap;color:var(--muted);font-size:.86rem}
-    .build-flight-result-price{font-size:1.2rem;font-weight:850;margin:10px 0}.build-flight-result a{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border-radius:12px;padding:10px 12px;background:#6750a4;color:#fff;text-decoration:none;font-weight:800}
+    .build-flight-result-price{font-size:1.2rem;font-weight:850;margin:10px 0}.build-flight-result-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.build-flight-result a,.build-flight-result button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border-radius:12px;padding:10px 12px;font-weight:800}.build-flight-result a{background:#6750a4;color:#fff;text-decoration:none}.build-flight-result button{background:#fff;color:#4f378b;border:1px solid #cbb9df}
     .build-flight-result-note{font-size:.83rem;color:#8a5a00;margin-top:8px}.build-flight-search-summary{margin:8px 0 0;font-size:.9rem}.build-flight-search-summary strong{color:#352a40}
     @media(max-width:620px){.build-flight-form{grid-template-columns:1fr}.build-flight-form .wide{grid-column:auto}}
     @media(max-width:620px){.tb-cost-panel,.budget-summary-grid{grid-template-columns:1fr}.build-progress-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -2471,7 +2471,7 @@ window.addEventListener('focus',()=>{if(proposalOpen&&visibleAppView()==='builde
 // TB04_PROPOSAL_UI_END
 // TRAVEL_BUILDER_UI_END
 
-let tbBuildApiPromise=null,travelSearchApiPromise=null,buildLoadSequence=0,buildCurrentData=null,buildSearchComponentId=null;
+let tbBuildApiPromise=null,travelSearchApiPromise=null,buildLoadSequence=0,buildCurrentData=null,buildSearchComponentId=null,buildFlightOffers=[];
 function tbBuildApi(){return tbBuildApiPromise??=import('./domain/tb-build.mjs').catch(error=>{tbBuildApiPromise=null;throw error})}
 function travelSearchApi(){return travelSearchApiPromise??=import('./domain/travel-search.mjs').catch(error=>{travelSearchApiPromise=null;throw error})}
 function buildSearchCulture(){
@@ -2520,19 +2520,74 @@ async function openBuildFlightSearch(componentId=null){
   $('buildFlightSearchIntro').textContent=component?'Confirma el tram i la data abans de buscar. La cerca no modifica ni reserva la peça.':'Indica origen, destinació i data. Aquesta cerca és independent del transport local i no modifica el viatge fins que seleccionis una opció en una fase posterior.';
   $('buildFlightResults').innerHTML='';$('buildFlightSearchSummary').textContent='';msg('buildFlightSearchMessage','');panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});
 }
-function closeBuildFlightSearch(){buildSearchComponentId=null;$('buildFlightSearch')?.classList.add('hidden');if($('buildFlightResults'))$('buildFlightResults').innerHTML='';msg('buildFlightSearchMessage','')}
+function closeBuildFlightSearch(){buildSearchComponentId=null;buildFlightOffers=[];$('buildFlightSearch')?.classList.add('hidden');if($('buildFlightResults'))$('buildFlightResults').innerHTML='';msg('buildFlightSearchMessage','')}
 function formatFlightLocal(value){if(!value)return '';const m=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);return m?`${m[3]}/${m[2]} · ${m[4]}:${m[5]}`:value}
 function durationLabel(minutes){const value=Number(minutes);if(!Number.isFinite(value))return '';const h=Math.floor(value/60),m=value%60;return [h?`${h} h`:'',m?`${m} min`:''].filter(Boolean).join(' ')}
 function renderFlightOffers(data){
   const results=Array.isArray(data?.results)?data.results:[],sources=data?.providers?.flights?.sources||[],skyscanner=sources.find(source=>source.provider==='skyscanner');
+  buildFlightOffers=results;
   if(!results.length){$('buildFlightResults').innerHTML='';if(skyscanner&&!skyscanner.configured){msg('buildFlightSearchMessage','La cerca està preparada, però Skyscanner encara no està connectat amb credencials de partner.',true);return}if(skyscanner?.error==='unsupported_hard_preferences'){msg('buildFlightSearchMessage','No mostro resultats perquè el proveïdor no pot aplicar una preferència imprescindible del viatge. No la ignoraré silenciosament.',true);return}if(skyscanner?.error){msg('buildFlightSearchMessage','El proveïdor de vols no ha pogut completar la cerca: '+skyscanner.error,true);return}msg('buildFlightSearchMessage','No s’han trobat opcions per aquesta cerca.',true);return}
-  msg('buildFlightSearchMessage',`${results.length} opcions trobades. Encara no n’has seleccionat cap.`);
+  msg('buildFlightSearchMessage',`${results.length} opcions trobades. Selecciona’n una per passar-la a la fitxa del vol.`);
   $('buildFlightResults').innerHTML=results.map(result=>{
     const raw=result.raw||{},carriers=Array.isArray(raw.carrier_names)?raw.carrier_names.join(' · '):'',stops=raw.stop_count==null?'':raw.stop_count===0?'Directe':raw.stop_count===1?'1 escala':`${raw.stop_count} escales`,duration=durationLabel(raw.duration_minutes),times=[formatFlightLocal(raw.departure_local),formatFlightLocal(raw.arrival_local)].filter(Boolean).join(' → '),agents=Array.isArray(raw.agent_names)?raw.agent_names.join(' · '):'';
     const price=result.price?new Intl.NumberFormat('ca-ES',{style:'currency',currency:result.price.currency,maximumFractionDigits:2}).format(result.price.amount):'Preu no disponible';
-    return `<article class="build-flight-result"><h4>${esc(carriers||result.title||'Opció de vol')}</h4><div class="build-flight-result-meta">${times?`<span>🕒 ${esc(times)}</span>`:''}${duration?`<span>· ${esc(duration)}</span>`:''}${stops?`<span>· ${esc(stops)}</span>`:''}</div><div class="build-flight-result-price">${esc(price)}</div>${agents?`<p>Oferta via ${esc(agents)}</p>`:''}${result.deeplink?`<a href="${esc(result.deeplink)}" target="_blank" rel="noopener">Veure oferta</a>`:`<p class="build-flight-result-note">Aquesta opció no té un únic enllaç de reserva verificat.</p>`}</article>`;
+    return `<article class="build-flight-result"><h4>${esc(carriers||result.title||'Opció de vol')}</h4><div class="build-flight-result-meta">${times?`<span>🕒 ${esc(times)}</span>`:''}${duration?`<span>· ${esc(duration)}</span>`:''}${stops?`<span>· ${esc(stops)}</span>`:''}</div><div class="build-flight-result-price">${esc(price)}</div>${agents?`<p>Oferta via ${esc(agents)}</p>`:''}<div class="build-flight-result-actions"><button type="button" data-select-flight-offer="${esc(result.id)}">Selecciona</button>${result.deeplink?`<a href="${esc(result.deeplink)}" target="_blank" rel="noopener">Veure oferta</a>`:''}</div>${result.deeplink?'':`<p class="build-flight-result-note">Aquesta opció no té un únic enllaç de reserva verificat.</p>`}</article>`;
   }).join('');
+  $('buildFlightResults').querySelectorAll('[data-select-flight-offer]').forEach(button=>button.onclick=()=>selectBuildFlightOffer(button.dataset.selectFlightOffer));
 }
+function selectedOfferPlace(raw,key){
+  const value=raw?.[key];
+  if(!value||typeof value!=='object')return {code:'',city:'',airport:''};
+  const airport=value.type==='PLACE_TYPE_AIRPORT';
+  return {code:airport&&value.iataCode?String(value.iataCode).toUpperCase():'',city:airport?'':String(value.name||''),airport:airport?String(value.name||''):''};
+}
+async function selectBuildFlightOffer(resultId){
+  if(!trip||!session||isLondonTrip())return;
+  const result=buildFlightOffers.find(item=>String(item.id)===String(resultId));if(!result){msg('buildFlightSearchMessage','Aquesta opció ja no està disponible. Torna a fer la cerca.',true);return}
+  const searchComponent=buildSearchComponentId&&buildSearchComponentId!=='adhoc'?buildCurrentData?.components?.find(item=>item.component_id===buildSearchComponentId&&item.kind==='flight'):null;
+  const sourceId=searchComponent?.source_id||'';
+  const raw=result.raw||{},origin=selectedOfferPlace(raw,'resolved_origin'),destination=selectedOfferPlace(raw,'resolved_destination');
+  const carrier=(Array.isArray(raw.carrier_names)?raw.carrier_names:[]).filter(Boolean).join(' · ').slice(0,200);
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
+  setAppView('genericFlightsView');
+  await loadFlights(true);
+  if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId)return;
+  await openFlightForm(sourceId);
+  if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId)return;
+  const row=sourceId?flightRows.find(item=>item.id===sourceId):null;
+  $('flightAirline').value=carrier||row?.airline||'';
+  if(origin.code)$('flightDepartureCode').value=origin.code;
+  if(origin.city)$('flightDepartureCity').value=origin.city;
+  if(origin.airport)$('flightDepartureAirport').value=origin.airport;
+  if(destination.code)$('flightArrivalCode').value=destination.code;
+  if(destination.city)$('flightArrivalCity').value=destination.city;
+  if(destination.airport)$('flightArrivalAirport').value=destination.airport;
+  $('flightDepartureTimeZone').value=row?.departure_time_zone||'';
+  $('flightArrivalTimeZone').value=row?.arrival_time_zone||'';
+  $('flightDepartureAt').value=raw.departure_local||'';
+  $('flightArrivalAt').value=raw.arrival_local||'';
+  $('flightStatus').value='planning';
+  const offerPrice=result.price&&Number.isFinite(Number(result.price.amount))?Number(result.price.amount):null;
+  const offerCurrency=result.price?.currency||'';
+  if($('flightCostPanel')&&!$('flightCostPanel').classList.contains('hidden')&&offerPrice!=null){
+    $('flightExpectedAmount').value=String(offerPrice);
+    setCurrencyValue('flightCostCurrency',offerCurrency,true);
+    $('flightPriceScope').value='Oferta seleccionada al cercador de vols';
+  }else if(offerPrice!=null){
+    const priceText=new Intl.NumberFormat('ca-ES',{style:'currency',currency:offerCurrency,maximumFractionDigits:2}).format(offerPrice);
+    const current=$('flightNotes').value.trim();
+    $('flightNotes').value=[current,`Oferta seleccionada al cercador: ${priceText}`].filter(Boolean).join('\n');
+  }
+  if(result.deeplink){
+    const current=$('flightNotes').value.trim();
+    $('flightNotes').value=[current,`Enllaç de l’oferta: ${result.deeplink}`].filter(Boolean).join('\n');
+  }
+  saveFlightDraft();
+  const missingZones=[raw.departure_local&&!$('flightDepartureTimeZone').value?'sortida':'',raw.arrival_local&&!$('flightArrivalTimeZone').value?'arribada':''].filter(Boolean);
+  msg('flightMsg',missingZones.length?`Opció seleccionada. Revisa la fitxa i indica la zona horària de ${missingZones.join(' i ')} abans de desar.`:'Opció seleccionada. Revisa la fitxa abans de desar el vol.');
+  $('flightFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
 async function runBuildFlightSearch(){
   if(!trip||!buildSearchComponentId||!buildCurrentData?.brief)return;
   const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id,button=$('buildFlightSearchSubmit');button.disabled=true;$('buildFlightResults').innerHTML='';msg('buildFlightSearchMessage','Buscant opcions reals…');
@@ -2815,7 +2870,7 @@ function renderFlightDocumentOptions(selectedBooking='',selectedBoarding=[],sele
   renderFlightExistingDocuments('flightBoardingDocuments','boarding_pass',selectedBoarding);
   renderFlightExistingDocuments('flightBaggageDocuments','baggage_tag',selectedBaggage);
 }
-function openFlightForm(id=''){
+async function openFlightForm(id=''){
   if(!trip||isLondonTrip())return;
 
   const row=id?flightRows.find(item=>item.id===id):null;
@@ -2863,7 +2918,7 @@ function openFlightForm(id=''){
   $('flightAirline').focus();
   $('flightFormCard').scrollIntoView({behavior:'smooth',block:'start'});
   saveFlightDraft();
-  loadTbCostForm(form,'flight',row?.id||'','flight').catch(error=>msg('flightMsg',error?.message||'No s’ha pogut carregar el cost.',true));
+  try{await loadTbCostForm(form,'flight',row?.id||'','flight')}catch(error){msg('flightMsg',error?.message||'No s’ha pogut carregar el cost.',true)}
 }
 
 async function fetchAgendaFlights(silent=false){
