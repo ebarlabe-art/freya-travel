@@ -2,6 +2,27 @@ import {findTbComponent} from './tb-confirmation.mjs';
 
 export {findTbComponent};
 
+export async function findBudgetComponent(client,{tripId,sourceKind,sourceId}){
+  const proposalComponent=await findTbComponent(client,{tripId,sourceKind,sourceId});
+  if(proposalComponent)return {componentId:proposalComponent,kind:'proposal'};
+  const {data,error}=await client.from('trip_standalone_component_links')
+    .select('component_id')
+    .eq('trip_id',tripId)
+    .eq('source_kind',sourceKind)
+    .eq('source_id',sourceId)
+    .maybeSingle();
+  if(error)throw error;
+  return data?.component_id?{componentId:data.component_id,kind:'standalone'}:null;
+}
+
+export async function ensureStandaloneBudgetComponent(client,{tripId,sourceKind,sourceId}){
+  const {data,error}=await client.rpc('ensure_trip_standalone_component_v1',{
+    p_trip_id:tripId,p_source_kind:sourceKind,p_source_id:sourceId
+  });
+  if(error)throw error;
+  return data;
+}
+
 export function linesToItems(value){
   return String(value||'').split(/\n+/).map(x=>x.trim()).filter(Boolean).slice(0,20);
 }
