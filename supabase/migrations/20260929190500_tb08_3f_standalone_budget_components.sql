@@ -26,10 +26,11 @@ alter table public.trip_component_costs
   foreign key (trip_id) references public.trips(id) on delete cascade;
 
 create or replace function proposal_private.standalone_component_link_immutable()
-returns trigger language plpgsql set search_path='' as $$
+returns trigger language plpgsql set search_path='' as $
 begin
+  if pg_trigger_depth() > 1 then return old; end if;
   raise exception 'Standalone component mapping is immutable' using errcode='22023';
-end $$;
+end $;
 
 create trigger standalone_component_link_immutable
 before update or delete on public.trip_standalone_component_links
