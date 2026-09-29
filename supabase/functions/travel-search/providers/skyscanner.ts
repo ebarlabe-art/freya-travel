@@ -2,9 +2,10 @@ import type {
   ProviderSearchResponse,
   TravelSearchQuery,
 } from './types.ts';
+import { createSkyscannerFlightsAdapter } from './skyscanner-core.mjs';
 
 export async function searchSkyscannerFlights(
-  _query: TravelSearchQuery,
+  query: TravelSearchQuery,
 ): Promise<ProviderSearchResponse> {
   const apiKey = Deno.env.get('SKYSCANNER_API_KEY');
 
@@ -14,14 +15,10 @@ export async function searchSkyscannerFlights(
       service: 'flights',
       configured: false,
       results: [],
+      applied_preferences: [],
+      unapplied_preferences: query.preferences.map((item) => item.key),
     };
   }
 
-  return {
-    provider: 'skyscanner',
-    service: 'flights',
-    configured: true,
-    results: [],
-    error: 'Provider adapter ready; live search not enabled yet.',
-  };
+  return await createSkyscannerFlightsAdapter({ apiKey }).search(query);
 }
