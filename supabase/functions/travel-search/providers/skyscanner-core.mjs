@@ -18,8 +18,8 @@ export function skyscannerPrice(price){
 export function selectSkyscannerPlace(payload,input){
   const rows=Array.isArray(payload?.places)?payload.places.filter(p=>p&&['PLACE_TYPE_CITY','PLACE_TYPE_AIRPORT'].includes(p.type)&&typeof p.entityId==='string'):[];
   if(!rows.length)return null;
-  const exact=rows.find(p=>norm(p.name)===norm(input)||norm(p.iataCode)===norm(input));
-  const p=exact||rows[0];
+  const p=rows.find(item=>norm(item.name)===norm(input)||norm(item.iataCode)===norm(input));
+  if(!p)return null;
   return {entityId:p.entityId,name:String(p.name||input),iataCode:typeof p.iataCode==='string'?p.iataCode:null,type:p.type};
 }
 function dateObject(value){
@@ -35,8 +35,10 @@ function bookingLinks(option){
   return [...new Set((option?.items||[]).map(i=>i?.deepLink).filter(x=>typeof x==='string'&&/^https:\/\//.test(x)))];
 }
 export function parseSkyscannerResults(payloads,query,resolution){
-  const map=new Map();
+  let map=new Map();
   for(const payload of payloads){
+    if(payload?.action==='RESULT_ACTION_NOT_MODIFIED'||payload?.action==='RESULT_ACTION_OMITTED')continue;
+    if(payload?.action==='RESULT_ACTION_REPLACED')map=new Map();
     const itineraries=payload?.content?.results?.itineraries||{};
     for(const [id,itinerary] of Object.entries(itineraries)){
       const options=Array.isArray(itinerary?.pricingOptions)?itinerary.pricingOptions:[];
