@@ -3563,7 +3563,8 @@ function renderTripHome(){
   if(!trip||!session||isLondonTrip()||!$('tripHomeContent'))return;
   const ready=itinerarySourcesAreReady();
   const projection=ready?normalizedItineraryProjection(trip.id,tripLoadGeneration,session.user.id):[];
-  const state=deriveTripHomeState({trip,ready,items:projection,checklist:tripHomeChecklist},new Date());
+  const homeProjection=projection.filter(item=>item.sourceType==='manual'||item.isCompleted||['reserved','confirmed'].includes(item.reservationStatus));
+  const state=deriveTripHomeState({trip,ready,items:homeProjection,checklist:null},new Date());
   const heading={future:`Falten ${state.daysUntil} ${state.daysUntil===1?'dia':'dies'}`,active:'El teu viatge, ara',past:'Un viatge per recordar',setup:'Prepara el teu viatge'}[state.phase];
   const home=$('tripHome');
   const preTrip=state.phase==='future'||state.phase==='setup';
@@ -3596,24 +3597,22 @@ function renderTripHome(){
     if(state.completedOther?.length)html+=`<details><summary>Altres elements fets · ${state.completedOther.length}</summary>${state.completedOther.map(item=>tripHomeCard(item,'✓ FET')).join('')}</details>`;
     if(state.pastUnmarked?.length)html+=`<details><summary>Plans passats · sense marcar com a fets (${state.pastUnmarked.length})</summary>${state.pastUnmarked.map(item=>tripHomeCard(item,'PASSAT · sense marcar com a fet')).join('')}</details>`;
   }
-  if(state.phase!=='past')html+=state.pendingChecklist===null?'<p>Preparatius no disponibles encara. Consulta la checklist.</p>':`<details ${state.phase==='future'?'open':''}><summary>✅ ${state.pendingChecklist.length} preparatius pendents</summary>${state.pendingChecklist.length?`<ul>${state.pendingChecklist.slice(0,5).map(item=>`<li>${esc(item.text)}</li>`).join('')}</ul>`:'<p>La checklist no té tasques pendents.</p>'}</details>`;
-  if(state.phase!=='past')html+='<div class="trip-home-actions"><button type="button" data-home-view="checklistView">Obrir checklist</button></div>';
   const container=$('tripHomeContent');
   // Avoid replacing focused controls and collapsing details on every clock tick.
   if(container._homeHtml===html)return;container._homeHtml=html;container.innerHTML=html;
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   const current=()=>itineraryRequestIsCurrent(tripId,generation,userId)&&!isLondonTrip();
-  bindTripProgress(container,projection,'tripHomeMessage');
-  bindContextPhotoActions(container,projection);
+  bindTripProgress(container,homeProjection,'tripHomeMessage');
+  bindContextPhotoActions(container,homeProjection);
   container.querySelectorAll('[data-home-view]').forEach(button=>button.onclick=()=>{if(current()){clearItinerarySourceContext();setAppView(button.dataset.homeView)}});
   container.querySelectorAll('[data-home-retry]').forEach(button=>button.onclick=()=>{if(current()){ensureTripAgenda(true);loadItems();renderTripHome()}});
   container.querySelectorAll('[data-home-source]').forEach(button=>button.onclick=()=>{
-    if(!current())return;const item=projection.find(item=>item.key===button.dataset.homeSource);if(!item)return;
+    if(!current())return;const item=homeProjection.find(item=>item.key===button.dataset.homeSource);if(!item)return;
     if(item.sourceType==='manual'){genericItinerarySelectedTripId=trip.id;genericItinerarySelectedDay=item.localDate||'pending';tripHomeItineraryFocus={key:item.key,tripId,generation,userId};setAppView('itineraryView')}
     else{itineraryProjection=projection;openItinerarySource(item.sourceType,item.sourceId,'genericDashboardView')}
   });
   container.querySelectorAll('[data-home-document]').forEach(button=>button.onclick=async()=>{
-    if(!current())return;const item=projection.find(item=>item.key===button.dataset.homeKey),id=button.dataset.homeDocument;if(!item)return;
+    if(!current())return;const item=homeProjection.find(item=>item.key===button.dataset.homeKey),id=button.dataset.homeDocument;if(!item)return;
     const links=itineraryDocumentsFor(item.sourceType,item.sourceId),associated=links.some(link=>(link.documentId||(item.sourceType==='accommodation'?accommodationVoucherDocumentId(item.sourceId):activityDocumentId(item.sourceId,link.role)))===id);
     if(!associated){msg('tripHomeMessage','El document associat ha canviat. Torna a obrir l’element.',true);return}
     try{
