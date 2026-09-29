@@ -510,30 +510,12 @@
       <section class="build-hero"><small>🧩 Build</small><h2>Construeix aquest viatge</h2><p>Revisa les peces de la proposta, el seu estat i el pressupost. Als vols pendents ja pots obrir una cerca d’ofertes reals sense modificar encara la peça.</p></section>
       <p id="buildMessage" class="message hidden" role="status" aria-live="polite"></p>
       <section id="buildBudget" class="build-budget"></section>
-      <section class="build-flight-entry" aria-label="Vols">
-        <div><h3>✈️ Vols</h3><p>Busca vols encara que el viatge no tingui cap tram creat prèviament.</p></div>
-        <button id="buildOpenFlightSearch" type="button">🔎 Buscar vols</button>
-      </section>
+      <button class="build-flight-entry" type="button" data-open="genericFlightsView" aria-label="Obrir Vols">
+        <div><h3>✈️ Vols</h3><p>Busca, guarda i revisa els vols del viatge.</p></div>
+        <span aria-hidden="true">›</span>
+      </button>
       <p id="buildProgress" class="build-progress-summary"></p>
       <div id="buildGroups" class="build-groups"></div>
-      <section id="buildFlightSearch" class="card build-flight-search hidden" aria-label="Cerca d’opcions de vol">
-        <h3>🔎 Buscar opcions de vol</h3>
-        <p id="buildFlightSearchIntro">Confirma el tram i la data abans de buscar. La cerca no modifica ni reserva la peça.</p>
-        <form id="buildFlightSearchForm" class="build-flight-form">
-          <label>Origen<input id="buildFlightOrigin" maxlength="120" required placeholder="BCN o Barcelona"></label>
-          <label>Destinació<input id="buildFlightDestination" maxlength="120" required placeholder="RIX o Riga"></label>
-          <label>Data<input id="buildFlightDate" type="date" required></label>
-          <label>Cabina<select id="buildFlightCabin"><option value="economy">Econòmica</option><option value="premium_economy">Premium economy</option><option value="business">Business</option><option value="first">First</option></select></label>
-          <label>Adults<input id="buildFlightAdults" type="number" min="1" max="8" inputmode="numeric" required></label>
-          <label>Menors<input id="buildFlightChildrenCount" type="number" min="0" max="8" inputmode="numeric" value="0" required></label>
-          <label>Edats dels menors<input id="buildFlightChildren" maxlength="80" placeholder="Ex.: 8, 12"></label>
-          <label class="wide">Moneda<select id="buildFlightCurrency" data-currency-select required></select></label>
-          <div class="build-flight-form-actions"><button id="buildFlightSearchSubmit" type="submit">Cerca vols</button><button id="buildFlightSearchClose" type="button" class="secondary">Tanca</button></div>
-        </form>
-        <p id="buildFlightSearchSummary" class="build-flight-search-summary"></p>
-        <p id="buildFlightSearchMessage" class="message hidden" role="status" aria-live="polite"></p>
-        <div id="buildFlightResults" class="build-flight-results"></div>
-      </section>
     </div>
 
     <div id="budgetView" class="hidden">
@@ -617,11 +599,33 @@
 
       <section class="accommodation-hero">
         <div>
-          <small>✈️ Transport i vols</small>
+          <small>✈️ Vols</small>
           <h2>Els teus vols</h2>
-          <p>Organitza cada tram del viatge i tingues horaris, aeroports i documents sempre a mà.</p>
+          <p>Busca, selecciona i organitza cada tram del viatge, amb horaris, aeroports i documents sempre a mà.</p>
         </div>
-        <button id="addFlight" type="button">Afegir vol</button>
+        <div class="build-flight-result-actions">
+          <button id="buildOpenFlightSearch" type="button">🔎 Buscar vols</button>
+          <button id="addFlight" type="button" class="secondary">Afegir vol</button>
+        </div>
+      </section>
+
+      <section id="buildFlightSearch" class="card build-flight-search hidden" aria-label="Cerca d’opcions de vol">
+        <h3>🔎 Buscar opcions de vol</h3>
+        <p id="buildFlightSearchIntro">Indica origen, destinació i data abans de buscar.</p>
+        <form id="buildFlightSearchForm" class="build-flight-form">
+          <label>Origen<input id="buildFlightOrigin" maxlength="120" required placeholder="BCN o Barcelona"></label>
+          <label>Destinació<input id="buildFlightDestination" maxlength="120" required placeholder="RIX o Riga"></label>
+          <label>Data<input id="buildFlightDate" type="date" required></label>
+          <label>Cabina<select id="buildFlightCabin"><option value="economy">Econòmica</option><option value="premium_economy">Premium economy</option><option value="business">Business</option><option value="first">First</option></select></label>
+          <label>Adults<input id="buildFlightAdults" type="number" min="1" max="8" inputmode="numeric" required></label>
+          <label>Menors<input id="buildFlightChildrenCount" type="number" min="0" max="8" inputmode="numeric" value="0" required></label>
+          <label>Edats dels menors<input id="buildFlightChildren" maxlength="80" placeholder="Ex.: 8, 12"></label>
+          <label class="wide">Moneda<select id="buildFlightCurrency" data-currency-select required></select></label>
+          <div class="build-flight-form-actions"><button id="buildFlightSearchSubmit" type="submit">Cerca vols</button><button id="buildFlightSearchClose" type="button" class="secondary">Tanca</button></div>
+        </form>
+        <p id="buildFlightSearchSummary" class="build-flight-search-summary"></p>
+        <p id="buildFlightSearchMessage" class="message hidden" role="status" aria-live="polite"></p>
+        <div id="buildFlightResults" class="build-flight-results"></div>
       </section>
 
       <p id="flightMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
@@ -2510,6 +2514,11 @@ function renderBuild(data,tripId,generation,userId){
   });
 }
 async function openBuildFlightSearch(componentId=null){
+  if(!trip||isLondonTrip())return;
+  if($('genericFlightsView')?.classList.contains('hidden')){
+    setAppView('genericFlightsView');
+    await loadFlights(true);
+  }
   const component=componentId?buildCurrentData?.components?.find(item=>item.component_id===componentId&&item.kind==='flight'):null;
   if(componentId&&!component){msg('buildMessage','No puc recuperar aquesta peça de vol.',true);return}
   if(!buildCurrentData?.brief){msg('buildMessage','Falta el resum del viatge per preparar la cerca de vols.',true);return}
