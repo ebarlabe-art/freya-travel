@@ -62,7 +62,7 @@
     .build-hero{background:linear-gradient(135deg,#4f378b,#8d6bc2);color:#fff;border-radius:26px;padding:24px;margin:12px 0 16px;box-shadow:0 18px 42px rgba(79,55,139,.18)}
     .build-hero h2{margin:5px 0 7px;font-size:1.7rem}.build-hero p{margin:0;color:rgba(255,255,255,.86);line-height:1.5}
     .build-progress-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 16px}
-    .build-progress-card{background:#fff;border:1px solid var(--line);border-radius:17px;padding:13px;text-align:center}.build-progress-card strong{display:block;font-size:1.25rem}.build-progress-card small{display:block;color:var(--muted);margin-top:3px}
+    .build-progress-card{background:#fff;border:1px solid var(--line);border-radius:17px;padding:13px;text-align:center}.build-progress-card strong{display:block;font-size:1.25rem}.build-progress-card small{display:block;color:var(--muted);margin-top:3px}.build-flight-entry{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 16px;padding:18px;border:1px solid #cbb9df;border-radius:20px;background:linear-gradient(135deg,#fff,#f4edfb)}.build-flight-entry h3{margin:0 0 5px}.build-flight-entry p{margin:0;color:var(--muted);line-height:1.4}.build-flight-entry button{flex:0 0 auto}
     .build-budget{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px;margin-bottom:15px}.build-budget h3{margin:0 0 10px}.build-budget-lines{display:grid;gap:8px}.build-budget-line{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;background:#f8f4fb;border-radius:13px}.build-budget-warning{margin:10px 0 0;color:#8a5a00;font-weight:700;font-size:.88rem}
     .build-groups{display:grid;gap:12px}.build-group{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden}.build-group>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 17px;font-weight:850;list-style:none}.build-group>summary::-webkit-details-marker{display:none}.build-group>summary small{color:var(--muted);font-weight:650}
     .build-group-list{display:grid;gap:10px;padding:0 12px 12px}.build-component{border:1px solid #e2dae9;border-radius:16px;padding:14px;background:#fcfafd}.build-component-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.build-component h4{margin:0 0 4px}.build-component p{margin:6px 0 0;color:var(--muted);line-height:1.4;font-size:.9rem}
@@ -509,6 +509,10 @@
       <button class="ghost back" data-back>← Torna al tauler</button>
       <section class="build-hero"><small>🧩 Build</small><h2>Construeix aquest viatge</h2><p>Revisa les peces de la proposta, el seu estat i el pressupost. Als vols pendents ja pots obrir una cerca d’ofertes reals sense modificar encara la peça.</p></section>
       <p id="buildMessage" class="message hidden" role="status" aria-live="polite"></p>
+      <section class="build-flight-entry" aria-label="Vols">
+        <div><h3>✈️ Vols</h3><p>Busca vols encara que el viatge no tingui cap tram creat prèviament.</p></div>
+        <button id="buildOpenFlightSearch" type="button">🔎 Buscar vols</button>
+      </section>
       <div id="buildProgress" class="build-progress-grid"></div>
       <section id="buildBudget" class="build-budget"></section>
       <div id="buildGroups" class="build-groups"></div>
@@ -2504,13 +2508,15 @@ function renderBuild(data,tripId,generation,userId){
     else{setActivityViewMode(button.dataset.buildGroup==='local_transport'?'local_transport':'activity');setAppView('activitiesView');await loadActivities(true);if(tripRequestIsCurrent(tripId,generation))openActivityForm(id)}
   });
 }
-async function openBuildFlightSearch(componentId){
-  const component=buildCurrentData?.components?.find(item=>item.component_id===componentId&&item.kind==='flight');
-  if(!component||!buildCurrentData?.brief){msg('buildMessage','No puc recuperar el resum original d’aquesta peça.',true);return}
-  buildSearchComponentId=componentId;
-  const panel=$('buildFlightSearch'),seed=component.search_seed||{},culture=buildSearchCulture(),api=await travelSearchApi(),defaults=api.flightSearchDefaultsFromBrief(buildCurrentData.brief);
+async function openBuildFlightSearch(componentId=null){
+  const component=componentId?buildCurrentData?.components?.find(item=>item.component_id===componentId&&item.kind==='flight'):null;
+  if(componentId&&!component){msg('buildMessage','No puc recuperar aquesta peça de vol.',true);return}
+  if(!buildCurrentData?.brief){msg('buildMessage','Falta el resum del viatge per preparar la cerca de vols.',true);return}
+  buildSearchComponentId=componentId||'adhoc';
+  const panel=$('buildFlightSearch'),seed=component?.search_seed||{},culture=buildSearchCulture(),api=await travelSearchApi(),defaults=api.flightSearchDefaultsFromBrief(buildCurrentData.brief);
   $('buildFlightOrigin').value=seed.origin||'';$('buildFlightDestination').value=seed.destination||'';$('buildFlightDate').value=buildFlightSeedDate(seed);
-  $('buildFlightAdults').value=defaults.adults?String(defaults.adults):'';$('buildFlightChildren').value=(defaults.children_ages||[]).length===defaults.children_count?(defaults.children_ages||[]).join(', '):'';$('buildFlightCabin').value='economy';setCurrencyValue('buildFlightCurrency',component.price?.currency||culture.currency||'',false);
+  $('buildFlightAdults').value=defaults.adults?String(defaults.adults):'';$('buildFlightChildren').value=(defaults.children_ages||[]).length===defaults.children_count?(defaults.children_ages||[]).join(', '):'';$('buildFlightCabin').value='economy';setCurrencyValue('buildFlightCurrency',component?.price?.currency||culture.currency||'',false);
+  $('buildFlightSearchIntro').textContent=component?'Confirma el tram i la data abans de buscar. La cerca no modifica ni reserva la peça.':'Indica origen, destinació i data. Aquesta cerca és independent del transport local i no modifica el viatge fins que seleccionis una opció en una fase posterior.';
   $('buildFlightResults').innerHTML='';$('buildFlightSearchSummary').textContent='';msg('buildFlightSearchMessage','');panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function closeBuildFlightSearch(){buildSearchComponentId=null;$('buildFlightSearch')?.classList.add('hidden');if($('buildFlightResults'))$('buildFlightResults').innerHTML='';msg('buildFlightSearchMessage','')}
@@ -2539,7 +2545,7 @@ async function runBuildFlightSearch(){
   }catch(error){if(tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId)msg('buildFlightSearchMessage',error?.message||'No s’ha pogut completar la cerca de vols.',true)}
   finally{if(tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId)button.disabled=false}
 }
-$('buildFlightSearchForm').onsubmit=event=>{event.preventDefault();runBuildFlightSearch()};$('buildFlightSearchClose').onclick=closeBuildFlightSearch;
+$('buildFlightSearchForm').onsubmit=event=>{event.preventDefault();runBuildFlightSearch()};$('buildFlightSearchClose').onclick=closeBuildFlightSearch;$('buildOpenFlightSearch').onclick=()=>openBuildFlightSearch();
 async function loadBuildView(){
   if(!trip||isLondonTrip()||!trip.tb_handoff||!$('buildView'))return;
   closeBuildFlightSearch();
