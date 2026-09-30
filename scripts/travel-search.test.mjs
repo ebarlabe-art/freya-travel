@@ -103,10 +103,15 @@ test('flight leg search validates culture without recursion',()=>{
 });
 
 test('TB-08.5 hotel search does not require flight-only fields',()=>{
- const r=compileHotelSearch({destination:'Tallinn',startDate:'2026-12-30',endDate:'2027-01-02',adults:2,childrenAges:[],market:'ES',locale:'ca-ES',currency:'EUR'});
- assert.equal(r.ready,true);assert.equal(r.query.destination,'Tallinn');assert.equal(r.query.services[0],'hotels');assert.equal(r.query.origin,undefined);assert.equal(r.query.cabin,undefined);
+ const r=compileHotelSearch({destination:'Tallinn',startDate:'2026-12-30',endDate:'2027-01-02',adults:2,childrenAges:[],rooms:2,market:'ES',locale:'ca-ES',currency:'EUR'});
+ assert.equal(r.ready,true);assert.equal(r.query.destination,'Tallinn');assert.equal(r.query.services[0],'hotels');assert.equal(r.query.rooms,2);assert.equal(r.query.origin,undefined);assert.equal(r.query.cabin,undefined);
 });
 test('TB-08.5 hotel search rejects invalid stay dates and never invents adults',()=>{
  const bad=compileHotelSearch({destination:'Tallinn',startDate:'2027-01-02',endDate:'2026-12-30',adults:2,market:'ES',locale:'ca-ES',currency:'EUR'});
  assert.equal(bad.ready,false);assert.ok(bad.blockers.some(x=>x.code==='stay_dates_required'));const defaults=hotelSearchDefaultsFromBrief(emptyBriefDocument());assert.equal(defaults.adults,0);assert.ok(defaults.traveler_blockers.some(x=>x.code==='adult_traveler_required'));
+});
+
+test('TB-08.5 hotel search validates room count',()=>{
+ const bad=compileHotelSearch({destination:'Tallinn',startDate:'2026-12-30',endDate:'2027-01-02',adults:2,rooms:0,market:'ES',locale:'ca-ES',currency:'EUR'});
+ assert.equal(bad.ready,false);assert.ok(bad.blockers.some(x=>x.code==='rooms_required'));
 });

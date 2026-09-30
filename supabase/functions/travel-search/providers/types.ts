@@ -23,6 +23,7 @@ export type TravelSearchQuery = {
   trip_type: 'one_way' | 'round_trip';
   adults: number;
   children_ages: number[];
+  rooms: number;
   cabin: string;
   services: TravelSearchService[];
   market: string;

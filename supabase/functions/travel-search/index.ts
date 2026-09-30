@@ -217,6 +217,7 @@ Deno.serve(async (req: Request) => {
   const tripType = String(body?.trip_type || '').trim();
   const adults = Number(body?.adults || 0);
   const childrenAges = Array.isArray(body?.children_ages) ? body.children_ages.map(Number) : [];
+  const rooms = Number(body?.rooms || 1);
   const cabin = String(body?.cabin || '');
   const market = String(body?.market || '').trim();
   const locale = String(body?.locale || '').trim();
@@ -263,6 +264,9 @@ Deno.serve(async (req: Request) => {
     if (!endDate || !isIsoDate(startDate) || !isIsoDate(endDate) || endDate <= startDate) {
       return json({ error: 'Invalid hotel stay dates' }, 400);
     }
+    if (!Number.isInteger(rooms) || rooms < 1 || rooms > 8) {
+      return json({ error: 'Invalid number of rooms' }, 400);
+    }
   }
 
   if (!Number.isInteger(adults) || adults < 1 || adults > 8) {
@@ -302,6 +306,7 @@ Deno.serve(async (req: Request) => {
     trip_type: needsFlights ? tripType as 'one_way' | 'round_trip' : 'round_trip',
     adults,
     children_ages: childrenAges,
+    rooms: needsHotels ? rooms : 1,
     cabin: needsFlights ? cabin : 'economy',
     services,
     market,
