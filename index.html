@@ -2787,7 +2787,8 @@ function renderBuild(data,tripId,generation,userId){
     const kind=button.dataset.buildKind,id=button.dataset.buildSource;
     if(kind==='flight'){setAppView('genericFlightsView');await loadFlights(true);if(tripRequestIsCurrent(tripId,generation))openFlightForm(id)}
     else if(kind==='accommodation'){setAppView('accommodationView');await loadAccommodations(true);if(tripRequestIsCurrent(tripId,generation))openAccommodationForm(id)}
-    else{setActivityViewMode(button.dataset.buildGroup==='local_transport'?'local_transport':'activity');setAppView('activitiesView');await loadActivities(true);if(tripRequestIsCurrent(tripId,generation))openActivityForm(id)}
+    else if(button.dataset.buildGroup==='local_transport'){setAppView('localTransportView');await loadActivities(true);if(tripRequestIsCurrent(tripId,generation))openLocalTransportForm(id)}
+    else{setActivityViewMode('activity');setAppView('activitiesView');await loadActivities(true);if(tripRequestIsCurrent(tripId,generation))openActivityForm(id)}
   });
 }
 async function openBuildAccommodationSearch(){
@@ -3766,7 +3767,7 @@ async function recoverActivityConflict(activityId,tripId,generation,message){
   await loadActivities(true);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;const current=activityRows.find(item=>item.id===activityId);if(!current){clearActivityDraft(tripId);resetActivityFormUi();msg('activityMsg','Aquesta activitat s’ha eliminat mentre l’editaves. Hem actualitzat la llista.',true);return}clearActivityDraft(tripId);openActivityForm(activityId);msg('activityMsg',message||'Aquesta activitat ha canviat mentre l’editaves. Hem carregat la versió més recent. Revisa els canvis abans de tornar a desar.',true);
 }
 async function openActivityDocument(activityId,role){
-  if(!trip||isLondonTrip())return;const tripId=trip.id,generation=tripLoadGeneration,documentId=activityDocumentId(activityId,role);if(!documentId)return;let document=documentRows.find(item=>item.id===documentId);if(!document){const documents=await loadDocuments(true);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;document=(documents||[]).find(item=>item.id===documentId)}if(!document){msg('activityMsg','El document associat ja no està disponible.',true);return}await openDocument(documentId,documentRows);
+  if(!trip||isLondonTrip())return;const tripId=trip.id,generation=tripLoadGeneration,documentId=activityDocumentId(activityId,role);if(!documentId)return;let document=documentRows.find(item=>item.id===documentId);if(!document){const documents=await loadDocuments(true);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;document=(documents||[]).find(item=>item.id===documentId)}if(!document){msg($('localTransportView')&&!$('localTransportView').classList.contains('hidden')?'localTransportMsg':'activityMsg','El document associat ja no està disponible.',true);return}await openDocument(documentId,documentRows);
 }
 async function deleteActivity(id,button){
   if(!trip||isLondonTrip())return;const row=activityRows.find(item=>item.id===id);if(!row||!confirm(`Eliminar «${row.title}»? Els documents es conservaran.`))return;const tripId=trip.id,generation=tripLoadGeneration,wasBeingEdited=$('activityForm').dataset.editId===id;button.disabled=true;msg('activityMsg','Eliminant activitat…');try{const {error}=await db.from('trip_activities').delete().eq('id',id).eq('trip_id',tripId);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;if(error)throw error;if(wasBeingEdited){clearActivityDraft(tripId);resetActivityFormUi()}msg('activityMsg','Activitat eliminada.');await loadActivities(true)}catch(error){if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip()){button.disabled=false;msg('activityMsg',error?.code==='23503'&&error?.message?.includes('trip_proposal_component_links')?'Aquesta peça conserva l’origen del viatge. Pots cancel·lar-la des d’Editar, però no eliminar-la.':(error?.message||'No s’ha pogut eliminar l’activitat.'),true)}}
@@ -4352,10 +4353,16 @@ function openPendingItinerarySource(type){
     else if(!$('accommodationFormCard').classList.contains('hidden')&&$('accommodationForm').dataset.editId===context.sourceId){}
     else if(!(draft&&draft.editId===context.sourceId&&restoreAccommodationDraft()))openAccommodationForm(context.sourceId);
   }else if(type==='activity'){
-    const draft=readActivityDraft();
-    if(draft&&draft.editId!==context.sourceId){resetActivityFormUi();focusItinerarySourceCard(type,context.sourceId,'activityMsg')}
-    else if(!$('activityFormCard').classList.contains('hidden')&&$('activityForm').dataset.editId===context.sourceId){}
-    else if(!(draft&&draft.editId===context.sourceId&&restoreActivityDraft()))openActivityForm(context.sourceId);
+    const sourceRow=activityRows.find(row=>row.id===context.sourceId);
+    if(isLocalTransportActivity(sourceRow)){
+      if(!$('localTransportFormCard').classList.contains('hidden')&&$('localTransportForm').dataset.editId===context.sourceId){}
+      else openLocalTransportForm(context.sourceId);
+    }else{
+      const draft=readActivityDraft();
+      if(draft&&draft.editId!==context.sourceId){resetActivityFormUi();focusItinerarySourceCard(type,context.sourceId,'activityMsg')}
+      else if(!$('activityFormCard').classList.contains('hidden')&&$('activityForm').dataset.editId===context.sourceId){}
+      else if(!(draft&&draft.editId===context.sourceId&&restoreActivityDraft()))openActivityForm(context.sourceId);
+    }
   }else{
     const draft=readFlightDraft();
     if(draft&&draft.editId!==context.sourceId){resetFlightFormUi();focusItinerarySourceCard(type,context.sourceId,'flightMsg')}
@@ -4367,7 +4374,8 @@ function openPendingItinerarySource(type){
 function openItinerarySource(type,id,originView='itineraryView'){
   if(!trip||!session||isLondonTrip()||!['flight','accommodation','activity'].includes(type)||!itineraryProjection.some(item=>item.tripId===trip.id&&item.sourceType===type&&item.sourceId===id))return;
   itinerarySourceContext={userId:session.user.id,tripId:trip.id,generation:tripLoadGeneration,sourceType:type,sourceId:id,pending:true,originView:originView==='genericDashboardView'?originView:'itineraryView'};updateItinerarySourceBack();
-  setAppView(type==='flight'?'genericFlightsView':type==='accommodation'?'accommodationView':'activitiesView');
+  const activityRow=type==='activity'?activityRows.find(row=>row.id===id):null;
+  setAppView(type==='flight'?'genericFlightsView':type==='accommodation'?'accommodationView':isLocalTransportActivity(activityRow)?'localTransportView':'activitiesView');
 }
 
 function renderPasswordRecovery(){
@@ -4406,7 +4414,7 @@ function clearTripScopedState(){
   clearAccommodationVoucherFocus();
   clearGenericItineraryState();
   documentRows=[];pendingDocumentRows=[];expenseRows=[];photoRows=[];pendingPhotoRows=[];carRentalRows=[];carRentalDocumentLinks=[];carRentalSubmitting=false;carRentalLoadSequence+=1;accommodationRows=[];accommodationDocumentLinks=[];accommodationSubmitting=false;accommodationLoadSequence+=1;flightRows=[];flightDocumentLinks=[];flightSubmitting=false;flightLoadSequence+=1;activityRows=[];activityDocumentLinks=[];activitySubmitting=false;activityLoadSequence+=1;manualItineraryRows=[];manualItinerarySubmitting=false;manualItineraryLoadSequence+=1;parkingRow=null;parkingLoadsPending=0;clearPhotoObjectUrls();closePhotoLightbox();
-  const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList',''],['accommodationList',''],['flightList',''],['activityList',''],['carRentalList',''],['genericItineraryDayTabs',''],['genericItineraryDays',''],['genericItineraryUnscheduledList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
+  const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList',''],['accommodationList',''],['flightList',''],['activityList',''],['localTransportList',''],['carRentalList',''],['genericItineraryDayTabs',''],['genericItineraryDays',''],['genericItineraryUnscheduledList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
   [['overviewChecklist','0/0'],['overviewDocuments','0'],['overviewExpenses','0'],['documentCount','0'],['expenseCount','0'],['photoCount','0']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
   [['genericItineraryModuleStatus','Planning consolidat'],['genericChecklistModuleStatus','Preparatius compartits'],['genericDocumentsModuleStatus','Documents del viatge'],['genericPhotosModuleStatus','Àlbum compartit del viatge'],['genericTravelersModuleStatus','Invitacions del viatge'],['genericAccommodationModuleStatus','Cap allotjament confirmat'],['genericFlightsModuleStatus','Cap vol confirmat'],['genericActivitiesModuleStatus','Cap activitat confirmada'],['genericLocalTransportModuleStatus','Cap transport confirmat'],['genericCarRentalModuleStatus','Cap cotxe reservat'],['genericParkingModuleStatus','A punt per utilitzar']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
   ['genericItineraryModuleCard','genericFlightsModuleCard','genericAccommodationModuleCard','genericActivitiesModuleCard','genericLocalTransportModuleCard','genericCarRentalModuleCard','genericConfirmedSection'].forEach(id=>$(id)?.classList.add('hidden'));
@@ -4445,6 +4453,7 @@ function clearTripScopedState(){
   if($('photoPreviewImage'))$('photoPreviewImage').removeAttribute('src');
   showPhotoMessage('');
   if($('carRentalForm'))resetCarRentalForm();
+  if($('localTransportForm'))resetLocalTransportForm();
   if($('accommodationForm')){$('accommodationForm').reset();$('accommodationForm').dataset.editId='';$('accommodationForm').dataset.timeZone='';$('accommodationForm').dataset.tripId='';$('accommodationForm').dataset.originalUpdatedAt='';$('accommodationForm').dataset.originalVoucherDocumentId='';$('accommodationForm').dataset.voucherTouched='';$('accommodationForm').dataset.legacyLocationText='';$('accommodationForm').dataset.remoteConflict=''}
   if($('accommodationFormCard'))setAccommodationFormMode(false);
   if($('accommodationEmpty'))$('accommodationEmpty').classList.add('hidden');
