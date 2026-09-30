@@ -653,6 +653,7 @@
           <label>Sortida<input id="buildAccommodationEndDate" type="date" required></label>
           <label>Adults<input id="buildAccommodationAdults" type="number" min="1" max="8" inputmode="numeric" required></label>
           <label>Menors<input id="buildAccommodationChildrenCount" type="number" min="0" max="8" inputmode="numeric" value="0" required></label>
+          <label>Habitacions<input id="buildAccommodationRooms" type="number" min="1" max="8" inputmode="numeric" value="1" required></label>
           <label>Edats dels menors<input id="buildAccommodationChildren" maxlength="80" placeholder="Ex.: 8, 12"></label>
           <label class="wide">Moneda<select id="buildAccommodationCurrency" data-currency-select required></select></label>
           <div class="build-flight-form-actions"><button id="buildAccommodationSearchSubmit" type="submit">Cerca allotjament</button><button id="buildAccommodationSearchClose" type="button" class="secondary">Tanca</button></div>
@@ -2722,7 +2723,7 @@ async function openBuildAccommodationSearch(){
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   if($('accommodationView')?.classList.contains('hidden')){setAppView('accommodationView');await loadAccommodations(true)}
   const api=await travelSearchApi(),culture=genericSearchCulture();
-  let defaults={destination:'',start_date:'',end_date:'',adults:0,children_ages:[],children_count:0};
+  let defaults={destination:'',start_date:'',end_date:'',adults:0,children_ages:[],children_count:0,rooms:1};
   try{
     const {data,error}=await db.from('trip_briefs').select('document').eq('trip_id',tripId).maybeSingle();
     if(error)throw error;
@@ -2734,6 +2735,7 @@ async function openBuildAccommodationSearch(){
   $('buildAccommodationEndDate').value=defaults.end_date||trip?.end_date||'';
   $('buildAccommodationAdults').value=defaults.adults?String(defaults.adults):'';
   $('buildAccommodationChildrenCount').value=String(defaults.children_count||0);
+  $('buildAccommodationRooms').value=String(defaults.rooms||1);
   $('buildAccommodationChildren').value=(defaults.children_ages||[]).length===defaults.children_count?(defaults.children_ages||[]).join(', '):'';
   setCurrencyValue('buildAccommodationCurrency',culture.currency||'',false);
   $('buildAccommodationResults').innerHTML='';$('buildAccommodationSearchSummary').textContent='';msg('buildAccommodationSearchMessage','');
@@ -2760,12 +2762,13 @@ async function runBuildAccommodationSearch(){
   const button=$('buildAccommodationSearchSubmit'),tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   button.disabled=true;msg('buildAccommodationSearchMessage','Buscant allotjaments…');$('buildAccommodationResults').innerHTML='';
   try{
-    const api=await travelSearchApi(),culture=genericSearchCulture(),childrenAges=parseChildAges($('buildAccommodationChildren').value),childrenCount=Number($('buildAccommodationChildrenCount').value);
+    const api=await travelSearchApi(),culture=genericSearchCulture(),childrenAges=parseChildAges($('buildAccommodationChildren').value),childrenCount=Number($('buildAccommodationChildrenCount').value),rooms=Number($('buildAccommodationRooms').value);
     if(!Number.isInteger(childrenCount)||childrenCount<0||childrenCount>8)throw new Error('Indica un nombre de menors entre 0 i 8.');
     if(childrenAges.length!==childrenCount)throw new Error(childrenCount?'Indica una edat per a cada menor.':'Si no viatgen menors, deixa les edats en blanc.');
-    const compiled=api.compileHotelSearch({destination:$('buildAccommodationDestination').value,startDate:$('buildAccommodationStartDate').value,endDate:$('buildAccommodationEndDate').value,adults:Number($('buildAccommodationAdults').value),childrenAges,market:culture.market,locale:culture.locale,currency:$('buildAccommodationCurrency').value});
+    if(!Number.isInteger(rooms)||rooms<1||rooms>8)throw new Error('Indica entre 1 i 8 habitacions.');
+    const compiled=api.compileHotelSearch({destination:$('buildAccommodationDestination').value,startDate:$('buildAccommodationStartDate').value,endDate:$('buildAccommodationEndDate').value,adults:Number($('buildAccommodationAdults').value),childrenAges,rooms,market:culture.market,locale:culture.locale,currency:$('buildAccommodationCurrency').value});
     if(!compiled.ready)throw new Error('Completa destinació, dates, viatgers i moneda abans de buscar.');
-    $('buildAccommodationSearchSummary').innerHTML='Buscant a <strong>'+esc(compiled.query.destination)+'</strong> · '+esc(compiled.query.start_date)+' → '+esc(compiled.query.end_date)+' · '+compiled.query.adults+' adult'+(compiled.query.adults===1?'':'s')+(compiled.query.children_ages.length?' · menors: '+esc(compiled.query.children_ages.join(', ')):'');
+    $('buildAccommodationSearchSummary').innerHTML='Buscant a <strong>'+esc(compiled.query.destination)+'</strong> · '+esc(compiled.query.start_date)+' → '+esc(compiled.query.end_date)+' · '+compiled.query.adults+' adult'+(compiled.query.adults===1?'':'s')+(compiled.query.children_ages.length?' · menors: '+esc(compiled.query.children_ages.join(', ')):'')+' · '+compiled.query.rooms+' habitació'+(compiled.query.rooms===1?'':'ns');
     const response=await db.functions.invoke('travel-search',{body:compiled.query}),data=response.data,error=response.error;
     if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId)return;if(error)throw error;renderAccommodationOffers(data);
   }catch(error){if(tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId)msg('buildAccommodationSearchMessage',error?.message||'No s’ha pogut completar la cerca d’allotjament.',true)}
