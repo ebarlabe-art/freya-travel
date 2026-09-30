@@ -2241,7 +2241,6 @@ async function resumeBuilderPointer(p=builderPointer()){
 function builderHistory(view,depth=(history.state?.builderNav?.depth||0)+1){return {owner:session?.user?.id,view,depth,parent:view==='builderView'?(history.state?.builderNav?.parent||(['designTripView','constructionView'].includes(visibleAppView())?visibleAppView():'constructionView')):null}}
 function navigateBuilder(view,push=true,leaveChecked=false){
   if(!session||!leaveChecked&&!canLeaveBuilder())return;
-  if(view==='designTripView'&&visibleAppView()==='tripsHomeView'&&builderPointer()){history.pushState({builderNav:builderHistory('designTripView')},'');setAppView('designTripView');resumeBuilderPointer();return;}
   if(view!=='builderView')leaveBuilderPointer();
   if(view!=='builderView'&&proposalOpen)resetProposalUi();
   if(view!=='builderView'&&builderController){try{builderController.clearRoute()}catch(error){$('builderMessage').textContent=error.message;return}}
