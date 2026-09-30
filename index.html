@@ -449,19 +449,18 @@
       <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="genericTripTitle"></h1><p id="genericTripDates"></p><div id="genericTripMeta" class="generic-meta"></div></div>
       <div id="genericPushCard" class="install-card hidden"><div><strong>🔔 Notificacions</strong><small id="genericPushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="genericEnablePush" type="button">Activa les notificacions</button></div>
       <section class="generic-dashboard-intro">
-        <div><h2>El teu viatge, a mà</h2><p>Prepara’l, viu-lo i conserva’n tots els records des d’un sol lloc.</p></div>
-        <div class="generic-lifecycle" aria-label="Etapes del viatge"><span>Abans</span><span>Durant</span><span>Després</span></div>
+        <div><h2>Prepara el teu viatge</h2><p>Tot el que encara estàs decidint o comparant viu dins de “Construeix aquest viatge”.</p></div>
       </section>
+      <button id="genericBuildCard" class="trip-build-entry hidden" type="button" data-open="buildView"><span><strong>🧩 Construeix aquest viatge</strong><small>Busca, compara i completa les peces que encara falten del viatge.</small></span><span>›</span></button>
       <section id="tripHome" class="trip-home" aria-label="El viatge ara">
         <div id="tripHomeContent"></div>
         <p id="tripHomeMessage" class="message hidden" role="status"></p>
       </section>
-      <button id="genericBuildCard" class="trip-build-entry hidden" type="button" data-open="buildView"><span><strong>🧩 Construeix aquest viatge</strong><small>Busca, compara i completa les peces que encara falten del viatge.</small></span><span>›</span></button>
       <section id="genericConfirmedSection" class="generic-trip-section hidden" aria-label="El teu viatge">
         <div class="generic-trip-section-head"><h2>El teu viatge</h2><p>Aquí apareix només el que ja tens reservat o confirmat.</p></div>
         <div class="generic-module-grid">
           <button id="genericItineraryModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="itineraryView"><span class="generic-module-icon">📅</span><span class="generic-module-copy"><strong>Itinerari</strong><small id="genericItineraryModuleStatus">Planning consolidat</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericFlightsModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="genericFlightsView"><span class="generic-module-icon">✈️</span><span class="generic-module-copy"><strong>Vols i trajectes</strong><small id="genericFlightsModuleStatus">Cap vol confirmat</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericFlightsModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="genericFlightsView"><span class="generic-module-icon">✈️</span><span class="generic-module-copy"><strong>Vols</strong><small id="genericFlightsModuleStatus">Cap vol confirmat</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericAccommodationModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="accommodationView"><span class="generic-module-icon">🏨</span><span class="generic-module-copy"><strong>Allotjament</strong><small id="genericAccommodationModuleStatus">Cap allotjament confirmat</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericActivitiesModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="activitiesView" data-activity-mode="activity"><span class="generic-module-icon">🎟️</span><span class="generic-module-copy"><strong>Activitats</strong><small id="genericActivitiesModuleStatus">Cap activitat confirmada</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericLocalTransportModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="activitiesView" data-activity-mode="local_transport"><span class="generic-module-icon">🚇</span><span class="generic-module-copy"><strong>Transport local</strong><small id="genericLocalTransportModuleStatus">Cap transport confirmat</small></span><span class="generic-module-arrow">›</span></button>
@@ -3583,7 +3582,6 @@ function renderTripHome(){
     else if(state.phase==='future')html+='<p>Encara no hi ha cap compromís amb hora reservat o confirmat.</p>';
     html+=state.nextCoincidences.map(item=>tripHomeCard(item,'A LA MATEIXA HORA · coincidència')).join('');
     if(state.flexible.length)html+=`<h3>Plans d’avui</h3><p>Horaris orientatius o flexibles.</p>${state.flexible.map(item=>tripHomeCard(item,'PLA FLEXIBLE')).join('')}`;
-    if(state.unscheduled.length)html+=`<details><summary>Plans pendents de situar · ${state.unscheduled.length}</summary>${state.unscheduled.map(item=>tripHomeCard(item,'SENSE DATA · no assignat a avui')).join('')}</details>`;
     if(state.points.length)html+=`<details><summary>Previsions amb hora d’avui · sense durada coneguda (${state.points.length})</summary>${state.points.map(item=>tripHomeCard(item,'PREVIST · no confirma realització')).join('')}</details>`;
     if(state.dayFinished){
       html+='<h3>Sense més compromisos amb hora avui</h3><p>Això no vol dir que tots els plans s’hagin completat.</p>';
