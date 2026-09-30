@@ -463,7 +463,7 @@
           <button id="genericFlightsModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="genericFlightsView"><span class="generic-module-icon">✈️</span><span class="generic-module-copy"><strong>Vols</strong><small id="genericFlightsModuleStatus">Cap vol confirmat</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericAccommodationModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="accommodationView"><span class="generic-module-icon">🏨</span><span class="generic-module-copy"><strong>Allotjament</strong><small id="genericAccommodationModuleStatus">Cap allotjament confirmat</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericActivitiesModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="activitiesView" data-activity-mode="activity"><span class="generic-module-icon">🎟️</span><span class="generic-module-copy"><strong>Activitats</strong><small id="genericActivitiesModuleStatus">Cap activitat confirmada</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericLocalTransportModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="activitiesView" data-activity-mode="local_transport"><span class="generic-module-icon">🚇</span><span class="generic-module-copy"><strong>Transport local</strong><small id="genericLocalTransportModuleStatus">Cap transport confirmat</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericLocalTransportModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="localTransportView"><span class="generic-module-icon">🚇</span><span class="generic-module-copy"><strong>Transport local</strong><small id="genericLocalTransportModuleStatus">Cap transport confirmat</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericCarRentalModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="carRentalView"><span class="generic-module-icon">🚙</span><span class="generic-module-copy"><strong>Cotxe de lloguer</strong><small id="genericCarRentalModuleStatus">Cap cotxe reservat</small></span><span class="generic-module-arrow">›</span></button>
         </div>
       </section>
@@ -523,6 +523,10 @@
             <article class="build-component">
               <div class="build-component-head"><div><h4>🚙 Cotxe de lloguer</h4><p>Prepara, reserva i documenta el cotxe del viatge.</p></div></div>
               <div class="build-component-actions"><button type="button" data-open="carRentalView">Gestiona el cotxe de lloguer</button></div>
+            </article>
+            <article class="build-component">
+              <div class="build-component-head"><div><h4>🚇 Transport intern / local</h4><p>Trens, busos, ferris, trasllats i altres desplaçaments del viatge.</p></div></div>
+              <div class="build-component-actions"><button type="button" data-open="localTransportView">Gestiona transports</button></div>
             </article>
           </div>
         </section>
@@ -895,6 +899,69 @@
       </section>
     </div>
 
+    <div id="localTransportView" class="hidden">
+      <button class="ghost back" data-source-back>← Torna al tauler</button>
+      <section class="accommodation-hero">
+        <div><small>🚇 Transport intern / local</small><h2>Com et mouràs?</h2><p>Organitza trens, busos, ferris, trasllats, taxi/VTC i transport públic sense barrejar-los amb les activitats.</p></div>
+        <button id="addLocalTransport" type="button">Afegir transport</button>
+      </section>
+      <p id="localTransportMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
+      <div id="localTransportBrowse">
+        <div id="localTransportLoading" class="accommodation-loading hidden">Carregant transports…</div>
+        <div id="localTransportEmpty" class="accommodation-empty hidden"><strong>Encara no hi ha cap transport</strong>Pots afegir un tren, bus, ferri, trasllat o transport urbà.<br><button id="addFirstLocalTransport" type="button">Afegir transport</button></div>
+        <div id="localTransportList" class="accommodation-list"></div>
+      </div>
+      <section id="localTransportFormCard" class="card accommodation-form-card hidden">
+        <h3 id="localTransportFormTitle">Afegir transport</h3>
+        <form id="localTransportForm" class="accommodation-form">
+          <label>Tipus<select id="localTransportMode" required>
+            <option value="train">🚆 Tren</option><option value="bus">🚌 Bus</option><option value="ferry">⛴️ Ferri</option><option value="transfer">🚐 Trasllat</option><option value="taxi">🚕 Taxi</option><option value="vtc">🚘 VTC</option><option value="metro">🚇 Metro</option><option value="tram">🚊 Tramvia</option><option value="public_transport">🚌 Transport públic</option><option value="other">📍 Altres</option>
+          </select></label>
+          <label>Nom / trajecte<input id="localTransportTitle" maxlength="200" required placeholder="Riga → Tallinn"></label>
+
+          <label class="wide">Origen<input id="localTransportOriginName" maxlength="200" placeholder="Estació, aeroport, hotel..."></label>
+          <label class="wide">Adreça origen<input id="localTransportOriginAddress" maxlength="500"></label>
+          <label>Ciutat origen<input id="localTransportOriginCity" maxlength="200"></label>
+          <label>Sortida<input id="localTransportStartAt" type="datetime-local"></label>
+          <label class="wide">Zona horària sortida<input id="localTransportTimeZone" maxlength="100" placeholder="Europe/Riga"></label>
+
+          <label class="wide">Destinació<input id="localTransportDestinationName" maxlength="200" placeholder="Estació, port, hotel..."></label>
+          <label class="wide">Adreça destinació<input id="localTransportDestinationAddress" maxlength="500"></label>
+          <label>Ciutat destinació<input id="localTransportDestinationCity" maxlength="200"></label>
+          <label>Arribada<input id="localTransportEndAt" type="datetime-local"></label>
+          <label class="wide">Zona horària arribada<input id="localTransportArrivalTimeZone" maxlength="100" placeholder="Europe/Tallinn"></label>
+
+          <label>Estat<select id="localTransportStatus"><option value="planning">En planificació</option><option value="reserved">Reservat</option><option value="confirmed">Confirmat</option><option value="cancelled">Cancel·lat</option></select></label>
+          <label>Persones<input id="localTransportPeople" type="number" min="1" max="10000" inputmode="numeric"></label>
+          <label>Companyia / operador<input id="localTransportProvider" maxlength="200" placeholder="Lux Express, Renfe..."></label>
+          <label>Número de servei<input id="localTransportServiceNumber" maxlength="100" placeholder="IC 123, bus 24..."></label>
+          <label>Localitzador<input id="localTransportReference" maxlength="200"></label>
+          <label>Andana / moll / parada<input id="localTransportPlatform" maxlength="100"></label>
+          <label>Seient / cabina<input id="localTransportSeat" maxlength="100"></label>
+          <label>Telèfon<input id="localTransportPhone" type="tel" maxlength="50"></label>
+          <label>Correu<input id="localTransportEmail" type="email" maxlength="254"></label>
+          <label class="wide">Web<input id="localTransportWebsite" type="url" maxlength="2048" placeholder="https://..."></label>
+
+          <section id="localTransportCostPanel" class="tb-cost-panel hidden">
+            <h4>💶 Cost del transport</h4><p>El preu confirmat substitueix el previst al pressupost.</p>
+            <label>Preu previst<input id="localTransportExpectedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            <label>Preu confirmat<input id="localTransportConfirmedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            <label>Moneda<select id="localTransportCostCurrency" data-currency-select></select></label>
+            <input id="localTransportPriceQuality" type="hidden" value="unknown">
+            <label class="wide">Què inclou<input id="localTransportPriceScope" maxlength="500" placeholder="Bitllets, equipatge, reserva de seient..."></label>
+            <label class="wide">Costos obligatoris encara desconeguts<textarea id="localTransportUnknownCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
+            <label class="wide">Costos exclosos<textarea id="localTransportExcludedCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
+          </section>
+
+          <label class="wide">Reserva<select id="localTransportBookingDocument"><option value="">Sense document associat</option></select></label>
+          <label class="wide">Bitllet / boarding pass<select id="localTransportTicketDocument"><option value="">Sense document associat</option></select></label>
+          <div class="accommodation-document-row wide"><span class="accommodation-document-help">Pots associar documents que ja hagis pujat a Documents.</span><button id="localTransportOpenDocuments" type="button" class="secondary accommodation-documents-action">Anar a Documents</button></div>
+          <label class="wide">Notes<textarea id="localTransportNotes" maxlength="4000" placeholder="Equipatge, instruccions de recollida, marge recomanat..."></textarea></label>
+          <div class="accommodation-form-actions"><button id="saveLocalTransport" type="submit">Desar transport</button><button id="cancelLocalTransport" type="button" class="secondary">Cancel·lar</button></div>
+        </form>
+      </section>
+    </div>
+
     <div id="activitiesView" class="hidden">
       <button class="ghost back" data-source-back>← Torna al tauler</button>
       <section class="accommodation-hero">
@@ -910,7 +977,7 @@
       <section id="activityFormCard" class="card accommodation-form-card hidden">
         <h3 id="activityFormTitle">Afegir activitat</h3>
         <form id="activityForm" class="accommodation-form">
-          <label>Tipus<select id="activityType" required><option value="restaurant">Restaurant</option><option value="attraction">Atracció</option><option value="tour">Tour o visita</option><option value="excursion">Excursió</option><option value="museum">Museu</option><option value="show">Espectacle</option><option value="experience">Experiència</option><option value="beach">Platja</option><option value="transport_activity">Activitat de transport</option><option value="transport">Transport</option><option value="other">Altres</option></select></label>
+          <label>Tipus<select id="activityType" required><option value="restaurant">Restaurant</option><option value="attraction">Atracció</option><option value="tour">Tour o visita</option><option value="excursion">Excursió</option><option value="museum">Museu</option><option value="show">Espectacle</option><option value="experience">Experiència</option><option value="beach">Platja</option><option value="other">Altres</option></select></label>
           <label>Nom<input id="activityTitle" maxlength="200" required placeholder="Nom de l’activitat"></label>
           <label>Inici (opcional)<input id="activityStartAt" type="datetime-local"></label>
           <label>Final (opcional)<input id="activityEndAt" type="datetime-local"></label>
@@ -1983,6 +2050,7 @@ const ACCOMMODATION_SELECT='id,trip_id,accommodation_type,name,address,location_
 const ACCOMMODATION_TYPES={hotel:{icon:'🏨',label:'Hotel'},apartment:{icon:'🏠',label:'Apartament'},house:{icon:'🏡',label:'Casa'},hostel:{icon:'🛏️',label:'Hostal'},resort:{icon:'🌴',label:'Resort'},other:{icon:'📍',label:'Allotjament'}};
 const ACCOMMODATION_STATUSES={planning:'En planificació',confirmed:'Confirmat',cancelled:'Cancel·lat'};
 const ACTIVITY_TYPES={transport:{icon:'🚐',label:'Transport'},restaurant:{icon:'🍽️',label:'Restaurant'},attraction:{icon:'🎡',label:'Atracció'},tour:{icon:'🗺️',label:'Tour o visita'},excursion:{icon:'🥾',label:'Excursió'},museum:{icon:'🏛️',label:'Museu'},show:{icon:'🎭',label:'Espectacle'},experience:{icon:'✨',label:'Experiència'},beach:{icon:'🏖️',label:'Platja'},transport_activity:{icon:'🚐',label:'Activitat de transport'},other:{icon:'📍',label:'Altres'}};
+const LOCAL_TRANSPORT_MODES={train:{icon:'🚆',label:'Tren'},bus:{icon:'🚌',label:'Bus'},ferry:{icon:'⛴️',label:'Ferri'},transfer:{icon:'🚐',label:'Trasllat'},taxi:{icon:'🚕',label:'Taxi'},vtc:{icon:'🚘',label:'VTC'},metro:{icon:'🚇',label:'Metro'},tram:{icon:'🚊',label:'Tramvia'},public_transport:{icon:'🚌',label:'Transport públic'},other:{icon:'📍',label:'Altres'}};
 const ACTIVITY_STATUSES={planning:'En planificació',reserved:'Reservat',confirmed:'Confirmat',cancelled:'Cancel·lat'};
 const ACTIVITY_DRAFT_VERSION=1;
 const ACTIVITY_DRAFT_FIELDS=['activityType','activityTitle','activityStartAt','activityEndAt','activityTimeZone','activityVenue','activityAddress','activityCity','activityStatus','activityReference','activityProvider','activityPhone','activityEmail','activityWebsite','activityPeople','activityAmount','activityCurrency','activityBookingDocument','activityTicketDocument','activityNotes'];
@@ -1995,10 +2063,10 @@ function accommodationDocumentFor(accommodationId){const documentId=accommodatio
 function accommodationSummary(count=accommodationRows.length){return !count?'Cap allotjament':count===1?'1 allotjament':`${count} allotjaments`}
 function validDocumentsReturnContext(){
   const context=documentsReturnContext,userId=session?.user?.id,tripId=trip?.id;
-  if(['accommodationView','genericFlightsView','activitiesView','carRentalView'].includes(context?.returnView)&&context.userId===userId&&context.tripId===tripId&&!isLondonTrip())return context;
+  if(['accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView'].includes(context?.returnView)&&context.userId===userId&&context.tripId===tripId&&!isLondonTrip())return context;
   documentsReturnContext=null;return null;
 }
-function updateDocumentsBack(){const context=validDocumentsReturnContext();if($('documentsBack'))$('documentsBack').textContent=context?.returnView==='accommodationView'?'← Tornar a Allotjament':context?.returnView==='genericFlightsView'?'← Tornar a Vols':context?.returnView==='activitiesView'?'← Tornar a Reserves i activitats':context?.returnView==='carRentalView'?'← Tornar a Cotxe de lloguer':'← Torna al tauler'}
+function updateDocumentsBack(){const context=validDocumentsReturnContext();if($('documentsBack'))$('documentsBack').textContent=context?.returnView==='accommodationView'?'← Tornar a Allotjament':context?.returnView==='genericFlightsView'?'← Tornar a Vols':context?.returnView==='activitiesView'?'← Tornar a Reserves i activitats':context?.returnView==='localTransportView'?'← Tornar a Transport intern / local':context?.returnView==='carRentalView'?'← Tornar a Cotxe de lloguer':'← Torna al tauler'}
 function clearDocumentsReturnContext(){documentsReturnContext=null;updateDocumentsBack()}
 function clearAccommodationVoucherFocus(){
   accommodationVoucherFocus=null;if(accommodationVoucherFocusTimer)clearTimeout(accommodationVoucherFocusTimer);accommodationVoucherFocusTimer=null;
@@ -2032,6 +2100,10 @@ function setAccommodationDocumentsReturnContext(){
 function setActivityDocumentsReturnContext(){
   if(!trip||!session||isLondonTrip())return false;
   documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'activitiesView'};updateDocumentsBack();return true;
+}
+function setLocalTransportDocumentsReturnContext(){
+  if(!trip||!session||isLondonTrip())return false;
+  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'localTransportView'};updateDocumentsBack();return true;
 }
 function setFlightDocumentsReturnContext(){
   if(!trip||!session||isLondonTrip())return false;
@@ -2898,9 +2970,9 @@ async function loadBuildView(){
 
 $('budgetSettingsForm').onsubmit=async event=>{event.preventDefault();if(!trip||isLondonTrip())return;const target=$('budgetTarget').value.trim(),maximum=$('budgetMaximum').value.trim(),currency=$('budgetCurrency').value.trim().toUpperCase();if((target||maximum)&&!/^[A-Z]{3}$/.test(currency)){msg('budgetMsg','Indica una moneda de tres lletres, per exemple EUR.',true);return}try{const api=await tbBudgetApi();await api.saveBudgetSettings(db,{tripId:trip.id,expectedRevision:Number($('budgetSettingsForm').dataset.revision||0),targetAmount:target===''?null:Number(target),maximumAmount:maximum===''?null:Number(maximum),currency:(target||maximum)?currency:null});await loadBudgetView();msg('budgetMsg','Pressupost actualitzat.')}catch(error){msg('budgetMsg',error?.message||'No s’ha pogut desar el pressupost.',true)}};
 
-const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','carRentalView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView']);
-const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','carRentalView'].includes(id)));
+const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView']);
+const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
   if(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(view))return true;
   if(!value)return false;
@@ -2934,7 +3006,7 @@ function setAppView(id){
   persistNavigationState(id);
   updateTripHomeClock();updateHomeClock();
   if(id==='documentsView')updateDocumentsBack();if(id==='buildView')loadBuildView();if(id==='budgetView')loadBudgetView();
-  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView')loadActivityViewData();if(id==='carRentalView')loadCarRentals();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
+  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView')loadActivityViewData();if(id==='localTransportView')loadLocalTransportViewData();if(id==='carRentalView')loadCarRentals();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
 }
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
 function stopLondonFlightTimer(){
@@ -4889,7 +4961,7 @@ $('addActivity').onclick=()=>openActivityForm();
 $('addFirstActivity').onclick=()=>openActivityForm();
 $('cancelActivity').onclick=closeActivityForm;
 $('activityOpenDocuments').onclick=()=>{if(!setActivityDocumentsReturnContext())return;saveActivityDraft();setAppView('documentsView')};
-['activity','flight','accommodation','carRental'].forEach(prefix=>{const input=$(prefix+'CostCurrency');if(input){const clear=()=>input.setCustomValidity('');input.addEventListener('input',clear);input.addEventListener('change',clear)}});
+['activity','localTransport','flight','accommodation','carRental'].forEach(prefix=>{const input=$(prefix+'CostCurrency');if(input){const clear=()=>input.setCustomValidity('');input.addEventListener('input',clear);input.addEventListener('change',clear)}});
 $('activityForm').addEventListener('input',saveActivityDraft);$('activityForm').addEventListener('change',saveActivityDraft);
 $('activityBookingDocument').addEventListener('change',()=>reconcileActivityDocumentRoles('booking'));
 $('activityTicketDocument').addEventListener('change',()=>reconcileActivityDocumentRoles('ticket'));
