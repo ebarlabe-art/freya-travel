@@ -114,21 +114,22 @@ export function compileFlightLegSearch(document,{origin,destination,startDate,ad
   };
 }
 
-export function compileHotelSearch({destination,startDate,endDate,adults,childrenAges=[],market,locale,currency}={}){
+export function compileHotelSearch({destination,startDate,endDate,adults,childrenAges=[],rooms=1,market,locale,currency}={}){
   const blockers=[];
   searchCulture(blockers,{market,locale,currency});
   const cleanDestination=typeof destination==='string'?destination.trim():'';
   if(!cleanDestination)blockers.push({code:'destination_required',field:'destination'});
   if(!validDate(startDate)||!validDate(endDate)||endDate<=startDate)blockers.push({code:'stay_dates_required',field:'dates'});
-  const adultCount=Number(adults),ages=Array.isArray(childrenAges)?childrenAges.map(Number):[];
+  const adultCount=Number(adults),ages=Array.isArray(childrenAges)?childrenAges.map(Number):[],roomCount=Number(rooms);
   if(!Number.isInteger(adultCount)||adultCount<1||adultCount>8)blockers.push({code:'adult_traveler_required',field:'travelers'});
   if(ages.length>8||ages.some(age=>!Number.isInteger(age)||age<0||age>17))blockers.push({code:'child_age_required',field:'travelers'});
+  if(!Number.isInteger(roomCount)||roomCount<1||roomCount>8)blockers.push({code:'rooms_required',field:'rooms'});
   return {
     ready:blockers.length===0,
     blockers,
     query:blockers.length?null:{
       destination:cleanDestination,start_date:startDate,end_date:endDate,
-      adults:adultCount,children_ages:ages,services:['hotels'],
+      adults:adultCount,children_ages:ages,rooms:roomCount,services:['hotels'],
       market,locale,currency,preferences:[],
     },
   };
@@ -149,6 +150,7 @@ export function hotelSearchDefaultsFromBrief(document){
     adults,
     children_ages:childrenAges,
     children_count:Object.values(document.travelers).filter(t=>t.kind==='child').length,
+    rooms:1,
     traveler_blockers:blockers,
   };
 }
