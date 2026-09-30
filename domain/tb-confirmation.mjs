@@ -1,5 +1,6 @@
 export async function findTbComponent(client,{tripId,sourceKind,sourceId}){
-  const column=sourceKind==='accommodation'?'accommodation_id':sourceKind==='flight'?'flight_id':'activity_id';
+  const column=sourceKind==='accommodation'?'accommodation_id':sourceKind==='flight'?'flight_id':sourceKind==='activity'?'activity_id':null;
+  if(!column)return null;
   const {data,error}=await client.from('trip_proposal_component_links')
     .select('component_id')
     .eq('trip_id',tripId)
