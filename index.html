@@ -5062,6 +5062,116 @@ $('flightForm').onsubmit=async event=>{
   }
 };
 
+$('addLocalTransport').onclick=()=>openLocalTransportForm();
+$('addFirstLocalTransport').onclick=()=>openLocalTransportForm();
+$('cancelLocalTransport').onclick=closeLocalTransportForm;
+$('localTransportOpenDocuments').onclick=()=>{if(setLocalTransportDocumentsReturnContext())setAppView('documentsView')};
+$('localTransportBookingDocument').addEventListener('change',()=>{if($('localTransportBookingDocument').value&&$('localTransportBookingDocument').value===$('localTransportTicketDocument').value)$('localTransportTicketDocument').value='';localTransportDocumentOptions($('localTransportBookingDocument').value,$('localTransportTicketDocument').value)});
+$('localTransportTicketDocument').addEventListener('change',()=>{if($('localTransportTicketDocument').value&&$('localTransportTicketDocument').value===$('localTransportBookingDocument').value)$('localTransportBookingDocument').value='';localTransportDocumentOptions($('localTransportBookingDocument').value,$('localTransportTicketDocument').value)});
+$('localTransportForm').onsubmit=async event=>{
+  event.preventDefault();if(!trip||!session||isLondonTrip())return;
+  const form=$('localTransportForm');$('localTransportCostCurrency')?.setCustomValidity('');if(!form.reportValidity())return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,editingId=form.dataset.editId||'',originalUpdatedAt=form.dataset.originalUpdatedAt||'',originalBooking=form.dataset.originalBookingDocumentId||'',originalTicket=form.dataset.originalTicketDocumentId||'';
+  if(form.dataset.tripId!==tripId)return;
+  try{
+    const startZone=optionalText($('localTransportTimeZone').value),arrivalZone=optionalText($('localTransportArrivalTimeZone').value)||startZone,startValue=$('localTransportStartAt').value,endValue=$('localTransportEndAt').value;
+    if((startValue||endValue)&&!startZone)throw new Error('Indica la zona horària de sortida.');
+    if(endValue&&!startValue)throw new Error('Per indicar l’arribada, també has d’indicar la sortida.');
+    if(endValue&&!arrivalZone)throw new Error('Indica la zona horària d’arribada.');
+    if(startZone)new Intl.DateTimeFormat('ca-ES',{timeZone:startZone}).format(new Date());
+    if(arrivalZone)new Intl.DateTimeFormat('ca-ES',{timeZone:arrivalZone}).format(new Date());
+    const startAt=startValue?zonedLocalToIso(startValue,startZone):null,endAt=endValue?zonedLocalToIso(endValue,arrivalZone):null;
+    if(startAt&&endAt&&new Date(endAt)<=new Date(startAt))throw new Error('L’arribada ha de ser posterior a la sortida.');
+
+    const rawWebsite=$('localTransportWebsite').value.trim(),website=rawWebsite?safeWebsiteUrl(rawWebsite):null;
+    if(rawWebsite&&!website)throw new Error('La web ha de ser una adreça HTTP o HTTPS vàlida.');
+    const requestedBooking=$('localTransportBookingDocument').value||'',requestedTicket=$('localTransportTicketDocument').value||'';
+    if(requestedBooking&&requestedBooking===requestedTicket)throw new Error('El mateix document no pot constar alhora com a reserva i bitllet.');
+
+    const desiredStatus=$('localTransportStatus').value,current=editingId?activityRows.find(item=>item.id===editingId):null;
+    const confirmationApi=editingId?await tbConfirmationApi():null;
+    const proposalComponentId=editingId?await confirmationApi.findTbComponent(db,{tripId,sourceKind:'activity',sourceId:editingId}):null;
+    const confirmingProposal=!!proposalComponentId&&desiredStatus==='confirmed';
+
+    const payload={
+      activity_type:'transport',
+      title:$('localTransportTitle').value.trim(),
+      start_at:startAt,end_at:endAt,time_zone:startZone,
+      venue_name:optionalText($('localTransportOriginName').value),
+      address:optionalText($('localTransportOriginAddress').value),
+      city:optionalText($('localTransportOriginCity').value),
+      reservation_status:confirmingProposal?(current?.reservation_status||'planning'):desiredStatus,
+      booking_reference:optionalText($('localTransportReference').value),
+      provider:optionalText($('localTransportProvider').value),
+      contact_phone:optionalText($('localTransportPhone').value),
+      contact_email:optionalText($('localTransportEmail').value),
+      website_url:website,
+      people_count:$('localTransportPeople').value?Number($('localTransportPeople').value):null,
+      amount:null,currency:null,
+      notes:optionalText($('localTransportNotes').value),
+      transport_mode:$('localTransportMode').value,
+      transport_origin_name:optionalText($('localTransportOriginName').value),
+      transport_origin_address:optionalText($('localTransportOriginAddress').value),
+      transport_origin_city:optionalText($('localTransportOriginCity').value),
+      transport_destination_name:optionalText($('localTransportDestinationName').value),
+      transport_destination_address:optionalText($('localTransportDestinationAddress').value),
+      transport_destination_city:optionalText($('localTransportDestinationCity').value),
+      transport_arrival_time_zone:endAt?arrivalZone:null,
+      transport_service_number:optionalText($('localTransportServiceNumber').value),
+      transport_seat:optionalText($('localTransportSeat').value),
+      transport_platform:optionalText($('localTransportPlatform').value)
+    };
+
+    $('saveLocalTransport').disabled=true;msg('localTransportMsg',editingId?'Desant els canvis…':'Desant transport…');
+    const result=editingId
+      ?await db.from('trip_activities').update(payload).eq('trip_id',tripId).eq('id',editingId).eq('updated_at',originalUpdatedAt).select('*').maybeSingle()
+      :await db.from('trip_activities').insert({...payload,trip_id:tripId,created_by:userId}).select('*').single();
+    if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;
+    if(result.error)throw result.error;
+    if(editingId&&!result.data)throw new Error('Aquest transport ha canviat mentre l’editaves. Torna a obrir-lo.');
+    const saved=result.data;form.dataset.editId=saved.id;form.dataset.originalUpdatedAt=saved.updated_at;
+
+    const budgetApi=await tbBudgetApi();
+    let budgetComponent=await budgetApi.findBudgetComponent(db,{tripId,sourceKind:'activity',sourceId:saved.id});
+    if(!budgetComponent){
+      const created=await budgetApi.ensureStandaloneBudgetComponent(db,{tripId,sourceKind:'activity',sourceId:saved.id});
+      budgetComponent={componentId:created.component_id,kind:'standalone'};
+      form.dataset.tbComponentId=created.component_id;form.dataset.budgetComponentKind='standalone';form.dataset.costRevision='0';form.dataset.costVerifiedAt='';form.dataset.costOriginalQuality='unknown';form.dataset.costOriginalExpectedAmount='';
+    }
+
+    let confirmedEvidenceRole=null;
+    if(confirmingProposal){
+      confirmedEvidenceRole=requestedBooking?'booking':requestedTicket?'ticket':null;
+      const evidenceDocumentId=confirmedEvidenceRole==='booking'?requestedBooking:confirmedEvidenceRole==='ticket'?requestedTicket:null;
+      const expectedEvidenceDocumentId=confirmedEvidenceRole==='booking'?originalBooking:confirmedEvidenceRole==='ticket'?originalTicket:null;
+      const cost=readTbCostForm(form,'localTransport');
+      const confirmation=cost
+        ?await budgetApi.confirmComponentWithCost(db,{tripId,componentId:proposalComponentId,expectedUpdatedAt:saved.updated_at,expectedEvidenceDocumentId:evidenceDocumentId?expectedEvidenceDocumentId:null,evidenceDocumentId,evidenceRole:confirmedEvidenceRole,costExpectedRevision:cost.expectedRevision,expectedAmount:cost.expectedAmount,confirmedAmount:cost.confirmedAmount,currency:cost.currency,expectedQuality:cost.expectedQuality,verifiedAt:cost.verifiedAt,scope:cost.scope,unknownRequiredCosts:cost.unknownRequiredCosts,excludedCosts:cost.excludedCosts,costEvidenceDocumentId:evidenceDocumentId})
+        :await confirmationApi.confirmTbComponent(db,{tripId,componentId:proposalComponentId,expectedUpdatedAt:saved.updated_at,expectedEvidenceDocumentId:evidenceDocumentId?expectedEvidenceDocumentId:null,evidenceDocumentId,evidenceRole:confirmedEvidenceRole});
+      saved.updated_at=confirmation?.source_updated_at||saved.updated_at;form.dataset.originalUpdatedAt=saved.updated_at;
+    }
+
+    if(confirmedEvidenceRole!=='booking'){
+      const ok=await syncActivityDocument(saved.id,'booking',requestedBooking,editingId?originalBooking:'',saved.updated_at,tripId,generation);if(!ok)return;
+    }
+    if(confirmedEvidenceRole!=='ticket'){
+      const ok=await syncActivityDocument(saved.id,'ticket',requestedTicket,editingId?originalTicket:'',saved.updated_at,tripId,generation);if(!ok)return;
+    }
+
+    if(!confirmingProposal){
+      const costSaved=await saveTbCostForForm(form,'localTransport',requestedBooking||requestedTicket||null);
+      if(costSaved?.source_updated_at)saved.updated_at=costSaved.source_updated_at;
+    }
+
+    resetLocalTransportForm();msg('localTransportMsg',editingId?'Transport actualitzat.':'Transport afegit.');
+    await Promise.all([loadDocuments(true),loadActivities(true)]);renderLocalTransports();
+  }catch(error){
+    if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip())msg('localTransportMsg',error?.message||'No s’ha pogut desar el transport.',true);
+  }finally{
+    if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip())$('saveLocalTransport').disabled=false;
+  }
+};
+
 $('addActivity').onclick=()=>openActivityForm();
 $('addFirstActivity').onclick=()=>openActivityForm();
 $('cancelActivity').onclick=closeActivityForm;
