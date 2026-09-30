@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {emptyBriefDocument} from '../domain/trip-brief.mjs';
-import {compileFlightLegSearch,compileFlightSearchFromBrief,flightSearchDefaultsFromBrief} from '../domain/travel-search.mjs';
+import {compileFlightLegSearch,compileFlightSearchFromBrief,compileHotelSearch,flightSearchDefaultsFromBrief,hotelSearchDefaultsFromBrief} from '../domain/travel-search.mjs';
 import {createSkyscannerFlightsAdapter,parseSkyscannerResults,selectSkyscannerPlace,skyscannerPrice} from '../supabase/functions/travel-search/providers/skyscanner-core.mjs';
 
 function known(field,value,strength='preference'){return {field,scope:'global',origin:'explicit_user',knowledge:'known',strength,value}}
@@ -100,4 +100,13 @@ test('flight leg search validates culture without recursion',()=>{
  const r=compileFlightLegSearch(d,{origin:'Barcelona',destination:'Riga',startDate:'2026-12-26',adults:2,childrenAges:[8],market:'ES',locale:'ca-ES',currency:'EUR',cabin:'economy'});
  assert.equal(r.ready,true);
  assert.equal(r.query.children_ages.length,1);
+});
+
+test('TB-08.5 hotel search does not require flight-only fields',()=>{
+ const r=compileHotelSearch({destination:'Tallinn',startDate:'2026-12-30',endDate:'2027-01-02',adults:2,childrenAges:[],market:'ES',locale:'ca-ES',currency:'EUR'});
+ assert.equal(r.ready,true);assert.equal(r.query.destination,'Tallinn');assert.equal(r.query.services[0],'hotels');assert.equal(r.query.origin,undefined);assert.equal(r.query.cabin,undefined);
+});
+test('TB-08.5 hotel search rejects invalid stay dates and never invents adults',()=>{
+ const bad=compileHotelSearch({destination:'Tallinn',startDate:'2027-01-02',endDate:'2026-12-30',adults:2,market:'ES',locale:'ca-ES',currency:'EUR'});
+ assert.equal(bad.ready,false);assert.ok(bad.blockers.some(x=>x.code==='stay_dates_required'));const defaults=hotelSearchDefaultsFromBrief(emptyBriefDocument());assert.equal(defaults.adults,0);assert.ok(defaults.traveler_blockers.some(x=>x.code==='adult_traveler_required'));
 });
