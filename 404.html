@@ -3622,8 +3622,8 @@ async function openLocalTransportForm(id=''){
   $('localTransportNotes').value=row?.notes||'';
   localTransportDocumentOptions(form.dataset.originalBookingDocumentId,form.dataset.originalTicketDocumentId);
   setLocalTransportFormMode(true);
-  if(row)await loadTbCostForm(form,'activity',row.id,'localTransport');
-  else{
+  const loadedCost=row?await loadTbCostForm(form,'activity',row.id,'localTransport'):null;
+  if(!loadedCost){
     $('localTransportCostPanel').classList.remove('hidden');
     form.dataset.tbComponentId='';form.dataset.budgetComponentKind='';form.dataset.costRevision='0';form.dataset.costVerifiedAt='';form.dataset.costOriginalQuality='unknown';form.dataset.costOriginalExpectedAmount='';
     $('localTransportExpectedAmount').value='';$('localTransportConfirmedAmount').value='';setCurrencyValue('localTransportCostCurrency','',true);$('localTransportPriceScope').value='';$('localTransportUnknownCosts').value='';$('localTransportExcludedCosts').value='';
