@@ -2919,7 +2919,7 @@ function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('
 function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent='';}
 function setAppView(id){
   if(!trip&&!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id))id='tripsHomeView';
-  if(isLondonTrip()&&['genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView'].includes(id))id='dashboardView';
+  if(isLondonTrip()&&['genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','carRentalView'].includes(id))id='dashboardView';
   if(!isLondonTrip()&&!GENERIC_ALLOWED_VIEWS.has(id))id='genericDashboardView';
   if(id==='buildView'&&!trip?.tb_handoff)id='genericDashboardView';
   if(id==='itineraryView')configureItineraryContent();
