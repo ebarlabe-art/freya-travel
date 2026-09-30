@@ -2507,9 +2507,13 @@ window.addEventListener('focus',()=>{if(proposalOpen&&visibleAppView()==='builde
 let tbBuildApiPromise=null,travelSearchApiPromise=null,buildLoadSequence=0,buildCurrentData=null,buildSearchComponentId=null,buildFlightOffers=[];
 function tbBuildApi(){return tbBuildApiPromise??=import('./domain/tb-build.mjs').catch(error=>{tbBuildApiPromise=null;throw error})}
 function travelSearchApi(){return travelSearchApiPromise??=import('./domain/travel-search.mjs').catch(error=>{travelSearchApiPromise=null;throw error})}
-function buildSearchCulture(){
+function genericSearchCulture(){
   const raw=String(navigator.language||'ca-ES'),locale=/^[a-z]{2}-[A-Z]{2}$/.test(raw)?raw:'ca-ES';
-  return {locale,market:locale.slice(-2),currency:buildCurrentData?.budget?.settings?.currency||tripDefaultCurrency()||'EUR'};
+  return {locale,market:locale.slice(-2),currency:tripDefaultCurrency()||'EUR'};
+}
+function buildSearchCulture(){
+  const culture=genericSearchCulture();
+  return {...culture,currency:buildCurrentData?.budget?.settings?.currency||culture.currency};
 }
 function buildFlightSeedDate(seed){
   if(!seed?.departure_at)return '';
@@ -2543,9 +2547,17 @@ function renderBuild(data,tripId,generation,userId){
   });
 }
 async function openBuildAccommodationSearch(){
-  if(!trip||isLondonTrip())return;
+  if(!trip||!session||isLondonTrip())return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   if($('accommodationView')?.classList.contains('hidden')){setAppView('accommodationView');await loadAccommodations(true)}
-  const api=await travelSearchApi(),defaults=buildCurrentData?.brief?api.hotelSearchDefaultsFromBrief(buildCurrentData.brief):{destination:'',start_date:'',end_date:'',adults:0,children_ages:[],children_count:0},culture=buildSearchCulture();
+  const api=await travelSearchApi(),culture=genericSearchCulture();
+  let defaults={destination:'',start_date:'',end_date:'',adults:0,children_ages:[],children_count:0};
+  try{
+    const {data,error}=await db.from('trip_briefs').select('document').eq('trip_id',tripId).maybeSingle();
+    if(error)throw error;
+    if(data?.document)defaults=api.hotelSearchDefaultsFromBrief(data.document);
+  }catch(error){console.warn('No s’ha pogut carregar el Trip Brief per a la cerca d’allotjament:',error)}
+  if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId)return;
   $('buildAccommodationDestination').value=defaults.destination||'';
   $('buildAccommodationStartDate').value=defaults.start_date||trip?.start_date||'';
   $('buildAccommodationEndDate').value=defaults.end_date||trip?.end_date||'';
@@ -2577,7 +2589,7 @@ async function runBuildAccommodationSearch(){
   const button=$('buildAccommodationSearchSubmit'),tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   button.disabled=true;msg('buildAccommodationSearchMessage','Buscant allotjaments…');$('buildAccommodationResults').innerHTML='';
   try{
-    const api=await travelSearchApi(),culture=buildSearchCulture(),childrenAges=parseChildAges($('buildAccommodationChildren').value),childrenCount=Number($('buildAccommodationChildrenCount').value);
+    const api=await travelSearchApi(),culture=genericSearchCulture(),childrenAges=parseChildAges($('buildAccommodationChildren').value),childrenCount=Number($('buildAccommodationChildrenCount').value);
     if(!Number.isInteger(childrenCount)||childrenCount<0||childrenCount>8)throw new Error('Indica un nombre de menors entre 0 i 8.');
     if(childrenAges.length!==childrenCount)throw new Error(childrenCount?'Indica una edat per a cada menor.':'Si no viatgen menors, deixa les edats en blanc.');
     const compiled=api.compileHotelSearch({destination:$('buildAccommodationDestination').value,startDate:$('buildAccommodationStartDate').value,endDate:$('buildAccommodationEndDate').value,adults:Number($('buildAccommodationAdults').value),childrenAges,market:culture.market,locale:culture.locale,currency:$('buildAccommodationCurrency').value});
