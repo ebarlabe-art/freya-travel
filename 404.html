@@ -464,6 +464,7 @@
           <button id="genericAccommodationModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="accommodationView"><span class="generic-module-icon">🏨</span><span class="generic-module-copy"><strong>Allotjament</strong><small id="genericAccommodationModuleStatus">Cap allotjament confirmat</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericActivitiesModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="activitiesView" data-activity-mode="activity"><span class="generic-module-icon">🎟️</span><span class="generic-module-copy"><strong>Activitats</strong><small id="genericActivitiesModuleStatus">Cap activitat confirmada</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericLocalTransportModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="activitiesView" data-activity-mode="local_transport"><span class="generic-module-icon">🚇</span><span class="generic-module-copy"><strong>Transport local</strong><small id="genericLocalTransportModuleStatus">Cap transport confirmat</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericCarRentalModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="carRentalView"><span class="generic-module-icon">🚙</span><span class="generic-module-copy"><strong>Cotxe de lloguer</strong><small id="genericCarRentalModuleStatus">Cap cotxe reservat</small></span><span class="generic-module-arrow">›</span></button>
         </div>
       </section>
       <section class="generic-trip-section generic-trip-tools" aria-label="Eines del viatge">
@@ -519,6 +520,10 @@
                 <button type="button" data-open="genericFlightsView">Cerca i gestiona vols</button>
               </div>
             </article>
+            <article class="build-component">
+              <div class="build-component-head"><div><h4>🚙 Cotxe de lloguer</h4><p>Prepara, reserva i documenta el cotxe del viatge.</p></div></div>
+              <div class="build-component-actions"><button type="button" data-open="carRentalView">Gestiona el cotxe de lloguer</button></div>
+            </article>
           </div>
         </section>
       </div>
@@ -550,6 +555,83 @@
           <span id="genericPlaceholderState" class="generic-placeholder-state">Pendent de configurar</span>
         </section>
       </div>
+    </div>
+
+    <div id="carRentalView" class="hidden">
+      <button class="ghost back" data-source-back>← Torna al tauler</button>
+      <section class="accommodation-hero">
+        <div><small>🚙 Cotxe de lloguer</small><h2>El cotxe del viatge</h2><p>Reserva, contracte, assegurança i proves d’entrega i devolució, vinculades al mateix lloguer.</p></div>
+        <div class="build-flight-result-actions"><button id="carRentalSearchInfo" type="button">🔎 Buscar cotxe</button><button id="addCarRental" type="button" class="secondary">Afegir lloguer</button></div>
+      </section>
+      <p id="carRentalSearchMessage" class="message hidden" role="status" aria-live="polite"></p>
+      <p id="carRentalMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
+      <div id="carRentalBrowse">
+        <div id="carRentalLoading" class="accommodation-loading hidden">Carregant lloguers…</div>
+        <div id="carRentalEmpty" class="accommodation-empty hidden"><strong>Encara no hi ha cap cotxe de lloguer</strong>Pots afegir una reserva manualment. La cerca amb proveïdors es connectarà en una fase posterior.<br><button id="addFirstCarRental" type="button">Afegir lloguer</button></div>
+        <div id="carRentalList" class="accommodation-list"></div>
+      </div>
+      <section id="carRentalFormCard" class="card accommodation-form-card hidden">
+        <h3 id="carRentalFormTitle">Afegir cotxe de lloguer</h3>
+        <form id="carRentalForm" class="accommodation-form">
+          <label>Companyia<input id="carRentalProvider" maxlength="200" placeholder="Sixt, Europcar..."></label>
+          <label>Localitzador<input id="carRentalReference" maxlength="200" placeholder="ABC123"></label>
+          <label class="wide">Lloc de recollida<input id="carRentalPickupLocation" maxlength="500" placeholder="Aeroport, oficina, adreça..."></label>
+          <label>Ciutat de recollida<input id="carRentalPickupCity" maxlength="200"></label>
+          <label>Recollida<input id="carRentalPickupAt" type="datetime-local"></label>
+          <label>Zona horària recollida<input id="carRentalPickupTimeZone" maxlength="100" placeholder="Europe/Riga"></label>
+          <label class="wide">Lloc de devolució<input id="carRentalReturnLocation" maxlength="500"></label>
+          <label>Ciutat de devolució<input id="carRentalReturnCity" maxlength="200"></label>
+          <label>Devolució<input id="carRentalReturnAt" type="datetime-local"></label>
+          <label>Zona horària devolució<input id="carRentalReturnTimeZone" maxlength="100" placeholder="Europe/Riga"></label>
+          <label>Categoria / classe<input id="carRentalVehicleClass" maxlength="100" placeholder="Compacte, SUV..."></label>
+          <label>Model assignat<input id="carRentalVehicleModel" maxlength="200" placeholder="Peugeot 208 o similar"></label>
+          <label>Matrícula<input id="carRentalLicensePlate" maxlength="40"></label>
+          <label>Canvi<select id="carRentalTransmission"><option value="">Pendent</option><option value="automatic">Automàtic</option><option value="manual">Manual</option><option value="unknown">No especificat</option></select></label>
+          <label class="wide">Política de combustible<input id="carRentalFuelPolicy" maxlength="200" placeholder="Ple/Ple..."></label>
+          <label>Combustible en recollir<input id="carRentalPickupFuel" maxlength="80"></label>
+          <label>Combustible en tornar<input id="carRentalReturnFuel" maxlength="80"></label>
+          <label>Km en recollir<input id="carRentalPickupMileage" type="number" min="0" step="1" inputmode="numeric"></label>
+          <label>Km en tornar<input id="carRentalReturnMileage" type="number" min="0" step="1" inputmode="numeric"></label>
+          <label class="wide">Assegurança<input id="carRentalInsurance" maxlength="500"></label>
+          <label>Franquícia<input id="carRentalExcessAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+          <label>Moneda franquícia<select id="carRentalExcessCurrency" data-currency-select></select></label>
+          <label>Dipòsit<input id="carRentalDepositAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+          <label>Moneda dipòsit<select id="carRentalDepositCurrency" data-currency-select></select></label>
+          <label>Telèfon<input id="carRentalPhone" type="tel" maxlength="50"></label>
+          <label>Correu<input id="carRentalEmail" type="email" maxlength="254"></label>
+          <label class="wide">Web<input id="carRentalWebsite" inputmode="url" maxlength="2048" placeholder="https://..."></label>
+          <label>Estat<select id="carRentalStatus"><option value="planning">En planificació</option><option value="reserved">Reservat</option><option value="confirmed">Confirmat</option><option value="cancelled">Cancel·lat</option></select></label>
+          <section class="flight-document-manager wide">
+            <h4>📄 Reserva, contracte i assegurança</h4>
+            <label>Reserva<select id="carRentalReservationDocument"><option value="">Sense document</option></select></label>
+            <label>Contracte<select id="carRentalContractDocument"><option value="">Sense document</option></select></label>
+            <label>Assegurança<select id="carRentalInsuranceDocument"><option value="">Sense document</option></select></label>
+            <div class="accommodation-document-row"><span class="accommodation-document-help">Associa documents ja pujats al viatge.</span><button id="carRentalOpenDocuments" type="button" class="secondary accommodation-documents-action">Anar a Documents</button></div>
+          </section>
+          <section class="flight-document-manager wide">
+            <h4>📸 Com te’l lliuren</h4><p>Carrosseria, llantes, vidres, interior, combustible, quilometratge i danys existents.</p>
+            <div id="carRentalPickupPhotos" class="flight-existing-documents"></div>
+            <label class="flight-file-input">Afegir fotos d’entrega<input id="carRentalPickupPhotoFiles" type="file" accept="image/*" multiple capture="environment"></label>
+          </section>
+          <section class="flight-document-manager wide">
+            <h4>📸 Com l’entregues</h4><p>Estat final, combustible i quilometratge.</p>
+            <div id="carRentalReturnPhotos" class="flight-existing-documents"></div>
+            <label class="flight-file-input">Afegir fotos de devolució<input id="carRentalReturnPhotoFiles" type="file" accept="image/*" multiple capture="environment"></label>
+          </section>
+          <section id="carRentalCostPanel" class="tb-cost-panel hidden">
+            <h4>💶 Cost del lloguer</h4><p>El preu confirmat substitueix el previst al pressupost.</p>
+            <label>Preu previst<input id="carRentalExpectedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            <label>Preu confirmat<input id="carRentalConfirmedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            <label>Moneda<select id="carRentalCostCurrency" data-currency-select></select></label>
+            <input id="carRentalPriceQuality" type="hidden" value="unknown">
+            <label class="wide">Què inclou<input id="carRentalPriceScope" maxlength="500"></label>
+            <label class="wide">Costos obligatoris encara desconeguts<textarea id="carRentalUnknownCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
+            <label class="wide">Costos exclosos<textarea id="carRentalExcludedCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
+          </section>
+          <label class="wide">Notes<textarea id="carRentalNotes" maxlength="4000"></textarea></label>
+          <div class="accommodation-form-actions"><button id="saveCarRental" type="submit">Desar lloguer</button><button id="cancelCarRental" type="button" class="secondary">Cancel·lar</button></div>
+        </form>
+      </section>
     </div>
 
     <div id="accommodationView" class="hidden">
@@ -1193,6 +1275,7 @@
             <option value="Entrada">🎟️ Entrada</option>
             <option value="Vol">✈️ Vol</option>
             <option value="Hotel">🏨 Hotel</option>
+            <option value="Cotxe">🚙 Cotxe de lloguer</option>
             <option value="Excursió">🚌 Excursió</option>
             <option value="Museu">🏛️ Museu o monument</option>
             <option value="restaurant">🍽️ Restaurant</option>
@@ -1851,6 +1934,11 @@ function openGenericModule(key){
   $('genericPlaceholderState').textContent=module.state||'Pendent de configurar';
   setAppView('genericModuleView');
 }
+let carRentalChannel=null;
+let carRentalRows=[];
+let carRentalDocumentLinks=[];
+let carRentalSubmitting=false;
+let carRentalLoadSequence=0;
 let accommodationChannel=null;
 let accommodationRows=[];
 let flightChannel=null;
@@ -1906,10 +1994,10 @@ function accommodationDocumentFor(accommodationId){const documentId=accommodatio
 function accommodationSummary(count=accommodationRows.length){return !count?'Cap allotjament':count===1?'1 allotjament':`${count} allotjaments`}
 function validDocumentsReturnContext(){
   const context=documentsReturnContext,userId=session?.user?.id,tripId=trip?.id;
-  if(['accommodationView','genericFlightsView','activitiesView'].includes(context?.returnView)&&context.userId===userId&&context.tripId===tripId&&!isLondonTrip())return context;
+  if(['accommodationView','genericFlightsView','activitiesView','carRentalView'].includes(context?.returnView)&&context.userId===userId&&context.tripId===tripId&&!isLondonTrip())return context;
   documentsReturnContext=null;return null;
 }
-function updateDocumentsBack(){const context=validDocumentsReturnContext();if($('documentsBack'))$('documentsBack').textContent=context?.returnView==='accommodationView'?'← Tornar a Allotjament':context?.returnView==='genericFlightsView'?'← Tornar a Vols':context?.returnView==='activitiesView'?'← Tornar a Reserves i activitats':'← Torna al tauler'}
+function updateDocumentsBack(){const context=validDocumentsReturnContext();if($('documentsBack'))$('documentsBack').textContent=context?.returnView==='accommodationView'?'← Tornar a Allotjament':context?.returnView==='genericFlightsView'?'← Tornar a Vols':context?.returnView==='activitiesView'?'← Tornar a Reserves i activitats':context?.returnView==='carRentalView'?'← Tornar a Cotxe de lloguer':'← Torna al tauler'}
 function clearDocumentsReturnContext(){documentsReturnContext=null;updateDocumentsBack()}
 function clearAccommodationVoucherFocus(){
   accommodationVoucherFocus=null;if(accommodationVoucherFocusTimer)clearTimeout(accommodationVoucherFocusTimer);accommodationVoucherFocusTimer=null;
@@ -1948,9 +2036,92 @@ function setFlightDocumentsReturnContext(){
   if(!trip||!session||isLondonTrip())return false;
   documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'genericFlightsView'};updateDocumentsBack();return true;
 }
+function setCarRentalDocumentsReturnContext(){
+  if(!trip||!session||isLondonTrip())return false;
+  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'carRentalView'};updateDocumentsBack();return true;
+}
 function handleDocumentsBack(){
   const context=validDocumentsReturnContext();documentsReturnContext=null;updateDocumentsBack();setAppView(context?.returnView||tripDashboardId());
 }
+
+const CAR_RENTAL_SELECT='id,trip_id,provider,booking_reference,pickup_location,pickup_city,pickup_at,pickup_time_zone,return_location,return_city,return_at,return_time_zone,vehicle_class,vehicle_model,license_plate,transmission,fuel_policy,pickup_fuel_level,return_fuel_level,pickup_mileage,return_mileage,insurance,excess_amount,excess_currency,deposit_amount,deposit_currency,phone,email,website_url,reservation_status,notes,created_by,updated_by,created_at,updated_at';
+const CAR_RENTAL_STATUSES={planning:'En planificació',reserved:'Reservat',confirmed:'Confirmat',cancelled:'Cancel·lat'};
+function carRentalDocumentIds(rentalId,role){return carRentalDocumentLinks.filter(link=>link.trip_id===trip?.id&&link.car_rental_id===rentalId&&link.document_role===role).map(link=>link.document_id)}
+function carRentalSummary(rows=carRentalRows){const count=rows.length;return !count?'Cap cotxe reservat':count===1?'1 cotxe de lloguer':count+' cotxes de lloguer'}
+function renderCarRentalDocumentOptions(row=null){
+  const html='<option value="">Sense document</option>'+documentRows.map(d=>'<option value="'+esc(d.id)+'">'+esc(d.title)+' · '+esc(d.file_name||'Document')+'</option>').join('');
+  for(const [id,role] of [['carRentalReservationDocument','reservation'],['carRentalContractDocument','contract'],['carRentalInsuranceDocument','insurance']]){
+    const select=$(id);if(!select)continue;const selected=row?carRentalDocumentIds(row.id,role)[0]||'':select.value;select.innerHTML=html;if(selected&&!documentRows.some(d=>d.id===selected))select.insertAdjacentHTML('beforeend','<option value="'+esc(selected)+'">Document associat · no disponible</option>');select.value=selected||'';
+  }
+  renderCarRentalEvidence(row);
+}
+function renderCarRentalEvidence(row=null){
+  for(const [id,role,label] of [['carRentalPickupPhotos','pickup_photo','entrega'],['carRentalReturnPhotos','return_photo','devolució']]){
+    const box=$(id);if(!box)continue;const ids=row?carRentalDocumentIds(row.id,role):[];
+    box.innerHTML=ids.length?ids.map(docId=>{const d=documentRows.find(x=>x.id===docId);return '<button type="button" class="secondary" data-rental-doc="'+esc(docId)+'">📷 '+esc(d?.file_name||('Foto de '+label))+'</button>'}).join(''):'<span class="muted">Encara no hi ha fotos.</span>';
+    box.querySelectorAll('[data-rental-doc]').forEach(button=>button.onclick=()=>openDocument(button.dataset.rentalDoc,documentRows,'carRentalMsg'));
+  }
+}
+function carRentalMapUrl(row,which='pickup'){const query=which==='return'?[row.return_location,row.return_city].filter(Boolean).join(', '):[row.pickup_location,row.pickup_city].filter(Boolean).join(', ');return query?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(query):''}
+function renderCarRentals(){
+  syncGenericConfirmedModules();
+  const list=$('carRentalList'),empty=$('carRentalEmpty');if(!list||!empty)return;
+  empty.classList.toggle('hidden',carRentalRows.length>0);
+  list.innerHTML=carRentalRows.map(row=>{
+    const pickup=formatAccommodationDate(row.pickup_at,row.pickup_time_zone),ret=formatAccommodationDate(row.return_at,row.return_time_zone),vehicle=[row.vehicle_model,row.license_plate].filter(Boolean).join(' · '),status=CAR_RENTAL_STATUSES[row.reservation_status]||row.reservation_status,pickMap=carRentalMapUrl(row,'pickup'),returnMap=carRentalMapUrl(row,'return');
+    return '<article class="accommodation-card"><div class="accommodation-card-head"><div class="accommodation-identity"><div class="accommodation-icon">🚙</div><div><small class="muted">'+esc(row.provider||'Cotxe de lloguer')+'</small><h3>'+esc(vehicle||row.vehicle_class||'Cotxe per concretar')+'</h3>'+(row.booking_reference?'<div class="accommodation-place">Reserva · '+esc(row.booking_reference)+'</div>':'')+'</div></div><span class="accommodation-status '+esc(row.reservation_status)+'">'+esc(status)+'</span></div><div class="accommodation-facts">'+(pickup?'<div class="accommodation-fact"><small>Recollida</small><strong>'+esc(pickup)+'</strong></div>':'')+(ret?'<div class="accommodation-fact"><small>Devolució</small><strong>'+esc(ret)+'</strong></div>':'')+(row.pickup_location?'<div class="accommodation-fact"><small>Lloc</small><strong>'+esc([row.pickup_location,row.pickup_city].filter(Boolean).join(' · '))+'</strong></div>':'')+'</div><div class="accommodation-actions">'+(pickMap?'<a href="'+esc(pickMap)+'" target="_blank" rel="noopener">📍 Recollida</a>':'')+(returnMap?'<a href="'+esc(returnMap)+'" target="_blank" rel="noopener">📍 Devolució</a>':'')+'<button type="button" data-edit-car-rental="'+esc(row.id)+'">Editar</button><button type="button" class="danger-action" data-delete-car-rental="'+esc(row.id)+'">Eliminar</button></div></article>';
+  }).join('');
+  list.querySelectorAll('[data-edit-car-rental]').forEach(button=>button.onclick=()=>openCarRentalForm(button.dataset.editCarRental));
+  list.querySelectorAll('[data-delete-car-rental]').forEach(button=>button.onclick=()=>deleteCarRental(button.dataset.deleteCarRental,button));
+}
+async function loadCarRentals(silent=false){
+  if(!trip||isLondonTrip())return [];
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id,sequence=++carRentalLoadSequence;if(!silent)$('carRentalLoading')?.classList.remove('hidden');
+  const [rentals,links]=await Promise.all([
+    db.from('trip_car_rentals').select(CAR_RENTAL_SELECT).eq('trip_id',tripId).order('pickup_at',{ascending:true,nullsFirst:false}).order('created_at'),
+    db.from('trip_car_rental_documents').select('trip_id,car_rental_id,document_id,document_role,created_at').eq('trip_id',tripId).order('created_at')
+  ]);
+  if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId||sequence!==carRentalLoadSequence)return null;
+  $('carRentalLoading')?.classList.add('hidden');const error=rentals.error||links.error;if(error){if(!silent)msg('carRentalMsg',error.message,true);return null}
+  carRentalRows=rentals.data||[];carRentalDocumentLinks=links.data||[];renderCarRentals();return carRentalRows;
+}
+function setCarRentalFormMode(active){$('carRentalBrowse').classList.toggle('hidden',active);$('addCarRental').classList.toggle('hidden',active);$('carRentalFormCard').classList.toggle('hidden',!active)}
+function resetCarRentalForm(){
+  const form=$('carRentalForm');if(!form)return;form.reset();form.dataset.editId='';form.dataset.originalUpdatedAt='';form.dataset.tripId='';carRentalSubmitting=false;$('saveCarRental').disabled=false;setCurrencyValue('carRentalExcessCurrency','',false);setCurrencyValue('carRentalDepositCurrency','',false);renderCarRentalDocumentOptions(null);if($('carRentalCostPanel'))$('carRentalCostPanel').classList.add('hidden');setCarRentalFormMode(false);
+}
+async function openCarRentalForm(id=''){
+  if(!trip||isLondonTrip())return;
+  const row=id?carRentalRows.find(item=>item.id===id):null,form=$('carRentalForm');form.reset();form.dataset.editId=row?.id||'';form.dataset.originalUpdatedAt=row?.updated_at||'';form.dataset.tripId=trip.id;
+  $('carRentalProvider').value=row?.provider||'';$('carRentalReference').value=row?.booking_reference||'';$('carRentalPickupLocation').value=row?.pickup_location||'';$('carRentalPickupCity').value=row?.pickup_city||'';$('carRentalPickupTimeZone').value=row?.pickup_time_zone||trip.time_zone||'';$('carRentalPickupAt').value=isoToZonedLocal(row?.pickup_at,$('carRentalPickupTimeZone').value);$('carRentalReturnLocation').value=row?.return_location||'';$('carRentalReturnCity').value=row?.return_city||'';$('carRentalReturnTimeZone').value=row?.return_time_zone||trip.time_zone||'';$('carRentalReturnAt').value=isoToZonedLocal(row?.return_at,$('carRentalReturnTimeZone').value);$('carRentalVehicleClass').value=row?.vehicle_class||'';$('carRentalVehicleModel').value=row?.vehicle_model||'';$('carRentalLicensePlate').value=row?.license_plate||'';$('carRentalTransmission').value=row?.transmission||'';$('carRentalFuelPolicy').value=row?.fuel_policy||'';$('carRentalPickupFuel').value=row?.pickup_fuel_level||'';$('carRentalReturnFuel').value=row?.return_fuel_level||'';$('carRentalPickupMileage').value=row?.pickup_mileage??'';$('carRentalReturnMileage').value=row?.return_mileage??'';$('carRentalInsurance').value=row?.insurance||'';$('carRentalExcessAmount').value=row?.excess_amount??'';setCurrencyValue('carRentalExcessCurrency',row?.excess_currency||'',false);$('carRentalDepositAmount').value=row?.deposit_amount??'';setCurrencyValue('carRentalDepositCurrency',row?.deposit_currency||'',false);$('carRentalPhone').value=row?.phone||'';$('carRentalEmail').value=row?.email||'';$('carRentalWebsite').value=row?.website_url||'';$('carRentalStatus').value=row?.reservation_status||'planning';$('carRentalNotes').value=row?.notes||'';$('carRentalFormTitle').textContent=row?'Editar cotxe de lloguer':'Afegir cotxe de lloguer';renderCarRentalDocumentOptions(row);setCarRentalFormMode(true);if(row)await loadTbCostForm(form,'car_rental',row.id,'carRental');else{$('carRentalCostPanel').classList.remove('hidden');form.dataset.tbComponentId='';form.dataset.budgetComponentKind='';form.dataset.costRevision='0';form.dataset.costVerifiedAt='';form.dataset.costOriginalQuality='unknown';form.dataset.costOriginalExpectedAmount='';$('carRentalExpectedAmount').value='';$('carRentalConfirmedAmount').value='';setCurrencyValue('carRentalCostCurrency','',true);$('carRentalPriceScope').value='';$('carRentalUnknownCosts').value='';$('carRentalExcludedCosts').value=''}form.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeCarRentalForm(){resetCarRentalForm();msg('carRentalMsg','')}
+async function syncCarRentalRole(rentalId,role,documentId){
+  const current=carRentalDocumentIds(rentalId,role),remove=current.filter(id=>id!==documentId);
+  if(remove.length){const result=await db.from('trip_car_rental_documents').delete().eq('trip_id',trip.id).eq('car_rental_id',rentalId).eq('document_role',role).in('document_id',remove);if(result.error)throw result.error}
+  if(documentId&&!current.includes(documentId)){const result=await db.from('trip_car_rental_documents').insert({trip_id:trip.id,car_rental_id:rentalId,document_id:documentId,document_role:role,created_by:session.user.id});if(result.error)throw result.error}
+}
+async function uploadCarRentalEvidence(rentalId,inputId,role){
+  const files=[...($(inputId)?.files||[])];if(!files.length)return 0;if(files.length>20)throw new Error('Pots pujar un màxim de 20 fotos cada vegada.');
+  let count=0;
+  for(const file of files){
+    if(!file.type.startsWith('image/'))throw new Error('Les proves del vehicle han de ser imatges.');
+    if(file.size>15*1024*1024)throw new Error('Una de les fotos supera el límit de 15 MB.');
+    const ext=(file.name.split('.').pop()||'jpg').toLowerCase(),docId=crypto.randomUUID(),path=trip.id+'/car-rental/'+rentalId+'/'+role+'/'+docId+'.'+ext,title=(role==='pickup_photo'?'Entrega':'Devolució')+' · '+(carRentalRows.find(r=>r.id===rentalId)?.provider||'cotxe');
+    const up=await db.storage.from(DOC_BUCKET).upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});if(up.error)throw up.error;
+    const inserted=await db.from('travel_documents').insert({id:docId,trip_id:trip.id,title,category:'Cotxe',file_name:file.name,file_path:path,mime_type:file.type||null,created_by:session.user.id}).select('id').single();
+    if(inserted.error){await db.storage.from(DOC_BUCKET).remove([path]);throw inserted.error}
+    const link=await db.from('trip_car_rental_documents').insert({trip_id:trip.id,car_rental_id:rentalId,document_id:docId,document_role:role,created_by:session.user.id});if(link.error){await db.from('travel_documents').delete().eq('id',docId).eq('trip_id',trip.id);await db.storage.from(DOC_BUCKET).remove([path]);throw link.error}
+    count++;
+  }
+  return count;
+}
+async function deleteCarRental(id,button){
+  if(!trip||isLondonTrip())return;const row=carRentalRows.find(r=>r.id===id);if(!row||!confirm('Eliminar aquest lloguer? Els documents i fotos es conservaran a Documents.'))return;button.disabled=true;msg('carRentalMsg','Eliminant lloguer…');const result=await db.from('trip_car_rentals').delete().eq('trip_id',trip.id).eq('id',id);if(result.error){button.disabled=false;msg('carRentalMsg',result.error.message,true);return}msg('carRentalMsg','Lloguer eliminat.');await loadCarRentals(true);
+}
+function subscribeCarRentals(){
+  if(!trip||isLondonTrip())return;if(carRentalChannel)db.removeChannel(carRentalChannel);const tripId=trip.id,generation=tripLoadGeneration,reconcile=()=>{if(tripRequestIsCurrent(tripId,generation))loadCarRentals(true)};carRentalChannel=db.channel('car-rentals-'+tripId).on('postgres_changes',{event:'*',schema:'public',table:'trip_car_rentals',filter:'trip_id=eq.'+tripId},reconcile).on('postgres_changes',{event:'*',schema:'public',table:'trip_car_rental_documents',filter:'trip_id=eq.'+tripId},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
+}
+
 function accommodationDraftKey(tripId=trip?.id,userId=session?.user?.id){return tripId&&userId?`freya-accommodation-draft-v${ACCOMMODATION_DRAFT_VERSION}-${userId}-${tripId}`:null}
 function readAccommodationDraft(tripId=trip?.id,userId=session?.user?.id){
   const key=accommodationDraftKey(tripId,userId);if(!key)return null;
@@ -2724,9 +2895,9 @@ async function loadBuildView(){
 
 $('budgetSettingsForm').onsubmit=async event=>{event.preventDefault();if(!trip||isLondonTrip())return;const target=$('budgetTarget').value.trim(),maximum=$('budgetMaximum').value.trim(),currency=$('budgetCurrency').value.trim().toUpperCase();if((target||maximum)&&!/^[A-Z]{3}$/.test(currency)){msg('budgetMsg','Indica una moneda de tres lletres, per exemple EUR.',true);return}try{const api=await tbBudgetApi();await api.saveBudgetSettings(db,{tripId:trip.id,expectedRevision:Number($('budgetSettingsForm').dataset.revision||0),targetAmount:target===''?null:Number(target),maximumAmount:maximum===''?null:Number(maximum),currency:(target||maximum)?currency:null});await loadBudgetView();msg('budgetMsg','Pressupost actualitzat.')}catch(error){msg('budgetMsg',error?.message||'No s’ha pogut desar el pressupost.',true)}};
 
-const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView']);
-const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView'].includes(id)));
+const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','carRentalView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView']);
+const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','carRentalView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
   if(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(view))return true;
   if(!value)return false;
@@ -2748,7 +2919,7 @@ function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('
 function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent='';}
 function setAppView(id){
   if(!trip&&!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id))id='tripsHomeView';
-  if(isLondonTrip()&&['genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView'].includes(id))id='dashboardView';
+  if(isLondonTrip()&&['genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','carRentalView'].includes(id))id='dashboardView';
   if(!isLondonTrip()&&!GENERIC_ALLOWED_VIEWS.has(id))id='genericDashboardView';
   if(id==='buildView'&&!trip?.tb_handoff)id='genericDashboardView';
   if(id==='itineraryView')configureItineraryContent();
@@ -2760,7 +2931,7 @@ function setAppView(id){
   persistNavigationState(id);
   updateTripHomeClock();updateHomeClock();
   if(id==='documentsView')updateDocumentsBack();if(id==='buildView')loadBuildView();if(id==='budgetView')loadBudgetView();
-  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView')loadActivityViewData();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
+  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView')loadActivityViewData();if(id==='carRentalView')loadCarRentals();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
 }
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
 function stopLondonFlightTimer(){
@@ -3285,13 +3456,15 @@ function syncGenericConfirmedModules(){
   const accommodations=accommodationRows.filter(row=>row.reservation_status==='confirmed');
   const activities=activityRowsForMode('activity').filter(row=>['reserved','confirmed'].includes(row.reservation_status));
   const localTransport=activityRowsForMode('local_transport').filter(row=>['reserved','confirmed'].includes(row.reservation_status));
-  const any=flights.length||accommodations.length||activities.length||localTransport.length;
-  [['genericFlightsModuleCard',!!flights.length],['genericAccommodationModuleCard',!!accommodations.length],['genericActivitiesModuleCard',!!activities.length],['genericLocalTransportModuleCard',!!localTransport.length],['genericItineraryModuleCard',!!any]].forEach(([id,show])=>$(id)?.classList.toggle('hidden',!show));
+  const carRentals=carRentalRows.filter(row=>['reserved','confirmed'].includes(row.reservation_status));
+  const any=flights.length||accommodations.length||activities.length||localTransport.length||carRentals.length;
+  [['genericFlightsModuleCard',!!flights.length],['genericAccommodationModuleCard',!!accommodations.length],['genericActivitiesModuleCard',!!activities.length],['genericLocalTransportModuleCard',!!localTransport.length],['genericCarRentalModuleCard',!!carRentals.length],['genericItineraryModuleCard',!!any]].forEach(([id,show])=>$(id)?.classList.toggle('hidden',!show));
   $('genericConfirmedSection')?.classList.toggle('hidden',!any);
   if($('genericFlightsModuleStatus'))$('genericFlightsModuleStatus').textContent=flightSummary(flights.length);
   if($('genericAccommodationModuleStatus'))$('genericAccommodationModuleStatus').textContent=accommodationSummary(accommodations.length);
   if($('genericActivitiesModuleStatus'))$('genericActivitiesModuleStatus').textContent=activitySummary(activities);
   if($('genericLocalTransportModuleStatus'))$('genericLocalTransportModuleStatus').textContent=localTransportSummary(localTransport);
+  if($('genericCarRentalModuleStatus'))$('genericCarRentalModuleStatus').textContent=carRentalSummary(carRentals);
 }
 function setActivityViewMode(mode='activity'){
   activityViewMode=mode==='local_transport'?'local_transport':'activity';
@@ -4029,7 +4202,7 @@ function renderPasswordRecovery(){
   else msg('passwordRecoveryMsg','Validant l’enllaç de recuperació…');
 }
 async function disconnectTripRealtime(){
-  const active=[channel,checklistChannel,documentChannel,expenseChannel,accommodationChannel,flightChannel,activityChannel,manualItineraryChannel,dayMetadataChannel].filter(Boolean);channel=checklistChannel=documentChannel=expenseChannel=accommodationChannel=flightChannel=activityChannel=manualItineraryChannel=dayMetadataChannel=null;
+  const active=[channel,checklistChannel,documentChannel,expenseChannel,accommodationChannel,flightChannel,activityChannel,carRentalChannel,manualItineraryChannel,dayMetadataChannel].filter(Boolean);channel=checklistChannel=documentChannel=expenseChannel=accommodationChannel=flightChannel=activityChannel=carRentalChannel=manualItineraryChannel=dayMetadataChannel=null;
   await Promise.allSettled(active.map(item=>db.removeChannel(item)));
 }
 function clearGenericItineraryState(){
@@ -4051,11 +4224,11 @@ function clearTripScopedState(){
   clearDocumentsReturnContext();
   clearAccommodationVoucherFocus();
   clearGenericItineraryState();
-  documentRows=[];pendingDocumentRows=[];expenseRows=[];photoRows=[];pendingPhotoRows=[];accommodationRows=[];accommodationDocumentLinks=[];accommodationSubmitting=false;accommodationLoadSequence+=1;flightRows=[];flightDocumentLinks=[];flightSubmitting=false;flightLoadSequence+=1;activityRows=[];activityDocumentLinks=[];activitySubmitting=false;activityLoadSequence+=1;manualItineraryRows=[];manualItinerarySubmitting=false;manualItineraryLoadSequence+=1;parkingRow=null;parkingLoadsPending=0;clearPhotoObjectUrls();closePhotoLightbox();
-  const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList',''],['accommodationList',''],['flightList',''],['activityList',''],['genericItineraryDayTabs',''],['genericItineraryDays',''],['genericItineraryUnscheduledList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
+  documentRows=[];pendingDocumentRows=[];expenseRows=[];photoRows=[];pendingPhotoRows=[];carRentalRows=[];carRentalDocumentLinks=[];carRentalSubmitting=false;carRentalLoadSequence+=1;accommodationRows=[];accommodationDocumentLinks=[];accommodationSubmitting=false;accommodationLoadSequence+=1;flightRows=[];flightDocumentLinks=[];flightSubmitting=false;flightLoadSequence+=1;activityRows=[];activityDocumentLinks=[];activitySubmitting=false;activityLoadSequence+=1;manualItineraryRows=[];manualItinerarySubmitting=false;manualItineraryLoadSequence+=1;parkingRow=null;parkingLoadsPending=0;clearPhotoObjectUrls();closePhotoLightbox();
+  const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList',''],['accommodationList',''],['flightList',''],['activityList',''],['carRentalList',''],['genericItineraryDayTabs',''],['genericItineraryDays',''],['genericItineraryUnscheduledList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
   [['overviewChecklist','0/0'],['overviewDocuments','0'],['overviewExpenses','0'],['documentCount','0'],['expenseCount','0'],['photoCount','0']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
-  [['genericItineraryModuleStatus','Planning consolidat'],['genericChecklistModuleStatus','Preparatius compartits'],['genericDocumentsModuleStatus','Documents del viatge'],['genericPhotosModuleStatus','Àlbum compartit del viatge'],['genericTravelersModuleStatus','Invitacions del viatge'],['genericAccommodationModuleStatus','Cap allotjament confirmat'],['genericFlightsModuleStatus','Cap vol confirmat'],['genericActivitiesModuleStatus','Cap activitat confirmada'],['genericLocalTransportModuleStatus','Cap transport confirmat'],['genericParkingModuleStatus','A punt per utilitzar']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
-  ['genericItineraryModuleCard','genericFlightsModuleCard','genericAccommodationModuleCard','genericActivitiesModuleCard','genericLocalTransportModuleCard','genericConfirmedSection'].forEach(id=>$(id)?.classList.add('hidden'));
+  [['genericItineraryModuleStatus','Planning consolidat'],['genericChecklistModuleStatus','Preparatius compartits'],['genericDocumentsModuleStatus','Documents del viatge'],['genericPhotosModuleStatus','Àlbum compartit del viatge'],['genericTravelersModuleStatus','Invitacions del viatge'],['genericAccommodationModuleStatus','Cap allotjament confirmat'],['genericFlightsModuleStatus','Cap vol confirmat'],['genericActivitiesModuleStatus','Cap activitat confirmada'],['genericLocalTransportModuleStatus','Cap transport confirmat'],['genericCarRentalModuleStatus','Cap cotxe reservat'],['genericParkingModuleStatus','A punt per utilitzar']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
+  ['genericItineraryModuleCard','genericFlightsModuleCard','genericAccommodationModuleCard','genericActivitiesModuleCard','genericLocalTransportModuleCard','genericCarRentalModuleCard','genericConfirmedSection'].forEach(id=>$(id)?.classList.add('hidden'));
   if($('genericPlaceholderTrip'))$('genericPlaceholderTrip').textContent='Viatge';
   if($('genericPlaceholderIcon'))$('genericPlaceholderIcon').textContent='✨';
   if($('genericPlaceholderTitle'))$('genericPlaceholderTitle').textContent='Mòdul del viatge';
@@ -4090,6 +4263,7 @@ function clearTripScopedState(){
   if($('photoPreview'))$('photoPreview').classList.remove('visible');
   if($('photoPreviewImage'))$('photoPreviewImage').removeAttribute('src');
   showPhotoMessage('');
+  if($('carRentalForm'))resetCarRentalForm();
   if($('accommodationForm')){$('accommodationForm').reset();$('accommodationForm').dataset.editId='';$('accommodationForm').dataset.timeZone='';$('accommodationForm').dataset.tripId='';$('accommodationForm').dataset.originalUpdatedAt='';$('accommodationForm').dataset.originalVoucherDocumentId='';$('accommodationForm').dataset.voucherTouched='';$('accommodationForm').dataset.legacyLocationText='';$('accommodationForm').dataset.remoteConflict=''}
   if($('accommodationFormCard'))setAccommodationFormMode(false);
   if($('accommodationEmpty'))$('accommodationEmpty').classList.add('hidden');
@@ -4221,9 +4395,9 @@ async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
   clearTripScopedState();trip=selected;rememberSelectedTrip();updateTripPresentation();
   if(open)setAppView(tripDashboardId());else setAppView('tripsHomeView');
   if(!isLondonTrip()){await initializeGenericChecklistDefaults();if(!tripRequestIsCurrent(selected.id,generation))return false}
-  await Promise.all([loadItems(),loadDocuments(true),...(isLondonTrip()?[loadExpenses(true)]:[ensureTripAgenda(),loadParkingSummary()])]);if(!tripRequestIsCurrent(selected.id,generation))return false;
+  await Promise.all([loadItems(),loadDocuments(true),...(isLondonTrip()?[loadExpenses(true)]:[ensureTripAgenda(),loadParkingSummary(),loadCarRentals(true)])]);if(!tripRequestIsCurrent(selected.id,generation))return false;
   if(isLondonTrip()){await ensureDefaultChecklistItems();if(!tripRequestIsCurrent(selected.id,generation))return false;addFavoriteButtons();initFlightChecklist()}
-  subscribe();subscribeDocuments();if(isLondonTrip())subscribeExpenses();else{subscribeAccommodations();subscribeFlights();subscribeActivities();subscribeManualItineraryItems();subscribeTripDayMetadata()}
+  subscribe();subscribeDocuments();if(isLondonTrip())subscribeExpenses();else{subscribeAccommodations();subscribeFlights();subscribeActivities();subscribeCarRentals();subscribeManualItineraryItems();subscribeTripDayMetadata()}
   if(applyDeepLink)applyPendingInitialView();
   refreshPushUi();return true;
 }
@@ -4423,6 +4597,46 @@ $('genericTravelersToggle').onclick=()=>{
   const opening=card.classList.contains('hidden');
   card.classList.toggle('hidden',!opening);
   if(opening){$('genericTripSettingsCard')?.classList.add('hidden');card.scrollIntoView({behavior:'smooth',block:'start'})}
+};
+$('addCarRental').onclick=()=>openCarRentalForm();$('addFirstCarRental').onclick=()=>openCarRentalForm();$('cancelCarRental').onclick=closeCarRentalForm;
+$('carRentalSearchInfo').onclick=()=>msg('carRentalSearchMessage','La cerca queda preparada per integrar proveïdors, però encara no n’activem cap.',false);
+$('carRentalOpenDocuments').onclick=()=>{if(setCarRentalDocumentsReturnContext())setAppView('documentsView')};
+$('carRentalForm').onsubmit=async event=>{
+  event.preventDefault();if(carRentalSubmitting||!trip||!session||isLondonTrip())return;
+  const form=$('carRentalForm');$('carRentalCostCurrency')?.setCustomValidity('');if(!form.reportValidity())return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,editId=form.dataset.editId||'',originalUpdatedAt=form.dataset.originalUpdatedAt||'';
+  try{
+    const pickupZone=optionalText($('carRentalPickupTimeZone').value),returnZone=optionalText($('carRentalReturnTimeZone').value);
+    if($('carRentalPickupAt').value&&!pickupZone)throw new Error('Indica la zona horària de recollida.');
+    if($('carRentalReturnAt').value&&!returnZone)throw new Error('Indica la zona horària de devolució.');
+    const pickupAt=$('carRentalPickupAt').value?zonedLocalToIso($('carRentalPickupAt').value,pickupZone):null,returnAt=$('carRentalReturnAt').value?zonedLocalToIso($('carRentalReturnAt').value,returnZone):null;
+    if(pickupAt&&returnAt&&new Date(returnAt)<=new Date(pickupAt))throw new Error('La devolució ha de ser posterior a la recollida.');
+    const websiteRaw=$('carRentalWebsite').value.trim(),website=websiteRaw?safeWebsiteUrl(websiteRaw):null;if(websiteRaw&&!website)throw new Error('La web ha de ser una adreça HTTP o HTTPS vàlida.');
+    const excessAmount=costNumber('carRentalExcessAmount'),excessCurrency=$('carRentalExcessCurrency').value||null,depositAmount=costNumber('carRentalDepositAmount'),depositCurrency=$('carRentalDepositCurrency').value||null;
+    if((excessAmount!=null)!==!!excessCurrency)throw new Error('Indica import i moneda de la franquícia, o deixa tots dos buits.');
+    if((depositAmount!=null)!==!!depositCurrency)throw new Error('Indica import i moneda del dipòsit, o deixa tots dos buits.');
+    const pickupMileage=$('carRentalPickupMileage').value===''?null:Number($('carRentalPickupMileage').value),returnMileage=$('carRentalReturnMileage').value===''?null:Number($('carRentalReturnMileage').value);if(pickupMileage!=null&&returnMileage!=null&&returnMileage<pickupMileage)throw new Error('Els km de devolució no poden ser inferiors als de recollida.');
+    const payload={provider:optionalText($('carRentalProvider').value),booking_reference:optionalText($('carRentalReference').value),pickup_location:optionalText($('carRentalPickupLocation').value),pickup_city:optionalText($('carRentalPickupCity').value),pickup_at:pickupAt,pickup_time_zone:pickupZone,return_location:optionalText($('carRentalReturnLocation').value),return_city:optionalText($('carRentalReturnCity').value),return_at:returnAt,return_time_zone:returnZone,vehicle_class:optionalText($('carRentalVehicleClass').value),vehicle_model:optionalText($('carRentalVehicleModel').value),license_plate:optionalText($('carRentalLicensePlate').value),transmission:optionalText($('carRentalTransmission').value),fuel_policy:optionalText($('carRentalFuelPolicy').value),pickup_fuel_level:optionalText($('carRentalPickupFuel').value),return_fuel_level:optionalText($('carRentalReturnFuel').value),pickup_mileage:pickupMileage,return_mileage:returnMileage,insurance:optionalText($('carRentalInsurance').value),excess_amount:excessAmount,excess_currency:excessCurrency,deposit_amount:depositAmount,deposit_currency:depositCurrency,phone:optionalText($('carRentalPhone').value),email:optionalText($('carRentalEmail').value),website_url:website,reservation_status:$('carRentalStatus').value,notes:optionalText($('carRentalNotes').value)};
+    carRentalSubmitting=true;$('saveCarRental').disabled=true;msg('carRentalMsg',editId?'Desant canvis…':'Desant lloguer…');
+    const result=editId?await db.from('trip_car_rentals').update(payload).eq('trip_id',tripId).eq('id',editId).eq('updated_at',originalUpdatedAt).select(CAR_RENTAL_SELECT).maybeSingle():await db.from('trip_car_rentals').insert({...payload,trip_id:tripId,created_by:userId}).select(CAR_RENTAL_SELECT).single();
+    if(!tripRequestIsCurrent(tripId,generation))return;if(result.error)throw result.error;if(editId&&!result.data)throw new Error('El lloguer ha canviat mentre l’editaves. Torna a obrir-lo.');
+    const saved=result.data;form.dataset.editId=saved.id;form.dataset.originalUpdatedAt=saved.updated_at;
+    const budgetApi=await tbBudgetApi();let budgetComponent=await budgetApi.findBudgetComponent(db,{tripId,sourceKind:'car_rental',sourceId:saved.id});
+    if(!budgetComponent){
+      const created=await budgetApi.ensureStandaloneBudgetComponent(db,{tripId,sourceKind:'car_rental',sourceId:saved.id});
+      budgetComponent={componentId:created.component_id,kind:'standalone'};
+      form.dataset.tbComponentId=created.component_id;form.dataset.budgetComponentKind='standalone';form.dataset.costRevision='0';form.dataset.costVerifiedAt='';form.dataset.costOriginalQuality='unknown';form.dataset.costOriginalExpectedAmount='';
+    }
+    await syncCarRentalRole(saved.id,'reservation',$('carRentalReservationDocument').value||'');
+    await syncCarRentalRole(saved.id,'contract',$('carRentalContractDocument').value||'');
+    await syncCarRentalRole(saved.id,'insurance',$('carRentalInsuranceDocument').value||'');
+    const pickupUploaded=await uploadCarRentalEvidence(saved.id,'carRentalPickupPhotoFiles','pickup_photo'),returnUploaded=await uploadCarRentalEvidence(saved.id,'carRentalReturnPhotoFiles','return_photo');
+    if(saved.reservation_status==='confirmed'&&form.dataset.budgetComponentKind==='standalone'&&costNumber('carRentalConfirmedAmount')==null&&costNumber('carRentalExpectedAmount')!=null)$('carRentalConfirmedAmount').value=$('carRentalExpectedAmount').value;
+    await saveTbCostForForm(form,'carRental',$('carRentalReservationDocument').value||$('carRentalContractDocument').value||null);
+    await Promise.all([loadDocuments(true),loadCarRentals(true)]);
+    resetCarRentalForm();msg('carRentalMsg',(editId?'Lloguer actualitzat.':'Lloguer afegit.')+((pickupUploaded+returnUploaded)?' Fotos del vehicle desades: '+(pickupUploaded+returnUploaded)+'.':''));
+  }catch(error){if(tripRequestIsCurrent(tripId,generation))msg('carRentalMsg',error?.message||'No s’ha pogut desar el lloguer.',true)}
+  finally{if(tripRequestIsCurrent(tripId,generation)){carRentalSubmitting=false;$('saveCarRental').disabled=false}}
 };
 $('addAccommodation').onclick=()=>openAccommodationForm();$('addFirstAccommodation').onclick=()=>openAccommodationForm();$('cancelAccommodation').onclick=closeAccommodationForm;
 $('addFlight').onclick=()=>openFlightForm();
@@ -4671,7 +4885,7 @@ $('addActivity').onclick=()=>openActivityForm();
 $('addFirstActivity').onclick=()=>openActivityForm();
 $('cancelActivity').onclick=closeActivityForm;
 $('activityOpenDocuments').onclick=()=>{if(!setActivityDocumentsReturnContext())return;saveActivityDraft();setAppView('documentsView')};
-['activity','flight','accommodation'].forEach(prefix=>{const input=$(prefix+'CostCurrency');if(input){const clear=()=>input.setCustomValidity('');input.addEventListener('input',clear);input.addEventListener('change',clear)}});
+['activity','flight','accommodation','carRental'].forEach(prefix=>{const input=$(prefix+'CostCurrency');if(input){const clear=()=>input.setCustomValidity('');input.addEventListener('input',clear);input.addEventListener('change',clear)}});
 $('activityForm').addEventListener('input',saveActivityDraft);$('activityForm').addEventListener('change',saveActivityDraft);
 $('activityBookingDocument').addEventListener('change',()=>reconcileActivityDocumentRoles('booking'));
 $('activityTicketDocument').addEventListener('change',()=>reconcileActivityDocumentRoles('ticket'));
@@ -5655,7 +5869,7 @@ let documentChannel=null;
 let documentRows=[];
 let pendingDocumentRows=[];
 const DOC_BUCKET='trip-documents';
-function categoryIcon(category){return ({Entrada:'🎟️',Vol:'✈️',Hotel:'🏨',Excursió:'🚌',Museu:'🏛️',restaurant:'🍽️',baggage_tag:'🧳',Personal:'🛂',Altres:'📎'})[category]||'📎'}
+function categoryIcon(category){return ({Entrada:'🎟️',Vol:'✈️',Hotel:'🏨',Cotxe:'🚙',Excursió:'🚌',Museu:'🏛️',restaurant:'🍽️',baggage_tag:'🧳',Personal:'🛂',Altres:'📎'})[category]||'📎'}
 function categoryLabel(category){return category==='restaurant'?'Restaurant':category==='baggage_tag'?'Etiqueta d’equipatge':category||'Document'}
 function safeFileName(name){return name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'document'}
 async function loadDocuments(silent=false){
@@ -5691,6 +5905,8 @@ function renderDocuments(docs=documentRows){
     renderFlights();
     if(!$('activityFormCard').classList.contains('hidden'))renderActivityDocumentOptions($('activityBookingDocument').value,$('activityTicketDocument').value);
     renderActivities();
+    if(!$('carRentalFormCard').classList.contains('hidden'))renderCarRentalDocumentOptions(carRentalRows.find(r=>r.id===$('carRentalForm').dataset.editId)||null);
+    renderCarRentals();
   }
   focusAssociatedAccommodationVoucher(true);
 }
