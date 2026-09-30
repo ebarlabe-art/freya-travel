@@ -46,10 +46,13 @@ function briefTravelers(document,blockers){
   }
   return {adults,childrenAges};
 }
-function searchCulture(blockers,{market,locale,currency,cabin}={}){
+function searchCulture(blockers,{market,locale,currency}={}){
   if(typeof market!=='string'||!/^[A-Z]{2}$/.test(market))blockers.push({code:'market_required',field:'market'});
   if(typeof locale!=='string'||!/^[a-z]{2}-[A-Z]{2}$/.test(locale))blockers.push({code:'locale_required',field:'locale'});
   if(typeof currency!=='string'||!/^[A-Z]{3}$/.test(currency))blockers.push({code:'currency_required',field:'currency'});
+}
+function flightSearchCulture(blockers,{market,locale,currency,cabin}={}){
+  searchCulture(blockers,{market,locale,currency});
   if(!CABINS.has(cabin))blockers.push({code:'cabin_required',field:'cabin'});
 }
 const ISO_DATE=/^20\d{2}-\d{2}-\d{2}$/;
@@ -58,10 +61,7 @@ function validDate(value){if(typeof value!=='string'||!ISO_DATE.test(value))retu
 export function compileFlightSearchFromBrief(document,{market,locale,currency,cabin}={}){
   if(!document||typeof document!=='object'||!document.decisions||!document.scopes||!document.travelers)throw new Error('Invalid Trip Brief document');
   const blockers=[];
-  if(typeof market!=='string'||!/^[A-Z]{2}$/.test(market))blockers.push({code:'market_required',field:'market'});
-  if(typeof locale!=='string'||!/^[a-z]{2}-[A-Z]{2}$/.test(locale))blockers.push({code:'locale_required',field:'locale'});
-  if(typeof currency!=='string'||!/^[A-Z]{3}$/.test(currency))blockers.push({code:'currency_required',field:'currency'});
-  if(!CABINS.has(cabin))blockers.push({code:'cabin_required',field:'cabin'});
+  flightSearchCulture(blockers,{market,locale,currency,cabin});
 
   const origin=onePlace(explicitKnown(document,'origin'),'origin_required',blockers);
   const destinationDecision=explicitKnown(document,'destination');
@@ -93,7 +93,7 @@ export function compileFlightSearchFromBrief(document,{market,locale,currency,ca
 export function compileFlightLegSearch(document,{origin,destination,startDate,adults,childrenAges=[],market,locale,currency,cabin}={}){
   if(!document||typeof document!=='object'||!document.decisions||!document.scopes||!document.travelers)throw new Error('Invalid Trip Brief document');
   const blockers=[];
-  searchCulture(blockers,{market,locale,currency,cabin});
+  flightSearchCulture(blockers,{market,locale,currency,cabin});
   const cleanOrigin=typeof origin==='string'?origin.trim():'';
   const cleanDestination=typeof destination==='string'?destination.trim():'';
   if(!cleanOrigin)blockers.push({code:'origin_required',field:'origin'});
@@ -111,6 +111,45 @@ export function compileFlightLegSearch(document,{origin,destination,startDate,ad
       adults:adultCount,children_ages:ages,cabin,services:['flights'],
       market,locale,currency,preferences,
     },
+  };
+}
+
+export function compileHotelSearch({destination,startDate,endDate,adults,childrenAges=[],market,locale,currency}={}){
+  const blockers=[];
+  searchCulture(blockers,{market,locale,currency});
+  const cleanDestination=typeof destination==='string'?destination.trim():'';
+  if(!cleanDestination)blockers.push({code:'destination_required',field:'destination'});
+  if(!validDate(startDate)||!validDate(endDate)||endDate<=startDate)blockers.push({code:'stay_dates_required',field:'dates'});
+  const adultCount=Number(adults),ages=Array.isArray(childrenAges)?childrenAges.map(Number):[];
+  if(!Number.isInteger(adultCount)||adultCount<1||adultCount>8)blockers.push({code:'adult_traveler_required',field:'travelers'});
+  if(ages.length>8||ages.some(age=>!Number.isInteger(age)||age<0||age>17))blockers.push({code:'child_age_required',field:'travelers'});
+  return {
+    ready:blockers.length===0,
+    blockers,
+    query:blockers.length?null:{
+      destination:cleanDestination,start_date:startDate,end_date:endDate,
+      adults:adultCount,children_ages:ages,services:['hotels'],
+      market,locale,currency,preferences:[],
+    },
+  };
+}
+
+export function hotelSearchDefaultsFromBrief(document){
+  if(!document||typeof document!=='object'||!document.decisions||!document.scopes||!document.travelers)throw new Error('Invalid Trip Brief document');
+  const blockers=[];
+  const destinationDecision=explicitKnown(document,'destination');
+  const destination=destinationDecision?.value?.mode==='known'&&Array.isArray(destinationDecision.value.places)&&destinationDecision.value.places.length===1?destinationDecision.value.places[0]:'';
+  const dates=explicitKnown(document,'dates');
+  const exactDates=dates?.value?.mode==='exact'?dates.value:null;
+  const {adults,childrenAges}=briefTravelers(document,blockers);
+  return {
+    destination,
+    start_date:exactDates?.start||'',
+    end_date:exactDates?.end||'',
+    adults,
+    children_ages:childrenAges,
+    children_count:Object.values(document.travelers).filter(t=>t.kind==='child').length,
+    traveler_blockers:blockers,
   };
 }
 
