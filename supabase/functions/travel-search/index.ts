@@ -226,24 +226,43 @@ Deno.serve(async (req: Request) => {
     Array.isArray(body?.services) ? body.services : [],
   );
 
-  if (!origin || !destination || !startDate) {
+  if (!services.length) {
+    return json({ error: 'Select at least one search service' }, 400);
+  }
+
+  const needsFlights = services.includes('flights');
+  const needsHotels = services.includes('hotels');
+
+  if (!destination || !startDate) {
     return json({ error: 'Missing required search fields' }, 400);
   }
 
-  if (!['one_way', 'round_trip'].includes(tripType)) {
-    return json({ error: 'Invalid trip type' }, 400);
+  if (needsFlights) {
+    if (!origin || !['one_way', 'round_trip'].includes(tripType)) {
+      return json({ error: 'Invalid flight search fields' }, 400);
+    }
+
+    if (!isIsoDate(startDate) || (tripType === 'round_trip' && (!endDate || !isIsoDate(endDate)))) {
+      return json({ error: 'Invalid date format' }, 400);
+    }
+
+    if (tripType === 'one_way' && endDate !== null) {
+      return json({ error: 'One-way search cannot include an end date' }, 400);
+    }
+
+    if (tripType === 'round_trip' && endDate! < startDate) {
+      return json({ error: 'End date cannot be before start date' }, 400);
+    }
+
+    if (!allowedCabins.includes(cabin)) {
+      return json({ error: 'Invalid cabin class' }, 400);
+    }
   }
 
-  if (!isIsoDate(startDate) || (tripType === 'round_trip' && (!endDate || !isIsoDate(endDate)))) {
-    return json({ error: 'Invalid date format' }, 400);
-  }
-
-  if (tripType === 'one_way' && endDate !== null) {
-    return json({ error: 'One-way search cannot include an end date' }, 400);
-  }
-
-  if (tripType === 'round_trip' && endDate! < startDate) {
-    return json({ error: 'End date cannot be before start date' }, 400);
+  if (needsHotels) {
+    if (!endDate || !isIsoDate(startDate) || !isIsoDate(endDate) || endDate <= startDate) {
+      return json({ error: 'Invalid hotel stay dates' }, 400);
+    }
   }
 
   if (!Number.isInteger(adults) || adults < 1 || adults > 8) {
@@ -255,14 +274,6 @@ Deno.serve(async (req: Request) => {
     childrenAges.some((age) => !Number.isInteger(age) || age < 0 || age > 17)
   ) {
     return json({ error: 'Invalid children ages' }, 400);
-  }
-
-  if (!allowedCabins.includes(cabin)) {
-    return json({ error: 'Invalid cabin class' }, 400);
-  }
-
-  if (!services.length) {
-    return json({ error: 'Select at least one search service' }, 400);
   }
 
   if (!/^[A-Z]{2}$/.test(market) || !/^[a-z]{2}-[A-Z]{2}$/.test(locale) || !/^[A-Z]{3}$/.test(currency)) {
@@ -284,19 +295,19 @@ Deno.serve(async (req: Request) => {
   }
 
   const query: TravelSearchQuery = {
-    origin,
+    origin: needsFlights ? origin : '',
     destination,
     start_date: startDate,
     end_date: endDate,
-    trip_type: tripType as 'one_way' | 'round_trip',
+    trip_type: needsFlights ? tripType as 'one_way' | 'round_trip' : 'round_trip',
     adults,
     children_ages: childrenAges,
-    cabin,
+    cabin: needsFlights ? cabin : 'economy',
     services,
     market,
     locale,
     currency,
-    preferences,
+    preferences: needsFlights ? preferences : [],
   };
 
   const responses = await Promise.all(searchTasks(query));
