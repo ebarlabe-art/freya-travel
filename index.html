@@ -555,9 +555,31 @@
     <div id="accommodationView" class="hidden">
       <button class="ghost back" data-source-back>← Torna al tauler</button>
       <section class="accommodation-hero">
-        <div><small>🏨 Allotjament</small><h2>On dormiràs?</h2><p>Organitza tots els allotjaments del viatge i tingues les dades útils sempre a mà.</p></div>
-        <button id="addAccommodation" type="button">Afegir allotjament</button>
+        <div><small>🏨 Allotjament</small><h2>On dormiràs?</h2><p>Busca, compara i organitza els allotjaments del viatge, amb les dades útils sempre a mà.</p></div>
+        <div class="build-flight-result-actions">
+          <button id="buildOpenAccommodationSearch" type="button">🔎 Buscar allotjament</button>
+          <button id="addAccommodation" type="button" class="secondary">Afegir allotjament</button>
+        </div>
       </section>
+
+      <section id="buildAccommodationSearch" class="card build-flight-search hidden" aria-label="Cerca d’allotjament">
+        <h3>🔎 Buscar allotjament</h3>
+        <p id="buildAccommodationSearchIntro">Indica destinació, dates i viatgers abans de buscar.</p>
+        <form id="buildAccommodationSearchForm" class="build-flight-form">
+          <label class="wide">Destinació<input id="buildAccommodationDestination" maxlength="160" required placeholder="Ex.: Tallinn"></label>
+          <label>Entrada<input id="buildAccommodationStartDate" type="date" required></label>
+          <label>Sortida<input id="buildAccommodationEndDate" type="date" required></label>
+          <label>Adults<input id="buildAccommodationAdults" type="number" min="1" max="8" inputmode="numeric" required></label>
+          <label>Menors<input id="buildAccommodationChildrenCount" type="number" min="0" max="8" inputmode="numeric" value="0" required></label>
+          <label>Edats dels menors<input id="buildAccommodationChildren" maxlength="80" placeholder="Ex.: 8, 12"></label>
+          <label class="wide">Moneda<select id="buildAccommodationCurrency" data-currency-select required></select></label>
+          <div class="build-flight-form-actions"><button id="buildAccommodationSearchSubmit" type="submit">Cerca allotjament</button><button id="buildAccommodationSearchClose" type="button" class="secondary">Tanca</button></div>
+        </form>
+        <p id="buildAccommodationSearchSummary" class="build-flight-search-summary"></p>
+        <p id="buildAccommodationSearchMessage" class="message hidden" role="status" aria-live="polite"></p>
+        <div id="buildAccommodationResults" class="build-flight-results"></div>
+      </section>
+
       <p id="accommodationMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
       <div id="accommodationBrowse">
         <div id="accommodationLoading" class="accommodation-loading hidden">Carregant allotjaments…</div>
@@ -2520,6 +2542,55 @@ function renderBuild(data,tripId,generation,userId){
     else{setActivityViewMode(button.dataset.buildGroup==='local_transport'?'local_transport':'activity');setAppView('activitiesView');await loadActivities(true);if(tripRequestIsCurrent(tripId,generation))openActivityForm(id)}
   });
 }
+async function openBuildAccommodationSearch(){
+  if(!trip||isLondonTrip())return;
+  if($('accommodationView')?.classList.contains('hidden')){setAppView('accommodationView');await loadAccommodations(true)}
+  const api=await travelSearchApi(),defaults=buildCurrentData?.brief?api.hotelSearchDefaultsFromBrief(buildCurrentData.brief):{destination:'',start_date:'',end_date:'',adults:0,children_ages:[],children_count:0},culture=buildSearchCulture();
+  $('buildAccommodationDestination').value=defaults.destination||'';
+  $('buildAccommodationStartDate').value=defaults.start_date||trip?.start_date||'';
+  $('buildAccommodationEndDate').value=defaults.end_date||trip?.end_date||'';
+  $('buildAccommodationAdults').value=defaults.adults?String(defaults.adults):'';
+  $('buildAccommodationChildrenCount').value=String(defaults.children_count||0);
+  $('buildAccommodationChildren').value=(defaults.children_ages||[]).length===defaults.children_count?(defaults.children_ages||[]).join(', '):'';
+  setCurrencyValue('buildAccommodationCurrency',culture.currency||'',false);
+  $('buildAccommodationResults').innerHTML='';$('buildAccommodationSearchSummary').textContent='';msg('buildAccommodationSearchMessage','');
+  $('buildAccommodationSearch').classList.remove('hidden');$('buildAccommodationSearch').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeBuildAccommodationSearch(){$('buildAccommodationSearch')?.classList.add('hidden');if($('buildAccommodationResults'))$('buildAccommodationResults').innerHTML='';msg('buildAccommodationSearchMessage','')}
+function renderAccommodationOffers(data){
+  const results=Array.isArray(data?.results)?data.results.filter(result=>result.service==='hotels'):[],sources=data?.providers?.hotels?.sources||[];
+  if(!results.length){
+    $('buildAccommodationResults').innerHTML='';
+    if(!sources.some(source=>source.configured)){msg('buildAccommodationSearchMessage','La cerca està preparada, però encara no hi ha cap proveïdor d’allotjament connectat amb credencials.',true);return}
+    const providerError=sources.find(source=>source.configured&&source.error)?.error;
+    if(providerError){msg('buildAccommodationSearchMessage','Els proveïdors estan preparats, però la cerca en viu encara no està activada: '+providerError,true);return}
+    msg('buildAccommodationSearchMessage','No s’han trobat allotjaments per aquesta cerca.',true);return;
+  }
+  msg('buildAccommodationSearchMessage',results.length+' opcions trobades.');
+  $('buildAccommodationResults').innerHTML=results.map(result=>{
+    const price=result.price?new Intl.NumberFormat('ca-ES',{style:'currency',currency:result.price.currency,maximumFractionDigits:2}).format(result.price.amount):'Preu no disponible';
+    return '<article class="build-flight-result"><h4>'+esc(result.title||'Allotjament')+'</h4>'+(result.subtitle?'<p>'+esc(result.subtitle)+'</p>':'')+'<div class="build-flight-result-price">'+esc(price)+'</div><div class="build-flight-result-actions">'+(result.deeplink?'<a href="'+esc(result.deeplink)+'" target="_blank" rel="noopener">Veure oferta</a>':'')+'</div></article>';
+  }).join('');
+}
+async function runBuildAccommodationSearch(){
+  if(!trip||!session||isLondonTrip())return;
+  const button=$('buildAccommodationSearchSubmit'),tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
+  button.disabled=true;msg('buildAccommodationSearchMessage','Buscant allotjaments…');$('buildAccommodationResults').innerHTML='';
+  try{
+    const api=await travelSearchApi(),culture=buildSearchCulture(),childrenAges=parseChildAges($('buildAccommodationChildren').value),childrenCount=Number($('buildAccommodationChildrenCount').value);
+    if(!Number.isInteger(childrenCount)||childrenCount<0||childrenCount>8)throw new Error('Indica un nombre de menors entre 0 i 8.');
+    if(childrenAges.length!==childrenCount)throw new Error(childrenCount?'Indica una edat per a cada menor.':'Si no viatgen menors, deixa les edats en blanc.');
+    const compiled=api.compileHotelSearch({destination:$('buildAccommodationDestination').value,startDate:$('buildAccommodationStartDate').value,endDate:$('buildAccommodationEndDate').value,adults:Number($('buildAccommodationAdults').value),childrenAges,market:culture.market,locale:culture.locale,currency:$('buildAccommodationCurrency').value});
+    if(!compiled.ready)throw new Error('Completa destinació, dates, viatgers i moneda abans de buscar.');
+    $('buildAccommodationSearchSummary').innerHTML='Buscant a <strong>'+esc(compiled.query.destination)+'</strong> · '+esc(compiled.query.start_date)+' → '+esc(compiled.query.end_date)+' · '+compiled.query.adults+' adult'+(compiled.query.adults===1?'':'s')+(compiled.query.children_ages.length?' · menors: '+esc(compiled.query.children_ages.join(', ')):'');
+    const response=await db.functions.invoke('travel-search',{body:compiled.query}),data=response.data,error=response.error;
+    if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId)return;if(error)throw error;renderAccommodationOffers(data);
+  }catch(error){if(tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId)msg('buildAccommodationSearchMessage',error?.message||'No s’ha pogut completar la cerca d’allotjament.',true)}
+  finally{if(tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId)button.disabled=false}
+}
+$('buildAccommodationSearchForm').onsubmit=event=>{event.preventDefault();runBuildAccommodationSearch()};
+$('buildAccommodationSearchClose').onclick=closeBuildAccommodationSearch;
+$('buildOpenAccommodationSearch').onclick=()=>openBuildAccommodationSearch();
 async function openBuildFlightSearch(componentId=null){
   if(!trip||isLondonTrip())return;
   if($('genericFlightsView')?.classList.contains('hidden')){
