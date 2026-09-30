@@ -464,6 +464,7 @@
           <button id="genericAccommodationModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="accommodationView"><span class="generic-module-icon">🏨</span><span class="generic-module-copy"><strong>Allotjament</strong><small id="genericAccommodationModuleStatus">Cap allotjament confirmat</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericActivitiesModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="activitiesView" data-activity-mode="activity"><span class="generic-module-icon">🎟️</span><span class="generic-module-copy"><strong>Activitats</strong><small id="genericActivitiesModuleStatus">Cap activitat confirmada</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericLocalTransportModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="activitiesView" data-activity-mode="local_transport"><span class="generic-module-icon">🚇</span><span class="generic-module-copy"><strong>Transport local</strong><small id="genericLocalTransportModuleStatus">Cap transport confirmat</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericCarRentalModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="carRentalView"><span class="generic-module-icon">🚙</span><span class="generic-module-copy"><strong>Cotxe de lloguer</strong><small id="genericCarRentalModuleStatus">Cap cotxe reservat</small></span><span class="generic-module-arrow">›</span></button>
         </div>
       </section>
       <section class="generic-trip-section generic-trip-tools" aria-label="Eines del viatge">
@@ -519,6 +520,10 @@
                 <button type="button" data-open="genericFlightsView">Cerca i gestiona vols</button>
               </div>
             </article>
+            <article class="build-component">
+              <div class="build-component-head"><div><h4>🚙 Cotxe de lloguer</h4><p>Prepara, reserva i documenta el cotxe del viatge.</p></div></div>
+              <div class="build-component-actions"><button type="button" data-open="carRentalView">Gestiona el cotxe de lloguer</button></div>
+            </article>
           </div>
         </section>
       </div>
@@ -550,6 +555,83 @@
           <span id="genericPlaceholderState" class="generic-placeholder-state">Pendent de configurar</span>
         </section>
       </div>
+    </div>
+
+    <div id="carRentalView" class="hidden">
+      <button class="ghost back" data-source-back>← Torna al tauler</button>
+      <section class="accommodation-hero">
+        <div><small>🚙 Cotxe de lloguer</small><h2>El cotxe del viatge</h2><p>Reserva, contracte, assegurança i proves d’entrega i devolució, vinculades al mateix lloguer.</p></div>
+        <div class="build-flight-result-actions"><button id="carRentalSearchInfo" type="button">🔎 Buscar cotxe</button><button id="addCarRental" type="button" class="secondary">Afegir lloguer</button></div>
+      </section>
+      <p id="carRentalSearchMessage" class="message hidden" role="status" aria-live="polite"></p>
+      <p id="carRentalMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
+      <div id="carRentalBrowse">
+        <div id="carRentalLoading" class="accommodation-loading hidden">Carregant lloguers…</div>
+        <div id="carRentalEmpty" class="accommodation-empty hidden"><strong>Encara no hi ha cap cotxe de lloguer</strong>Pots afegir una reserva manualment. La cerca amb proveïdors es connectarà en una fase posterior.<br><button id="addFirstCarRental" type="button">Afegir lloguer</button></div>
+        <div id="carRentalList" class="accommodation-list"></div>
+      </div>
+      <section id="carRentalFormCard" class="card accommodation-form-card hidden">
+        <h3 id="carRentalFormTitle">Afegir cotxe de lloguer</h3>
+        <form id="carRentalForm" class="accommodation-form">
+          <label>Companyia<input id="carRentalProvider" maxlength="200" placeholder="Sixt, Europcar..."></label>
+          <label>Localitzador<input id="carRentalReference" maxlength="200" placeholder="ABC123"></label>
+          <label class="wide">Lloc de recollida<input id="carRentalPickupLocation" maxlength="500" placeholder="Aeroport, oficina, adreça..."></label>
+          <label>Ciutat de recollida<input id="carRentalPickupCity" maxlength="200"></label>
+          <label>Recollida<input id="carRentalPickupAt" type="datetime-local"></label>
+          <label>Zona horària recollida<input id="carRentalPickupTimeZone" maxlength="100" placeholder="Europe/Riga"></label>
+          <label class="wide">Lloc de devolució<input id="carRentalReturnLocation" maxlength="500"></label>
+          <label>Ciutat de devolució<input id="carRentalReturnCity" maxlength="200"></label>
+          <label>Devolució<input id="carRentalReturnAt" type="datetime-local"></label>
+          <label>Zona horària devolució<input id="carRentalReturnTimeZone" maxlength="100" placeholder="Europe/Riga"></label>
+          <label>Categoria / classe<input id="carRentalVehicleClass" maxlength="100" placeholder="Compacte, SUV..."></label>
+          <label>Model assignat<input id="carRentalVehicleModel" maxlength="200" placeholder="Peugeot 208 o similar"></label>
+          <label>Matrícula<input id="carRentalLicensePlate" maxlength="40"></label>
+          <label>Canvi<select id="carRentalTransmission"><option value="">Pendent</option><option value="automatic">Automàtic</option><option value="manual">Manual</option><option value="unknown">No especificat</option></select></label>
+          <label class="wide">Política de combustible<input id="carRentalFuelPolicy" maxlength="200" placeholder="Ple/Ple..."></label>
+          <label>Combustible en recollir<input id="carRentalPickupFuel" maxlength="80"></label>
+          <label>Combustible en tornar<input id="carRentalReturnFuel" maxlength="80"></label>
+          <label>Km en recollir<input id="carRentalPickupMileage" type="number" min="0" step="1" inputmode="numeric"></label>
+          <label>Km en tornar<input id="carRentalReturnMileage" type="number" min="0" step="1" inputmode="numeric"></label>
+          <label class="wide">Assegurança<input id="carRentalInsurance" maxlength="500"></label>
+          <label>Franquícia<input id="carRentalExcessAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+          <label>Moneda franquícia<select id="carRentalExcessCurrency" data-currency-select></select></label>
+          <label>Dipòsit<input id="carRentalDepositAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+          <label>Moneda dipòsit<select id="carRentalDepositCurrency" data-currency-select></select></label>
+          <label>Telèfon<input id="carRentalPhone" type="tel" maxlength="50"></label>
+          <label>Correu<input id="carRentalEmail" type="email" maxlength="254"></label>
+          <label class="wide">Web<input id="carRentalWebsite" inputmode="url" maxlength="2048" placeholder="https://..."></label>
+          <label>Estat<select id="carRentalStatus"><option value="planning">En planificació</option><option value="reserved">Reservat</option><option value="confirmed">Confirmat</option><option value="cancelled">Cancel·lat</option></select></label>
+          <section class="flight-document-manager wide">
+            <h4>📄 Reserva, contracte i assegurança</h4>
+            <label>Reserva<select id="carRentalReservationDocument"><option value="">Sense document</option></select></label>
+            <label>Contracte<select id="carRentalContractDocument"><option value="">Sense document</option></select></label>
+            <label>Assegurança<select id="carRentalInsuranceDocument"><option value="">Sense document</option></select></label>
+            <div class="accommodation-document-row"><span class="accommodation-document-help">Associa documents ja pujats al viatge.</span><button id="carRentalOpenDocuments" type="button" class="secondary accommodation-documents-action">Anar a Documents</button></div>
+          </section>
+          <section class="flight-document-manager wide">
+            <h4>📸 Com te’l lliuren</h4><p>Carrosseria, llantes, vidres, interior, combustible, quilometratge i danys existents.</p>
+            <div id="carRentalPickupPhotos" class="flight-existing-documents"></div>
+            <label class="flight-file-input">Afegir fotos d’entrega<input id="carRentalPickupPhotoFiles" type="file" accept="image/*" multiple capture="environment"></label>
+          </section>
+          <section class="flight-document-manager wide">
+            <h4>📸 Com l’entregues</h4><p>Estat final, combustible i quilometratge.</p>
+            <div id="carRentalReturnPhotos" class="flight-existing-documents"></div>
+            <label class="flight-file-input">Afegir fotos de devolució<input id="carRentalReturnPhotoFiles" type="file" accept="image/*" multiple capture="environment"></label>
+          </section>
+          <section id="carRentalCostPanel" class="tb-cost-panel hidden">
+            <h4>💶 Cost del lloguer</h4><p>El preu confirmat substitueix el previst al pressupost.</p>
+            <label>Preu previst<input id="carRentalExpectedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            <label>Preu confirmat<input id="carRentalConfirmedAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            <label>Moneda<select id="carRentalCostCurrency" data-currency-select></select></label>
+            <input id="carRentalPriceQuality" type="hidden" value="unknown">
+            <label class="wide">Què inclou<input id="carRentalPriceScope" maxlength="500"></label>
+            <label class="wide">Costos obligatoris encara desconeguts<textarea id="carRentalUnknownCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
+            <label class="wide">Costos exclosos<textarea id="carRentalExcludedCosts" maxlength="1200" placeholder="Un per línia"></textarea></label>
+          </section>
+          <label class="wide">Notes<textarea id="carRentalNotes" maxlength="4000"></textarea></label>
+          <div class="accommodation-form-actions"><button id="saveCarRental" type="submit">Desar lloguer</button><button id="cancelCarRental" type="button" class="secondary">Cancel·lar</button></div>
+        </form>
+      </section>
     </div>
 
     <div id="accommodationView" class="hidden">
@@ -1193,6 +1275,7 @@
             <option value="Entrada">🎟️ Entrada</option>
             <option value="Vol">✈️ Vol</option>
             <option value="Hotel">🏨 Hotel</option>
+            <option value="Cotxe">🚙 Cotxe de lloguer</option>
             <option value="Excursió">🚌 Excursió</option>
             <option value="Museu">🏛️ Museu o monument</option>
             <option value="restaurant">🍽️ Restaurant</option>
@@ -1851,6 +1934,11 @@ function openGenericModule(key){
   $('genericPlaceholderState').textContent=module.state||'Pendent de configurar';
   setAppView('genericModuleView');
 }
+let carRentalChannel=null;
+let carRentalRows=[];
+let carRentalDocumentLinks=[];
+let carRentalSubmitting=false;
+let carRentalLoadSequence=0;
 let accommodationChannel=null;
 let accommodationRows=[];
 let flightChannel=null;
@@ -2724,9 +2812,9 @@ async function loadBuildView(){
 
 $('budgetSettingsForm').onsubmit=async event=>{event.preventDefault();if(!trip||isLondonTrip())return;const target=$('budgetTarget').value.trim(),maximum=$('budgetMaximum').value.trim(),currency=$('budgetCurrency').value.trim().toUpperCase();if((target||maximum)&&!/^[A-Z]{3}$/.test(currency)){msg('budgetMsg','Indica una moneda de tres lletres, per exemple EUR.',true);return}try{const api=await tbBudgetApi();await api.saveBudgetSettings(db,{tripId:trip.id,expectedRevision:Number($('budgetSettingsForm').dataset.revision||0),targetAmount:target===''?null:Number(target),maximumAmount:maximum===''?null:Number(maximum),currency:(target||maximum)?currency:null});await loadBudgetView();msg('budgetMsg','Pressupost actualitzat.')}catch(error){msg('budgetMsg',error?.message||'No s’ha pogut desar el pressupost.',true)}};
 
-const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView']);
-const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView'].includes(id)));
+const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','buildView','budgetView','accommodationView','genericFlightsView','activitiesView','carRentalView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView']);
+const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','carRentalView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
   if(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(view))return true;
   if(!value)return false;
