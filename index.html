@@ -3457,8 +3457,9 @@ function syncGenericConfirmedModules(){
   const activities=activityRowsForMode('activity').filter(row=>['reserved','confirmed'].includes(row.reservation_status));
   const localTransport=activityRowsForMode('local_transport').filter(row=>['reserved','confirmed'].includes(row.reservation_status));
   const carRentals=carRentalRows.filter(row=>['reserved','confirmed'].includes(row.reservation_status));
-  const any=flights.length||accommodations.length||activities.length||localTransport.length||carRentals.length;
-  [['genericFlightsModuleCard',!!flights.length],['genericAccommodationModuleCard',!!accommodations.length],['genericActivitiesModuleCard',!!activities.length],['genericLocalTransportModuleCard',!!localTransport.length],['genericCarRentalModuleCard',!!carRentals.length],['genericItineraryModuleCard',!!any]].forEach(([id,show])=>$(id)?.classList.toggle('hidden',!show));
+  const itineraryAny=flights.length||accommodations.length||activities.length||localTransport.length;
+  const any=itineraryAny||carRentals.length;
+  [['genericFlightsModuleCard',!!flights.length],['genericAccommodationModuleCard',!!accommodations.length],['genericActivitiesModuleCard',!!activities.length],['genericLocalTransportModuleCard',!!localTransport.length],['genericCarRentalModuleCard',!!carRentals.length],['genericItineraryModuleCard',!!itineraryAny]].forEach(([id,show])=>$(id)?.classList.toggle('hidden',!show));
   $('genericConfirmedSection')?.classList.toggle('hidden',!any);
   if($('genericFlightsModuleStatus'))$('genericFlightsModuleStatus').textContent=flightSummary(flights.length);
   if($('genericAccommodationModuleStatus'))$('genericAccommodationModuleStatus').textContent=accommodationSummary(accommodations.length);
