@@ -1,4 +1,4 @@
-const CACHE='freya-travel-release-6418-v1';
+const CACHE='freya-travel-release-6419-v1';
 const ASSETS=['./domain/place-resolution.mjs','./domain/place-resolution-ui.mjs','./domain/proposal-handoff.mjs','./domain/tb-confirmation.mjs','./domain/tb-budget.mjs','./domain/tb-build.mjs','./domain/travel-search.mjs','./domain/proposal-refinement.mjs','./domain/proposal-builder.mjs','./domain/live-trip-brief.mjs','./domain/travel-builder.mjs','./domain/trip-brief.mjs','./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./itinerary.html','./freya-travel-v1.5/index.html','./freya-travel-v1.5/itinerary.html'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
