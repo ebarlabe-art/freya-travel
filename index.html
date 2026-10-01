@@ -1105,7 +1105,7 @@
 
     <div id="dashboardView">
       <button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button>
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.17 · Activitats i documents</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.18 · Activitats i documents</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <div id="pushCard" class="install-card"><div><strong>🔔 Notificacions</strong><small id="pushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="enablePush" type="button">Activa les notificacions</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
@@ -1705,7 +1705,7 @@
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
     <button id="globalSearchFab" class="search-fab" type="button" aria-label="Cerca a tota l'app">🔎</button>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.17</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.18</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4450,32 +4450,73 @@ function tripAdjustmentDismissKey(){return trip&&session?.user?.id?`freya-tb09-d
 function readDismissedTripAdjustments(){const key=tripAdjustmentDismissKey();if(!key)return new Set();try{return new Set(JSON.parse(localStorage.getItem(key)||'[]').filter(value=>typeof value==='string'))}catch(_){return new Set()}}
 function dismissTripAdjustment(key){const storageKey=tripAdjustmentDismissKey();if(!storageKey||!key)return;const values=readDismissedTripAdjustments();values.add(key);try{localStorage.setItem(storageKey,JSON.stringify([...values].slice(-100)))}catch(_){}}
 function tripReviewManualRow(id){return manualItineraryRows.find(row=>row.id===id&&row.trip_id===trip?.id)||null}
+function tripReviewFlexibleManual(item,{optionalOnly=false,timingKinds=null}={}){
+  if(!item||item.sourceType!=='manual'||!item.sourceUpdatedAt)return null;
+  const row=tripReviewManualRow(item.sourceId);if(!row||row.is_fixed||row.status!=='planned'||row.updated_at!==item.sourceUpdatedAt)return null;
+  if(optionalOnly&&!row.is_optional)return null;if(timingKinds&&!timingKinds.includes(row.timing_kind))return null;
+  return row;
+}
 function tripAdjustmentFingerprint(suggestion,row,patch){return [suggestion.id,row?.id,row?.updated_at,JSON.stringify(patch)].filter(Boolean).join('|')}
+function tripReviewExactMoveProposal(suggestion,active,movable,anchor){
+  const row=tripReviewFlexibleManual(movable,{timingKinds:['exact']});if(!row||!row.starts_at||!anchor?.endsAt)return null;
+  const anchorEnd=new Date(anchor.endsAt).getTime(),oldStart=new Date(row.starts_at).getTime(),oldEnd=row.ends_at?new Date(row.ends_at).getTime():null;
+  if(!Number.isFinite(anchorEnd)||!Number.isFinite(oldStart))return null;
+  const duration=Number.isFinite(oldEnd)&&oldEnd>oldStart?oldEnd-oldStart:0,newStart=anchorEnd+60*60000,newEnd=duration?newStart+duration:null;
+  const local=itineraryDateTime(new Date(newStart).toISOString(),row.time_zone);if(!local||local.date!==movable.localDate)return null;
+  const candidateEnd=newEnd||newStart+60000;
+  const collision=active.some(item=>{
+    if(item.key===movable.key||item.localDate!==movable.localDate||item.timingKind!=='exact'||!item.startsAt)return false;
+    const start=new Date(item.startsAt).getTime(),end=item.endsAt?new Date(item.endsAt).getTime():start+60000;
+    return Number.isFinite(start)&&Number.isFinite(end)&&newStart<end&&candidateEnd>start;
+  });
+  if(collision)return null;
+  const patch={starts_at:new Date(newStart).toISOString(),ends_at:newEnd?new Date(newEnd).toISOString():null};
+  const key=tripAdjustmentFingerprint(suggestion,row,patch);
+  return {key,sourceId:row.id,expectedUpdatedAt:row.updated_at,patch,title:`Moure “${row.title}” a les ${local.time}`,copy:'Mantinc la durada actual i deixo 60 minuts de marge després de l’altra peça.'};
+}
+function tripReviewMoveManualToDatePatch(row,targetDate){
+  if(!row||!targetDate)return null;
+  if(['approximate','date','all_day','daypart'].includes(row.timing_kind))return {local_date:targetDate};
+  if(row.timing_kind!=='exact'||!row.starts_at||!row.time_zone)return null;
+  const localStart=isoToZonedLocal(row.starts_at,row.time_zone),match=/T(\d{2}:\d{2})$/.exec(localStart||'');if(!match)return null;
+  const newStart=zonedLocalToIso(`${targetDate}T${match[1]}`,row.time_zone),oldStart=new Date(row.starts_at).getTime(),oldEnd=row.ends_at?new Date(row.ends_at).getTime():null,duration=Number.isFinite(oldEnd)&&oldEnd>oldStart?oldEnd-oldStart:0;
+  const nextStart=new Date(newStart).getTime();if(!Number.isFinite(nextStart))return null;
+  return {starts_at:new Date(nextStart).toISOString(),ends_at:duration?new Date(nextStart+duration).toISOString():null};
+}
+function tripReviewPatchFitsDate(active,movable,targetDate,patch){
+  if(!patch||!movable||movable.timingKind!=='exact'||!patch.starts_at)return true;
+  const start=new Date(patch.starts_at).getTime(),end=patch.ends_at?new Date(patch.ends_at).getTime():start+60000;if(!Number.isFinite(start)||!Number.isFinite(end))return false;
+  return !active.some(item=>{
+    if(item.key===movable.key||item.localDate!==targetDate||item.timingKind!=='exact'||!item.startsAt)return false;
+    const otherStart=new Date(item.startsAt).getTime(),otherEnd=item.endsAt?new Date(item.endsAt).getTime():otherStart+60000;
+    return Number.isFinite(otherStart)&&Number.isFinite(otherEnd)&&start<otherEnd&&end>otherStart;
+  });
+}
+function tripReviewBusyDayProposal(suggestion,active){
+  const date=suggestion.localDate,dates=genericItineraryTripDates();if(!date||dates.length<2)return null;
+  const candidates=active.filter(item=>item.localDate===date).map(item=>({item,row:tripReviewFlexibleManual(item,{optionalOnly:true,timingKinds:['exact','approximate','date','all_day','daypart']})})).filter(value=>value.row);
+  if(!candidates.length)return null;
+  const counts=new Map(dates.map(day=>[day,0]));active.forEach(item=>{if(item.localDate&&counts.has(item.localDate))counts.set(item.localDate,counts.get(item.localDate)+1)});
+  const currentCount=counts.get(date)||0,targets=dates.filter(day=>day!==date&&(counts.get(day)||0)<=currentCount-2).sort((a,b)=>(counts.get(a)||0)-(counts.get(b)||0)||a.localeCompare(b));
+  for(const candidate of candidates)for(const target of targets){
+    const patch=tripReviewMoveManualToDatePatch(candidate.row,target);if(!tripReviewPatchFitsDate(active,candidate.item,target,patch))continue;
+    const key=tripAdjustmentFingerprint(suggestion,candidate.row,patch);
+    return {key,sourceId:candidate.row.id,expectedUpdatedAt:candidate.row.updated_at,patch,title:`Moure “${candidate.row.title}” al ${itineraryDayHeading(target)}`,copy:'És una peça marcada com a opcional i flexible. En mantinc el tipus d’horari i la passo a un dia menys carregat.'};
+  }
+  return null;
+}
 function tripReviewAdjustmentFor(suggestion,items){
   if(!suggestion||!trip||!session)return null;
   const active=(Array.isArray(items)?items:[]).filter(tripReviewActive);
   if(['overlap','tight_gap'].includes(suggestion.kind)){
-    const keys=suggestion.relatedKeys||[],previous=active.find(item=>item.key===keys[0]),movable=active.find(item=>item.key===keys[1]);
-    if(!previous||!movable||movable.sourceType!=='manual'||movable.timingKind!=='exact'||!previous.endsAt)return null;
-    const row=tripReviewManualRow(movable.sourceId);if(!row||row.is_fixed||row.status!=='planned'||!row.starts_at||row.updated_at!==movable.sourceUpdatedAt)return null;
-    const previousEnd=new Date(previous.endsAt).getTime(),oldStart=new Date(row.starts_at).getTime(),oldEnd=row.ends_at?new Date(row.ends_at).getTime():null;
-    if(!Number.isFinite(previousEnd)||!Number.isFinite(oldStart))return null;
-    const duration=Number.isFinite(oldEnd)&&oldEnd>oldStart?oldEnd-oldStart:0,newStart=previousEnd+60*60000,newEnd=duration?newStart+duration:null;
-    const local=itineraryDateTime(new Date(newStart).toISOString(),row.time_zone);if(!local||local.date!==movable.localDate)return null;
-    const candidateEnd=newEnd||newStart+60000;
-    const collision=active.some(item=>{
-      if(item.key===movable.key||item.localDate!==movable.localDate||item.timingKind!=='exact'||!item.startsAt)return false;
-      const start=new Date(item.startsAt).getTime(),end=item.endsAt?new Date(item.endsAt).getTime():start+60000;
-      return Number.isFinite(start)&&Number.isFinite(end)&&newStart<end&&candidateEnd>start;
-    });
-    if(collision)return null;
-    const patch={starts_at:new Date(newStart).toISOString(),ends_at:newEnd?new Date(newEnd).toISOString():null};
-    const key=tripAdjustmentFingerprint(suggestion,row,patch);
-    return {key,sourceId:row.id,expectedUpdatedAt:row.updated_at,patch,title:`Moure “${row.title}” a les ${local.time}`,copy:'Mantinc la durada actual i deixo 60 minuts de marge després del pla anterior.'};
+    const keys=suggestion.relatedKeys||[],first=active.find(item=>item.key===keys[0]),second=active.find(item=>item.key===keys[1]);if(!first||!second)return null;
+    const secondMove=tripReviewExactMoveProposal(suggestion,active,second,first);if(secondMove)return secondMove;
+    const firstMove=tripReviewExactMoveProposal(suggestion,active,first,second);if(firstMove)return firstMove;
+    return null;
   }
   if(suggestion.kind==='unscheduled'){
-    const item=active.find(value=>value.key===suggestion.focusKey);if(!item||item.sourceType!=='manual')return null;
-    const row=tripReviewManualRow(item.sourceId);if(!row||row.is_fixed||row.status!=='planned'||row.timing_kind!=='unscheduled'||row.updated_at!==item.sourceUpdatedAt)return null;
+    const item=active.find(value=>value.key===suggestion.focusKey);if(!item)return null;
+    const row=tripReviewFlexibleManual(item,{timingKinds:['unscheduled']});if(!row)return null;
     const dates=genericItineraryTripDates();if(!dates.length)return null;
     const counts=new Map(dates.map(date=>[date,0]));active.forEach(value=>{if(value.localDate&&counts.has(value.localDate))counts.set(value.localDate,counts.get(value.localDate)+1)});
     const target=[...dates].sort((a,b)=>counts.get(a)-counts.get(b)||a.localeCompare(b))[0];if(!target)return null;
@@ -4483,6 +4524,7 @@ function tripReviewAdjustmentFor(suggestion,items){
     const key=tripAdjustmentFingerprint(suggestion,row,patch);
     return {key,sourceId:row.id,expectedUpdatedAt:row.updated_at,patch,title:`Situar “${row.title}” el ${itineraryDayHeading(target)}`,copy:'L’afegeixo al dia menys carregat, encara sense fixar una hora concreta.'};
   }
+  if(suggestion.kind==='busy_day')return tripReviewBusyDayProposal(suggestion,active);
   return null;
 }
 function tripReviewSuggestions(items){
