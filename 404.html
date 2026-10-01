@@ -1639,6 +1639,7 @@ let trip = null;
 let channel=null,tripLoadGeneration=0,sessionRenderGeneration=0,flightTimer=null;
 const NAVIGATION_STATE_VERSION=1;
 let navigationRestoreInProgress=false,lastAuthenticatedUserId=null;
+let moduleReturnContext=null;
 let coldStartNavigationPending=true;
 const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
@@ -2789,9 +2790,10 @@ function renderBuild(data,tripId,generation,userId){
   $('buildGroups').querySelectorAll('[data-build-source]').forEach(button=>button.onclick=async()=>{
     if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId)return;
     const kind=button.dataset.buildKind,id=button.dataset.buildSource;
+    setModuleReturnContext('buildView');updateItinerarySourceBack();
     if(kind==='flight'){setAppView('genericFlightsView');await loadFlights(true);if(tripRequestIsCurrent(tripId,generation))openFlightForm(id)}
     else if(kind==='accommodation'){setAppView('accommodationView');await loadAccommodations(true);if(tripRequestIsCurrent(tripId,generation))openAccommodationForm(id)}
-    else if(button.dataset.buildGroup==='local_transport'){setAppView('localTransportView');await loadActivities(true);if(tripRequestIsCurrent(tripId,generation))openLocalTransportForm(id)}
+    else if(button.dataset.buildGroup==='local_transport'){resetLocalTransportForm();setAppView('localTransportView');await loadActivities(true)}
     else{setActivityViewMode('activity');setAppView('activitiesView');await loadActivities(true);if(tripRequestIsCurrent(tripId,generation))openActivityForm(id)}
   });
 }
@@ -4324,9 +4326,20 @@ function configureItineraryContent(){
   ['d6','d7','d8','d9','d10','d11'].forEach(id=>$(id)?.classList.toggle('hidden',!london));
   if(london)resetManualItineraryFormUi();
 }
+function validModuleReturnContext(){
+  const context=moduleReturnContext;
+  if(!context||context.userId!==session?.user?.id||context.tripId!==trip?.id){moduleReturnContext=null;return null}
+  return context;
+}
+function setModuleReturnContext(view='buildView'){
+  if(!trip||!session)return;
+  moduleReturnContext={userId:session.user.id,tripId:trip.id,view};
+}
+function clearModuleReturnContext(){moduleReturnContext=null}
 function clearItinerarySourceContext(){
   itinerarySourceContext=null;
-  document.querySelectorAll('[data-source-back]').forEach(button=>button.textContent='← Torna al tauler');
+  const moduleContext=validModuleReturnContext();
+  document.querySelectorAll('[data-source-back]').forEach(button=>button.textContent=moduleContext?.view==='buildView'?'← Tornar a Construir el meu viatge':'← Torna al tauler');
 }
 function validItinerarySourceContext(type=null){
   const context=itinerarySourceContext;
@@ -4335,11 +4348,12 @@ function validItinerarySourceContext(type=null){
   return context;
 }
 function updateItinerarySourceBack(){
-  const context=validItinerarySourceContext();
-  document.querySelectorAll('[data-source-back]').forEach(button=>button.textContent=context&&context.originView!=='genericDashboardView'?'← Tornar a Itinerari':'← Torna al tauler');
+  const context=validItinerarySourceContext(),moduleContext=validModuleReturnContext();
+  document.querySelectorAll('[data-source-back]').forEach(button=>button.textContent=context&&context.originView!=='genericDashboardView'?'← Tornar a Itinerari':moduleContext?.view==='buildView'?'← Tornar a Construir el meu viatge':'← Torna al tauler');
 }
 function handleItinerarySourceBack(){
-  const context=validItinerarySourceContext();clearItinerarySourceContext();setAppView(context?.originView||(context?'itineraryView':tripDashboardId()));
+  const context=validItinerarySourceContext(),moduleContext=validModuleReturnContext(),target=context?.originView||(context?'itineraryView':moduleContext?.view||tripDashboardId());
+  itinerarySourceContext=null;moduleReturnContext=null;updateItinerarySourceBack();setAppView(target);
 }
 function focusItinerarySourceCard(type,id,messageId){
   const attributes={flight:'flightId',accommodation:'accommodationId',activity:'activityId'},attribute=attributes[type];
@@ -4620,7 +4634,7 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
   if(open&&preferredTripId&&trips.some(t=>t.id===preferredTripId))recordHomeTripEntry(preferredTripId);
   if(coldStart&&!pendingInitialRoute){
     const savedId=readSelectedTripId();if(savedId&&!trips.some(value=>value.id===savedId))forgetSelectedTrip();
-    trip=null;tripLoadGeneration+=1;await disconnectTripRealtime();clearTripScopedState();updateTripPresentation();setAppView('tripsHomeView');return true;
+    trip=null;tripLoadGeneration+=1;await disconnectTripRealtime();clearTripScopedState();updateTripPresentation();renderTripsHome();setAppView('tripsHomeView');return true;
   }
   const explicitRoute=!!(pendingInitialRoute&&!initialViewApplied),savedNavigation=!explicitRoute&&!preferredTripId&&!open?readNavigationState(requestUserId):null;
   const savedNavigationTrip=savedNavigation?.tripId?trips.find(value=>value.id===savedNavigation.tripId)||null:null;
@@ -4656,11 +4670,12 @@ async function renderSession(next){
   if(nextUserId&&lastAuthenticatedUserId&&nextUserId!==lastAuthenticatedUserId){clearNavigationState(lastAuthenticatedUserId);clearDocumentsReturnContext();clearAccommodationVoucherFocus();clearGenericItineraryState()}
   if(nextUserId)lastAuthenticatedUserId=nextUserId;session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');
   if(!session){if(lastAuthenticatedUserId)clearNavigationState(lastAuthenticatedUserId);lastAuthenticatedUserId=null;trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();clearGenericItineraryState();await disconnectTripRealtime();clearTripScopedState();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
-  $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent='';show('tripView');
+  $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent='';
   try{
     const coldStart=coldStartNavigationPending;
     await refreshTrips({coldStart});
     if(renderGeneration!==sessionRenderGeneration)return;
+    show('tripView');
     if(coldStart){coldStartNavigationPending=false;if(!pendingInitialRoute)await restoreBuilderSession()}
   }catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
 }
@@ -4752,7 +4767,16 @@ async function loadItems(){
 
 async function toggleItem(id,done){if(!trip)return;const tripId=trip.id,generation=tripLoadGeneration;const {error}=await db.from('checklist_items').update({done}).eq('id',id).eq('trip_id',tripId);if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
 async function deleteItem(id,templateKey=''){if(!trip)return;const tripId=trip.id,generation=tripLoadGeneration,dismissTemplate=!isLondonTrip()&&!!templateKey;const query=dismissTemplate?db.from('checklist_items').update({dismissed:true}).eq('id',id).eq('trip_id',tripId):db.from('checklist_items').delete().eq('id',id).eq('trip_id',tripId);const {error}=await query;if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
-document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{if(b.dataset.open==='documentsView'){clearDocumentsReturnContext();clearAccommodationVoucherFocus()}if(b.dataset.open==='activitiesView'&&b.dataset.activityMode)setActivityViewMode(b.dataset.activityMode);if(['genericFlightsView','accommodationView','activitiesView','itineraryView'].includes(b.dataset.open))clearItinerarySourceContext();setAppView(b.dataset.open)});
+document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
+  const fromBuild=!!b.closest('#buildView');
+  if(fromBuild&&['genericFlightsView','accommodationView','activitiesView','localTransportView','carRentalView'].includes(b.dataset.open))setModuleReturnContext('buildView');
+  else if(!['documentsView'].includes(b.dataset.open))clearModuleReturnContext();
+  if(b.dataset.open==='documentsView'){clearDocumentsReturnContext();clearAccommodationVoucherFocus()}
+  if(b.dataset.open==='activitiesView'&&b.dataset.activityMode)setActivityViewMode(b.dataset.activityMode);
+  if(['genericFlightsView','accommodationView','activitiesView','localTransportView','carRentalView','itineraryView'].includes(b.dataset.open))clearItinerarySourceContext();
+  if(b.dataset.open==='localTransportView'&&!validItinerarySourceContext())resetLocalTransportForm();
+  updateItinerarySourceBack();setAppView(b.dataset.open)
+});
 $('backToTrips').onclick=returnFromHomeTrip;document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=returnFromHomeTrip);document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-generic-module]').forEach(b=>b.onclick=()=>openGenericModule(b.dataset.genericModule));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView(tripDashboardId()));document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
 document.querySelectorAll('[data-source-back]').forEach(button=>button.onclick=handleItinerarySourceBack);
 $('refreshGenericItinerary').onclick=()=>loadGenericItinerary(true);
@@ -5178,6 +5202,7 @@ $('localTransportForm').onsubmit=async event=>{
 
     resetLocalTransportForm();msg('localTransportMsg',editingId?'Transport actualitzat.':'Transport afegit.');
     await Promise.all([loadDocuments(true),loadActivities(true)]);renderLocalTransports();
+    if(!editingId&&tripRequestIsCurrent(tripId,generation)){clearItinerarySourceContext();clearModuleReturnContext();setAppView(tripDashboardId())}
   }catch(error){
     if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip())msg('localTransportMsg',error?.message||'No s’ha pogut desar el transport.',true);
   }finally{
