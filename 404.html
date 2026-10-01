@@ -544,31 +544,33 @@
 
     <div id="buildView" class="hidden">
       <button class="ghost back" data-back>← Torna al tauler</button>
-      <section class="build-hero"><small>🧩 Build</small><h2>Construeix aquest viatge</h2><p>Revisa les peces de la proposta, el seu estat i el pressupost. Als vols pendents ja pots obrir una cerca d’ofertes reals sense modificar encara la peça.</p></section>
-      <p id="buildMessage" class="message hidden" role="status" aria-live="polite"></p>
-      <section id="buildBudget" class="build-budget"></section>
+      <section class="build-hero"><small>🧩 Build</small><h2>Construeix aquest viatge</h2><p>Tria què vols preparar. Dins de cada apartat podràs buscar, afegir i gestionar el que ja tens.</p></section>
       <div class="build-groups">
         <section class="build-group">
           <div class="build-group-list" style="padding-top:12px">
             <article class="build-component">
               <div class="build-component-head"><div><h4>✈️ Vols</h4><p>Busca, guarda i revisa els vols del viatge.</p></div></div>
-              <div class="build-component-actions">
-                <button type="button" data-open="genericFlightsView">Cerca i gestiona vols</button>
-              </div>
+              <div class="build-component-actions"><button type="button" data-open="genericFlightsView">Cerca i gestiona vols</button></div>
+            </article>
+            <article class="build-component">
+              <div class="build-component-head"><div><h4>🏨 Allotjament</h4><p>Busca, afegeix i gestiona els allotjaments del viatge.</p></div></div>
+              <div class="build-component-actions"><button type="button" data-open="accommodationView">Cerca i gestiona allotjaments</button></div>
             </article>
             <article class="build-component">
               <div class="build-component-head"><div><h4>🚙 Cotxe de lloguer</h4><p>Prepara, reserva i documenta el cotxe del viatge.</p></div></div>
               <div class="build-component-actions"><button type="button" data-open="carRentalView">Gestiona el cotxe de lloguer</button></div>
             </article>
             <article class="build-component">
-              <div class="build-component-head"><div><h4>🚇 Transport intern / local</h4><p id="buildLocalTransportSummary">Trens, busos, ferris, trasllats i altres desplaçaments del viatge.</p></div></div>
+              <div class="build-component-head"><div><h4>🚇 Transport intern / local</h4><p>Trens, busos, ferris, trasllats i altres desplaçaments del viatge.</p></div></div>
               <div class="build-component-actions"><button type="button" data-open="localTransportView">Gestiona transports</button></div>
+            </article>
+            <article class="build-component">
+              <div class="build-component-head"><div><h4>🎟️ Activitats</h4><p>Busca, afegeix i gestiona visites, entrades i plans del viatge.</p></div></div>
+              <div class="build-component-actions"><button type="button" data-open="activitiesView" data-activity-mode="activity">Cerca i gestiona activitats</button></div>
             </article>
           </div>
         </section>
       </div>
-      <p id="buildProgress" class="build-progress-summary"></p>
-      <div id="buildGroups" class="build-groups"></div>
     </div>
 
     <div id="budgetView" class="hidden">
@@ -1066,7 +1068,7 @@
 
     <div id="dashboardView">
       <button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button>
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.10 · Activitats i documents</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.11 · Activitats i documents</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <div id="pushCard" class="install-card"><div><strong>🔔 Notificacions</strong><small id="pushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="enablePush" type="button">Activa les notificacions</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
@@ -1666,7 +1668,7 @@
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
     <button id="globalSearchFab" class="search-fab" type="button" aria-label="Cerca a tota l'app">🔎</button>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.10</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.11</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3069,7 +3071,7 @@ function setAppView(id){
   if(id!=='builderView'&&typeof coldStartNavigationPending!=='undefined'&&!coldStartNavigationPending)leaveBuilderPointer();
   persistNavigationState(id);
   updateTripHomeClock();updateHomeClock();
-  if(id==='documentsView')updateDocumentsBack();if(id==='buildView')loadBuildView();if(id==='budgetView')loadBudgetView();
+  if(id==='documentsView')updateDocumentsBack();if(id==='budgetView')loadBudgetView();
   if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView'){setActivityViewMode('activity');loadActivityViewData()}if(id==='localTransportView')loadLocalTransportViewData();if(id==='carRentalView')loadCarRentals();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
 }
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
