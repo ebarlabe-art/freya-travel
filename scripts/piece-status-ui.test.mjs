@@ -8,7 +8,7 @@ const migration=readFileSync(new URL('../supabase/migrations/20261001145500_unif
 const ids=['accommodationStatus','flightStatus','localTransportStatus','activityStatus','carRentalStatus'];
 
 test('all booking-like travel pieces expose the same prominent four-state lifecycle',()=>{
-  assert.equal((html.match(/data-piece-status-panel/g)||[]).length,ids.length);
+  assert.equal((html.match(/<div class="piece-status-panel" data-piece-status-panel/g)||[]).length,ids.length);
   for(const id of ids){
     const at=html.indexOf('id="'+id+'"');
     assert.ok(at>=0,'missing '+id);
