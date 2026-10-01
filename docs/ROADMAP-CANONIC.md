@@ -105,7 +105,7 @@ Principis que continuen sent obligatoris:
 | TB-07 · Cerca | ✅ | Contracte i infraestructura de cerca |
 | TB-08 · Build operatiu | ✅ | Vols, allotjament, jerarquia de peces i integració amb pressupost |
 | TB-08.5 · Cerca d'allotjament | 🟡 | UX/contracte fets; proveïdors d'hotel encara sense cerca live |
-| TB-09 · Ajustos assistits | 🟡 | TB-09.1 revisió read-only + TB-09.2 propostes aplicables amb acceptació explícita; falta ampliar cobertura |
+| TB-09 · Ajustos assistits | 🟡 | TB-09.1 revisió + TB-09.2 aplicació explícita + TB-09.3 cobertura ampliada sobre planning flexible |
 
 ### Proveïdors
 
@@ -128,6 +128,8 @@ Objectiu: un cop existeix un viatge construït, Freya ajuda a millorar-lo sense 
 **TB-09.1 ✅** — revisió read-only del viatge: solapaments, marges curts, dies carregats, peces sense encaixar, estats pendents i documents absents. Cada avís porta al planning i no modifica cap dada.
 
 **TB-09.2 ✅** — propostes deterministes sobre planning manual flexible, amb explicació, confirmació explícita, control de conflictes i opció personal “Ara no”. Cap vol, hotel, activitat reservada, estat comercial o document es modifica automàticament.
+
+**TB-09.3 ✅** — cobertura ampliada: pot moure qualsevol costat flexible d’un conflicte exacte i redistribuir peces manuals opcionals/flexibles de dies massa carregats, preservant el tipus d’horari i comprovant col·lisions.
 
 Ha d'arribar a poder detectar/proposar, entre altres:
 - incompatibilitats d'horaris;
@@ -392,6 +394,6 @@ No es crea un roadmap paral·lel.
 
 ## Pròxim pas
 
-> **TB-09.3 · Ampliar la cobertura dels ajustos assistits**
+> **TB-09.4 · Tancar el bloc d’ajustos assistits**
 
-TB-09.1 revisa i TB-09.2 ja pot aplicar canvis segurs sobre planning flexible. El següent tall ha d'ampliar la qualitat i cobertura de les propostes sense traspassar decisions de reserva o confirmació.
+Revisar qualitat, missatges, casos límit i prova física abans de declarar TB-09 complet i passar a Importació intel·ligent.
