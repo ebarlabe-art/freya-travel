@@ -21,8 +21,8 @@ test('TB-09.1 detects structured itinerary review signals',()=>{
   assert.match(block,/documents/);
 });
 
-test('TB-09.1 never writes itinerary data itself',()=>{
-  const block=html.slice(html.indexOf('function tripReviewSuggestionId'),html.indexOf('function itineraryStatusLabel'));
+test('TB-09.1 detection remains read-only',()=>{
+  const block=html.slice(html.indexOf('function tripReviewSuggestions'),html.indexOf('function tripReviewSeverityLabel'));
   assert.doesNotMatch(block,/\.insert\(/);
   assert.doesNotMatch(block,/\.update\(/);
   assert.doesNotMatch(block,/\.delete\(/);

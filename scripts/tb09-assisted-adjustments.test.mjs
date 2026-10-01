@@ -11,13 +11,14 @@ test('TB-09.2 proposes only explicit user-approved adjustments',()=>{
 });
 
 test('TB-09.2 automatic patches are restricted to manual flexible itinerary items',()=>{
- const block=html.slice(html.indexOf('function tripReviewAdjustmentFor'),html.indexOf('function tripReviewSuggestions'));
- assert.match(block,/sourceType!=='manual'/);
- assert.match(block,/row\.is_fixed/);
- assert.match(block,/row\.status!=='planned'/);
- assert.doesNotMatch(block,/trip_flights/);
- assert.doesNotMatch(block,/trip_accommodations/);
- assert.doesNotMatch(block,/trip_activities/);
+ const guard=html.slice(html.indexOf('function tripReviewFlexibleManual'),html.indexOf('function tripAdjustmentFingerprint'));
+ const engine=html.slice(html.indexOf('function tripReviewAdjustmentFor'),html.indexOf('function tripReviewSuggestions'));
+ assert.match(guard,/sourceType!=='manual'/);
+ assert.match(guard,/row\.is_fixed/);
+ assert.match(guard,/row\.status!=='planned'/);
+ assert.doesNotMatch(engine,/trip_flights/);
+ assert.doesNotMatch(engine,/trip_accommodations/);
+ assert.doesNotMatch(engine,/trip_activities/);
 });
 
 test('TB-09.2 applies with optimistic concurrency and reloads authoritative data',()=>{

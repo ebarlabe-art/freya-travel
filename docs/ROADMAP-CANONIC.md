@@ -105,7 +105,7 @@ Principis que continuen sent obligatoris:
 | TB-07 · Cerca | ✅ | Contracte i infraestructura de cerca |
 | TB-08 · Build operatiu | ✅ | Vols, allotjament, jerarquia de peces i integració amb pressupost |
 | TB-08.5 · Cerca d'allotjament | 🟡 | UX/contracte fets; proveïdors d'hotel encara sense cerca live |
-| TB-09 · Ajustos assistits | 🟡 | TB-09.1 revisió + TB-09.2 aplicació explícita + TB-09.3 cobertura ampliada sobre planning flexible |
+| TB-09 · Ajustos assistits | ✅ | CLOSED · revisió, propostes explícites, cobertura segura i porta final de seguretat |
 
 ### Proveïdors
 
@@ -121,7 +121,7 @@ Principis que continuen sent obligatoris:
 ## FASE A · Tancar ABANS: el viatge es construeix i es prepara sol
 
 ### A1. TB-09 · Ajustos assistits del viatge
-**Prioritat: P0 · EN CURS**
+**Prioritat: ✅ CLOSED**
 
 Objectiu: un cop existeix un viatge construït, Freya ajuda a millorar-lo sense substituir la decisió de l'usuari.
 
@@ -130,6 +130,8 @@ Objectiu: un cop existeix un viatge construït, Freya ajuda a millorar-lo sense 
 **TB-09.2 ✅** — propostes deterministes sobre planning manual flexible, amb explicació, confirmació explícita, control de conflictes i opció personal “Ara no”. Cap vol, hotel, activitat reservada, estat comercial o document es modifica automàticament.
 
 **TB-09.3 ✅** — cobertura ampliada: pot moure qualsevol costat flexible d’un conflicte exacte i redistribuir peces manuals opcionals/flexibles de dies massa carregats, preservant el tipus d’horari i comprovant col·lisions.
+
+**TB-09.4 ✅** — tancament de qualitat: porta de seguretat abans de qualsevol escriptura, revalidació de peça manual/flexible, versió exacta i whitelist estricta dels únics camps temporals que Freya pot modificar.
 
 Ha d'arribar a poder detectar/proposar, entre altres:
 - incompatibilitats d'horaris;
@@ -394,6 +396,6 @@ No es crea un roadmap paral·lel.
 
 ## Pròxim pas
 
-> **TB-09.4 · Tancar el bloc d’ajustos assistits**
+> **A2 · Importació intel·ligent**
 
-Revisar qualitat, missatges, casos límit i prova física abans de declarar TB-09 complet i passar a Importació intel·ligent.
+TB-09 queda CLOSED. El següent bloc canònic és convertir PDF, captures, correus i documents de reserva en propostes de dades operatives que l’usuari confirma abans d’escriure.
