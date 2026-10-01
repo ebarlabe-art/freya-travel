@@ -105,7 +105,7 @@ Principis que continuen sent obligatoris:
 | TB-07 · Cerca | ✅ | Contracte i infraestructura de cerca |
 | TB-08 · Build operatiu | ✅ | Vols, allotjament, jerarquia de peces i integració amb pressupost |
 | TB-08.5 · Cerca d'allotjament | 🟡 | UX/contracte fets; proveïdors d'hotel encara sense cerca live |
-| TB-09 · Ajustos assistits | ⬜ | **Següent gran bloc del Builder** |
+| TB-09 · Ajustos assistits | 🟡 | TB-09.1 · revisió read-only implementada; falta proposta/acceptació de canvis |
 
 ### Proveïdors
 
@@ -121,9 +121,11 @@ Principis que continuen sent obligatoris:
 ## FASE A · Tancar ABANS: el viatge es construeix i es prepara sol
 
 ### A1. TB-09 · Ajustos assistits del viatge
-**Prioritat: P0 · SEGÜENT**
+**Prioritat: P0 · EN CURS**
 
 Objectiu: un cop existeix un viatge construït, Freya ajuda a millorar-lo sense substituir la decisió de l'usuari.
+
+**TB-09.1 ✅** — revisió read-only del viatge: solapaments, marges curts, dies carregats, peces sense encaixar, estats pendents i documents absents. Cada avís porta al planning i no modifica cap dada.
 
 Ha d'arribar a poder detectar/proposar, entre altres:
 - incompatibilitats d'horaris;
@@ -388,6 +390,6 @@ No es crea un roadmap paral·lel.
 
 ## Pròxim pas
 
-> **TB-09 · Ajustos assistits del viatge construït**
+> **TB-09.2 · Propostes d'ajust amb acceptació explícita**
 
-És el següent bloc canònic després de la consolidació de fiabilitat i Offline V1.
+TB-09.1 ja revisa el viatge sense tocar-lo. El següent tall és convertir alguns avisos en propostes concretes que l'usuari pugui acceptar o rebutjar.
