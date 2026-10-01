@@ -63,8 +63,8 @@
     .build-hero h2{margin:5px 0 7px;font-size:1.7rem}.build-hero p{margin:0;color:rgba(255,255,255,.86);line-height:1.5}
     .trip-review-entry{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 16px;padding:17px 18px;border-radius:21px;border:1px solid #bda7d7;background:linear-gradient(135deg,#f6effb,#ece0f7);color:#352a40;text-align:left;box-shadow:0 10px 26px rgba(79,55,139,.09)}
     .trip-review-entry strong{display:block;font-size:1.05rem}.trip-review-entry small{display:block;color:#675c70;margin-top:4px;line-height:1.4}.trip-review-entry span:last-child{font-size:1.4rem;color:#6750a4}
-    .trip-review-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 14px}.trip-review-stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px}.trip-review-stat strong{display:block;font-size:1.25rem;color:#4f378b}.trip-review-stat small{color:var(--muted)}
-    .trip-review-list{display:grid;gap:11px}.trip-review-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:15px 16px}.trip-review-card.attention{border-color:#e2b25d;background:#fffaf0}.trip-review-card.important{border-color:#d7aaa4;background:#fff6f4}.trip-review-card.review{border-color:#d8cbe6;background:#fbf8fd}.trip-review-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.trip-review-card h3{margin:0 0 5px;font-size:1rem}.trip-review-card p{margin:0;color:var(--muted);line-height:1.45}.trip-review-chip{border-radius:999px;padding:5px 8px;background:#eee8f4;color:#4f378b;font-size:.72rem;font-weight:850;white-space:nowrap}.trip-review-card.attention .trip-review-chip{background:#fff0c9;color:#775500}.trip-review-card.important .trip-review-chip{background:#ffdad6;color:#8c1d18}.trip-review-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.trip-review-note{margin:14px 0 0;padding:12px 14px;border-radius:14px;background:#f5f1f7;color:#675c70;font-size:.86rem;line-height:1.45}.trip-review-empty{padding:24px;text-align:center;border:1px dashed #cbb9df;border-radius:18px;background:#fff}.trip-review-empty strong{display:block;margin-bottom:5px;color:#4f378b}
+    .trip-review-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 14px}.trip-review-stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px}.trip-review-stat strong{display:block;font-size:1.25rem;color:#4f378b}.trip-review-stat small{color:var(--muted)}
+    .trip-review-list{display:grid;gap:11px}.trip-review-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:15px 16px}.trip-review-card.attention{border-color:#e2b25d;background:#fffaf0}.trip-review-card.important{border-color:#d7aaa4;background:#fff6f4}.trip-review-card.review{border-color:#d8cbe6;background:#fbf8fd}.trip-review-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.trip-review-card h3{margin:0 0 5px;font-size:1rem}.trip-review-card p{margin:0;color:var(--muted);line-height:1.45}.trip-review-chip{border-radius:999px;padding:5px 8px;background:#eee8f4;color:#4f378b;font-size:.72rem;font-weight:850;white-space:nowrap}.trip-review-card.attention .trip-review-chip{background:#fff0c9;color:#775500}.trip-review-card.important .trip-review-chip{background:#ffdad6;color:#8c1d18}.trip-review-proposal{margin-top:12px;padding:12px 13px;border-radius:14px;background:#f2ebf8;border:1px solid #d8c6e9}.trip-review-proposal strong{display:block;color:#4f378b;margin-bottom:4px}.trip-review-proposal p{margin:0;color:#594d62}.trip-review-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.trip-review-actions .apply-adjustment{background:#4f378b;color:#fff}.trip-review-actions .dismiss-adjustment{background:#fff;color:#6750a4;border:1px solid #cbb9df}.trip-review-note{margin:14px 0 0;padding:12px 14px;border-radius:14px;background:#f5f1f7;color:#675c70;font-size:.86rem;line-height:1.45}.trip-review-empty{padding:24px;text-align:center;border:1px dashed #cbb9df;border-radius:18px;background:#fff}.trip-review-empty strong{display:block;margin-bottom:5px;color:#4f378b}
     @media(max-width:620px){.trip-review-summary{grid-template-columns:1fr}}
     .build-progress-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 16px}
     .build-progress-summary{margin:0 0 12px;color:var(--muted);font-size:.92rem}.build-group-link{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 17px;background:transparent;color:#1f1b24;border:0;border-radius:0;text-align:left;font:inherit;font-weight:850;cursor:pointer}.build-group-link small{color:var(--muted);font-weight:650}
@@ -588,7 +588,7 @@
       <p id="tripReviewMessage" class="message hidden" role="status" aria-live="polite"></p>
       <div id="tripReviewSummary" class="trip-review-summary"></div>
       <div id="tripReviewList" class="trip-review-list"></div>
-      <p class="trip-review-note">Aquesta primera revisió és deliberadament prudent: comprova dades estructurades, horaris, estats i documents. Encara no calcula temps real de trajecte, horaris d’obertura ni modifica automàticament cap peça.</p>
+      <p class="trip-review-note">Freya només proposa canvis automàtics sobre elements manuals flexibles. Vols, hotels, activitats reservades, confirmacions i documents sempre requereixen revisió humana. Encara no calcula temps real de trajecte ni horaris d’obertura.</p>
     </div>
 
     <div id="budgetView" class="hidden">
@@ -1105,7 +1105,7 @@
 
     <div id="dashboardView">
       <button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button>
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.16 · Activitats i documents</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.17 · Activitats i documents</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <div id="pushCard" class="install-card"><div><strong>🔔 Notificacions</strong><small id="pushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="enablePush" type="button">Activa les notificacions</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
@@ -1705,7 +1705,7 @@
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
     <button id="globalSearchFab" class="search-fab" type="button" aria-label="Cerca a tota l'app">🔎</button>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.16</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.17</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4446,13 +4446,52 @@ function normalizedItineraryProjection(tripId,generation,userId=session?.user?.i
 }
 function tripReviewSuggestionId(kind,...parts){return [kind,...parts].filter(Boolean).join(':')}
 function tripReviewActive(item){return item&&!item.isCancelled&&!item.isCompleted&&item.status!=='cancelled'&&item.status!=='completed'}
+function tripAdjustmentDismissKey(){return trip&&session?.user?.id?`freya-tb09-dismissed-v1:${session.user.id}:${trip.id}`:null}
+function readDismissedTripAdjustments(){const key=tripAdjustmentDismissKey();if(!key)return new Set();try{return new Set(JSON.parse(localStorage.getItem(key)||'[]').filter(value=>typeof value==='string'))}catch(_){return new Set()}}
+function dismissTripAdjustment(key){const storageKey=tripAdjustmentDismissKey();if(!storageKey||!key)return;const values=readDismissedTripAdjustments();values.add(key);try{localStorage.setItem(storageKey,JSON.stringify([...values].slice(-100)))}catch(_){}}
+function tripReviewManualRow(id){return manualItineraryRows.find(row=>row.id===id&&row.trip_id===trip?.id)||null}
+function tripAdjustmentFingerprint(suggestion,row,patch){return [suggestion.id,row?.id,row?.updated_at,JSON.stringify(patch)].filter(Boolean).join('|')}
+function tripReviewAdjustmentFor(suggestion,items){
+  if(!suggestion||!trip||!session)return null;
+  const active=(Array.isArray(items)?items:[]).filter(tripReviewActive);
+  if(['overlap','tight_gap'].includes(suggestion.kind)){
+    const keys=suggestion.relatedKeys||[],previous=active.find(item=>item.key===keys[0]),movable=active.find(item=>item.key===keys[1]);
+    if(!previous||!movable||movable.sourceType!=='manual'||movable.timingKind!=='exact'||!previous.endsAt)return null;
+    const row=tripReviewManualRow(movable.sourceId);if(!row||row.is_fixed||row.status!=='planned'||!row.starts_at||row.updated_at!==movable.sourceUpdatedAt)return null;
+    const previousEnd=new Date(previous.endsAt).getTime(),oldStart=new Date(row.starts_at).getTime(),oldEnd=row.ends_at?new Date(row.ends_at).getTime():null;
+    if(!Number.isFinite(previousEnd)||!Number.isFinite(oldStart))return null;
+    const duration=Number.isFinite(oldEnd)&&oldEnd>oldStart?oldEnd-oldStart:0,newStart=previousEnd+60*60000,newEnd=duration?newStart+duration:null;
+    const local=itineraryDateTime(new Date(newStart).toISOString(),row.time_zone);if(!local||local.date!==movable.localDate)return null;
+    const candidateEnd=newEnd||newStart+60000;
+    const collision=active.some(item=>{
+      if(item.key===movable.key||item.localDate!==movable.localDate||item.timingKind!=='exact'||!item.startsAt)return false;
+      const start=new Date(item.startsAt).getTime(),end=item.endsAt?new Date(item.endsAt).getTime():start+60000;
+      return Number.isFinite(start)&&Number.isFinite(end)&&newStart<end&&candidateEnd>start;
+    });
+    if(collision)return null;
+    const patch={starts_at:new Date(newStart).toISOString(),ends_at:newEnd?new Date(newEnd).toISOString():null};
+    const key=tripAdjustmentFingerprint(suggestion,row,patch);
+    return {key,sourceId:row.id,expectedUpdatedAt:row.updated_at,patch,title:`Moure “${row.title}” a les ${local.time}`,copy:'Mantinc la durada actual i deixo 60 minuts de marge després del pla anterior.'};
+  }
+  if(suggestion.kind==='unscheduled'){
+    const item=active.find(value=>value.key===suggestion.focusKey);if(!item||item.sourceType!=='manual')return null;
+    const row=tripReviewManualRow(item.sourceId);if(!row||row.is_fixed||row.status!=='planned'||row.timing_kind!=='unscheduled'||row.updated_at!==item.sourceUpdatedAt)return null;
+    const dates=genericItineraryTripDates();if(!dates.length)return null;
+    const counts=new Map(dates.map(date=>[date,0]));active.forEach(value=>{if(value.localDate&&counts.has(value.localDate))counts.set(value.localDate,counts.get(value.localDate)+1)});
+    const target=[...dates].sort((a,b)=>counts.get(a)-counts.get(b)||a.localeCompare(b))[0];if(!target)return null;
+    const patch={timing_kind:'date',local_date:target};
+    const key=tripAdjustmentFingerprint(suggestion,row,patch);
+    return {key,sourceId:row.id,expectedUpdatedAt:row.updated_at,patch,title:`Situar “${row.title}” el ${itineraryDayHeading(target)}`,copy:'L’afegeixo al dia menys carregat, encara sense fixar una hora concreta.'};
+  }
+  return null;
+}
 function tripReviewSuggestions(items){
   const active=(Array.isArray(items)?items:[]).filter(tripReviewActive),suggestions=[],seen=new Set();
   const push=value=>{if(!value?.id||seen.has(value.id))return;seen.add(value.id);suggestions.push(value)};
   const exact=active.filter(item=>item.timingKind==='exact'&&item.startsAt&&item.endsAt).map(item=>({...item,_start:new Date(item.startsAt).getTime(),_end:new Date(item.endsAt).getTime()})).filter(item=>Number.isFinite(item._start)&&Number.isFinite(item._end)&&item._end>item._start).sort((a,b)=>a._start-b._start);
   for(let i=0;i<exact.length;i++)for(let j=i+1;j<exact.length;j++){
     const a=exact[i],b=exact[j];if(a.localDate!==b.localDate)continue;if(b._start>=a._end)break;
-    push({id:tripReviewSuggestionId('overlap',a.key,b.key),kind:'overlap',severity:'important',icon:'⚠️',title:'Hi ha un solapament d’horaris',copy:`“${a.title}” i “${b.title}” coincideixen en el temps.`,localDate:a.localDate,focusKey:a.key});
+    push({id:tripReviewSuggestionId('overlap',a.key,b.key),kind:'overlap',severity:'important',icon:'⚠️',title:'Hi ha un solapament d’horaris',copy:`“${a.title}” i “${b.title}” coincideixen en el temps.`,localDate:a.localDate,focusKey:a.key,relatedKeys:[a.key,b.key]});
   }
   const byDate=new Map();
   active.filter(item=>item.localDate).forEach(item=>{if(!byDate.has(item.localDate))byDate.set(item.localDate,[]);byDate.get(item.localDate).push(item)});
@@ -4461,7 +4500,7 @@ function tripReviewSuggestions(items){
     for(let i=0;i<ordered.length-1;i++){
       const a=ordered[i],b=ordered[i+1];if(!Number.isFinite(a._end)||b._start<a._end)continue;
       const gap=Math.round((b._start-a._end)/60000);
-      if(gap>=0&&gap<=30)push({id:tripReviewSuggestionId('tight',a.key,b.key),kind:'tight_gap',severity:'attention',icon:'⏱️',title:'Marge molt just',copy:`Només hi ha ${gap} min entre “${a.title}” i “${b.title}”. Freya encara no hi suma el temps real de trajecte.`,localDate:date,focusKey:a.key});
+      if(gap>=0&&gap<=30)push({id:tripReviewSuggestionId('tight',a.key,b.key),kind:'tight_gap',severity:'attention',icon:'⏱️',title:'Marge molt just',copy:`Només hi ha ${gap} min entre “${a.title}” i “${b.title}”. Freya encara no hi suma el temps real de trajecte.`,localDate:date,focusKey:a.key,relatedKeys:[a.key,b.key]});
     }
     if(dayItems.length>=6)push({id:tripReviewSuggestionId('busy',date),kind:'busy_day',severity:'review',icon:'📅',title:'Dia especialment carregat',copy:`Hi ha ${dayItems.length} peces planificades aquest dia. No és un error, però val la pena revisar el ritme.`,localDate:date,focusKey:dayItems[0]?.key});
   }
@@ -4485,11 +4524,30 @@ function openTripReviewSuggestion(suggestion){
   if(suggestion.focusKey)tripHomeItineraryFocus={key:suggestion.focusKey,tripId:trip.id,generation:tripLoadGeneration,userId:session.user.id};
   setAppView('itineraryView');
 }
+async function applyTripReviewAdjustment(suggestion,proposal){
+  if(!suggestion||!proposal||!trip||!session||isLondonTrip())return;
+  if(connectionUnavailable()){msg('tripReviewMessage','📵 Per aplicar una proposta cal connexió.',true);return}
+  if(!confirm(`${proposal.title}. Vols aplicar aquesta proposta al planning compartit?`))return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;msg('tripReviewMessage','Aplicant la proposta…');
+  try{
+    const {data,error}=await db.from('trip_itinerary_items').update(proposal.patch).eq('trip_id',tripId).eq('id',proposal.sourceId).eq('updated_at',proposal.expectedUpdatedAt).select('*').maybeSingle();
+    if(!itineraryRequestIsCurrent(tripId,generation,userId)||visibleAppView()!=='tripReviewView')return;
+    if(error)throw error;if(!data){await loadManualItineraryItems(true);throw new Error('Aquest element ha canviat en un altre dispositiu. He recarregat el planning; revisa la nova proposta.')}
+    await loadManualItineraryItems(true);if(!itineraryRequestIsCurrent(tripId,generation,userId))return;
+    itineraryProjection=normalizedItineraryProjection(tripId,generation,userId);renderTripReview(tripReviewSuggestions(itineraryProjection));msg('tripReviewMessage','✨ Proposta aplicada al planning.');
+  }catch(error){if(itineraryRequestIsCurrent(tripId,generation,userId))msg('tripReviewMessage',error?.message||'No s’ha pogut aplicar la proposta.',true)}
+}
 function renderTripReview(suggestions){
-  const rows=Array.isArray(suggestions)?suggestions:[],important=rows.filter(x=>x.severity==='important').length,attention=rows.filter(x=>x.severity==='attention').length;
-  $('tripReviewSummary').innerHTML=`<div class="trip-review-stat"><strong>${rows.length}</strong><small>punts a revisar</small></div><div class="trip-review-stat"><strong>${important}</strong><small>conflictes clars</small></div><div class="trip-review-stat"><strong>${attention}</strong><small>atencions</small></div>`;
-  $('tripReviewList').innerHTML=rows.length?rows.map((row,index)=>`<article class="trip-review-card ${esc(row.severity)}"><div class="trip-review-card-head"><div><h3>${row.icon} ${esc(row.title)}</h3><p>${esc(row.copy)}</p></div><span class="trip-review-chip">${esc(tripReviewSeverityLabel(row.severity))}</span></div><div class="trip-review-actions"><button type="button" data-trip-review-index="${index}">Veure al planning</button></div></article>`).join(''):'<div class="trip-review-empty"><strong>✨ No he detectat cap conflicte clar.</strong>El planning estructurat és coherent amb les comprovacions que Freya pot fer ara mateix.</div>';
+  const rows=Array.isArray(suggestions)?suggestions:[],important=rows.filter(x=>x.severity==='important').length,attention=rows.filter(x=>x.severity==='attention').length,dismissed=readDismissedTripAdjustments();
+  const proposals=rows.map(row=>tripReviewAdjustmentFor(row,itineraryProjection)).filter(proposal=>proposal&&!dismissed.has(proposal.key)).length;
+  $('tripReviewSummary').innerHTML=`<div class="trip-review-stat"><strong>${rows.length}</strong><small>punts a revisar</small></div><div class="trip-review-stat"><strong>${important}</strong><small>conflictes clars</small></div><div class="trip-review-stat"><strong>${attention}</strong><small>atencions</small></div><div class="trip-review-stat"><strong>${proposals}</strong><small>propostes aplicables</small></div>`;
+  $('tripReviewList').innerHTML=rows.length?rows.map((row,index)=>{
+    const proposal=tripReviewAdjustmentFor(row,itineraryProjection),visibleProposal=proposal&&!dismissed.has(proposal.key)?proposal:null;
+    return `<article class="trip-review-card ${esc(row.severity)}"><div class="trip-review-card-head"><div><h3>${row.icon} ${esc(row.title)}</h3><p>${esc(row.copy)}</p></div><span class="trip-review-chip">${esc(tripReviewSeverityLabel(row.severity))}</span></div>${visibleProposal?`<div class="trip-review-proposal"><strong>✨ Freya et proposa</strong><p>${esc(visibleProposal.title)}. ${esc(visibleProposal.copy)}</p></div>`:''}<div class="trip-review-actions"><button type="button" data-trip-review-index="${index}">Veure al planning</button>${visibleProposal?`<button type="button" class="apply-adjustment" data-trip-adjust-apply="${index}">Aplica proposta</button><button type="button" class="dismiss-adjustment" data-trip-adjust-dismiss="${index}">Ara no</button>`:''}</div></article>`;
+  }).join(''):'<div class="trip-review-empty"><strong>✨ No he detectat cap conflicte clar.</strong>El planning estructurat és coherent amb les comprovacions que Freya pot fer ara mateix.</div>';
   $('tripReviewList').querySelectorAll('[data-trip-review-index]').forEach(button=>button.onclick=()=>openTripReviewSuggestion(rows[Number(button.dataset.tripReviewIndex)]));
+  $('tripReviewList').querySelectorAll('[data-trip-adjust-apply]').forEach(button=>button.onclick=()=>{const row=rows[Number(button.dataset.tripAdjustApply)],proposal=tripReviewAdjustmentFor(row,itineraryProjection);if(proposal&&!readDismissedTripAdjustments().has(proposal.key))applyTripReviewAdjustment(row,proposal)});
+  $('tripReviewList').querySelectorAll('[data-trip-adjust-dismiss]').forEach(button=>button.onclick=()=>{const row=rows[Number(button.dataset.tripAdjustDismiss)],proposal=tripReviewAdjustmentFor(row,itineraryProjection);if(!proposal)return;dismissTripAdjustment(proposal.key);renderTripReview(rows);msg('tripReviewMessage','D’acord. Aquesta proposta queda amagada per a tu mentre el planning no canviï.')});
 }
 async function loadTripReview(force=false){
   if(!trip||!session||isLondonTrip())return;
