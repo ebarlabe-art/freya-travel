@@ -1,0 +1,29 @@
+name: Runtime Packaging Check
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - name: Verify runtime package
+        run: |
+          test -f dist/domain/tb-confirmation.mjs
+          test -f dist/domain/tb-budget.mjs
+          test -f dist/domain/travel-builder.mjs
+          test -f dist/sw.js
+          test -f dist/manifest.webmanifest
+          test -f dist/404.html
+          grep -q "freya-travel-release-6413-v1" dist/sw.js
