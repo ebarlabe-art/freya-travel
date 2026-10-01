@@ -89,6 +89,9 @@
 .activity-quick-section{padding:12px 14px;border-radius:16px;background:#faf8fc;border:1px solid #eee8f4;min-width:0}
 .activity-quick-section small{display:block;color:#746b80;font-weight:800;margin-bottom:5px}.activity-quick-section strong,.activity-quick-section span{display:block;overflow-wrap:anywhere}
 .activity-notes-label{display:block;color:#746b80;font-size:.78rem;font-weight:800;margin-bottom:4px}
+.proposal-pending-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 15px;border:1px dashed #cbb8df;border-radius:16px;background:#faf8fc}
+.proposal-pending-row>div{min-width:0}.proposal-pending-row small{display:block;color:#746b80;font-weight:800;margin-bottom:3px}.proposal-pending-row strong{display:block;color:#4f378b}.proposal-pending-row p{margin:5px 0 0;color:#746b80;line-height:1.4;overflow-wrap:anywhere}.proposal-pending-row button{flex:0 0 auto;min-height:44px;padding:10px 12px}
+@media(max-width:560px){.proposal-pending-row{align-items:flex-start;flex-direction:column}.proposal-pending-row button{width:100%}}
 @media(max-width:560px){.activity-collection{padding:14px}.activity-collection-head{align-items:center}.activity-quick{grid-template-columns:minmax(0,1fr)}}
 .local-transport-collection{margin-top:18px;padding:18px;border:1px solid rgba(82,57,132,.14);border-radius:28px;background:rgba(255,255,255,.48)}
 .local-transport-collection-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:0 4px 14px}
@@ -1059,7 +1062,7 @@
 
     <div id="dashboardView">
       <button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button>
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.8 · Activitats i documents</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.9 · Activitats i documents</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <div id="pushCard" class="install-card"><div><strong>🔔 Notificacions</strong><small id="pushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="enablePush" type="button">Activa les notificacions</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
@@ -1659,7 +1662,7 @@
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
     <button id="globalSearchFab" class="search-fab" type="button" aria-label="Cerca a tota l'app">🔎</button>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.8</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.9</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2413,8 +2416,9 @@ function renderAccommodationDocumentOptions(selectedDocumentId=''){
 function renderAccommodations(){
   const currentCount=accommodationRows.length;syncGenericConfirmedModules();
   const list=$('accommodationList'),empty=$('accommodationEmpty'),collection=$('accommodationCollection'),count=$('accommodationCount');if(!list||!empty)return;
-  empty.classList.toggle('hidden',currentCount!==0);collection?.classList.toggle('hidden',currentCount===0);if(count)count.textContent=currentCount===1?'1 allotjament':currentCount+' allotjaments';
-  list.innerHTML=accommodationRows.map(row=>{
+  const pendingRows=accommodationRows.filter(isProposalPlaceholderAccommodation),visibleRows=accommodationRows.filter(row=>!isProposalPlaceholderAccommodation(row));
+  empty.classList.toggle('hidden',currentCount!==0);collection?.classList.toggle('hidden',currentCount===0);if(count)count.textContent=visibleRows.length?visibleRows.length===1?'1 allotjament':visibleRows.length+' allotjaments':'Cap allotjament afegit';
+  list.innerHTML=pendingRows.map(row=>proposalPendingHtml(row,'accommodation')).join('')+visibleRows.map(row=>{
     const type=ACCOMMODATION_TYPES[row.accommodation_type]||ACCOMMODATION_TYPES.other,status=ACCOMMODATION_STATUSES[row.reservation_status]||row.reservation_status;
     const locationLines=accommodationLocationLines(row),checkIn=formatAccommodationDate(row.check_in_at,row.time_zone),checkOut=formatAccommodationDate(row.check_out_at,row.time_zone),mapUrl=accommodationMapUrl(row),phone=safePhone(row.phone),website=safeWebsiteUrl(row.website_url),voucherDocumentId=accommodationVoucherDocumentId(row.id),voucher=accommodationDocumentFor(row.id),hasVoucher=!!voucherDocumentId;
     const facts=[checkIn&&['Check-in',checkIn],checkOut&&['Check-out',checkOut],row.booking_reference&&['Referència',row.booking_reference],row.room_number&&['Habitació',row.room_number],row.booking_provider&&['Reserva',row.booking_provider]].filter(Boolean);
@@ -3572,6 +3576,17 @@ function activityDocumentId(activityId,role){
   return activityDocumentLinks.find(link=>link.trip_id===trip?.id&&link.activity_id===activityId&&link.document_role===role)?.document_id||'';
 }
 function isLocalTransportActivity(row){return ['transport','transport_activity'].includes(row?.activity_type)}
+function isProposalPlaceholderActivity(row){
+  return row?.reservation_status==='planning'&&['Activitat per concretar','Transport per concretar'].includes(String(row?.title||'').trim());
+}
+function isProposalPlaceholderAccommodation(row){
+  return row?.reservation_status==='planning'&&String(row?.name||'').trim()==='Allotjament per concretar';
+}
+function proposalPendingHtml(row,kind){
+  const editAttr=kind==='accommodation'?'data-edit-accommodation':kind==='transport'?'data-edit-local-transport':'data-edit-activity';
+  const label=kind==='accommodation'?'Allotjament pendent':kind==='transport'?'Transport pendent':'Activitat pendent';
+  return `<div class="proposal-pending-row"><div><small>Proposta del viatge · ${esc(label)}</small><strong>Pendent de definir</strong>${row?.notes?`<p>${esc(row.notes)}</p>`:''}</div><button type="button" class="secondary" ${editAttr}="${esc(row.id)}">Concretar</button></div>`;
+}
 function activityRowsForMode(mode=activityViewMode){return activityRows.filter(row=>mode==='local_transport'?isLocalTransportActivity(row):!isLocalTransportActivity(row))}
 function activitySummary(rows=activityRowsForMode('activity')){const count=rows.length;return !count?'Cap activitat':count===1?'1 activitat':`${count} activitats`}
 function localTransportSummary(rows=activityRowsForMode('local_transport')){const count=rows.length;return !count?'Cap transport local':count===1?'1 transport local':`${count} transports locals`}
@@ -3614,10 +3629,10 @@ function localTransportDate(value,timeZone){return formatAccommodationDate(value
 function renderLocalTransports(){
   const list=$('localTransportList'),empty=$('localTransportEmpty');if(!list||!empty)return;
   if(isLondonTrip()){list.innerHTML='';empty.classList.add('hidden');return}
-  const rows=localTransportRows(),count=$('localTransportCount');
+  const rows=localTransportRows(),pendingRows=rows.filter(isProposalPlaceholderActivity),visibleRows=rows.filter(row=>!isProposalPlaceholderActivity(row)),count=$('localTransportCount');
   empty.classList.toggle('hidden',rows.length>0);
-  if(count){count.textContent=rows.length+` ${rows.length===1?'trajecte':'trajectes'}`;count.classList.toggle('hidden',!rows.length)}
-  list.innerHTML=rows.map(row=>{
+  if(count){count.textContent=visibleRows.length?visibleRows.length+` ${visibleRows.length===1?'trajecte':'trajectes'}`:'Cap trajecte afegit';count.classList.toggle('hidden',!rows.length)}
+  list.innerHTML=pendingRows.map(row=>proposalPendingHtml(row,'transport')).join('')+visibleRows.map(row=>{
     const mode=LOCAL_TRANSPORT_MODES[row.transport_mode]||LOCAL_TRANSPORT_MODES.other;
     const status=ACTIVITY_STATUSES[row.reservation_status]||row.reservation_status;
     const departure=localTransportDate(row.start_at,row.time_zone);
@@ -3735,12 +3750,13 @@ function renderActivities(){
   const list=$('activityList'),empty=$('activityEmpty'),collection=$('activityCollection'),count=$('activityCount');if(!list||!empty)return;
   if(isLondonTrip()){list.innerHTML='';empty.classList.add('hidden');collection?.classList.add('hidden');return}
   syncGenericConfirmedModules();
-  const visibleRows=activityRowsForMode();
-  if($('genericActivitiesModuleStatus'))$('genericActivitiesModuleStatus').textContent=activitySummary();
-  if($('genericLocalTransportModuleStatus'))$('genericLocalTransportModuleStatus').textContent=localTransportSummary();
-  empty.classList.toggle('hidden',visibleRows.length>0);collection?.classList.toggle('hidden',!visibleRows.length);
-  if(count)count.textContent=visibleRows.length===1?'1 activitat':visibleRows.length+' activitats';
-  list.innerHTML=visibleRows.map(row=>{
+  const allRows=activityRowsForMode(),pendingRows=allRows.filter(isProposalPlaceholderActivity),visibleRows=allRows.filter(row=>!isProposalPlaceholderActivity(row));
+  if($('genericActivitiesModuleStatus'))$('genericActivitiesModuleStatus').textContent=activitySummary(visibleRows);
+  if($('genericLocalTransportModuleStatus'))$('genericLocalTransportModuleStatus').textContent=localTransportSummary(localTransportRows().filter(row=>!isProposalPlaceholderActivity(row)));
+  empty.classList.toggle('hidden',allRows.length>0);collection?.classList.toggle('hidden',!allRows.length);
+  if(count)count.textContent=visibleRows.length?visibleRows.length===1?'1 activitat':visibleRows.length+' activitats':'Cap activitat afegida';
+  const pendingHtml=pendingRows.map(row=>proposalPendingHtml(row,'activity')).join('');
+  const rowsHtml=visibleRows.map(row=>{
     const type=ACTIVITY_TYPES[row.activity_type]||ACTIVITY_TYPES.other,status=ACTIVITY_STATUSES[row.reservation_status]||row.reservation_status,schedule=activitySchedule(row),location=activityLocation(row),mapUrl=activityMapUrl(row);
     const bookingId=activityDocumentId(row.id,'booking'),ticketId=activityDocumentId(row.id,'ticket');
     const facts=[];
@@ -3753,6 +3769,7 @@ function renderActivities(){
     const where=location?'<div class="activity-quick-section"><small>📍 On</small><strong>'+esc(row.venue_name||row.city||'Lloc')+'</strong><span>'+esc([row.address,row.city].filter(Boolean).join(' · ')||location)+'</span></div>':'<div class="activity-quick-section"><small>📍 On</small><span>Pendent de concretar</span></div>';
     return `<article class="accommodation-card" data-activity-id="${esc(row.id)}"><div class="accommodation-card-head"><div class="accommodation-identity"><div class="accommodation-icon">${type.icon}</div><div><small class="muted">${esc(type.label)}</small><h3>${esc(row.title)}</h3></div></div><span class="accommodation-status ${esc(row.reservation_status)}">${esc(status)}</span></div><div class="activity-quick">${when}${where}</div>${facts.length?`<div class="accommodation-facts">${facts.map(([label,value])=>`<div class="accommodation-fact"><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`).join('')}</div>`:''}${row.notes?`<p class="accommodation-notes"><span class="activity-notes-label">📝 Notes</span>${esc(row.notes)}</p>`:''}<div class="accommodation-actions">${bookingId?`<button type="button" class="primary-action" data-activity-document="${esc(row.id)}" data-activity-document-role="booking">📄 Reserva</button>`:''}${ticketId?`<button type="button" class="primary-action" data-activity-document="${esc(row.id)}" data-activity-document-role="ticket">🎟️ Entrada</button>`:''}${mapUrl?`<a href="${esc(mapUrl)}" target="_blank" rel="noopener">🧭 Com arribar</a>`:''}${phone?`<a href="tel:${esc(phone)}">📞 Trucar</a>`:''}${row.contact_email?`<a href="mailto:${esc(row.contact_email)}">✉️ Correu</a>`:''}${website?`<a href="${esc(website)}" target="_blank" rel="noopener">🌐 Web</a>`:''}<button type="button" data-edit-activity="${esc(row.id)}">Editar</button><button type="button" class="danger-action" data-delete-activity="${esc(row.id)}">Eliminar</button></div></article>`;
   }).join('');
+  list.innerHTML=pendingHtml+rowsHtml;
   list.querySelectorAll('[data-activity-document]').forEach(button=>button.onclick=()=>openActivityDocument(button.dataset.activityDocument,button.dataset.activityDocumentRole));
   list.querySelectorAll('[data-edit-activity]').forEach(button=>button.onclick=()=>openActivityForm(button.dataset.editActivity));
   list.querySelectorAll('[data-delete-activity]').forEach(button=>button.onclick=()=>deleteActivity(button.dataset.deleteActivity,button));
@@ -4719,6 +4736,7 @@ async function renderSession(next){
   $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent='';
   try{
     const coldStart=coldStartNavigationPending;
+    if(coldStart&&!pendingInitialRoute){show('tripView');setAppView('tripsHomeView')}
     await refreshTrips({coldStart});
     if(renderGeneration!==sessionRenderGeneration)return;
     show('tripView');
