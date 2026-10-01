@@ -1088,7 +1088,7 @@
 
     <div id="dashboardView">
       <button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button>
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.13 · Activitats i documents</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.14 · Activitats i documents</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <div id="pushCard" class="install-card"><div><strong>🔔 Notificacions</strong><small id="pushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="enablePush" type="button">Activa les notificacions</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
@@ -1688,7 +1688,7 @@
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
     <button id="globalSearchFab" class="search-fab" type="button" aria-label="Cerca a tota l'app">🔎</button>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.13</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.14</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2342,15 +2342,63 @@ function safeWebsiteUrl(value){
   try{const parsed=new URL(/^[a-z][a-z0-9+.-]*:/i.test(raw)?raw:`https://${raw}`);return ['http:','https:'].includes(parsed.protocol)&&parsed.href.length<=2048?parsed.href:null}catch(_){return null}
 }
 function safePhone(value){const normalized=String(value||'').replace(/[^\d+*#,;]/g,'');return normalized&&/[0-9]/.test(normalized)?normalized:null}
-let tbConfirmationApiPromise=null,tbBudgetApiPromise=null;
-function tbConfirmationApi(){
-  if(!tbConfirmationApiPromise)tbConfirmationApiPromise=import('./domain/tb-confirmation.mjs');
-  return tbConfirmationApiPromise;
+async function tbFindComponent(client,{tripId,sourceKind,sourceId}){
+  const column=sourceKind==='accommodation'?'accommodation_id':sourceKind==='flight'?'flight_id':sourceKind==='activity'?'activity_id':null;
+  if(!column)return null;
+  const {data,error}=await client.from('trip_proposal_component_links').select('component_id').eq('trip_id',tripId).eq(column,sourceId).maybeSingle();
+  if(error)throw error;
+  return data?.component_id||null;
 }
-function tbBudgetApi(){
-  if(!tbBudgetApiPromise)tbBudgetApiPromise=import('./domain/tb-budget.mjs');
-  return tbBudgetApiPromise;
+async function tbConfirmComponent(client,{tripId,componentId,expectedUpdatedAt,expectedEvidenceDocumentId=null,evidenceDocumentId=null,evidenceRole=null,operationId=crypto.randomUUID()}){
+  const {data,error}=await client.rpc('confirm_trip_component_v1',{p_trip_id:tripId,p_component_id:componentId,p_expected_updated_at:expectedUpdatedAt,p_operation_id:operationId,p_expected_evidence_document_id:expectedEvidenceDocumentId||null,p_evidence_document_id:evidenceDocumentId||null,p_evidence_role:evidenceRole||null});
+  if(error)throw error;
+  return data;
 }
+async function tbConfirmationForSourceInline(client,{tripId,sourceKind,sourceId}){
+  const {data,error}=await client.from('trip_component_confirmation_operations').select('component_id,confirmation_source,evidence_document_id,evidence_role,confirmed_at').eq('trip_id',tripId).eq('source_kind',sourceKind).eq('source_id',sourceId).order('confirmed_at',{ascending:false}).limit(1).maybeSingle();
+  if(error)throw error;
+  return data||null;
+}
+const TB_CONFIRMATION_API={findTbComponent:tbFindComponent,confirmTbComponent:tbConfirmComponent,tbConfirmationForSource:tbConfirmationForSourceInline};
+
+async function tbFindBudgetComponent(client,{tripId,sourceKind,sourceId}){
+  const proposalComponent=await tbFindComponent(client,{tripId,sourceKind,sourceId});
+  if(proposalComponent)return {componentId:proposalComponent,kind:'proposal'};
+  const {data,error}=await client.from('trip_standalone_component_links').select('component_id').eq('trip_id',tripId).eq('source_kind',sourceKind).eq('source_id',sourceId).maybeSingle();
+  if(error)throw error;
+  return data?.component_id?{componentId:data.component_id,kind:'standalone'}:null;
+}
+async function tbEnsureStandaloneBudgetComponent(client,{tripId,sourceKind,sourceId}){
+  const {data,error}=await client.rpc('ensure_trip_standalone_component_v1',{p_trip_id:tripId,p_source_kind:sourceKind,p_source_id:sourceId});
+  if(error)throw error;
+  return data;
+}
+function tbLinesToItems(value){return String(value||'').split(/\\n+/).map(x=>x.trim()).filter(Boolean).slice(0,20)}
+async function tbLoadComponentCost(client,{tripId,componentId}){
+  if(!componentId)return null;
+  const {data,error}=await client.from('trip_component_costs').select('trip_id,component_id,source_kind,source_id,expected_amount,confirmed_amount,currency,expected_quality,verified_at,confirmed_at,scope,unknown_required_costs,excluded_costs,evidence_document_id,revision,updated_at').eq('trip_id',tripId).eq('component_id',componentId).maybeSingle();
+  if(error)throw error;
+  return data||null;
+}
+async function tbSaveComponentCost(client,{tripId,componentId,expectedRevision=0,expectedAmount=null,confirmedAmount=null,currency=null,expectedQuality='unknown',verifiedAt=null,scope={},unknownRequiredCosts=[],excludedCosts=[],evidenceDocumentId=null,operationId=crypto.randomUUID()}){
+  const {data,error}=await client.rpc('set_trip_component_cost_v1',{p_trip_id:tripId,p_component_id:componentId,p_expected_revision:expectedRevision,p_operation_id:operationId,p_expected_amount:expectedAmount,p_confirmed_amount:confirmedAmount,p_currency:currency||null,p_expected_quality:expectedQuality,p_verified_at:verifiedAt,p_scope:scope||{},p_unknown_required_costs:unknownRequiredCosts||[],p_excluded_costs:excludedCosts||[],p_evidence_document_id:evidenceDocumentId||null});
+  if(error)throw error;
+  return data;
+}
+async function tbConfirmComponentWithCost(client,{tripId,componentId,expectedUpdatedAt,expectedEvidenceDocumentId=null,evidenceDocumentId=null,evidenceRole=null,costExpectedRevision=0,expectedAmount=null,confirmedAmount=null,currency=null,expectedQuality='unknown',verifiedAt=null,scope={},unknownRequiredCosts=[],excludedCosts=[],costEvidenceDocumentId=null,operationId=crypto.randomUUID()}){
+  const {data,error}=await client.rpc('confirm_trip_component_with_cost_v1',{p_trip_id:tripId,p_component_id:componentId,p_expected_updated_at:expectedUpdatedAt,p_operation_id:operationId,p_expected_evidence_document_id:expectedEvidenceDocumentId||null,p_evidence_document_id:evidenceDocumentId||null,p_evidence_role:evidenceRole||null,p_cost_expected_revision:costExpectedRevision,p_expected_amount:expectedAmount,p_confirmed_amount:confirmedAmount,p_currency:currency||null,p_expected_quality:expectedQuality,p_verified_at:verifiedAt,p_scope:scope||{},p_unknown_required_costs:unknownRequiredCosts||[],p_excluded_costs:excludedCosts||[],p_cost_evidence_document_id:costEvidenceDocumentId||null});
+  if(error)throw error;
+  return data;
+}
+async function tbLoadBudget(client,tripId){const {data,error}=await client.rpc('get_trip_budget_v1',{p_trip_id:tripId});if(error)throw error;return data}
+async function tbSaveBudgetSettings(client,{tripId,expectedRevision=0,targetAmount=null,maximumAmount=null,currency=null,operationId=crypto.randomUUID()}){
+  const {data,error}=await client.rpc('set_trip_budget_settings_v1',{p_trip_id:tripId,p_expected_revision:expectedRevision,p_operation_id:operationId,p_target_amount:targetAmount,p_maximum_amount:maximumAmount,p_currency:currency||null});
+  if(error)throw error;
+  return data;
+}
+const TB_BUDGET_API={findTbComponent:tbFindComponent,findBudgetComponent:tbFindBudgetComponent,ensureStandaloneBudgetComponent:tbEnsureStandaloneBudgetComponent,linesToItems:tbLinesToItems,loadComponentCost:tbLoadComponentCost,saveComponentCost:tbSaveComponentCost,confirmComponentWithCost:tbConfirmComponentWithCost,loadBudget:tbLoadBudget,saveBudgetSettings:tbSaveBudgetSettings};
+async function tbConfirmationApi(){return TB_CONFIRMATION_API}
+async function tbBudgetApi(){return TB_BUDGET_API}
 const CURRENCY_OPTIONS=[
   ['EUR','Euro'],['GBP','Lliura esterlina'],['USD','Dòlar dels EUA'],['CHF','Franc suís'],['JPY','Ien japonès'],['CAD','Dòlar canadenc'],['AUD','Dòlar australià'],['SEK','Corona sueca'],['NOK','Corona noruega'],['DKK','Corona danesa'],['PLN','Zloty polonès'],['CZK','Corona txeca'],['HUF','Fòrint hongarès'],
   ['AED','Dírham dels Emirats Àrabs Units'],['AFN','Afghani afganès'],['ALL','Lek albanès'],['AMD','Dram armeni'],['ANG','Florí de les Antilles Neerlandeses'],['AOA','Kwanza angolès'],['ARS','Peso argentí'],['AWG','Florí d’Aruba'],['AZN','Manat azerbaidjanès'],['BAM','Marc convertible de Bòsnia i Hercegovina'],['BBD','Dòlar de Barbados'],['BDT','Taka de Bangla Desh'],['BHD','Dinar de Bahrain'],['BIF','Franc de Burundi'],['BMD','Dòlar de Bermudes'],['BND','Dòlar de Brunei'],['BOB','Boliviano'],['BRL','Real brasiler'],['BSD','Dòlar de les Bahames'],['BTN','Ngultrum de Bhutan'],['BWP','Pula de Botswana'],['BYN','Ruble belarús'],['BZD','Dòlar de Belize'],['CDF','Franc congolès'],['CLP','Peso xilè'],['CNY','Iuan renminbi'],['COP','Peso colombià'],['CRC','Colón costa-riqueny'],['CUP','Peso cubà'],['CVE','Escut capverdià'],['DJF','Franc de Djibouti'],['DOP','Peso dominicà'],['DZD','Dinar algerià'],['EGP','Lliura egípcia'],['ERN','Nakfa eritreu'],['ETB','Birr etíop'],['FJD','Dòlar de Fiji'],['FKP','Lliura de les Malvines'],['GEL','Lari georgià'],['GHS','Cedi ghanès'],['GIP','Lliura de Gibraltar'],['GMD','Dalasi gambià'],['GNF','Franc guineà'],['GTQ','Quetzal guatemalenc'],['GYD','Dòlar de Guyana'],['HKD','Dòlar de Hong Kong'],['HNL','Lempira hondurenya'],['HTG','Gourde haitià'],['IDR','Rupia indonèsia'],['ILS','Nou xéquel israelià'],['INR','Rupia índia'],['IQD','Dinar iraquià'],['IRR','Rial iranià'],['ISK','Corona islandesa'],['JMD','Dòlar jamaicà'],['JOD','Dinar jordà'],['KES','Xíling kenyà'],['KGS','Som kirguís'],['KHR','Riel cambodjà'],['KMF','Franc comorià'],['KPW','Won nord-coreà'],['KRW','Won sud-coreà'],['KWD','Dinar kuwaitià'],['KYD','Dòlar de les Illes Caiman'],['KZT','Tenge kazakh'],['LAK','Kip laosià'],['LBP','Lliura libanesa'],['LKR','Rupia de Sri Lanka'],['LRD','Dòlar liberià'],['LSL','Loti de Lesotho'],['LYD','Dinar libi'],['MAD','Dírham marroquí'],['MDL','Leu moldau'],['MGA','Ariary malgaix'],['MKD','Denar macedoni'],['MMK','Kyat de Myanmar'],['MNT','Tögrög mongol'],['MOP','Pataca de Macau'],['MRU','Ouguiya maurità'],['MUR','Rupia mauriciana'],['MVR','Rufiyaa de les Maldives'],['MWK','Kwacha malawià'],['MXN','Peso mexicà'],['MYR','Ringgit malaisi'],['MZN','Metical moçambiquès'],['NAD','Dòlar namibià'],['NGN','Naira nigeriana'],['NIO','Córdoba nicaragüenc'],['NPR','Rupia nepalesa'],['NZD','Dòlar neozelandès'],['OMR','Rial omanita'],['PAB','Balboa panameny'],['PEN','Sol peruà'],['PGK','Kina de Papua Nova Guinea'],['PHP','Peso filipí'],['PKR','Rupia pakistanesa'],['PYG','Guaraní paraguaià'],['QAR','Rial qatarià'],['RON','Leu romanès'],['RSD','Dinar serbi'],['RUB','Ruble rus'],['RWF','Franc ruandès'],['SAR','Rial saudita'],['SBD','Dòlar de les Illes Salomó'],['SCR','Rupia de les Seychelles'],['SDG','Lliura sudanesa'],['SGD','Dòlar de Singapur'],['SHP','Lliura de Santa Helena'],['SLE','Leone de Sierra Leone'],['SOS','Xíling somali'],['SRD','Dòlar de Surinam'],['SSP','Lliura del Sudan del Sud'],['STN','Dobra de São Tomé i Príncipe'],['SYP','Lliura siriana'],['SZL','Lilangeni d’Eswatini'],['THB','Baht tailandès'],['TJS','Somoni tadjik'],['TMT','Manat turcman'],['TND','Dinar tunisià'],['TOP','Paʻanga tongalès'],['TRY','Lira turca'],['TTD','Dòlar de Trinitat i Tobago'],['TWD','Nou dòlar taiwanès'],['TZS','Xíling tanzà'],['UAH','Hrívnia ucraïnesa'],['UGX','Xíling ugandès'],['UYU','Peso uruguaià'],['UZS','Som uzbek'],['VES','Bolívar veneçolà'],['VND','Dong vietnamita'],['VUV','Vatu de Vanuatu'],['WST','Tala samoà'],['XAF','Franc CFA d’Àfrica Central'],['XCD','Dòlar del Carib Oriental'],['XOF','Franc CFA d’Àfrica Occidental'],['XPF','Franc CFP'],['YER','Rial iemenita'],['ZAR','Rand sud-africà'],['ZMW','Kwacha zambià']
