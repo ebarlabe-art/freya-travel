@@ -43,6 +43,11 @@ export function projectBuild({links=[],costs=[],budget=null,flights=[],accommoda
     const rawStatus=sourceStatus(row,kind)||'planning',status=statusMeta[rawStatus]||statusMeta.planning;
     const price=costState(cost);
     const localTransport=kind==='activity'&&['transport','transport_activity'].includes(row?.activity_type);
+    const title=sourceTitle(row,kind);
+    const proposalPlaceholder=rawStatus==='planning'&&(
+      (kind==='accommodation'&&title==='Allotjament per concretar')||
+      (kind==='activity'&&['Activitat per concretar','Transport per concretar'].includes(title))
+    );
     return {
       component_id:link.component_id,
       kind,
@@ -51,7 +56,8 @@ export function projectBuild({links=[],costs=[],budget=null,flights=[],accommoda
       kind_label:localTransport?'Transport local':kindMeta[kind].label,
       view:kindMeta[kind].view,
       source_id:id,
-      title:sourceTitle(row,kind),
+      title,
+      proposal_placeholder:proposalPlaceholder,
       note:sourceNote(row),
       status,
       price_state:price,
