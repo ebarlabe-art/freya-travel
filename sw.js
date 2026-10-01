@@ -1,4 +1,4 @@
-const CACHE='freya-travel-activities-documents-v1';
+const CACHE='freya-travel-pwa-fast-start-v1';
 const ASSETS=['./domain/place-resolution.mjs','./domain/place-resolution-ui.mjs','./domain/proposal-handoff.mjs','./domain/tb-confirmation.mjs','./domain/tb-budget.mjs','./domain/tb-build.mjs','./domain/travel-search.mjs','./domain/proposal-refinement.mjs','./domain/proposal-builder.mjs','./domain/live-trip-brief.mjs','./domain/travel-builder.mjs','./domain/trip-brief.mjs','./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./itinerary.html','./freya-travel-v1.5/index.html','./freya-travel-v1.5/itinerary.html'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
@@ -17,10 +17,13 @@ self.addEventListener('fetch',event=>{
     const nestedItineraryPath=new URL('./freya-travel-v1.5/itinerary.html',self.location.href).pathname;
     const isNestedIndex=url.pathname===nestedIndexPath||url.pathname===nestedAppPath||url.pathname===nestedAppPath.slice(0,-1);
     const fallbackKey=url.pathname===rootItineraryPath?'./itinerary.html':url.pathname===nestedItineraryPath?'./freya-travel-v1.5/itinerary.html':isNestedIndex?'./freya-travel-v1.5/index.html':'./index.html';
-    event.respondWith(fetch(request).then(response=>{
+    const network=fetch(request).then(response=>{
       if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(fallbackKey,copy))}
       return response;
-    }).catch(()=>caches.match(fallbackKey).then(cached=>cached||caches.match('./'))));
+    });
+    const cached=caches.match(fallbackKey).then(hit=>hit||caches.match('./'));
+    const fastFallback=new Promise(resolve=>setTimeout(()=>cached.then(resolve),1200));
+    event.respondWith(Promise.race([network,fastFallback]).then(response=>response||network).catch(()=>cached));
     return;
   }
   const isCodeAsset=['script','worker','sharedworker'].includes(request.destination)||/\.(?:m?js|css)$/i.test(url.pathname);
