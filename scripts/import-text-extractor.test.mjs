@@ -78,3 +78,19 @@ test('no crea una proposta si només sap el tipus però no pot acreditar cap cam
 test('classificació és read-only i pot retornar desconegut',()=>{
   assert.deepEqual(classifyImportText('hello world'),{target_type:null,line_count:1});
 });
+
+test('extreu un transport local explícit',()=>{
+  const p=extractImportProposalFromText(`
+Bus ticket
+Route: Riga → Tallinn
+Operator: Lux Express
+Service number: LX123
+Booking reference: BUS77
+Departure: Riga
+Arrival: Tallinn
+`,source);
+  assert.equal(p.target_type,'local_transport');
+  assert.equal(p.fields.title.value,'Riga → Tallinn');
+  assert.equal(p.fields.provider.value,'Lux Express');
+  assert.equal(p.fields.transport_service_number.value,'LX123');
+});
