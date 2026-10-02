@@ -91,3 +91,11 @@ test('fresh Home loads recover handoff provenance without persisted client state
  assert.equal(reads,3);assert.equal(await ctx.loadHomeTrips(client,'owner',()=>false),null);
  client.from=()=>{const q={select:()=>q,eq:()=>q,order:()=>q,range:async()=>({data:[]})};return q};assert.equal((await ctx.loadHomeTrips(client,'owner',()=>true))[0].tb_handoff,false);
 });
+
+test('Builder distinguishes drafts from operational trips and offers direct open',()=>{
+ assert.match(html,/function operationalTripForBrief\(/);
+ assert.match(html,/data-open-operational-brief/);
+ assert.match(html,/✅ Viatge creat/);
+ assert.match(html,/Obre el viatge i afegeix reserves/);
+ assert.match(html,/💭 Idea en esborrany/);
+});
