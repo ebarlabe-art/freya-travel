@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.send-itinerary-notifications]
 verify_jwt = false
+
+[functions.import-reservation]
+verify_jwt = true
