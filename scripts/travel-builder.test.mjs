@@ -167,3 +167,9 @@ test('cannot forget a pending identity on storage read failure or post-response 
  await assert.rejects(c.execute(),/quota/);assert.ok(c.state.pending);await c.execute();
  assert.deepEqual(calls[0],calls[1]);assert.equal(c.state.pending,undefined);
 });
+
+test('Builder distinguishes draft idea from an already-created operational trip',()=>{
+ const r=row();r.document.decisions.dest=known('destination',{mode:'known',places:['Riga','Tallin']});r.document.decisions.dates=known('dates',{mode:'exact',start:'2026-12-26',end:'2027-01-02'});
+ const h=harness();h.s.trips=[{id:'trip-riga',name:'Riga + Tallin',start_date:'2026-12-26',end_date:'2027-01-02'}];h.s.db=server([r]).client;
+ return h.s.resumeBuilder(r.id,'destination').then(()=>{assert.equal(h.$('builderOperationalTripCard').classList.contains('hidden'),false);assert.match(h.$('builderOperationalTripTitle').textContent,/ja és un viatge creat/);assert.match(h.$('builderPrompt').textContent,/viatge que ja tens creat/);});
+});
