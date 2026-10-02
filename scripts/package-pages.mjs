@@ -16,13 +16,14 @@ const runtimeDomain=[
   'live-trip-brief.mjs',
   'travel-builder.mjs',
   'trip-brief.mjs',
+  'import-proposal.mjs',
 ];
 
 await mkdir(new URL('domain/',dist),{recursive:true});
 for(const file of runtimeDomain){
   await copyFile(new URL('domain/'+file,root),new URL('domain/'+file,dist));
 }
-for(const file of ['trip-brief.mjs','live-trip-brief.mjs','travel-builder.mjs']){
+for(const file of ['trip-brief.mjs','live-trip-brief.mjs','travel-builder.mjs','import-proposal.mjs']){
   const source=await import('node:fs/promises').then(fs=>fs.readFile(new URL('domain/'+file,root),'utf8'));
   const browser=source
     .replaceAll("./trip-brief.mjs","./trip-brief.js")
