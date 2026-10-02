@@ -2773,10 +2773,11 @@ function normalizedTripIdentity(value){
 function operationalTripForBrief(api,row){
   const label=normalizedTripIdentity(api.briefLabel(row));
   if(!label)return null;
-  const exact=trips.filter(value=>normalizedTripIdentity(value.name)===label);
+  const operationalTrips=typeof trips!=='undefined'&&Array.isArray(trips)?trips:[];
+  const exact=operationalTrips.filter(value=>normalizedTripIdentity(value.name)===label);
   if(exact.length===1)return exact[0];
   const words=new Set(label.split(' ').filter(word=>word.length>2));
-  const scored=trips.map(value=>{
+  const scored=operationalTrips.map(value=>{
     const name=normalizedTripIdentity(value.name),nameWords=new Set(name.split(' '));
     const overlap=[...words].filter(word=>nameWords.has(word)).length;
     return {value,score:overlap};
