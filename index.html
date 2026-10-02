@@ -1110,7 +1110,7 @@
 
     <div id="dashboardView">
       <button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button>
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.27 · Activitats i documents</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.28 · Activitats i documents</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <div id="pushCard" class="install-card"><div><strong>🔔 Notificacions</strong><small id="pushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="enablePush" type="button">Activa les notificacions</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
@@ -1710,7 +1710,7 @@
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
     <button id="globalSearchFab" class="search-fab" type="button" aria-label="Cerca a tota l'app">🔎</button>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.27</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.28</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -5003,11 +5003,24 @@ function renderTripsHome(){
   for(const [key,id] of [['active','activeTripsList'],['upcoming','upcomingTripsList'],['past','pastTripsList'],['undated','undatedTripsList'],['construction','constructionTripsList']]){
     $(id).innerHTML=rows(key).length?rows(key).map(value=>{
     const duration=tripDuration(value),london=isLondonTrip(value),selected=value.id===trip?.id;
-    return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(({active:'En curs',upcoming:'En preparació',past:'Completat',undated:'Dates pendents',construction:'En construcció'})[key])}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button></article>`;
+    return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(({active:'En curs',upcoming:'En preparació',past:'Completat',undated:'Dates pendents',construction:'En construcció'})[key])}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button>${key==='construction'&&value.is_owner&&value.tb_handoff&&!london?`<button class="secondary" type="button" data-discard-trip="${esc(value.id)}" data-discard-name="${esc(value.name)}">🗑️ Eliminar viatge</button>`:''}</article>`;
 
     }).join(''):`<p class="muted">${key==='upcoming'?'Encara no tens viatges propers.':key==='past'?'Encara no tens viatges passats.':''}</p>`;
     $(id).querySelectorAll('[data-select-trip]').forEach(button=>button.onclick=()=>openHomeTrip(button.dataset.selectTrip));
+    $(id).querySelectorAll('[data-discard-trip]').forEach(button=>button.onclick=()=>discardConstructionTrip(button.dataset.discardTrip,button.dataset.discardName));
   }
+}
+async function discardConstructionTrip(id,name){
+  const row=trips.find(value=>value.id===id);
+  if(!row||!row.is_owner||!row.tb_handoff||homeTripPhase(row)!=='undated'||isLondonTrip(row))return;
+  if(!confirm('Eliminar «'+name+'» de Freya? Deixarà d’aparèixer a Els meus viatges i no es podrà obrir.'))return;
+  const {data,error}=await db.rpc('discard_construction_trip_v1',{p_trip_id:id});
+  if(error){alert(error.message||'No s’ha pogut eliminar el viatge.');return}
+  if(data!==true){alert('No s’ha pogut confirmar l’eliminació del viatge.');return}
+  if(trip?.id===id){trip=null;tripLoadGeneration+=1;await disconnectTripRealtime();clearTripScopedState()}
+  forgetSelectedTrip();
+  clearNavigationState(session?.user?.id);
+  await refreshTrips({coldStart:true});
 }
 // HOME-01 navigation is scoped to category entry/detail; Photos retains its own history.
 let homeTripReturn=null,homeClockTimer=null;
