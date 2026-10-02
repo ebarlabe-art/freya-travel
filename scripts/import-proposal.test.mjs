@@ -101,3 +101,8 @@ test('transport local només admet camps del seu model operatiu',()=>{
   const bad=structuredClone(p);bad.fields.vehicle_model=field('Forbidden');
   assert.throws(()=>normalizeImportProposal(bad),e=>e.code==='forbidden_import_field');
 });
+
+test('allotjament pot proposar localització estructurada ja existent al formulari',()=>{
+  const p=flight();p.target_type='accommodation';p.fields={name:field('Grand Poet Hotel'),city:field('Riga'),postal_code:field('LV-1050'),country:field('Latvia')};
+  const n=normalizeImportProposal(p);assert.equal(n.fields.city.value,'Riga');assert.equal(n.fields.postal_code.value,'LV-1050');
+});
