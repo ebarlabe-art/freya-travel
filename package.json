@@ -14,7 +14,7 @@
     "test:proposals:browser": "node scripts/check-proposals-browser.mjs",
     "predev": "npm run entries:sync",
     "dev": "vite",
-    "prebuild": "npm run entries:sync",
+    "prebuild": "npm run entries:sync && node scripts/browser-runtime.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "postbuild": "node scripts/package-pages.mjs"
