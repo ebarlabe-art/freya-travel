@@ -37,6 +37,7 @@ const detectType=text=>{
     flight:[/\bflight\b/i,/\bvol\b/i,/boarding/i,/\b[A-Z]{2}\s?\d{2,4}\b/,/departure|arrival|sortida|arribada/i],
     accommodation:[/hotel|hostel|apartment|apartament|resort|accommodation|allotjament/i,/check[ -]?in/i,/check[ -]?out/i],
     activity:[/ticket|entrada|activity|activitat|tour|excursion|excursi[oó]|museum|museu/i,/admission|meeting point|punt de trobada/i],
+    local_transport:[/train|tren|bus|coach|ferry|ferri|transfer|trasllat|metro|tram|transport/i,/departure|sortida|origin|origen/i,/arrival|arribada|destination|destinaci[oó]/i],
     car_rental:[/car rental|rent a car|vehicle rental|lloguer de cotxe|lloguer de vehicle/i,/pick[ -]?up|recollida/i,/drop[ -]?off|return location|devoluci[oó]/i]
   };
   const ranked=Object.entries(scores).map(([type,patterns])=>[type,patterns.reduce((n,p)=>n+(p.test(text)?1:0),0)]).sort((a,b)=>b[1]-a[1]);
@@ -76,6 +77,17 @@ function activityFields(text){
   if(provider)fields.provider=field(provider.value,provider.excerpt,'medium');
   return fields;
 }
+function localTransportFields(text){
+  const fields={};
+  const title=firstMatch(text,[/(?:route|ruta|journey|trajecte|service|servei)\s*[:\-]\s*([^\n]{2,160})/i]);
+  if(title)fields.title=field(title.value,title.excerpt);
+  const ref=bookingRef(text);if(ref)fields.booking_reference=field(ref.value.toUpperCase(),ref.excerpt);
+  const provider=firstMatch(text,[/(?:operator|company|provider|operador|companyia|prove[iï]dor)\s*[:\-]\s*([^\n]{2,100})/i]);
+  if(provider)fields.provider=field(provider.value,provider.excerpt,'medium');
+  const service=firstMatch(text,[/(?:service|train|bus|ferry|tren|servei)\s*(?:number|no\.?|n[uú]m(?:ero)?|#|:)\s*[:#-]?\s*([A-Z0-9-]{1,30})/i]);
+  if(service)fields.transport_service_number=field(service.value,service.excerpt);
+  return fields;
+}
 function carRentalFields(text){
   const fields={};
   const provider=firstMatch(text,[/(?:provider|rental company|company|prove[iï]dor)\s*[:\-]\s*([^\n]{2,100})/i]);
@@ -92,7 +104,7 @@ export function extractImportProposalFromText(rawText,source={}){
   if(text.length<12)throw Object.assign(new Error('No hi ha prou text per interpretar la reserva.'),{code:'insufficient_import_text'});
   const target_type=detectType(text);
   if(!target_type)throw Object.assign(new Error('No puc identificar amb prou seguretat quin tipus de reserva és.'),{code:'ambiguous_import_type'});
-  const builders={flight:flightFields,accommodation:accommodationFields,activity:activityFields,car_rental:carRentalFields};
+  const builders={flight:flightFields,accommodation:accommodationFields,activity:activityFields,local_transport:localTransportFields,car_rental:carRentalFields};
   const fields=builders[target_type](text);
   const warnings=[];
   if(Object.keys(fields).length===0)warnings.push('S’ha identificat el tipus de reserva, però no hi ha camps prou explícits per proposar.');
@@ -100,6 +112,7 @@ export function extractImportProposalFromText(rawText,source={}){
     flight:['flight_number'],
     accommodation:['name'],
     activity:['title'],
+    local_transport:['title'],
     car_rental:['provider']
   };
   const missing_required=required[target_type].filter(name=>!fields[name]);
