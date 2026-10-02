@@ -461,12 +461,14 @@
       </section>
     </div>
     <div id="manualTripView" class="hidden trips-home"><button type="button" data-builder-back="designTripView">← Tornar</button><section class="new-trip-card"><h1>Afegeix el teu viatge</h1>
-          <p class="muted">Indica la destinació principal i les dates. Freya s’encarrega automàticament de la zona horària.</p>
+          <p class="muted">Afegeix totes les destinacions del viatge. Freya verificarà cada lloc i gestionarà automàticament la seva zona horària.</p>
           <form id="createTripForm" class="trip-form">
             <div class="trip-form-grid">
-              <label class="wide">Destinació principal<input id="tripDestination" maxlength="120" placeholder="Ex.: Riga, Letònia" autocomplete="off" required></label>
+              <label class="wide">Destinació<input id="tripDestination" maxlength="120" placeholder="Ex.: Riga, Letònia" autocomplete="off"></label>
+              <div class="wide"><button id="addTripDestination" type="button" class="secondary">＋ Afegir destinació</button></div>
               <div id="tripDestinationChoices" class="builder-doors hidden wide" aria-live="polite"></div>
               <p id="tripPlaceStatus" class="muted wide" role="status"></p>
+              <div id="tripStopsList" class="wide" aria-live="polite"></div>
               <label class="wide">Nom del viatge <small class="muted">(opcional)</small><input id="tripName" maxlength="100" placeholder="Ex.: Nadal a Riga i Tallinn"></label>
               <label>Data d’inici<input id="tripStartDate" type="date" required></label>
               <label>Data de fi<input id="tripEndDate" type="date" required></label>
@@ -1108,7 +1110,7 @@
 
     <div id="dashboardView">
       <button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button>
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.26 · Activitats i documents</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.27 · Activitats i documents</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <div id="pushCard" class="install-card"><div><strong>🔔 Notificacions</strong><small id="pushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="enablePush" type="button">Activa les notificacions</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
@@ -1708,7 +1710,7 @@
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
     <button id="globalSearchFab" class="search-fab" type="button" aria-label="Cerca a tota l'app">🔎</button>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.26</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.27</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2811,11 +2813,25 @@ async function loadBuilderList(){
     const rows=await api.withBriefTimeout(api.listOpenBriefs(db,owner,()=>builderCurrent(owner,epoch)&&sequence===builderListSequence));
     if(!builderCurrent(owner,epoch)||sequence!==builderListSequence)return;
     $('builderContinue').classList.toggle('hidden',!rows.length);
-    $('builderBriefList').innerHTML=rows.map(row=>`<button type="button" data-resume-brief="${esc(row.id)}"><strong>${esc(api.briefLabel(row))}</strong><small>Actualitzat ${esc(new Date(row.updated_at).toLocaleString('ca-ES'))}</small></button>`).join('');
+    $('builderBriefList').innerHTML=rows.map(row=>`<div class="card" style="padding:10px;margin:0"><button type="button" data-resume-brief="${esc(row.id)}"><strong>${esc(api.briefLabel(row))}</strong><small>Actualitzat ${esc(new Date(row.updated_at).toLocaleString('ca-ES'))}</small></button><button type="button" class="secondary" data-delete-brief="${esc(row.id)}" data-delete-label="${esc(api.briefLabel(row))}">🗑️ Elimina esborrany</button></div>`).join('');
     $('builderBriefList').querySelectorAll('[data-resume-brief]').forEach(button=>button.onclick=()=>builderPointer()?.brief===button.dataset.resumeBrief?resumeBuilderPointer():resumeBuilder(button.dataset.resumeBrief));
+    $('builderBriefList').querySelectorAll('[data-delete-brief]').forEach(button=>button.onclick=()=>deleteBuilderBrief(button.dataset.deleteBrief,button.dataset.deleteLabel));
     $('builderListMessage').textContent=controller.state.pending?'Hi ha una operació pendent de verificar. Reintenta-la abans de començar-ne una altra.':rows.length||trips.some(t=>t.tb_handoff&&homeTripPhase(t)==='undated')?'':'Encara no tens cap viatge en construcció.';
     renderBuilderControls();
   }catch(error){if(builderCurrent(owner,epoch)&&sequence===builderListSequence)$('builderListMessage').textContent=error.message||'No s’han pogut carregar els esborranys.'}
+}
+async function deleteBuilderBrief(id,label){
+  const owner=session?.user?.id;if(!owner)return;
+  const pendingBrief=builderController?.state?.pending?.command?.p_brief_id;
+  if(pendingBrief===id){$('builderListMessage').textContent='Aquest esborrany té una operació pendent. Verifica-la abans d’eliminar-lo.';return}
+  if(!confirm('Eliminar l’esborrany «'+label+'»? Aquesta acció no es pot desfer.'))return;
+  $('builderListMessage').textContent='Eliminant esborrany…';
+  const {data,error}=await db.from('trip_briefs').delete().eq('id',id).eq('owner_id',owner).is('trip_id',null).select('id');
+  if(error){$('builderListMessage').textContent=error.message;return}
+  if(!(data||[]).length){$('builderListMessage').textContent='L’esborrany ja no estava disponible.';return}
+  const pointer=builderPointer();if(pointer?.brief===id)try{localStorage.removeItem('freya-builder-nav-v1:'+owner)}catch{}
+  if(builderController?.state?.route?.id===id)try{builderController.clearRoute()}catch{}
+  await loadBuilderList();
 }
 function showBuilderRow(api,row,mode){
   resetProposalUi();
@@ -5060,7 +5076,7 @@ function updateTripPresentation(){
     initGlobalSearch();
     $('genericTripTitle').textContent=trip.name;
     $('genericTripDates').textContent=tripDateRange(trip);
-    $('genericTripMeta').innerHTML=`<span>🌍 ${esc(trip.time_zone||'Zona horària pendent')}</span><span>${trip.is_owner?'Creat per tu':'Viatge compartit'}</span>`;
+    $('genericTripMeta').innerHTML=`<span>${tripStopRows.length?'📍 '+esc(tripStopRows.map(stop=>stop.canonical_name||stop.label).join(' → ')):'📍 Destinacions pendents'}</span><span>${trip.is_owner?'Creat per tu':'Viatge compartit'}</span>`;
     $('genericBuildCard')?.classList.toggle('hidden',!trip.tb_handoff);
     renderTripHome();
     $('genericInviteCode').textContent=trip.invite_code||'';
@@ -5079,10 +5095,17 @@ function updateTripPresentation(){
     }
   }
 }
+let tripStopRows=[];
 async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
-  const selected=trips.find(value=>value.id===tripId)||null;if(!selected){trip=null;clearGenericItineraryState();updateTripPresentation();setAppView('tripsHomeView');return false}
+  const selected=trips.find(value=>value.id===tripId)||null;if(!selected){trip=null;tripStopRows=[];clearGenericItineraryState();updateTripPresentation();setAppView('tripsHomeView');return false}
   tripLoadGeneration+=1;const generation=tripLoadGeneration;clearGenericItineraryState();await disconnectTripRealtime();if(generation!==tripLoadGeneration)return false;
-  clearTripScopedState();trip=selected;rememberSelectedTrip();updateTripPresentation();
+  clearTripScopedState();trip=selected;tripStopRows=[];rememberSelectedTrip();
+  if(!isLondonTrip()&&!connectionUnavailable()){
+    const stopResult=await db.from('trip_stops').select('id,position,label,canonical_name,time_zone').eq('trip_id',selected.id).order('position',{ascending:true});
+    if(generation!==tripLoadGeneration||trip?.id!==selected.id)return false;
+    if(!stopResult.error)tripStopRows=stopResult.data||[];
+  }
+  updateTripPresentation();
   if(open)setAppView(tripDashboardId());else setAppView('tripsHomeView');
   if(!isLondonTrip()&&connectionUnavailable()){restoreOfflineAgendaSnapshot();restoreOfflineCarRentals();restoreOfflineDocuments()}
   if(!isLondonTrip()&&!connectionUnavailable()){await initializeGenericChecklistDefaults();if(!tripRequestIsCurrent(selected.id,generation))return false}
@@ -6953,19 +6976,37 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   await db.auth.signOut();
   if(password)password.value='';
 });
-let manualTripPlace=null,manualTripPlaceQuery='';
+let manualTripStops=[],manualTripPendingQuery='';
 function manualTripPlaceLabel(place){return [place?.canonical_name,place?.administrative_area,place?.country_code].filter(Boolean).join(' · ')}
-function clearManualTripPlace(){
-  manualTripPlace=null;manualTripPlaceQuery='';
+function manualTripStopPayload(stop){return {
+  label:stop.label,
+  canonical_name:stop.place.canonical_name,
+  administrative_area:stop.place.administrative_area||null,
+  country_code:stop.place.country_code||null,
+  latitude:stop.place.latitude,
+  longitude:stop.place.longitude,
+  time_zone:stop.place.timezone,
+  provider:stop.place.provider,
+  provider_place_id:stop.place.provider_place_id
+}}
+function renderManualTripStops(){
+  const list=$('tripStopsList');if(!list)return;
+  if(!manualTripStops.length){list.innerHTML='<p class="muted">Encara no has afegit cap destinació.</p>';return}
+  list.innerHTML='<strong>Destinacions del viatge</strong>'+manualTripStops.map((stop,index)=>`<div class="card" style="margin:8px 0;padding:12px"><div><strong>${index+1}. ${esc(stop.label)}</strong><small style="display:block">${esc(stop.place.timezone)}</small></div><button type="button" class="secondary" data-remove-trip-stop="${index}">Eliminar</button></div>`).join('');
+  list.querySelectorAll('[data-remove-trip-stop]').forEach(button=>button.onclick=()=>{manualTripStops.splice(Number(button.dataset.removeTripStop),1);renderManualTripStops()});
+}
+function clearManualTripCandidate(){
+  manualTripPendingQuery='';
   const choices=$('tripDestinationChoices'),status=$('tripPlaceStatus');
   if(choices){choices.innerHTML='';choices.classList.add('hidden')}
   if(status)status.textContent='';
 }
-function chooseManualTripPlace(query,candidate){
-  manualTripPlace=candidate?.place||null;manualTripPlaceQuery=query;
-  const choices=$('tripDestinationChoices'),status=$('tripPlaceStatus');
-  if(choices){choices.innerHTML='';choices.classList.add('hidden')}
-  if(status&&manualTripPlace)status.textContent='Destinació reconeguda: '+manualTripPlaceLabel(manualTripPlace);
+function addManualTripStop(query,candidate){
+  const place=candidate?.place;
+  if(!place?.timezone||place.timezone_status!=='verified')return;
+  const duplicate=manualTripStops.some(stop=>stop.place.provider===place.provider&&stop.place.provider_place_id===place.provider_place_id);
+  if(!duplicate)manualTripStops.push({label:place.canonical_name||query,place});
+  $('tripDestination').value='';clearManualTripCandidate();renderManualTripStops();
 }
 function showManualTripPlaceChoices(query,candidates){
   const box=$('tripDestinationChoices');if(!box)return;
@@ -6973,85 +7014,58 @@ function showManualTripPlaceChoices(query,candidates){
   const intro=document.createElement('strong');intro.textContent='Quin lloc vols dir?';box.append(intro);
   candidates.slice(0,5).forEach(candidate=>{
     const button=document.createElement('button');button.type='button';
-    button.innerHTML='<strong>'+esc(manualTripPlaceLabel(candidate.place))+'</strong><span>Utilitza aquesta destinació</span>';
-    button.onclick=()=>chooseManualTripPlace(query,candidate);box.append(button);
+    button.innerHTML='<strong>'+esc(manualTripPlaceLabel(candidate.place))+'</strong><span>Afegir aquesta destinació</span>';
+    button.onclick=()=>addManualTripStop(query,candidate);box.append(button);
   });
   box.classList.remove('hidden');
 }
-async function resolveManualTripPlace(query){
-  if(manualTripPlace&&manualTripPlaceQuery===query&&manualTripPlace.timezone_status==='verified'&&manualTripPlace.timezone)return manualTripPlace;
-  const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text:query,language:'ca'}});
-  if(error||data?.error)throw new Error('Ara mateix Freya no pot localitzar la destinació. Torna-ho a provar.');
-  const candidates=(data?.candidates||[]).filter(candidate=>candidate?.place?.timezone_status==='verified'&&candidate.place.timezone);
-  if(!candidates.length)throw new Error('No he pogut identificar la destinació. Escriu ciutat i país.');
-  if(candidates.length>1){showManualTripPlaceChoices(query,candidates);return null}
-  chooseManualTripPlace(query,candidates[0]);return candidates[0].place;
+async function resolveAndAddManualTripStop(){
+  const query=$('tripDestination').value.trim();
+  if(!query){msg('tripMsg','Escriu una destinació abans d’afegir-la.',true);return false}
+  if(manualTripPendingQuery===query)return false;
+  manualTripPendingQuery=query;
+  $('addTripDestination').disabled=true;$('tripPlaceStatus').textContent='Verificant la destinació…';
+  try{
+    const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text:query,language:'ca'}});
+    if(error||data?.error)throw new Error('Ara mateix Freya no pot localitzar aquesta destinació. Torna-ho a provar.');
+    const candidates=(data?.candidates||[]).filter(candidate=>candidate?.place?.timezone_status==='verified'&&candidate.place.timezone);
+    if(!candidates.length)throw new Error('No he pogut identificar la destinació. Escriu ciutat i país.');
+    if(candidates.length>1){showManualTripPlaceChoices(query,candidates);$('tripPlaceStatus').textContent='Tria la destinació correcta.';return false}
+    addManualTripStop(query,candidates[0]);return true;
+  }catch(error){
+    clearManualTripCandidate();msg('tripMsg',error?.message||'No s’ha pogut verificar la destinació.',true);return false;
+  }finally{$('addTripDestination').disabled=false}
 }
-$('tripDestination').oninput=clearManualTripPlace;
+$('tripDestination').oninput=clearManualTripCandidate;
+$('addTripDestination').onclick=resolveAndAddManualTripStop;
+renderManualTripStops();
 $('tripStartDate').onchange=()=>{$('tripEndDate').min=$('tripStartDate').value;if(!$('tripEndDate').value||$('tripEndDate').value<$('tripStartDate').value)$('tripEndDate').value=$('tripStartDate').value};
 $('createTripForm').onsubmit=async e=>{
-  e.preventDefault();
-  msg('tripMsg','');
-
-  const destination=$('tripDestination').value.trim();
-  const requestedName=$('tripName').value.trim();
-  const startDate=$('tripStartDate').value;
-  const endDate=$('tripEndDate').value;
-
-  if(!destination||!startDate||!endDate){
-    msg('tripMsg','Completa la destinació principal i les dates.',true);
-    return;
+  e.preventDefault();msg('tripMsg','');
+  const requestedName=$('tripName').value.trim(),startDate=$('tripStartDate').value,endDate=$('tripEndDate').value;
+  if($('tripDestination').value.trim()){
+    const added=await resolveAndAddManualTripStop();
+    if(!added)return;
   }
-
-  if(endDate<startDate){
-    msg('tripMsg','La data de fi no pot ser anterior a la data d’inici.',true);
-    return;
-  }
-
-  $('createTrip').disabled=true;$('createTrip').textContent='Preparant el viatge…';
-
-  let createdId=null;
-
+  if(!manualTripStops.length||!startDate||!endDate){msg('tripMsg','Afegeix almenys una destinació i completa les dates.',true);return}
+  if(endDate<startDate){msg('tripMsg','La data de fi no pot ser anterior a la data d’inici.',true);return}
+  const defaultName=manualTripStops.map(stop=>stop.place.canonical_name||stop.label).join(' + ');
+  const name=(requestedName||defaultName).slice(0,100);
+  $('createTrip').disabled=true;$('createTrip').textContent='Creant el viatge…';
   try{
-    const place=await resolveManualTripPlace(destination);
-    if(!place){
-      msg('tripMsg','Tria la destinació correcta i torna a prémer “Crear viatge i afegir reserves”.');
+    const {data,error}=await db.rpc('create_trip_with_stops_v1',{p_name:name,p_start_date:startDate,p_end_date:endDate,p_stops:manualTripStops.map(manualTripStopPayload)});
+    if(error)throw error;
+    const createdId=data?.[0]?.id;
+    if(!createdId)throw new Error('El servidor no ha confirmat la creació del viatge.');
+    msg('tripMsg','✅ Viatge desat. Obrint-lo…');
+    const refreshed=await refreshTrips({preferredTripId:createdId,open:true});
+    if(!refreshed||!trips.some(value=>value.id===createdId)){
+      msg('tripMsg','El viatge s’ha desat correctament, però no s’ha pogut recarregar. No el tornis a crear: torna a Els meus viatges.',true);
       return;
     }
-    const timeZone=place.timezone;
-    const name=(requestedName||place.canonical_name||destination).slice(0,100);
-    if(!timeZone)throw new Error('Freya no ha pogut determinar la zona horària de la destinació.');
-
-    const {data,error}=await db.rpc('create_trip_v2',{
-      p_name:name,
-      p_start_date:startDate,
-      p_end_date:endDate,
-      p_time_zone:timeZone
-    });
-
-    if(error){
-      msg('tripMsg',error.message,true);
-      return;
-    }
-
-    createdId=data?.[0]?.id||null;
-
-    try{
-      await refreshTrips({preferredTripId:createdId,open:true});
-      $('createTripForm').reset();clearManualTripPlace();
-    }catch(loadError){
-      msg(
-        'tripMsg',
-        'El viatge s’ha creat correctament, però no hem pogut actualitzar la llista. No el tornis a crear: refresca els viatges o torna a entrar a Freya.',
-        true
-      );
-      console.error('Viatge creat però refreshTrips ha fallat:',createdId,loadError);
-    }
-  }catch(error){
-    msg('tripMsg',error?.message||'No s’ha pogut crear el viatge.',true);
-  }finally{
-    $('createTrip').disabled=false;$('createTrip').textContent='Crear viatge i afegir reserves';
-  }
+    $('createTripForm').reset();manualTripStops=[];clearManualTripCandidate();renderManualTripStops();
+  }catch(error){msg('tripMsg',error?.message||'No s’ha pogut crear el viatge. No s’ha desat cap viatge parcial.',true)}
+  finally{$('createTrip').disabled=false;$('createTrip').textContent='Crear viatge i afegir reserves'}
 };
 $('joinTrip').onclick=async()=>{
   msg('joinTripMsg','');

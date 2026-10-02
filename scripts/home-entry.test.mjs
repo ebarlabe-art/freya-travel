@@ -31,7 +31,7 @@ test('London and Eivissa are past using only real metadata, independent of their
 });
 test('five doors; forms are outside Home; active above doors and undated below',()=>{
  const entry=html.split('id="tripsHomeView"')[1].split('id="upcomingTripsView"')[0];assert.equal((entry.match(/data-home-view=/g)||[]).length,5);assert.doesNotMatch(entry,/<form|inviteInput|builderBriefList/);assert.ok(entry.indexOf('id="homeActive"')<entry.indexOf('class="home-doors"'));assert.match(entry,/Dates pendents/);
- const design=html.split('id="designTripView"')[1].split('id="manualTripView"')[0];assert.equal((design.match(/data-builder-mode=/g)||[]).length,3);assert.doesNotMatch(design,/builderBriefList/);assert.match(design,/Afegeix-lo manualment/);
+ const design=html.split('id="designTripView"')[1].split('id="manualTripView"')[0];assert.equal((design.match(/data-builder-mode=/g)||[]).length,3);assert.doesNotMatch(design,/builderBriefList/);assert.match(design,/Afegeix el meu viatge/);
  const construction=html.split('id="constructionView"')[1].split('id="designTripView"')[0];assert.match(construction,/Continua dissenyant.*builderBriefList/s);assert.doesNotMatch(construction,/data-builder-mode/);
  const join=html.split('id="joinTripView"')[1].split('id="constructionView"')[0];assert.match(join,/inviteInput/);
 });
