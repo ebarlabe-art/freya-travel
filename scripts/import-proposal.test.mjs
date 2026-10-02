@@ -74,8 +74,8 @@ test('el resum assenyala qualsevol proposta que necessita revisió',()=>{
   assert.equal(importProposalSummary(q).needs_attention,false);
 });
 
-test('els quatre tipus operatius inicials tenen una allowlist explícita',()=>{
-  assert.deepEqual(Object.keys(importTargetFields).sort(),['accommodation','activity','car_rental','flight']);
+test('els cinc tipus operatius tenen una allowlist explícita',()=>{
+  assert.deepEqual(Object.keys(importTargetFields).sort(),['accommodation','activity','car_rental','flight','local_transport']);
   for(const fields of Object.values(importTargetFields)){
     assert.ok(fields.length>0);
     assert.equal(fields.includes('trip_id'),false);
@@ -90,4 +90,14 @@ test('deduplica pendents i avisos sense convertir-los en dades operatives',()=>{
   const n=normalizeImportProposal(p);
   assert.deepEqual(n.missing_required,['Zona horària']);
   assert.deepEqual(n.warnings,['Data poc clara']);
+});
+
+test('transport local només admet camps del seu model operatiu',()=>{
+  const p=flight();
+  p.target_type='local_transport';
+  p.fields={title:field('Riga → Tallinn'),transport_mode:field('bus'),transport_service_number:field('LUX-1')};
+  const n=normalizeImportProposal(p);
+  assert.equal(n.fields.transport_mode.value,'bus');
+  const bad=structuredClone(p);bad.fields.vehicle_model=field('Forbidden');
+  assert.throws(()=>normalizeImportProposal(bad),e=>e.code==='forbidden_import_field');
 });
