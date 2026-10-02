@@ -2,7 +2,7 @@
 
 **Versió:** 1.0  
 **Data de tall:** 1 d'octubre de 2026  
-**Versió publicada de l'app en aquest tall:** 6.4.15  
+**Versió publicada de l'app en aquest tall:** 6.4.19  
 **Estat del document:** CANÒNIC
 
 > Aquest document substitueix els roadmaps anteriors com a guia operativa del projecte. Els documents i roadmaps previs es conserven com a historial de decisions. Qualsevol nova idea s'ha d'ubicar dins d'aquest roadmap o incorporar-se mitjançant una revisió numerada.
