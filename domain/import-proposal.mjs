@@ -7,7 +7,7 @@ const targetFields={
     'departure_terminal','arrival_terminal','seat','baggage','flight_status','notes'
   ]),
   accommodation:new Set([
-    'accommodation_type','name','address','location_text','latitude','longitude','check_in_at','check_out_at','time_zone',
+    'accommodation_type','name','address','location_text','city','postal_code','region','country','latitude','longitude','check_in_at','check_out_at','time_zone',
     'booking_reference','booking_provider','reservation_status','phone','email','website_url','room_number','notes'
   ]),
   activity:new Set([
