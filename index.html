@@ -443,27 +443,35 @@
       <button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>Dissenya un viatge</h1>
       <p id="builderStartMessage" role="status"></p>
       <button type="button" id="builderStartRetry" class="hidden">Verifica l’operació pendent</button>
-      <section class="new-trip-card"><h2>Comença un viatge nou</h2><div class="builder-doors">
-        <button type="button" data-builder-mode="inspire" onclick="startBuilder('inspire')"><strong>✨ Inspira’m</strong><span>No sé on anar. Ajuda’m a trobar el viatge.</span></button>
-        <button type="button" data-builder-mode="destination" onclick="startBuilder('destination')"><strong>📍 Ja sé on vull anar</strong><span>Tinc destinació. Ajuda’m a construir-lo.</span></button>
-        <button type="button" data-builder-mode="idea" onclick="startBuilder('idea')"><strong>🧭 Tinc una idea</strong><span>Sé més o menys què vull. Ajuda’m a donar-li forma.</span></button>
-      </div></section>
-      <section class="new-trip-card"><p>Ja tens el viatge muntat?</p><button type="button" data-home-view="manualTripView">Afegeix-lo manualment</button></section>
+      <section class="new-trip-card">
+        <h2>Vull que Freya m’ajudi</h2>
+        <p class="muted">Explica’m en quin punt ets i t’ajudaré a decidir i construir el viatge.</p>
+        <div class="builder-doors">
+          <button type="button" data-builder-mode="inspire" onclick="startBuilder('inspire')"><strong>✨ Inspira’m</strong><span>No tinc destinació. Ajuda’m a descobrir on anar i a construir el viatge.</span></button>
+          <button type="button" data-builder-mode="destination" onclick="startBuilder('destination')"><strong>📍 Ja sé on vull anar</strong><span>Tinc la destinació, però encara he de decidir vols, allotjament, ruta, activitats o altres peces.</span></button>
+          <button type="button" data-builder-mode="idea" onclick="startBuilder('idea')"><strong>🧭 Tinc una idea</strong><span>Tinc dates, preferències o algunes coses clares. Ajuda’m a concretar-ho.</span></button>
+        </div>
+      </section>
+      <section class="new-trip-card">
+        <h2>🧳 Ja tinc el viatge muntat</h2>
+        <p class="muted">Ja tens destinació, dates, reserves o planning? Crea el viatge i afegeix en una sola pàgina vols, allotjament, activitats, transport i cotxe de lloguer.</p>
+        <div class="builder-doors">
+          <button type="button" data-home-view="manualTripView"><strong>Afegeix el meu viatge</strong><span>Vull entrar a Freya el viatge que ja tinc preparat.</span></button>
+        </div>
+      </section>
     </div>
-    <div id="manualTripView" class="hidden trips-home"><button type="button" data-builder-back="designTripView">← Tornar</button><section class="new-trip-card"><h1>Afegeix el viatge manualment</h1>
+    <div id="manualTripView" class="hidden trips-home"><button type="button" data-builder-back="designTripView">← Tornar</button><section class="new-trip-card"><h1>Afegeix el teu viatge</h1>
+          <p class="muted">Indica la destinació principal i les dates. Freya s’encarrega automàticament de la zona horària.</p>
           <form id="createTripForm" class="trip-form">
             <div class="trip-form-grid">
-              <label class="wide">Nom o destinació<input id="tripName" maxlength="100" placeholder="Ex.: Roma" required></label>
-              <label class="wide">Zona horària de la destinació
-                <select id="tripTimeZone" required>
-                  <option value="">Selecciona una zona horària…</option>
-                </select>
-                <small class="muted">Ex.: Lapònia → Europe/Helsinki · Roma → Europe/Rome.</small>
-              </label>
+              <label class="wide">Destinació principal<input id="tripDestination" maxlength="120" placeholder="Ex.: Riga, Letònia" autocomplete="off" required></label>
+              <div id="tripDestinationChoices" class="builder-doors hidden wide" aria-live="polite"></div>
+              <p id="tripPlaceStatus" class="muted wide" role="status"></p>
+              <label class="wide">Nom del viatge <small class="muted">(opcional)</small><input id="tripName" maxlength="100" placeholder="Ex.: Nadal a Riga i Tallinn"></label>
               <label>Data d’inici<input id="tripStartDate" type="date" required></label>
               <label>Data de fi<input id="tripEndDate" type="date" required></label>
             </div>
-            <button id="createTrip" type="submit">Crear viatge</button>
+            <button id="createTrip" type="submit">Crear viatge i afegir reserves</button>
           </form>
       <p id="tripMsg" class="message hidden" role="status" aria-live="polite"></p>
     </section></div>
@@ -500,15 +508,15 @@
         <div id="tripHomeContent"></div>
         <p id="tripHomeMessage" class="message hidden" role="status"></p>
       </section>
-      <section id="genericConfirmedSection" class="generic-trip-section hidden" aria-label="El teu viatge">
-        <div class="generic-trip-section-head"><h2>El teu viatge</h2><p>Aquí apareix només el que ja tens reservat o confirmat.</p></div>
+      <section id="genericConfirmedSection" class="generic-trip-section" aria-label="Peces del viatge">
+        <div class="generic-trip-section-head"><h2>Peces del viatge</h2><p>Afegeix el que ja tens reservat i completa el que et falta. Totes les peces són sempre aquí.</p></div>
         <div class="generic-module-grid">
-          <button id="genericItineraryModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="itineraryView"><span class="generic-module-icon">📅</span><span class="generic-module-copy"><strong>Itinerari</strong><small id="genericItineraryModuleStatus">Planning consolidat</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericFlightsModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="genericFlightsView"><span class="generic-module-icon">✈️</span><span class="generic-module-copy"><strong>Vols</strong><small id="genericFlightsModuleStatus">Cap vol confirmat</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericAccommodationModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="accommodationView"><span class="generic-module-icon">🏨</span><span class="generic-module-copy"><strong>Allotjament</strong><small id="genericAccommodationModuleStatus">Cap allotjament confirmat</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericActivitiesModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="activitiesView" data-activity-mode="activity"><span class="generic-module-icon">🎟️</span><span class="generic-module-copy"><strong>Activitats</strong><small id="genericActivitiesModuleStatus">Cap activitat confirmada</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericLocalTransportModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="localTransportView"><span class="generic-module-icon">🚇</span><span class="generic-module-copy"><strong>Transport local</strong><small id="genericLocalTransportModuleStatus">Cap transport confirmat</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericCarRentalModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="carRentalView"><span class="generic-module-icon">🚙</span><span class="generic-module-copy"><strong>Cotxe de lloguer</strong><small id="genericCarRentalModuleStatus">Cap cotxe reservat</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericItineraryModuleCard" class="generic-module-card is-ready" type="button" data-open="itineraryView"><span class="generic-module-icon">📅</span><span class="generic-module-copy"><strong>Itinerari</strong><small id="genericItineraryModuleStatus">Crea o revisa l’itinerari</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericFlightsModuleCard" class="generic-module-card is-ready" type="button" data-open="genericFlightsView"><span class="generic-module-icon">✈️</span><span class="generic-module-copy"><strong>Vols</strong><small id="genericFlightsModuleStatus">Afegeix vols</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericAccommodationModuleCard" class="generic-module-card is-ready" type="button" data-open="accommodationView"><span class="generic-module-icon">🏨</span><span class="generic-module-copy"><strong>Allotjament</strong><small id="genericAccommodationModuleStatus">Afegeix allotjament</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericActivitiesModuleCard" class="generic-module-card is-ready" type="button" data-open="activitiesView" data-activity-mode="activity"><span class="generic-module-icon">🎟️</span><span class="generic-module-copy"><strong>Activitats</strong><small id="genericActivitiesModuleStatus">Afegeix activitats</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericLocalTransportModuleCard" class="generic-module-card is-ready" type="button" data-open="localTransportView"><span class="generic-module-icon">🚇</span><span class="generic-module-copy"><strong>Transport local</strong><small id="genericLocalTransportModuleStatus">Afegeix transport</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericCarRentalModuleCard" class="generic-module-card is-ready" type="button" data-open="carRentalView"><span class="generic-module-icon">🚙</span><span class="generic-module-copy"><strong>Cotxe de lloguer</strong><small id="genericCarRentalModuleStatus">Afegeix cotxe</small></span><span class="generic-module-arrow">›</span></button>
         </div>
       </section>
       <section class="generic-trip-section generic-trip-tools" aria-label="Eines del viatge">
@@ -524,7 +532,7 @@
           <button class="generic-module-card" type="button" data-generic-module="currency"><span class="generic-module-icon">💱</span><span class="generic-module-copy"><strong>Moneda</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
           <button class="generic-module-card is-ready" type="button" data-open="photosView"><span class="generic-module-icon">📸</span><span class="generic-module-copy"><strong>Fotos</strong><small id="genericPhotosModuleStatus">Àlbum compartit del viatge</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericTravelersToggle" class="generic-module-card is-ready" type="button"><span class="generic-module-icon">👥</span><span class="generic-module-copy"><strong>Viatgers</strong><small id="genericTravelersModuleStatus">Invitacions del viatge</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericTripSettingsToggle" class="generic-module-card is-ready hidden" type="button"><span class="generic-module-icon">⚙️</span><span class="generic-module-copy"><strong>Configuració</strong><small>Nom, dates i zona horària</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericTripSettingsToggle" class="generic-module-card is-ready hidden" type="button"><span class="generic-module-icon">⚙️</span><span class="generic-module-copy"><strong>Configuració</strong><small>Nom i dates</small></span><span class="generic-module-arrow">›</span></button>
         </div>
       </section>
       <div id="genericTripSettingsCard" class="card generic-invite-card hidden">
@@ -533,12 +541,7 @@
         <form id="genericTripSettingsForm" class="trip-form">
           <div class="trip-form-grid">
             <label class="wide">Nom del viatge<input id="genericTripName" maxlength="100" required></label>
-            <label class="wide">Zona horària de la destinació
-              <select id="genericTripTimeZone" required>
-                <option value="">Selecciona una zona horària…</option>
-              </select>
-              <small class="muted">Ex.: Lapònia → Europe/Helsinki · Roma → Europe/Rome.</small>
-            </label>
+            <p class="wide muted">Freya gestiona automàticament la zona horària de la destinació.</p>
             <label>Data d’inici<input id="genericTripStartDate" type="date" required></label>
             <label>Data de fi<input id="genericTripEndDate" type="date" required></label>
           </div>
@@ -1105,7 +1108,7 @@
 
     <div id="dashboardView">
       <button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button>
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.25 · Activitats i documents</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.26 · Activitats i documents</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <div id="pushCard" class="install-card"><div><strong>🔔 Notificacions</strong><small id="pushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="enablePush" type="button">Activa les notificacions</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
@@ -1705,7 +1708,7 @@
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
     <button id="globalSearchFab" class="search-fab" type="button" aria-label="Cerca a tota l'app">🔎</button>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.25</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.26</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3830,20 +3833,20 @@ function activitySummary(rows=activityRowsForMode('activity')){const count=rows.
 function localTransportSummary(rows=activityRowsForMode('local_transport')){const count=rows.length;return !count?'Cap transport local':count===1?'1 transport local':`${count} transports locals`}
 function syncGenericConfirmedModules(){
   if(!trip||isLondonTrip())return;
-  const flights=flightRows.filter(row=>['reserved','confirmed'].includes(row.flight_status));
-  const accommodations=accommodationRows.filter(row=>['reserved','confirmed'].includes(row.reservation_status));
-  const activities=activityRowsForMode('activity').filter(row=>['reserved','confirmed'].includes(row.reservation_status));
-  const localTransport=activityRowsForMode('local_transport').filter(row=>['reserved','confirmed'].includes(row.reservation_status));
-  const carRentals=carRentalRows.filter(row=>['reserved','confirmed'].includes(row.reservation_status));
+  const flights=flightRows;
+  const accommodations=accommodationRows;
+  const activities=activityRowsForMode('activity');
+  const localTransport=activityRowsForMode('local_transport');
+  const carRentals=carRentalRows;
   const itineraryAny=flights.length||accommodations.length||activities.length||localTransport.length;
-  const any=itineraryAny||carRentals.length;
-  [['genericFlightsModuleCard',!!flights.length],['genericAccommodationModuleCard',!!accommodations.length],['genericActivitiesModuleCard',!!activities.length],['genericLocalTransportModuleCard',!!localTransport.length],['genericCarRentalModuleCard',!!carRentals.length],['genericItineraryModuleCard',!!itineraryAny]].forEach(([id,show])=>$(id)?.classList.toggle('hidden',!show));
-  $('genericConfirmedSection')?.classList.toggle('hidden',!any);
-  if($('genericFlightsModuleStatus'))$('genericFlightsModuleStatus').textContent=flightSummary(flights.length);
-  if($('genericAccommodationModuleStatus'))$('genericAccommodationModuleStatus').textContent=accommodationSummary(accommodations.length);
-  if($('genericActivitiesModuleStatus'))$('genericActivitiesModuleStatus').textContent=activitySummary(activities);
-  if($('genericLocalTransportModuleStatus'))$('genericLocalTransportModuleStatus').textContent=localTransportSummary(localTransport);
-  if($('genericCarRentalModuleStatus'))$('genericCarRentalModuleStatus').textContent=carRentalSummary(carRentals);
+  ['genericFlightsModuleCard','genericAccommodationModuleCard','genericActivitiesModuleCard','genericLocalTransportModuleCard','genericCarRentalModuleCard','genericItineraryModuleCard'].forEach(id=>$(id)?.classList.remove('hidden'));
+  $('genericConfirmedSection')?.classList.remove('hidden');
+  if($('genericItineraryModuleStatus'))$('genericItineraryModuleStatus').textContent=itineraryAny?'Planning consolidat':'Crea o revisa l’itinerari';
+  if($('genericFlightsModuleStatus'))$('genericFlightsModuleStatus').textContent=flights.length?flightSummary(flights.length):'Afegeix vols';
+  if($('genericAccommodationModuleStatus'))$('genericAccommodationModuleStatus').textContent=accommodations.length?accommodationSummary(accommodations.length):'Afegeix allotjament';
+  if($('genericActivitiesModuleStatus'))$('genericActivitiesModuleStatus').textContent=activities.length?activitySummary(activities):'Afegeix activitats';
+  if($('genericLocalTransportModuleStatus'))$('genericLocalTransportModuleStatus').textContent=localTransport.length?localTransportSummary(localTransport):'Afegeix transport';
+  if($('genericCarRentalModuleStatus'))$('genericCarRentalModuleStatus').textContent=carRentals.length?carRentalSummary(carRentals):'Afegeix cotxe';
 }
 
 function localTransportRows(){return activityRows.filter(isLocalTransportActivity)}
@@ -4914,8 +4917,8 @@ function clearTripScopedState(){
   documentRows=[];pendingDocumentRows=[];expenseRows=[];photoRows=[];pendingPhotoRows=[];carRentalRows=[];carRentalDocumentLinks=[];carRentalSubmitting=false;carRentalLoadSequence+=1;accommodationRows=[];accommodationDocumentLinks=[];accommodationSubmitting=false;accommodationLoadSequence+=1;flightRows=[];flightDocumentLinks=[];flightSubmitting=false;flightLoadSequence+=1;activityRows=[];activityDocumentLinks=[];activitySubmitting=false;activityLoadSequence+=1;manualItineraryRows=[];manualItinerarySubmitting=false;manualItineraryLoadSequence+=1;parkingRow=null;parkingLoadsPending=0;clearPhotoObjectUrls();closePhotoLightbox();
   const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList',''],['accommodationList',''],['flightList',''],['activityList',''],['localTransportList',''],['carRentalList',''],['genericItineraryDayTabs',''],['genericItineraryDays',''],['genericItineraryUnscheduledList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
   [['overviewChecklist','0/0'],['overviewDocuments','0'],['overviewExpenses','0'],['documentCount','0'],['expenseCount','0'],['photoCount','0']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
-  [['genericItineraryModuleStatus','Planning consolidat'],['genericChecklistModuleStatus','Preparatius compartits'],['genericDocumentsModuleStatus','Documents del viatge'],['genericPhotosModuleStatus','Àlbum compartit del viatge'],['genericTravelersModuleStatus','Invitacions del viatge'],['genericAccommodationModuleStatus','Cap allotjament confirmat'],['genericFlightsModuleStatus','Cap vol confirmat'],['genericActivitiesModuleStatus','Cap activitat confirmada'],['genericLocalTransportModuleStatus','Cap transport confirmat'],['genericCarRentalModuleStatus','Cap cotxe reservat'],['genericParkingModuleStatus','A punt per utilitzar']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
-  ['genericItineraryModuleCard','genericFlightsModuleCard','genericAccommodationModuleCard','genericActivitiesModuleCard','genericLocalTransportModuleCard','genericCarRentalModuleCard','genericConfirmedSection'].forEach(id=>$(id)?.classList.add('hidden'));
+  [['genericItineraryModuleStatus','Crea o revisa l’itinerari'],['genericChecklistModuleStatus','Preparatius compartits'],['genericDocumentsModuleStatus','Documents del viatge'],['genericPhotosModuleStatus','Àlbum compartit del viatge'],['genericTravelersModuleStatus','Invitacions del viatge'],['genericAccommodationModuleStatus','Afegeix allotjament'],['genericFlightsModuleStatus','Afegeix vols'],['genericActivitiesModuleStatus','Afegeix activitats'],['genericLocalTransportModuleStatus','Afegeix transport'],['genericCarRentalModuleStatus','Afegeix cotxe'],['genericParkingModuleStatus','A punt per utilitzar']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
+  ['genericItineraryModuleCard','genericFlightsModuleCard','genericAccommodationModuleCard','genericActivitiesModuleCard','genericLocalTransportModuleCard','genericCarRentalModuleCard','genericConfirmedSection'].forEach(id=>$(id)?.classList.remove('hidden'));
   if($('genericPlaceholderTrip'))$('genericPlaceholderTrip').textContent='Viatge';
   if($('genericPlaceholderIcon'))$('genericPlaceholderIcon').textContent='✨';
   if($('genericPlaceholderTitle'))$('genericPlaceholderTitle').textContent='Mòdul del viatge';
@@ -5073,7 +5076,6 @@ function updateTripPresentation(){
         $('genericTripStartDate').value=trip.start_date||'';
         $('genericTripEndDate').value=trip.end_date||'';
         $('genericTripEndDate').min=trip.start_date||'';
-        $('genericTripTimeZone').value=trip.time_zone||'';
     }
   }
 }
@@ -6951,60 +6953,53 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   await db.auth.signOut();
   if(password)password.value='';
 });
-const FALLBACK_TRIP_TIME_ZONES=[
-  'Europe/Madrid','Atlantic/Canary','Europe/London','Europe/Paris',
-  'Europe/Rome','Europe/Helsinki','Europe/Athens','Europe/Berlin',
-  'America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
-  'Asia/Dubai','Asia/Colombo','Indian/Maldives','Asia/Bangkok',
-  'Asia/Singapore','Asia/Tokyo','Australia/Sydney'
-];
-
-function availableTripTimeZones(){
-  try{
-    if(typeof Intl.supportedValuesOf==='function'){
-      const zones=Intl.supportedValuesOf('timeZone');
-      if(zones?.length)return zones;
-    }
-  }catch(_){}
-  return FALLBACK_TRIP_TIME_ZONES;
+let manualTripPlace=null,manualTripPlaceQuery='';
+function manualTripPlaceLabel(place){return [place?.canonical_name,place?.administrative_area,place?.country_code].filter(Boolean).join(' · ')}
+function clearManualTripPlace(){
+  manualTripPlace=null;manualTripPlaceQuery='';
+  const choices=$('tripDestinationChoices'),status=$('tripPlaceStatus');
+  if(choices){choices.innerHTML='';choices.classList.add('hidden')}
+  if(status)status.textContent='';
 }
-
-function populateTripTimeZoneSelect(id){
-  const select=$(id);
-  if(!select)return;
-
-  const current=select.value;
-  const zones=[...availableTripTimeZones()];
-
-  if(current&&!zones.includes(current))zones.push(current);
-
-  zones.sort();
-
-  select.innerHTML=
-    '<option value="">Selecciona una zona horària…</option>'+
-    zones.map(zone=>`<option value="${esc(zone)}">${esc(zone)}</option>`).join('');
-
-  if(current)select.value=current;
+function chooseManualTripPlace(query,candidate){
+  manualTripPlace=candidate?.place||null;manualTripPlaceQuery=query;
+  const choices=$('tripDestinationChoices'),status=$('tripPlaceStatus');
+  if(choices){choices.innerHTML='';choices.classList.add('hidden')}
+  if(status&&manualTripPlace)status.textContent='Destinació reconeguda: '+manualTripPlaceLabel(manualTripPlace);
 }
-
-function populateTripTimeZoneOptions(){
-  populateTripTimeZoneSelect('tripTimeZone');
-  populateTripTimeZoneSelect('genericTripTimeZone');
+function showManualTripPlaceChoices(query,candidates){
+  const box=$('tripDestinationChoices');if(!box)return;
+  box.innerHTML='';
+  const intro=document.createElement('strong');intro.textContent='Quin lloc vols dir?';box.append(intro);
+  candidates.slice(0,5).forEach(candidate=>{
+    const button=document.createElement('button');button.type='button';
+    button.innerHTML='<strong>'+esc(manualTripPlaceLabel(candidate.place))+'</strong><span>Utilitza aquesta destinació</span>';
+    button.onclick=()=>chooseManualTripPlace(query,candidate);box.append(button);
+  });
+  box.classList.remove('hidden');
 }
-
-populateTripTimeZoneOptions();
+async function resolveManualTripPlace(query){
+  if(manualTripPlace&&manualTripPlaceQuery===query&&manualTripPlace.timezone_status==='verified'&&manualTripPlace.timezone)return manualTripPlace;
+  const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text:query,language:'ca'}});
+  if(error||data?.error)throw new Error('Ara mateix Freya no pot localitzar la destinació. Torna-ho a provar.');
+  const candidates=(data?.candidates||[]).filter(candidate=>candidate?.place?.timezone_status==='verified'&&candidate.place.timezone);
+  if(!candidates.length)throw new Error('No he pogut identificar la destinació. Escriu ciutat i país.');
+  if(candidates.length>1){showManualTripPlaceChoices(query,candidates);return null}
+  chooseManualTripPlace(query,candidates[0]);return candidates[0].place;
+}
+$('tripDestination').oninput=clearManualTripPlace;
 $('tripStartDate').onchange=()=>{$('tripEndDate').min=$('tripStartDate').value;if(!$('tripEndDate').value||$('tripEndDate').value<$('tripStartDate').value)$('tripEndDate').value=$('tripStartDate').value};
 $('createTripForm').onsubmit=async e=>{
   e.preventDefault();
   msg('tripMsg','');
 
-  const name=$('tripName').value.trim();
+  const destination=$('tripDestination').value.trim();
+  const requestedName=$('tripName').value.trim();
   const startDate=$('tripStartDate').value;
   const endDate=$('tripEndDate').value;
-  const timeZone=$('tripTimeZone').value.trim();
 
-  if(!name||!startDate||!endDate||!timeZone){
-    msg('tripMsg','Completa el nom, les dates i la zona horària.',true);
+  if(!destination||!startDate||!endDate){
+    msg('tripMsg','Completa la destinació principal i les dates.',true);
     return;
   }
 
@@ -7013,11 +7008,20 @@ $('createTripForm').onsubmit=async e=>{
     return;
   }
 
-  $('createTrip').disabled=true;
+  $('createTrip').disabled=true;$('createTrip').textContent='Preparant el viatge…';
 
   let createdId=null;
 
   try{
+    const place=await resolveManualTripPlace(destination);
+    if(!place){
+      msg('tripMsg','Tria la destinació correcta i torna a prémer “Crear viatge i afegir reserves”.');
+      return;
+    }
+    const timeZone=place.timezone;
+    const name=(requestedName||place.canonical_name||destination).slice(0,100);
+    if(!timeZone)throw new Error('Freya no ha pogut determinar la zona horària de la destinació.');
+
     const {data,error}=await db.rpc('create_trip_v2',{
       p_name:name,
       p_start_date:startDate,
@@ -7034,8 +7038,7 @@ $('createTripForm').onsubmit=async e=>{
 
     try{
       await refreshTrips({preferredTripId:createdId,open:true});
-      $('createTripForm').reset();
-      $('tripTimeZone').value='';
+      $('createTripForm').reset();clearManualTripPlace();
     }catch(loadError){
       msg(
         'tripMsg',
@@ -7047,10 +7050,9 @@ $('createTripForm').onsubmit=async e=>{
   }catch(error){
     msg('tripMsg',error?.message||'No s’ha pogut crear el viatge.',true);
   }finally{
-    $('createTrip').disabled=false;
+    $('createTrip').disabled=false;$('createTrip').textContent='Crear viatge i afegir reserves';
   }
 };
-
 $('joinTrip').onclick=async()=>{
   msg('joinTripMsg','');
 
@@ -7116,10 +7118,14 @@ $('genericTripSettingsForm').onsubmit=async e=>{
   const name=$('genericTripName').value.trim();
   const startDate=$('genericTripStartDate').value;
   const endDate=$('genericTripEndDate').value;
-  const timeZone=$('genericTripTimeZone').value.trim();
+  const timeZone=trip.time_zone;
 
-  if(!name||!startDate||!endDate||!timeZone){
-    msg('genericTripSettingsMsg','Completa el nom, les dates i la zona horària.',true);
+  if(!name||!startDate||!endDate){
+    msg('genericTripSettingsMsg','Completa el nom i les dates.',true);
+    return;
+  }
+  if(!timeZone){
+    msg('genericTripSettingsMsg','Falta una dada interna de la destinació. Torna a obrir el viatge i prova-ho de nou.',true);
     return;
   }
 

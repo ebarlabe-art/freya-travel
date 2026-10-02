@@ -21,12 +21,14 @@ test('all booking-like travel pieces expose the same prominent four-state lifecy
   assert.match(html,/Encara està en planificació i no es mostrarà com una peça activa del viatge/);
 });
 
-test('reserved and confirmed pieces are both active in the trip home',()=>{
-  assert.match(html,/flightRows\.filter\(row=>\['reserved','confirmed'\]\.includes\(row\.flight_status\)\)/);
-  assert.match(html,/accommodationRows\.filter\(row=>\['reserved','confirmed'\]\.includes\(row\.reservation_status\)\)/);
-  assert.match(html,/activityRowsForMode\('activity'\)\.filter\(row=>\['reserved','confirmed'\]\.includes\(row\.reservation_status\)\)/);
-  assert.match(html,/activityRowsForMode\('local_transport'\)\.filter\(row=>\['reserved','confirmed'\]\.includes\(row\.reservation_status\)\)/);
-  assert.match(html,/carRentalRows\.filter\(row=>\['reserved','confirmed'\]\.includes\(row\.reservation_status\)\)/);
+test('all operational piece entry points stay visible even before a reservation exists',()=>{
+  assert.match(html,/id="genericConfirmedSection" class="generic-trip-section"/);
+  for(const id of ['genericFlightsModuleCard','genericAccommodationModuleCard','genericActivitiesModuleCard','genericLocalTransportModuleCard','genericCarRentalModuleCard']){
+    const at=html.indexOf('id="'+id+'"');
+    assert.ok(at>=0,'missing '+id);
+    assert.doesNotMatch(html.slice(at,at+180),/\bhidden\b/);
+  }
+  assert.match(html,/Afegeix vols/);assert.match(html,/Afegeix allotjament/);assert.match(html,/Afegeix activitats/);assert.match(html,/Afegeix transport/);assert.match(html,/Afegeix cotxe/);
 });
 
 test('database constraints allow reserved for flights and accommodations',()=>{
