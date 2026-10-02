@@ -116,8 +116,9 @@ test('separate views, complete manual form, old Search entry removed, backend in
  assert.match(html,/id="designTripView"/);assert.match(html,/id="manualTripView"/);assert.match(html,/id="builderView"/);
  const home=html.split('id="tripsHomeView"')[1].split('id="designTripView"')[0];assert.doesNotMatch(home,/createTripForm|tripSearchForm/);
  const manual=html.split('id="manualTripView"')[1].split('id="builderView"')[0];
- assert.match(manual,/id="createTripForm"[\s\S]*id="tripDestination"[\s\S]*id="createTrip"[\s\S]*<\/form>/);
+ assert.match(manual,/id="createTripForm"[\s\S]*id="tripDestination"[\s\S]*id="addTripDestination"[\s\S]*id="tripStopsList"[\s\S]*id="createTrip"[\s\S]*<\/form>/);
  assert.doesNotMatch(manual,/tripTimeZone|Selecciona una zona horària/);
+ assert.match(html,/create_trip_with_stops_v1/);assert.match(html,/data-delete-brief/);
  assert.match(html,/Ja tinc el viatge muntat/);assert.match(html,/Afegeix el meu viatge/);
  assert.doesNotMatch(html,/Buscar amb Freya|createTripSearchMethod|tripSearchForm/);
  assert.match(html,/db.rpc\('create_trip_v2'/);assert.ok(readFileSync(new URL('../supabase/functions/travel-search/index.ts',import.meta.url),'utf8'));
@@ -134,17 +135,22 @@ test('Home popstate never hijacks NAV-01 return or operational trip views',()=>{
   h.s.view=view;h.listeners.popstate({state:{builderNav:{owner:'u',view:'tripsHomeView'}}});assert.equal(h.s.view,view);
  }
 });
-test('manual create resolves destination timezone automatically, uses operational RPC and opens the new trip',async()=>{
- const handler=html.slice(html.indexOf("let manualTripPlace="),html.indexOf("$('joinTrip').onclick="));
+test('manual create supports multiple verified stops and only opens after atomic server confirmation',async()=>{
+ const handler=html.slice(html.indexOf("let manualTripStops="),html.indexOf("$('joinTrip').onclick="));
  const h=harness();let rpc,refresh;
- Object.assign(h.s,{msg(){},console,refreshTrips:async options=>refresh=options,document:{...h.s.document,createElement:()=>({type:'',textContent:'',innerHTML:'',onclick:null})}});
- h.$('tripDestination').value='Roma, Itàlia';h.$('tripName').value='';h.$('tripStartDate').value='2027-04-01';h.$('tripEndDate').value='2027-04-04';h.$('createTripForm').reset=()=>{};
- h.s.db={
-  functions:{invoke:async()=>({data:{candidates:[{place:{canonical_name:'Roma',administrative_area:'Lazio',country_code:'IT',timezone_status:'verified',timezone:'Europe/Rome'}}]}})},
-  rpc:async(name,payload)=>{rpc={name,payload};return {data:[{id:'new-trip'}]}}
- };
- vm.runInContext(handler,h.s);await h.$('createTripForm').onsubmit({preventDefault(){}});
- assert.equal(rpc.name,'create_trip_v2');assert.equal(rpc.payload.p_name,'Roma');assert.equal(rpc.payload.p_time_zone,'Europe/Rome');
+ Object.assign(h.s,{msg(){},console,trips:[],refreshTrips:async options=>{refresh=options;h.s.trips=[{id:'new-trip'}];return true},document:{...h.s.document,createElement:()=>({type:'',textContent:'',innerHTML:'',onclick:null})}});
+ h.$('tripName').value='';h.$('tripStartDate').value='2027-04-01';h.$('tripEndDate').value='2027-04-04';h.$('createTripForm').reset=()=>{};
+ const places=[
+  {canonical_name:'Roma',administrative_area:'Lazio',country_code:'IT',timezone_status:'verified',timezone:'Europe/Rome',provider:'geoapify',provider_place_id:'rome',latitude:41.9,longitude:12.5},
+  {canonical_name:'Florència',administrative_area:'Toscana',country_code:'IT',timezone_status:'verified',timezone:'Europe/Rome',provider:'geoapify',provider_place_id:'florence',latitude:43.77,longitude:11.25}
+ ];
+ let search=0;h.s.db={functions:{invoke:async()=>({data:{candidates:[{place:places[search++]}]}})},rpc:async(name,payload)=>{rpc={name,payload};return {data:[{id:'new-trip'}]}}};
+ vm.runInContext(handler,h.s);
+ h.$('tripDestination').value='Roma, Itàlia';await h.s.resolveAndAddManualTripStop();
+ h.$('tripDestination').value='Florència, Itàlia';await h.s.resolveAndAddManualTripStop();
+ await h.$('createTripForm').onsubmit({preventDefault(){}});
+ assert.equal(rpc.name,'create_trip_with_stops_v1');assert.equal(rpc.payload.p_stops.length,2);
+ assert.equal(rpc.payload.p_stops[0].time_zone,'Europe/Rome');assert.equal(rpc.payload.p_stops[1].provider_place_id,'florence');
  assert.equal(refresh.preferredTripId,'new-trip');assert.equal(refresh.open,true);assert.equal(h.$('createTrip').disabled,false);
 });
 test('PWA caches both TB01 and TB02 modules, legacy entries and reminder handlers remain',()=>{
