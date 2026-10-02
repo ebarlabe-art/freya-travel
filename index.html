@@ -2789,6 +2789,10 @@ function renderBuilderControls(){
   $('builderReview').classList.toggle('hidden',!builderConflict);
   document.querySelectorAll('[data-builder-mode]').forEach(button=>button.disabled=builderBusy||pending);
   $('builderStartRetry').classList.toggle('hidden',!pending);$('builderStartRetry').disabled=builderBusy;
+  if(visibleAppView()==='designTripView'){
+    if(pending&&!builderBusy)$('builderStartMessage').textContent='Hi ha una operació anterior pendent de verificar. Prem “Verifica l’operació pendent” i després podràs començar un viatge nou.';
+    else if(!pending&&!builderBusy&&$('builderStartMessage').textContent.includes('operació anterior pendent'))$('builderStartMessage').textContent='';
+  }
   $('builderPendingRetry').classList.toggle('hidden',!pending);$('builderPendingRetry').disabled=builderBusy;
   $('builderRetry').classList.toggle('hidden',!pending);$('builderRetry').disabled=builderBusy;
   $('builderNotes').disabled=builderBusy||pending||!builderRow||builderConflict;
