@@ -7,13 +7,20 @@ const targetFields={
     'departure_terminal','arrival_terminal','seat','baggage','flight_status','notes'
   ]),
   accommodation:new Set([
-    'accommodation_type','name','address','location_text','latitude','longitude','check_in_at','check_out_at','time_zone',
+    'accommodation_type','name','address','location_text','city','postal_code','region','country','latitude','longitude','check_in_at','check_out_at','time_zone',
     'booking_reference','booking_provider','reservation_status','phone','email','website_url','room_number','notes'
   ]),
   activity:new Set([
     'title','activity_type','start_at','end_at','time_zone','venue_name','address','city','latitude','longitude',
     'reservation_status','booking_reference','provider','contact_phone','contact_email','website_url','people_count',
     'amount','currency','notes'
+  ]),
+  local_transport:new Set([
+    'title','transport_mode','start_at','time_zone','end_at','transport_arrival_time_zone',
+    'transport_origin_name','transport_origin_address','transport_origin_city',
+    'transport_destination_name','transport_destination_address','transport_destination_city',
+    'reservation_status','booking_reference','provider','transport_service_number','transport_seat','transport_platform',
+    'contact_phone','contact_email','website_url','people_count','notes'
   ]),
   car_rental:new Set([
     'provider','booking_reference','pickup_location','pickup_city','pickup_at','pickup_time_zone','return_location','return_city',

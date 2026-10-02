@@ -19,6 +19,7 @@ Flux futur:
 - vol (`flight`)
 - allotjament (`accommodation`)
 - activitat (`activity`)
+- transport local / entre destinacions (`local_transport`)
 - cotxe de lloguer (`car_rental`)
 
 Els camps admesos coincideixen amb els camps operatius que ja existeixen a les
@@ -66,7 +67,7 @@ A2.1.
 
 ### Capacitats inicials
 
-- classifica `flight | accommodation | activity | car_rental`;
+- classifica `flight | accommodation | activity | local_transport | car_rental`;
 - extreu només dades textualment explícites (per exemple número de vol,
   localitzador, nom d’hotel, proveïdor o lloc de recollida);
 - conserva evidència textual per cada camp;
@@ -86,3 +87,19 @@ Fitxers:
 
 A2.2 continua sent read-only: produeix una proposta A2.1 i no té accés a
 Supabase ni a cap operació d’escriptura.
+
+
+## A2.3 · Importació des de la peça
+
+Objectiu del tall:
+
+`PDF/captura → document privat del viatge → Edge Function read-only → proposta A2.1 → revisió humana → omplir formulari → desament manual`
+
+Regles:
+
+- el fitxer es puja directament des de Vols, Allotjament, Activitats, Transport o Cotxe;
+- el fitxer continua sent un `travel_documents` privat i no passa per GitHub;
+- la lectura automàtica no escriu cap peça operativa;
+- la proposta es valida contra l’allowlist A2.1;
+- la persona usuària veu els camps detectats i decideix si els aplica al formulari;
+- només el botó normal de desament del formulari escriu finalment la reserva.
