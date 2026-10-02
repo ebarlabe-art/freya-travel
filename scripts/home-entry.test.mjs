@@ -50,6 +50,10 @@ test('category → trip → Back and forward, plus detail refresh',async()=>{
 test('manual/join parents preserved; photo and operational navigation not hijacked',async()=>{
  for(const parent of ['manualTripView','joinTripView']){const h=harness();h.s.view=parent;h.s.recordHomeTripEntry('t');assert.equal(h.s.history.state.homeTripDetail.parent,parent);for(const view of ['photosView','documentsView','itineraryView']){h.s.view=view;h.pop({builderNav:{owner:'u',view:parent}});assert.equal(h.s.view,view)}}
 });
+test('operational Builder trips in construction expose safe discard only for owned handoffs',()=>{
+ const {s,$}=harness();s.trips=[trip({id:'b',start_date:null,end_date:null,tb_handoff:true,is_owner:true})];s.renderTripsHome();assert.match($('constructionTripsList').innerHTML,/data-discard-trip="b"/);
+ s.trips=[trip({id:'s',start_date:null,end_date:null,tb_handoff:true,is_owner:false})];s.renderTripsHome();assert.doesNotMatch($('constructionTripsList').innerHTML,/data-discard-trip=/);
+});
 test('clock repaints at next minute boundary and resumes on visibility without backend requests',()=>{
  const h=harness();h.s.updateHomeClock();assert.ok(h.s.timer.ms>0&&h.s.timer.ms<=60020);h.s.document.visibilityState='hidden';h.s.timer=null;h.s.updateHomeClock();assert.equal(h.s.timer,null);h.s.document.visibilityState='visible';h.docListeners.visibilitychange();assert.ok(h.s.timer);const clock=home.slice(home.indexOf('function updateHomeClock'));assert.doesNotMatch(clock,/db\.|loadBuilderList|selectTrip/);
 });
