@@ -390,6 +390,8 @@
 .proposal-loading{display:flex;align-items:center;gap:8px;min-height:48px}.proposal-dots{display:inline-flex;gap:5px}.proposal-dots i{width:7px;height:7px;border-radius:50%;background:currentColor;animation:proposal-pulse 1.2s infinite}.proposal-dots i:nth-child(2){animation-delay:.2s}.proposal-dots i:nth-child(3){animation-delay:.4s}.proposal-chips{display:flex;flex-wrap:wrap;gap:8px}.proposal-chips label{padding:10px;border:1px solid #b8a8c8;border-radius:16px;min-height:44px}#proposalContent textarea{width:100%;box-sizing:border-box}#proposalContent [data-history-generation]{display:block;margin:10px 0;width:100%;text-align:left}
 @keyframes proposal-pulse{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
 @media(prefers-reduced-motion:reduce){.proposal-dots i{animation:none;opacity:1}}
+
+.import-reservation-overlay{position:fixed;inset:0;z-index:1200;background:rgba(27,17,39,.62);display:flex;align-items:flex-end;justify-content:center;padding:16px}.import-reservation-overlay.hidden{display:none}.import-reservation-panel{width:min(680px,100%);max-height:88dvh;overflow:auto;background:#fff;border-radius:24px 24px 16px 16px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.import-reservation-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.import-reservation-head h2{margin:.2rem 0}.import-reservation-head button{min-width:44px}.import-reservation-fields{display:grid;gap:10px;margin:16px 0}.import-reservation-field{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px;border:1px solid #ded4e7;border-radius:14px;background:#faf8fc}.import-reservation-field input{width:20px;height:20px;margin-top:3px}.import-reservation-field strong,.import-reservation-field span,.import-reservation-field small{display:block;overflow-wrap:anywhere}.import-reservation-field small{margin-top:5px;color:#6b6074}.import-confidence-low{border-color:#d49a75;background:#fff8f1}.import-confidence-medium{border-color:#d9c77f}.import-reservation-warnings{padding:12px;border-radius:12px;background:#fff6df;margin:12px 0}.import-reservation-actions{display:flex;gap:10px;flex-wrap:wrap}.import-reservation-actions button{flex:1 1 180px;min-height:48px}@media(min-width:700px){.import-reservation-overlay{align-items:center}.import-reservation-panel{border-radius:24px}}
 </style>
 </head>
 <body>
@@ -626,7 +628,7 @@
       <button class="ghost back" data-source-back>← Torna al tauler</button>
       <section class="accommodation-hero">
         <div><small>🚙 Cotxe de lloguer</small><h2>El cotxe del viatge</h2><p>Reserva, contracte, assegurança i proves d’entrega i devolució, vinculades al mateix lloguer.</p></div>
-        <div class="build-flight-result-actions"><button id="carRentalSearchInfo" type="button">🔎 Buscar cotxe</button><button id="addCarRental" type="button" class="secondary">Afegir lloguer</button></div>
+        <div class="build-flight-result-actions"><button id="carRentalSearchInfo" type="button">🔎 Buscar cotxe</button><button type="button" class="secondary" data-import-reservation="car_rental">📎 Importa reserva</button><button id="addCarRental" type="button" class="secondary">Afegir lloguer</button></div>
       </section>
       <p id="carRentalSearchMessage" class="message hidden" role="status" aria-live="polite"></p>
       <p id="carRentalMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
@@ -710,6 +712,7 @@
         <div><small>🏨 Allotjament</small><h2>On dormiràs?</h2><p>Busca, compara i organitza els allotjaments del viatge, amb les dades útils sempre a mà.</p></div>
         <div class="build-flight-result-actions">
           <button id="buildOpenAccommodationSearch" type="button">🔎 Buscar allotjament</button>
+          <button type="button" class="secondary" data-import-reservation="accommodation">📎 Importa reserva</button>
           <button id="addAccommodation" type="button" class="secondary">Afegir allotjament</button>
         </div>
       </section>
@@ -796,6 +799,7 @@
         </div>
         <div class="build-flight-result-actions">
           <button id="buildOpenFlightSearch" type="button">🔎 Buscar vols</button>
+          <button type="button" class="secondary" data-import-reservation="flight">📎 Importa reserva</button>
           <button id="addFlight" type="button" class="secondary">Afegir vol</button>
         </div>
       </section>
@@ -976,7 +980,7 @@
       <button class="ghost back" data-source-back>← Torna al tauler</button>
       <section class="accommodation-hero">
         <div><small>🚇 Transport intern / local</small><h2>Com et mouràs?</h2><p>Organitza trens, busos, ferris, trasllats, taxi/VTC i transport públic sense barrejar-los amb les activitats.</p></div>
-        <button id="addLocalTransport" type="button">Afegir transport</button>
+        <div class="build-flight-result-actions"><button type="button" class="secondary" data-import-reservation="local_transport">📎 Importa reserva</button><button id="addLocalTransport" type="button">Afegir transport</button></div>
       </section>
       <p id="localTransportMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
       <div id="localTransportBrowse" class="local-transport-collection">
@@ -1048,7 +1052,7 @@
       <button class="ghost back" data-source-back>← Torna al tauler</button>
       <section class="accommodation-hero">
         <div><small id="activityViewEyebrow">🎟️ Activitats</small><h2 id="activityViewTitle">Què vols fer?</h2><p id="activityViewCopy">Organitza visites, experiències i reserves del viatge, amb els documents importants sempre a mà.</p></div>
-        <button id="addActivity" type="button">Afegir activitat</button>
+        <div class="build-flight-result-actions"><button type="button" class="secondary" data-import-reservation="activity">📎 Importa reserva</button><button id="addActivity" type="button">Afegir activitat</button></div>
       </section>
       <p id="activityMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
       <div id="activityBrowse">
@@ -1110,7 +1114,7 @@
 
     <div id="dashboardView">
       <button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button>
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.28 · Activitats i documents</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.29 · Activitats i documents</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <div id="pushCard" class="install-card"><div><strong>🔔 Notificacions</strong><small id="pushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="enablePush" type="button">Activa les notificacions</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
@@ -1422,6 +1426,20 @@
       </div>
     </div>
 
+    <input id="reservationImportFile" type="file" class="hidden" accept="application/pdf,image/png,image/jpeg,image/webp">
+    <div id="reservationImportOverlay" class="import-reservation-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="reservationImportTitle">
+      <section class="import-reservation-panel">
+        <div class="import-reservation-head"><div><small>✨ Freya llegeix la reserva</small><h2 id="reservationImportTitle">Importa reserva</h2></div><button id="reservationImportClose" type="button" class="ghost" aria-label="Tanca">✕</button></div>
+        <p id="reservationImportStatus" class="message" role="status" aria-live="polite"></p>
+        <div id="reservationImportWarnings" class="import-reservation-warnings hidden"></div>
+        <div id="reservationImportFields" class="import-reservation-fields"></div>
+        <div class="import-reservation-actions">
+          <button id="reservationImportApply" type="button" class="hidden">Omple el formulari</button>
+          <button id="reservationImportCancel" type="button" class="secondary">Tanca</button>
+        </div>
+      </section>
+    </div>
+
     <div id="documentsView" class="hidden">
       <button id="documentsBack" class="ghost back" data-back>← Torna al tauler</button>
       <div class="card">
@@ -1710,7 +1728,7 @@
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
     <button id="globalSearchFab" class="search-fab" type="button" aria-label="Cerca a tota l'app">🔎</button>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.28</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.29</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -6740,6 +6758,154 @@ let documentChannel=null;
 let documentRows=[];
 let pendingDocumentRows=[];
 const DOC_BUCKET='trip-documents';
+let reservationImportState={target:null,document:null,proposal:null};
+let importProposalApiPromise=null;
+const reservationImportTypeLabels={flight:'Vol',accommodation:'Allotjament',activity:'Activitat',local_transport:'Transport',car_rental:'Cotxe de lloguer'};
+const reservationImportCategories={flight:'Vol',accommodation:'Hotel',activity:'Entrada',local_transport:'Altres',car_rental:'Cotxe'};
+const reservationImportLabels={
+ airline:'Companyia',flight_number:'Número de vol',departure_airport_code:'Aeroport sortida',departure_airport_name:'Nom aeroport sortida',departure_city:'Ciutat sortida',departure_at:'Sortida',arrival_airport_code:'Aeroport arribada',arrival_airport_name:'Nom aeroport arribada',arrival_city:'Ciutat arribada',arrival_at:'Arribada',booking_reference:'Localitzador',departure_terminal:'Terminal sortida',arrival_terminal:'Terminal arribada',seat:'Seient',baggage:'Equipatge',
+ accommodation_type:'Tipus',name:'Nom',address:'Adreça',location_text:'Ubicació',city:'Ciutat',postal_code:'Codi postal',region:'Regió',country:'País',check_in_at:'Check-in',check_out_at:'Check-out',booking_provider:'Proveïdor',phone:'Telèfon',email:'Correu',website_url:'Web',room_number:'Habitació',
+ title:'Nom / trajecte',activity_type:'Tipus d’activitat',start_at:'Inici',end_at:'Final',venue_name:'Lloc',provider:'Proveïdor',contact_phone:'Telèfon',contact_email:'Correu',people_count:'Persones',amount:'Import',currency:'Moneda',
+ transport_mode:'Tipus de transport',transport_origin_name:'Origen',transport_origin_address:'Adreça origen',transport_origin_city:'Ciutat origen',transport_destination_name:'Destinació',transport_destination_address:'Adreça destinació',transport_destination_city:'Ciutat destinació',transport_service_number:'Número de servei',transport_seat:'Seient',transport_platform:'Andana / moll / parada',
+ pickup_location:'Recollida',pickup_city:'Ciutat recollida',pickup_at:'Hora recollida',return_location:'Devolució',return_city:'Ciutat devolució',return_at:'Hora devolució',vehicle_class:'Categoria',vehicle_model:'Model',license_plate:'Matrícula',transmission:'Canvi',fuel_policy:'Combustible',insurance:'Assegurança',excess_amount:'Franquícia',excess_currency:'Moneda franquícia',deposit_amount:'Dipòsit',deposit_currency:'Moneda dipòsit'
+};
+function loadImportProposalApi(){
+  const url='/freya-travel/domain/import-proposal.js';
+  return importProposalApiPromise??=import(/* @vite-ignore */ url).catch(error=>{importProposalApiPromise=null;throw error});
+}
+function importValue(fields,name){return fields?.[name]?.value==null?'':String(fields[name].value)}
+function importDateTime(value){const m=String(value||'').match(/^(20\d{2}-\d{2}-\d{2})T(\d{2}:\d{2})/);return m?m[1]+'T'+m[2]:''}
+function closeReservationImport(){reservationImportState={target:null,document:null,proposal:null};$('reservationImportOverlay').classList.add('hidden');$('reservationImportFields').innerHTML='';$('reservationImportWarnings').innerHTML='';$('reservationImportWarnings').classList.add('hidden');$('reservationImportApply').classList.add('hidden');$('reservationImportFile').value=''}
+function showReservationImport(target,status){
+  $('reservationImportTitle').textContent='Importa '+(reservationImportTypeLabels[target]||'reserva').toLowerCase();
+  $('reservationImportStatus').textContent=status||'';
+  $('reservationImportFields').innerHTML='';
+  $('reservationImportWarnings').innerHTML='';$('reservationImportWarnings').classList.add('hidden');
+  $('reservationImportApply').classList.add('hidden');
+  $('reservationImportOverlay').classList.remove('hidden');
+}
+function renderReservationImportProposal(proposal){
+  const entries=Object.entries(proposal.fields||{});
+  $('reservationImportStatus').textContent='He trobat '+entries.length+' '+(entries.length===1?'camp':'camps')+'. Revisa’ls abans d’omplir el formulari.';
+  $('reservationImportFields').innerHTML=entries.map(([name,field])=>{
+    const checked=field.confidence!=='low'?'checked':'';
+    const excerpt=field.evidence?.[0]?.excerpt||'';
+    const page=field.evidence?.[0]?.page?' · pàg. '+field.evidence[0].page:'';
+    const conf={high:'alta',medium:'mitjana',low:'baixa'}[field.confidence]||field.confidence;
+    return `<label class="import-reservation-field import-confidence-${esc(field.confidence)}"><input type="checkbox" data-import-field="${esc(name)}" ${checked}><span><strong>${esc(reservationImportLabels[name]||name)}</strong><span>${esc(String(field.value))}</span><small>Confiança ${esc(conf)}${page}${excerpt?' · “'+esc(excerpt)+'”':''}</small></span></label>`;
+  }).join('');
+  const notices=[...(proposal.missing_required||[]).map(v=>'Falta: '+v),...(proposal.warnings||[])];
+  if(notices.length){$('reservationImportWarnings').innerHTML='<strong>Revisa també:</strong><br>'+notices.map(v=>esc(v)).join('<br>');$('reservationImportWarnings').classList.remove('hidden')}
+  $('reservationImportApply').classList.remove('hidden');
+}
+function selectedReservationImportFields(){
+  const p=reservationImportState.proposal;if(!p)return {};
+  const selected=new Set([...$('reservationImportFields').querySelectorAll('[data-import-field]:checked')].map(input=>input.dataset.importField));
+  return Object.fromEntries(Object.entries(p.fields).filter(([name])=>selected.has(name)));
+}
+function importNormalizePlace(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
+async function resolveImportedTimeZone(place){
+  const text=String(place||'').trim();if(!text)return null;
+  const key=importNormalizePlace(text);
+  const local=(tripStopRows||[]).filter(stop=>{const name=importNormalizePlace(stop.canonical_name||stop.label);return name===key||name.includes(key)||key.includes(name)});
+  if(local.length===1&&local[0].time_zone)return local[0].time_zone;
+  try{
+    const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text,language:'ca'}});
+    if(error||data?.error)return null;
+    const candidates=(data?.candidates||[]).filter(candidate=>candidate?.place?.timezone_status==='verified'&&candidate.place.timezone);
+    if(candidates.length===1)return candidates[0].place.timezone;
+    const exact=candidates.filter(candidate=>importNormalizePlace(candidate.place.canonical_name)===key);
+    return exact.length===1?exact[0].place.timezone:null;
+  }catch{return null}
+}
+async function applyReservationImport(){
+  const {target,document,proposal}=reservationImportState;if(!target||!document||!proposal||!trip)return;
+  const fields=selectedReservationImportFields(),v=name=>importValue(fields,name);
+  let dateOnlySkipped=false;
+  const dateValue=name=>{const raw=v(name),out=importDateTime(raw);if(raw&&!out)dateOnlySkipped=true;return out};
+  $('reservationImportApply').disabled=true;$('reservationImportStatus').textContent='Omplint el formulari…';
+  try{
+    renderDocuments(documentRows);
+    if(target==='flight'){
+      await openFlightForm();
+      const map={airline:'flightAirline',flight_number:'flightNumber',departure_airport_code:'flightDepartureCode',departure_airport_name:'flightDepartureAirport',departure_city:'flightDepartureCity',arrival_airport_code:'flightArrivalCode',arrival_airport_name:'flightArrivalAirport',arrival_city:'flightArrivalCity',booking_reference:'flightReference',departure_terminal:'flightDepartureTerminal',arrival_terminal:'flightArrivalTerminal',seat:'flightSeat',baggage:'flightBaggage'};
+      for(const [name,id] of Object.entries(map))if(fields[name])$(id).value=v(name);
+      if(fields.departure_at){const value=dateValue('departure_at');if(value)$('flightDepartureAt').value=value}
+      if(fields.arrival_at){const value=dateValue('arrival_at');if(value)$('flightArrivalAt').value=value}
+      const departureZone=await resolveImportedTimeZone(v('departure_city')||v('departure_airport_name'));if(departureZone)$('flightDepartureTimeZone').value=departureZone;
+      const arrivalZone=await resolveImportedTimeZone(v('arrival_city')||v('arrival_airport_name'));if(arrivalZone)$('flightArrivalTimeZone').value=arrivalZone;
+      renderFlightDocumentOptions(document.id,[],[]);$('flightBookingDocument').value=document.id;$('flightStatus').value='reserved';syncPieceStatus('flightStatus');saveFlightDraft();
+    }else if(target==='accommodation'){
+      openAccommodationForm();
+      const map={name:'accommodationName',address:'accommodationAddress',city:'accommodationCity',postal_code:'accommodationPostalCode',region:'accommodationRegion',country:'accommodationCountry',booking_provider:'accommodationProvider',booking_reference:'accommodationReference',phone:'accommodationPhone',email:'accommodationEmail',website_url:'accommodationWebsite',room_number:'accommodationRoom'};
+      for(const [name,id] of Object.entries(map))if(fields[name])$(id).value=v(name);
+      if(fields.accommodation_type&&['hotel','apartment','house','hostel','resort','other'].includes(v('accommodation_type')))$('accommodationType').value=v('accommodation_type');
+      if(fields.check_in_at){const value=dateValue('check_in_at');if(value)$('accommodationCheckIn').value=value}
+      if(fields.check_out_at){const value=dateValue('check_out_at');if(value)$('accommodationCheckOut').value=value}
+      const zone=await resolveImportedTimeZone(v('city')||v('location_text')||v('address'));if(zone){$('accommodationForm').dataset.timeZone=zone;$('accommodationTimeZoneHelp').textContent='Hores guardades en la zona '+zone+'.'}
+      renderAccommodationDocumentOptions(document.id);$('accommodationVoucher').value=document.id;$('accommodationStatus').value='reserved';syncPieceStatus('accommodationStatus');
+    }else if(target==='activity'){
+      openActivityForm();
+      const map={title:'activityTitle',venue_name:'activityVenue',address:'activityAddress',city:'activityCity',booking_reference:'activityReference',provider:'activityProvider',contact_phone:'activityPhone',contact_email:'activityEmail',website_url:'activityWebsite',people_count:'activityPeople',amount:'activityAmount',currency:'activityCurrency'};
+      for(const [name,id] of Object.entries(map))if(fields[name])$(id).value=v(name);
+      if(fields.activity_type&&[...$('activityType').options].some(o=>o.value===v('activity_type')))$('activityType').value=v('activity_type');
+      if(fields.start_at){const value=dateValue('start_at');if(value)$('activityStartAt').value=value}
+      if(fields.end_at){const value=dateValue('end_at');if(value)$('activityEndAt').value=value}
+      const zone=await resolveImportedTimeZone(v('city')||v('venue_name'));if(zone)$('activityTimeZone').value=zone;
+      renderActivityDocumentOptions(document.id,'');$('activityBookingDocument').value=document.id;$('activityStatus').value='reserved';syncPieceStatus('activityStatus');saveActivityDraft();
+    }else if(target==='local_transport'){
+      await openLocalTransportForm();
+      const map={title:'localTransportTitle',transport_origin_name:'localTransportOriginName',transport_origin_address:'localTransportOriginAddress',transport_origin_city:'localTransportOriginCity',transport_destination_name:'localTransportDestinationName',transport_destination_address:'localTransportDestinationAddress',transport_destination_city:'localTransportDestinationCity',booking_reference:'localTransportReference',provider:'localTransportProvider',transport_service_number:'localTransportServiceNumber',transport_seat:'localTransportSeat',transport_platform:'localTransportPlatform',contact_phone:'localTransportPhone',contact_email:'localTransportEmail',website_url:'localTransportWebsite',people_count:'localTransportPeople'};
+      for(const [name,id] of Object.entries(map))if(fields[name])$(id).value=v(name);
+      if(fields.transport_mode&&[...$('localTransportMode').options].some(o=>o.value===v('transport_mode')))$('localTransportMode').value=v('transport_mode');
+      if(fields.start_at){const value=dateValue('start_at');if(value)$('localTransportStartAt').value=value}
+      if(fields.end_at){const value=dateValue('end_at');if(value)$('localTransportEndAt').value=value}
+      const startZone=await resolveImportedTimeZone(v('transport_origin_city')||v('transport_origin_name'));if(startZone)$('localTransportTimeZone').value=startZone;
+      const endZone=await resolveImportedTimeZone(v('transport_destination_city')||v('transport_destination_name'));if(endZone)$('localTransportArrivalTimeZone').value=endZone;
+      localTransportDocumentOptions(document.id,'');$('localTransportBookingDocument').value=document.id;$('localTransportStatus').value='reserved';syncPieceStatus('localTransportStatus');
+    }else if(target==='car_rental'){
+      await openCarRentalForm();
+      const map={provider:'carRentalProvider',booking_reference:'carRentalReference',pickup_location:'carRentalPickupLocation',pickup_city:'carRentalPickupCity',return_location:'carRentalReturnLocation',return_city:'carRentalReturnCity',vehicle_class:'carRentalVehicleClass',vehicle_model:'carRentalVehicleModel',license_plate:'carRentalLicensePlate',fuel_policy:'carRentalFuelPolicy',insurance:'carRentalInsurance',excess_amount:'carRentalExcessAmount',deposit_amount:'carRentalDepositAmount',phone:'carRentalPhone',email:'carRentalEmail',website_url:'carRentalWebsite'};
+      for(const [name,id] of Object.entries(map))if(fields[name])$(id).value=v(name);
+      if(fields.transmission&&['manual','automatic','unknown'].includes(v('transmission')))$('carRentalTransmission').value=v('transmission');
+      if(fields.excess_currency)setCurrencyValue('carRentalExcessCurrency',v('excess_currency').toUpperCase(),true);
+      if(fields.deposit_currency)setCurrencyValue('carRentalDepositCurrency',v('deposit_currency').toUpperCase(),true);
+      if(fields.pickup_at){const value=dateValue('pickup_at');if(value)$('carRentalPickupAt').value=value}
+      if(fields.return_at){const value=dateValue('return_at');if(value)$('carRentalReturnAt').value=value}
+      const pickupZone=await resolveImportedTimeZone(v('pickup_city')||v('pickup_location'));if(pickupZone)$('carRentalPickupTimeZone').value=pickupZone;
+      const returnZone=await resolveImportedTimeZone(v('return_city')||v('return_location'));if(returnZone)$('carRentalReturnTimeZone').value=returnZone;
+      renderCarRentalDocumentOptions(null);$('carRentalReservationDocument').value=document.id;$('carRentalStatus').value='reserved';syncPieceStatus('carRentalStatus');
+    }
+    closeReservationImport();
+    const messageId={flight:'flightMsg',accommodation:'accommodationMsg',activity:'activityMsg',local_transport:'localTransportMsg',car_rental:'carRentalMsg'}[target];
+    msg(messageId,dateOnlySkipped?'Reserva llegida. He omplert els camps segurs; alguna data sense hora ha quedat pendent de revisar. Revisa-ho i desa quan vulguis.':'Reserva llegida i formulari omplert. Revisa-ho i desa quan vulguis.');
+  }catch(error){$('reservationImportStatus').textContent=error?.message||'No s’ha pogut omplir el formulari.'}
+  finally{$('reservationImportApply').disabled=false}
+}
+async function processReservationImportFile(file){
+  const target=reservationImportState.target;if(!target||!trip||!session)return;
+  if(!['application/pdf','image/png','image/jpeg','image/webp'].includes(file.type)){showReservationImport(target,'Aquest format no és compatible. Puja un PDF, PNG, JPG o WebP.');return}
+  if(file.size>15*1024*1024){showReservationImport(target,'El fitxer supera el límit de 15 MB.');return}
+  showReservationImport(target,'Pujant el document al viatge…');
+  try{
+    const document=await uploadTripDocument(file,file.name.replace(/\.[^.]+$/,'')||'Reserva',reservationImportCategories[target]||'Altres');
+    reservationImportState.document=document;
+    $('reservationImportStatus').textContent='Llegint la reserva…';
+    const {data,error}=await db.functions.invoke('import-reservation',{body:{trip_id:trip.id,document_id:document.id,target_type:target}});
+    if(error||data?.error)throw new Error(({unsupported_file_type:'Format no compatible.',document_unavailable:'No s’ha pogut llegir el document privat.',provider_rate_limited:'Freya està rebent moltes peticions. Torna-ho a provar en uns minuts.',provider_refusal:'No he pogut interpretar aquest document.',no_import_fields:'He llegit el document, però no hi he trobat dades prou clares.',import_not_configured:'La lectura intel·ligent encara no està configurada.'})[data?.error]||error?.message||'No s’ha pogut interpretar la reserva.');
+    const api=await loadImportProposalApi(),proposal=api.normalizeImportProposal(data.proposal);
+    if(proposal.target_type!==target||proposal.source.document_id!==document.id)throw new Error('La proposta retornada no correspon a aquesta reserva.');
+    reservationImportState.proposal=proposal;renderReservationImportProposal(proposal);
+  }catch(error){$('reservationImportStatus').textContent=error?.message||'No s’ha pogut importar la reserva.'}
+}
+document.querySelectorAll('[data-import-reservation]').forEach(button=>button.onclick=()=>{
+  if(!trip||isLondonTrip())return;
+  reservationImportState={target:button.dataset.importReservation,document:null,proposal:null};
+  $('reservationImportFile').value='';$('reservationImportFile').click();
+});
+$('reservationImportFile').onchange=()=>{const file=$('reservationImportFile').files?.[0];if(file)processReservationImportFile(file)};
+$('reservationImportClose').onclick=closeReservationImport;$('reservationImportCancel').onclick=closeReservationImport;$('reservationImportApply').onclick=applyReservationImport;
+
 function categoryIcon(category){return ({Entrada:'🎟️',Vol:'✈️',Hotel:'🏨',Cotxe:'🚙',Excursió:'🚌',Museu:'🏛️',restaurant:'🍽️',baggage_tag:'🧳',Personal:'🛂',Altres:'📎'})[category]||'📎'}
 function categoryLabel(category){return category==='restaurant'?'Restaurant':category==='baggage_tag'?'Etiqueta d’equipatge':category||'Document'}
 function safeFileName(name){return name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'document'}
