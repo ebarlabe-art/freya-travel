@@ -15,6 +15,13 @@ const targetFields={
     'reservation_status','booking_reference','provider','contact_phone','contact_email','website_url','people_count',
     'amount','currency','notes'
   ]),
+  local_transport:new Set([
+    'title','transport_mode','start_at','time_zone','end_at','transport_arrival_time_zone',
+    'transport_origin_name','transport_origin_address','transport_origin_city',
+    'transport_destination_name','transport_destination_address','transport_destination_city',
+    'reservation_status','booking_reference','provider','transport_service_number','transport_seat','transport_platform',
+    'contact_phone','contact_email','website_url','people_count','notes'
+  ]),
   car_rental:new Set([
     'provider','booking_reference','pickup_location','pickup_city','pickup_at','pickup_time_zone','return_location','return_city',
     'return_at','return_time_zone','vehicle_class','vehicle_model','license_plate','transmission','fuel_policy','pickup_fuel_level',
