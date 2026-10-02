@@ -2855,7 +2855,12 @@ async function loadBuilderList(){
     const rows=await api.withBriefTimeout(api.listOpenBriefs(db,owner,()=>builderCurrent(owner,epoch)&&sequence===builderListSequence));
     if(!builderCurrent(owner,epoch)||sequence!==builderListSequence)return;
     $('builderContinue').classList.toggle('hidden',!rows.length);
-    $('builderBriefList').innerHTML=rows.map(row=>`<div class="card" style="padding:10px;margin:0"><button type="button" data-resume-brief="${esc(row.id)}"><small>💭 Idea en esborrany</small><strong>${esc(api.briefLabel(row))}</strong><small>Actualitzat ${esc(new Date(row.updated_at).toLocaleString('ca-ES'))}</small></button><button type="button" class="secondary" data-delete-brief="${esc(row.id)}" data-delete-label="${esc(api.briefLabel(row))}">🗑️ Elimina esborrany</button></div>`).join('');
+    $('builderBriefList').innerHTML=rows.map(row=>{
+      const operational=operationalTripForBrief(api,row),label=api.briefLabel(row),updated=esc(new Date(row.updated_at).toLocaleString('ca-ES'));
+      if(operational)return `<div class="card" style="padding:10px;margin:0"><button type="button" data-open-operational-brief="${esc(operational.id)}"><small>✅ Viatge creat</small><strong>${esc(operational.name)}</strong><small>Aquesta idea ja té un viatge operatiu · actualitzat ${updated}</small></button><button type="button" class="secondary" data-resume-brief="${esc(row.id)}">💭 Edita la idea</button></div>`;
+      return `<div class="card" style="padding:10px;margin:0"><button type="button" data-resume-brief="${esc(row.id)}"><small>💭 Idea en esborrany</small><strong>${esc(label)}</strong><small>Actualitzat ${updated}</small></button><button type="button" class="secondary" data-delete-brief="${esc(row.id)}" data-delete-label="${esc(label)}">🗑️ Elimina esborrany</button></div>`;
+    }).join('');
+    $('builderBriefList').querySelectorAll('[data-open-operational-brief]').forEach(button=>button.onclick=()=>openHomeTrip(button.dataset.openOperationalBrief));
     $('builderBriefList').querySelectorAll('[data-resume-brief]').forEach(button=>button.onclick=()=>builderPointer()?.brief===button.dataset.resumeBrief?resumeBuilderPointer():resumeBuilder(button.dataset.resumeBrief));
     $('builderBriefList').querySelectorAll('[data-delete-brief]').forEach(button=>button.onclick=()=>deleteBuilderBrief(button.dataset.deleteBrief,button.dataset.deleteLabel));
     $('builderListMessage').textContent=controller.state.pending?'Hi ha una operació pendent de verificar. Reintenta-la abans de començar-ne una altra.':rows.length||trips.some(t=>t.tb_handoff&&homeTripPhase(t)==='undated')?'':'Encara no tens cap viatge en construcció.';
