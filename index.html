@@ -2787,7 +2787,7 @@ function renderBuilderControls(){
   $('builderProposals').disabled=builderBusy||pending||!builderRow||builderConflict;
   builderLive?.setLocked(builderBusy||pending||!builderRow||builderConflict);
   $('builderReview').classList.toggle('hidden',!builderConflict);
-  document.querySelectorAll('[data-builder-mode]').forEach(button=>button.disabled=builderBusy||pending);
+  document.querySelectorAll('[data-builder-mode]').forEach(button=>button.disabled=builderBusy);
   $('builderStartRetry').classList.toggle('hidden',!pending);$('builderStartRetry').disabled=builderBusy;
   if(visibleAppView()==='designTripView'){
     if(pending&&!builderBusy)$('builderStartMessage').textContent='Hi ha una operació anterior pendent de verificar. Prem “Verifica l’operació pendent” i després podràs començar un viatge nou.';
@@ -2850,9 +2850,16 @@ async function runBuilderPending(){
 }
 async function startBuilder(mode){
   if(builderBusy)return;
-  const owner=session?.user?.id,epoch=builderEpoch;builderBusy=true;$('builderStartMessage').textContent='Preparant l’esborrany…';renderBuilderControls();
+  const owner=session?.user?.id,epoch=builderEpoch;
   try{
-    const {controller,api}=await getBuilderController();controller.prepareStart(mode);
+    const {controller,api}=await getBuilderController();
+    if(controller.state.pending){
+      $('builderStartMessage').textContent='Recuperant una operació anterior…';
+      await runBuilderPending();
+      return;
+    }
+    builderBusy=true;$('builderStartMessage').textContent='Preparant l’esborrany…';renderBuilderControls();
+    controller.prepareStart(mode);
     builderLive?.clear();builderRow=null;builderBase='';$('builderNotes').value='';$('builderKnown').textContent='';$('builderHeading').textContent=api.builderModes[mode].title;enterBuilderView();
   }catch(error){if(builderCurrent(owner,epoch)){$('builderStartMessage').textContent=error.message;builderBusy=false;renderBuilderControls()}return}
   if(!builderCurrent(owner,epoch))return;builderBusy=false;await runBuilderPending();
