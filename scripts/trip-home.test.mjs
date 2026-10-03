@@ -265,3 +265,21 @@ test('NAV contract: browser history has a single popstate authority',()=>{
   const count=(html.match(/addEventListener\(['"]popstate['"]/g)||[]).length+(html.match(/\.onpopstate\s*=/g)||[]).length;
   assert.equal(count,1,'Navigation refactor must converge to one popstate authority');
 });
+
+
+test('NAV-02 uses one operational return-route authority',()=>{
+  assert.match(html,/let operationalReturnRoute=null/);
+  assert.match(html,/function setOperationalReturnRoute\(childView,parentView\)/);
+  assert.match(html,/function validOperationalReturnRoute\(childView=null\)/);
+  assert.doesNotMatch(html,/let documentsReturnContext=null/);
+  assert.doesNotMatch(html,/let moduleReturnContext=null/);
+});
+
+test('NAV-02 Documents parent is encoded as a route, not an ad-hoc context',()=>{
+  assert.match(html,/setOperationalReturnRoute\('documentsView',parentView\)/);
+  assert.match(html,/validOperationalReturnRoute\('documentsView'\)/);
+});
+
+test('NAV-02 Build to module records the concrete child and Build parent',()=>{
+  assert.match(html,/setOperationalReturnRoute\(b\.dataset\.open,'buildView'\)/);
+});
