@@ -1444,6 +1444,13 @@
       <section class="import-reservation-panel">
         <div class="import-reservation-head"><div><small>✨ Freya llegeix la reserva</small><h2 id="reservationImportTitle">Importa reserva</h2></div><button id="reservationImportClose" type="button" class="ghost" aria-label="Tanca">✕</button></div>
         <p id="reservationImportStatus" class="message" role="status" aria-live="polite"></p>
+        <div id="reservationImportSource" class="import-reservation-fields">
+          <label><strong>Document del viatge</strong><select id="reservationImportDocument"><option value="">Tria un document ja pujat…</option></select></label>
+          <div class="import-reservation-actions">
+            <button id="reservationImportUseDocument" type="button" class="secondary">Utilitza aquest document</button>
+            <button id="reservationImportUploadNew" type="button" class="secondary">Puja'n un de nou</button>
+          </div>
+        </div>
         <div id="reservationImportWarnings" class="import-reservation-warnings hidden"></div>
         <div id="reservationImportFields" class="import-reservation-fields"></div>
         <div class="import-reservation-actions">
@@ -6955,13 +6962,23 @@ function importValue(fields,name){return fields?.[name]?.value==null?'':String(f
 function importDateTime(value){const m=String(value||'').match(/^(20\d{2}-\d{2}-\d{2})T(\d{2}:\d{2})/);return m?m[1]+'T'+m[2]:''}
 function importDate(value){const m=String(value||'').match(/^(20\d{2}-\d{2}-\d{2})/);return m?m[1]:''}
 function importTime(value){const m=String(value||'').match(/^20\d{2}-\d{2}-\d{2}T(\d{2}:\d{2})/);return m?m[1]:''}
-function closeReservationImport(){reservationImportState={target:null,document:null,proposal:null};$('reservationImportOverlay').classList.add('hidden');$('reservationImportFields').innerHTML='';$('reservationImportWarnings').innerHTML='';$('reservationImportWarnings').classList.add('hidden');$('reservationImportApply').classList.add('hidden');$('reservationImportFile').value=''}
+function reservationImportDocuments(){
+  const allowed=new Set(['application/pdf','image/png','image/jpeg','image/webp']);
+  return (documentRows||[]).filter(document=>allowed.has(document.mime_type));
+}
+function renderReservationImportSources(){
+  const select=$('reservationImportDocument'),docs=reservationImportDocuments();
+  select.innerHTML='<option value="">Tria un document ja pujat…</option>'+docs.map(document=>`<option value="${esc(document.id)}">${esc(document.title||document.file_name||'Document')}</option>`).join('');
+  $('reservationImportUseDocument').disabled=!docs.length;
+}
+function closeReservationImport(){reservationImportState={target:null,document:null,proposal:null};$('reservationImportOverlay').classList.add('hidden');$('reservationImportFields').innerHTML='';$('reservationImportWarnings').innerHTML='';$('reservationImportWarnings').classList.add('hidden');$('reservationImportApply').classList.add('hidden');$('reservationImportSource').classList.remove('hidden');$('reservationImportFile').value=''}
 function showReservationImport(target,status){
   $('reservationImportTitle').textContent='Importa '+(reservationImportTypeLabels[target]||'reserva').toLowerCase();
-  $('reservationImportStatus').textContent=status||'';
+  $('reservationImportStatus').textContent=status||'Tria una reserva que ja sigui a Documents o puja’n una de nova.';
   $('reservationImportFields').innerHTML='';
   $('reservationImportWarnings').innerHTML='';$('reservationImportWarnings').classList.add('hidden');
-  $('reservationImportApply').classList.add('hidden');
+  $('reservationImportApply').classList.add('hidden');$('reservationImportSource').classList.remove('hidden');
+  renderReservationImportSources();
   $('reservationImportOverlay').classList.remove('hidden');
 }
 function renderReservationImportProposal(proposal){
@@ -7102,27 +7119,38 @@ async function applyReservationImport(){
   }catch(error){$('reservationImportStatus').textContent=error?.message||'No s’ha pogut omplir el formulari.'}
   finally{$('reservationImportApply').disabled=false}
 }
-async function processReservationImportFile(file){
-  const target=reservationImportState.target;if(!target||!trip||!session)return;
-  if(!['application/pdf','image/png','image/jpeg','image/webp'].includes(file.type)){showReservationImport(target,'Aquest format no és compatible. Puja un PDF, PNG, JPG o WebP.');return}
-  if(file.size>15*1024*1024){showReservationImport(target,'El fitxer supera el límit de 15 MB.');return}
-  showReservationImport(target,'Pujant el document al viatge…');
+async function processReservationImportDocument(document){
+  const target=reservationImportState.target;if(!target||!trip||!session||!document)return;
+  reservationImportState.document=document;$('reservationImportSource').classList.add('hidden');$('reservationImportStatus').textContent='Llegint la reserva…';
   try{
-    const document=await uploadTripDocument(file,file.name.replace(/\.[^.]+$/,'')||'Reserva',reservationImportCategories[target]||'Altres');
-    reservationImportState.document=document;
-    $('reservationImportStatus').textContent='Llegint la reserva…';
     const {data,error}=await db.functions.invoke('import-reservation',{body:{trip_id:trip.id,document_id:document.id,target_type:target}});
     if(error||data?.error)throw new Error(({unsupported_file_type:'Format no compatible.',document_unavailable:'No s’ha pogut llegir el document privat.',provider_rate_limited:'Freya està rebent moltes peticions. Torna-ho a provar en uns minuts.',provider_refusal:'No he pogut interpretar aquest document.',no_import_fields:'He llegit el document, però no hi he trobat dades prou clares.',import_not_configured:'La lectura intel·ligent encara no està configurada.'})[data?.error]||error?.message||'No s’ha pogut interpretar la reserva.');
     const api=await loadImportProposalApi(),proposal=api.normalizeImportProposal(data.proposal);
     if(proposal.target_type!==target||proposal.source.document_id!==document.id)throw new Error('La proposta retornada no correspon a aquesta reserva.');
     reservationImportState.proposal=proposal;renderReservationImportProposal(proposal);
-  }catch(error){$('reservationImportStatus').textContent=error?.message||'No s’ha pogut importar la reserva.'}
+  }catch(error){$('reservationImportStatus').textContent=error?.message||'No s’ha pogut importar la reserva.';$('reservationImportSource').classList.remove('hidden')}
+}
+async function processReservationImportFile(file){
+  const target=reservationImportState.target;if(!target||!trip||!session)return;
+  if(!['application/pdf','image/png','image/jpeg','image/webp'].includes(file.type)){showReservationImport(target,'Aquest format no és compatible. Puja un PDF, PNG, JPG o WebP.');return}
+  if(file.size>15*1024*1024){showReservationImport(target,'El fitxer supera el límit de 15 MB.');return}
+  $('reservationImportStatus').textContent='Pujant el document al viatge…';$('reservationImportSource').classList.add('hidden');
+  try{
+    const document=await uploadTripDocument(file,file.name.replace(/\.[^.]+$/,'')||'Reserva',reservationImportCategories[target]||'Altres');
+    await processReservationImportDocument(document);
+  }catch(error){$('reservationImportStatus').textContent=error?.message||'No s’ha pogut importar la reserva.';$('reservationImportSource').classList.remove('hidden')}
 }
 document.querySelectorAll('[data-import-reservation]').forEach(button=>button.onclick=()=>{
   if(!trip||isLondonTrip())return;
   reservationImportState={target:button.dataset.importReservation,document:null,proposal:null};
-  $('reservationImportFile').value='';$('reservationImportFile').click();
+  $('reservationImportFile').value='';showReservationImport(reservationImportState.target);
 });
+$('reservationImportUseDocument').onclick=()=>{
+  const document=reservationImportDocuments().find(document=>document.id===$('reservationImportDocument').value);
+  if(!document){$('reservationImportStatus').textContent='Tria primer un document del viatge.';return}
+  processReservationImportDocument(document);
+};
+$('reservationImportUploadNew').onclick=()=>{$('reservationImportFile').value='';$('reservationImportFile').click()};
 $('reservationImportFile').onchange=()=>{const file=$('reservationImportFile').files?.[0];if(file)processReservationImportFile(file)};
 $('reservationImportClose').onclick=closeReservationImport;$('reservationImportCancel').onclick=closeReservationImport;$('reservationImportApply').onclick=applyReservationImport;
 
