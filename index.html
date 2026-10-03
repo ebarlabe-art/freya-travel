@@ -5393,7 +5393,15 @@ async function renderSession(next){
     await refreshTrips({coldStart});
     if(renderGeneration!==sessionRenderGeneration)return;
     show('tripView');
-    if(coldStart){coldStartNavigationPending=false;if(!pendingInitialRoute)await restoreBuilderSession()}
+    if(coldStart){
+      coldStartNavigationPending=false;
+      if(!pendingInitialRoute){
+        leaveBuilderPointer();
+        homeTripReturn=null;
+        history.replaceState({builderNav:builderHistory('tripsHomeView',0)},'');
+        setAppView('tripsHomeView');
+      }
+    }
   }catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
 }
 const LONDON_CHECKLIST_CATEGORIES=[
