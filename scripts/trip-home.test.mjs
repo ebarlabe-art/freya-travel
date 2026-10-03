@@ -246,13 +246,14 @@ test('NAV contract: operational trip history must not restore Builder',()=>{
   assert.doesNotMatch(popHandlers,/restoreBuilderSession|resumeBuilder/);
 });
 
-test('NAV contract: external document return restores its exact source view in memory',()=>{
-  assert.match(html,/function rememberExternalDocumentReturn\(\)/);
-  assert.match(html,/externalDocumentReturn=\{userId:session\.user\.id,tripId:trip\.id,view,suspended:false\}/);
-  assert.match(html,/function restoreExternalDocumentReturn\(\)/);
-  assert.match(html,/setAppView\(route\.view\)/);
+test('NAV contract: document viewer preserves the current source view without external navigation',()=>{
+  assert.match(html,/id="documentViewer"/);
+  assert.match(html,/function showDocumentViewer\(doc,signedUrl\)/);
   const open=html.slice(html.indexOf("async function openDocument("),html.indexOf("async function deleteDocument("));
-  assert.match(open,/rememberExternalDocumentReturn\(\)/);
+  assert.match(open,/showDocumentViewer\(doc,data\.signedUrl\)/);
+  assert.doesNotMatch(open,/window\.open|rememberExternalDocumentReturn|restoreExternalDocumentReturn/);
+  const close=html.slice(html.indexOf('function closeDocumentViewer(){'),html.indexOf('function showDocumentViewer('));
+  assert.doesNotMatch(close,/setAppView|history\.|location/);
 });
 
 test('NAV contract: fresh open has exactly one Home decision path',()=>{
