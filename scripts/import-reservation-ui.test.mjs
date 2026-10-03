@@ -27,9 +27,13 @@ test('low-confidence values are opt-in and proposal is revalidated client-side',
 });
 
 test('uploaded file becomes a private travel document before read-only extraction',()=>{
-  const process=html.slice(html.indexOf('async function processReservationImportFile('),html.indexOf("document.querySelectorAll('[data-import-reservation]"));
-  assert.ok(process.indexOf('uploadTripDocument(')<process.indexOf("db.functions.invoke('import-reservation'"));
-  assert.match(process,/document_id:document\.id/);
+  const upload=html.slice(html.indexOf('async function processReservationImportFile('),html.indexOf("document.querySelectorAll('[data-import-reservation]"));
+  assert.match(upload,/const document=await uploadTripDocument\(/);
+  assert.match(upload,/await processReservationImportDocument\(document\)/);
+  const extract=html.slice(html.indexOf('async function processReservationImportDocument('),html.indexOf('async function processReservationImportFile('));
+  assert.match(extract,/db\.functions\.invoke\('import-reservation'/);
+  assert.match(extract,/document_id:document\.id/);
+  assert.doesNotMatch(upload,/db\.functions\.invoke\('import-reservation'/);
 });
 
 test('flight UI keeps imported passenger names and renders saved notes',()=>{
