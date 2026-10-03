@@ -6975,14 +6975,20 @@ function renderReservationImportSources(){
   $('reservationImportUseDocument').disabled=!docs.length;
 }
 function closeReservationImport(){reservationImportState={target:null,document:null,proposal:null};$('reservationImportOverlay').classList.add('hidden');$('reservationImportFields').innerHTML='';$('reservationImportWarnings').innerHTML='';$('reservationImportWarnings').classList.add('hidden');$('reservationImportApply').classList.add('hidden');$('reservationImportSource').classList.remove('hidden');$('reservationImportFile').value=''}
-function showReservationImport(target,status){
+async function showReservationImport(target,status){
   $('reservationImportTitle').textContent='Importa '+(reservationImportTypeLabels[target]||'reserva').toLowerCase();
-  $('reservationImportStatus').textContent=status||'Tria una reserva que ja sigui a Documents o puja’n una de nova.';
+  $('reservationImportStatus').textContent=status||'Carregant els documents del viatge…';
   $('reservationImportFields').innerHTML='';
   $('reservationImportWarnings').innerHTML='';$('reservationImportWarnings').classList.add('hidden');
   $('reservationImportApply').classList.add('hidden');$('reservationImportSource').classList.remove('hidden');
-  renderReservationImportSources();
   $('reservationImportOverlay').classList.remove('hidden');
+  if(trip&&!isLondonTrip()){
+    try{await loadDocuments(true)}catch(_){}
+  }
+  if(reservationImportState.target!==target)return;
+  renderReservationImportSources();
+  const docs=reservationImportDocuments();
+  $('reservationImportStatus').textContent=status||(docs.length?'Tria una reserva que ja sigui a Documents o puja’n una de nova.':'No hi ha cap PDF o imatge compatible a Documents. Pots pujar-ne un de nou.');
 }
 function renderReservationImportProposal(proposal){
   const entries=Object.entries(proposal.fields||{});
