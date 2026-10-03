@@ -305,3 +305,19 @@ test('NAV-03 deactivation preserves Builder pending operation for safe retry',()
   const deactivate=html.slice(html.indexOf('function deactivateBuilderNavigation(){'),html.indexOf('async function resumeBuilderPointer('));
   assert.doesNotMatch(deactivate,/delete state\.pending|sessionStorage\.removeItem/);
 });
+
+
+test('document viewer stays inside Freya instead of opening a new browsing context',()=>{
+  assert.match(html,/id="documentViewer"/);
+  assert.match(html,/function showDocumentViewer\(doc,signedUrl\)/);
+  const open=html.slice(html.indexOf('async function openDocument('),html.indexOf('async function deleteDocument('));
+  assert.match(open,/showDocumentViewer\(doc,data\.signedUrl\)/);
+  assert.doesNotMatch(open,/window\.open\(/);
+  assert.doesNotMatch(open,/externalDocumentReturn|visibilitychange|pageshow/);
+});
+
+test('closing the internal document viewer does not navigate away from its source module',()=>{
+  const close=html.slice(html.indexOf('function closeDocumentViewer(){'),html.indexOf('function showDocumentViewer('));
+  assert.match(close,/viewer\.classList\.add\('hidden'\)/);
+  assert.doesNotMatch(close,/setAppView|history\.|location/);
+});
