@@ -4574,7 +4574,7 @@ async function ensureAccommodationArrivalEstimates(){
   if(!trip||!session||isLondonTrip()||connectionUnavailable())return;
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
   for(const row of accommodationRows){
-    if(!row.check_in_at||accommodationArrivalEstimates.has(row.id)||accommodationArrivalEstimateRequests.has(row.id))continue;
+    if((!row.check_in_at&&!row.check_in_date)||accommodationArrivalEstimates.has(row.id)||accommodationArrivalEstimateRequests.has(row.id))continue;
     const flight=arrivalFlightForAccommodation(row),destination=accommodationDestinationText(row),origin=flight?flightArrivalOriginText(flight):'';
     if(!flight?.arrival_at||!origin||!destination)continue;
     accommodationArrivalEstimateRequests.add(row.id);
@@ -4607,6 +4607,7 @@ function normalizedItineraryProjection(tripId,generation,userId=session?.user?.i
   accommodationRows.forEach(row=>{
     const estimatedArrival=estimatedHotelArrivalItem(row,tripId);if(estimatedArrival)items.push(estimatedArrival);
     [['check_in',row.check_in_at,row.check_in_date,'Check-in','🏠'],['check_out',row.check_out_at,row.check_out_date,'Check-out','🧳']].forEach(([sourceEvent,value,dateOnly,label,icon])=>{
+      if(sourceEvent==='check_in'&&estimatedArrival&&!value)return;
       const timing=itineraryDateTime(value,row.time_zone);
       if(timing){
         items.push({key:`accommodation:${row.id}:${sourceEvent}`,tripId,sourceType:'accommodation',sourceId:row.id,sourceEvent,title:`${label} · ${row.name}`,eyebrow:'Allotjament',subtitle:accommodationLocationLines(row).join(' · '),details:[],icon,startsAt:value,endsAt:null,timeZone:timing.timeZone,localDate:timing.date,timeLabel:timing.time,timingKind:'exact',localOrder:itineraryLocalOrder(timing.time),sortInstant:timing.instant,sortOrder:0,status:row.reservation_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:accommodationMapUrl(row)||'',documents:itineraryDocumentsFor('accommodation',row.id),tags:[]});
