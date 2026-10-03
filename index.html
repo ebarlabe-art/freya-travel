@@ -7133,7 +7133,11 @@ async function processReservationImportDocument(document){
   reservationImportState.document=document;$('reservationImportSource').classList.add('hidden');$('reservationImportStatus').textContent='Llegint la reserva…';
   try{
     const {data,error}=await db.functions.invoke('import-reservation',{body:{trip_id:trip.id,document_id:document.id,target_type:target}});
-    if(error||data?.error)throw new Error(({unsupported_file_type:'Format no compatible.',document_unavailable:'No s’ha pogut llegir el document privat.',provider_rate_limited:'Freya està rebent moltes peticions. Torna-ho a provar en uns minuts.',provider_refusal:'No he pogut interpretar aquest document.',no_import_fields:'He llegit el document, però no hi he trobat dades prou clares.',import_not_configured:'La lectura intel·ligent encara no està configurada.'})[data?.error]||error?.message||'No s’ha pogut interpretar la reserva.');
+    let functionErrorCode=data?.error||null;
+    if(error&&!functionErrorCode&&error.context&&typeof error.context.json==='function'){
+      try{const body=await error.context.clone().json();functionErrorCode=body?.error||null}catch(_){}
+    }
+    if(error||functionErrorCode)throw new Error(({unsupported_file_type:'Format no compatible.',document_unavailable:'No s’ha pogut llegir el document privat.',trip_unavailable:'No s’ha pogut validar el viatge.',invalid_file_size:'El document no té una mida compatible.',provider_rate_limited:'Freya està rebent moltes peticions. Torna-ho a provar en uns minuts.',provider_refusal:'No he pogut interpretar aquest document.',no_import_fields:'He llegit el document, però no hi he trobat dades prou clares.',invalid_model_output:'La lectura ha retornat dades amb un format inesperat.',provider_invalid_response:'La lectura intel·ligent ha retornat una resposta no vàlida.',provider_error:'El servei de lectura intel·ligent no ha pogut processar el document.',import_not_configured:'La lectura intel·ligent encara no està configurada.'})[functionErrorCode]||error?.message||'No s’ha pogut interpretar la reserva.');
     const api=await loadImportProposalApi(),proposal=api.normalizeImportProposal(data.proposal);
     if(proposal.target_type!==target||proposal.source.document_id!==document.id)throw new Error('La proposta retornada no correspon a aquesta reserva.');
     reservationImportState.proposal=proposal;renderReservationImportProposal(proposal);
