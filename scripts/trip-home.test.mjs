@@ -239,3 +239,69 @@ test('opening a trip card still opens its operational dashboard',()=>{
   const select=html.slice(html.indexOf('async function selectTrip('),html.indexOf('async function initializeGenericChecklistDefaults('));
   assert.match(select,/if\(open\)setAppView\(tripDashboardId\(\)\)/);
 });
+
+
+test('NAV contract: operational trip history must not restore Builder',()=>{
+  const popHandlers=[...html.matchAll(/addEventListener\(['"]popstate['"][\s\S]{0,1800}/g)].map(x=>x[0]).join('\n');
+  assert.doesNotMatch(popHandlers,/restoreBuilderSession|resumeBuilder/);
+});
+
+test('NAV contract: external document return restores its exact source view in memory',()=>{
+  assert.match(html,/function rememberExternalDocumentReturn\(\)/);
+  assert.match(html,/externalDocumentReturn=\{userId:session\.user\.id,tripId:trip\.id,view,suspended:false\}/);
+  assert.match(html,/function restoreExternalDocumentReturn\(\)/);
+  assert.match(html,/setAppView\(route\.view\)/);
+  const open=html.slice(html.indexOf("async function openDocument("),html.indexOf("async function deleteDocument("));
+  assert.match(open,/rememberExternalDocumentReturn\(\)/);
+});
+
+test('NAV contract: fresh open has exactly one Home decision path',()=>{
+  const render=html.slice(html.indexOf('async function renderSession('),html.indexOf('const LONDON_CHECKLIST_CATEGORIES='));
+  assert.match(render,/setAppView\('tripsHomeView'\)/);
+  assert.doesNotMatch(render,/restoreBuilderSession\(\)/);
+});
+
+test('NAV contract: browser history has a single popstate authority',()=>{
+  const count=(html.match(/addEventListener\(['"]popstate['"]/g)||[]).length+(html.match(/\.onpopstate\s*=/g)||[]).length;
+  assert.equal(count,1,'Navigation refactor must converge to one popstate authority');
+});
+
+
+test('NAV-02 uses one operational return-route authority',()=>{
+  assert.match(html,/let operationalReturnRoute=null/);
+  assert.match(html,/function setOperationalReturnRoute\(childView,parentView\)/);
+  assert.match(html,/function validOperationalReturnRoute\(childView=null\)/);
+  assert.doesNotMatch(html,/let documentsReturnContext=null/);
+  assert.doesNotMatch(html,/let moduleReturnContext=null/);
+});
+
+test('NAV-02 Documents parent is encoded as a route, not an ad-hoc context',()=>{
+  assert.match(html,/setOperationalReturnRoute\('documentsView',parentView\)/);
+  assert.match(html,/validOperationalReturnRoute\('documentsView'\)/);
+});
+
+test('NAV-02 Build to module records the concrete child and Build parent',()=>{
+  assert.match(html,/setOperationalReturnRoute\(b\.dataset\.open,'buildView'\)/);
+});
+
+
+test('NAV-03 operational trip entry deactivates every Builder navigation authority',()=>{
+  const deactivate=html.slice(html.indexOf('function deactivateBuilderNavigation(){'),html.indexOf('async function resumeBuilderPointer('));
+  assert.match(deactivate,/localStorage\.removeItem\('freya-builder-nav-v1:'/);
+  assert.match(deactivate,/delete state\.route/);
+  assert.match(deactivate,/builderController\?\.clearRoute\(\)/);
+  assert.match(deactivate,/delete state\.builderNav/);
+  const select=html.slice(html.indexOf('async function selectTrip('),html.indexOf('async function initializeGenericChecklistDefaults('));
+  assert.match(select,/if\(open\)\{deactivateBuilderNavigation\(\);setAppView\(tripDashboardId\(\)\)\}/);
+});
+
+test('NAV-03 formalized Builder handoff also crosses the operational boundary',()=>{
+  const open=html.slice(html.indexOf('async function openFormalizedTrip('),html.indexOf('async function openHandoffReview('));
+  assert.match(open,/deactivateBuilderNavigation\(\)/);
+  assert.doesNotMatch(open,/leaveBuilderPointer\(\)/);
+});
+
+test('NAV-03 deactivation preserves Builder pending operation for safe retry',()=>{
+  const deactivate=html.slice(html.indexOf('function deactivateBuilderNavigation(){'),html.indexOf('async function resumeBuilderPointer('));
+  assert.doesNotMatch(deactivate,/delete state\.pending|sessionStorage\.removeItem/);
+});
