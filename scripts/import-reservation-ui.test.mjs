@@ -31,3 +31,21 @@ test('uploaded file becomes a private travel document before read-only extractio
   assert.ok(process.indexOf('uploadTripDocument(')<process.indexOf("db.functions.invoke('import-reservation'"));
   assert.match(process,/document_id:document\.id/);
 });
+
+test('flight UI keeps imported passenger names and renders saved notes',()=>{
+  assert.match(html,/id="flightPassengers"/);
+  assert.match(html,/passengers:'flightPassengers'/);
+  assert.match(html,/passengers:nullable\(\$\('flightPassengers'\)\.value\)/);
+  const render=html.slice(html.indexOf('function renderFlights(){'),html.indexOf('function flightDocumentLinksFor'));
+  assert.match(render,/row\.notes/);
+});
+
+test('itinerary projection already includes dated flights and accommodation check-in/out with maps',()=>{
+  const block=html.slice(html.indexOf('function normalizedItineraryProjection'),html.indexOf('function tripReviewSuggestionId'));
+  assert.match(block,/flightRows\.forEach/);
+  assert.match(block,/departure_at/);
+  assert.match(block,/accommodationRows\.forEach/);
+  assert.match(block,/check_in/);
+  assert.match(block,/check_out/);
+  assert.match(block,/accommodationMapUrl/);
+});
