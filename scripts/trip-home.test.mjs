@@ -239,3 +239,28 @@ test('opening a trip card still opens its operational dashboard',()=>{
   const select=html.slice(html.indexOf('async function selectTrip('),html.indexOf('async function initializeGenericChecklistDefaults('));
   assert.match(select,/if\(open\)setAppView\(tripDashboardId\(\)\)/);
 });
+
+
+test('NAV contract: operational trip history must not restore Builder',()=>{
+  const popHandlers=[...html.matchAll(/addEventListener\(['"]popstate['"][\s\S]{0,1800}/g)].map(x=>x[0]).join('\n');
+  assert.doesNotMatch(popHandlers,/restoreBuilderSession|resumeBuilder/);
+});
+
+test('NAV contract: document detail opened from Documents returns to Documents',()=>{
+  assert.match(html,/documentsReturnContext/);
+  const detail=html.slice(html.indexOf("data-document-open"),html.indexOf("data-document-delete"));
+  assert.match(html,/documentsView/);
+  // Contract intentionally fails until document detail has one authoritative parent route.
+  assert.match(detail,/documentsView/);
+});
+
+test('NAV contract: fresh open has exactly one Home decision path',()=>{
+  const render=html.slice(html.indexOf('async function renderSession('),html.indexOf('const LONDON_CHECKLIST_CATEGORIES='));
+  assert.match(render,/setAppView\('tripsHomeView'\)/);
+  assert.doesNotMatch(render,/restoreBuilderSession\(\)/);
+});
+
+test('NAV contract: browser history has a single popstate authority',()=>{
+  const count=(html.match(/addEventListener\(['"]popstate['"]/g)||[]).length+(html.match(/\.onpopstate\s*=/g)||[]).length;
+  assert.equal(count,1,'Navigation refactor must converge to one popstate authority');
+});
