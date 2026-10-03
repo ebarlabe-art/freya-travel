@@ -1771,7 +1771,7 @@ let trip = null;
 let channel=null,tripLoadGeneration=0,sessionRenderGeneration=0,flightTimer=null;
 const NAVIGATION_STATE_VERSION=1;
 let navigationRestoreInProgress=false,lastAuthenticatedUserId=null;
-let moduleReturnContext=null;
+let operationalReturnRoute=null;
 let coldStartNavigationPending=true;
 const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
@@ -2245,7 +2245,6 @@ let activityLoadSequence=0;
 let accommodationDocumentLinks=[];
 let accommodationSubmitting=false;
 let accommodationLoadSequence=0;
-let documentsReturnContext=null;
 let accommodationVoucherFocus=null,accommodationVoucherFocusTimer=null;
 let itineraryProjection=[];
 let accommodationArrivalEstimates=new Map();
@@ -2310,12 +2309,12 @@ function accommodationVoucherDocumentId(accommodationId){return accommodationLin
 function accommodationDocumentFor(accommodationId){const documentId=accommodationVoucherDocumentId(accommodationId);return documentId?documentRows.find(document=>document.id===documentId)||null:null}
 function accommodationSummary(count=accommodationRows.length){return !count?'Cap allotjament':count===1?'1 allotjament':`${count} allotjaments`}
 function validDocumentsReturnContext(){
-  const context=documentsReturnContext,userId=session?.user?.id,tripId=trip?.id;
-  if(['accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView'].includes(context?.returnView)&&context.userId===userId&&context.tripId===tripId&&!isLondonTrip())return context;
-  documentsReturnContext=null;return null;
+  const route=validOperationalReturnRoute('documentsView');
+  if(route&&['accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView'].includes(route.parentView)&&!isLondonTrip())return {userId:route.userId,tripId:route.tripId,returnView:route.parentView};
+  return null;
 }
 function updateDocumentsBack(){const context=validDocumentsReturnContext();if($('documentsBack'))$('documentsBack').textContent=context?.returnView==='accommodationView'?'← Tornar a Allotjament':context?.returnView==='genericFlightsView'?'← Tornar a Vols':context?.returnView==='activitiesView'?'← Tornar a Reserves i activitats':context?.returnView==='localTransportView'?'← Tornar a Transport intern / local':context?.returnView==='carRentalView'?'← Tornar a Cotxe de lloguer':'← Torna al tauler'}
-function clearDocumentsReturnContext(){documentsReturnContext=null;updateDocumentsBack()}
+function clearDocumentsReturnContext(){clearOperationalReturnRoute('documentsView');updateDocumentsBack()}
 function clearAccommodationVoucherFocus(){
   accommodationVoucherFocus=null;if(accommodationVoucherFocusTimer)clearTimeout(accommodationVoucherFocusTimer);accommodationVoucherFocusTimer=null;
   document.querySelectorAll('.doc-card.doc-voucher-focus').forEach(card=>card.classList.remove('doc-voucher-focus'));
@@ -2341,28 +2340,17 @@ function focusAssociatedAccommodationVoucher(documentsResolved=false){
   });
   return true;
 }
-function setAccommodationDocumentsReturnContext(){
+function setDocumentsReturnContext(parentView){
   if(!trip||!session||isLondonTrip())return false;
-  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'accommodationView'};updateDocumentsBack();return true;
+  const ok=setOperationalReturnRoute('documentsView',parentView);if(ok)updateDocumentsBack();return ok;
 }
-function setActivityDocumentsReturnContext(){
-  if(!trip||!session||isLondonTrip())return false;
-  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'activitiesView'};updateDocumentsBack();return true;
-}
-function setLocalTransportDocumentsReturnContext(){
-  if(!trip||!session||isLondonTrip())return false;
-  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'localTransportView'};updateDocumentsBack();return true;
-}
-function setFlightDocumentsReturnContext(){
-  if(!trip||!session||isLondonTrip())return false;
-  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'genericFlightsView'};updateDocumentsBack();return true;
-}
-function setCarRentalDocumentsReturnContext(){
-  if(!trip||!session||isLondonTrip())return false;
-  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'carRentalView'};updateDocumentsBack();return true;
-}
+function setAccommodationDocumentsReturnContext(){return setDocumentsReturnContext('accommodationView')}
+function setActivityDocumentsReturnContext(){return setDocumentsReturnContext('activitiesView')}
+function setLocalTransportDocumentsReturnContext(){return setDocumentsReturnContext('localTransportView')}
+function setFlightDocumentsReturnContext(){return setDocumentsReturnContext('genericFlightsView')}
+function setCarRentalDocumentsReturnContext(){return setDocumentsReturnContext('carRentalView')}
 function handleDocumentsBack(){
-  const context=validDocumentsReturnContext();documentsReturnContext=null;updateDocumentsBack();setAppView(context?.returnView||tripDashboardId());
+  const context=validDocumentsReturnContext();clearOperationalReturnRoute('documentsView');updateDocumentsBack();setAppView(context?.returnView||tripDashboardId());
 }
 
 const CAR_RENTAL_SELECT='id,trip_id,provider,booking_reference,pickup_location,pickup_city,pickup_at,pickup_time_zone,return_location,return_city,return_at,return_time_zone,vehicle_class,vehicle_model,license_plate,transmission,fuel_policy,pickup_fuel_level,return_fuel_level,pickup_mileage,return_mileage,insurance,excess_amount,excess_currency,deposit_amount,deposit_currency,phone,email,website_url,reservation_status,notes,created_by,updated_by,created_at,updated_at';
@@ -3168,7 +3156,7 @@ function renderBuild(data,tripId,generation,userId){
   $('buildGroups').querySelectorAll('[data-build-source]').forEach(button=>button.onclick=async()=>{
     if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId)return;
     const kind=button.dataset.buildKind,id=button.dataset.buildSource;
-    setModuleReturnContext('buildView');updateItinerarySourceBack();
+    setOperationalReturnRoute(kind==='flight'?'genericFlightsView':kind==='accommodation'?'accommodationView':button.dataset.buildGroup==='localTransport'?'localTransportView':'activitiesView','buildView');updateItinerarySourceBack();
     if(kind==='flight'){setAppView('genericFlightsView');await loadFlights(true);if(tripRequestIsCurrent(tripId,generation))openFlightForm(id)}
     else if(kind==='accommodation'){setAppView('accommodationView');await loadAccommodations(true);if(tripRequestIsCurrent(tripId,generation))openAccommodationForm(id)}
     else if(button.dataset.buildGroup==='local_transport'){resetLocalTransportForm();setAppView('localTransportView');await loadActivities(true)}
@@ -5016,16 +5004,28 @@ function configureItineraryContent(){
   ['d6','d7','d8','d9','d10','d11'].forEach(id=>$(id)?.classList.toggle('hidden',!london));
   if(london)resetManualItineraryFormUi();
 }
+const OPERATIONAL_RETURN_VIEWS=new Set(['buildView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','itineraryView','documentsView', 'genericDashboardView','dashboardView']);
+function validOperationalReturnRoute(childView=null){
+  const route=operationalReturnRoute;
+  if(!route||route.userId!==session?.user?.id||route.tripId!==trip?.id||(childView&&route.childView!==childView)||!OPERATIONAL_RETURN_VIEWS.has(route.parentView)){if(route&&(route.userId!==session?.user?.id||route.tripId!==trip?.id))operationalReturnRoute=null;return null}
+  return route;
+}
+function setOperationalReturnRoute(childView,parentView){
+  if(!trip||!session||!OPERATIONAL_RETURN_VIEWS.has(parentView))return false;
+  operationalReturnRoute={userId:session.user.id,tripId:trip.id,childView,parentView};return true;
+}
+function clearOperationalReturnRoute(childView=null){
+  if(!childView||operationalReturnRoute?.childView===childView)operationalReturnRoute=null;
+}
 function validModuleReturnContext(){
-  const context=moduleReturnContext;
-  if(!context||context.userId!==session?.user?.id||context.tripId!==trip?.id){moduleReturnContext=null;return null}
-  return context;
+  const route=validOperationalReturnRoute();
+  return route?.parentView==='buildView'?{userId:route.userId,tripId:route.tripId,view:'buildView'}:null;
 }
 function setModuleReturnContext(view='buildView'){
-  if(!trip||!session)return;
-  moduleReturnContext={userId:session.user.id,tripId:trip.id,view};
+  const child=visibleAppView()==='buildView'?null:visibleAppView();
+  return setOperationalReturnRoute(child,view);
 }
-function clearModuleReturnContext(){moduleReturnContext=null}
+function clearModuleReturnContext(){clearOperationalReturnRoute()}
 function clearItinerarySourceContext(){
   itinerarySourceContext=null;
   const moduleContext=validModuleReturnContext();
@@ -5495,7 +5495,7 @@ async function toggleItem(id,done){if(!trip)return;const tripId=trip.id,generati
 async function deleteItem(id,templateKey=''){if(!trip)return;const tripId=trip.id,generation=tripLoadGeneration,dismissTemplate=!isLondonTrip()&&!!templateKey;const query=dismissTemplate?db.from('checklist_items').update({dismissed:true}).eq('id',id).eq('trip_id',tripId):db.from('checklist_items').delete().eq('id',id).eq('trip_id',tripId);const {error}=await query;if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
 document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
   const fromBuild=!!b.closest('#buildView');
-  if(fromBuild&&['genericFlightsView','accommodationView','activitiesView','localTransportView','carRentalView'].includes(b.dataset.open))setModuleReturnContext('buildView');
+  if(fromBuild&&['genericFlightsView','accommodationView','activitiesView','localTransportView','carRentalView'].includes(b.dataset.open))setOperationalReturnRoute(b.dataset.open,'buildView');
   else if(!['documentsView'].includes(b.dataset.open))clearModuleReturnContext();
   if(b.dataset.open==='documentsView'){clearDocumentsReturnContext();clearAccommodationVoucherFocus()}
   if(b.dataset.open==='activitiesView'&&b.dataset.activityMode)setActivityViewMode(b.dataset.activityMode);
