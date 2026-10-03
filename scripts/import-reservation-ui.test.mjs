@@ -63,3 +63,10 @@ test('multi-segment flight import creates separate rows under one booking docume
   assert.match(html,/db\.from\('trip_flights'\)\.insert\(rows\)/);
   assert.match(html,/syncFlightDocument\(row\.id,'booking',document\.id/);
 });
+
+test('multi-segment imports materialize reusable travelers for every leg',()=>{
+ const block=html.slice(html.indexOf('async function createImportedFlightSegments'),html.indexOf('async function applyReservationImport'));
+ assert.match(block,/ensure_trip_flight_travelers/);
+ assert.match(block,/p_flight_ids:\(data\|\|\[\]\)\.map\(row=>row\.id\)/);
+ assert.match(block,/p_names:passengerNames/);
+});
