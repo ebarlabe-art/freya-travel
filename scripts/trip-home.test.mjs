@@ -246,12 +246,13 @@ test('NAV contract: operational trip history must not restore Builder',()=>{
   assert.doesNotMatch(popHandlers,/restoreBuilderSession|resumeBuilder/);
 });
 
-test('NAV contract: document detail opened from Documents returns to Documents',()=>{
-  assert.match(html,/documentsReturnContext/);
-  const detail=html.slice(html.indexOf("data-document-open"),html.indexOf("data-document-delete"));
-  assert.match(html,/documentsView/);
-  // Contract intentionally fails until document detail has one authoritative parent route.
-  assert.match(detail,/documentsView/);
+test('NAV contract: external document return restores its exact source view in memory',()=>{
+  assert.match(html,/function rememberExternalDocumentReturn\(\)/);
+  assert.match(html,/externalDocumentReturn=\{userId:session\.user\.id,tripId:trip\.id,view,suspended:false\}/);
+  assert.match(html,/function restoreExternalDocumentReturn\(\)/);
+  assert.match(html,/setAppView\(route\.view\)/);
+  const open=html.slice(html.indexOf("async function openDocument("),html.indexOf("async function deleteDocument("));
+  assert.match(open,/rememberExternalDocumentReturn\(\)/);
 });
 
 test('NAV contract: fresh open has exactly one Home decision path',()=>{
