@@ -3020,6 +3020,8 @@ $('builderReview').onclick=()=>{$('builderMessage').textContent='Revisa els valo
 $('builderReload').onclick=()=>{if(builderRow&&(!builderDirty()||confirm('Recarregar descartarà el text no desat. Continuar?'))){builderBase=$('builderNotes').value;if(builderLive)builderLive.dirty=false;resumeBuilder(builderRow.id,builderController.state.route?.mode||'resume')}};
 // TB04_PROPOSAL_UI_START — nested Builder screens, no operational navigation.
 let proposalOpen=false,proposalSession=null,proposalResult=null,proposalDetail=null,proposalTimer=null,proposalSequence=0,proposalGeneration=null,proposalMode='results',proposalLoadingTimer=null;
+let proposalApiPromise=null;
+function loadProposalApi(){const url='/freya-travel/domain/proposal-builder.js';return proposalApiPromise??=import(/* @vite-ignore */ url).catch(error=>{proposalApiPromise=null;throw error})}
 function stopProposalLoading(){clearInterval(proposalLoadingTimer);proposalLoadingTimer=null;$('proposalLoading').classList.add('hidden');$('proposalPanel').removeAttribute('aria-busy');}
 function startProposalLoading(){if(proposalLoadingTimer!==null)return;$('proposalLoading').classList.remove('hidden');$('proposalPanel').setAttribute('aria-busy','true');const messages=['Estic buscant idees que encaixin amb el teu viatge…','Estic valorant diferents maneres de construir-lo…','Estic preparant les alternatives…'];let i=0;$('proposalLoadingText').textContent=messages[0];proposalLoadingTimer=setInterval(()=>{$('proposalLoadingText').textContent=messages[++i%messages.length]},6000);}
 function resetProposalUi(){stopProposalLoading();proposalGeneration=null;proposalMode='results';proposalSequence++;if(proposalTimer!==null)clearTimeout(proposalTimer);proposalTimer=null;proposalOpen=false;proposalSession=null;proposalResult=null;proposalDetail=null;$('proposalPanel').classList.add('hidden');$('builderEditorPanel').classList.toggle('hidden',false);$('proposalContent').textContent='';$('proposalMessage').textContent='';}
@@ -3032,7 +3034,7 @@ async function openBuilderProposals(push=true,detail=null,direct=false,generatio
  $('proposalHeading').textContent=detail?'Detall de proposta':'Alternatives';$('proposalBack').textContent=detail?'← Torna a alternatives':'← Torna al resum del viatge';
  $('proposalContent').textContent='';$('proposalMessage').textContent=direct?'Preparant alternatives…':'Carregant alternatives…';
  try{
-  const api=await import('/freya-travel/domain/proposal-builder.mjs');if(!builderCurrent(owner,epoch)||sequence!==proposalSequence)return;
+  const api=await loadProposalApi();if(!builderCurrent(owner,epoch)||sequence!==proposalSequence)return;
   if(!proposalSession)proposalSession=new api.ProposalSession(db,owner,sessionStorage,()=>builderCurrent(owner,epoch));
   if(push)history.pushState({builderNav:{...builderHistory('builderView'),proposal:{brief:builderRow.id,detail,generation,mode,before}}},'');
   for(const id of ['proposalGenerate','proposalMore','proposalHistory','proposalCurrent'])$(id).classList.add('hidden');
@@ -3052,7 +3054,7 @@ async function openBuilderProposals(push=true,detail=null,direct=false,generatio
     $('proposalContent').innerHTML=api.renderRefinement(builderRow,proposalResult);
     $('proposalFreeText').onclick=()=>{$('proposalTextLabel').classList.remove('hidden');$('proposalRefinementText').focus()};
     $('proposalRefinementForm').onsubmit=e=>{e.preventDefault();const chips=[...document.querySelectorAll('[name="refinementChip"]:checked')].map(c=>c.value),text=$('proposalRefinementText').value.trim();if(!chips.length&&!text){$('proposalMessage').textContent='Tria què voldries canviar o explica-m’ho.';return;}generateBuilderProposals({chips,text});};
-    $('proposalContent').querySelectorAll('[data-review-decision]').forEach(b=>b.onclick=async()=>{const id=b.dataset.reviewDecision;const decision=builderRow.document.decisions[id];const field=decision?.field;resetProposalUi();rememberBuilder();const api=await import('./domain/live-trip-brief.mjs');if(decision?.scope!=='global'){$('builderMessage').textContent='Aquest imprescindible és específic d’una part del viatge i es conserva. L’edició per àmbit encara no està disponible.';return;}builderLive?.open(api.blockFor(field),field);$('builderMessage').textContent='Revisa aquest imprescindible al resum. Només s’aplicarà quan desis i confirmis el canvi.';});
+    $('proposalContent').querySelectorAll('[data-review-decision]').forEach(b=>b.onclick=async()=>{const id=b.dataset.reviewDecision;const decision=builderRow.document.decisions[id];const field=decision?.field;resetProposalUi();rememberBuilder();const api=await loadBuilderApi();if(decision?.scope!=='global'){$('builderMessage').textContent='Aquest imprescindible és específic d’una part del viatge i es conserva. L’edició per àmbit encara no està disponible.';return;}builderLive?.open(api.blockFor(field),field);$('builderMessage').textContent='Revisa aquest imprescindible al resum. Només s’aplicarà quan desis i confirmis el canvi.';});
    }
    return;
   }
