@@ -3485,6 +3485,7 @@ function renderFlights(){
     const boardingDocuments=flightDocumentLinksFor(row.id,'boarding_pass');
     const baggageDocuments=flightDocumentLinksFor(row.id,'baggage_tag');
     const travelers=flightTravelersFor(row.id);
+    const travelerFallback=!travelers.length&&row.passengers?[{traveler_id:'',display_name:row.passengers,seat:row.seat||null,_fallback:true}]:travelers;
 
     return `<article class="accommodation-card" data-flight-id="${esc(row.id)}">
       <div class="accommodation-card-head">
@@ -3504,7 +3505,7 @@ function renderFlights(){
         ${row.seat?`<div class="accommodation-fact"><small>Seient</small><strong>${esc(row.seat)}</strong></div>`:''}
       </div>
       ${row.notes?`<p class="accommodation-notes">${esc(row.notes)}</p>`:''}
-      ${travelers.length?`<section class="flight-document-group"><h4>👥 Passatgers</h4><div class="flight-travelers">${travelers.map(traveler=>flightTravelerCard(row,traveler)).join('')}</div></section>`:''}
+      ${travelerFallback.length?`<section class="flight-document-group"><h4>👥 Passatgers</h4><div class="flight-travelers">${travelerFallback.map(traveler=>traveler._fallback?`<div class="flight-traveler"><strong>${esc(traveler.display_name)}</strong>${traveler.seat?`<span>Seient ${esc(traveler.seat)}</span>`:''}</div>`:flightTravelerCard(row,traveler)).join('')}</div></section>`:''}
       ${(bookingDocuments.length||boardingDocuments.length||baggageDocuments.length)?`<div class="flight-document-groups">
         ${flightCardDocumentGroup(row,'booking','📄 Reserva',bookingDocuments)}
         ${flightCardDocumentGroup(row,'boarding_pass','🎫 Targetes d’embarcament',boardingDocuments)}
@@ -3542,6 +3543,12 @@ function travelerBoardingPasses(flightId,travelerId){return flightTravelerDocume
 function flightTravelerCard(flight,traveler){
   const passes=travelerBoardingPasses(flight.id,traveler.traveler_id);
   return `<div class="flight-traveler"><strong>${esc(traveler.display_name)}</strong>${traveler.seat?`<span>Seient ${esc(traveler.seat)}</span>`:''}<div class="flight-document-links">${passes.map(link=>`<button type="button" class="secondary" data-traveler-document="${esc(link.document_id)}">🎫 ${esc(flightDocumentTitle(link.document_id))}</button>`).join('')}<button type="button" class="secondary" data-assign-traveler-document data-flight-id="${esc(flight.id)}" data-traveler-id="${esc(traveler.traveler_id)}">${passes.length?'Canviar / afegir targeta':'Afegir targeta d’embarcament'}</button></div></div>`;
+}
+async function ensureFlightTravelersFromText(flightId,passengersText){
+  const names=[...new Set(String(passengersText||'').split(' · ').map(name=>name.trim()).filter(Boolean))];
+  if(!names.length||!trip?.id||!flightId)return;
+  const {error}=await db.rpc('ensure_trip_flight_travelers',{p_trip_id:trip.id,p_flight_ids:[flightId],p_names:names});
+  if(error)throw error;
 }
 async function openTravelerFlightDocument(documentId){if(documentId)await openDocument(documentId,documentRows)}
 async function assignTravelerBoardingPass(flightId,travelerId){
@@ -5622,6 +5629,8 @@ $('flightForm').onsubmit=async event=>{
         $('flightPriceScope').value='Oferta seleccionada al cercador de vols';
       }
     }
+
+    if(payload.passengers)await ensureFlightTravelersFromText(flight.id,payload.passengers);
 
     form.dataset.editId=flight.id;
     form.dataset.originalUpdatedAt=flight.updated_at;
