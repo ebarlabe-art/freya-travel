@@ -56,3 +56,10 @@ test('accommodation import maps address and dates into the operational form',()=
   assert.match(apply,/check_in_at/);
   assert.match(apply,/check_out_at/);
 });
+
+test('multi-segment flight import creates separate rows under one booking document',()=>{
+  assert.match(html,/async function createImportedFlightSegments/);
+  assert.match(html,/proposal\.flight_segments\?\.length>1/);
+  assert.match(html,/db\.from\('trip_flights'\)\.insert\(rows\)/);
+  assert.match(html,/syncFlightDocument\(row\.id,'booking',document\.id/);
+});
