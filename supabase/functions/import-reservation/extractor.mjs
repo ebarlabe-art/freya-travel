@@ -37,7 +37,7 @@ export function importResponseSchema(target){
         seat:{anyOf:[{type:'string',minLength:1,maxLength:100},{type:'null'}]},
         baggage:{anyOf:[{type:'string',minLength:1,maxLength:500},{type:'null'}]},
         passengers:{anyOf:[{type:'string',minLength:1,maxLength:1000},{type:'null'}]}
-      },required:['airline','flight_number','departure_airport_code','departure_airport_name','departure_city','departure_at','arrival_airport_code','arrival_airport_name','arrival_city','arrival_at','departure_terminal','arrival_terminal','seat','baggage','passengers']}}:{type:'array',maxItems:0}
+      },required:['airline','flight_number','departure_airport_code','departure_airport_name','departure_city','departure_at','arrival_airport_code','arrival_airport_name','arrival_city','arrival_at','departure_terminal','arrival_terminal','seat','baggage','passengers']}}:{type:'array',maxItems:0,items:{type:'string'}}
     },
     required:['fields','warnings','flight_segments']
   };
