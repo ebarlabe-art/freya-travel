@@ -165,9 +165,9 @@ export class LiveBriefEditor{
   this.root.querySelectorAll('[data-choice]').forEach(el=>el.onclick=()=>this.choose(el));
   this.root.querySelectorAll('[data-force]').forEach(el=>el.onchange=()=>{const d=globalDecision(row,el.dataset.force)?.decision;this.submit(()=>fieldCommand(row,d.field,{...d,strength:el.value}))});
   this.root.querySelectorAll('[data-remove]').forEach(el=>el.onclick=()=>this.submit(()=>fieldCommand(row,el.dataset.remove,{remove:true})));
-  this.root.querySelectorAll('form').forEach(form=>{form.oninput=()=>{this.dirty=true};form.onsubmit=e=>{e.preventDefault();if(form.reportValidity())this.formSubmit(form)}});
-  // Empty add-only interest form is not an unsaved edit. Its blank required input must not block proposal generation after saved interest chips.
-  const freeInterestForm=this.root.querySelector('form[data-form="free"]');if(freeInterestForm){const syncFreeDirty=()=>{this.dirty=!!freeInterestForm.elements.text.value.trim()};freeInterestForm.oninput=syncFreeDirty;syncFreeDirty();}
+  const formSignature=()=>[...this.root.querySelectorAll('form')].map(form=>[...form.elements].filter(el=>el.name).map(el=>[el.name,el.type==='checkbox'||el.type==='radio'?el.checked:el.value])).flat();
+  const formBaseline=JSON.stringify(formSignature());
+  this.root.querySelectorAll('form').forEach(form=>{form.oninput=()=>{this.dirty=JSON.stringify(formSignature())!==formBaseline};form.onsubmit=e=>{e.preventDefault();if(form.reportValidity())this.formSubmit(form)}});
   this.root.querySelectorAll('[data-state]').forEach(el=>el.onclick=()=>this.submit(()=>fieldCommand(row,el.dataset.field,{knowledge:el.dataset.state})));
   const budget=this.root.querySelector('form[data-form=budget]');if(budget){const sync=()=>{for(const name of ['amount','currency','stretch'])budget.elements[name].closest('label').hidden=budget.elements.mode.value==='price_discovery'||name==='stretch'&&budget.elements.mode.value!=='target_stretch';};budget.elements.mode.addEventListener('change',sync);sync();}
   this.root.querySelector('[data-date-mode]')?.addEventListener('change',e=>{const window=e.target.value==='window';const form=e.target.form;form.elements.start.previousSibling.textContent=window?'A partir de':'Inici';form.elements.end.previousSibling.textContent=window?'Fins a':'Final'});
