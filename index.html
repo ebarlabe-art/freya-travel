@@ -919,6 +919,10 @@
             <input id="flightBaggage" maxlength="500" placeholder="Maleta de cabina, facturada...">
           </label>
 
+          <label class="wide">Passatgers
+            <input id="flightPassengers" maxlength="1000" placeholder="Noms tal com consten a la reserva">
+          </label>
+
           <label class="wide">Reserva
             <select id="flightBookingDocument">
               <option value="">Sense document associat</option>
@@ -2286,7 +2290,7 @@ document.addEventListener('submit',event=>{
 const ACTIVITY_DRAFT_VERSION=1;
 const ACTIVITY_DRAFT_FIELDS=['activityType','activityTitle','activityStartAt','activityEndAt','activityTimeZone','activityVenue','activityAddress','activityCity','activityStatus','activityReference','activityProvider','activityPhone','activityEmail','activityWebsite','activityPeople','activityAmount','activityCurrency','activityBookingDocument','activityTicketDocument','activityNotes'];
 const FLIGHT_DRAFT_VERSION=1;
-const FLIGHT_DRAFT_FIELDS=['flightAirline','flightNumber','flightDepartureCode','flightDepartureCity','flightDepartureAirport','flightDepartureAt','flightDepartureTimeZone','flightArrivalCode','flightArrivalCity','flightArrivalAirport','flightArrivalAt','flightArrivalTimeZone','flightStatus','flightReference','flightDepartureTerminal','flightArrivalTerminal','flightSeat','flightBaggage','flightBookingDocument','flightNotes'];
+const FLIGHT_DRAFT_FIELDS=['flightAirline','flightNumber','flightDepartureCode','flightDepartureCity','flightDepartureAirport','flightDepartureAt','flightDepartureTimeZone','flightArrivalCode','flightArrivalCity','flightArrivalAirport','flightArrivalAt','flightArrivalTimeZone','flightStatus','flightReference','flightDepartureTerminal','flightArrivalTerminal','flightSeat','flightBaggage','flightPassengers','flightBookingDocument','flightNotes'];
 function optionalText(value){const normalized=String(value||'').trim();return normalized||null}
 function accommodationLinkFor(accommodationId){return accommodationDocumentLinks.find(link=>link.trip_id===trip?.id&&link.accommodation_id===accommodationId&&link.document_role==='voucher')||null}
 function accommodationVoucherDocumentId(accommodationId){return accommodationLinkFor(accommodationId)?.document_id||''}
@@ -3496,6 +3500,7 @@ function renderFlights(){
         ${row.booking_reference?`<div class="accommodation-fact"><small>Localitzador</small><strong>${esc(row.booking_reference)}</strong></div>`:''}
         ${row.seat?`<div class="accommodation-fact"><small>Seient</small><strong>${esc(row.seat)}</strong></div>`:''}
       </div>
+      ${row.notes?`<p class="accommodation-notes">${esc(row.notes)}</p>`:''}
       ${(bookingDocuments.length||boardingDocuments.length||baggageDocuments.length)?`<div class="flight-document-groups">
         ${flightCardDocumentGroup(row,'booking','📄 Reserva',bookingDocuments)}
         ${flightCardDocumentGroup(row,'boarding_pass','🎫 Targetes d’embarcament',boardingDocuments)}
@@ -3623,6 +3628,7 @@ async function openFlightForm(id=''){
   $('flightArrivalTerminal').value=row?.arrival_terminal||'';
   $('flightSeat').value=row?.seat||'';
   $('flightBaggage').value=row?.baggage||'';
+  $('flightPassengers').value=row?.passengers||'';
   $('flightNotes').value=row?.notes||'';
 
   renderFlightDocumentOptions(
@@ -5521,6 +5527,7 @@ $('flightForm').onsubmit=async event=>{
     arrival_terminal:nullable($('flightArrivalTerminal').value),
     seat:nullable($('flightSeat').value),
     baggage:nullable($('flightBaggage').value),
+    passengers:nullable($('flightPassengers').value),
     flight_status:confirmingTb?(currentFlight?.flight_status||'planning'):desiredStatus,
     notes:nullable($('flightNotes').value)
   };
@@ -6799,7 +6806,7 @@ let importProposalApiPromise=null;
 const reservationImportTypeLabels={flight:'Vol',accommodation:'Allotjament',activity:'Activitat',local_transport:'Transport',car_rental:'Cotxe de lloguer'};
 const reservationImportCategories={flight:'Vol',accommodation:'Hotel',activity:'Entrada',local_transport:'Altres',car_rental:'Cotxe'};
 const reservationImportLabels={
- airline:'Companyia',flight_number:'Número de vol',departure_airport_code:'Aeroport sortida',departure_airport_name:'Nom aeroport sortida',departure_city:'Ciutat sortida',departure_at:'Sortida',arrival_airport_code:'Aeroport arribada',arrival_airport_name:'Nom aeroport arribada',arrival_city:'Ciutat arribada',arrival_at:'Arribada',booking_reference:'Localitzador',departure_terminal:'Terminal sortida',arrival_terminal:'Terminal arribada',seat:'Seient',baggage:'Equipatge',
+ airline:'Companyia',flight_number:'Número de vol',departure_airport_code:'Aeroport sortida',departure_airport_name:'Nom aeroport sortida',departure_city:'Ciutat sortida',departure_at:'Sortida',arrival_airport_code:'Aeroport arribada',arrival_airport_name:'Nom aeroport arribada',arrival_city:'Ciutat arribada',arrival_at:'Arribada',booking_reference:'Localitzador',departure_terminal:'Terminal sortida',arrival_terminal:'Terminal arribada',seat:'Seient',baggage:'Equipatge',passengers:'Passatgers',
  accommodation_type:'Tipus',name:'Nom',address:'Adreça',location_text:'Ubicació',city:'Ciutat',postal_code:'Codi postal',region:'Regió',country:'País',check_in_at:'Check-in',check_out_at:'Check-out',booking_provider:'Proveïdor',phone:'Telèfon',email:'Correu',website_url:'Web',room_number:'Habitació',
  title:'Nom / trajecte',activity_type:'Tipus d’activitat',start_at:'Inici',end_at:'Final',venue_name:'Lloc',provider:'Proveïdor',contact_phone:'Telèfon',contact_email:'Correu',people_count:'Persones',amount:'Import',currency:'Moneda',
  transport_mode:'Tipus de transport',transport_origin_name:'Origen',transport_origin_address:'Adreça origen',transport_origin_city:'Ciutat origen',transport_destination_name:'Destinació',transport_destination_address:'Adreça destinació',transport_destination_city:'Ciutat destinació',transport_service_number:'Número de servei',transport_seat:'Seient',transport_platform:'Andana / moll / parada',
@@ -6864,7 +6871,7 @@ async function applyReservationImport(){
     renderDocuments(documentRows);
     if(target==='flight'){
       await openFlightForm();
-      const map={airline:'flightAirline',flight_number:'flightNumber',departure_airport_code:'flightDepartureCode',departure_airport_name:'flightDepartureAirport',departure_city:'flightDepartureCity',arrival_airport_code:'flightArrivalCode',arrival_airport_name:'flightArrivalAirport',arrival_city:'flightArrivalCity',booking_reference:'flightReference',departure_terminal:'flightDepartureTerminal',arrival_terminal:'flightArrivalTerminal',seat:'flightSeat',baggage:'flightBaggage'};
+      const map={airline:'flightAirline',flight_number:'flightNumber',departure_airport_code:'flightDepartureCode',departure_airport_name:'flightDepartureAirport',departure_city:'flightDepartureCity',arrival_airport_code:'flightArrivalCode',arrival_airport_name:'flightArrivalAirport',arrival_city:'flightArrivalCity',booking_reference:'flightReference',departure_terminal:'flightDepartureTerminal',arrival_terminal:'flightArrivalTerminal',seat:'flightSeat',baggage:'flightBaggage',passengers:'flightPassengers'};
       for(const [name,id] of Object.entries(map))if(fields[name])$(id).value=v(name);
       if(fields.departure_at){const value=dateValue('departure_at');if(value)$('flightDepartureAt').value=value}
       if(fields.arrival_at){const value=dateValue('arrival_at');if(value)$('flightArrivalAt').value=value}
