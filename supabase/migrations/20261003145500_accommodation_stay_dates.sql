@@ -2,11 +2,8 @@ alter table public.trip_accommodations
   add column if not exists check_in_date date,
   add column if not exists check_out_date date;
 
-update public.trip_accommodations
-set
-  check_in_date=coalesce(check_in_date,(check_in_at at time zone coalesce(time_zone,'UTC'))::date),
-  check_out_date=coalesce(check_out_date,(check_out_at at time zone coalesce(time_zone,'UTC'))::date)
-where check_in_date is null or check_out_date is null;
+alter table public.trip_accommodations
+  drop constraint if exists trip_accommodations_date_order_check;
 
 alter table public.trip_accommodations
   add constraint trip_accommodations_date_order_check
