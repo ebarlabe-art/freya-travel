@@ -78,3 +78,17 @@ test('flight cards render travelers and individual boarding-pass controls',()=>{
  assert.match(html,/trip_flight_traveler_documents/);
  assert.match(html,/trip_flight_travelers/);
 });
+
+
+test('A2.4 can reuse an existing private trip document without uploading it again',()=>{
+  assert.match(html,/id="reservationImportDocument"/);
+  assert.match(html,/id="reservationImportUseDocument"/);
+  assert.match(html,/id="reservationImportUploadNew"/);
+  assert.match(html,/function reservationImportDocuments\(\)/);
+  const process=html.slice(html.indexOf('async function processReservationImportDocument('),html.indexOf('async function processReservationImportFile('));
+  assert.match(process,/document_id:document\.id/);
+  assert.doesNotMatch(process,/uploadTripDocument/);
+  const click=html.slice(html.indexOf("document.querySelectorAll('[data-import-reservation]"),html.indexOf("$('reservationImportClose').onclick"));
+  assert.match(click,/showReservationImport\(reservationImportState\.target\)/);
+  assert.match(click,/processReservationImportDocument\(document\)/);
+});
