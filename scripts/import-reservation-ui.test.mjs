@@ -92,3 +92,13 @@ test('A2.4 can reuse an existing private trip document without uploading it agai
   assert.match(click,/showReservationImport\(reservationImportState\.target\)/);
   assert.match(click,/processReservationImportDocument\(document\)/);
 });
+
+
+test('A2.4 refreshes trip documents before rendering the existing-document selector',()=>{
+  const start=html.indexOf('async function showReservationImport(');
+  const end=html.indexOf('function renderReservationImportProposal(',start);
+  const block=html.slice(start,end);
+  assert.match(block,/await loadDocuments\(true\)/);
+  assert.ok(block.indexOf('await loadDocuments(true)')<block.indexOf('renderReservationImportSources()'));
+  assert.match(block,/No hi ha cap PDF o imatge compatible a Documents/);
+});
