@@ -4570,24 +4570,38 @@ function estimatedHotelArrivalItem(row,tripId){
   const transfer=Number.isFinite(estimate.drive_seconds)?`~${Math.max(1,Math.round(estimate.drive_seconds/60))} min de trasllat`:'';
   return {key:`accommodation:${row.id}:estimated_arrival`,tripId,sourceType:'accommodation',sourceId:row.id,sourceEvent:'estimated_arrival',title:`Arribada estimada · ${row.name}`,eyebrow:'Allotjament · estimació',subtitle:accommodationLocationLines(row).join(' · '),details:[`Inclou ${estimate.airport_buffer_minutes} min per desembarcar i recollir equipatge`,[distance,transfer].filter(Boolean).join(' · '),'Hora orientativa: pot variar segons equipatge, trànsit i transport real.'].filter(Boolean),icon:'🏨',startsAt:estimate.arrivalAt,endsAt:null,timeZone:timing.timeZone,localDate:timing.date,timeLabel:`~ ${timing.time}`,timingKind:'approximate',localOrder:itineraryLocalOrder(timing.time),sortInstant:timing.instant,sortOrder:1,status:row.reservation_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:accommodationMapUrl(row)||'',documents:itineraryDocumentsFor('accommodation',row.id),tags:['Estimació']};
 }
+function accommodationContextCity(row){
+  if(row.city)return row.city;
+  const matches=(tripStopRows||[]).filter(stop=>stop.time_zone&&row.time_zone&&stop.time_zone===row.time_zone);
+  if(matches.length===1)return matches[0].canonical_name||matches[0].label||'';
+  return '';
+}
 async function ensureAccommodationArrivalEstimates(){
-  if(!trip||!session||isLondonTrip()||connectionUnavailable())return;
+  if(!trip||!session||isLondonTrip())return;
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
+  let changed=false;
   for(const row of accommodationRows){
     if((!row.check_in_at&&!row.check_in_date)||accommodationArrivalEstimates.has(row.id)||accommodationArrivalEstimateRequests.has(row.id))continue;
-    const flight=arrivalFlightForAccommodation(row),destination=accommodationDestinationText(row),origin=flight?flightArrivalOriginText(flight):'';
-    if(!flight?.arrival_at||!origin||!destination)continue;
-    accommodationArrivalEstimateRequests.add(row.id);
-    try{
-      const {data,error}=await db.functions.invoke('trip-transfer-estimate',{body:{trip_id:tripId,origin,destination}});
-      if(error||data?.error)throw error||new Error(data.error);
-      if(!itineraryRequestIsCurrent(tripId,generation,userId))return;
-      const airportBuffer=flight.baggage?75:60,arrivalMs=new Date(flight.arrival_at).getTime()+airportBuffer*60000+Number(data.drive_seconds||0)*1000+15*60000;
-      accommodationArrivalEstimates.set(row.id,{...data,airport_buffer_minutes:airportBuffer,arrivalAt:new Date(arrivalMs).toISOString(),flight_id:flight.id});
-    }catch(_){}
-    finally{accommodationArrivalEstimateRequests.delete(row.id)}
+    const flight=arrivalFlightForAccommodation(row);if(!flight?.arrival_at)continue;
+    const hotelCity=accommodationContextCity(row),arrivalCity=flight.arrival_city||'';
+    const sameCity=hotelCity&&arrivalCity&&importNormalizePlace(hotelCity)===importNormalizePlace(arrivalCity);
+    const transferMinutes=sameCity?30:45;
+    const airportBuffer=flight.baggage?75:60;
+    const arrivalMs=new Date(flight.arrival_at).getTime()+(airportBuffer+transferMinutes+15)*60000;
+    accommodationArrivalEstimates.set(row.id,{
+      airport_buffer_minutes:airportBuffer,
+      drive_seconds:transferMinutes*60,
+      distance_m:null,
+      quality:'approximate',
+      method:sameCity?'same_city_context':'trip_context_fallback',
+      origin:{label:flightArrivalOriginText(flight)},
+      destination:{label:accommodationDestinationText(row)||hotelCity||row.name},
+      arrivalAt:new Date(arrivalMs).toISOString(),
+      flight_id:flight.id
+    });
+    changed=true;
   }
-  if(itineraryRequestIsCurrent(tripId,generation,userId)){rebuildGenericItinerary(tripId,generation,userId);renderTripHome()}
+  if(changed&&itineraryRequestIsCurrent(tripId,generation,userId)){rebuildGenericItinerary(tripId,generation,userId);renderTripHome()}
 }
 function normalizedItineraryProjection(tripId,generation,userId=session?.user?.id){
   if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip()||!itinerarySourcesAreReady(tripId,generation,userId))return [];
