@@ -6888,6 +6888,11 @@ async function createImportedFlightSegments(proposal,document,selectedFields){
   if(error)throw error;
   if(!tripRequestIsCurrent(tripId,generation))return [];
   for(const row of data||[])await syncFlightDocument(row.id,'booking',document.id,'',row.updated_at,tripId,generation);
+  const passengerNames=[...new Set(segments.flatMap(segment=>String(segment.passengers||common('passengers')||'').split(' · ')).map(name=>name.trim()).filter(Boolean))];
+  if(passengerNames.length){
+    const {error:travelerError}=await db.rpc('ensure_trip_flight_travelers',{p_trip_id:tripId,p_flight_ids:(data||[]).map(row=>row.id),p_names:passengerNames});
+    if(travelerError)throw travelerError;
+  }
   await Promise.all([loadDocuments(true),loadFlights(true)]);
   return data||[];
 }
