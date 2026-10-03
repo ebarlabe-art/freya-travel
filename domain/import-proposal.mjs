@@ -4,7 +4,7 @@ const targetFields={
   flight:new Set([
     'airline','flight_number','departure_airport_code','departure_airport_name','departure_city','departure_at','departure_time_zone',
     'arrival_airport_code','arrival_airport_name','arrival_city','arrival_at','arrival_time_zone','booking_reference',
-    'departure_terminal','arrival_terminal','seat','baggage','flight_status','notes'
+    'departure_terminal','arrival_terminal','seat','baggage','passengers','flight_status','notes'
   ]),
   accommodation:new Set([
     'accommodation_type','name','address','location_text','city','postal_code','region','country','latitude','longitude','check_in_at','check_out_at','time_zone',
