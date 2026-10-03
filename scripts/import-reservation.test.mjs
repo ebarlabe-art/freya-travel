@@ -21,3 +21,19 @@ test('strict schema pins field names to the requested piece',()=>{
  assert.deepEqual(importResponseSchema('flight').properties.fields.items.properties.name.enum,importAiFields.flight);
  assert.throws(()=>importResponseSchema('magic'),/unsupported_target/);
 });
+
+test('flight import explicitly supports passengers and requires departure date',()=>{
+ assert.ok(importAiFields.flight.includes('passengers'));
+ const schema=importResponseSchema('flight');
+ assert.ok(schema.properties.fields.items.properties.name.enum.includes('passengers'));
+ const raw={fields:[
+  {name:'flight_number',value:'AY101',confidence:'high',evidence_excerpt:'AY101',page:1},
+  {name:'departure_at',value:'2026-12-28T09:00',confidence:'high',evidence_excerpt:'28 Dec 09:00',page:1},
+  {name:'passengers',value:'Eva Barlabé · Xesc',confidence:'high',evidence_excerpt:'Passengers Eva Barlabé, Xesc',page:1}
+ ],warnings:['TRAM_ADDICIONAL: AY123 HEL → BCN 2026-12-28 12:00 → 15:30']};
+ const p=modelResultToProposal(raw,{target_type:'flight',source:{kind:'document',document_id:'doc',file_name:'flight.pdf',mime_type:'application/pdf'}});
+ assert.equal(p.fields.passengers.value,'Eva Barlabé · Xesc');
+ assert.equal(p.missing_required.length,0);
+ assert.match(p.warnings[0],/^TRAM_ADDICIONAL:/);
+ normalizeImportProposal(p);
+});
