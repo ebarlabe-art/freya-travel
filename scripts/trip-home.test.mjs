@@ -246,13 +246,14 @@ test('NAV contract: operational trip history must not restore Builder',()=>{
   assert.doesNotMatch(popHandlers,/restoreBuilderSession|resumeBuilder/);
 });
 
-test('NAV contract: external document return restores its exact source view in memory',()=>{
-  assert.match(html,/function rememberExternalDocumentReturn\(\)/);
-  assert.match(html,/externalDocumentReturn=\{userId:session\.user\.id,tripId:trip\.id,view,suspended:false\}/);
-  assert.match(html,/function restoreExternalDocumentReturn\(\)/);
-  assert.match(html,/setAppView\(route\.view\)/);
+test('NAV contract: document viewer preserves the current source view without external navigation',()=>{
+  assert.match(html,/id="documentViewer"/);
+  assert.match(html,/function showDocumentViewer\(doc,signedUrl\)/);
   const open=html.slice(html.indexOf("async function openDocument("),html.indexOf("async function deleteDocument("));
-  assert.match(open,/rememberExternalDocumentReturn\(\)/);
+  assert.match(open,/showDocumentViewer\(doc,data\.signedUrl\)/);
+  assert.doesNotMatch(open,/window\.open|rememberExternalDocumentReturn|restoreExternalDocumentReturn/);
+  const close=html.slice(html.indexOf('function closeDocumentViewer(){'),html.indexOf('function showDocumentViewer('));
+  assert.doesNotMatch(close,/setAppView|history\.|location/);
 });
 
 test('NAV contract: fresh open has exactly one Home decision path',()=>{
@@ -304,4 +305,20 @@ test('NAV-03 formalized Builder handoff also crosses the operational boundary',(
 test('NAV-03 deactivation preserves Builder pending operation for safe retry',()=>{
   const deactivate=html.slice(html.indexOf('function deactivateBuilderNavigation(){'),html.indexOf('async function resumeBuilderPointer('));
   assert.doesNotMatch(deactivate,/delete state\.pending|sessionStorage\.removeItem/);
+});
+
+
+test('document viewer stays inside Freya instead of opening a new browsing context',()=>{
+  assert.match(html,/id="documentViewer"/);
+  assert.match(html,/function showDocumentViewer\(doc,signedUrl\)/);
+  const open=html.slice(html.indexOf('async function openDocument('),html.indexOf('async function deleteDocument('));
+  assert.match(open,/showDocumentViewer\(doc,data\.signedUrl\)/);
+  assert.doesNotMatch(open,/window\.open\(/);
+  assert.doesNotMatch(open,/externalDocumentReturn|visibilitychange|pageshow/);
+});
+
+test('closing the internal document viewer does not navigate away from its source module',()=>{
+  const close=html.slice(html.indexOf('function closeDocumentViewer(){'),html.indexOf('function showDocumentViewer('));
+  assert.match(close,/viewer\.classList\.add\('hidden'\)/);
+  assert.doesNotMatch(close,/setAppView|history\.|location/);
 });

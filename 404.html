@@ -223,7 +223,7 @@
     .ticket-list{display:grid;gap:16px}.ticket-card{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 8px 26px rgba(49,42,59,.06)}.ticket-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 18px 12px}.ticket-type{display:flex;align-items:center;gap:10px}.ticket-type .ticket-icon{font-size:28px}.ticket-type strong{display:block;font-size:1.05rem}.ticket-type small{display:block;color:var(--muted);margin-top:2px}.ticket-status{display:inline-block;background:#e7f5ec;color:#247642;border-radius:999px;padding:5px 9px;font-size:.75rem;font-weight:800;white-space:nowrap}.ticket-body{padding:0 18px 18px}.boarding{background:linear-gradient(135deg,#6750a4,#9b72cf);color:#fff;border-radius:18px;padding:18px}.route{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin:14px 0}.airport{text-align:left}.airport:last-child{text-align:right}.airport b{display:block;font-size:1.55rem}.airport span{font-size:.83rem;color:#efe8ff}.plane-line{font-size:1.35rem}.ticket-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.45)}.ticket-meta small{display:block;color:#efe8ff}.ticket-meta b{display:block;margin-top:3px}.ticket-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.ticket-actions button,.ticket-actions a{display:inline-block;text-decoration:none;border-radius:12px;padding:10px 12px;font-weight:700}.ticket-actions .pending{background:var(--soft);color:#6f6877;cursor:default}.ticket-actions .map-link{margin-top:0}.reservation{border-radius:18px;padding:18px;background:#faf8fd;border:1px solid var(--line)}.reservation h3{margin:0 0 8px}.reservation p{margin:4px 0;color:var(--muted)}.reservation .big-time{font-size:1.35rem;font-weight:800;color:#4f378b;margin:10px 0}.wallet-note{background:#fff4d7;border:1px solid #f0d98a;color:#6d5310;border-radius:16px;padding:14px;margin-top:16px}
     .favorite-btn{position:absolute;right:10px;top:10px;width:38px;height:38px;padding:0;border-radius:50%;background:#f3eef9;color:#6b5b79;font-size:1.25rem;line-height:1;box-shadow:none}.favorite-btn.active{background:#fff1bf;color:#9a6b00}.event>div{padding-right:58px}.ticket-card{position:relative}.ticket-card>.favorite-btn{z-index:2;right:12px;top:12px}.ticket-head{padding-right:64px}.favorites-grid{display:grid;gap:14px}.favorite-item{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 8px 24px rgba(49,42,59,.05)}.favorite-item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.favorite-item h3{margin:0}.favorite-item .when{font-weight:800;color:#6750a4;margin:6px 0}.favorite-item p{margin:5px 0;color:var(--muted)}.favorite-remove{background:#fff1bf;color:#7c5600;padding:9px 11px;white-space:nowrap}.favorite-empty{text-align:center;padding:26px 14px;color:var(--muted)}.favorite-count{display:inline-block;min-width:24px;text-align:center;background:#fff1bf;color:#7c5600;border-radius:999px;padding:3px 7px;font-size:.78rem;font-weight:800;margin-left:6px}
     .install-card{display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(135deg,#f3eef9,#fff);border:1px solid var(--line);border-radius:20px;padding:16px;margin:14px 0}.install-card strong{display:block}.install-card small{display:block;color:var(--muted);margin-top:4px}.install-card button{white-space:nowrap}.install-help{font-size:.88rem;color:var(--muted);margin-top:8px}
-    .doc-upload{display:grid;gap:12px}.doc-upload select,.doc-upload input[type=file]{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:12px;background:#fff}.doc-progress{font-size:.9rem;color:var(--muted)}.doc-grid{display:grid;gap:14px}.doc-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px;box-shadow:0 8px 24px rgba(49,42,59,.05)}.doc-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.doc-card h3{margin:0 0 4px}.doc-card p{margin:4px 0;color:var(--muted)}.doc-chip{display:inline-block;background:#ede7f6;color:#4f378b;border-radius:999px;padding:5px 9px;font-size:.75rem;font-weight:800}.doc-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.doc-actions button{padding:10px 12px}.doc-open{background:var(--purple)}.doc-delete{background:#ffdad6;color:#8c1d18}.doc-empty{text-align:center;padding:26px 14px;color:var(--muted)}.privacy-note{background:#e7f5ec;border:1px solid #b9dfc5;color:#245c36;border-radius:16px;padding:14px;margin-top:12px}.upload-status{margin-top:10px}.doc-count{display:inline-block;min-width:24px;text-align:center;background:#ede7f6;color:#4f378b;border-radius:999px;padding:3px 7px;font-size:.78rem;font-weight:800;margin-left:6px}
+    .document-viewer{position:fixed;inset:0;z-index:10000;background:#fff;display:grid;grid-template-rows:auto 1fr;min-height:100dvh}.document-viewer-bar{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;border-bottom:1px solid var(--line);background:#fff}.document-viewer-bar strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.document-viewer-close{padding:10px 14px}.document-viewer-body{min-height:0;display:grid;place-items:stretch;background:#f7f5fb}.document-viewer-body iframe{width:100%;height:100%;border:0;background:#fff}.document-viewer-body img{display:block;max-width:100%;max-height:100%;margin:auto;object-fit:contain}.document-viewer-open{overflow:hidden}.doc-upload{display:grid;gap:12px}.doc-upload select,.doc-upload input[type=file]{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:12px;background:#fff}.doc-progress{font-size:.9rem;color:var(--muted)}.doc-grid{display:grid;gap:14px}.doc-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px;box-shadow:0 8px 24px rgba(49,42,59,.05)}.doc-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.doc-card h3{margin:0 0 4px}.doc-card p{margin:4px 0;color:var(--muted)}.doc-chip{display:inline-block;background:#ede7f6;color:#4f378b;border-radius:999px;padding:5px 9px;font-size:.75rem;font-weight:800}.doc-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.doc-actions button{padding:10px 12px}.doc-open{background:var(--purple)}.doc-delete{background:#ffdad6;color:#8c1d18}.doc-empty{text-align:center;padding:26px 14px;color:var(--muted)}.privacy-note{background:#e7f5ec;border:1px solid #b9dfc5;color:#245c36;border-radius:16px;padding:14px;margin-top:12px}.upload-status{margin-top:10px}.doc-count{display:inline-block;min-width:24px;text-align:center;background:#ede7f6;color:#4f378b;border-radius:999px;padding:3px 7px;font-size:.78rem;font-weight:800;margin-left:6px}
 
     .expense-count{display:inline-block;min-width:24px;text-align:center;background:#e7f5ec;color:#247642;border-radius:999px;padding:3px 7px;font-size:.78rem;font-weight:800;margin-left:6px}.expense-form{display:grid;gap:12px}.expense-form select,.expense-form input{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:13px;background:#fff}.expense-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.expense-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.expense-stat{background:#faf8fd;border:1px solid var(--line);border-radius:16px;padding:14px}.expense-stat small{display:block;color:var(--muted)}.expense-stat strong{display:block;font-size:1.2rem;margin-top:5px}.expense-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.expense-toolbar button{flex:1;min-width:155px}.expense-filters{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:14px}.expense-filters input,.expense-filters select{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:12px;background:#fff}.expense-list{display:grid;gap:14px}.expense-day{display:grid;gap:10px}.expense-day-title{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#4f378b;padding:4px 2px}.expense-day-title h3{margin:0;font-size:1rem}.expense-day-total{font-size:.86rem;color:var(--muted);font-weight:700}.expense-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px}.expense-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.expense-head h3{margin:0}.expense-amount{font-size:1.2rem;font-weight:800;color:#4f378b;white-space:nowrap}.expense-meta{margin-top:7px;color:var(--muted);font-size:.9rem}.expense-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.expense-actions button{padding:9px 11px}.expense-receipt{background:#e7f5ec;color:#245c36}.expense-delete{background:#ffdad6;color:#8c1d18}.expense-empty{text-align:center;padding:24px;color:var(--muted)}.expense-chart{display:grid;gap:12px}.chart-row{display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:10px}.chart-label{font-size:.9rem;font-weight:700}.chart-track{height:12px;background:#eee8f4;border-radius:999px;overflow:hidden}.chart-bar{height:100%;background:linear-gradient(90deg,#6750a4,#9b72cf);border-radius:999px}.chart-value{font-size:.86rem;color:var(--muted);white-space:nowrap}.receipt-label{display:grid;gap:6px;color:var(--muted);font-size:.9rem}.receipt-label input{padding:10px}.float-add{position:fixed;right:20px;bottom:22px;width:58px;height:58px;border-radius:50%;font-size:28px;padding:0;box-shadow:0 10px 28px rgba(79,55,139,.35);z-index:20}
 
@@ -390,6 +390,8 @@
 .proposal-loading{display:flex;align-items:center;gap:8px;min-height:48px}.proposal-dots{display:inline-flex;gap:5px}.proposal-dots i{width:7px;height:7px;border-radius:50%;background:currentColor;animation:proposal-pulse 1.2s infinite}.proposal-dots i:nth-child(2){animation-delay:.2s}.proposal-dots i:nth-child(3){animation-delay:.4s}.proposal-chips{display:flex;flex-wrap:wrap;gap:8px}.proposal-chips label{padding:10px;border:1px solid #b8a8c8;border-radius:16px;min-height:44px}#proposalContent textarea{width:100%;box-sizing:border-box}#proposalContent [data-history-generation]{display:block;margin:10px 0;width:100%;text-align:left}
 @keyframes proposal-pulse{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
 @media(prefers-reduced-motion:reduce){.proposal-dots i{animation:none;opacity:1}}
+
+.import-reservation-overlay{position:fixed;inset:0;z-index:1200;background:rgba(27,17,39,.62);display:flex;align-items:flex-end;justify-content:center;padding:16px}.import-reservation-overlay.hidden{display:none}.import-reservation-panel{width:min(680px,100%);max-height:88dvh;overflow:auto;background:#fff;border-radius:24px 24px 16px 16px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.import-reservation-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.import-reservation-head h2{margin:.2rem 0}.import-reservation-head button{min-width:44px}.import-reservation-fields{display:grid;gap:10px;margin:16px 0}.import-reservation-field{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px;border:1px solid #ded4e7;border-radius:14px;background:#faf8fc}.import-reservation-field input{width:20px;height:20px;margin-top:3px}.import-reservation-field strong,.import-reservation-field span,.import-reservation-field small{display:block;overflow-wrap:anywhere}.import-reservation-field small{margin-top:5px;color:#6b6074}.import-confidence-low{border-color:#d49a75;background:#fff8f1}.import-confidence-medium{border-color:#d9c77f}.import-reservation-warnings{padding:12px;border-radius:12px;background:#fff6df;margin:12px 0}.import-reservation-actions{display:flex;gap:10px;flex-wrap:wrap}.import-reservation-actions button{flex:1 1 180px;min-height:48px}@media(min-width:700px){.import-reservation-overlay{align-items:center}.import-reservation-panel{border-radius:24px}}
 </style>
 </head>
 <body>
@@ -435,7 +437,7 @@
     <div id="joinTripView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><section class="new-trip-card"><h2>Uneix-te a un viatge</h2><div class="join-trip"><input id="inviteInput" placeholder="Codi d’invitació" aria-label="Codi d’invitació"><button id="joinTrip" type="button">Unir-m’hi</button></div><p id="joinTripMsg" class="message hidden" role="status"></p></section></div>
     <div id="constructionView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>🧭 En construcció</h1>
       <div id="constructionTripsList" class="trip-list"></div>
-      <section id="builderContinue" class="new-trip-card hidden"><h2>Continua dissenyant</h2><div id="builderBriefList"></div></section>
+      <section id="builderContinue" class="new-trip-card hidden"><h2>💭 Idees en esborrany</h2><p class="muted">Aquí hi ha idees del Builder que encara no són un viatge operatiu. Els viatges ja creats s’obren des d’Els meus viatges.</p><div id="builderBriefList"></div></section>
       <p id="builderListMessage" role="status"></p><button id="builderListRetry" type="button">Actualitza esborranys</button>
       <button id="builderPendingRetry" type="button" class="hidden">Verifica l’operació pendent</button>
     </div>
@@ -443,27 +445,37 @@
       <button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>Dissenya un viatge</h1>
       <p id="builderStartMessage" role="status"></p>
       <button type="button" id="builderStartRetry" class="hidden">Verifica l’operació pendent</button>
-      <section class="new-trip-card"><h2>Comença un viatge nou</h2><div class="builder-doors">
-        <button type="button" data-builder-mode="inspire"><strong>✨ Inspira’m</strong><span>No sé on anar. Ajuda’m a trobar el viatge.</span></button>
-        <button type="button" data-builder-mode="destination"><strong>📍 Ja sé on vull anar</strong><span>Tinc destinació. Ajuda’m a construir-lo.</span></button>
-        <button type="button" data-builder-mode="idea"><strong>🧭 Tinc una idea</strong><span>Sé més o menys què vull. Ajuda’m a donar-li forma.</span></button>
-      </div></section>
-      <section class="new-trip-card"><p>Ja tens el viatge muntat?</p><button type="button" data-home-view="manualTripView">Afegeix-lo manualment</button></section>
+      <section class="new-trip-card">
+        <h2>Vull que Freya m’ajudi</h2>
+        <p class="muted">Explica’m en quin punt ets i t’ajudaré a decidir i construir el viatge.</p>
+        <div class="builder-doors">
+          <button type="button" data-builder-mode="inspire" onclick="startBuilder('inspire')"><strong>✨ Inspira’m</strong><span>No tinc destinació. Ajuda’m a descobrir on anar i a construir el viatge.</span></button>
+          <button type="button" data-builder-mode="destination" onclick="startBuilder('destination')"><strong>📍 Ja sé on vull anar</strong><span>Tinc la destinació, però encara he de decidir vols, allotjament, ruta, activitats o altres peces.</span></button>
+          <button type="button" data-builder-mode="idea" onclick="startBuilder('idea')"><strong>🧭 Tinc una idea</strong><span>Tinc dates, preferències o algunes coses clares. Ajuda’m a concretar-ho.</span></button>
+        </div>
+      </section>
+      <section class="new-trip-card">
+        <h2>🧳 Ja tinc el viatge muntat</h2>
+        <p class="muted">Ja tens destinació, dates, reserves o planning? Crea el viatge i afegeix en una sola pàgina vols, allotjament, activitats, transport i cotxe de lloguer.</p>
+        <div class="builder-doors">
+          <button type="button" data-home-view="manualTripView"><strong>Afegeix el meu viatge</strong><span>Vull entrar a Freya el viatge que ja tinc preparat.</span></button>
+        </div>
+      </section>
     </div>
-    <div id="manualTripView" class="hidden trips-home"><button type="button" data-builder-back="designTripView">← Tornar</button><section class="new-trip-card"><h1>Afegeix el viatge manualment</h1>
+    <div id="manualTripView" class="hidden trips-home"><button type="button" data-builder-back="designTripView">← Tornar</button><section class="new-trip-card"><h1>Afegeix el teu viatge</h1>
+          <p class="muted">Afegeix totes les destinacions del viatge. Freya verificarà cada lloc i gestionarà automàticament la seva zona horària.</p>
           <form id="createTripForm" class="trip-form">
             <div class="trip-form-grid">
-              <label class="wide">Nom o destinació<input id="tripName" maxlength="100" placeholder="Ex.: Roma" required></label>
-              <label class="wide">Zona horària de la destinació
-                <select id="tripTimeZone" required>
-                  <option value="">Selecciona una zona horària…</option>
-                </select>
-                <small class="muted">Ex.: Lapònia → Europe/Helsinki · Roma → Europe/Rome.</small>
-              </label>
+              <label class="wide">Destinació<input id="tripDestination" maxlength="120" placeholder="Ex.: Riga, Letònia" autocomplete="off"></label>
+              <div class="wide"><button id="addTripDestination" type="button" class="secondary">＋ Afegir destinació</button></div>
+              <div id="tripDestinationChoices" class="builder-doors hidden wide" aria-live="polite"></div>
+              <p id="tripPlaceStatus" class="muted wide" role="status"></p>
+              <div id="tripStopsList" class="wide" aria-live="polite"></div>
+              <label class="wide">Nom del viatge <small class="muted">(opcional)</small><input id="tripName" maxlength="100" placeholder="Ex.: Nadal a Riga i Tallinn"></label>
               <label>Data d’inici<input id="tripStartDate" type="date" required></label>
               <label>Data de fi<input id="tripEndDate" type="date" required></label>
             </div>
-            <button id="createTrip" type="submit">Crear viatge</button>
+            <button id="createTrip" type="submit">Crear viatge i afegir reserves</button>
           </form>
       <p id="tripMsg" class="message hidden" role="status" aria-live="polite"></p>
     </section></div>
@@ -472,7 +484,14 @@
       <button type="button" data-builder-back="constructionView">← Tornar</button>
       <h1 id="builderHeading">Continua dissenyant</h1>
       <button type="button" id="builderPlacesOpen">Verifica les ubicacions</button><div id="builderPlaces"></div>
-      <p id="builderKnown" class="hidden"></p><p id="builderPrompt"></p>
+      <p id="builderKnown" class="hidden"></p>
+      <section id="builderOperationalTripCard" class="new-trip-card hidden">
+        <small>✅ VIATGE JA CREAT</small>
+        <h2 id="builderOperationalTripTitle">Aquest viatge ja existeix</h2>
+        <p>No cal que el tornis a construir aquí. Obre el viatge operatiu per afegir vols, allotjament, activitats, transport, cotxe i importar reserves.</p>
+        <button id="builderOpenOperationalTrip" type="button">Obre el viatge i afegeix reserves →</button>
+      </section>
+      <p id="builderPrompt"></p>
       <div id="builderLive"></div>
       <div id="builderNotesPanel" class="hidden">
       <form id="builderNotesForm"><label for="builderNotes">Explica’ns el viatge que tens al cap</label><textarea id="builderNotes" rows="4" maxlength="2000" placeholder="Vull neu, ambient de Nadal i alguna activitat especial…"></textarea><button id="builderSave" type="submit">Desa la idea</button></form>
@@ -500,15 +519,15 @@
         <div id="tripHomeContent"></div>
         <p id="tripHomeMessage" class="message hidden" role="status"></p>
       </section>
-      <section id="genericConfirmedSection" class="generic-trip-section hidden" aria-label="El teu viatge">
-        <div class="generic-trip-section-head"><h2>El teu viatge</h2><p>Aquí apareix només el que ja tens reservat o confirmat.</p></div>
+      <section id="genericConfirmedSection" class="generic-trip-section" aria-label="Peces del viatge">
+        <div class="generic-trip-section-head"><h2>Peces del viatge</h2><p>Afegeix el que ja tens reservat i completa el que et falta. Totes les peces són sempre aquí.</p></div>
         <div class="generic-module-grid">
-          <button id="genericItineraryModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="itineraryView"><span class="generic-module-icon">📅</span><span class="generic-module-copy"><strong>Itinerari</strong><small id="genericItineraryModuleStatus">Planning consolidat</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericFlightsModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="genericFlightsView"><span class="generic-module-icon">✈️</span><span class="generic-module-copy"><strong>Vols</strong><small id="genericFlightsModuleStatus">Cap vol confirmat</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericAccommodationModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="accommodationView"><span class="generic-module-icon">🏨</span><span class="generic-module-copy"><strong>Allotjament</strong><small id="genericAccommodationModuleStatus">Cap allotjament confirmat</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericActivitiesModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="activitiesView" data-activity-mode="activity"><span class="generic-module-icon">🎟️</span><span class="generic-module-copy"><strong>Activitats</strong><small id="genericActivitiesModuleStatus">Cap activitat confirmada</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericLocalTransportModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="localTransportView"><span class="generic-module-icon">🚇</span><span class="generic-module-copy"><strong>Transport local</strong><small id="genericLocalTransportModuleStatus">Cap transport confirmat</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericCarRentalModuleCard" class="generic-module-card is-ready hidden" type="button" data-open="carRentalView"><span class="generic-module-icon">🚙</span><span class="generic-module-copy"><strong>Cotxe de lloguer</strong><small id="genericCarRentalModuleStatus">Cap cotxe reservat</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericItineraryModuleCard" class="generic-module-card is-ready" type="button" data-open="itineraryView"><span class="generic-module-icon">📅</span><span class="generic-module-copy"><strong>Itinerari</strong><small id="genericItineraryModuleStatus">Crea o revisa l’itinerari</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericFlightsModuleCard" class="generic-module-card is-ready" type="button" data-open="genericFlightsView"><span class="generic-module-icon">✈️</span><span class="generic-module-copy"><strong>Vols</strong><small id="genericFlightsModuleStatus">Afegeix vols</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericAccommodationModuleCard" class="generic-module-card is-ready" type="button" data-open="accommodationView"><span class="generic-module-icon">🏨</span><span class="generic-module-copy"><strong>Allotjament</strong><small id="genericAccommodationModuleStatus">Afegeix allotjament</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericActivitiesModuleCard" class="generic-module-card is-ready" type="button" data-open="activitiesView" data-activity-mode="activity"><span class="generic-module-icon">🎟️</span><span class="generic-module-copy"><strong>Activitats</strong><small id="genericActivitiesModuleStatus">Afegeix activitats</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericLocalTransportModuleCard" class="generic-module-card is-ready" type="button" data-open="localTransportView"><span class="generic-module-icon">🚇</span><span class="generic-module-copy"><strong>Transport local</strong><small id="genericLocalTransportModuleStatus">Afegeix transport</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericCarRentalModuleCard" class="generic-module-card is-ready" type="button" data-open="carRentalView"><span class="generic-module-icon">🚙</span><span class="generic-module-copy"><strong>Cotxe de lloguer</strong><small id="genericCarRentalModuleStatus">Afegeix cotxe</small></span><span class="generic-module-arrow">›</span></button>
         </div>
       </section>
       <section class="generic-trip-section generic-trip-tools" aria-label="Eines del viatge">
@@ -524,7 +543,7 @@
           <button class="generic-module-card" type="button" data-generic-module="currency"><span class="generic-module-icon">💱</span><span class="generic-module-copy"><strong>Moneda</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
           <button class="generic-module-card is-ready" type="button" data-open="photosView"><span class="generic-module-icon">📸</span><span class="generic-module-copy"><strong>Fotos</strong><small id="genericPhotosModuleStatus">Àlbum compartit del viatge</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericTravelersToggle" class="generic-module-card is-ready" type="button"><span class="generic-module-icon">👥</span><span class="generic-module-copy"><strong>Viatgers</strong><small id="genericTravelersModuleStatus">Invitacions del viatge</small></span><span class="generic-module-arrow">›</span></button>
-          <button id="genericTripSettingsToggle" class="generic-module-card is-ready hidden" type="button"><span class="generic-module-icon">⚙️</span><span class="generic-module-copy"><strong>Configuració</strong><small>Nom, dates i zona horària</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericTripSettingsToggle" class="generic-module-card is-ready hidden" type="button"><span class="generic-module-icon">⚙️</span><span class="generic-module-copy"><strong>Configuració</strong><small>Nom i dates</small></span><span class="generic-module-arrow">›</span></button>
         </div>
       </section>
       <div id="genericTripSettingsCard" class="card generic-invite-card hidden">
@@ -533,12 +552,7 @@
         <form id="genericTripSettingsForm" class="trip-form">
           <div class="trip-form-grid">
             <label class="wide">Nom del viatge<input id="genericTripName" maxlength="100" required></label>
-            <label class="wide">Zona horària de la destinació
-              <select id="genericTripTimeZone" required>
-                <option value="">Selecciona una zona horària…</option>
-              </select>
-              <small class="muted">Ex.: Lapònia → Europe/Helsinki · Roma → Europe/Rome.</small>
-            </label>
+            <p class="wide muted">Freya gestiona automàticament la zona horària de la destinació.</p>
             <label>Data d’inici<input id="genericTripStartDate" type="date" required></label>
             <label>Data de fi<input id="genericTripEndDate" type="date" required></label>
           </div>
@@ -621,7 +635,7 @@
       <button class="ghost back" data-source-back>← Torna al tauler</button>
       <section class="accommodation-hero">
         <div><small>🚙 Cotxe de lloguer</small><h2>El cotxe del viatge</h2><p>Reserva, contracte, assegurança i proves d’entrega i devolució, vinculades al mateix lloguer.</p></div>
-        <div class="build-flight-result-actions"><button id="carRentalSearchInfo" type="button">🔎 Buscar cotxe</button><button id="addCarRental" type="button" class="secondary">Afegir lloguer</button></div>
+        <div class="build-flight-result-actions"><button id="carRentalSearchInfo" type="button">🔎 Buscar cotxe</button><button type="button" class="secondary" data-import-reservation="car_rental">📎 Importa reserva</button><button id="addCarRental" type="button" class="secondary">Afegir lloguer</button></div>
       </section>
       <p id="carRentalSearchMessage" class="message hidden" role="status" aria-live="polite"></p>
       <p id="carRentalMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
@@ -705,6 +719,7 @@
         <div><small>🏨 Allotjament</small><h2>On dormiràs?</h2><p>Busca, compara i organitza els allotjaments del viatge, amb les dades útils sempre a mà.</p></div>
         <div class="build-flight-result-actions">
           <button id="buildOpenAccommodationSearch" type="button">🔎 Buscar allotjament</button>
+          <button type="button" class="secondary" data-import-reservation="accommodation">📎 Importa reserva</button>
           <button id="addAccommodation" type="button" class="secondary">Afegir allotjament</button>
         </div>
       </section>
@@ -747,8 +762,10 @@
           <label>Codi postal<input id="accommodationPostalCode" maxlength="40" placeholder="07830"></label>
           <label>Província / regió / territori<input id="accommodationRegion" maxlength="200" placeholder="Illes Balears"></label>
           <label>País<input id="accommodationCountry" maxlength="200" placeholder="Opcional"></label>
-          <label>Check-in<input id="accommodationCheckIn" type="datetime-local"></label>
-          <label>Check-out<input id="accommodationCheckOut" type="datetime-local"></label>
+          <label>Data d’entrada<input id="accommodationCheckInDate" type="date"></label>
+          <label>Hora de check-in <small class="muted">si consta</small><input id="accommodationCheckInTime" type="time"></label>
+          <label>Data de sortida<input id="accommodationCheckOutDate" type="date"></label>
+          <label>Hora de check-out <small class="muted">si consta</small><input id="accommodationCheckOutTime" type="time"></label>
           <div id="accommodationTimeZoneHelp" class="accommodation-form-help"></div>
           
           <label>Proveïdor<input id="accommodationProvider" maxlength="200" placeholder="Web, agència..."></label>
@@ -791,6 +808,7 @@
         </div>
         <div class="build-flight-result-actions">
           <button id="buildOpenFlightSearch" type="button">🔎 Buscar vols</button>
+          <button type="button" class="secondary" data-import-reservation="flight">📎 Importa reserva</button>
           <button id="addFlight" type="button" class="secondary">Afegir vol</button>
         </div>
       </section>
@@ -903,6 +921,10 @@
             <input id="flightBaggage" maxlength="500" placeholder="Maleta de cabina, facturada...">
           </label>
 
+          <label class="wide">Passatgers
+            <input id="flightPassengers" maxlength="1000" placeholder="Noms tal com consten a la reserva">
+          </label>
+
           <label class="wide">Reserva
             <select id="flightBookingDocument">
               <option value="">Sense document associat</option>
@@ -971,7 +993,7 @@
       <button class="ghost back" data-source-back>← Torna al tauler</button>
       <section class="accommodation-hero">
         <div><small>🚇 Transport intern / local</small><h2>Com et mouràs?</h2><p>Organitza trens, busos, ferris, trasllats, taxi/VTC i transport públic sense barrejar-los amb les activitats.</p></div>
-        <button id="addLocalTransport" type="button">Afegir transport</button>
+        <div class="build-flight-result-actions"><button type="button" class="secondary" data-import-reservation="local_transport">📎 Importa reserva</button><button id="addLocalTransport" type="button">Afegir transport</button></div>
       </section>
       <p id="localTransportMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
       <div id="localTransportBrowse" class="local-transport-collection">
@@ -1043,7 +1065,7 @@
       <button class="ghost back" data-source-back>← Torna al tauler</button>
       <section class="accommodation-hero">
         <div><small id="activityViewEyebrow">🎟️ Activitats</small><h2 id="activityViewTitle">Què vols fer?</h2><p id="activityViewCopy">Organitza visites, experiències i reserves del viatge, amb els documents importants sempre a mà.</p></div>
-        <button id="addActivity" type="button">Afegir activitat</button>
+        <div class="build-flight-result-actions"><button type="button" class="secondary" data-import-reservation="activity">📎 Importa reserva</button><button id="addActivity" type="button">Afegir activitat</button></div>
       </section>
       <p id="activityMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
       <div id="activityBrowse">
@@ -1105,7 +1127,7 @@
 
     <div id="dashboardView">
       <button id="backToTrips" class="dashboard-switch" type="button">← Els meus viatges</button>
-      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.19 · Activitats i documents</div></div>
+      <div class="dashboard-head"><div>✈️ Freya Travel</div><h1 id="tripTitle"></h1><p>Eva ❤️ Xesc · 6–11 d’agost de 2026</p><div id="countdown" class="countdown"></div><div class="version-pill">✨ Versió 6.4.30 · Activitats i documents</div></div>
       <div id="installCard" class="install-card hidden"><div><strong>📱 Instal·la Freya Travel</strong><small>Obre-la com una app, sense barra del navegador.</small><div id="installHelp" class="install-help hidden"></div></div><button id="installApp" type="button">Instal·lar</button></div>
       <div id="pushCard" class="install-card"><div><strong>🔔 Notificacions</strong><small id="pushStatus" role="status" aria-live="polite">Comprovant compatibilitat…</small></div><button id="enablePush" type="button">Activa les notificacions</button></div>
       <section class="trip-overview" aria-label="Resum del viatge">
@@ -1417,6 +1439,27 @@
       </div>
     </div>
 
+    <input id="reservationImportFile" type="file" class="hidden" accept="application/pdf,image/png,image/jpeg,image/webp">
+    <div id="reservationImportOverlay" class="import-reservation-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="reservationImportTitle">
+      <section class="import-reservation-panel">
+        <div class="import-reservation-head"><div><small>✨ Freya llegeix la reserva</small><h2 id="reservationImportTitle">Importa reserva</h2></div><button id="reservationImportClose" type="button" class="ghost" aria-label="Tanca">✕</button></div>
+        <p id="reservationImportStatus" class="message" role="status" aria-live="polite"></p>
+        <div id="reservationImportSource" class="import-reservation-fields">
+          <label><strong>Document del viatge</strong><select id="reservationImportDocument"><option value="">Tria un document ja pujat…</option></select></label>
+          <div class="import-reservation-actions">
+            <button id="reservationImportUseDocument" type="button" class="secondary">Utilitza aquest document</button>
+            <button id="reservationImportUploadNew" type="button" class="secondary">Puja'n un de nou</button>
+          </div>
+        </div>
+        <div id="reservationImportWarnings" class="import-reservation-warnings hidden"></div>
+        <div id="reservationImportFields" class="import-reservation-fields"></div>
+        <div class="import-reservation-actions">
+          <button id="reservationImportApply" type="button" class="hidden">Omple el formulari</button>
+          <button id="reservationImportCancel" type="button" class="secondary">Tanca</button>
+        </div>
+      </section>
+    </div>
+
     <div id="documentsView" class="hidden">
       <button id="documentsBack" class="ghost back" data-back>← Torna al tauler</button>
       <div class="card">
@@ -1449,6 +1492,14 @@
         <div id="documentsList" class="doc-grid"></div>
         <div id="documentsEmpty" class="doc-empty">Encara no hi ha cap document.</div>
       </div>
+    </div>
+
+    <div id="documentViewer" class="document-viewer hidden" role="dialog" aria-modal="true" aria-labelledby="documentViewerTitle">
+      <div class="document-viewer-bar">
+        <button id="documentViewerClose" type="button" class="ghost document-viewer-close">← Tanca</button>
+        <strong id="documentViewerTitle">Document</strong>
+      </div>
+      <div id="documentViewerBody" class="document-viewer-body"></div>
     </div>
 
     <div id="expensesView" class="hidden">
@@ -1705,7 +1756,7 @@
       <section id="d11" class="day"><div class="day-title"><small>Dimarts 11 d’agost</small><h2>Parlament, Notting Hill i tornada</h2></div><ol class="timeline"><li class="event"><time>08.00</time><div><strong>Check-out</strong><p>Deixar les maletes a l’hotel.</p></div></li><li class="event"><time>09.30</time><div><strong>UK Parliament</strong><p>Entrada per Cromwell Green Visitor Entrance.</p><span class="badge">Reserva</span></div></li><li class="event"><time>11.40</time><div><strong>Hyde Park i Kensington Gardens</strong><p>Passeig fins a Notting Hill i Portobello Road.</p></div></li><li class="event"><time>15.50</time><div><strong>Recollida d’equipatge</strong><p>Retorn a l’hotel amb marge.</p></div></li><li class="event"><time>17.20</time><div><strong>Stansted Express</strong><p>Objectiu: arribar a Stansted cap a les 18.10 h.</p></div></li><li class="event"><time>21.30</time><div><strong>Vol FR9798 · Ryanair</strong><p>London Stansted → Girona.</p><span class="badge">Confirmat</span><a class="map-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/UK+Parliament/Hyde+Park+Corner/Kensington+Gardens/Notting+Hill/Riu+Plaza+London+Victoria">📍 Obrir ruta a Maps</a></div></li></ol></section>
     </div>
     <button id="globalSearchFab" class="search-fab" type="button" aria-label="Cerca a tota l'app">🔎</button>
-    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.19</p>
+    <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.30</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1728,7 +1779,7 @@ let trip = null;
 let channel=null,tripLoadGeneration=0,sessionRenderGeneration=0,flightTimer=null;
 const NAVIGATION_STATE_VERSION=1;
 let navigationRestoreInProgress=false,lastAuthenticatedUserId=null;
-let moduleReturnContext=null;
+let operationalReturnRoute=null;
 let coldStartNavigationPending=true;
 const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'),hide=id=>$(id).classList.add('hidden');
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
@@ -2189,6 +2240,8 @@ let accommodationRows=[];
 let flightChannel=null;
 let flightRows=[];
 let flightDocumentLinks=[];
+let flightTravelerRows=[];
+let flightTravelerDocumentLinks=[];
 let flightSubmitting=false;
 let flightLoadSequence=0;
 let flightCompletedUploadKeys=new Set();
@@ -2200,9 +2253,10 @@ let activityLoadSequence=0;
 let accommodationDocumentLinks=[];
 let accommodationSubmitting=false;
 let accommodationLoadSequence=0;
-let documentsReturnContext=null;
 let accommodationVoucherFocus=null,accommodationVoucherFocusTimer=null;
 let itineraryProjection=[];
+let accommodationArrivalEstimates=new Map();
+let accommodationArrivalEstimateRequests=new Set();
 let itinerarySourceReady={flight:null,accommodation:null,activity:null,manual:null};
 let itineraryLoadSequence=0;
 let itineraryLoadBatch=0;
@@ -2222,8 +2276,8 @@ let dayMetadataLoadSequence=0;
 const MANUAL_ITINERARY_DRAFT_VERSION=1;
 const MANUAL_ITINERARY_DRAFT_FIELDS=['manualItineraryTitle','manualItineraryTimingKind','manualItineraryDate','manualItineraryDaypart','manualItineraryStartAt','manualItineraryEndAt','manualItineraryApproximateStartTime','manualItineraryApproximateEndTime','manualItineraryTimeZone','manualItineraryLocation','manualItineraryAddress','manualItineraryCity','manualItineraryFixed','manualItineraryOptional','manualItineraryStatus','manualItineraryNotes'];
 const ACCOMMODATION_DRAFT_VERSION=2;
-const ACCOMMODATION_DRAFT_FIELDS=['accommodationType','accommodationName','accommodationAddress','accommodationCity','accommodationPostalCode','accommodationRegion','accommodationCountry','accommodationCheckIn','accommodationCheckOut','accommodationStatus','accommodationProvider','accommodationReference','accommodationPhone','accommodationEmail','accommodationWebsite','accommodationRoom','accommodationVoucher','accommodationNotes'];
-const ACCOMMODATION_SELECT='id,trip_id,accommodation_type,name,address,location_text,city,postal_code,region,country,latitude,longitude,check_in_at,check_out_at,time_zone,booking_reference,booking_provider,reservation_status,phone,email,website_url,room_number,notes,check_in_completed_at,check_out_completed_at,created_by,updated_by,created_at,updated_at';
+const ACCOMMODATION_DRAFT_FIELDS=['accommodationType','accommodationName','accommodationAddress','accommodationCity','accommodationPostalCode','accommodationRegion','accommodationCountry','accommodationCheckInDate','accommodationCheckInTime','accommodationCheckOutDate','accommodationCheckOutTime','accommodationStatus','accommodationProvider','accommodationReference','accommodationPhone','accommodationEmail','accommodationWebsite','accommodationRoom','accommodationVoucher','accommodationNotes'];
+const ACCOMMODATION_SELECT='id,trip_id,accommodation_type,name,address,location_text,city,postal_code,region,country,latitude,longitude,check_in_date,check_out_date,check_in_at,check_out_at,time_zone,booking_reference,booking_provider,reservation_status,phone,email,website_url,room_number,notes,check_in_completed_at,check_out_completed_at,created_by,updated_by,created_at,updated_at';
 const ACCOMMODATION_TYPES={hotel:{icon:'🏨',label:'Hotel'},apartment:{icon:'🏠',label:'Apartament'},house:{icon:'🏡',label:'Casa'},hostel:{icon:'🛏️',label:'Hostal'},resort:{icon:'🌴',label:'Resort'},other:{icon:'📍',label:'Allotjament'}};
 const ACCOMMODATION_STATUSES={planning:'En planificació',reserved:'Reservat',confirmed:'Confirmat',cancelled:'Cancel·lat'};
 const ACTIVITY_TYPES={transport:{icon:'🚐',label:'Transport'},restaurant:{icon:'🍽️',label:'Restaurant'},attraction:{icon:'🎡',label:'Atracció'},tour:{icon:'🗺️',label:'Tour o visita'},excursion:{icon:'🥾',label:'Excursió'},museum:{icon:'🏛️',label:'Museu'},show:{icon:'🎭',label:'Espectacle'},experience:{icon:'✨',label:'Experiència'},beach:{icon:'🏖️',label:'Platja'},transport_activity:{icon:'🚐',label:'Activitat de transport'},other:{icon:'📍',label:'Altres'}};
@@ -2256,19 +2310,19 @@ document.addEventListener('submit',event=>{
 const ACTIVITY_DRAFT_VERSION=1;
 const ACTIVITY_DRAFT_FIELDS=['activityType','activityTitle','activityStartAt','activityEndAt','activityTimeZone','activityVenue','activityAddress','activityCity','activityStatus','activityReference','activityProvider','activityPhone','activityEmail','activityWebsite','activityPeople','activityAmount','activityCurrency','activityBookingDocument','activityTicketDocument','activityNotes'];
 const FLIGHT_DRAFT_VERSION=1;
-const FLIGHT_DRAFT_FIELDS=['flightAirline','flightNumber','flightDepartureCode','flightDepartureCity','flightDepartureAirport','flightDepartureAt','flightDepartureTimeZone','flightArrivalCode','flightArrivalCity','flightArrivalAirport','flightArrivalAt','flightArrivalTimeZone','flightStatus','flightReference','flightDepartureTerminal','flightArrivalTerminal','flightSeat','flightBaggage','flightBookingDocument','flightNotes'];
+const FLIGHT_DRAFT_FIELDS=['flightAirline','flightNumber','flightDepartureCode','flightDepartureCity','flightDepartureAirport','flightDepartureAt','flightDepartureTimeZone','flightArrivalCode','flightArrivalCity','flightArrivalAirport','flightArrivalAt','flightArrivalTimeZone','flightStatus','flightReference','flightDepartureTerminal','flightArrivalTerminal','flightSeat','flightBaggage','flightPassengers','flightBookingDocument','flightNotes'];
 function optionalText(value){const normalized=String(value||'').trim();return normalized||null}
 function accommodationLinkFor(accommodationId){return accommodationDocumentLinks.find(link=>link.trip_id===trip?.id&&link.accommodation_id===accommodationId&&link.document_role==='voucher')||null}
 function accommodationVoucherDocumentId(accommodationId){return accommodationLinkFor(accommodationId)?.document_id||''}
 function accommodationDocumentFor(accommodationId){const documentId=accommodationVoucherDocumentId(accommodationId);return documentId?documentRows.find(document=>document.id===documentId)||null:null}
 function accommodationSummary(count=accommodationRows.length){return !count?'Cap allotjament':count===1?'1 allotjament':`${count} allotjaments`}
 function validDocumentsReturnContext(){
-  const context=documentsReturnContext,userId=session?.user?.id,tripId=trip?.id;
-  if(['accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView'].includes(context?.returnView)&&context.userId===userId&&context.tripId===tripId&&!isLondonTrip())return context;
-  documentsReturnContext=null;return null;
+  const route=validOperationalReturnRoute('documentsView');
+  if(route&&['accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView'].includes(route.parentView)&&!isLondonTrip())return {userId:route.userId,tripId:route.tripId,returnView:route.parentView};
+  return null;
 }
 function updateDocumentsBack(){const context=validDocumentsReturnContext();if($('documentsBack'))$('documentsBack').textContent=context?.returnView==='accommodationView'?'← Tornar a Allotjament':context?.returnView==='genericFlightsView'?'← Tornar a Vols':context?.returnView==='activitiesView'?'← Tornar a Reserves i activitats':context?.returnView==='localTransportView'?'← Tornar a Transport intern / local':context?.returnView==='carRentalView'?'← Tornar a Cotxe de lloguer':'← Torna al tauler'}
-function clearDocumentsReturnContext(){documentsReturnContext=null;updateDocumentsBack()}
+function clearDocumentsReturnContext(){clearOperationalReturnRoute('documentsView');updateDocumentsBack()}
 function clearAccommodationVoucherFocus(){
   accommodationVoucherFocus=null;if(accommodationVoucherFocusTimer)clearTimeout(accommodationVoucherFocusTimer);accommodationVoucherFocusTimer=null;
   document.querySelectorAll('.doc-card.doc-voucher-focus').forEach(card=>card.classList.remove('doc-voucher-focus'));
@@ -2294,28 +2348,17 @@ function focusAssociatedAccommodationVoucher(documentsResolved=false){
   });
   return true;
 }
-function setAccommodationDocumentsReturnContext(){
+function setDocumentsReturnContext(parentView){
   if(!trip||!session||isLondonTrip())return false;
-  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'accommodationView'};updateDocumentsBack();return true;
+  const ok=setOperationalReturnRoute('documentsView',parentView);if(ok)updateDocumentsBack();return ok;
 }
-function setActivityDocumentsReturnContext(){
-  if(!trip||!session||isLondonTrip())return false;
-  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'activitiesView'};updateDocumentsBack();return true;
-}
-function setLocalTransportDocumentsReturnContext(){
-  if(!trip||!session||isLondonTrip())return false;
-  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'localTransportView'};updateDocumentsBack();return true;
-}
-function setFlightDocumentsReturnContext(){
-  if(!trip||!session||isLondonTrip())return false;
-  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'genericFlightsView'};updateDocumentsBack();return true;
-}
-function setCarRentalDocumentsReturnContext(){
-  if(!trip||!session||isLondonTrip())return false;
-  documentsReturnContext={userId:session.user.id,tripId:trip.id,returnView:'carRentalView'};updateDocumentsBack();return true;
-}
+function setAccommodationDocumentsReturnContext(){return setDocumentsReturnContext('accommodationView')}
+function setActivityDocumentsReturnContext(){return setDocumentsReturnContext('activitiesView')}
+function setLocalTransportDocumentsReturnContext(){return setDocumentsReturnContext('localTransportView')}
+function setFlightDocumentsReturnContext(){return setDocumentsReturnContext('genericFlightsView')}
+function setCarRentalDocumentsReturnContext(){return setDocumentsReturnContext('carRentalView')}
 function handleDocumentsBack(){
-  const context=validDocumentsReturnContext();documentsReturnContext=null;updateDocumentsBack();setAppView(context?.returnView||tripDashboardId());
+  const context=validDocumentsReturnContext();clearOperationalReturnRoute('documentsView');updateDocumentsBack();setAppView(context?.returnView||tripDashboardId());
 }
 
 const CAR_RENTAL_SELECT='id,trip_id,provider,booking_reference,pickup_location,pickup_city,pickup_at,pickup_time_zone,return_location,return_city,return_at,return_time_zone,vehicle_class,vehicle_model,license_plate,transmission,fuel_policy,pickup_fuel_level,return_fuel_level,pickup_mileage,return_mileage,insurance,excess_amount,excess_currency,deposit_amount,deposit_currency,phone,email,website_url,reservation_status,notes,created_by,updated_by,created_at,updated_at';
@@ -2668,7 +2711,7 @@ function openAccommodationForm(id=''){
   const timeZone=row?.time_zone||trip.time_zone;if(!timeZone){msg('accommodationMsg','Aquest viatge no té una zona horària vàlida.',true);return}
   const originalVoucherDocumentId=row?accommodationVoucherDocumentId(row.id):'';
   const form=$('accommodationForm');form.reset();form.dataset.editId=row?.id||'';form.dataset.timeZone=timeZone;form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=row?.updated_at||'';form.dataset.originalVoucherDocumentId=originalVoucherDocumentId;form.dataset.voucherTouched='false';form.dataset.legacyLocationText=row?.location_text||'';form.dataset.remoteConflict='';
-  $('accommodationFormTitle').textContent=row?'Editar allotjament':'Afegir allotjament';$('accommodationType').value=row?.accommodation_type||'hotel';$('accommodationName').value=row?.name||'';$('accommodationAddress').value=row?.address||'';$('accommodationCity').value=row?.city||'';$('accommodationPostalCode').value=row?.postal_code||'';$('accommodationRegion').value=row?.region||'';$('accommodationCountry').value=row?.country||'';$('accommodationCheckIn').value=isoToZonedLocal(row?.check_in_at,timeZone);$('accommodationCheckOut').value=isoToZonedLocal(row?.check_out_at,timeZone);$('accommodationStatus').value=row?.reservation_status||'planning';syncPieceStatus('accommodationStatus');$('accommodationProvider').value=row?.booking_provider||'';$('accommodationReference').value=row?.booking_reference||'';$('accommodationPhone').value=row?.phone||'';$('accommodationEmail').value=row?.email||'';$('accommodationWebsite').value=row?.website_url||'';$('accommodationRoom').value=row?.room_number||'';$('accommodationNotes').value=row?.notes||'';
+  $('accommodationFormTitle').textContent=row?'Editar allotjament':'Afegir allotjament';$('accommodationType').value=row?.accommodation_type||'hotel';$('accommodationName').value=row?.name||'';$('accommodationAddress').value=row?.address||'';$('accommodationCity').value=row?.city||'';$('accommodationPostalCode').value=row?.postal_code||'';$('accommodationRegion').value=row?.region||'';$('accommodationCountry').value=row?.country||'';$('accommodationCheckInDate').value=row?.check_in_date||isoToZonedLocal(row?.check_in_at,timeZone).slice(0,10);$('accommodationCheckInTime').value=isoToZonedLocal(row?.check_in_at,timeZone).slice(11,16);$('accommodationCheckOutDate').value=row?.check_out_date||isoToZonedLocal(row?.check_out_at,timeZone).slice(0,10);$('accommodationCheckOutTime').value=isoToZonedLocal(row?.check_out_at,timeZone).slice(11,16);$('accommodationStatus').value=row?.reservation_status||'planning';syncPieceStatus('accommodationStatus');$('accommodationProvider').value=row?.booking_provider||'';$('accommodationReference').value=row?.booking_reference||'';$('accommodationPhone').value=row?.phone||'';$('accommodationEmail').value=row?.email||'';$('accommodationWebsite').value=row?.website_url||'';$('accommodationRoom').value=row?.room_number||'';$('accommodationNotes').value=row?.notes||'';
   $('accommodationTimeZoneHelp').textContent=`Hores guardades en la zona ${timeZone}.`;renderAccommodationDocumentOptions(originalVoucherDocumentId);setAccommodationFormMode(true);$('accommodationName').focus();$('accommodationFormCard').scrollIntoView({behavior:'smooth',block:'start'});loadTbCostForm(form,'accommodation',row?.id||'','accommodation').catch(error=>msg('accommodationMsg',error?.message||'No s’ha pogut carregar el cost.',true));
 }
 async function fetchCurrentAccommodationVoucher(accommodationId,tripId,generation){
@@ -2718,7 +2761,7 @@ function subscribeAccommodations(){
 }
 // TRAVEL_BUILDER_UI_START — home-only navigation; operational trips remain separate.
 let builderApiPromise=null,builderController=null,builderRow=null,builderBase='',builderBusy=false,builderConflict=false,builderEpoch=0,builderListSequence=0,builderLive=null;
-function loadBuilderApi(){return builderApiPromise??=import('./domain/travel-builder.mjs').catch(error=>{builderApiPromise=null;throw error})}
+function loadBuilderApi(){const url='/freya-travel/domain/travel-builder.js';return builderApiPromise??=import(/* @vite-ignore */ url).catch(error=>{builderApiPromise=null;throw error})}
 function homeTripPhase(value,now=new Date()){
   const valid=date=>typeof date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(Date.parse(date))&&new Date(date+'T00:00:00Z').toISOString().slice(0,10)===date;
   if(!valid(value.start_date)||!valid(value.end_date)||value.start_date>value.end_date||!value.time_zone)return 'undated';
@@ -2735,8 +2778,25 @@ function homeTripGroups(values,now=new Date()){
   groups.forEach(group=>group.rows.sort((a,b)=>group.key==='past'?String(b.end_date||'').localeCompare(a.end_date||''):String(a.start_date||'').localeCompare(b.start_date||'')));
   return groups.filter(group=>group.rows.length);
 }
-function resetBuilderUi(){if($('builderPlaces'))$('builderPlaces').innerHTML='';resetProposalUi();builderLive?.clear();builderLive=null;if(typeof homeTripReturn!=='undefined')homeTripReturn=null;builderEpoch++;builderListSequence++;builderController=null;builderRow=null;builderBase='';builderBusy=false;builderConflict=false;$('builderNotes').value='';$('builderStartMessage').textContent='';$('builderBriefList').innerHTML='';$('builderKnown').textContent='';$('builderMessage').textContent=''}
+function resetBuilderUi(){if($('builderPlaces'))$('builderPlaces').innerHTML='';$('builderOperationalTripCard')?.classList.add('hidden');resetProposalUi();builderLive?.clear();builderLive=null;if(typeof homeTripReturn!=='undefined')homeTripReturn=null;builderEpoch++;builderListSequence++;builderController=null;builderRow=null;builderBase='';builderBusy=false;builderConflict=false;$('builderNotes').value='';$('builderStartMessage').textContent='';$('builderBriefList').innerHTML='';$('builderKnown').textContent='';$('builderMessage').textContent=''}
 function builderCurrent(owner,epoch){return session?.user?.id===owner&&builderEpoch===epoch}
+function normalizedTripIdentity(value){
+  return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+}
+function operationalTripForBrief(api,row){
+  const label=normalizedTripIdentity(api.briefLabel(row));
+  if(!label)return null;
+  const operationalTrips=typeof trips!=='undefined'&&Array.isArray(trips)?trips:[];
+  const exact=operationalTrips.filter(value=>normalizedTripIdentity(value.name)===label);
+  if(exact.length===1)return exact[0];
+  const words=new Set(label.split(' ').filter(word=>word.length>2));
+  const scored=operationalTrips.map(value=>{
+    const name=normalizedTripIdentity(value.name),nameWords=new Set(name.split(' '));
+    const overlap=[...words].filter(word=>nameWords.has(word)).length;
+    return {value,score:overlap};
+  }).filter(item=>item.score>=Math.max(1,Math.min(2,words.size))).sort((a,b)=>b.score-a.score);
+  return scored.length&&(!scored[1]||scored[0].score>scored[1].score)?scored[0].value:null;
+}
 async function getBuilderController(){
   const owner=session?.user?.id,epoch=builderEpoch;if(!owner)throw new Error('Torna a iniciar sessió.');
   const api=await loadBuilderApi();if(!builderCurrent(owner,epoch))throw new Error('La sessió ha canviat.');
@@ -2749,6 +2809,18 @@ function canLeaveBuilder(){return !builderBusy&&(!builderDirty()||confirm('Sorti
 function builderPointer(){try{const p=JSON.parse(localStorage.getItem('freya-builder-nav-v1:'+session?.user?.id)||'null');return p&&typeof p.brief==='string'?p:null}catch{return null}}
 function rememberBuilder(proposal=null){if(!session?.user?.id||!builderRow)return;try{localStorage.setItem('freya-builder-nav-v1:'+session.user.id,JSON.stringify({active:true,brief:builderRow.id,revision:proposal?.revision??builderRow.revision,proposal:proposal?{brief:builderRow.id,generation:proposal.generation,detail:proposal.detail||null,mode:proposal.mode||'results'}:null}))}catch{}}
 function leaveBuilderPointer(){const p=builderPointer();if(p)try{localStorage.setItem('freya-builder-nav-v1:'+session.user.id,JSON.stringify({...p,active:false}))}catch{}}
+function deactivateBuilderNavigation(){
+  const owner=session?.user?.id;if(!owner)return;
+  try{localStorage.removeItem('freya-builder-nav-v1:'+owner)}catch{}
+  try{
+    const key='freya-builder-v1:'+owner,raw=sessionStorage.getItem(key),state=raw?JSON.parse(raw):null;
+    if(state&&typeof state==='object'&&!Array.isArray(state)&&state.route){delete state.route;sessionStorage.setItem(key,JSON.stringify(state))}
+  }catch{}
+  try{builderController?.clearRoute()}catch{}
+  if(proposalOpen)resetProposalUi();
+  builderLive?.clear();builderLive=null;builderRow=null;builderBase='';builderConflict=false;
+  const state={...(history.state||{})};if(state.builderNav){delete state.builderNav;history.replaceState(Object.keys(state).length?state:null,'')}
+}
 async function resumeBuilderPointer(p=builderPointer()){
  if(!p)return;const parent=visibleAppView()==='designTripView'?'designTripView':null;await resumeBuilder(p.brief,'resume',true);
  if(parent&&history.state?.builderNav)history.replaceState({builderNav:{...history.state.builderNav,parent}},'');
@@ -2771,24 +2843,27 @@ function builderBack(fallback){
   if(visibleAppView()==='builderView')fallback=history.state?.builderNav?.parent||fallback;
   if(history.state?.builderNav?.owner===session?.user?.id&&history.state.builderNav.depth>0)history.back();else navigateBuilder(fallback,false);
 }
-window.addEventListener('popstate',event=>{
-  if(!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(visibleAppView()))return;
-  if(typeof photoNavigation!=='undefined'&&photoNavigation||event.state?.freyaPhoto)return;
+function handleBuilderPopState(event){
+  if(!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(visibleAppView()))return false;
   const target=event.state?.builderNav;
-  if(target?.owner===session?.user?.id&&target.view==='builderView'&&target.proposal&&builderRow?.id===target.proposal.brief){openBuilderProposals(false,target.proposal.detail,false,target.proposal.generation,target.proposal.mode,target.proposal.before);return}
-  if(proposalOpen&&target?.view==='builderView'&&target.owner===session?.user?.id){resetProposalUi();rememberBuilder();return}
-  if(!target||target.owner!==session?.user?.id||!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(target.view))return;
-  if(!canLeaveBuilder()){history.pushState({builderNav:builderHistory(visibleAppView())},'');return}
-  if(target.view==='builderView'){navigateBuilder('constructionView',false,true);return} // Forward never manufactures a new brief.
-  navigateBuilder(target.view,false,true);
-});
+  if(target?.owner===session?.user?.id&&target.view==='builderView'&&target.proposal&&builderRow?.id===target.proposal.brief){openBuilderProposals(false,target.proposal.detail,false,target.proposal.generation,target.proposal.mode,target.proposal.before);return true}
+  if(proposalOpen&&target?.view==='builderView'&&target.owner===session?.user?.id){resetProposalUi();rememberBuilder();return true}
+  if(!target||target.owner!==session?.user?.id||!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(target.view))return false;
+  if(!canLeaveBuilder()){history.pushState({builderNav:builderHistory(visibleAppView())},'');return true}
+  if(target.view==='builderView'){navigateBuilder('constructionView',false,true);return true} // Forward never manufactures a new brief.
+  navigateBuilder(target.view,false,true);return true;
+}
 function renderBuilderControls(){
   const pending=!!builderController?.state.pending;
   $('builderProposals').disabled=builderBusy||pending||!builderRow||builderConflict;
   builderLive?.setLocked(builderBusy||pending||!builderRow||builderConflict);
   $('builderReview').classList.toggle('hidden',!builderConflict);
-  document.querySelectorAll('[data-builder-mode]').forEach(button=>button.disabled=builderBusy||pending);
+  document.querySelectorAll('[data-builder-mode]').forEach(button=>button.disabled=builderBusy);
   $('builderStartRetry').classList.toggle('hidden',!pending);$('builderStartRetry').disabled=builderBusy;
+  if(visibleAppView()==='designTripView'){
+    if(pending&&!builderBusy)$('builderStartMessage').textContent='Hi ha una operació anterior pendent de verificar. Prem “Verifica l’operació pendent” i després podràs començar un viatge nou.';
+    else if(!pending&&!builderBusy&&$('builderStartMessage').textContent.includes('operació anterior pendent'))$('builderStartMessage').textContent='';
+  }
   $('builderPendingRetry').classList.toggle('hidden',!pending);$('builderPendingRetry').disabled=builderBusy;
   $('builderRetry').classList.toggle('hidden',!pending);$('builderRetry').disabled=builderBusy;
   $('builderNotes').disabled=builderBusy||pending||!builderRow||builderConflict;
@@ -2804,11 +2879,30 @@ async function loadBuilderList(){
     const rows=await api.withBriefTimeout(api.listOpenBriefs(db,owner,()=>builderCurrent(owner,epoch)&&sequence===builderListSequence));
     if(!builderCurrent(owner,epoch)||sequence!==builderListSequence)return;
     $('builderContinue').classList.toggle('hidden',!rows.length);
-    $('builderBriefList').innerHTML=rows.map(row=>`<button type="button" data-resume-brief="${esc(row.id)}"><strong>${esc(api.briefLabel(row))}</strong><small>Actualitzat ${esc(new Date(row.updated_at).toLocaleString('ca-ES'))}</small></button>`).join('');
+    $('builderBriefList').innerHTML=rows.map(row=>{
+      const operational=operationalTripForBrief(api,row),label=api.briefLabel(row),updated=esc(new Date(row.updated_at).toLocaleString('ca-ES'));
+      if(operational)return `<div class="card" style="padding:10px;margin:0"><button type="button" data-open-operational-brief="${esc(operational.id)}"><small>✅ Viatge creat</small><strong>${esc(operational.name)}</strong><small>Aquesta idea ja té un viatge operatiu · actualitzat ${updated}</small></button><button type="button" class="secondary" data-resume-brief="${esc(row.id)}">💭 Edita la idea</button></div>`;
+      return `<div class="card" style="padding:10px;margin:0"><button type="button" data-resume-brief="${esc(row.id)}"><small>💭 Idea en esborrany</small><strong>${esc(label)}</strong><small>Actualitzat ${updated}</small></button><button type="button" class="secondary" data-delete-brief="${esc(row.id)}" data-delete-label="${esc(label)}">🗑️ Elimina esborrany</button></div>`;
+    }).join('');
+    $('builderBriefList').querySelectorAll('[data-open-operational-brief]').forEach(button=>button.onclick=()=>openHomeTrip(button.dataset.openOperationalBrief));
     $('builderBriefList').querySelectorAll('[data-resume-brief]').forEach(button=>button.onclick=()=>builderPointer()?.brief===button.dataset.resumeBrief?resumeBuilderPointer():resumeBuilder(button.dataset.resumeBrief));
+    $('builderBriefList').querySelectorAll('[data-delete-brief]').forEach(button=>button.onclick=()=>deleteBuilderBrief(button.dataset.deleteBrief,button.dataset.deleteLabel));
     $('builderListMessage').textContent=controller.state.pending?'Hi ha una operació pendent de verificar. Reintenta-la abans de començar-ne una altra.':rows.length||trips.some(t=>t.tb_handoff&&homeTripPhase(t)==='undated')?'':'Encara no tens cap viatge en construcció.';
     renderBuilderControls();
   }catch(error){if(builderCurrent(owner,epoch)&&sequence===builderListSequence)$('builderListMessage').textContent=error.message||'No s’han pogut carregar els esborranys.'}
+}
+async function deleteBuilderBrief(id,label){
+  const owner=session?.user?.id;if(!owner)return;
+  const pendingBrief=builderController?.state?.pending?.command?.p_brief_id;
+  if(pendingBrief===id){$('builderListMessage').textContent='Aquest esborrany té una operació pendent. Verifica-la abans d’eliminar-lo.';return}
+  if(!confirm('Eliminar l’esborrany «'+label+'»? Aquesta acció no es pot desfer.'))return;
+  $('builderListMessage').textContent='Eliminant esborrany…';
+  const {data,error}=await db.from('trip_briefs').delete().eq('id',id).eq('owner_id',owner).is('trip_id',null).select('id');
+  if(error){$('builderListMessage').textContent=error.message;return}
+  if(!(data||[]).length){$('builderListMessage').textContent='L’esborrany ja no estava disponible.';return}
+  const pointer=builderPointer();if(pointer?.brief===id)try{localStorage.removeItem('freya-builder-nav-v1:'+owner)}catch{}
+  if(builderController?.state?.route?.id===id)try{builderController.clearRoute()}catch{}
+  await loadBuilderList();
 }
 function showBuilderRow(api,row,mode){
   resetProposalUi();
@@ -2818,8 +2912,15 @@ function showBuilderRow(api,row,mode){
   $('builderNotes').value=builderBase;
   $('builderHeading').textContent=api.builderModes[mode]?.title||'Continua dissenyant';
   const facts=api.briefKnownFacts(row);$('builderKnown').textContent=facts.length?'Ja sabem: '+facts.join(' · '):'Viatge en preparació';
+  const operational=operationalTripForBrief(api,row);
+  $('builderOperationalTripCard').classList.toggle('hidden',!operational);
+  if(operational){
+    $('builderOperationalTripTitle').textContent=operational.name+' ja és un viatge creat';
+    $('builderOpenOperationalTrip').onclick=()=>openHomeTrip(operational.id);
+    $('builderPrompt').textContent='Aquesta idea coincideix amb un viatge que ja tens creat. Pots conservar l’esborrany, però per afegir reserves entra al viatge operatiu.';
+  }
   const destinationKnown=Object.values(row.document.decisions).some(d=>d.field==='destination'&&d.scope==='global'&&d.knowledge==='known'&&d.origin==='explicit_user'&&d.value.places?.length);
-  $('builderPrompt').textContent=mode==='destination'&&destinationKnown?'Què més t’agradaria fer en aquest viatge?':api.builderModes[mode]?.prompt||'Pots continuar la idea sense repetir les dades que ja coneixem.';
+  if(!operational)$('builderPrompt').textContent=mode==='destination'&&destinationKnown?'Què més t’agradaria fer en aquest viatge?':api.builderModes[mode]?.prompt||'Pots continuar la idea sense repetir les dades que ja coneixem.';
   if(!builderLive&&$('builderLive').querySelector)builderLive=new api.LiveBriefEditor($('builderLive'),{save:saveBuilderStructured,isBlocked:()=>builderBusy||!!builderController?.state.pending||builderConflict||!builderRow,openNotes:open=>$('builderNotesPanel').classList.toggle('hidden',!open),canSwitch:()=>!builderBusy&&!builderController?.state.pending&&($('builderNotes').value===builderBase||confirm('El text encara no està desat. Vols continuar editant un altre bloc?'))});
   builderLive?.update(row,mode);
   $('builderMessage').textContent='';renderBuilderControls();rememberBuilder();
@@ -2846,12 +2947,37 @@ async function runBuilderPending(){
 }
 async function startBuilder(mode){
   if(builderBusy)return;
-  const owner=session?.user?.id,epoch=builderEpoch;builderBusy=true;$('builderStartMessage').textContent='Preparant l’esborrany…';renderBuilderControls();
+  const owner=session?.user?.id,epoch=builderEpoch;
+  const fallbackTitles={inspire:'✨ Inspira’m',destination:'📍 Ja sé on vull anar',idea:'🧭 Tinc una idea'};
+  enterBuilderView();
+  $('builderHeading').textContent=fallbackTitles[mode]||'Continua dissenyant';
+  $('builderPrompt').textContent='Preparant el viatge…';
+  $('builderMessage').textContent='';
+  builderBusy=true;renderBuilderControls();
   try{
-    const {controller,api}=await getBuilderController();controller.prepareStart(mode);
-    builderLive?.clear();builderRow=null;builderBase='';$('builderNotes').value='';$('builderKnown').textContent='';$('builderHeading').textContent=api.builderModes[mode].title;enterBuilderView();
-  }catch(error){if(builderCurrent(owner,epoch)){$('builderStartMessage').textContent=error.message;builderBusy=false;renderBuilderControls()}return}
-  if(!builderCurrent(owner,epoch))return;builderBusy=false;await runBuilderPending();
+    const {controller,api}=await getBuilderController();
+    if(!builderCurrent(owner,epoch))return;
+    if(controller.state.pending){
+      builderBusy=false;
+      $('builderMessage').textContent='Recuperant una operació anterior…';
+      await runBuilderPending();
+      return;
+    }
+    controller.prepareStart(mode);
+    builderLive?.clear();builderRow=null;builderBase='';$('builderNotes').value='';$('builderKnown').textContent='';
+    $('builderHeading').textContent=api.builderModes[mode].title;
+    $('builderPrompt').textContent=api.builderModes[mode].prompt;
+  }catch(error){
+    if(builderCurrent(owner,epoch)){
+      builderBusy=false;
+      $('builderMessage').textContent='No s’ha pogut iniciar el Builder: '+(error?.message||'error desconegut');
+      renderBuilderControls();
+    }
+    return;
+  }
+  if(!builderCurrent(owner,epoch))return;
+  builderBusy=false;
+  await runBuilderPending();
 }
 async function resumeBuilder(id,mode='resume',restore=false){
   if(builderBusy||!canLeaveBuilder())return;
@@ -2908,6 +3034,8 @@ $('builderReview').onclick=()=>{$('builderMessage').textContent='Revisa els valo
 $('builderReload').onclick=()=>{if(builderRow&&(!builderDirty()||confirm('Recarregar descartarà el text no desat. Continuar?'))){builderBase=$('builderNotes').value;if(builderLive)builderLive.dirty=false;resumeBuilder(builderRow.id,builderController.state.route?.mode||'resume')}};
 // TB04_PROPOSAL_UI_START — nested Builder screens, no operational navigation.
 let proposalOpen=false,proposalSession=null,proposalResult=null,proposalDetail=null,proposalTimer=null,proposalSequence=0,proposalGeneration=null,proposalMode='results',proposalLoadingTimer=null;
+let proposalApiPromise=null;
+function loadProposalApi(){const url='/freya-travel/domain/proposal-builder.js';return proposalApiPromise??=import(/* @vite-ignore */ url).catch(error=>{proposalApiPromise=null;throw error})}
 function stopProposalLoading(){clearInterval(proposalLoadingTimer);proposalLoadingTimer=null;$('proposalLoading').classList.add('hidden');$('proposalPanel').removeAttribute('aria-busy');}
 function startProposalLoading(){if(proposalLoadingTimer!==null)return;$('proposalLoading').classList.remove('hidden');$('proposalPanel').setAttribute('aria-busy','true');const messages=['Estic buscant idees que encaixin amb el teu viatge…','Estic valorant diferents maneres de construir-lo…','Estic preparant les alternatives…'];let i=0;$('proposalLoadingText').textContent=messages[0];proposalLoadingTimer=setInterval(()=>{$('proposalLoadingText').textContent=messages[++i%messages.length]},6000);}
 function resetProposalUi(){stopProposalLoading();proposalGeneration=null;proposalMode='results';proposalSequence++;if(proposalTimer!==null)clearTimeout(proposalTimer);proposalTimer=null;proposalOpen=false;proposalSession=null;proposalResult=null;proposalDetail=null;$('proposalPanel').classList.add('hidden');$('builderEditorPanel').classList.toggle('hidden',false);$('proposalContent').textContent='';$('proposalMessage').textContent='';}
@@ -2915,13 +3043,15 @@ async function openBuilderProposals(push=true,detail=null,direct=false,generatio
  if(!builderRow||builderBusy)return;
  if(!proposalOpen&&builderDirty()){$('builderMessage').textContent='Desa o descarta els canvis abans d’explorar alternatives.';return;}
  const owner=session?.user?.id,epoch=builderEpoch,sequence=++proposalSequence;
+ proposalOpen=true;proposalDetail=detail;proposalGeneration=generation;proposalMode=mode;
+ $('builderEditorPanel').classList.add('hidden');$('proposalPanel').classList.remove('hidden');
+ $('proposalHeading').textContent=detail?'Detall de proposta':'Alternatives';$('proposalBack').textContent=detail?'← Torna a alternatives':'← Torna al resum del viatge';
+ $('proposalContent').textContent='';$('proposalMessage').textContent=direct?'Preparant alternatives…':'Carregant alternatives…';
  try{
-  const api=await import('./domain/proposal-builder.mjs');if(!builderCurrent(owner,epoch)||sequence!==proposalSequence)return;
+  const api=await loadProposalApi();if(!builderCurrent(owner,epoch)||sequence!==proposalSequence)return;
   if(!proposalSession)proposalSession=new api.ProposalSession(db,owner,sessionStorage,()=>builderCurrent(owner,epoch));
-  proposalOpen=true;proposalDetail=detail;proposalGeneration=generation;proposalMode=mode;$('builderEditorPanel').classList.add('hidden');$('proposalPanel').classList.remove('hidden');
   if(push)history.pushState({builderNav:{...builderHistory('builderView'),proposal:{brief:builderRow.id,detail,generation,mode,before}}},'');
-  $('proposalHeading').textContent=detail?'Detall de proposta':'Alternatives';$('proposalBack').textContent=detail?'← Torna a alternatives':'← Torna al resum del viatge';
-  $('proposalContent').textContent='';for(const id of ['proposalGenerate','proposalMore','proposalHistory','proposalCurrent'])$(id).classList.add('hidden');$('proposalMessage').textContent=direct?'Preparant alternatives…':'Carregant alternatives…';
+  for(const id of ['proposalGenerate','proposalMore','proposalHistory','proposalCurrent'])$(id).classList.add('hidden');
   proposalResult=await proposalSession.read(builderRow.id,generation);if(!builderCurrent(owner,epoch)||sequence!==proposalSequence||!proposalOpen)return;
   if(proposalResult.brief_revision!==undefined&&proposalResult.brief_revision!==builderRow.revision){builderConflict=true;renderBuilderControls();}
   if(direct&&!detail&&mode==='results'&&(!proposalResult.generation||proposalResult.stale||proposalResult.generation.status==='obsolete')){await generateBuilderProposals();return;}
@@ -2938,7 +3068,7 @@ async function openBuilderProposals(push=true,detail=null,direct=false,generatio
     $('proposalContent').innerHTML=api.renderRefinement(builderRow,proposalResult);
     $('proposalFreeText').onclick=()=>{$('proposalTextLabel').classList.remove('hidden');$('proposalRefinementText').focus()};
     $('proposalRefinementForm').onsubmit=e=>{e.preventDefault();const chips=[...document.querySelectorAll('[name="refinementChip"]:checked')].map(c=>c.value),text=$('proposalRefinementText').value.trim();if(!chips.length&&!text){$('proposalMessage').textContent='Tria què voldries canviar o explica-m’ho.';return;}generateBuilderProposals({chips,text});};
-    $('proposalContent').querySelectorAll('[data-review-decision]').forEach(b=>b.onclick=async()=>{const id=b.dataset.reviewDecision;const decision=builderRow.document.decisions[id];const field=decision?.field;resetProposalUi();rememberBuilder();const api=await import('./domain/live-trip-brief.mjs');if(decision?.scope!=='global'){$('builderMessage').textContent='Aquest imprescindible és específic d’una part del viatge i es conserva. L’edició per àmbit encara no està disponible.';return;}builderLive?.open(api.blockFor(field),field);$('builderMessage').textContent='Revisa aquest imprescindible al resum. Només s’aplicarà quan desis i confirmis el canvi.';});
+    $('proposalContent').querySelectorAll('[data-review-decision]').forEach(b=>b.onclick=async()=>{const id=b.dataset.reviewDecision;const decision=builderRow.document.decisions[id];const field=decision?.field;resetProposalUi();rememberBuilder();const api=await loadBuilderApi();if(decision?.scope!=='global'){$('builderMessage').textContent='Aquest imprescindible és específic d’una part del viatge i es conserva. L’edició per àmbit encara no està disponible.';return;}builderLive?.open(api.blockFor(field),field);$('builderMessage').textContent='Revisa aquest imprescindible al resum. Només s’aplicarà quan desis i confirmis el canvi.';});
    }
    return;
   }
@@ -2958,7 +3088,7 @@ async function openBuilderProposals(push=true,detail=null,direct=false,generatio
   $('proposalGenerate').disabled=!!proposalSession.busy;
   $('proposalGenerate').textContent=proposalSession.pending?'Verifica la petició pendent':proposalResult.stale?'Genera amb el resum actual':working?'Reprèn si la generació s’ha interromput':g?'Reintenta':'Genera alternatives';
   clearTimeout(proposalTimer);if(working)proposalTimer=setTimeout(()=>{if(proposalOpen&&!document.hidden&&builderCurrent(owner,epoch))openBuilderProposals(false,proposalDetail,false,proposalGeneration,proposalMode)},3000);
- }catch(error){if(builderCurrent(owner,epoch)&&sequence===proposalSequence){stopProposalLoading();$('proposalMessage').textContent=error.message||'No s’han pogut carregar les alternatives.';}}
+ }catch(error){if(builderCurrent(owner,epoch)&&sequence===proposalSequence){stopProposalLoading();const message=error?.message||'No s’han pogut carregar les alternatives.';$('proposalMessage').textContent=message;$('builderMessage').textContent='Propostes: '+message;}}
 }
 $('builderProposals').onclick=()=>openBuilderProposals(true,null,true);
 $('proposalBack').onclick=()=>{if(history.state?.builderNav?.proposal&&history.state.builderNav.depth>0)history.back();else if(proposalDetail)openBuilderProposals(false,null,false,proposalGeneration);else{resetProposalUi();history.replaceState({builderNav:builderHistory('builderView',0)},'');rememberBuilder();}};
@@ -2972,7 +3102,7 @@ async function generateBuilderProposals(refinement){
  finally{if(builderCurrent(owner,epoch)&&proposalSession===activeSession){$('proposalGenerate').disabled=false;if(!['pending','running'].includes(proposalResult?.generation?.status))stopProposalLoading();}}
 }
 async function handoffController(){const owner=session?.user?.id,epoch=builderEpoch;const api=await import('./domain/proposal-handoff.mjs');if(!builderCurrent(owner,epoch))throw Error('La sessió ha canviat.');return {api,controller:new api.HandoffSession(db,owner,localStorage,()=>builderCurrent(owner,epoch)),owner,epoch};}
-async function openFormalizedTrip(briefId){const {controller,owner,epoch}=await handoffController();const result=await controller.read(briefId);if(!result)throw Error('No s’ha pogut recuperar el viatge construït.');if(controller.pending?.p_brief_id===briefId)controller.clear();leaveBuilderPointer();builderController?.clearRoute();resetProposalUi();await refreshTrips({preferredTripId:result.trip_id,open:true});if(builderCurrent(owner,epoch))history.replaceState(null,'');}
+async function openFormalizedTrip(briefId){const {controller,owner,epoch}=await handoffController();const result=await controller.read(briefId);if(!result)throw Error('No s’ha pogut recuperar el viatge construït.');if(controller.pending?.p_brief_id===briefId)controller.clear();deactivateBuilderNavigation();await refreshTrips({preferredTripId:result.trip_id,open:true});if(builderCurrent(owner,epoch))history.replaceState(null,'');}
 async function openHandoffReview(proposal){
  const sequence=proposalSequence;const {api,controller,owner,epoch}=await handoffController();
  try{
@@ -3046,7 +3176,7 @@ function renderBuild(data,tripId,generation,userId){
   $('buildGroups').querySelectorAll('[data-build-source]').forEach(button=>button.onclick=async()=>{
     if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId)return;
     const kind=button.dataset.buildKind,id=button.dataset.buildSource;
-    setModuleReturnContext('buildView');updateItinerarySourceBack();
+    setOperationalReturnRoute(kind==='flight'?'genericFlightsView':kind==='accommodation'?'accommodationView':button.dataset.buildGroup==='localTransport'?'localTransportView':'activitiesView','buildView');updateItinerarySourceBack();
     if(kind==='flight'){setAppView('genericFlightsView');await loadFlights(true);if(tripRequestIsCurrent(tripId,generation))openFlightForm(id)}
     else if(kind==='accommodation'){setAppView('accommodationView');await loadAccommodations(true);if(tripRequestIsCurrent(tripId,generation))openAccommodationForm(id)}
     else if(button.dataset.buildGroup==='local_transport'){resetLocalTransportForm();setAppView('localTransportView');await loadActivities(true)}
@@ -3248,10 +3378,8 @@ function normalizedNavigationView(view,value=trip){
   return isLondonTrip(value)?'dashboardView':'genericDashboardView';
 }
 function persistNavigationState(view){
-  if(['upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(view))return;
-  const userId=session?.user?.id,key=navigationStateStorageKey(userId);if(!key||navigationRestoreInProgress)return;
-  const safeView=normalizedNavigationView(view,trip),state={tripId:trip?.id||null,view:safeView,savedAt:Date.now()};
-  try{localStorage.setItem(key,JSON.stringify(state))}catch(_){}
+  // Opening Freya is intentional Home. Keep trip selection separately, never persist an internal screen.
+  if(session?.user?.id)clearNavigationState(session.user.id);
 }
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
 function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent='';}
@@ -3376,6 +3504,8 @@ function renderFlights(){
     const bookingDocuments=flightDocumentLinksFor(row.id,'booking');
     const boardingDocuments=flightDocumentLinksFor(row.id,'boarding_pass');
     const baggageDocuments=flightDocumentLinksFor(row.id,'baggage_tag');
+    const travelers=flightTravelersFor(row.id);
+    const travelerFallback=!travelers.length&&row.passengers?[{traveler_id:'',display_name:row.passengers,seat:row.seat||null,_fallback:true}]:travelers;
 
     return `<article class="accommodation-card" data-flight-id="${esc(row.id)}">
       <div class="accommodation-card-head">
@@ -3394,6 +3524,8 @@ function renderFlights(){
         ${row.booking_reference?`<div class="accommodation-fact"><small>Localitzador</small><strong>${esc(row.booking_reference)}</strong></div>`:''}
         ${row.seat?`<div class="accommodation-fact"><small>Seient</small><strong>${esc(row.seat)}</strong></div>`:''}
       </div>
+      ${row.notes?`<p class="accommodation-notes">${esc(row.notes)}</p>`:''}
+      ${travelerFallback.length?`<section class="flight-document-group"><h4>👥 Passatgers</h4><div class="flight-travelers">${travelerFallback.map(traveler=>traveler._fallback?`<div class="flight-traveler"><strong>${esc(traveler.display_name)}</strong>${traveler.seat?`<span>Seient ${esc(traveler.seat)}</span>`:''}</div>`:flightTravelerCard(row,traveler)).join('')}</div></section>`:''}
       ${(bookingDocuments.length||boardingDocuments.length||baggageDocuments.length)?`<div class="flight-document-groups">
         ${flightCardDocumentGroup(row,'booking','📄 Reserva',bookingDocuments)}
         ${flightCardDocumentGroup(row,'boarding_pass','🎫 Targetes d’embarcament',boardingDocuments)}
@@ -3406,6 +3538,8 @@ function renderFlights(){
     </article>`;
   }).join('');
 
+  list.querySelectorAll('[data-traveler-document]').forEach(button=>button.onclick=()=>openTravelerFlightDocument(button.dataset.travelerDocument));
+  list.querySelectorAll('[data-assign-traveler-document]').forEach(button=>button.onclick=()=>assignTravelerBoardingPass(button.dataset.flightId,button.dataset.travelerId));
   list.querySelectorAll('[data-flight-document]').forEach(button=>{
     button.onclick=()=>openFlightDocument(
       button.dataset.flightDocument,
@@ -3424,6 +3558,30 @@ function renderFlights(){
   });
 }
 
+function flightTravelersFor(flightId){return flightTravelerRows.filter(row=>row.flight_id===flightId).sort((a,b)=>a.display_name.localeCompare(b.display_name,'ca'))}
+function travelerBoardingPasses(flightId,travelerId){return flightTravelerDocumentLinks.filter(row=>row.flight_id===flightId&&row.traveler_id===travelerId&&row.document_role==='boarding_pass')}
+function flightTravelerCard(flight,traveler){
+  const passes=travelerBoardingPasses(flight.id,traveler.traveler_id);
+  return `<div class="flight-traveler"><strong>${esc(traveler.display_name)}</strong>${traveler.seat?`<span>Seient ${esc(traveler.seat)}</span>`:''}<div class="flight-document-links">${passes.map(link=>`<button type="button" class="secondary" data-traveler-document="${esc(link.document_id)}">🎫 ${esc(flightDocumentTitle(link.document_id))}</button>`).join('')}<button type="button" class="secondary" data-assign-traveler-document data-flight-id="${esc(flight.id)}" data-traveler-id="${esc(traveler.traveler_id)}">${passes.length?'Canviar / afegir targeta':'Afegir targeta d’embarcament'}</button></div></div>`;
+}
+async function ensureFlightTravelersFromText(flightId,passengersText){
+  const names=[...new Set(String(passengersText||'').split(' · ').map(name=>name.trim()).filter(Boolean))];
+  if(!names.length||!trip?.id||!flightId)return;
+  const {error}=await db.rpc('ensure_trip_flight_travelers',{p_trip_id:trip.id,p_flight_ids:[flightId],p_names:names});
+  if(error)throw error;
+}
+async function openTravelerFlightDocument(documentId){if(documentId)await openDocument(documentId,documentRows)}
+async function assignTravelerBoardingPass(flightId,travelerId){
+  const traveler=flightTravelerRows.find(row=>row.flight_id===flightId&&row.traveler_id===travelerId);if(!traveler)return;
+  const available=documentRows.filter(doc=>doc.category==='Vol'||/embarcament|boarding/i.test((doc.title||'')+' '+(doc.file_name||'')));
+  if(!available.length){msg('flightMsg',`No hi ha cap targeta d’embarcament a Documents per assignar a ${traveler.display_name}. Puja-la primer a Documents.`,true);return}
+  const choices=available.map((doc,index)=>`${index+1}. ${doc.title||doc.file_name}`).join('\n');
+  const answer=prompt(`Targeta d’embarcament de ${traveler.display_name}:\n${choices}\n\nEscriu el número del document.`);
+  const selected=available[Number(answer)-1];if(!selected)return;
+  const {error}=await db.from('trip_flight_traveler_documents').upsert({trip_id:trip.id,flight_id:flightId,traveler_id:travelerId,document_id:selected.id,document_role:'boarding_pass',created_by:session.user.id},{onConflict:'trip_id,flight_id,traveler_id,document_role,document_id'});
+  if(error){msg('flightMsg',error.message||'No s’ha pogut assignar la targeta.',true);return}
+  await loadFlights(true);msg('flightMsg',`Targeta d’embarcament assignada a ${traveler.display_name}.`);
+}
 function flightDocumentLinksFor(flightId,role){
   return flightDocumentLinks.filter(link=>link.trip_id===trip?.id&&link.flight_id===flightId&&link.document_role===role).sort((a,b)=>(a.created_at||'').localeCompare(b.created_at||'')||a.document_id.localeCompare(b.document_id));
 }
@@ -3521,6 +3679,7 @@ async function openFlightForm(id=''){
   $('flightArrivalTerminal').value=row?.arrival_terminal||'';
   $('flightSeat').value=row?.seat||'';
   $('flightBaggage').value=row?.baggage||'';
+  $('flightPassengers').value=row?.passengers||'';
   $('flightNotes').value=row?.notes||'';
 
   renderFlightDocumentOptions(
@@ -3547,7 +3706,7 @@ async function fetchAgendaFlights(silent=false){
   if(!silent&&$('flightLoading'))$('flightLoading').classList.remove('hidden');
 
   try{
-    const [flightResult,linkResult]=await Promise.all([
+    const [flightResult,linkResult,travelerResult,travelerDocumentResult]=await Promise.all([
       db.from('trip_flights')
         .select('*')
         .eq('trip_id',tripId)
@@ -3556,15 +3715,25 @@ async function fetchAgendaFlights(silent=false){
         .order('id',{ascending:true}),
       db.from('trip_flight_documents')
         .select('trip_id,flight_id,document_id,document_role,created_at')
+        .eq('trip_id',tripId),
+      db.from('trip_flight_travelers')
+        .select('trip_id,flight_id,traveler_id,seat,trip_travelers!inner(display_name)')
+        .eq('trip_id',tripId),
+      db.from('trip_flight_traveler_documents')
+        .select('trip_id,flight_id,traveler_id,document_id,document_role,created_at')
         .eq('trip_id',tripId)
     ]);
 
     if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId||loadSequence!==flightLoadSequence)return flightRows;
     if(flightResult.error)throw flightResult.error;
     if(linkResult.error)throw linkResult.error;
+    if(travelerResult.error)throw travelerResult.error;
+    if(travelerDocumentResult.error)throw travelerDocumentResult.error;
 
     flightRows=flightResult.data||[];
     flightDocumentLinks=linkResult.data||[];
+    flightTravelerRows=(travelerResult.data||[]).map(row=>({...row,display_name:row.trip_travelers?.display_name||'Passatger'}));
+    flightTravelerDocumentLinks=travelerDocumentResult.data||[];
     renderFlights();
     const form=$('flightForm'),editingId=form.dataset.tripId===tripId?form.dataset.editId||'':'';
     const storedDraft=readFlightDraft(tripId,userId);
@@ -3801,20 +3970,20 @@ function activitySummary(rows=activityRowsForMode('activity')){const count=rows.
 function localTransportSummary(rows=activityRowsForMode('local_transport')){const count=rows.length;return !count?'Cap transport local':count===1?'1 transport local':`${count} transports locals`}
 function syncGenericConfirmedModules(){
   if(!trip||isLondonTrip())return;
-  const flights=flightRows.filter(row=>['reserved','confirmed'].includes(row.flight_status));
-  const accommodations=accommodationRows.filter(row=>['reserved','confirmed'].includes(row.reservation_status));
-  const activities=activityRowsForMode('activity').filter(row=>['reserved','confirmed'].includes(row.reservation_status));
-  const localTransport=activityRowsForMode('local_transport').filter(row=>['reserved','confirmed'].includes(row.reservation_status));
-  const carRentals=carRentalRows.filter(row=>['reserved','confirmed'].includes(row.reservation_status));
+  const flights=flightRows;
+  const accommodations=accommodationRows;
+  const activities=activityRowsForMode('activity');
+  const localTransport=activityRowsForMode('local_transport');
+  const carRentals=carRentalRows;
   const itineraryAny=flights.length||accommodations.length||activities.length||localTransport.length;
-  const any=itineraryAny||carRentals.length;
-  [['genericFlightsModuleCard',!!flights.length],['genericAccommodationModuleCard',!!accommodations.length],['genericActivitiesModuleCard',!!activities.length],['genericLocalTransportModuleCard',!!localTransport.length],['genericCarRentalModuleCard',!!carRentals.length],['genericItineraryModuleCard',!!itineraryAny]].forEach(([id,show])=>$(id)?.classList.toggle('hidden',!show));
-  $('genericConfirmedSection')?.classList.toggle('hidden',!any);
-  if($('genericFlightsModuleStatus'))$('genericFlightsModuleStatus').textContent=flightSummary(flights.length);
-  if($('genericAccommodationModuleStatus'))$('genericAccommodationModuleStatus').textContent=accommodationSummary(accommodations.length);
-  if($('genericActivitiesModuleStatus'))$('genericActivitiesModuleStatus').textContent=activitySummary(activities);
-  if($('genericLocalTransportModuleStatus'))$('genericLocalTransportModuleStatus').textContent=localTransportSummary(localTransport);
-  if($('genericCarRentalModuleStatus'))$('genericCarRentalModuleStatus').textContent=carRentalSummary(carRentals);
+  ['genericFlightsModuleCard','genericAccommodationModuleCard','genericActivitiesModuleCard','genericLocalTransportModuleCard','genericCarRentalModuleCard','genericItineraryModuleCard'].forEach(id=>$(id)?.classList.remove('hidden'));
+  $('genericConfirmedSection')?.classList.remove('hidden');
+  if($('genericItineraryModuleStatus'))$('genericItineraryModuleStatus').textContent=itineraryAny?'Planning consolidat':'Crea o revisa l’itinerari';
+  if($('genericFlightsModuleStatus'))$('genericFlightsModuleStatus').textContent=flights.length?flightSummary(flights.length):'Afegeix vols';
+  if($('genericAccommodationModuleStatus'))$('genericAccommodationModuleStatus').textContent=accommodations.length?accommodationSummary(accommodations.length):'Afegeix allotjament';
+  if($('genericActivitiesModuleStatus'))$('genericActivitiesModuleStatus').textContent=activities.length?activitySummary(activities):'Afegeix activitats';
+  if($('genericLocalTransportModuleStatus'))$('genericLocalTransportModuleStatus').textContent=localTransport.length?localTransportSummary(localTransport):'Afegeix transport';
+  if($('genericCarRentalModuleStatus'))$('genericCarRentalModuleStatus').textContent=carRentals.length?carRentalSummary(carRentals):'Afegeix cotxe';
 }
 
 function localTransportRows(){return activityRows.filter(isLocalTransportActivity)}
@@ -4403,6 +4572,77 @@ function itineraryDocumentsFor(sourceType,sourceId){
     activityDocumentId(sourceId,'ticket')&&{role:'ticket',label:'🎟️ Entrada'}
   ].filter(Boolean);
 }
+function accommodationDestinationText(row){return [row.name,row.address,row.city,row.country].filter(Boolean).join(', ')}
+function flightArrivalOriginText(row){return [row.arrival_airport_name,row.arrival_airport_code,row.arrival_city].filter(Boolean).join(', ')}
+function sameItineraryLocalDate(value,zone,date){return itineraryDateTime(value,zone)?.date===date}
+function departureFlightForAccommodation(row){
+  const checkOut=row.check_out_at?itineraryDateTime(row.check_out_at,row.time_zone):row.check_out_date?{date:row.check_out_date}:null;if(!checkOut)return null;
+  return flightRows.filter(f=>f.departure_at&&sameItineraryLocalDate(f.departure_at,f.departure_time_zone,checkOut.date)).sort((a,b)=>new Date(a.departure_at)-new Date(b.departure_at))[0]||null;
+}
+function estimatedHotelDepartureItem(row,tripId){
+  const estimate=accommodationArrivalEstimates.get('checkout:'+row.id);if(!estimate?.departureAt)return null;
+  const timing=itineraryDateTime(estimate.departureAt,row.time_zone);if(!timing)return null;
+  const transfer=Number.isFinite(estimate.drive_seconds)?`~${Math.max(1,Math.round(estimate.drive_seconds/60))} min de trasllat`:'';
+  return {key:`accommodation:${row.id}:estimated_departure`,tripId,sourceType:'accommodation',sourceId:row.id,sourceEvent:'estimated_departure',title:`Sortida estimada de l’hotel · ${row.name}`,eyebrow:'Allotjament · estimació',subtitle:accommodationLocationLines(row).join(' · '),details:[`Preveu arribar a l’aeroport ${estimate.airport_buffer_minutes} min abans del vol`,transfer,'Hora orientativa: pot variar segons trànsit i operativa de l’aeroport.'].filter(Boolean),icon:'🧳',startsAt:estimate.departureAt,endsAt:null,timeZone:timing.timeZone,localDate:timing.date,timeLabel:`~ ${timing.time}`,timingKind:'approximate',localOrder:itineraryLocalOrder(timing.time),sortInstant:timing.instant,sortOrder:-1,status:row.reservation_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:accommodationMapUrl(row)||'',documents:itineraryDocumentsFor('accommodation',row.id),tags:['Estimació']};
+}
+function arrivalFlightForAccommodation(row){
+  const checkIn=row.check_in_at?itineraryDateTime(row.check_in_at,row.time_zone):row.check_in_date?{date:row.check_in_date}:null;if(!checkIn)return null;
+  return flightRows.filter(f=>f.arrival_at&&sameItineraryLocalDate(f.arrival_at,f.arrival_time_zone,checkIn.date)).sort((a,b)=>new Date(b.arrival_at)-new Date(a.arrival_at))[0]||null;
+}
+function estimatedHotelArrivalItem(row,tripId){
+  const estimate=accommodationArrivalEstimates.get(row.id);if(!estimate?.arrivalAt)return null;
+  const timing=itineraryDateTime(estimate.arrivalAt,row.time_zone);if(!timing)return null;
+  const distance=Number.isFinite(estimate.distance_m)?`${Math.round(estimate.distance_m/1000)} km`:'';
+  const transfer=Number.isFinite(estimate.drive_seconds)?`~${Math.max(1,Math.round(estimate.drive_seconds/60))} min de trasllat`:'';
+  return {key:`accommodation:${row.id}:estimated_arrival`,tripId,sourceType:'accommodation',sourceId:row.id,sourceEvent:'estimated_arrival',title:`Arribada estimada · ${row.name}`,eyebrow:'Allotjament · estimació',subtitle:accommodationLocationLines(row).join(' · '),details:[`Inclou ${estimate.airport_buffer_minutes} min per desembarcar i recollir equipatge`,[distance,transfer].filter(Boolean).join(' · '),'Hora orientativa: pot variar segons equipatge, trànsit i transport real.'].filter(Boolean),icon:'🏨',startsAt:estimate.arrivalAt,endsAt:null,timeZone:timing.timeZone,localDate:timing.date,timeLabel:`~ ${timing.time}`,timingKind:'approximate',localOrder:itineraryLocalOrder(timing.time),sortInstant:timing.instant,sortOrder:1,status:row.reservation_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:accommodationMapUrl(row)||'',documents:itineraryDocumentsFor('accommodation',row.id),tags:['Estimació']};
+}
+function accommodationContextCity(row){
+  if(row.city)return row.city;
+  const matches=(tripStopRows||[]).filter(stop=>stop.time_zone&&row.time_zone&&stop.time_zone===row.time_zone);
+  if(matches.length===1)return matches[0].canonical_name||matches[0].label||'';
+  return '';
+}
+async function ensureAccommodationArrivalEstimates(){
+  if(!trip||!session||isLondonTrip())return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
+  let changed=false;
+  for(const row of accommodationRows){
+    const hotelCity=accommodationContextCity(row);
+
+    if((row.check_in_at||row.check_in_date)&&!accommodationArrivalEstimates.has(row.id)&&!accommodationArrivalEstimateRequests.has(row.id)){
+      const flight=arrivalFlightForAccommodation(row);
+      if(flight?.arrival_at){
+        const arrivalCity=flight.arrival_city||'',sameCity=hotelCity&&arrivalCity&&importNormalizePlace(hotelCity)===importNormalizePlace(arrivalCity);
+        const transferMinutes=sameCity?30:45,airportBuffer=flight.baggage?75:60;
+        const arrivalMs=new Date(flight.arrival_at).getTime()+(airportBuffer+transferMinutes+15)*60000;
+        accommodationArrivalEstimates.set(row.id,{
+          airport_buffer_minutes:airportBuffer,drive_seconds:transferMinutes*60,distance_m:null,quality:'approximate',
+          method:sameCity?'same_city_context':'trip_context_fallback',
+          origin:{label:flightArrivalOriginText(flight)},destination:{label:accommodationDestinationText(row)||hotelCity||row.name},
+          arrivalAt:new Date(arrivalMs).toISOString(),flight_id:flight.id
+        });changed=true;
+      }
+    }
+
+    const checkoutKey='checkout:'+row.id;
+    if((row.check_out_at||row.check_out_date)&&!accommodationArrivalEstimates.has(checkoutKey)&&!accommodationArrivalEstimateRequests.has(checkoutKey)){
+      const flight=departureFlightForAccommodation(row);
+      if(flight?.departure_at){
+        const departureCity=flight.departure_city||'',sameCity=hotelCity&&departureCity&&importNormalizePlace(hotelCity)===importNormalizePlace(departureCity);
+        const transferMinutes=sameCity?30:45;
+        const airportBuffer=120;
+        const departureMs=new Date(flight.departure_at).getTime()-(airportBuffer+transferMinutes+15)*60000;
+        accommodationArrivalEstimates.set(checkoutKey,{
+          airport_buffer_minutes:airportBuffer,drive_seconds:transferMinutes*60,distance_m:null,quality:'approximate',
+          method:sameCity?'same_city_context':'trip_context_fallback',
+          origin:{label:accommodationDestinationText(row)||hotelCity||row.name},destination:{label:flight.departure_airport_name||flight.departure_airport_code||flight.departure_city||'Aeroport'},
+          departureAt:new Date(departureMs).toISOString(),flight_id:flight.id
+        });changed=true;
+      }
+    }
+  }
+  if(changed&&itineraryRequestIsCurrent(tripId,generation,userId)){rebuildGenericItinerary(tripId,generation,userId);renderTripHome()}
+}
 function normalizedItineraryProjection(tripId,generation,userId=session?.user?.id){
   if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip()||!itinerarySourcesAreReady(tripId,generation,userId))return [];
   const items=[];
@@ -4419,9 +4659,17 @@ function normalizedItineraryProjection(tripId,generation,userId=session?.user?.i
     items.push({key:`flight:${row.id}:departure`,tripId,sourceType:'flight',sourceId:row.id,sourceEvent:'departure',title:`${origin} → ${destination}`,eyebrow:'Vol',subtitle:carrier,details:detail,icon:'✈️',startsAt:row.departure_at,endsAt:row.arrival_at,timeZone:departure.timeZone,localDate:departure.date,timeLabel:departure.time,timingKind:'exact',localOrder:itineraryLocalOrder(departure.time),sortInstant:departure.instant,sortOrder:0,status:row.flight_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:flightItineraryMapUrl(row),documents:itineraryDocumentsFor('flight',row.id),tags:[]});
   });
   accommodationRows.forEach(row=>{
-    [['check_in',row.check_in_at,'Check-in','🏠'],['check_out',row.check_out_at,'Check-out','🧳']].forEach(([sourceEvent,value,label,icon])=>{
-      const timing=itineraryDateTime(value,row.time_zone);if(!timing)return;
-      items.push({key:`accommodation:${row.id}:${sourceEvent}`,tripId,sourceType:'accommodation',sourceId:row.id,sourceEvent,title:`${label} · ${row.name}`,eyebrow:'Allotjament',subtitle:accommodationLocationLines(row).join(' · '),details:[],icon,startsAt:value,endsAt:null,timeZone:timing.timeZone,localDate:timing.date,timeLabel:timing.time,timingKind:'exact',localOrder:itineraryLocalOrder(timing.time),sortInstant:timing.instant,sortOrder:0,status:row.reservation_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:accommodationMapUrl(row)||'',documents:itineraryDocumentsFor('accommodation',row.id),tags:[]});
+    const estimatedArrival=estimatedHotelArrivalItem(row,tripId);if(estimatedArrival)items.push(estimatedArrival);
+    const estimatedDeparture=estimatedHotelDepartureItem(row,tripId);if(estimatedDeparture)items.push(estimatedDeparture);
+    [['check_in',row.check_in_at,row.check_in_date,'Check-in','🏠'],['check_out',row.check_out_at,row.check_out_date,'Check-out','🧳']].forEach(([sourceEvent,value,dateOnly,label,icon])=>{
+      if(sourceEvent==='check_in'&&estimatedArrival&&!value)return;
+      if(sourceEvent==='check_out'&&estimatedDeparture&&!value)return;
+      const timing=itineraryDateTime(value,row.time_zone);
+      if(timing){
+        items.push({key:`accommodation:${row.id}:${sourceEvent}`,tripId,sourceType:'accommodation',sourceId:row.id,sourceEvent,title:`${label} · ${row.name}`,eyebrow:'Allotjament',subtitle:accommodationLocationLines(row).join(' · '),details:[],icon,startsAt:value,endsAt:null,timeZone:timing.timeZone,localDate:timing.date,timeLabel:timing.time,timingKind:'exact',localOrder:itineraryLocalOrder(timing.time),sortInstant:timing.instant,sortOrder:0,status:row.reservation_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:accommodationMapUrl(row)||'',documents:itineraryDocumentsFor('accommodation',row.id),tags:[]});
+      }else if(dateOnly){
+        items.push({key:`accommodation:${row.id}:${sourceEvent}`,tripId,sourceType:'accommodation',sourceId:row.id,sourceEvent,title:`${label} · ${row.name}`,eyebrow:'Allotjament',subtitle:accommodationLocationLines(row).join(' · '),details:['Hora no indicada a la reserva'],icon,startsAt:null,endsAt:null,timeZone:itineraryTimeZone(row.time_zone),localDate:dateOnly,timeLabel:'Durant el dia',timingKind:'date',localOrder:sourceEvent==='check_in'?900:660,sortInstant:Number.MAX_SAFE_INTEGER,sortOrder:sourceEvent==='check_in'?1:-1,status:row.reservation_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:accommodationMapUrl(row)||'',documents:itineraryDocumentsFor('accommodation',row.id),tags:['Hora pendent']});
+      }
     });
   });
   activityRows.forEach(row=>{
@@ -4761,7 +5009,7 @@ async function loadGenericItinerary(force=false){
     if(!itineraryRequestIsCurrent(tripId,generation,userId)||sequence!==itineraryLoadSequence||isLondonTrip())return;
     if(!itinerarySourcesAreReady(tripId,generation,userId)){itineraryProjection=[];renderGenericItinerary();msg('genericItineraryMessage','No s’ha pogut carregar tot l’itinerari. Torna-ho a provar.',true);return}
     if(pendingInitialRoute?.view!=='itinerary'&&!$('itineraryView').classList.contains('hidden')&&$('manualItineraryFormCard').classList.contains('hidden'))restoreManualItineraryDraft();
-    rebuildGenericItinerary(tripId,generation,userId);
+    rebuildGenericItinerary(tripId,generation,userId);ensureAccommodationArrivalEstimates();
   }catch(error){
     if(itineraryRequestIsCurrent(tripId,generation,userId)&&sequence===itineraryLoadSequence&&!isLondonTrip()){itineraryProjection=[];renderGenericItinerary();msg('genericItineraryMessage',error?.message||'No s’ha pogut carregar tot l’itinerari. Torna-ho a provar.',true)}
   }finally{
@@ -4776,16 +5024,28 @@ function configureItineraryContent(){
   ['d6','d7','d8','d9','d10','d11'].forEach(id=>$(id)?.classList.toggle('hidden',!london));
   if(london)resetManualItineraryFormUi();
 }
+const OPERATIONAL_RETURN_VIEWS=new Set(['buildView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','itineraryView','documentsView', 'genericDashboardView','dashboardView']);
+function validOperationalReturnRoute(childView=null){
+  const route=operationalReturnRoute;
+  if(!route||route.userId!==session?.user?.id||route.tripId!==trip?.id||(childView&&route.childView!==childView)||!OPERATIONAL_RETURN_VIEWS.has(route.parentView)){if(route&&(route.userId!==session?.user?.id||route.tripId!==trip?.id))operationalReturnRoute=null;return null}
+  return route;
+}
+function setOperationalReturnRoute(childView,parentView){
+  if(!trip||!session||!OPERATIONAL_RETURN_VIEWS.has(parentView))return false;
+  operationalReturnRoute={userId:session.user.id,tripId:trip.id,childView,parentView};return true;
+}
+function clearOperationalReturnRoute(childView=null){
+  if(!childView||operationalReturnRoute?.childView===childView)operationalReturnRoute=null;
+}
 function validModuleReturnContext(){
-  const context=moduleReturnContext;
-  if(!context||context.userId!==session?.user?.id||context.tripId!==trip?.id){moduleReturnContext=null;return null}
-  return context;
+  const route=validOperationalReturnRoute();
+  return route?.parentView==='buildView'?{userId:route.userId,tripId:route.tripId,view:'buildView'}:null;
 }
 function setModuleReturnContext(view='buildView'){
-  if(!trip||!session)return;
-  moduleReturnContext={userId:session.user.id,tripId:trip.id,view};
+  const child=visibleAppView()==='buildView'?null:visibleAppView();
+  return setOperationalReturnRoute(child,view);
 }
-function clearModuleReturnContext(){moduleReturnContext=null}
+function clearModuleReturnContext(){clearOperationalReturnRoute()}
 function clearItinerarySourceContext(){
   itinerarySourceContext=null;
   const moduleContext=validModuleReturnContext();
@@ -4885,8 +5145,8 @@ function clearTripScopedState(){
   documentRows=[];pendingDocumentRows=[];expenseRows=[];photoRows=[];pendingPhotoRows=[];carRentalRows=[];carRentalDocumentLinks=[];carRentalSubmitting=false;carRentalLoadSequence+=1;accommodationRows=[];accommodationDocumentLinks=[];accommodationSubmitting=false;accommodationLoadSequence+=1;flightRows=[];flightDocumentLinks=[];flightSubmitting=false;flightLoadSequence+=1;activityRows=[];activityDocumentLinks=[];activitySubmitting=false;activityLoadSequence+=1;manualItineraryRows=[];manualItinerarySubmitting=false;manualItineraryLoadSequence+=1;parkingRow=null;parkingLoadsPending=0;clearPhotoObjectUrls();closePhotoLightbox();
   const emptyHtml=[['items',''],['documentsList',''],['expensesList',''],['expenseChart',''],['photosList',''],['accommodationList',''],['flightList',''],['activityList',''],['localTransportList',''],['carRentalList',''],['genericItineraryDayTabs',''],['genericItineraryDays',''],['genericItineraryUnscheduledList','']];emptyHtml.forEach(([id,value])=>{if($(id))$(id).innerHTML=value});
   [['overviewChecklist','0/0'],['overviewDocuments','0'],['overviewExpenses','0'],['documentCount','0'],['expenseCount','0'],['photoCount','0']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
-  [['genericItineraryModuleStatus','Planning consolidat'],['genericChecklistModuleStatus','Preparatius compartits'],['genericDocumentsModuleStatus','Documents del viatge'],['genericPhotosModuleStatus','Àlbum compartit del viatge'],['genericTravelersModuleStatus','Invitacions del viatge'],['genericAccommodationModuleStatus','Cap allotjament confirmat'],['genericFlightsModuleStatus','Cap vol confirmat'],['genericActivitiesModuleStatus','Cap activitat confirmada'],['genericLocalTransportModuleStatus','Cap transport confirmat'],['genericCarRentalModuleStatus','Cap cotxe reservat'],['genericParkingModuleStatus','A punt per utilitzar']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
-  ['genericItineraryModuleCard','genericFlightsModuleCard','genericAccommodationModuleCard','genericActivitiesModuleCard','genericLocalTransportModuleCard','genericCarRentalModuleCard','genericConfirmedSection'].forEach(id=>$(id)?.classList.add('hidden'));
+  [['genericItineraryModuleStatus','Crea o revisa l’itinerari'],['genericChecklistModuleStatus','Preparatius compartits'],['genericDocumentsModuleStatus','Documents del viatge'],['genericPhotosModuleStatus','Àlbum compartit del viatge'],['genericTravelersModuleStatus','Invitacions del viatge'],['genericAccommodationModuleStatus','Afegeix allotjament'],['genericFlightsModuleStatus','Afegeix vols'],['genericActivitiesModuleStatus','Afegeix activitats'],['genericLocalTransportModuleStatus','Afegeix transport'],['genericCarRentalModuleStatus','Afegeix cotxe'],['genericParkingModuleStatus','A punt per utilitzar']].forEach(([id,value])=>{if($(id))$(id).textContent=value});
+  ['genericItineraryModuleCard','genericFlightsModuleCard','genericAccommodationModuleCard','genericActivitiesModuleCard','genericLocalTransportModuleCard','genericCarRentalModuleCard','genericConfirmedSection'].forEach(id=>$(id)?.classList.remove('hidden'));
   if($('genericPlaceholderTrip'))$('genericPlaceholderTrip').textContent='Viatge';
   if($('genericPlaceholderIcon'))$('genericPlaceholderIcon').textContent='✨';
   if($('genericPlaceholderTitle'))$('genericPlaceholderTitle').textContent='Mòdul del viatge';
@@ -4955,11 +5215,24 @@ function renderTripsHome(){
   for(const [key,id] of [['active','activeTripsList'],['upcoming','upcomingTripsList'],['past','pastTripsList'],['undated','undatedTripsList'],['construction','constructionTripsList']]){
     $(id).innerHTML=rows(key).length?rows(key).map(value=>{
     const duration=tripDuration(value),london=isLondonTrip(value),selected=value.id===trip?.id;
-    return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(({active:'En curs',upcoming:'En preparació',past:'Completat',undated:'Dates pendents',construction:'En construcció'})[key])}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button></article>`;
+    return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(({active:'En curs',upcoming:'En preparació',past:'Completat',undated:'Dates pendents',construction:'En construcció'})[key])}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button>${key==='construction'&&value.is_owner&&value.tb_handoff&&!london?`<button class="secondary" type="button" data-discard-trip="${esc(value.id)}" data-discard-name="${esc(value.name)}">🗑️ Eliminar viatge</button>`:''}</article>`;
 
     }).join(''):`<p class="muted">${key==='upcoming'?'Encara no tens viatges propers.':key==='past'?'Encara no tens viatges passats.':''}</p>`;
     $(id).querySelectorAll('[data-select-trip]').forEach(button=>button.onclick=()=>openHomeTrip(button.dataset.selectTrip));
+    $(id).querySelectorAll('[data-discard-trip]').forEach(button=>button.onclick=()=>discardConstructionTrip(button.dataset.discardTrip,button.dataset.discardName));
   }
+}
+async function discardConstructionTrip(id,name){
+  const row=trips.find(value=>value.id===id);
+  if(!row||!row.is_owner||!row.tb_handoff||homeTripPhase(row)!=='undated'||isLondonTrip(row))return;
+  if(!confirm('Eliminar «'+name+'» de Freya? Deixarà d’aparèixer a Els meus viatges i no es podrà obrir.'))return;
+  const {data,error}=await db.rpc('discard_construction_trip_v1',{p_trip_id:id});
+  if(error){alert(error.message||'No s’ha pogut eliminar el viatge.');return}
+  if(data!==true){alert('No s’ha pogut confirmar l’eliminació del viatge.');return}
+  if(trip?.id===id){trip=null;tripLoadGeneration+=1;await disconnectTripRealtime();clearTripScopedState()}
+  forgetSelectedTrip();
+  clearNavigationState(session?.user?.id);
+  await refreshTrips({coldStart:true});
 }
 // HOME-01 navigation is scoped to category entry/detail; Photos retains its own history.
 let homeTripReturn=null,homeClockTimer=null;
@@ -4985,12 +5258,14 @@ async function restoreHomeRoute(){
   }
   if(nav?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView'].includes(nav.view))navigateBuilder(nav.view,false);
 }
-window.addEventListener('popstate',event=>{
-  if(typeof photoNavigation!=='undefined'&&photoNavigation||event.state?.freyaPhoto)return;
+function handleHomeTripPopState(event){
   const view=visibleAppView(),nav=event.state?.builderNav,detail=event.state?.homeTripDetail;
-  if(homeTripReturn?.owner===session?.user?.id&&['dashboardView','genericDashboardView'].includes(view)&&nav?.owner===session?.user?.id&&nav.view===homeTripReturn.parent)navigateBuilder(nav.view,false);
-  else if(detail?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','manualTripView','joinTripView'].includes(view)&&trips.some(t=>t.id===detail.id)){homeTripReturn=detail;selectTrip(detail.id,{open:true})}
-});
+  const operational=['dashboardView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView'].includes(view);
+  if(operational&&nav?.view==='builderView')return true; // Stale Builder history can never resurrect over an operational trip.
+  if(homeTripReturn?.owner===session?.user?.id&&['dashboardView','genericDashboardView'].includes(view)&&nav?.owner===session?.user?.id&&nav.view===homeTripReturn.parent){navigateBuilder(nav.view,false);return true}
+  if(detail?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','manualTripView','joinTripView'].includes(view)&&trips.some(t=>t.id===detail.id)){homeTripReturn=detail;selectTrip(detail.id,{open:true});return true}
+  return false;
+}
 function updateHomeClock(){
   clearTimeout(homeClockTimer);
   if(!session||document.visibilityState==='hidden'||!['tripsHomeView','upcomingTripsView','pastTripsView'].includes(visibleAppView()))return;
@@ -5028,7 +5303,7 @@ function updateTripPresentation(){
     initGlobalSearch();
     $('genericTripTitle').textContent=trip.name;
     $('genericTripDates').textContent=tripDateRange(trip);
-    $('genericTripMeta').innerHTML=`<span>🌍 ${esc(trip.time_zone||'Zona horària pendent')}</span><span>${trip.is_owner?'Creat per tu':'Viatge compartit'}</span>`;
+    $('genericTripMeta').innerHTML=`<span>${tripStopRows.length?'📍 '+esc(tripStopRows.map(stop=>stop.canonical_name||stop.label).join(' → ')):'📍 Destinacions pendents'}</span><span>${trip.is_owner?'Creat per tu':'Viatge compartit'}</span>`;
     $('genericBuildCard')?.classList.toggle('hidden',!trip.tb_handoff);
     renderTripHome();
     $('genericInviteCode').textContent=trip.invite_code||'';
@@ -5044,15 +5319,21 @@ function updateTripPresentation(){
         $('genericTripStartDate').value=trip.start_date||'';
         $('genericTripEndDate').value=trip.end_date||'';
         $('genericTripEndDate').min=trip.start_date||'';
-        $('genericTripTimeZone').value=trip.time_zone||'';
     }
   }
 }
+let tripStopRows=[];
 async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
-  const selected=trips.find(value=>value.id===tripId)||null;if(!selected){trip=null;clearGenericItineraryState();updateTripPresentation();setAppView('tripsHomeView');return false}
+  const selected=trips.find(value=>value.id===tripId)||null;if(!selected){trip=null;tripStopRows=[];clearGenericItineraryState();updateTripPresentation();setAppView('tripsHomeView');return false}
   tripLoadGeneration+=1;const generation=tripLoadGeneration;clearGenericItineraryState();await disconnectTripRealtime();if(generation!==tripLoadGeneration)return false;
-  clearTripScopedState();trip=selected;rememberSelectedTrip();updateTripPresentation();
-  if(open)setAppView(tripDashboardId());else setAppView('tripsHomeView');
+  clearTripScopedState();trip=selected;tripStopRows=[];rememberSelectedTrip();
+  if(!isLondonTrip()&&!connectionUnavailable()){
+    const stopResult=await db.from('trip_stops').select('id,position,label,canonical_name,time_zone').eq('trip_id',selected.id).order('position',{ascending:true});
+    if(generation!==tripLoadGeneration||trip?.id!==selected.id)return false;
+    if(!stopResult.error)tripStopRows=stopResult.data||[];
+  }
+  updateTripPresentation();
+  if(open){deactivateBuilderNavigation();setAppView(tripDashboardId())}else setAppView('tripsHomeView');
   if(!isLondonTrip()&&connectionUnavailable()){restoreOfflineAgendaSnapshot();restoreOfflineCarRentals();restoreOfflineDocuments()}
   if(!isLondonTrip()&&!connectionUnavailable()){await initializeGenericChecklistDefaults();if(!tripRequestIsCurrent(selected.id,generation))return false}
   await Promise.all([connectionUnavailable()?Promise.resolve():loadItems(),loadDocuments(true),...(isLondonTrip()?[loadExpenses(true)]:[ensureTripAgenda(),connectionUnavailable()?Promise.resolve():loadParkingSummary(),loadCarRentals(true)])]);if(!tripRequestIsCurrent(selected.id,generation))return false;
@@ -5095,12 +5376,9 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
     const savedId=readSelectedTripId();if(savedId&&!trips.some(value=>value.id===savedId))forgetSelectedTrip();
     trip=null;tripLoadGeneration+=1;await disconnectTripRealtime();clearTripScopedState();updateTripPresentation();renderTripsHome();setAppView('tripsHomeView');return true;
   }
-  const explicitRoute=!!(pendingInitialRoute&&!initialViewApplied),savedNavigation=!explicitRoute&&!preferredTripId&&!open?readNavigationState(requestUserId):null;
-  const savedNavigationTrip=savedNavigation?.tripId?trips.find(value=>value.id===savedNavigation.tripId)||null:null;
-  if(savedNavigation?.tripId&&!savedNavigationTrip)clearNavigationState(requestUserId);
-  const restoreNavigation=!!(savedNavigationTrip&&!explicitRoute&&!preferredTripId&&!open);
-  const restoreView=restoreNavigation?normalizedNavigationView(savedNavigation.view,savedNavigationTrip):null;
-  if(restoreNavigation&&savedNavigation.view!=='genericModuleView'&&!navigationViewIsValid(savedNavigation.view,savedNavigationTrip))clearNavigationState(requestUserId);
+  const explicitRoute=!!(pendingInitialRoute&&!initialViewApplied);
+  clearNavigationState(requestUserId);
+  const restoreNavigation=false,restoreView=null,savedNavigationTrip=null;
   const savedId=readSelectedTripId(),validPreferred=trips.some(value=>value.id===preferredTripId)?preferredTripId:null,validSaved=trips.some(value=>value.id===savedId)?savedId:null;
   if(savedId&&!validSaved)forgetSelectedTrip();
   const deepLinkPending=!!(pendingInitialRoute&&!initialViewApplied);
@@ -5109,7 +5387,7 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
       ?(trips.some(value=>value.id===pendingInitialRoute.tripId)?pendingInitialRoute.tripId:null)
       :trips.find(isLondonTrip)?.id||null
     :null;
-  const selectedId=deepLinkTripId||validPreferred||savedNavigationTrip?.id||validSaved||trips[0]?.id||null;
+  const selectedId=deepLinkTripId||validPreferred||validSaved||trips[0]?.id||null;
   renderTripsHome();
   if(selectedId){
     navigationRestoreInProgress=restoreNavigation;
@@ -5136,7 +5414,15 @@ async function renderSession(next){
     await refreshTrips({coldStart});
     if(renderGeneration!==sessionRenderGeneration)return;
     show('tripView');
-    if(coldStart){coldStartNavigationPending=false;if(!pendingInitialRoute)await restoreBuilderSession()}
+    if(coldStart){
+      coldStartNavigationPending=false;
+      if(!pendingInitialRoute){
+        leaveBuilderPointer();
+        homeTripReturn=null;
+        history.replaceState({builderNav:builderHistory('tripsHomeView',0)},'');
+        setAppView('tripsHomeView');
+      }
+    }
   }catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
 }
 const LONDON_CHECKLIST_CATEGORIES=[
@@ -5229,7 +5515,7 @@ async function toggleItem(id,done){if(!trip)return;const tripId=trip.id,generati
 async function deleteItem(id,templateKey=''){if(!trip)return;const tripId=trip.id,generation=tripLoadGeneration,dismissTemplate=!isLondonTrip()&&!!templateKey;const query=dismissTemplate?db.from('checklist_items').update({dismissed:true}).eq('id',id).eq('trip_id',tripId):db.from('checklist_items').delete().eq('id',id).eq('trip_id',tripId);const {error}=await query;if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
 document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
   const fromBuild=!!b.closest('#buildView');
-  if(fromBuild&&['genericFlightsView','accommodationView','activitiesView','localTransportView','carRentalView'].includes(b.dataset.open))setModuleReturnContext('buildView');
+  if(fromBuild&&['genericFlightsView','accommodationView','activitiesView','localTransportView','carRentalView'].includes(b.dataset.open))setOperationalReturnRoute(b.dataset.open,'buildView');
   else if(!['documentsView'].includes(b.dataset.open))clearModuleReturnContext();
   if(b.dataset.open==='documentsView'){clearDocumentsReturnContext();clearAccommodationVoucherFocus()}
   if(b.dataset.open==='activitiesView'&&b.dataset.activityMode)setActivityViewMode(b.dataset.activityMode);
@@ -5400,6 +5686,7 @@ $('flightForm').onsubmit=async event=>{
     arrival_terminal:nullable($('flightArrivalTerminal').value),
     seat:nullable($('flightSeat').value),
     baggage:nullable($('flightBaggage').value),
+    passengers:nullable($('flightPassengers').value),
     flight_status:confirmingTb?(currentFlight?.flight_status||'planning'):desiredStatus,
     notes:nullable($('flightNotes').value)
   };
@@ -5460,6 +5747,8 @@ $('flightForm').onsubmit=async event=>{
         $('flightPriceScope').value='Oferta seleccionada al cercador de vols';
       }
     }
+
+    if(payload.passengers)await ensureFlightTravelersFromText(flight.id,payload.passengers);
 
     form.dataset.editId=flight.id;
     form.dataset.originalUpdatedAt=flight.updated_at;
@@ -5768,14 +6057,19 @@ $('accommodationForm').onsubmit=async event=>{
   let savedAccommodation=null;
   try{
     new Intl.DateTimeFormat('ca-ES',{timeZone}).format(new Date());
-    const checkIn=zonedLocalToIso($('accommodationCheckIn').value,timeZone),checkOut=zonedLocalToIso($('accommodationCheckOut').value,timeZone);
+    const checkInDate=$('accommodationCheckInDate').value||null,checkOutDate=$('accommodationCheckOutDate').value||null;
+    const checkInTime=$('accommodationCheckInTime').value||'',checkOutTime=$('accommodationCheckOutTime').value||'';
+    if(checkInTime&&!checkInDate)throw new Error('Indica la data d’entrada abans de l’hora de check-in.');
+    if(checkOutTime&&!checkOutDate)throw new Error('Indica la data de sortida abans de l’hora de check-out.');
+    if(checkInDate&&checkOutDate&&checkOutDate<checkInDate)throw new Error('La data de sortida ha de ser igual o posterior a la d’entrada.');
+    const checkIn=checkInDate&&checkInTime?zonedLocalToIso(checkInDate+'T'+checkInTime,timeZone):null,checkOut=checkOutDate&&checkOutTime?zonedLocalToIso(checkOutDate+'T'+checkOutTime,timeZone):null;
     if(checkIn&&checkOut&&new Date(checkOut)<=new Date(checkIn))throw new Error('El check-out ha de ser posterior al check-in.');
     const rawWebsite=$('accommodationWebsite').value.trim(),website=rawWebsite?safeWebsiteUrl(rawWebsite):null;if(rawWebsite&&!website)throw new Error('La web ha de ser una adreça HTTP o HTTPS vàlida.');
     const desiredStatus=$('accommodationStatus').value,currentAccommodation=editingId?accommodationRows.find(item=>item.id===editingId):null;
     const tbApi=editingId?await tbConfirmationApi():null;
     const tbComponentId=editingId?await tbApi.findTbComponent(db,{tripId,sourceKind:'accommodation',sourceId:editingId}):null;
     const confirmingTb=!!tbComponentId&&desiredStatus==='confirmed';
-    const payload={accommodation_type:$('accommodationType').value,name:$('accommodationName').value.trim(),address:optionalText($('accommodationAddress').value),location_text:optionalText(form.dataset.legacyLocationText),city:optionalText($('accommodationCity').value),postal_code:optionalText($('accommodationPostalCode').value),region:optionalText($('accommodationRegion').value),country:optionalText($('accommodationCountry').value),check_in_at:checkIn,check_out_at:checkOut,time_zone:timeZone,booking_reference:optionalText($('accommodationReference').value),booking_provider:optionalText($('accommodationProvider').value),reservation_status:confirmingTb?(currentAccommodation?.reservation_status||'planning'):desiredStatus,phone:optionalText($('accommodationPhone').value),email:optionalText($('accommodationEmail').value),website_url:website,room_number:optionalText($('accommodationRoom').value),notes:optionalText($('accommodationNotes').value)};
+    const payload={accommodation_type:$('accommodationType').value,name:$('accommodationName').value.trim(),address:optionalText($('accommodationAddress').value),location_text:optionalText(form.dataset.legacyLocationText),city:optionalText($('accommodationCity').value),postal_code:optionalText($('accommodationPostalCode').value),region:optionalText($('accommodationRegion').value),country:optionalText($('accommodationCountry').value),check_in_date:checkInDate,check_out_date:checkOutDate,check_in_at:checkIn,check_out_at:checkOut,time_zone:timeZone,booking_reference:optionalText($('accommodationReference').value),booking_provider:optionalText($('accommodationProvider').value),reservation_status:confirmingTb?(currentAccommodation?.reservation_status||'planning'):desiredStatus,phone:optionalText($('accommodationPhone').value),email:optionalText($('accommodationEmail').value),website_url:website,room_number:optionalText($('accommodationRoom').value),notes:optionalText($('accommodationNotes').value)};
     accommodationSubmitting=true;$('saveAccommodation').disabled=true;msg('accommodationMsg',editingId?'Desant els canvis…':'Desant allotjament…');
     if(editingId){
       if(!originalUpdatedAt)throw new Error('No s’ha pogut verificar la versió de l’allotjament. Torna a obrir-lo abans de desar.');
@@ -6363,7 +6657,12 @@ function handlePhotoHistory(){
   if(marker?.token===nav.token&&marker.level==='photo')openGenericPhoto(nav.id);
   else closeGenericPhoto(true);
 }
-window.addEventListener('popstate',handlePhotoHistory);
+function handleFreyaPopState(event){
+  if(typeof photoNavigation!=='undefined'&&(photoNavigation||event.state?.freyaPhoto)){handlePhotoHistory(event);return}
+  if(handleHomeTripPopState(event))return;
+  handleBuilderPopState(event);
+}
+window.addEventListener('popstate',handleFreyaPopState);
 function resetPhotoNavigation(){
   photoNavigation=null;photoSignedRows=[];
   if($('photoContextEditor')?.open)$('photoContextEditor').close();
@@ -6673,6 +6972,227 @@ let documentChannel=null;
 let documentRows=[];
 let pendingDocumentRows=[];
 const DOC_BUCKET='trip-documents';
+let reservationImportState={target:null,document:null,proposal:null};
+let importProposalApiPromise=null;
+const reservationImportTypeLabels={flight:'Vol',accommodation:'Allotjament',activity:'Activitat',local_transport:'Transport',car_rental:'Cotxe de lloguer'};
+const reservationImportCategories={flight:'Vol',accommodation:'Hotel',activity:'Entrada',local_transport:'Altres',car_rental:'Cotxe'};
+const reservationImportLabels={
+ airline:'Companyia',flight_number:'Número de vol',departure_airport_code:'Aeroport sortida',departure_airport_name:'Nom aeroport sortida',departure_city:'Ciutat sortida',departure_at:'Sortida',arrival_airport_code:'Aeroport arribada',arrival_airport_name:'Nom aeroport arribada',arrival_city:'Ciutat arribada',arrival_at:'Arribada',booking_reference:'Localitzador',departure_terminal:'Terminal sortida',arrival_terminal:'Terminal arribada',seat:'Seient',baggage:'Equipatge',passengers:'Passatgers',
+ accommodation_type:'Tipus',name:'Nom',address:'Adreça',location_text:'Ubicació',city:'Ciutat',postal_code:'Codi postal',region:'Regió',country:'País',check_in_at:'Check-in',check_out_at:'Check-out',booking_provider:'Proveïdor',phone:'Telèfon',email:'Correu',website_url:'Web',room_number:'Habitació',
+ title:'Nom / trajecte',activity_type:'Tipus d’activitat',start_at:'Inici',end_at:'Final',venue_name:'Lloc',provider:'Proveïdor',contact_phone:'Telèfon',contact_email:'Correu',people_count:'Persones',amount:'Import',currency:'Moneda',
+ transport_mode:'Tipus de transport',transport_origin_name:'Origen',transport_origin_address:'Adreça origen',transport_origin_city:'Ciutat origen',transport_destination_name:'Destinació',transport_destination_address:'Adreça destinació',transport_destination_city:'Ciutat destinació',transport_service_number:'Número de servei',transport_seat:'Seient',transport_platform:'Andana / moll / parada',
+ pickup_location:'Recollida',pickup_city:'Ciutat recollida',pickup_at:'Hora recollida',return_location:'Devolució',return_city:'Ciutat devolució',return_at:'Hora devolució',vehicle_class:'Categoria',vehicle_model:'Model',license_plate:'Matrícula',transmission:'Canvi',fuel_policy:'Combustible',insurance:'Assegurança',excess_amount:'Franquícia',excess_currency:'Moneda franquícia',deposit_amount:'Dipòsit',deposit_currency:'Moneda dipòsit'
+};
+function loadImportProposalApi(){
+  const url='/freya-travel/domain/import-proposal.js';
+  return importProposalApiPromise??=import(/* @vite-ignore */ url).catch(error=>{importProposalApiPromise=null;throw error});
+}
+function importValue(fields,name){return fields?.[name]?.value==null?'':String(fields[name].value)}
+function importDateTime(value){const m=String(value||'').match(/^(20\d{2}-\d{2}-\d{2})T(\d{2}:\d{2})/);return m?m[1]+'T'+m[2]:''}
+function importDate(value){const m=String(value||'').match(/^(20\d{2}-\d{2}-\d{2})/);return m?m[1]:''}
+function importTime(value){const m=String(value||'').match(/^20\d{2}-\d{2}-\d{2}T(\d{2}:\d{2})/);return m?m[1]:''}
+function reservationImportDocuments(){
+  const allowed=new Set(['application/pdf','image/png','image/jpeg','image/webp']);
+  return (documentRows||[]).filter(document=>allowed.has(document.mime_type));
+}
+function renderReservationImportSources(){
+  const select=$('reservationImportDocument'),docs=reservationImportDocuments();
+  select.innerHTML='<option value="">Tria un document ja pujat…</option>'+docs.map(document=>`<option value="${esc(document.id)}">${esc(document.title||document.file_name||'Document')}</option>`).join('');
+  $('reservationImportUseDocument').disabled=!docs.length;
+}
+function closeReservationImport(){reservationImportState={target:null,document:null,proposal:null};$('reservationImportOverlay').classList.add('hidden');$('reservationImportFields').innerHTML='';$('reservationImportWarnings').innerHTML='';$('reservationImportWarnings').classList.add('hidden');$('reservationImportApply').classList.add('hidden');$('reservationImportSource').classList.remove('hidden');$('reservationImportFile').value=''}
+async function showReservationImport(target,status){
+  $('reservationImportTitle').textContent='Importa '+(reservationImportTypeLabels[target]||'reserva').toLowerCase();
+  $('reservationImportStatus').textContent=status||'Carregant els documents del viatge…';
+  $('reservationImportFields').innerHTML='';
+  $('reservationImportWarnings').innerHTML='';$('reservationImportWarnings').classList.add('hidden');
+  $('reservationImportApply').classList.add('hidden');$('reservationImportSource').classList.remove('hidden');
+  $('reservationImportOverlay').classList.remove('hidden');
+  if(trip&&!isLondonTrip()){
+    try{await loadDocuments(true)}catch(_){}
+  }
+  if(reservationImportState.target!==target)return;
+  renderReservationImportSources();
+  const docs=reservationImportDocuments();
+  $('reservationImportStatus').textContent=status||(docs.length?'Tria una reserva que ja sigui a Documents o puja’n una de nova.':'No hi ha cap PDF o imatge compatible a Documents. Pots pujar-ne un de nou.');
+}
+function renderReservationImportProposal(proposal){
+  const entries=Object.entries(proposal.fields||{});
+  $('reservationImportStatus').textContent='He trobat '+entries.length+' '+(entries.length===1?'camp':'camps')+'. Revisa’ls abans d’omplir el formulari.';
+  $('reservationImportFields').innerHTML=entries.map(([name,field])=>{
+    const checked=field.confidence!=='low'?'checked':'';
+    const excerpt=field.evidence?.[0]?.excerpt||'';
+    const page=field.evidence?.[0]?.page?' · pàg. '+field.evidence[0].page:'';
+    const conf={high:'alta',medium:'mitjana',low:'baixa'}[field.confidence]||field.confidence;
+    return `<label class="import-reservation-field import-confidence-${esc(field.confidence)}"><input type="checkbox" data-import-field="${esc(name)}" ${checked}><span><strong>${esc(reservationImportLabels[name]||name)}</strong><span>${esc(String(field.value))}</span><small>Confiança ${esc(conf)}${page}${excerpt?' · “'+esc(excerpt)+'”':''}</small></span></label>`;
+  }).join('');
+  const segmentNotice=proposal.target_type==='flight'&&proposal.flight_segments?.length>1?`He detectat ${proposal.flight_segments.length} trams de vol. En aplicar la reserva es crearan com a vols separats i quedaran vinculats al mateix document.`:'';
+  const notices=[segmentNotice,...(proposal.missing_required||[]).map(v=>'Falta: '+v),...(proposal.warnings||[])].filter(Boolean);
+  if(notices.length){$('reservationImportWarnings').innerHTML='<strong>Revisa també:</strong><br>'+notices.map(v=>esc(v)).join('<br>');$('reservationImportWarnings').classList.remove('hidden')}
+  $('reservationImportApply').classList.remove('hidden');
+}
+function selectedReservationImportFields(){
+  const p=reservationImportState.proposal;if(!p)return {};
+  const selected=new Set([...$('reservationImportFields').querySelectorAll('[data-import-field]:checked')].map(input=>input.dataset.importField));
+  return Object.fromEntries(Object.entries(p.fields).filter(([name])=>selected.has(name)));
+}
+function importNormalizePlace(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
+async function resolveImportedTimeZone(place){
+  const text=String(place||'').trim();if(!text)return null;
+  const key=importNormalizePlace(text);
+  const local=(tripStopRows||[]).filter(stop=>{const name=importNormalizePlace(stop.canonical_name||stop.label);return name===key||name.includes(key)||key.includes(name)});
+  if(local.length===1&&local[0].time_zone)return local[0].time_zone;
+  try{
+    const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text,language:'ca'}});
+    if(error||data?.error)return null;
+    const candidates=(data?.candidates||[]).filter(candidate=>candidate?.place?.timezone_status==='verified'&&candidate.place.timezone);
+    if(candidates.length===1)return candidates[0].place.timezone;
+    const exact=candidates.filter(candidate=>importNormalizePlace(candidate.place.canonical_name)===key);
+    return exact.length===1?exact[0].place.timezone:null;
+  }catch{return null}
+}
+async function createImportedFlightSegments(proposal,document,selectedFields){
+  const segments=proposal?.flight_segments||[];
+  if(segments.length<=1||!trip||!session)return [];
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
+  const common=name=>importValue(selectedFields,name)||null;
+  const rows=[];
+  for(const segment of segments){
+    const departureZone=await resolveImportedTimeZone(segment.departure_city||segment.departure_airport_name||segment.departure_airport_code);
+    const arrivalZone=await resolveImportedTimeZone(segment.arrival_city||segment.arrival_airport_name||segment.arrival_airport_code);
+    const departureLocal=importDateTime(segment.departure_at),arrivalLocal=importDateTime(segment.arrival_at);
+    if(!departureLocal||!departureZone)throw new Error(`Falta hora o zona horària segura per al tram ${segment.flight_number}. Revisa la reserva abans de crear-lo.`);
+    const payload={
+      trip_id:tripId,created_by:userId,airline:segment.airline||common('airline'),flight_number:segment.flight_number,
+      departure_airport_code:segment.departure_airport_code?.toUpperCase()||null,departure_airport_name:segment.departure_airport_name||null,departure_city:segment.departure_city||null,
+      departure_at:zonedLocalToIso(departureLocal,departureZone),departure_time_zone:departureZone,
+      arrival_airport_code:segment.arrival_airport_code?.toUpperCase()||null,arrival_airport_name:segment.arrival_airport_name||null,arrival_city:segment.arrival_city||null,
+      arrival_at:arrivalLocal&&arrivalZone?zonedLocalToIso(arrivalLocal,arrivalZone):null,arrival_time_zone:arrivalLocal?arrivalZone:null,
+      booking_reference:common('booking_reference'),departure_terminal:segment.departure_terminal||null,arrival_terminal:segment.arrival_terminal||null,
+      seat:segment.seat||null,baggage:segment.baggage||common('baggage'),passengers:segment.passengers||common('passengers'),flight_status:'reserved',notes:null
+    };
+    rows.push(payload);
+  }
+  const {data,error}=await db.from('trip_flights').insert(rows).select('*');
+  if(error)throw error;
+  if(!tripRequestIsCurrent(tripId,generation))return [];
+  for(const row of data||[])await syncFlightDocument(row.id,'booking',document.id,'',row.updated_at,tripId,generation);
+  const passengerNames=[...new Set(segments.flatMap(segment=>String(segment.passengers||common('passengers')||'').split(' · ')).map(name=>name.trim()).filter(Boolean))];
+  if(passengerNames.length){
+    const {error:travelerError}=await db.rpc('ensure_trip_flight_travelers',{p_trip_id:tripId,p_flight_ids:(data||[]).map(row=>row.id),p_names:passengerNames});
+    if(travelerError)throw travelerError;
+  }
+  await Promise.all([loadDocuments(true),loadFlights(true)]);
+  return data||[];
+}
+async function applyReservationImport(){
+  const {target,document,proposal}=reservationImportState;if(!target||!document||!proposal||!trip)return;
+  const fields=selectedReservationImportFields(),v=name=>importValue(fields,name);
+  let dateOnlySkipped=false;
+  const dateValue=name=>{const raw=v(name),out=importDateTime(raw);if(raw&&!out)dateOnlySkipped=true;return out};
+  $('reservationImportApply').disabled=true;$('reservationImportStatus').textContent='Omplint el formulari…';
+  try{
+    renderDocuments(documentRows);
+    if(target==='flight'&&proposal.flight_segments?.length>1){
+      const created=await createImportedFlightSegments(proposal,document,fields);
+      closeReservationImport();
+      msg('flightMsg',`Reserva llegida: he creat ${created.length} trams de vol separats i els he vinculat al mateix document. Revisa'ls abans de donar-los per confirmats.`);
+      return;
+    }else if(target==='flight'){
+      await openFlightForm();
+      const map={airline:'flightAirline',flight_number:'flightNumber',departure_airport_code:'flightDepartureCode',departure_airport_name:'flightDepartureAirport',departure_city:'flightDepartureCity',arrival_airport_code:'flightArrivalCode',arrival_airport_name:'flightArrivalAirport',arrival_city:'flightArrivalCity',booking_reference:'flightReference',departure_terminal:'flightDepartureTerminal',arrival_terminal:'flightArrivalTerminal',seat:'flightSeat',baggage:'flightBaggage',passengers:'flightPassengers'};
+      for(const [name,id] of Object.entries(map))if(fields[name])$(id).value=v(name);
+      if(fields.departure_at){const value=dateValue('departure_at');if(value)$('flightDepartureAt').value=value}
+      if(fields.arrival_at){const value=dateValue('arrival_at');if(value)$('flightArrivalAt').value=value}
+      const departureZone=await resolveImportedTimeZone(v('departure_city')||v('departure_airport_name'));if(departureZone)$('flightDepartureTimeZone').value=departureZone;
+      const arrivalZone=await resolveImportedTimeZone(v('arrival_city')||v('arrival_airport_name'));if(arrivalZone)$('flightArrivalTimeZone').value=arrivalZone;
+      renderFlightDocumentOptions(document.id,[],[]);$('flightBookingDocument').value=document.id;$('flightStatus').value='reserved';syncPieceStatus('flightStatus');saveFlightDraft();
+    }else if(target==='accommodation'){
+      openAccommodationForm();
+      const map={name:'accommodationName',address:'accommodationAddress',city:'accommodationCity',postal_code:'accommodationPostalCode',region:'accommodationRegion',country:'accommodationCountry',booking_provider:'accommodationProvider',booking_reference:'accommodationReference',phone:'accommodationPhone',email:'accommodationEmail',website_url:'accommodationWebsite',room_number:'accommodationRoom'};
+      for(const [name,id] of Object.entries(map))if(fields[name])$(id).value=v(name);
+      if(fields.accommodation_type&&['hotel','apartment','house','hostel','resort','other'].includes(v('accommodation_type')))$('accommodationType').value=v('accommodation_type');
+      if(fields.check_in_at){const raw=v('check_in_at'),date=importDate(raw),time=importTime(raw);if(date)$('accommodationCheckInDate').value=date;if(time)$('accommodationCheckInTime').value=time}
+      if(fields.check_out_at){const raw=v('check_out_at'),date=importDate(raw),time=importTime(raw);if(date)$('accommodationCheckOutDate').value=date;if(time)$('accommodationCheckOutTime').value=time}
+      const zone=await resolveImportedTimeZone(v('city')||v('location_text')||v('address'));if(zone){$('accommodationForm').dataset.timeZone=zone;$('accommodationTimeZoneHelp').textContent='Hores guardades en la zona '+zone+'.'}
+      renderAccommodationDocumentOptions(document.id);$('accommodationVoucher').value=document.id;$('accommodationStatus').value='reserved';syncPieceStatus('accommodationStatus');
+    }else if(target==='activity'){
+      openActivityForm();
+      const map={title:'activityTitle',venue_name:'activityVenue',address:'activityAddress',city:'activityCity',booking_reference:'activityReference',provider:'activityProvider',contact_phone:'activityPhone',contact_email:'activityEmail',website_url:'activityWebsite',people_count:'activityPeople',amount:'activityAmount',currency:'activityCurrency'};
+      for(const [name,id] of Object.entries(map))if(fields[name])$(id).value=v(name);
+      if(fields.activity_type&&[...$('activityType').options].some(o=>o.value===v('activity_type')))$('activityType').value=v('activity_type');
+      if(fields.start_at){const value=dateValue('start_at');if(value)$('activityStartAt').value=value}
+      if(fields.end_at){const value=dateValue('end_at');if(value)$('activityEndAt').value=value}
+      const zone=await resolveImportedTimeZone(v('city')||v('venue_name'));if(zone)$('activityTimeZone').value=zone;
+      renderActivityDocumentOptions(document.id,'');$('activityBookingDocument').value=document.id;$('activityStatus').value='reserved';syncPieceStatus('activityStatus');saveActivityDraft();
+    }else if(target==='local_transport'){
+      await openLocalTransportForm();
+      const map={title:'localTransportTitle',transport_origin_name:'localTransportOriginName',transport_origin_address:'localTransportOriginAddress',transport_origin_city:'localTransportOriginCity',transport_destination_name:'localTransportDestinationName',transport_destination_address:'localTransportDestinationAddress',transport_destination_city:'localTransportDestinationCity',booking_reference:'localTransportReference',provider:'localTransportProvider',transport_service_number:'localTransportServiceNumber',transport_seat:'localTransportSeat',transport_platform:'localTransportPlatform',contact_phone:'localTransportPhone',contact_email:'localTransportEmail',website_url:'localTransportWebsite',people_count:'localTransportPeople'};
+      for(const [name,id] of Object.entries(map))if(fields[name])$(id).value=v(name);
+      if(fields.transport_mode&&[...$('localTransportMode').options].some(o=>o.value===v('transport_mode')))$('localTransportMode').value=v('transport_mode');
+      if(fields.start_at){const value=dateValue('start_at');if(value)$('localTransportStartAt').value=value}
+      if(fields.end_at){const value=dateValue('end_at');if(value)$('localTransportEndAt').value=value}
+      const startZone=await resolveImportedTimeZone(v('transport_origin_city')||v('transport_origin_name'));if(startZone)$('localTransportTimeZone').value=startZone;
+      const endZone=await resolveImportedTimeZone(v('transport_destination_city')||v('transport_destination_name'));if(endZone)$('localTransportArrivalTimeZone').value=endZone;
+      localTransportDocumentOptions(document.id,'');$('localTransportBookingDocument').value=document.id;$('localTransportStatus').value='reserved';syncPieceStatus('localTransportStatus');
+    }else if(target==='car_rental'){
+      await openCarRentalForm();
+      const map={provider:'carRentalProvider',booking_reference:'carRentalReference',pickup_location:'carRentalPickupLocation',pickup_city:'carRentalPickupCity',return_location:'carRentalReturnLocation',return_city:'carRentalReturnCity',vehicle_class:'carRentalVehicleClass',vehicle_model:'carRentalVehicleModel',license_plate:'carRentalLicensePlate',fuel_policy:'carRentalFuelPolicy',insurance:'carRentalInsurance',excess_amount:'carRentalExcessAmount',deposit_amount:'carRentalDepositAmount',phone:'carRentalPhone',email:'carRentalEmail',website_url:'carRentalWebsite'};
+      for(const [name,id] of Object.entries(map))if(fields[name])$(id).value=v(name);
+      if(fields.transmission&&['manual','automatic','unknown'].includes(v('transmission')))$('carRentalTransmission').value=v('transmission');
+      if(fields.excess_currency)setCurrencyValue('carRentalExcessCurrency',v('excess_currency').toUpperCase(),true);
+      if(fields.deposit_currency)setCurrencyValue('carRentalDepositCurrency',v('deposit_currency').toUpperCase(),true);
+      if(fields.pickup_at){const value=dateValue('pickup_at');if(value)$('carRentalPickupAt').value=value}
+      if(fields.return_at){const value=dateValue('return_at');if(value)$('carRentalReturnAt').value=value}
+      const pickupZone=await resolveImportedTimeZone(v('pickup_city')||v('pickup_location'));if(pickupZone)$('carRentalPickupTimeZone').value=pickupZone;
+      const returnZone=await resolveImportedTimeZone(v('return_city')||v('return_location'));if(returnZone)$('carRentalReturnTimeZone').value=returnZone;
+      renderCarRentalDocumentOptions(null);$('carRentalReservationDocument').value=document.id;$('carRentalStatus').value='reserved';syncPieceStatus('carRentalStatus');
+    }
+    closeReservationImport();
+    const messageId={flight:'flightMsg',accommodation:'accommodationMsg',activity:'activityMsg',local_transport:'localTransportMsg',car_rental:'carRentalMsg'}[target];
+    msg(messageId,dateOnlySkipped?'Reserva llegida. He omplert els camps segurs; alguna data sense hora ha quedat pendent de revisar. Revisa-ho i desa quan vulguis.':'Reserva llegida i formulari omplert. Revisa-ho i desa quan vulguis.');
+  }catch(error){$('reservationImportStatus').textContent=error?.message||'No s’ha pogut omplir el formulari.'}
+  finally{$('reservationImportApply').disabled=false}
+}
+async function processReservationImportDocument(document){
+  const target=reservationImportState.target;if(!target||!trip||!session||!document)return;
+  reservationImportState.document=document;$('reservationImportSource').classList.add('hidden');$('reservationImportStatus').textContent='Llegint la reserva…';
+  try{
+    const {data,error}=await db.functions.invoke('import-reservation',{body:{trip_id:trip.id,document_id:document.id,target_type:target}});
+    let functionErrorCode=data?.error||null;
+    if(error&&!functionErrorCode&&error.context&&typeof error.context.json==='function'){
+      try{const body=await error.context.clone().json();functionErrorCode=body?.error||null}catch(_){}
+    }
+    if(error||functionErrorCode)throw new Error(({unsupported_file_type:'Format no compatible.',document_unavailable:'No s’ha pogut llegir el document privat.',trip_unavailable:'No s’ha pogut validar el viatge.',invalid_file_size:'El document no té una mida compatible.',provider_rate_limited:'Freya està rebent moltes peticions. Torna-ho a provar en uns minuts.',provider_refusal:'No he pogut interpretar aquest document.',no_import_fields:'He llegit el document, però no hi he trobat dades prou clares.',invalid_model_output:'La lectura ha retornat dades amb un format inesperat.',provider_invalid_response:'La lectura intel·ligent ha retornat una resposta no vàlida.',provider_error:'El servei de lectura intel·ligent no ha pogut processar el document.',import_not_configured:'La lectura intel·ligent encara no està configurada.'})[functionErrorCode]||error?.message||'No s’ha pogut interpretar la reserva.');
+    const api=await loadImportProposalApi(),proposal=api.normalizeImportProposal(data.proposal);
+    if(proposal.target_type!==target||proposal.source.document_id!==document.id)throw new Error('La proposta retornada no correspon a aquesta reserva.');
+    reservationImportState.proposal=proposal;renderReservationImportProposal(proposal);
+  }catch(error){$('reservationImportStatus').textContent=error?.message||'No s’ha pogut importar la reserva.';$('reservationImportSource').classList.remove('hidden')}
+}
+async function processReservationImportFile(file){
+  const target=reservationImportState.target;if(!target||!trip||!session)return;
+  if(!['application/pdf','image/png','image/jpeg','image/webp'].includes(file.type)){showReservationImport(target,'Aquest format no és compatible. Puja un PDF, PNG, JPG o WebP.');return}
+  if(file.size>15*1024*1024){showReservationImport(target,'El fitxer supera el límit de 15 MB.');return}
+  $('reservationImportStatus').textContent='Pujant el document al viatge…';$('reservationImportSource').classList.add('hidden');
+  try{
+    const document=await uploadTripDocument(file,file.name.replace(/\.[^.]+$/,'')||'Reserva',reservationImportCategories[target]||'Altres');
+    await processReservationImportDocument(document);
+  }catch(error){$('reservationImportStatus').textContent=error?.message||'No s’ha pogut importar la reserva.';$('reservationImportSource').classList.remove('hidden')}
+}
+document.querySelectorAll('[data-import-reservation]').forEach(button=>button.onclick=()=>{
+  if(!trip||isLondonTrip())return;
+  reservationImportState={target:button.dataset.importReservation,document:null,proposal:null};
+  $('reservationImportFile').value='';showReservationImport(reservationImportState.target);
+});
+$('reservationImportUseDocument').onclick=()=>{
+  const document=reservationImportDocuments().find(document=>document.id===$('reservationImportDocument').value);
+  if(!document){$('reservationImportStatus').textContent='Tria primer un document del viatge.';return}
+  processReservationImportDocument(document);
+};
+$('reservationImportUploadNew').onclick=()=>{$('reservationImportFile').value='';$('reservationImportFile').click()};
+$('reservationImportFile').onchange=()=>{const file=$('reservationImportFile').files?.[0];if(file)processReservationImportFile(file)};
+$('reservationImportClose').onclick=closeReservationImport;$('reservationImportCancel').onclick=closeReservationImport;$('reservationImportApply').onclick=applyReservationImport;
+
 function categoryIcon(category){return ({Entrada:'🎟️',Vol:'✈️',Hotel:'🏨',Cotxe:'🚙',Excursió:'🚌',Museu:'🏛️',restaurant:'🍽️',baggage_tag:'🧳',Personal:'🛂',Altres:'📎'})[category]||'📎'}
 function categoryLabel(category){return category==='restaurant'?'Restaurant':category==='baggage_tag'?'Etiqueta d’equipatge':category||'Document'}
 function safeFileName(name){return name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'document'}
@@ -6734,6 +7254,37 @@ function renderDocuments(docs=documentRows){
   }
   focusAssociatedAccommodationVoucher(true);
 }
+function closeDocumentViewer(){
+  const viewer=$('documentViewer'),body=$('documentViewerBody');
+  if(!viewer||!body)return;
+  body.replaceChildren();
+  viewer.classList.add('hidden');
+  document.body.classList.remove('document-viewer-open');
+}
+function showDocumentViewer(doc,signedUrl){
+  const viewer=$('documentViewer'),body=$('documentViewerBody'),title=$('documentViewerTitle');
+  if(!viewer||!body||!title)return;
+  closeDocumentViewer();
+  title.textContent=doc?.title||doc?.file_name||'Document';
+  const mime=String(doc?.mime_type||'').toLowerCase();
+  const name=String(doc?.file_name||'').toLowerCase();
+  if(mime.startsWith('image/')||/\.(png|jpe?g|webp|gif|heic|heif)$/.test(name)){
+    const image=document.createElement('img');
+    image.src=signedUrl;
+    image.alt=doc?.title||doc?.file_name||'Document';
+    body.append(image);
+  }else{
+    const frame=document.createElement('iframe');
+    frame.src=signedUrl;
+    frame.title=doc?.title||doc?.file_name||'Document';
+    frame.setAttribute('allow','fullscreen');
+    body.append(frame);
+  }
+  document.body.classList.add('document-viewer-open');
+  viewer.classList.remove('hidden');
+}
+$('documentViewerClose').onclick=closeDocumentViewer;
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('documentViewer').classList.contains('hidden'))closeDocumentViewer()});
 async function openDocument(id,docs,messageId='documentMsg'){
   if(!trip)return;
   if(connectionUnavailable()){msg(messageId,'📵 Aquest document necessita connexió per generar un accés segur.',true);updateConnectivityBanner();return}
@@ -6743,7 +7294,8 @@ async function openDocument(id,docs,messageId='documentMsg'){
   const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(doc.file_path,300);
   if(!tripRequestIsCurrent(tripId,generation))return;
   if(error){msg(messageId,error.message,true);return}
-  msg(messageId,'');window.open(data.signedUrl,'_blank','noopener');
+  msg(messageId,'');
+  showDocumentViewer(doc,data.signedUrl);
 }
 async function deleteDocument(id,docs){
   if(!trip)return;
@@ -6922,106 +7474,97 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   await db.auth.signOut();
   if(password)password.value='';
 });
-const FALLBACK_TRIP_TIME_ZONES=[
-  'Europe/Madrid','Atlantic/Canary','Europe/London','Europe/Paris',
-  'Europe/Rome','Europe/Helsinki','Europe/Athens','Europe/Berlin',
-  'America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
-  'Asia/Dubai','Asia/Colombo','Indian/Maldives','Asia/Bangkok',
-  'Asia/Singapore','Asia/Tokyo','Australia/Sydney'
-];
-
-function availableTripTimeZones(){
+let manualTripStops=[],manualTripPendingQuery='';
+function manualTripPlaceLabel(place){return [place?.canonical_name,place?.administrative_area,place?.country_code].filter(Boolean).join(' · ')}
+function manualTripStopPayload(stop){return {
+  label:stop.label,
+  canonical_name:stop.place.canonical_name,
+  administrative_area:stop.place.administrative_area||null,
+  country_code:stop.place.country_code||null,
+  latitude:stop.place.latitude,
+  longitude:stop.place.longitude,
+  time_zone:stop.place.timezone,
+  provider:stop.place.provider,
+  provider_place_id:stop.place.provider_place_id
+}}
+function renderManualTripStops(){
+  const list=$('tripStopsList');if(!list)return;
+  if(!manualTripStops.length){list.innerHTML='<p class="muted">Encara no has afegit cap destinació.</p>';return}
+  list.innerHTML='<strong>Destinacions del viatge</strong>'+manualTripStops.map((stop,index)=>`<div class="card" style="margin:8px 0;padding:12px"><div><strong>${index+1}. ${esc(stop.label)}</strong><small style="display:block">${esc(stop.place.timezone)}</small></div><button type="button" class="secondary" data-remove-trip-stop="${index}">Eliminar</button></div>`).join('');
+  list.querySelectorAll('[data-remove-trip-stop]').forEach(button=>button.onclick=()=>{manualTripStops.splice(Number(button.dataset.removeTripStop),1);renderManualTripStops()});
+}
+function clearManualTripCandidate(){
+  manualTripPendingQuery='';
+  const choices=$('tripDestinationChoices'),status=$('tripPlaceStatus');
+  if(choices){choices.innerHTML='';choices.classList.add('hidden')}
+  if(status)status.textContent='';
+}
+function addManualTripStop(query,candidate){
+  const place=candidate?.place;
+  if(!place?.timezone||place.timezone_status!=='verified')return;
+  const duplicate=manualTripStops.some(stop=>stop.place.provider===place.provider&&stop.place.provider_place_id===place.provider_place_id);
+  if(!duplicate)manualTripStops.push({label:place.canonical_name||query,place});
+  $('tripDestination').value='';clearManualTripCandidate();renderManualTripStops();
+}
+function showManualTripPlaceChoices(query,candidates){
+  const box=$('tripDestinationChoices');if(!box)return;
+  box.innerHTML='';
+  const intro=document.createElement('strong');intro.textContent='Quin lloc vols dir?';box.append(intro);
+  candidates.slice(0,5).forEach(candidate=>{
+    const button=document.createElement('button');button.type='button';
+    button.innerHTML='<strong>'+esc(manualTripPlaceLabel(candidate.place))+'</strong><span>Afegir aquesta destinació</span>';
+    button.onclick=()=>addManualTripStop(query,candidate);box.append(button);
+  });
+  box.classList.remove('hidden');
+}
+async function resolveAndAddManualTripStop(){
+  const query=$('tripDestination').value.trim();
+  if(!query){msg('tripMsg','Escriu una destinació abans d’afegir-la.',true);return false}
+  if(manualTripPendingQuery===query)return false;
+  manualTripPendingQuery=query;
+  $('addTripDestination').disabled=true;$('tripPlaceStatus').textContent='Verificant la destinació…';
   try{
-    if(typeof Intl.supportedValuesOf==='function'){
-      const zones=Intl.supportedValuesOf('timeZone');
-      if(zones?.length)return zones;
-    }
-  }catch(_){}
-  return FALLBACK_TRIP_TIME_ZONES;
+    const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text:query,language:'ca'}});
+    if(error||data?.error)throw new Error('Ara mateix Freya no pot localitzar aquesta destinació. Torna-ho a provar.');
+    const candidates=(data?.candidates||[]).filter(candidate=>candidate?.place?.timezone_status==='verified'&&candidate.place.timezone);
+    if(!candidates.length)throw new Error('No he pogut identificar la destinació. Escriu ciutat i país.');
+    if(candidates.length>1){showManualTripPlaceChoices(query,candidates);$('tripPlaceStatus').textContent='Tria la destinació correcta.';return false}
+    addManualTripStop(query,candidates[0]);return true;
+  }catch(error){
+    clearManualTripCandidate();msg('tripMsg',error?.message||'No s’ha pogut verificar la destinació.',true);return false;
+  }finally{$('addTripDestination').disabled=false}
 }
-
-function populateTripTimeZoneSelect(id){
-  const select=$(id);
-  if(!select)return;
-
-  const current=select.value;
-  const zones=[...availableTripTimeZones()];
-
-  if(current&&!zones.includes(current))zones.push(current);
-
-  zones.sort();
-
-  select.innerHTML=
-    '<option value="">Selecciona una zona horària…</option>'+
-    zones.map(zone=>`<option value="${esc(zone)}">${esc(zone)}</option>`).join('');
-
-  if(current)select.value=current;
-}
-
-function populateTripTimeZoneOptions(){
-  populateTripTimeZoneSelect('tripTimeZone');
-  populateTripTimeZoneSelect('genericTripTimeZone');
-}
-
-populateTripTimeZoneOptions();
+$('tripDestination').oninput=clearManualTripCandidate;
+$('addTripDestination').onclick=resolveAndAddManualTripStop;
+renderManualTripStops();
 $('tripStartDate').onchange=()=>{$('tripEndDate').min=$('tripStartDate').value;if(!$('tripEndDate').value||$('tripEndDate').value<$('tripStartDate').value)$('tripEndDate').value=$('tripStartDate').value};
 $('createTripForm').onsubmit=async e=>{
-  e.preventDefault();
-  msg('tripMsg','');
-
-  const name=$('tripName').value.trim();
-  const startDate=$('tripStartDate').value;
-  const endDate=$('tripEndDate').value;
-  const timeZone=$('tripTimeZone').value.trim();
-
-  if(!name||!startDate||!endDate||!timeZone){
-    msg('tripMsg','Completa el nom, les dates i la zona horària.',true);
-    return;
+  e.preventDefault();msg('tripMsg','');
+  const requestedName=$('tripName').value.trim(),startDate=$('tripStartDate').value,endDate=$('tripEndDate').value;
+  if($('tripDestination').value.trim()){
+    const added=await resolveAndAddManualTripStop();
+    if(!added)return;
   }
-
-  if(endDate<startDate){
-    msg('tripMsg','La data de fi no pot ser anterior a la data d’inici.',true);
-    return;
-  }
-
-  $('createTrip').disabled=true;
-
-  let createdId=null;
-
+  if(!manualTripStops.length||!startDate||!endDate){msg('tripMsg','Afegeix almenys una destinació i completa les dates.',true);return}
+  if(endDate<startDate){msg('tripMsg','La data de fi no pot ser anterior a la data d’inici.',true);return}
+  const defaultName=manualTripStops.map(stop=>stop.place.canonical_name||stop.label).join(' + ');
+  const name=(requestedName||defaultName).slice(0,100);
+  $('createTrip').disabled=true;$('createTrip').textContent='Creant el viatge…';
   try{
-    const {data,error}=await db.rpc('create_trip_v2',{
-      p_name:name,
-      p_start_date:startDate,
-      p_end_date:endDate,
-      p_time_zone:timeZone
-    });
-
-    if(error){
-      msg('tripMsg',error.message,true);
+    const {data,error}=await db.rpc('create_trip_with_stops_v1',{p_name:name,p_start_date:startDate,p_end_date:endDate,p_stops:manualTripStops.map(manualTripStopPayload)});
+    if(error)throw error;
+    const createdId=data?.[0]?.id;
+    if(!createdId)throw new Error('El servidor no ha confirmat la creació del viatge.');
+    msg('tripMsg','✅ Viatge desat. Obrint-lo…');
+    const refreshed=await refreshTrips({preferredTripId:createdId,open:true});
+    if(!refreshed||!trips.some(value=>value.id===createdId)){
+      msg('tripMsg','El viatge s’ha desat correctament, però no s’ha pogut recarregar. No el tornis a crear: torna a Els meus viatges.',true);
       return;
     }
-
-    createdId=data?.[0]?.id||null;
-
-    try{
-      await refreshTrips({preferredTripId:createdId,open:true});
-      $('createTripForm').reset();
-      $('tripTimeZone').value='';
-    }catch(loadError){
-      msg(
-        'tripMsg',
-        'El viatge s’ha creat correctament, però no hem pogut actualitzar la llista. No el tornis a crear: refresca els viatges o torna a entrar a Freya.',
-        true
-      );
-      console.error('Viatge creat però refreshTrips ha fallat:',createdId,loadError);
-    }
-  }catch(error){
-    msg('tripMsg',error?.message||'No s’ha pogut crear el viatge.',true);
-  }finally{
-    $('createTrip').disabled=false;
-  }
+    $('createTripForm').reset();manualTripStops=[];clearManualTripCandidate();renderManualTripStops();
+  }catch(error){msg('tripMsg',error?.message||'No s’ha pogut crear el viatge. No s’ha desat cap viatge parcial.',true)}
+  finally{$('createTrip').disabled=false;$('createTrip').textContent='Crear viatge i afegir reserves'}
 };
-
 $('joinTrip').onclick=async()=>{
   msg('joinTripMsg','');
 
@@ -7087,10 +7630,14 @@ $('genericTripSettingsForm').onsubmit=async e=>{
   const name=$('genericTripName').value.trim();
   const startDate=$('genericTripStartDate').value;
   const endDate=$('genericTripEndDate').value;
-  const timeZone=$('genericTripTimeZone').value.trim();
+  const timeZone=trip.time_zone;
 
-  if(!name||!startDate||!endDate||!timeZone){
-    msg('genericTripSettingsMsg','Completa el nom, les dates i la zona horària.',true);
+  if(!name||!startDate||!endDate){
+    msg('genericTripSettingsMsg','Completa el nom i les dates.',true);
+    return;
+  }
+  if(!timeZone){
+    msg('genericTripSettingsMsg','Falta una dada interna de la destinació. Torna a obrir el viatge i prova-ho de nou.',true);
     return;
   }
 
