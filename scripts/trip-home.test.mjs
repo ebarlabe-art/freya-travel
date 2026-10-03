@@ -283,3 +283,25 @@ test('NAV-02 Documents parent is encoded as a route, not an ad-hoc context',()=>
 test('NAV-02 Build to module records the concrete child and Build parent',()=>{
   assert.match(html,/setOperationalReturnRoute\(b\.dataset\.open,'buildView'\)/);
 });
+
+
+test('NAV-03 operational trip entry deactivates every Builder navigation authority',()=>{
+  const deactivate=html.slice(html.indexOf('function deactivateBuilderNavigation(){'),html.indexOf('async function resumeBuilderPointer('));
+  assert.match(deactivate,/localStorage\.removeItem\('freya-builder-nav-v1:'/);
+  assert.match(deactivate,/delete state\.route/);
+  assert.match(deactivate,/builderController\?\.clearRoute\(\)/);
+  assert.match(deactivate,/delete state\.builderNav/);
+  const select=html.slice(html.indexOf('async function selectTrip('),html.indexOf('async function initializeGenericChecklistDefaults('));
+  assert.match(select,/if\(open\)\{deactivateBuilderNavigation\(\);setAppView\(tripDashboardId\(\)\)\}/);
+});
+
+test('NAV-03 formalized Builder handoff also crosses the operational boundary',()=>{
+  const open=html.slice(html.indexOf('async function openFormalizedTrip('),html.indexOf('async function openHandoffReview('));
+  assert.match(open,/deactivateBuilderNavigation\(\)/);
+  assert.doesNotMatch(open,/leaveBuilderPointer\(\)/);
+});
+
+test('NAV-03 deactivation preserves Builder pending operation for safe retry',()=>{
+  const deactivate=html.slice(html.indexOf('function deactivateBuilderNavigation(){'),html.indexOf('async function resumeBuilderPointer('));
+  assert.doesNotMatch(deactivate,/delete state\.pending|sessionStorage\.removeItem/);
+});
