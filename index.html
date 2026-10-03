@@ -4560,7 +4560,7 @@ function accommodationDestinationText(row){return [row.name,row.address,row.city
 function flightArrivalOriginText(row){return [row.arrival_airport_name,row.arrival_airport_code,row.arrival_city].filter(Boolean).join(', ')}
 function sameItineraryLocalDate(value,zone,date){return itineraryDateTime(value,zone)?.date===date}
 function arrivalFlightForAccommodation(row){
-  const checkIn=itineraryDateTime(row.check_in_at,row.time_zone);if(!checkIn)return null;
+  const checkIn=row.check_in_at?itineraryDateTime(row.check_in_at,row.time_zone):row.check_in_date?{date:row.check_in_date}:null;if(!checkIn)return null;
   return flightRows.filter(f=>f.arrival_at&&sameItineraryLocalDate(f.arrival_at,f.arrival_time_zone,checkIn.date)).sort((a,b)=>new Date(b.arrival_at)-new Date(a.arrival_at))[0]||null;
 }
 function estimatedHotelArrivalItem(row,tripId){
@@ -4606,9 +4606,13 @@ function normalizedItineraryProjection(tripId,generation,userId=session?.user?.i
   });
   accommodationRows.forEach(row=>{
     const estimatedArrival=estimatedHotelArrivalItem(row,tripId);if(estimatedArrival)items.push(estimatedArrival);
-    [['check_in',row.check_in_at,'Check-in','🏠'],['check_out',row.check_out_at,'Check-out','🧳']].forEach(([sourceEvent,value,label,icon])=>{
-      const timing=itineraryDateTime(value,row.time_zone);if(!timing)return;
-      items.push({key:`accommodation:${row.id}:${sourceEvent}`,tripId,sourceType:'accommodation',sourceId:row.id,sourceEvent,title:`${label} · ${row.name}`,eyebrow:'Allotjament',subtitle:accommodationLocationLines(row).join(' · '),details:[],icon,startsAt:value,endsAt:null,timeZone:timing.timeZone,localDate:timing.date,timeLabel:timing.time,timingKind:'exact',localOrder:itineraryLocalOrder(timing.time),sortInstant:timing.instant,sortOrder:0,status:row.reservation_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:accommodationMapUrl(row)||'',documents:itineraryDocumentsFor('accommodation',row.id),tags:[]});
+    [['check_in',row.check_in_at,row.check_in_date,'Check-in','🏠'],['check_out',row.check_out_at,row.check_out_date,'Check-out','🧳']].forEach(([sourceEvent,value,dateOnly,label,icon])=>{
+      const timing=itineraryDateTime(value,row.time_zone);
+      if(timing){
+        items.push({key:`accommodation:${row.id}:${sourceEvent}`,tripId,sourceType:'accommodation',sourceId:row.id,sourceEvent,title:`${label} · ${row.name}`,eyebrow:'Allotjament',subtitle:accommodationLocationLines(row).join(' · '),details:[],icon,startsAt:value,endsAt:null,timeZone:timing.timeZone,localDate:timing.date,timeLabel:timing.time,timingKind:'exact',localOrder:itineraryLocalOrder(timing.time),sortInstant:timing.instant,sortOrder:0,status:row.reservation_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:accommodationMapUrl(row)||'',documents:itineraryDocumentsFor('accommodation',row.id),tags:[]});
+      }else if(dateOnly){
+        items.push({key:`accommodation:${row.id}:${sourceEvent}`,tripId,sourceType:'accommodation',sourceId:row.id,sourceEvent,title:`${label} · ${row.name}`,eyebrow:'Allotjament',subtitle:accommodationLocationLines(row).join(' · '),details:['Hora no indicada a la reserva'],icon,startsAt:null,endsAt:null,timeZone:itineraryTimeZone(row.time_zone),localDate:dateOnly,timeLabel:'Durant el dia',timingKind:'date',localOrder:sourceEvent==='check_in'?900:660,sortInstant:Number.MAX_SAFE_INTEGER,sortOrder:sourceEvent==='check_in'?1:-1,status:row.reservation_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:accommodationMapUrl(row)||'',documents:itineraryDocumentsFor('accommodation',row.id),tags:['Hora pendent']});
+      }
     });
   });
   activityRows.forEach(row=>{
