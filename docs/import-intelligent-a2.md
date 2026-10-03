@@ -103,3 +103,22 @@ Regles:
 - la proposta es valida contra l’allowlist A2.1;
 - la persona usuària veu els camps detectats i decideix si els aplica al formulari;
 - només el botó normal de desament del formulari escriu finalment la reserva.
+
+
+## A2.4 · Reutilització de documents existents
+
+La importació des d'una peça no obliga a duplicar un document que ja existeix al viatge.
+
+Flux:
+
+`Importa reserva → tria document existent | puja'n un de nou → extractor read-only → revisió humana → formulari`
+
+Regles:
+
+- només es mostren documents privats del viatge amb format compatible (PDF, PNG, JPG/JPEG o WebP);
+- reutilitzar un document existent no crea una segona còpia a Storage ni a `travel_documents`;
+- tant el document existent com el nou passen exactament per la mateixa Edge Function i el mateix contracte A2.1;
+- la proposta continua sense escriure la peça operativa: l'usuari revisa camps i, excepte el tractament específic de reserves de vol multisegment ja existent, el desament final continua sent explícit;
+- si l'extracció falla, el document original es conserva i es pot tornar a provar.
+
+Això aplica el principi de producte «la informació s'introdueix una sola vegada» també a la importació intel·ligent.
