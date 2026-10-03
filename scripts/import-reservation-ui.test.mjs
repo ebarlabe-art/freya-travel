@@ -102,3 +102,11 @@ test('A2.4 refreshes trip documents before rendering the existing-document selec
   assert.ok(block.indexOf('await loadDocuments(true)')<block.indexOf('renderReservationImportSources()'));
   assert.match(block,/No hi ha cap PDF o imatge compatible a Documents/);
 });
+
+
+test('A2 shows the real Edge Function error code instead of the generic non-2xx message',()=>{
+  assert.match(html,/error\.context&&typeof error\.context\.json==='function'/);
+  assert.match(html,/functionErrorCode=body\?\.error\|\|null/);
+  assert.match(html,/provider_invalid_response:'La lectura intel·ligent ha retornat una resposta no vàlida\.'/);
+  assert.match(html,/invalid_model_output:'La lectura ha retornat dades amb un format inesperat\.'/);
+});
