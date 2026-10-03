@@ -226,3 +226,16 @@ test('explicit deep links remain allowed to choose their destination on cold sta
   assert.match(html,/const deepLinkTripId=deepLinkPending/);
   assert.match(html,/if\(pendingInitialRoute&&!initialViewApplied\)applyPendingInitialView\(\)/);
 });
+
+
+test('fresh app open never resumes a durable Builder pointer',()=>{
+  const render=html.slice(html.indexOf('async function renderSession('),html.indexOf('const LONDON_CHECKLIST_CATEGORIES='));
+  assert.match(render,/if\(!pendingInitialRoute\)\{[\s\S]*leaveBuilderPointer\(\)[\s\S]*setAppView\('tripsHomeView'\)/);
+  assert.doesNotMatch(render,/await restoreBuilderSession\(\)/);
+});
+
+test('opening a trip card still opens its operational dashboard',()=>{
+  assert.match(html,/async function openHomeTrip\(id\)\{recordHomeTripEntry\(id\);await selectTrip\(id,\{open:true\}\)\}/);
+  const select=html.slice(html.indexOf('async function selectTrip('),html.indexOf('async function initializeGenericChecklistDefaults('));
+  assert.match(select,/if\(open\)setAppView\(tripDashboardId\(\)\)/);
+});
