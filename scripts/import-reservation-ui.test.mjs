@@ -49,3 +49,10 @@ test('itinerary projection already includes dated flights and accommodation chec
   assert.match(block,/check_out/);
   assert.match(block,/accommodationMapUrl/);
 });
+
+test('accommodation import maps address and dates into the operational form',()=>{
+  const apply=html.slice(html.indexOf('async function applyReservationImport(){'),html.indexOf('async function processReservationImportFile('));
+  assert.match(apply,/address:'accommodationAddress'/);
+  assert.match(apply,/check_in_at/);
+  assert.match(apply,/check_out_at/);
+});
