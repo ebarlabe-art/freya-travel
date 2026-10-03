@@ -20,9 +20,26 @@ export function importResponseSchema(target){
         evidence_excerpt:{type:'string',minLength:1,maxLength:500},
         page:{anyOf:[{type:'integer',minimum:1,maximum:10000},{type:'null'}]}
       },required:['name','value','confidence','evidence_excerpt','page']}},
-      warnings:{type:'array',maxItems:20,items:{type:'string',minLength:1,maxLength:300}}
+      warnings:{type:'array',maxItems:20,items:{type:'string',minLength:1,maxLength:300}},
+      flight_segments:target==='flight'?{type:'array',maxItems:12,items:{type:'object',additionalProperties:false,properties:{
+        airline:{type:'string',maxLength:200},
+        flight_number:{type:'string',minLength:1,maxLength:30},
+        departure_airport_code:{type:'string',maxLength:4},
+        departure_airport_name:{type:'string',maxLength:200},
+        departure_city:{type:'string',maxLength:200},
+        departure_at:{type:'string',minLength:10,maxLength:32},
+        arrival_airport_code:{type:'string',maxLength:4},
+        arrival_airport_name:{type:'string',maxLength:200},
+        arrival_city:{type:'string',maxLength:200},
+        arrival_at:{type:'string',minLength:10,maxLength:32},
+        departure_terminal:{type:'string',maxLength:50},
+        arrival_terminal:{type:'string',maxLength:50},
+        seat:{type:'string',maxLength:100},
+        baggage:{type:'string',maxLength:500},
+        passengers:{type:'string',maxLength:1000}
+      },required:['flight_number','departure_at']}}:{type:'array',maxItems:0}
     },
-    required:['fields','warnings']
+    required:['fields','warnings','flight_segments']
   };
 }
 export function importInstructions(target){
@@ -38,7 +55,9 @@ Regles obligatòries:
 - currency i monedes es retornen amb codi ISO de tres lletres NOMÉS si el document el mostra inequívocament.
 - Cada camp necessita un fragment breu del document que l'acrediti i, si és possible, la pàgina.
 - Per a vols, llegeix el document SENCER abans de respondre. Si la mateixa reserva conté connexions o escales, no aturis la lectura al primer tram.
-- Si target és vol i el document mostra més d'un tram, extreu al bloc principal el PRIMER tram cronològic i afegeix un avís exactament amb el prefix "TRAM_ADDICIONAL:" per CADA tram posterior, resumint número de vol, origen, destinació, data/hora de sortida i arribada tal com consten. Això evita perdre connexions fins que el client les pugui crear com a peces separades.
+- Si target és vol, flight_segments ha de contenir TOTS els trams cronològics de la reserva, inclòs el primer. Un tram és un vol físic entre dos aeroports: una connexió crea dos trams. No fusionis BCN→HEL→TLL en BCN→TLL.
+- Per compatibilitat, fields continua descrivint el PRIMER tram cronològic i les dades comunes de reserva. Si només hi ha un tram, flight_segments conté igualment aquell únic tram.
+- A cada flight_segments copia només dades explícites del tram. booking_reference és comú i queda a fields; passengers es pot repetir al tram si el document deixa clar que hi viatgen aquelles persones.
 - Per a vols, passengers és una llista textual dels noms de passatgers explícits, separats per " · ". No inventis ni completis noms.
 - Per a vols i allotjaments, prioritza especialment dates/hores explícites. Si hi ha data però no hora, retorna la data YYYY-MM-DD i avisa que falta l'hora.
 - Per a allotjaments, extreu l'adreça postal completa sempre que sigui visible, encara que també hi hagi nom i ciutat.
@@ -58,12 +77,19 @@ export function modelResultToProposal(raw,{target_type,source}){
     };
   }
   if(!Object.keys(fields).length)throw Error('no_import_fields');
+  const cleanSegment=value=>{
+    if(!value||typeof value!=='object'||typeof value.flight_number!=='string'||!value.flight_number.trim()||typeof value.departure_at!=='string'||!value.departure_at.trim())return null;
+    const allowed=new Set(['airline','flight_number','departure_airport_code','departure_airport_name','departure_city','departure_at','arrival_airport_code','arrival_airport_name','arrival_city','arrival_at','departure_terminal','arrival_terminal','seat','baggage','passengers']);
+    return Object.fromEntries(Object.entries(value).filter(([name,v])=>allowed.has(name)&&typeof v==='string'&&v.trim()).map(([name,v])=>[name,v.trim()]));
+  };
+  const flight_segments=target_type==='flight'&&Array.isArray(raw.flight_segments)?raw.flight_segments.map(cleanSegment).filter(Boolean):[];
   return {
     schema_version:1,
     source,
     target_type,
     fields,
     missing_required:(requiredByType[target_type]||[]).filter(name=>!fields[name]),
-    warnings:[...new Set(raw.warnings.filter(v=>typeof v==='string'&&v.trim()).map(v=>v.trim()))].slice(0,20)
+    warnings:[...new Set(raw.warnings.filter(v=>typeof v==='string'&&v.trim()).map(v=>v.trim()))].slice(0,20),
+    ...(target_type==='flight'?{flight_segments}: {})
   };
 }
