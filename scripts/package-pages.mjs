@@ -23,11 +23,12 @@ await mkdir(new URL('domain/',dist),{recursive:true});
 for(const file of runtimeDomain){
   await copyFile(new URL('domain/'+file,root),new URL('domain/'+file,dist));
 }
-for(const file of ['trip-brief.mjs','live-trip-brief.mjs','travel-builder.mjs','import-proposal.mjs']){
+for(const file of ['trip-brief.mjs','live-trip-brief.mjs','travel-builder.mjs','import-proposal.mjs','proposal-refinement.mjs','proposal-builder.mjs']){
   const source=await import('node:fs/promises').then(fs=>fs.readFile(new URL('domain/'+file,root),'utf8'));
   const browser=source
     .replaceAll("./trip-brief.mjs","./trip-brief.js")
-    .replaceAll("./live-trip-brief.mjs","./live-trip-brief.js");
+    .replaceAll("./live-trip-brief.mjs","./live-trip-brief.js")
+    .replaceAll("./proposal-refinement.mjs","./proposal-refinement.js");
   await import('node:fs/promises').then(fs=>fs.writeFile(new URL('domain/'+file.replace(/\.mjs$/,'.js'),dist),browser));
 }
 
