@@ -83,9 +83,21 @@ function normalizeField(name,value){
     evidence:normalizeEvidence(value.evidence)
   };
 }
+function normalizeFlightSegments(value){
+  if(value===undefined)return [];
+  if(!Array.isArray(value)||value.length>12)fail('Trams de vol invàlids.');
+  const allowed=new Set(['airline','flight_number','departure_airport_code','departure_airport_name','departure_city','departure_at','arrival_airport_code','arrival_airport_name','arrival_city','arrival_at','departure_terminal','arrival_terminal','seat','baggage','passengers']);
+  return value.map((segment,index)=>{
+    if(!plainObject(segment)||Object.keys(segment).some(key=>!allowed.has(key)))fail(`Tram de vol ${index+1} invàlid.`);
+    const out={};
+    for(const [name,raw] of Object.entries(segment))out[name]=assertShortText(raw,`Tram ${index+1}: ${name}`,name==='passengers'?1000:name==='baggage'?500:250);
+    if(!out.flight_number||!out.departure_at)fail(`Tram de vol ${index+1} incomplet.`);
+    return out;
+  });
+}
 export function normalizeImportProposal(input){
   if(!plainObject(input))fail('Proposta d’importació invàlida.');
-  const allowedRoot=new Set(['schema_version','source','target_type','fields','missing_required','warnings']);
+  const allowedRoot=new Set(['schema_version','source','target_type','fields','missing_required','warnings','flight_segments']);
   if(Object.keys(input).some(key=>!allowedRoot.has(key)))fail('La proposta conté camps arrel no admesos.');
   if(input.schema_version!==1)fail('Versió de proposta no suportada.','unsupported_import_schema');
   if(!plainObject(input.source))fail('Origen d’importació invàlid.');
@@ -120,7 +132,8 @@ export function normalizeImportProposal(input){
     target_type:input.target_type,
     fields,
     missing_required:normalizeList(input.missing_required,'Camp pendent'),
-    warnings:normalizeList(input.warnings,'Avís')
+    warnings:normalizeList(input.warnings,'Avís'),
+    ...(input.target_type==='flight'?{flight_segments:normalizeFlightSegments(input.flight_segments)}:{})
   };
 }
 
