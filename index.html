@@ -2801,6 +2801,18 @@ function canLeaveBuilder(){return !builderBusy&&(!builderDirty()||confirm('Sorti
 function builderPointer(){try{const p=JSON.parse(localStorage.getItem('freya-builder-nav-v1:'+session?.user?.id)||'null');return p&&typeof p.brief==='string'?p:null}catch{return null}}
 function rememberBuilder(proposal=null){if(!session?.user?.id||!builderRow)return;try{localStorage.setItem('freya-builder-nav-v1:'+session.user.id,JSON.stringify({active:true,brief:builderRow.id,revision:proposal?.revision??builderRow.revision,proposal:proposal?{brief:builderRow.id,generation:proposal.generation,detail:proposal.detail||null,mode:proposal.mode||'results'}:null}))}catch{}}
 function leaveBuilderPointer(){const p=builderPointer();if(p)try{localStorage.setItem('freya-builder-nav-v1:'+session.user.id,JSON.stringify({...p,active:false}))}catch{}}
+function deactivateBuilderNavigation(){
+  const owner=session?.user?.id;if(!owner)return;
+  try{localStorage.removeItem('freya-builder-nav-v1:'+owner)}catch{}
+  try{
+    const key='freya-builder-v1:'+owner,raw=sessionStorage.getItem(key),state=raw?JSON.parse(raw):null;
+    if(state&&typeof state==='object'&&!Array.isArray(state)&&state.route){delete state.route;sessionStorage.setItem(key,JSON.stringify(state))}
+  }catch{}
+  try{builderController?.clearRoute()}catch{}
+  if(proposalOpen)resetProposalUi();
+  builderLive?.clear();builderLive=null;builderRow=null;builderBase='';builderConflict=false;
+  const state={...(history.state||{})};if(state.builderNav){delete state.builderNav;history.replaceState(Object.keys(state).length?state:null,'')}
+}
 async function resumeBuilderPointer(p=builderPointer()){
  if(!p)return;const parent=visibleAppView()==='designTripView'?'designTripView':null;await resumeBuilder(p.brief,'resume',true);
  if(parent&&history.state?.builderNav)history.replaceState({builderNav:{...history.state.builderNav,parent}},'');
@@ -3082,7 +3094,7 @@ async function generateBuilderProposals(refinement){
  finally{if(builderCurrent(owner,epoch)&&proposalSession===activeSession){$('proposalGenerate').disabled=false;if(!['pending','running'].includes(proposalResult?.generation?.status))stopProposalLoading();}}
 }
 async function handoffController(){const owner=session?.user?.id,epoch=builderEpoch;const api=await import('./domain/proposal-handoff.mjs');if(!builderCurrent(owner,epoch))throw Error('La sessió ha canviat.');return {api,controller:new api.HandoffSession(db,owner,localStorage,()=>builderCurrent(owner,epoch)),owner,epoch};}
-async function openFormalizedTrip(briefId){const {controller,owner,epoch}=await handoffController();const result=await controller.read(briefId);if(!result)throw Error('No s’ha pogut recuperar el viatge construït.');if(controller.pending?.p_brief_id===briefId)controller.clear();leaveBuilderPointer();builderController?.clearRoute();resetProposalUi();await refreshTrips({preferredTripId:result.trip_id,open:true});if(builderCurrent(owner,epoch))history.replaceState(null,'');}
+async function openFormalizedTrip(briefId){const {controller,owner,epoch}=await handoffController();const result=await controller.read(briefId);if(!result)throw Error('No s’ha pogut recuperar el viatge construït.');if(controller.pending?.p_brief_id===briefId)controller.clear();deactivateBuilderNavigation();await refreshTrips({preferredTripId:result.trip_id,open:true});if(builderCurrent(owner,epoch))history.replaceState(null,'');}
 async function openHandoffReview(proposal){
  const sequence=proposalSequence;const {api,controller,owner,epoch}=await handoffController();
  try{
@@ -5313,7 +5325,7 @@ async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
     if(!stopResult.error)tripStopRows=stopResult.data||[];
   }
   updateTripPresentation();
-  if(open)setAppView(tripDashboardId());else setAppView('tripsHomeView');
+  if(open){deactivateBuilderNavigation();setAppView(tripDashboardId())}else setAppView('tripsHomeView');
   if(!isLondonTrip()&&connectionUnavailable()){restoreOfflineAgendaSnapshot();restoreOfflineCarRentals();restoreOfflineDocuments()}
   if(!isLondonTrip()&&!connectionUnavailable()){await initializeGenericChecklistDefaults();if(!tripRequestIsCurrent(selected.id,generation))return false}
   await Promise.all([connectionUnavailable()?Promise.resolve():loadItems(),loadDocuments(true),...(isLondonTrip()?[loadExpenses(true)]:[ensureTripAgenda(),connectionUnavailable()?Promise.resolve():loadParkingSummary(),loadCarRentals(true)])]);if(!tripRequestIsCurrent(selected.id,generation))return false;
