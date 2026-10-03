@@ -70,3 +70,11 @@ test('multi-segment imports materialize reusable travelers for every leg',()=>{
  assert.match(block,/p_flight_ids:\(data\|\|\[\]\)\.map\(row=>row\.id\)/);
  assert.match(block,/p_names:passengerNames/);
 });
+
+test('flight cards render travelers and individual boarding-pass controls',()=>{
+ assert.match(html,/function flightTravelersFor/);
+ assert.match(html,/function travelerBoardingPasses/);
+ assert.match(html,/data-assign-traveler-document/);
+ assert.match(html,/trip_flight_traveler_documents/);
+ assert.match(html,/trip_flight_travelers/);
+});
