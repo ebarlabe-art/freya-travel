@@ -223,7 +223,6 @@ export class LiveBriefEditor{
   return '';
  }
  choose(el){const field=el.dataset.field,d=globalDecision(this.row,field)?.decision;
-  if(el.dataset.choice==='family'&&d?.knowledge==='known'){this.open(this.active,field);return;}
   this.submit(()=>{
    if(el.dataset.choice==='family')return fieldCommand(this.row,field,d?.knowledge==='known'?{remove:true}:{value:true});
    if(el.dataset.choice==='style'){const values=d?.knowledge==='known'?[...d.value]:[];const i=values.indexOf(el.dataset.value);if(i<0)values.push(el.dataset.value);else values.splice(i,1);return fieldCommand(this.row,field,values.length?{value:values}:{remove:true})}
