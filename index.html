@@ -3371,10 +3371,8 @@ function normalizedNavigationView(view,value=trip){
   return isLondonTrip(value)?'dashboardView':'genericDashboardView';
 }
 function persistNavigationState(view){
-  if(['upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(view))return;
-  const userId=session?.user?.id,key=navigationStateStorageKey(userId);if(!key||navigationRestoreInProgress)return;
-  const safeView=normalizedNavigationView(view,trip),state={tripId:trip?.id||null,view:safeView,savedAt:Date.now()};
-  try{localStorage.setItem(key,JSON.stringify(state))}catch(_){}
+  // Opening Freya is intentional Home. Keep trip selection separately, never persist an internal screen.
+  if(session?.user?.id)clearNavigationState(session.user.id);
 }
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
 function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent='';}
@@ -5357,12 +5355,9 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
     const savedId=readSelectedTripId();if(savedId&&!trips.some(value=>value.id===savedId))forgetSelectedTrip();
     trip=null;tripLoadGeneration+=1;await disconnectTripRealtime();clearTripScopedState();updateTripPresentation();renderTripsHome();setAppView('tripsHomeView');return true;
   }
-  const explicitRoute=!!(pendingInitialRoute&&!initialViewApplied),savedNavigation=!explicitRoute&&!preferredTripId&&!open?readNavigationState(requestUserId):null;
-  const savedNavigationTrip=savedNavigation?.tripId?trips.find(value=>value.id===savedNavigation.tripId)||null:null;
-  if(savedNavigation?.tripId&&!savedNavigationTrip)clearNavigationState(requestUserId);
-  const restoreNavigation=!!(savedNavigationTrip&&!explicitRoute&&!preferredTripId&&!open);
-  const restoreView=restoreNavigation?normalizedNavigationView(savedNavigation.view,savedNavigationTrip):null;
-  if(restoreNavigation&&savedNavigation.view!=='genericModuleView'&&!navigationViewIsValid(savedNavigation.view,savedNavigationTrip))clearNavigationState(requestUserId);
+  const explicitRoute=!!(pendingInitialRoute&&!initialViewApplied);
+  clearNavigationState(requestUserId);
+  const restoreNavigation=false,restoreView=null,savedNavigationTrip=null;
   const savedId=readSelectedTripId(),validPreferred=trips.some(value=>value.id===preferredTripId)?preferredTripId:null,validSaved=trips.some(value=>value.id===savedId)?savedId:null;
   if(savedId&&!validSaved)forgetSelectedTrip();
   const deepLinkPending=!!(pendingInitialRoute&&!initialViewApplied);
@@ -5371,7 +5366,7 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
       ?(trips.some(value=>value.id===pendingInitialRoute.tripId)?pendingInitialRoute.tripId:null)
       :trips.find(isLondonTrip)?.id||null
     :null;
-  const selectedId=deepLinkTripId||validPreferred||savedNavigationTrip?.id||validSaved||trips[0]?.id||null;
+  const selectedId=deepLinkTripId||validPreferred||validSaved||trips[0]?.id||null;
   renderTripsHome();
   if(selectedId){
     navigationRestoreInProgress=restoreNavigation;
