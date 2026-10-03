@@ -25,7 +25,7 @@ export function renderProposalResult(result,selected=null){
  return banner+rows.map(p=>{const c=p.document.candidate;return `<article class="card"><h3>${esc(c.title)}</h3><p>Suggeriment pendent de verificació factual</p><p>${c.route.stops.map(s=>esc(s.destination)).join(' → ')}</p>${effectiveEvaluations(p.document).some(e=>e.strength==='hard'&&e.state==='unresolved')?'<p>Pendent de validar imprescindibles</p>':''}<button data-proposal-id="${esc(p.id)}" type="button">Explora aquesta alternativa</button></article>`}).join('');
 }
 export class ProposalSession{
- constructor(client,owner,storage,isCurrent=()=>true){this.client=client;this.owner=owner;this.storage=storage;this.isCurrent=isCurrent;this.key='freya-proposals-v1:'+owner;this.pending=JSON.parse(storage.getItem(this.key)||'null');this.busy=false;}
+ constructor(client,owner,storage,isCurrent=()=>true){this.client=client;this.owner=owner;this.storage=storage;this.isCurrent=isCurrent;this.key='freya-proposals-v1:'+owner;this.pending=null;try{const raw=storage.getItem(this.key);const parsed=raw?JSON.parse(raw):null;if(parsed&&typeof parsed==='object'&&typeof parsed.brief_id==='string'&&parsed.body&&typeof parsed.body==='object')this.pending=parsed;else if(raw)storage.removeItem(this.key)}catch(_){try{storage.removeItem(this.key)}catch{}}this.busy=false;}
  clearPending(){const stored=JSON.parse(this.storage.getItem(this.key)||'null');if(stored?.body.operation_id===this.pending?.body.operation_id)this.storage.removeItem(this.key);this.pending=null;}
  reconcile(result,acknowledged=false){
   const p=this.pending,g=result?.generation;if(!p||!g)return;
