@@ -762,8 +762,10 @@
           <label>Codi postal<input id="accommodationPostalCode" maxlength="40" placeholder="07830"></label>
           <label>Província / regió / territori<input id="accommodationRegion" maxlength="200" placeholder="Illes Balears"></label>
           <label>País<input id="accommodationCountry" maxlength="200" placeholder="Opcional"></label>
-          <label>Check-in<input id="accommodationCheckIn" type="datetime-local"></label>
-          <label>Check-out<input id="accommodationCheckOut" type="datetime-local"></label>
+          <label>Data d’entrada<input id="accommodationCheckInDate" type="date"></label>
+          <label>Hora de check-in <small class="muted">si consta</small><input id="accommodationCheckInTime" type="time"></label>
+          <label>Data de sortida<input id="accommodationCheckOutDate" type="date"></label>
+          <label>Hora de check-out <small class="muted">si consta</small><input id="accommodationCheckOutTime" type="time"></label>
           <div id="accommodationTimeZoneHelp" class="accommodation-form-help"></div>
           
           <label>Proveïdor<input id="accommodationProvider" maxlength="200" placeholder="Web, agència..."></label>
@@ -2260,8 +2262,8 @@ let dayMetadataLoadSequence=0;
 const MANUAL_ITINERARY_DRAFT_VERSION=1;
 const MANUAL_ITINERARY_DRAFT_FIELDS=['manualItineraryTitle','manualItineraryTimingKind','manualItineraryDate','manualItineraryDaypart','manualItineraryStartAt','manualItineraryEndAt','manualItineraryApproximateStartTime','manualItineraryApproximateEndTime','manualItineraryTimeZone','manualItineraryLocation','manualItineraryAddress','manualItineraryCity','manualItineraryFixed','manualItineraryOptional','manualItineraryStatus','manualItineraryNotes'];
 const ACCOMMODATION_DRAFT_VERSION=2;
-const ACCOMMODATION_DRAFT_FIELDS=['accommodationType','accommodationName','accommodationAddress','accommodationCity','accommodationPostalCode','accommodationRegion','accommodationCountry','accommodationCheckIn','accommodationCheckOut','accommodationStatus','accommodationProvider','accommodationReference','accommodationPhone','accommodationEmail','accommodationWebsite','accommodationRoom','accommodationVoucher','accommodationNotes'];
-const ACCOMMODATION_SELECT='id,trip_id,accommodation_type,name,address,location_text,city,postal_code,region,country,latitude,longitude,check_in_at,check_out_at,time_zone,booking_reference,booking_provider,reservation_status,phone,email,website_url,room_number,notes,check_in_completed_at,check_out_completed_at,created_by,updated_by,created_at,updated_at';
+const ACCOMMODATION_DRAFT_FIELDS=['accommodationType','accommodationName','accommodationAddress','accommodationCity','accommodationPostalCode','accommodationRegion','accommodationCountry','accommodationCheckInDate','accommodationCheckInTime','accommodationCheckOutDate','accommodationCheckOutTime','accommodationStatus','accommodationProvider','accommodationReference','accommodationPhone','accommodationEmail','accommodationWebsite','accommodationRoom','accommodationVoucher','accommodationNotes'];
+const ACCOMMODATION_SELECT='id,trip_id,accommodation_type,name,address,location_text,city,postal_code,region,country,latitude,longitude,check_in_date,check_out_date,check_in_at,check_out_at,time_zone,booking_reference,booking_provider,reservation_status,phone,email,website_url,room_number,notes,check_in_completed_at,check_out_completed_at,created_by,updated_by,created_at,updated_at';
 const ACCOMMODATION_TYPES={hotel:{icon:'🏨',label:'Hotel'},apartment:{icon:'🏠',label:'Apartament'},house:{icon:'🏡',label:'Casa'},hostel:{icon:'🛏️',label:'Hostal'},resort:{icon:'🌴',label:'Resort'},other:{icon:'📍',label:'Allotjament'}};
 const ACCOMMODATION_STATUSES={planning:'En planificació',reserved:'Reservat',confirmed:'Confirmat',cancelled:'Cancel·lat'};
 const ACTIVITY_TYPES={transport:{icon:'🚐',label:'Transport'},restaurant:{icon:'🍽️',label:'Restaurant'},attraction:{icon:'🎡',label:'Atracció'},tour:{icon:'🗺️',label:'Tour o visita'},excursion:{icon:'🥾',label:'Excursió'},museum:{icon:'🏛️',label:'Museu'},show:{icon:'🎭',label:'Espectacle'},experience:{icon:'✨',label:'Experiència'},beach:{icon:'🏖️',label:'Platja'},transport_activity:{icon:'🚐',label:'Activitat de transport'},other:{icon:'📍',label:'Altres'}};
@@ -2706,7 +2708,7 @@ function openAccommodationForm(id=''){
   const timeZone=row?.time_zone||trip.time_zone;if(!timeZone){msg('accommodationMsg','Aquest viatge no té una zona horària vàlida.',true);return}
   const originalVoucherDocumentId=row?accommodationVoucherDocumentId(row.id):'';
   const form=$('accommodationForm');form.reset();form.dataset.editId=row?.id||'';form.dataset.timeZone=timeZone;form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=row?.updated_at||'';form.dataset.originalVoucherDocumentId=originalVoucherDocumentId;form.dataset.voucherTouched='false';form.dataset.legacyLocationText=row?.location_text||'';form.dataset.remoteConflict='';
-  $('accommodationFormTitle').textContent=row?'Editar allotjament':'Afegir allotjament';$('accommodationType').value=row?.accommodation_type||'hotel';$('accommodationName').value=row?.name||'';$('accommodationAddress').value=row?.address||'';$('accommodationCity').value=row?.city||'';$('accommodationPostalCode').value=row?.postal_code||'';$('accommodationRegion').value=row?.region||'';$('accommodationCountry').value=row?.country||'';$('accommodationCheckIn').value=isoToZonedLocal(row?.check_in_at,timeZone);$('accommodationCheckOut').value=isoToZonedLocal(row?.check_out_at,timeZone);$('accommodationStatus').value=row?.reservation_status||'planning';syncPieceStatus('accommodationStatus');$('accommodationProvider').value=row?.booking_provider||'';$('accommodationReference').value=row?.booking_reference||'';$('accommodationPhone').value=row?.phone||'';$('accommodationEmail').value=row?.email||'';$('accommodationWebsite').value=row?.website_url||'';$('accommodationRoom').value=row?.room_number||'';$('accommodationNotes').value=row?.notes||'';
+  $('accommodationFormTitle').textContent=row?'Editar allotjament':'Afegir allotjament';$('accommodationType').value=row?.accommodation_type||'hotel';$('accommodationName').value=row?.name||'';$('accommodationAddress').value=row?.address||'';$('accommodationCity').value=row?.city||'';$('accommodationPostalCode').value=row?.postal_code||'';$('accommodationRegion').value=row?.region||'';$('accommodationCountry').value=row?.country||'';$('accommodationCheckInDate').value=row?.check_in_date||isoToZonedLocal(row?.check_in_at,timeZone).slice(0,10);$('accommodationCheckInTime').value=isoToZonedLocal(row?.check_in_at,timeZone).slice(11,16);$('accommodationCheckOutDate').value=row?.check_out_date||isoToZonedLocal(row?.check_out_at,timeZone).slice(0,10);$('accommodationCheckOutTime').value=isoToZonedLocal(row?.check_out_at,timeZone).slice(11,16);$('accommodationStatus').value=row?.reservation_status||'planning';syncPieceStatus('accommodationStatus');$('accommodationProvider').value=row?.booking_provider||'';$('accommodationReference').value=row?.booking_reference||'';$('accommodationPhone').value=row?.phone||'';$('accommodationEmail').value=row?.email||'';$('accommodationWebsite').value=row?.website_url||'';$('accommodationRoom').value=row?.room_number||'';$('accommodationNotes').value=row?.notes||'';
   $('accommodationTimeZoneHelp').textContent=`Hores guardades en la zona ${timeZone}.`;renderAccommodationDocumentOptions(originalVoucherDocumentId);setAccommodationFormMode(true);$('accommodationName').focus();$('accommodationFormCard').scrollIntoView({behavior:'smooth',block:'start'});loadTbCostForm(form,'accommodation',row?.id||'','accommodation').catch(error=>msg('accommodationMsg',error?.message||'No s’ha pogut carregar el cost.',true));
 }
 async function fetchCurrentAccommodationVoucher(accommodationId,tripId,generation){
@@ -5975,14 +5977,19 @@ $('accommodationForm').onsubmit=async event=>{
   let savedAccommodation=null;
   try{
     new Intl.DateTimeFormat('ca-ES',{timeZone}).format(new Date());
-    const checkIn=zonedLocalToIso($('accommodationCheckIn').value,timeZone),checkOut=zonedLocalToIso($('accommodationCheckOut').value,timeZone);
+    const checkInDate=$('accommodationCheckInDate').value||null,checkOutDate=$('accommodationCheckOutDate').value||null;
+    const checkInTime=$('accommodationCheckInTime').value||'',checkOutTime=$('accommodationCheckOutTime').value||'';
+    if(checkInTime&&!checkInDate)throw new Error('Indica la data d’entrada abans de l’hora de check-in.');
+    if(checkOutTime&&!checkOutDate)throw new Error('Indica la data de sortida abans de l’hora de check-out.');
+    if(checkInDate&&checkOutDate&&checkOutDate<checkInDate)throw new Error('La data de sortida ha de ser igual o posterior a la d’entrada.');
+    const checkIn=checkInDate&&checkInTime?zonedLocalToIso(checkInDate+'T'+checkInTime,timeZone):null,checkOut=checkOutDate&&checkOutTime?zonedLocalToIso(checkOutDate+'T'+checkOutTime,timeZone):null;
     if(checkIn&&checkOut&&new Date(checkOut)<=new Date(checkIn))throw new Error('El check-out ha de ser posterior al check-in.');
     const rawWebsite=$('accommodationWebsite').value.trim(),website=rawWebsite?safeWebsiteUrl(rawWebsite):null;if(rawWebsite&&!website)throw new Error('La web ha de ser una adreça HTTP o HTTPS vàlida.');
     const desiredStatus=$('accommodationStatus').value,currentAccommodation=editingId?accommodationRows.find(item=>item.id===editingId):null;
     const tbApi=editingId?await tbConfirmationApi():null;
     const tbComponentId=editingId?await tbApi.findTbComponent(db,{tripId,sourceKind:'accommodation',sourceId:editingId}):null;
     const confirmingTb=!!tbComponentId&&desiredStatus==='confirmed';
-    const payload={accommodation_type:$('accommodationType').value,name:$('accommodationName').value.trim(),address:optionalText($('accommodationAddress').value),location_text:optionalText(form.dataset.legacyLocationText),city:optionalText($('accommodationCity').value),postal_code:optionalText($('accommodationPostalCode').value),region:optionalText($('accommodationRegion').value),country:optionalText($('accommodationCountry').value),check_in_at:checkIn,check_out_at:checkOut,time_zone:timeZone,booking_reference:optionalText($('accommodationReference').value),booking_provider:optionalText($('accommodationProvider').value),reservation_status:confirmingTb?(currentAccommodation?.reservation_status||'planning'):desiredStatus,phone:optionalText($('accommodationPhone').value),email:optionalText($('accommodationEmail').value),website_url:website,room_number:optionalText($('accommodationRoom').value),notes:optionalText($('accommodationNotes').value)};
+    const payload={accommodation_type:$('accommodationType').value,name:$('accommodationName').value.trim(),address:optionalText($('accommodationAddress').value),location_text:optionalText(form.dataset.legacyLocationText),city:optionalText($('accommodationCity').value),postal_code:optionalText($('accommodationPostalCode').value),region:optionalText($('accommodationRegion').value),country:optionalText($('accommodationCountry').value),check_in_date:checkInDate,check_out_date:checkOutDate,check_in_at:checkIn,check_out_at:checkOut,time_zone:timeZone,booking_reference:optionalText($('accommodationReference').value),booking_provider:optionalText($('accommodationProvider').value),reservation_status:confirmingTb?(currentAccommodation?.reservation_status||'planning'):desiredStatus,phone:optionalText($('accommodationPhone').value),email:optionalText($('accommodationEmail').value),website_url:website,room_number:optionalText($('accommodationRoom').value),notes:optionalText($('accommodationNotes').value)};
     accommodationSubmitting=true;$('saveAccommodation').disabled=true;msg('accommodationMsg',editingId?'Desant els canvis…':'Desant allotjament…');
     if(editingId){
       if(!originalUpdatedAt)throw new Error('No s’ha pogut verificar la versió de l’allotjament. Torna a obrir-lo abans de desar.');
@@ -6897,6 +6904,8 @@ function loadImportProposalApi(){
 }
 function importValue(fields,name){return fields?.[name]?.value==null?'':String(fields[name].value)}
 function importDateTime(value){const m=String(value||'').match(/^(20\d{2}-\d{2}-\d{2})T(\d{2}:\d{2})/);return m?m[1]+'T'+m[2]:''}
+function importDate(value){const m=String(value||'').match(/^(20\d{2}-\d{2}-\d{2})/);return m?m[1]:''}
+function importTime(value){const m=String(value||'').match(/^20\d{2}-\d{2}-\d{2}T(\d{2}:\d{2})/);return m?m[1]:''}
 function closeReservationImport(){reservationImportState={target:null,document:null,proposal:null};$('reservationImportOverlay').classList.add('hidden');$('reservationImportFields').innerHTML='';$('reservationImportWarnings').innerHTML='';$('reservationImportWarnings').classList.add('hidden');$('reservationImportApply').classList.add('hidden');$('reservationImportFile').value=''}
 function showReservationImport(target,status){
   $('reservationImportTitle').textContent='Importa '+(reservationImportTypeLabels[target]||'reserva').toLowerCase();
@@ -7002,8 +7011,8 @@ async function applyReservationImport(){
       const map={name:'accommodationName',address:'accommodationAddress',city:'accommodationCity',postal_code:'accommodationPostalCode',region:'accommodationRegion',country:'accommodationCountry',booking_provider:'accommodationProvider',booking_reference:'accommodationReference',phone:'accommodationPhone',email:'accommodationEmail',website_url:'accommodationWebsite',room_number:'accommodationRoom'};
       for(const [name,id] of Object.entries(map))if(fields[name])$(id).value=v(name);
       if(fields.accommodation_type&&['hotel','apartment','house','hostel','resort','other'].includes(v('accommodation_type')))$('accommodationType').value=v('accommodation_type');
-      if(fields.check_in_at){const value=dateValue('check_in_at');if(value)$('accommodationCheckIn').value=value}
-      if(fields.check_out_at){const value=dateValue('check_out_at');if(value)$('accommodationCheckOut').value=value}
+      if(fields.check_in_at){const raw=v('check_in_at'),date=importDate(raw),time=importTime(raw);if(date)$('accommodationCheckInDate').value=date;if(time)$('accommodationCheckInTime').value=time}
+      if(fields.check_out_at){const raw=v('check_out_at'),date=importDate(raw),time=importTime(raw);if(date)$('accommodationCheckOutDate').value=date;if(time)$('accommodationCheckOutTime').value=time}
       const zone=await resolveImportedTimeZone(v('city')||v('location_text')||v('address'));if(zone){$('accommodationForm').dataset.timeZone=zone;$('accommodationTimeZoneHelp').textContent='Hores guardades en la zona '+zone+'.'}
       renderAccommodationDocumentOptions(document.id);$('accommodationVoucher').value=document.id;$('accommodationStatus').value='reserved';syncPieceStatus('accommodationStatus');
     }else if(target==='activity'){
