@@ -3027,13 +3027,15 @@ async function openBuilderProposals(push=true,detail=null,direct=false,generatio
  if(!builderRow||builderBusy)return;
  if(!proposalOpen&&builderDirty()){$('builderMessage').textContent='Desa o descarta els canvis abans d’explorar alternatives.';return;}
  const owner=session?.user?.id,epoch=builderEpoch,sequence=++proposalSequence;
+ proposalOpen=true;proposalDetail=detail;proposalGeneration=generation;proposalMode=mode;
+ $('builderEditorPanel').classList.add('hidden');$('proposalPanel').classList.remove('hidden');
+ $('proposalHeading').textContent=detail?'Detall de proposta':'Alternatives';$('proposalBack').textContent=detail?'← Torna a alternatives':'← Torna al resum del viatge';
+ $('proposalContent').textContent='';$('proposalMessage').textContent=direct?'Preparant alternatives…':'Carregant alternatives…';
  try{
-  const api=await import('./domain/proposal-builder.mjs');if(!builderCurrent(owner,epoch)||sequence!==proposalSequence)return;
+  const api=await import('./domain/proposal-builder.mjs?v=6438');if(!builderCurrent(owner,epoch)||sequence!==proposalSequence)return;
   if(!proposalSession)proposalSession=new api.ProposalSession(db,owner,sessionStorage,()=>builderCurrent(owner,epoch));
-  proposalOpen=true;proposalDetail=detail;proposalGeneration=generation;proposalMode=mode;$('builderEditorPanel').classList.add('hidden');$('proposalPanel').classList.remove('hidden');
   if(push)history.pushState({builderNav:{...builderHistory('builderView'),proposal:{brief:builderRow.id,detail,generation,mode,before}}},'');
-  $('proposalHeading').textContent=detail?'Detall de proposta':'Alternatives';$('proposalBack').textContent=detail?'← Torna a alternatives':'← Torna al resum del viatge';
-  $('proposalContent').textContent='';for(const id of ['proposalGenerate','proposalMore','proposalHistory','proposalCurrent'])$(id).classList.add('hidden');$('proposalMessage').textContent=direct?'Preparant alternatives…':'Carregant alternatives…';
+  for(const id of ['proposalGenerate','proposalMore','proposalHistory','proposalCurrent'])$(id).classList.add('hidden');
   proposalResult=await proposalSession.read(builderRow.id,generation);if(!builderCurrent(owner,epoch)||sequence!==proposalSequence||!proposalOpen)return;
   if(proposalResult.brief_revision!==undefined&&proposalResult.brief_revision!==builderRow.revision){builderConflict=true;renderBuilderControls();}
   if(direct&&!detail&&mode==='results'&&(!proposalResult.generation||proposalResult.stale||proposalResult.generation.status==='obsolete')){await generateBuilderProposals();return;}
@@ -3070,7 +3072,7 @@ async function openBuilderProposals(push=true,detail=null,direct=false,generatio
   $('proposalGenerate').disabled=!!proposalSession.busy;
   $('proposalGenerate').textContent=proposalSession.pending?'Verifica la petició pendent':proposalResult.stale?'Genera amb el resum actual':working?'Reprèn si la generació s’ha interromput':g?'Reintenta':'Genera alternatives';
   clearTimeout(proposalTimer);if(working)proposalTimer=setTimeout(()=>{if(proposalOpen&&!document.hidden&&builderCurrent(owner,epoch))openBuilderProposals(false,proposalDetail,false,proposalGeneration,proposalMode)},3000);
- }catch(error){if(builderCurrent(owner,epoch)&&sequence===proposalSequence){stopProposalLoading();$('proposalMessage').textContent=error.message||'No s’han pogut carregar les alternatives.';}}
+ }catch(error){if(builderCurrent(owner,epoch)&&sequence===proposalSequence){stopProposalLoading();const message=error?.message||'No s’han pogut carregar les alternatives.';$('proposalMessage').textContent=message;$('builderMessage').textContent='Propostes: '+message;}}
 }
 $('builderProposals').onclick=()=>openBuilderProposals(true,null,true);
 $('proposalBack').onclick=()=>{if(history.state?.builderNav?.proposal&&history.state.builderNav.depth>0)history.back();else if(proposalDetail)openBuilderProposals(false,null,false,proposalGeneration);else{resetProposalUi();history.replaceState({builderNav:builderHistory('builderView',0)},'');rememberBuilder();}};
