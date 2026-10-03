@@ -2835,17 +2835,16 @@ function builderBack(fallback){
   if(visibleAppView()==='builderView')fallback=history.state?.builderNav?.parent||fallback;
   if(history.state?.builderNav?.owner===session?.user?.id&&history.state.builderNav.depth>0)history.back();else navigateBuilder(fallback,false);
 }
-window.addEventListener('popstate',event=>{
-  if(!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(visibleAppView()))return;
-  if(typeof photoNavigation!=='undefined'&&photoNavigation||event.state?.freyaPhoto)return;
+function handleBuilderPopState(event){
+  if(!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(visibleAppView()))return false;
   const target=event.state?.builderNav;
-  if(target?.owner===session?.user?.id&&target.view==='builderView'&&target.proposal&&builderRow?.id===target.proposal.brief){openBuilderProposals(false,target.proposal.detail,false,target.proposal.generation,target.proposal.mode,target.proposal.before);return}
-  if(proposalOpen&&target?.view==='builderView'&&target.owner===session?.user?.id){resetProposalUi();rememberBuilder();return}
-  if(!target||target.owner!==session?.user?.id||!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(target.view))return;
-  if(!canLeaveBuilder()){history.pushState({builderNav:builderHistory(visibleAppView())},'');return}
-  if(target.view==='builderView'){navigateBuilder('constructionView',false,true);return} // Forward never manufactures a new brief.
-  navigateBuilder(target.view,false,true);
-});
+  if(target?.owner===session?.user?.id&&target.view==='builderView'&&target.proposal&&builderRow?.id===target.proposal.brief){openBuilderProposals(false,target.proposal.detail,false,target.proposal.generation,target.proposal.mode,target.proposal.before);return true}
+  if(proposalOpen&&target?.view==='builderView'&&target.owner===session?.user?.id){resetProposalUi();rememberBuilder();return true}
+  if(!target||target.owner!==session?.user?.id||!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(target.view))return false;
+  if(!canLeaveBuilder()){history.pushState({builderNav:builderHistory(visibleAppView())},'');return true}
+  if(target.view==='builderView'){navigateBuilder('constructionView',false,true);return true} // Forward never manufactures a new brief.
+  navigateBuilder(target.view,false,true);return true;
+}
 function renderBuilderControls(){
   const pending=!!builderController?.state.pending;
   $('builderProposals').disabled=builderBusy||pending||!builderRow||builderConflict;
@@ -5239,12 +5238,14 @@ async function restoreHomeRoute(){
   }
   if(nav?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView'].includes(nav.view))navigateBuilder(nav.view,false);
 }
-window.addEventListener('popstate',event=>{
-  if(typeof photoNavigation!=='undefined'&&photoNavigation||event.state?.freyaPhoto)return;
+function handleHomeTripPopState(event){
   const view=visibleAppView(),nav=event.state?.builderNav,detail=event.state?.homeTripDetail;
-  if(homeTripReturn?.owner===session?.user?.id&&['dashboardView','genericDashboardView'].includes(view)&&nav?.owner===session?.user?.id&&nav.view===homeTripReturn.parent)navigateBuilder(nav.view,false);
-  else if(detail?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','manualTripView','joinTripView'].includes(view)&&trips.some(t=>t.id===detail.id)){homeTripReturn=detail;selectTrip(detail.id,{open:true})}
-});
+  const operational=['dashboardView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView'].includes(view);
+  if(operational&&nav?.view==='builderView')return true; // Stale Builder history can never resurrect over an operational trip.
+  if(homeTripReturn?.owner===session?.user?.id&&['dashboardView','genericDashboardView'].includes(view)&&nav?.owner===session?.user?.id&&nav.view===homeTripReturn.parent){navigateBuilder(nav.view,false);return true}
+  if(detail?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','manualTripView','joinTripView'].includes(view)&&trips.some(t=>t.id===detail.id)){homeTripReturn=detail;selectTrip(detail.id,{open:true});return true}
+  return false;
+}
 function updateHomeClock(){
   clearTimeout(homeClockTimer);
   if(!session||document.visibilityState==='hidden'||!['tripsHomeView','upcomingTripsView','pastTripsView'].includes(visibleAppView()))return;
@@ -6636,7 +6637,12 @@ function handlePhotoHistory(){
   if(marker?.token===nav.token&&marker.level==='photo')openGenericPhoto(nav.id);
   else closeGenericPhoto(true);
 }
-window.addEventListener('popstate',handlePhotoHistory);
+function handleFreyaPopState(event){
+  if(typeof photoNavigation!=='undefined'&&(photoNavigation||event.state?.freyaPhoto)){handlePhotoHistory(event);return}
+  if(handleHomeTripPopState(event))return;
+  handleBuilderPopState(event);
+}
+window.addEventListener('popstate',handleFreyaPopState);
 function resetPhotoNavigation(){
   photoNavigation=null;photoSignedRows=[];
   if($('photoContextEditor')?.open)$('photoContextEditor').close();
@@ -7228,6 +7234,25 @@ function renderDocuments(docs=documentRows){
   }
   focusAssociatedAccommodationVoucher(true);
 }
+let externalDocumentReturn=null;
+function rememberExternalDocumentReturn(){
+  if(!trip||!session)return;
+  const view=visibleAppView();
+  externalDocumentReturn={userId:session.user.id,tripId:trip.id,view,suspended:false};
+}
+function restoreExternalDocumentReturn(){
+  const route=externalDocumentReturn;
+  if(!route||!route.suspended||document.visibilityState==='hidden')return false;
+  externalDocumentReturn=null;
+  if(session?.user?.id!==route.userId||trip?.id!==route.tripId)return false;
+  if(!navigationViewIsValid(route.view,trip))return false;
+  setAppView(route.view);return true;
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'&&externalDocumentReturn)externalDocumentReturn.suspended=true;
+  else if(document.visibilityState==='visible')restoreExternalDocumentReturn();
+});
+window.addEventListener('pageshow',restoreExternalDocumentReturn);
 async function openDocument(id,docs,messageId='documentMsg'){
   if(!trip)return;
   if(connectionUnavailable()){msg(messageId,'📵 Aquest document necessita connexió per generar un accés segur.',true);updateConnectivityBanner();return}
@@ -7237,6 +7262,7 @@ async function openDocument(id,docs,messageId='documentMsg'){
   const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(doc.file_path,300);
   if(!tripRequestIsCurrent(tripId,generation))return;
   if(error){msg(messageId,error.message,true);return}
+  rememberExternalDocumentReturn();
   msg(messageId,'');window.open(data.signedUrl,'_blank','noopener');
 }
 async function deleteDocument(id,docs){
