@@ -3032,7 +3032,7 @@ async function openBuilderProposals(push=true,detail=null,direct=false,generatio
  $('proposalHeading').textContent=detail?'Detall de proposta':'Alternatives';$('proposalBack').textContent=detail?'← Torna a alternatives':'← Torna al resum del viatge';
  $('proposalContent').textContent='';$('proposalMessage').textContent=direct?'Preparant alternatives…':'Carregant alternatives…';
  try{
-  const api=await import('./domain/proposal-builder.mjs?v=6439');if(!builderCurrent(owner,epoch)||sequence!==proposalSequence)return;
+  const api=await import('/freya-travel/domain/proposal-builder.mjs');if(!builderCurrent(owner,epoch)||sequence!==proposalSequence)return;
   if(!proposalSession)proposalSession=new api.ProposalSession(db,owner,sessionStorage,()=>builderCurrent(owner,epoch));
   if(push)history.pushState({builderNav:{...builderHistory('builderView'),proposal:{brief:builderRow.id,detail,generation,mode,before}}},'');
   for(const id of ['proposalGenerate','proposalMore','proposalHistory','proposalCurrent'])$(id).classList.add('hidden');
