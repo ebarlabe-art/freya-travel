@@ -2223,6 +2223,8 @@ let accommodationRows=[];
 let flightChannel=null;
 let flightRows=[];
 let flightDocumentLinks=[];
+let flightTravelerRows=[];
+let flightTravelerDocumentLinks=[];
 let flightSubmitting=false;
 let flightLoadSequence=0;
 let flightCompletedUploadKeys=new Set();
@@ -3482,6 +3484,7 @@ function renderFlights(){
     const bookingDocuments=flightDocumentLinksFor(row.id,'booking');
     const boardingDocuments=flightDocumentLinksFor(row.id,'boarding_pass');
     const baggageDocuments=flightDocumentLinksFor(row.id,'baggage_tag');
+    const travelers=flightTravelersFor(row.id);
 
     return `<article class="accommodation-card" data-flight-id="${esc(row.id)}">
       <div class="accommodation-card-head">
@@ -3501,6 +3504,7 @@ function renderFlights(){
         ${row.seat?`<div class="accommodation-fact"><small>Seient</small><strong>${esc(row.seat)}</strong></div>`:''}
       </div>
       ${row.notes?`<p class="accommodation-notes">${esc(row.notes)}</p>`:''}
+      ${travelers.length?`<section class="flight-document-group"><h4>👥 Passatgers</h4><div class="flight-travelers">${travelers.map(traveler=>flightTravelerCard(row,traveler)).join('')}</div></section>`:''}
       ${(bookingDocuments.length||boardingDocuments.length||baggageDocuments.length)?`<div class="flight-document-groups">
         ${flightCardDocumentGroup(row,'booking','📄 Reserva',bookingDocuments)}
         ${flightCardDocumentGroup(row,'boarding_pass','🎫 Targetes d’embarcament',boardingDocuments)}
@@ -3513,6 +3517,8 @@ function renderFlights(){
     </article>`;
   }).join('');
 
+  list.querySelectorAll('[data-traveler-document]').forEach(button=>button.onclick=()=>openTravelerFlightDocument(button.dataset.travelerDocument));
+  list.querySelectorAll('[data-assign-traveler-document]').forEach(button=>button.onclick=()=>assignTravelerBoardingPass(button.dataset.flightId,button.dataset.travelerId));
   list.querySelectorAll('[data-flight-document]').forEach(button=>{
     button.onclick=()=>openFlightDocument(
       button.dataset.flightDocument,
@@ -3531,6 +3537,24 @@ function renderFlights(){
   });
 }
 
+function flightTravelersFor(flightId){return flightTravelerRows.filter(row=>row.flight_id===flightId).sort((a,b)=>a.display_name.localeCompare(b.display_name,'ca'))}
+function travelerBoardingPasses(flightId,travelerId){return flightTravelerDocumentLinks.filter(row=>row.flight_id===flightId&&row.traveler_id===travelerId&&row.document_role==='boarding_pass')}
+function flightTravelerCard(flight,traveler){
+  const passes=travelerBoardingPasses(flight.id,traveler.traveler_id);
+  return `<div class="flight-traveler"><strong>${esc(traveler.display_name)}</strong>${traveler.seat?`<span>Seient ${esc(traveler.seat)}</span>`:''}<div class="flight-document-links">${passes.map(link=>`<button type="button" class="secondary" data-traveler-document="${esc(link.document_id)}">🎫 ${esc(flightDocumentTitle(link.document_id))}</button>`).join('')}<button type="button" class="secondary" data-assign-traveler-document data-flight-id="${esc(flight.id)}" data-traveler-id="${esc(traveler.traveler_id)}">${passes.length?'Canviar / afegir targeta':'Afegir targeta d’embarcament'}</button></div></div>`;
+}
+async function openTravelerFlightDocument(documentId){if(documentId)await openDocument(documentId,documentRows)}
+async function assignTravelerBoardingPass(flightId,travelerId){
+  const traveler=flightTravelerRows.find(row=>row.flight_id===flightId&&row.traveler_id===travelerId);if(!traveler)return;
+  const available=documentRows.filter(doc=>doc.category==='Vol'||/embarcament|boarding/i.test((doc.title||'')+' '+(doc.file_name||'')));
+  if(!available.length){msg('flightMsg',`No hi ha cap targeta d’embarcament a Documents per assignar a ${traveler.display_name}. Puja-la primer a Documents.`,true);return}
+  const choices=available.map((doc,index)=>`${index+1}. ${doc.title||doc.file_name}`).join('\n');
+  const answer=prompt(`Targeta d’embarcament de ${traveler.display_name}:\n${choices}\n\nEscriu el número del document.`);
+  const selected=available[Number(answer)-1];if(!selected)return;
+  const {error}=await db.from('trip_flight_traveler_documents').upsert({trip_id:trip.id,flight_id:flightId,traveler_id:travelerId,document_id:selected.id,document_role:'boarding_pass',created_by:session.user.id},{onConflict:'trip_id,flight_id,traveler_id,document_role,document_id'});
+  if(error){msg('flightMsg',error.message||'No s’ha pogut assignar la targeta.',true);return}
+  await loadFlights(true);msg('flightMsg',`Targeta d’embarcament assignada a ${traveler.display_name}.`);
+}
 function flightDocumentLinksFor(flightId,role){
   return flightDocumentLinks.filter(link=>link.trip_id===trip?.id&&link.flight_id===flightId&&link.document_role===role).sort((a,b)=>(a.created_at||'').localeCompare(b.created_at||'')||a.document_id.localeCompare(b.document_id));
 }
@@ -3655,7 +3679,7 @@ async function fetchAgendaFlights(silent=false){
   if(!silent&&$('flightLoading'))$('flightLoading').classList.remove('hidden');
 
   try{
-    const [flightResult,linkResult]=await Promise.all([
+    const [flightResult,linkResult,travelerResult,travelerDocumentResult]=await Promise.all([
       db.from('trip_flights')
         .select('*')
         .eq('trip_id',tripId)
@@ -3664,15 +3688,25 @@ async function fetchAgendaFlights(silent=false){
         .order('id',{ascending:true}),
       db.from('trip_flight_documents')
         .select('trip_id,flight_id,document_id,document_role,created_at')
+        .eq('trip_id',tripId),
+      db.from('trip_flight_travelers')
+        .select('trip_id,flight_id,traveler_id,seat,trip_travelers!inner(display_name)')
+        .eq('trip_id',tripId),
+      db.from('trip_flight_traveler_documents')
+        .select('trip_id,flight_id,traveler_id,document_id,document_role,created_at')
         .eq('trip_id',tripId)
     ]);
 
     if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId||loadSequence!==flightLoadSequence)return flightRows;
     if(flightResult.error)throw flightResult.error;
     if(linkResult.error)throw linkResult.error;
+    if(travelerResult.error)throw travelerResult.error;
+    if(travelerDocumentResult.error)throw travelerDocumentResult.error;
 
     flightRows=flightResult.data||[];
     flightDocumentLinks=linkResult.data||[];
+    flightTravelerRows=(travelerResult.data||[]).map(row=>({...row,display_name:row.trip_travelers?.display_name||'Passatger'}));
+    flightTravelerDocumentLinks=travelerDocumentResult.data||[];
     renderFlights();
     const form=$('flightForm'),editingId=form.dataset.tripId===tripId?form.dataset.editId||'':'';
     const storedDraft=readFlightDraft(tripId,userId);
