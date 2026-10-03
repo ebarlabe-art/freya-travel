@@ -1,12 +1,12 @@
 const confidence=new Set(['high','medium','low']);
 export const importAiFields=Object.freeze({
-  flight:['airline','flight_number','departure_airport_code','departure_airport_name','departure_city','departure_at','arrival_airport_code','arrival_airport_name','arrival_city','arrival_at','booking_reference','departure_terminal','arrival_terminal','seat','baggage'],
+  flight:['airline','flight_number','departure_airport_code','departure_airport_name','departure_city','departure_at','arrival_airport_code','arrival_airport_name','arrival_city','arrival_at','booking_reference','departure_terminal','arrival_terminal','seat','baggage','passengers'],
   accommodation:['accommodation_type','name','address','location_text','city','postal_code','region','country','check_in_at','check_out_at','booking_reference','booking_provider','phone','email','website_url','room_number'],
   activity:['title','activity_type','start_at','end_at','venue_name','address','city','booking_reference','provider','contact_phone','contact_email','website_url','people_count','amount','currency'],
   local_transport:['title','transport_mode','start_at','end_at','transport_origin_name','transport_origin_address','transport_origin_city','transport_destination_name','transport_destination_address','transport_destination_city','booking_reference','provider','transport_service_number','transport_seat','transport_platform','contact_phone','contact_email','website_url','people_count'],
   car_rental:['provider','booking_reference','pickup_location','pickup_city','pickup_at','return_location','return_city','return_at','vehicle_class','vehicle_model','license_plate','transmission','fuel_policy','insurance','excess_amount','excess_currency','deposit_amount','deposit_currency','phone','email','website_url']
 });
-const requiredByType={flight:['flight_number'],accommodation:['name'],activity:['title'],local_transport:['title'],car_rental:['provider']};
+const requiredByType={flight:['flight_number','departure_at'],accommodation:['name'],activity:['title'],local_transport:['title'],car_rental:['provider']};
 const typeLabels={flight:'vol',accommodation:'allotjament',activity:'activitat',local_transport:'transport',car_rental:'cotxe de lloguer'};
 export function importResponseSchema(target){
   const fields=importAiFields[target];if(!fields)throw Error('unsupported_target');
@@ -37,6 +37,11 @@ Regles obligatòries:
 - amount, people_count, dipòsits i franquícies es retornen com a text numèric simple, sense símbol de moneda.
 - currency i monedes es retornen amb codi ISO de tres lletres NOMÉS si el document el mostra inequívocament.
 - Cada camp necessita un fragment breu del document que l'acrediti i, si és possible, la pàgina.
+- Per a vols, llegeix el document SENCER abans de respondre. Si la mateixa reserva conté connexions o escales, no aturis la lectura al primer tram.
+- Si target és vol i el document mostra més d'un tram, extreu al bloc principal el PRIMER tram cronològic i afegeix un avís exactament amb el prefix "TRAM_ADDICIONAL:" per CADA tram posterior, resumint número de vol, origen, destinació, data/hora de sortida i arribada tal com consten. Això evita perdre connexions fins que el client les pugui crear com a peces separades.
+- Per a vols, passengers és una llista textual dels noms de passatgers explícits, separats per " · ". No inventis ni completis noms.
+- Per a vols i allotjaments, prioritza especialment dates/hores explícites. Si hi ha data però no hora, retorna la data YYYY-MM-DD i avisa que falta l'hora.
+- Per a allotjaments, extreu l'adreça postal completa sempre que sigui visible, encara que també hi hagi nom i ciutat.
 - Si una dada és dubtosa, baixa la confiança o omet-la.
 - No incloguis camps fora de l'esquema.`;
 }
