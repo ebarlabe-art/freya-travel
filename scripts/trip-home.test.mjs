@@ -212,3 +212,17 @@ test('past trip still exposes completed items and undo, not just gallery',()=>{
   const {content}=renderHarness([item('done',{isCompleted:true,completedAt:'2026-09-09T10:15:00Z'})],{trip:{...trip,start_date:'2026-09-08',end_date:'2026-09-09'}});
   assert.match(content,/Altres elements fets/);assert.match(content,/Desfer/);assert.match(content,/Fotos del viatge/);
 });
+
+
+test('cold start always opens intentional Home instead of restoring an internal screen',()=>{
+  assert.match(html,/function persistNavigationState\(view\)\{[\s\S]*clearNavigationState\(session\.user\.id\)/);
+  const refresh=html.slice(html.indexOf('async function refreshTrips('),html.indexOf('async function renderSession('));
+  assert.match(refresh,/const restoreNavigation=false,restoreView=null,savedNavigationTrip=null/);
+  assert.doesNotMatch(refresh,/readNavigationState\(requestUserId\)/);
+  assert.match(refresh,/const selectedId=deepLinkTripId\|\|validPreferred\|\|validSaved\|\|trips\[0\]\?\.id\|\|null/);
+});
+
+test('explicit deep links remain allowed to choose their destination on cold start',()=>{
+  assert.match(html,/const deepLinkTripId=deepLinkPending/);
+  assert.match(html,/if\(pendingInitialRoute&&!initialViewApplied\)applyPendingInitialView\(\)/);
+});
