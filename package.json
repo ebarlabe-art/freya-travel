@@ -17,7 +17,10 @@
     "prebuild": "npm run entries:sync && node scripts/browser-runtime.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "postbuild": "node scripts/package-pages.mjs"
+    "postbuild": "node scripts/package-pages.mjs",
+    "test:alb02": "node --test scripts/travel-book-*.test.mjs",
+    "test:alb02:db": "node scripts/test-travel-book-db.mjs",
+    "check:alb02": "npm run test:alb02 && npm run test:alb02:db && npm run entries:check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
