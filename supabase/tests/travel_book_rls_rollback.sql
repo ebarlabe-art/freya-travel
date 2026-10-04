@@ -1,0 +1,32 @@
+do $$declare f alb_fixture;op uuid; n text;begin
+ select * into f from alb_fixture;
+ select operation_id into op from public.travel_book_operations where operation_type='create_book' and book_id=f.book;
+ perform set_config('request.jwt.claim.sub',f.b::text,true);
+ perform pg_temp.assert_alb((select count(*)=2 from public.travel_books),'member sees shared trip books only');
+ perform pg_temp.assert_alb((select count(*)=0 from public.travel_book_operations),'member cannot read other actor receipts');
+ perform pg_temp.assert_alb(public.get_travel_book_operation_v1(op) is null,'receipt lookup isolated by actor');
+ perform pg_temp.alb_save(f.c1,1,'other member');
+ perform set_config('request.jwt.claim.sub',f.outsider::text,true);
+ foreach n in array array['travel_books','travel_book_editions','travel_book_compositions','travel_book_pages','travel_book_composition_versions','travel_book_source_snapshots','travel_book_assets','travel_book_resource_refs','travel_book_revisions','travel_book_revision_compositions','travel_book_operations'] loop
+   execute format('select pg_temp.assert_alb(not exists(select 1 from public.%I),%L)',n,'outsider hidden '||n);
+ end loop;
+ perform pg_temp.expect_alb_error(format('select public.create_travel_book_v1(%L,%L,%L,%L)',f.trip,gen_random_uuid(),'Forbidden',gen_random_uuid()),'42501');
+ perform set_config('request.jwt.claim.sub',f.a::text,true);
+ perform pg_temp.expect_alb_error(format('update public.travel_book_compositions set current_version=100 where id=%L',f.c1),'42501');
+ perform pg_temp.expect_alb_error(format('delete from public.travel_book_editions where id=%L',f.edition),'42501');
+ perform pg_temp.expect_alb_error(format('select public.create_travel_book_edition_v1(%L,%L,%L,%L,%L)',f.other_trip,f.book,gen_random_uuid(),'Cross',gen_random_uuid()),'P0002');
+end$$;
+reset role;
+do $$declare f alb_fixture;begin select * into f from alb_fixture;delete from public.trip_members where trip_id=f.trip and user_id=f.b;perform set_config('request.jwt.claim.sub',f.b::text,true);end$$;
+do $$declare f alb_fixture;op uuid;begin select * into f from alb_fixture;select operation_id into op from public.travel_book_operations where actor_id=f.b limit 1;perform pg_temp.assert_alb(op is not null,'revocation fixture has receipt');perform pg_temp.expect_alb_error(format('select public.get_travel_book_operation_v1(%L)',op),'42501');end$$;
+set local role authenticated;
+do $$declare f alb_fixture;begin select * into f from alb_fixture;perform pg_temp.assert_alb((select count(*)=0 from public.travel_books),'revocation cuts read');perform pg_temp.expect_alb_error(format('select public.create_travel_book_v1(%L,%L,%L,%L)',f.trip,gen_random_uuid(),'Revoked',gen_random_uuid()),'42501');end$$;
+reset role;
+do $$declare f alb_fixture;begin select * into f from alb_fixture;update public.trips set discarded_at=clock_timestamp(),discarded_by=f.a where id=f.trip;perform set_config('request.jwt.claim.sub',f.a::text,true);end$$;
+set local role authenticated;
+do $$declare f alb_fixture;op uuid;begin select * into f from alb_fixture;perform pg_temp.assert_alb(not public.is_trip_member(f.trip),'real discarded-trip predicate');perform pg_temp.assert_alb(not exists(select 1 from public.travel_books where trip_id=f.trip),'discard hides books');perform pg_temp.expect_alb_error(format('select public.create_travel_book_v1(%L,%L,%L,%L)',f.trip,gen_random_uuid(),'Discarded',gen_random_uuid()),'42501');end$$;
+reset role;
+set local role anon;
+select pg_temp.expect_alb_error('select public.get_travel_book_operation_v1(gen_random_uuid())','42501');
+reset role;
+rollback;
