@@ -49,6 +49,10 @@ do $$declare i ingestion_fixture;f alb_fixture;j jsonb;begin
  perform public.alb03_finish_v1(i.asset,f.a,(j#>>'{job,lease_id}')::uuid,null,'STORAGE_ERROR');
  perform pg_temp.assert_alb((select status='pending' from public.travel_book_assets where id=i.asset),'retryable failure stays pending');
  j:=public.alb03_claim_v1(i.asset,f.a);
+ update app_private.alb03_ingestions set lease_until=clock_timestamp()-interval '1 second' where asset_id=i.asset;
+ perform public.alb03_finish_v1(i.asset,f.a,(j#>>'{job,lease_id}')::uuid,null,'STORAGE_ERROR');
+ perform pg_temp.assert_alb((select status='pending' from public.travel_book_assets where id=i.asset),'same fencing token may finish after lease deadline');
+ j:=public.alb03_claim_v1(i.asset,f.a);
  perform pg_temp.expect_alb_error(format('select public.alb03_finish_v1(%L,%L,%L,%L::jsonb,null)',i.asset,f.a,(select lease from ingestion_fixture),pg_temp.alb_descriptor(i.asset)),'40001');
  perform public.alb03_finish_v1(i.asset,f.a,(j#>>'{job,lease_id}')::uuid,jsonb_build_object('original',pg_temp.alb_descriptor(i.asset)->'original'));
  perform pg_temp.assert_alb((select status='pending' from public.travel_book_assets where id=i.asset),'original alone is not ready');
