@@ -1332,12 +1332,12 @@
         </section>
         <section class="photo-upload-card">
           <section id="photoUploadV2" class="hidden" aria-label="Pujada de fotos">
-            <h3>Afegir fotos</h3><p>Fins a 20 fotos per lot · JPEG, PNG o WebP · màxim 32 MB cadascuna. Mantén Freya oberta fins que acabin. No es garanteix la pujada en segon pla.</p>
+            <h3>Afegir fotos</h3><p>Fins a 20 fotos per lot · JPEG, PNG, WebP, HEIC o HEIF · màxim 32 MB cadascuna. Mantén Freya oberta fins que acabin. No es garanteix la pujada en segon pla.</p>
             <div id="photoBatchContext"></div>
-            <label>Selecciona fotos<input id="photoFilesV2" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+            <label>Selecciona fotos<input id="photoFilesV2" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple></label>
             <p id="photoQueueMessage" role="status" aria-live="polite"></p>
             <div id="photoQueueList"></div>
-            <div class="trip-home-actions"><button id="photoQueueUpload" type="button">Pujar pendents</button><button id="photoQueueClear" type="button">Tancar lot</button></div>
+            <div class="trip-home-actions"><button id="photoQueueUpload" type="button">Pujar fotos</button><button id="photoQueueClear" type="button">Acabar</button></div>
           </section>
           <form id="photoForm" class="photo-form">
             <input id="photoTitle" type="text" maxlength="80" placeholder="Títol o lloc (opcional)">
@@ -6471,8 +6471,14 @@ let photoQueueRunning=false,photoV2LoadSequence=0,photoV2RenderSequence=0;
 let photoNavigation=null,photoSignedRows=[],photoHistoryPending=false,photoReturnPosition=null;
 function photoScope(){return {tripId:trip?.id,userId:session?.user?.id,generation:tripLoadGeneration}}
 function photoScopeCurrent(scope){return !!scope?.tripId&&!!scope.userId&&session?.user?.id===scope.userId&&tripRequestIsCurrent(scope.tripId,scope.generation)&&!isLondonTrip()}
-function photoFileError(file){return !['image/jpeg','image/png','image/webp'].includes(file.type)?'Format no compatible. Tria JPEG, PNG o WebP; converteix HEIC/HEIF abans de seleccionar-lo.':!file.size?'El fitxer és buit.':file.size>32*1024*1024?'La foto supera 32 MB.':''}
-function photoStablePath(scope,id,type){return `${scope.tripId}/photos/${scope.userId}/${id}.${{'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[type]||'invalid'}`}
+function normalizedPhotoMime(file){
+  const type=(file.type||'').toLowerCase();
+  if(['image/jpeg','image/png','image/webp','image/heic','image/heif'].includes(type))return type;
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  return ({jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',heic:'image/heic',heif:'image/heif'})[ext]||'';
+}
+function photoFileError(file){const mime=normalizedPhotoMime(file);return !mime?'Format no compatible. Tria JPEG, PNG, WebP, HEIC o HEIF.':!file.size?'El fitxer és buit.':file.size>32*1024*1024?'La foto supera 32 MB.':''}
+function photoStablePath(scope,id,type){return `${scope.tripId}/photos/${scope.userId}/${id}.${{'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/heic':'heic','image/heif':'heif'}[type]||'invalid'}`}
 function photoContextValue(value={}){return {local_date:value.local_date||null,activity_id:value.activity_id||null,itinerary_item_id:value.itinerary_item_id||null}}
 function photoContextsEqual(a,b){return JSON.stringify(photoContextValue(a))===JSON.stringify(photoContextValue(b))}
 function pendingPhotoContextJobs(){return photoQueue.filter(job=>job.status==='pending'&&!job.finalizationContext)}
@@ -6491,7 +6497,7 @@ function applyPhotoBatchContext(){
 function savedPhotoContextHtml(job){
   const metadata=photoMetadataUnavailable?null:photoMetadata.find(row=>row.document_id===job.id);
   const row=photoRows.find(row=>row.id===job.id);
-  return `<div class="photo-summary">${row?photoSummaryHtml(row):'<p>Foto desada pendent de verificar; refresca Fotos.</p>'}</div><button type="button" data-correct-photo="${esc(job.id)}" ${!metadata||!photoRows.some(row=>row.id===job.id)?'disabled':''}>Edita context de la foto desada</button>`;
+  return `<div class="photo-summary">${row?photoSummaryHtml(row):'<p>Foto desada pendent de verificar; refresca Fotos.</p>'}</div><button type="button" data-correct-photo="${esc(job.id)}" ${!metadata||!photoRows.some(row=>row.id===job.id)?'disabled':''}>Editar informació</button>`;
 }
 function refreshSavedPhotoContexts(){
   if(!photoScopeCurrent(photoScope()))return;const scope=photoScope();
@@ -6582,8 +6588,8 @@ function selectPhotoFiles(files){
   const batchId=photoQueue[0]?.batchId||crypto.randomUUID();let skipped=0;
   for(const file of files){
     if(photoQueue.some(job=>job.file.name===file.name&&job.file.size===file.size&&job.file.lastModified===file.lastModified)){skipped++;continue}
-    const id=crypto.randomUUID(),error=photoFileError(file);
-    photoQueue.push({id,batchId,index:photoQueue.length,scope,file,path:photoStablePath(scope,id,file.type),title:file.name.slice(0,160),context:photoContextValue(photoBatchContext),status:error?'error':'pending',invalid:!!error,error,preview:error?'':URL.createObjectURL(file),uploaded:false});
+    const id=crypto.randomUUID(),error=photoFileError(file),mime=normalizedPhotoMime(file);
+    photoQueue.push({id,batchId,index:photoQueue.length,scope,file,mime,path:photoStablePath(scope,id,mime),title:file.name.slice(0,160),context:photoContextValue(photoBatchContext),status:error?'error':'pending',invalid:!!error,error,preview:error||mime==='image/heic'||mime==='image/heif'?'':URL.createObjectURL(file),uploaded:false});
   }
   $('photoQueueMessage').textContent=skipped?`${skipped} seleccions repetides ignorades en aquest lot.`:'Revisa el context de cada foto abans de pujar.';renderPhotoQueue();
 }
@@ -6613,11 +6619,13 @@ async function executePhotoJob(job,io,current){
   finally{if(current())io.changed()}
 }
 async function uploadPhotoV2Object(job,current){
-  const image=new Image();image.src=job.preview;
-  try{await image.decode()}catch{throw new Error('No es pot llegir aquesta imatge. Exporta-la com a JPEG, PNG o WebP vàlid.')}
-  finally{image.removeAttribute('src')}
+  if(!['image/heic','image/heif'].includes(job.mime)){
+    const image=new Image();image.src=job.preview;
+    try{await image.decode()}catch{throw new Error('No es pot llegir aquesta imatge.')}
+    finally{image.removeAttribute('src')}
+  }
   if(!current())return {error:new Error('Pujada interrompuda pel canvi de viatge o usuari.')};
-  return db.storage.from(DOC_BUCKET).upload(job.path,job.file,{contentType:job.file.type,upsert:false});
+  return db.storage.from(DOC_BUCKET).upload(job.path,job.file,{contentType:job.mime,upsert:false});
 }
 async function runPhotoQueue(onlyId=null){
   const scope=photoScope();if(!photoScopeCurrent(scope)||photoQueueRunning)return;
@@ -6626,7 +6634,7 @@ async function runPhotoQueue(onlyId=null){
     const jobs=photoQueue.filter(job=>onlyId?job.id===onlyId&&job.status==='error'&&!job.invalid:job.status==='pending');
     for(const job of jobs){
       if(!current())return;
-      await executePhotoJob(job,{changed:renderPhotoQueue,upload:job=>uploadPhotoV2Object(job,current),finalize:job=>db.rpc('finalize_trip_photo',{p_trip_id:scope.tripId,p_document_id:job.id,p_title:job.title.trim()||job.file.name.slice(0,160),p_file_name:job.file.name,p_mime_type:job.file.type,p_upload_batch_id:job.batchId,p_selection_index:job.index,p_local_date:job.finalizationContext.local_date,p_activity_id:job.finalizationContext.activity_id,p_itinerary_item_id:job.finalizationContext.itinerary_item_id})},current);
+      await executePhotoJob(job,{changed:renderPhotoQueue,upload:job=>uploadPhotoV2Object(job,current),finalize:job=>db.rpc('finalize_trip_photo',{p_trip_id:scope.tripId,p_document_id:job.id,p_title:job.title.trim()||job.file.name.slice(0,160),p_file_name:job.file.name,p_mime_type:job.mime,p_upload_batch_id:job.batchId,p_selection_index:job.index,p_local_date:job.finalizationContext.local_date,p_activity_id:job.finalizationContext.activity_id,p_itinerary_item_id:job.finalizationContext.itinerary_item_id})},current);
       if(!current())return;
     }
     await photoRequestWithTimeout(loadGenericPhotos());if(!current())return;
