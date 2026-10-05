@@ -1391,6 +1391,11 @@
         </section>
         <p id="travelBookMessage" class="message hidden" role="status" aria-live="polite"></p>
         <div id="travelBookSummary" class="travel-book-summary"></div>
+        <section id="travelBookBatchCard" class="travel-book-entry">
+          <div><h3>⚙️ Preparació de les fotos</h3><p id="travelBookBatchStatus">Freya comprovarà quines fotos ja estan preparades i continuarà des d’allà.</p></div>
+          <div class="travel-book-summary"><span id="travelBookBatchProgress" class="travel-book-chip">0 / 0</span><span id="travelBookBatchErrors" class="travel-book-chip hidden">0 incidències</span></div>
+          <button id="travelBookBatchButton" type="button">Preparar les fotos pendents</button>
+        </section>
         <section id="travelBookCover" class="travel-book-cover hidden"></section>
         <div id="travelBookSections"></div>
       </div>
@@ -1851,8 +1856,9 @@ async function runAlb03RuntimeTest(){
 }
 $('alb03RuntimeTestButton').onclick=runAlb03RuntimeTest;
 
-let travelBookProposalApiPromise=null,travelBookProposalState=null;
+let travelBookProposalApiPromise=null,travelBookBatchApiPromise=null,travelBookProposalState=null,travelBookBatchRunning=false;
 function travelBookProposalApi(){return travelBookProposalApiPromise??=import('./domain/travel-book-proposal.mjs')}
+function travelBookBatchApi(){return travelBookBatchApiPromise??=import('./domain/travel-book-batch.mjs')}
 function updateTravelBookEntryVisibility(){const card=$('travelBookEntry');if(card)card.classList.toggle('hidden',!trip||isLondonTrip())}
 async function ensureTravelBookProject(){
   if(!trip||!session||isLondonTrip())throw new Error('Travel Book encara no està disponible per a aquest viatge.');
@@ -1864,16 +1870,21 @@ async function ensureTravelBookProject(){
   if(created.error)throw created.error;
   return {id,title};
 }
+async function travelBookMapLimited(items,limit,worker){
+  const out=new Array(items.length);let cursor=0;
+  async function run(){for(;;){const at=cursor++;if(at>=items.length)return;out[at]=await worker(items[at],at)}}
+  await Promise.all(Array.from({length:Math.min(limit,items.length)},()=>run()));return out;
+}
 async function loadTravelBookProposalSources(book){
   const [assetsResult,galleryCount]=await Promise.all([db.from('travel_book_assets').select('id,status,source_document_id_at_capture,width_px,height_px').eq('trip_id',trip.id).eq('book_id',book.id).eq('status','ready').order('created_at',{ascending:true}),db.from('travel_documents').select('id',{count:'exact',head:true}).eq('trip_id',trip.id).eq('category','Foto')]);
   if(assetsResult.error)throw assetsResult.error;
   if(galleryCount.error)throw galleryCount.error;
   const assets=assetsResult.data||[],totalGallery=galleryCount.count||0;
   if(!assets.length)return {photos:[],visuals:new Map(),ready:0,totalGallery};
-  const ingestionRows=await Promise.all(assets.map(async asset=>{
+  const ingestionRows=await travelBookMapLimited(assets,4,async asset=>{
     const result=await db.rpc('get_travel_book_ingestion_v1',{p_trip_id:trip.id,p_book_id:book.id,p_asset_id:asset.id});
     if(result.error)throw result.error;return {asset,result:result.data};
-  }));
+  });
   const snapshotIds=[...new Set(ingestionRows.map(row=>row.result?.snapshot_id).filter(Boolean))];
   const snapshots=snapshotIds.length?await db.from('travel_book_source_snapshots').select('id,payload').in('id',snapshotIds):{data:[],error:null};
   if(snapshots.error)throw snapshots.error;
@@ -1881,17 +1892,95 @@ async function loadTravelBookProposalSources(book){
   const variants=await db.from('travel_book_asset_variants').select('asset_id,kind,storage_path,width_px,height_px').in('asset_id',assets.map(a=>a.id)).eq('kind','thumbnail');
   if(variants.error)throw variants.error;
   const byAssetVariant=new Map((variants.data||[]).map(row=>[row.asset_id,row]));
-  const signed=await Promise.all((variants.data||[]).map(async row=>{
-    const result=await db.storage.from('travel-book').createSignedUrl(row.storage_path,3600);
-    return [row.asset_id,result.data?.signedUrl||''];
-  }));
-  const visuals=new Map(signed);
+  const variantRows=variants.data||[],signedResult=variantRows.length?await db.storage.from('travel-book').createSignedUrls(variantRows.map(row=>row.storage_path),3600):{data:[],error:null};
+  if(signedResult.error)throw signedResult.error;
+  const signedByPath=new Map((signedResult.data||[]).map(row=>[row.path,row.signedUrl||'']));
+  const visuals=new Map(variantRows.map(row=>[row.asset_id,signedByPath.get(row.storage_path)||'']));
   const photos=ingestionRows.map(({asset,result})=>{
     const snapshot=bySnapshot.get(result?.snapshot_id),variant=byAssetVariant.get(asset.id);
     return {asset_id:asset.id,status:asset.status,local_date:snapshot?.payload?.local_date||null,selection_index:null,width_px:variant?.width_px||asset.width_px,height_px:variant?.height_px||asset.height_px,source_snapshot_ids:result?.snapshot_id?[result.snapshot_id]:[]};
   });
   return {photos,visuals,ready:assets.length,totalGallery};
 }
+
+function travelBookBatchCurrent(scope){return !!scope&&trip?.id===scope.tripId&&session?.user?.id===scope.userId}
+function setTravelBookBatchUi({done=0,total=0,errors=0,message='',running=false}={}){
+  const progress=$('travelBookBatchProgress'),errorChip=$('travelBookBatchErrors'),button=$('travelBookBatchButton'),status=$('travelBookBatchStatus');
+  if(progress)progress.textContent=done+' / '+total;
+  if(errorChip){errorChip.textContent=errors+' '+(errors===1?'incidència':'incidències');errorChip.classList.toggle('hidden',!errors)}
+  if(status&&message)status.textContent=message;
+  if(button){button.disabled=running;button.textContent=running?'Preparant fotos…':(done<total?'Reprendre preparació':'Fotos preparades')}
+}
+async function travelBookRequestPhoto(bookId,documentId){
+  const result=await db.rpc('request_travel_book_photo_v1',{p_trip_id:trip.id,p_book_id:bookId,p_document_id:documentId,p_operation_id:crypto.randomUUID()});
+  if(result.error)throw result.error;
+  return result.data;
+}
+async function travelBookIngestAsset(assetId,api){
+  let last={state:'failed',retry:false};
+  for(let attempt=0;attempt<4;attempt++){
+    const response=await fetch(SUPABASE_URL+'/functions/v1/travel-book-ingest',{method:'POST',headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({asset_id:assetId})});
+    const body=await response.json().catch(()=>({}));
+    last=api.classifyTravelBookProcessResponse({status:response.status,body});
+    if(last.state==='ready')return {status:'ready'};
+    if(last.state==='derivative_pending'){
+      const worker=await fetch('https://travel-book-derivatives-production.up.railway.app/process',{method:'POST',headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({asset_id:assetId})});
+      const workerBody=await worker.json().catch(()=>({}));
+      const workerState=api.classifyTravelBookProcessResponse({status:worker.status,body:workerBody});
+      if(workerState.state==='ready')return {status:'ready'};
+      last=workerState;
+    }
+    if(!last.retry)break;
+    await new Promise(resolve=>setTimeout(resolve,api.batchBackoffMs(attempt)));
+  }
+  const error=new Error(last.state==='auth'?'La sessió ha caducat. Torna a entrar a Freya i reprèn la preparació.':'No s’ha pogut preparar aquesta foto ara mateix.');
+  error.code=last.state;throw error;
+}
+async function currentTravelBookCoverage(bookId){
+  const [docs,assets]=await Promise.all([
+    db.from('travel_documents').select('id').eq('trip_id',trip.id).eq('category','Foto').order('created_at',{ascending:true}),
+    db.from('travel_book_assets').select('source_document_id_at_capture,status').eq('trip_id',trip.id).eq('book_id',bookId).eq('status','ready')
+  ]);
+  if(docs.error)throw docs.error;if(assets.error)throw assets.error;
+  const ready=new Set((assets.data||[]).map(row=>row.source_document_id_at_capture).filter(Boolean));
+  return {documents:docs.data||[],ready};
+}
+async function runTravelBookBatch({automatic=false}={}){
+  if(travelBookBatchRunning||!trip||!session||isLondonTrip())return;
+  const scope={tripId:trip.id,userId:session.user.id};travelBookBatchRunning=true;
+  let done=0,total=0,errors=0;
+  try{
+    const book=await ensureTravelBookProject();if(!travelBookBatchCurrent(scope))return;
+    const coverage=await currentTravelBookCoverage(book.id),api=await travelBookBatchApi(),plan=api.planTravelBookIngestion(coverage.documents);
+    total=plan.length;done=plan.filter(id=>coverage.ready.has(id)).length;
+    setTravelBookBatchUi({done,total,errors,message:done===total?'Totes les fotos ja estan preparades.':'Preparant només les fotos que encara falten…',running:true});
+    for(const documentId of plan){
+      if(!travelBookBatchCurrent(scope))return;
+      if(coverage.ready.has(documentId))continue;
+      try{
+        const request=await travelBookRequestPhoto(book.id,documentId);
+        if(!travelBookBatchCurrent(scope))return;
+        const state=await db.rpc('get_travel_book_ingestion_v1',{p_trip_id:scope.tripId,p_book_id:book.id,p_asset_id:request.asset_id});
+        if(state.error)throw state.error;
+        if(state.data?.processing_state!=='ready')await travelBookIngestAsset(request.asset_id,api);
+        done++;
+      }catch(error){
+        errors++;
+        if(error?.code==='auth')throw error;
+      }
+      setTravelBookBatchUi({done,total,errors,message:'Preparades '+done+' de '+total+' fotos. Pots sortir de la pantalla: si iOS suspèn Freya, després reprendrà les pendents sense duplicar-les.',running:true});
+    }
+    if(!travelBookBatchCurrent(scope))return;
+    setTravelBookBatchUi({done,total,errors,message:errors?'La preparació ha acabat amb algunes incidències reintentables. Pots prémer «Reprendre preparació».':'✅ Fotos editorials preparades. Freya ja pot construir la proposta completa.',running:false});
+    await loadTravelBookView();
+  }catch(error){
+    if(travelBookBatchCurrent(scope))setTravelBookBatchUi({done,total,errors,message:error?.message||'La preparació s’ha interromput. Pots reprendre-la.',running:false});
+  }finally{
+    travelBookBatchRunning=false;
+    if(travelBookBatchCurrent(scope))$('travelBookBatchButton').disabled=false;
+  }
+}
+
 function formatTravelBookDate(value){
   if(!value)return 'Records sense data';
   try{return new Intl.DateTimeFormat('ca-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(value+'T00:00:00Z'))}catch{return value}
@@ -1919,6 +2008,7 @@ async function loadTravelBookView(){
     const proposal=api.buildInitialTravelBookProposal({trip_id:trip.id,book_id:book.id,title:book.title,photos:sources.photos});
     if(!api.validateInitialTravelBookProposal(proposal))throw new Error('La proposta no ha superat la validació.');
     renderTravelBookProposal(proposal,sources.visuals,sources.totalGallery);
+    setTravelBookBatchUi({done:proposal.stats.ready_photos,total:sources.totalGallery,errors:0,message:proposal.stats.ready_photos===sources.totalGallery?'Totes les fotos ja estan preparades.':'Hi ha fotos pendents de preparar. Freya pot continuar sense duplicar les que ja estan fetes.',running:travelBookBatchRunning});
     msg('travelBookMessage',proposal.stats.ready_photos?'':'Encara no hi ha fotos editorials en estat ready.');
   }catch(error){msg('travelBookMessage',error?.message||'No s’ha pogut preparar la proposta.',true)}
 }
@@ -1931,10 +2021,12 @@ async function openTravelBookFromPhotos(){
     if(trip?.id!==tripId)return;
     setAppView('travelBookView');
     status.textContent='';
+    runTravelBookBatch({automatic:true});
   }catch(error){if(trip?.id===tripId)status.textContent=error?.message||'No s’ha pogut obrir el Travel Book.'}
   finally{if(trip?.id===tripId)button.disabled=false}
 }
 $('createTravelBookButton').onclick=openTravelBookFromPhotos;
+$('travelBookBatchButton').onclick=()=>runTravelBookBatch();
 function selectedTripStorageKey(){return session?.user?.id?`freya-selected-trip-${session.user.id}`:null}
 function readSelectedTripId(){const key=selectedTripStorageKey();if(!key)return null;try{return localStorage.getItem(key)}catch(_){return null}}
 function rememberSelectedTrip(){const key=selectedTripStorageKey();if(!key||!trip)return;try{localStorage.setItem(key,trip.id)}catch(_){}}
