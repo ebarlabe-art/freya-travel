@@ -4,8 +4,7 @@ export const MAX_PIXELS = 200_000_000;
 export const MAX_SIDE = 32768;
 export const sha256 = async (bytes: Uint8Array) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes as BufferSource))).map(x=>x.toString(16).padStart(2,'0')).join('');
 export function requireEdgeCapacity(info:{mime:string,width:number,height:number}) {
- if(['image/heic','image/heif'].includes(info.mime))throw Error('DERIVATIVE_UNSUPPORTED');
- const limit=info.mime==='image/jpeg'?12_500_000:4_000_000;
+ const limit=['image/jpeg','image/heic','image/heif'].includes(info.mime)?12_500_000:4_000_000;
  if(info.width*info.height>limit)throw Error('DERIVATIVE_CAPACITY');
 }
 const text=(b:Uint8Array,a:number,n:number)=>new TextDecoder().decode(b.subarray(a,a+n));
