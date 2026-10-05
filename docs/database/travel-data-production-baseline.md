@@ -141,6 +141,8 @@ to normalize in this documentation sprint.
 
 ## Storage bucket `trip-documents`
 
+Production upload limit: **32 MiB** (`33554432` bytes), aligned with ALB-03 mobile-photo preservation. Allowed MIME types remain unchanged.
+
 The current canonical policies target `authenticated` and authorize objects by
 interpreting the first path segment as the trip UUID:
 
