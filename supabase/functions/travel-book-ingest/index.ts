@@ -21,7 +21,9 @@ const handler=createIngestHandler({
  },
  rpc:async(name:string,args:unknown)=>{
   const r=await fetch(url+'/rest/v1/rpc/'+name,{method:'POST',headers:{...headers(),'Content-Type':'application/json'},body:JSON.stringify(args),signal:AbortSignal.timeout(10000)});
-  const data=await r.json();if(!r.ok)throw Object.assign(Error(data.message),{code:data.code});return data;
+  const raw=await r.text();const data=raw?JSON.parse(raw):null;
+  if(!r.ok)throw Object.assign(Error(data?.message||'RPC_ERROR'),{code:data?.code});
+  return data;
  },
  storage:{read,put:async(bucket:string,name:string,bytes:Uint8Array,mime:string)=>{
   const r=await fetch(`${url}/storage/v1/object/${bucket}/${path(name)}`,{method:'POST',headers:{...headers(),'Content-Type':mime,'x-upsert':'false'},body:bytes as BodyInit,signal:AbortSignal.timeout(15000)});
