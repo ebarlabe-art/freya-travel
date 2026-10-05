@@ -1349,8 +1349,8 @@
         </section>
         <section id="alb03RuntimeTest" class="photo-upload-card hidden" aria-label="Prova tècnica Travel Book">
           <h3>🧪 Prova Travel Book</h3>
-          <p>Aquesta prova utilitza la foto seleccionada d’Eivissa per validar la nova ingesta editorial.</p>
-          <button id="alb03RuntimeTestButton" type="button">Executar prova ALB-03</button>
+          <p>Aquesta prova utilitza IMG_6200.jpeg (~9,2 MB) per validar la ingesta d’un JPEG gran.</p>
+          <button id="alb03RuntimeTestButton" type="button">Executar prova JPEG gran</button>
           <p id="alb03RuntimeTestMessage" role="status" aria-live="polite"></p>
         </section>
         <section>
@@ -1792,7 +1792,7 @@ function msg(id,text,error=false){const el=$(id);el.textContent=text;el.classNam
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function isLondonTrip(value=trip){return value?.experience_key==='london-2026'}
 const ALB03_RUNTIME_TEST_TRIP_ID='f9cf44a7-7c07-4637-afea-5b5c97268085';
-const ALB03_RUNTIME_TEST_ASSET_ID='5305f4e8-5035-4e5d-af79-708d9a366519';
+const ALB03_RUNTIME_TEST_ASSET_ID='eb0a0c0c-526a-47ef-91f9-05672cf803f5';
 function updateAlb03RuntimeTestVisibility(){const card=$('alb03RuntimeTest');if(card)card.classList.toggle('hidden',trip?.id!==ALB03_RUNTIME_TEST_TRIP_ID)}
 async function runAlb03RuntimeTest(){
   const button=$('alb03RuntimeTestButton'),message=$('alb03RuntimeTestMessage');
