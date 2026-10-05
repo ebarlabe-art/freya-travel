@@ -134,7 +134,7 @@ test('explicit FK rejection unlocks correction without changing retry object ide
 });
 test('backend confirmation of an ambiguous upload promotes it to correction flow, without reupload',async()=>{
  const h=savedContextHarness();vm.runInContext("photoQueue[0].status='error';photoQueue[0].finalizationContext={};photoQueue[0].batchId='batch';photoQueue[0].index=0",h.s);h.state.row.upload_batch_id='batch';h.state.row.selection_index=0;
- h.s.renderPhotoQueue=h.renderQueue;await h.s.loadGenericPhotos();assert.equal(h.get('photoQueue[0].status'),'uploaded');assert.match(h.element('photoQueueList').innerHTML,/Edita context de la foto desada/);assert.doesNotMatch(h.element('photoQueueList').innerHTML,/data-photo-retry/);
+ h.s.renderPhotoQueue=h.renderQueue;await h.s.loadGenericPhotos();assert.equal(h.get('photoQueue[0].status'),'uploaded');assert.match(h.element('photoQueueList').innerHTML,/Editar informació/);assert.doesNotMatch(h.element('photoQueueList').innerHTML,/data-photo-retry/);
 });
 test('gallery preserves selection order inside batches, newest batches first; legacy rows remain visible',()=>{
  const {s}=harness();const rows=[{id:'first',created_at:'2026-09-22T10:00:00Z'},{id:'last',created_at:'2026-09-22T10:01:00Z'},{id:'old',created_at:'2026-09-21T00:00:00Z'}];
