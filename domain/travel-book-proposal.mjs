@@ -16,7 +16,7 @@ function normalizedPhoto(raw){
   selection_index:index(raw.selection_index),
   width_px:positive(raw.width_px),
   height_px:positive(raw.height_px),
-  caption_candidate:text(raw.title,160),
+  caption_candidate:raw.title_reviewed===true?text(raw.title,160):null,
   source_snapshot_ids:snapshots
  };
 }
