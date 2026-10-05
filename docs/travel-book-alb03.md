@@ -1,6 +1,6 @@
 # ALB-03 — Fonts, originals i derivats editorials
 
-Implementació local sobre `origin/main` `6177cc62fc0891f76458179c974ce6a881463a73`, revisada abans de commit per preservar originals i admetre formats mòbils. Complementa [ALB-01](travel-book-alb01.md) i [ALB-02](travel-book-alb02.md), sense modificar els seus fitxers, migracions, composicions, CAS ni revisions.
+Estat: **tancat i validat físicament el 2026-10-05**. ALB-03 preserva originals, genera derivats editorials i admet JPEG/JPG, PNG, WebP i HEIC/HEIF. El flux HEIC/HEIF queda complet amb worker extern a Railway després que la prova real a Supabase Edge superés el límit de recursos del runtime. Complementa [ALB-01](travel-book-alb01.md) i [ALB-02](travel-book-alb02.md), sense alterar els seus contractes de composicions, CAS ni revisions.
 
 ## 1. Abast i model
 
@@ -20,7 +20,7 @@ ALB-02 només admet MIME web al seu descriptor d'asset. Es manté aquest contrac
 
 ## 2. Migració i taules
 
-`20261004234233_travel_book_ingestion_v1.sql` encara no està publicada ni desplegada: s'ha ajustat aquesta mateixa migració ALB-03, sense tocar cap migració històrica. Requereix ALB-02, fonts operatives, helpers i baseline real de Storage.
+`20261004234233_travel_book_ingestion_v1.sql` i les migracions correctives d'ALB-03 estan desplegades al projecte remot. La migració manté intactes els contractes d'ALB-02 i treballa sobre les fonts operatives i Storage reals.
 
 Crea:
 
@@ -36,9 +36,9 @@ No hi ha discriminació per iPhone/Android. S'admeten originals JPEG/JPG, PNG, W
 
 HEIC/HEIF es preserva sense descodificar píxels: s'inspecciona el contenidor ISO-BMFF amb límits de mida/nombre de boxes, es resol l'item primari (`pitm` + `ipma`) i la seva propietat `ispe`. No es pren arbitràriament la primera dimensió, que podria ser una miniatura. Les dimensions són les intrínseques del primari; crop, rotació/mirroring i EXIF originals es mantenen dins els bytes. Orientació `0` significa encara no interpretada (HEIF); no s'inventa una orientació EXIF. Una capçalera que no permet identificar dimensions segures es rebutja amb error explícit.
 
-**Suport HEIC/HEIF actual: original preservat, derivats pendents.** El WASM fixat anuncia lectura HEIC/HEIF i descodifica la fixture real en local (10 bits). Això no acredita interpretació HDR/nclx/ICC, transformacions d'item ni CPU/memòria al runtime allotjat. No s'activa aquesta conversió sense qualificar-la: retorna `DERIVATIVE_UNSUPPORTED`, HTTP 202, asset no-ready i original accessible al membre. Reintentar no duplica ni perd l'original, encara que desaparegui la galeria.
+**Suport HEIC/HEIF actual: complet per al pipeline editorial.** Supabase Edge preserva l'original byte-for-byte i, quan els derivats no es poden generar dins del pressupost del runtime, el worker extern desplegat a Railway llegeix l'original editorial verificat, genera `preview.png` i `thumbnail.png`, fa read-back i SHA-256 i finalitza l'asset amb `alb03_finish_v1`.
 
-Boundary tècnic immediat pendent: un processador qualificat ha de llegir **l'original editorial** amb descriptor/hash fixos, obtenir lease a través del boundary de servei, interpretar HEIF/ICC/nclx/crop/orientació, generar els PNG i tornar a verificar-los abans de `alb03_finish_v1`. Ha d'usar els mateixos paths i descriptors immutables; un intent no pot substituir variants diferents. Pot ser el WASM actual si supera qualificació, o un worker amb pressupost de CPU/memòria superior. No s'ha escollit ni desplegat cap proveïdor ni implementat un worker remot alternatiu.
+La prova física amb `IMG_7731.HEIC` (4032×3024, 1.507.426 bytes) va validar el circuit complet **original → preview → thumbnail → ready**. La primera temptativa de conversió dins Supabase Edge va acabar en `HTTP 546 / WORKER_RESOURCE_LIMIT`, fet que va justificar separar el processament HEIC/HEIF en un runtime extern. Els errors transitoris d'Supabase Storage (`429`, `502`, `503`, `504`) es reintenten amb backoff al worker extern.
 
 ## 4. Límits de preservació i de conversió
 
@@ -48,7 +48,7 @@ Boundary tècnic immediat pendent: un processador qualificat ha de llegir **l'or
 | Dimensions originals | Màxim 32.768 px per costat i 200.000.000 píxels totals |
 | Conversió JPEG a Edge | Fins a 12.500.000 píxels; JPEG scaled IDCT `2048x2048` abans del resize |
 | Conversió PNG/WebP a Edge | Fins a 4.000.000 píxels |
-| Conversió HEIC/HEIF | Pendent de qualificació; l'original sí que es preserva |
+| Conversió HEIC/HEIF | Worker extern Railway; original preservat a Supabase i derivats verificats abans de `ready` |
 | Preview / thumbnail | Màxim 1600 / 320 px per costat, PNG |
 
 El límit de preservació cobreix fotografies ordinàries de 12/24/48 MP i fins a 200 MP quan el fitxer no supera 32 MiB. Superar el pressupost de conversió **no rebutja ni elimina l'original**: `DERIVATIVE_CAPACITY` i derivat pendent. No es promet que qualsevol foto de mòbil sigui immediatament editable: 24/48 MP, PNG/WebP grans i HEIC necessiten el boundary de conversió pendent. El límit de 32 MiB evita múltiples buffers de fitxers enormes en una petició i limita el cost per original; no és una quota acumulada per llibre. Política de quotes/retenció/purga encara pendent.
@@ -97,7 +97,7 @@ Cinc RPC públiques amb wrappers `SECURITY INVOKER` i implementació privada amb
 
 `alb03_finish_v1` accepta `{original}` per fer durable l'original **abans del còdec**, mantenint el lease. `{original,preview,thumbnail}` verifica descriptors i fixa ready atòmicament, alliberant lease. `{original,preview}` es rebutja. Els descriptors tenen hash, width, height, path, MIME, ext, byte_size i orientation, amb camps estrictes i límits SQL. El servei és responsable del read-back físic; SQL no afirma haver llegit Storage.
 
-HTTP 200 ready; 202 derivat pendent; 422 error de processament; 401/403 autenticació/autorització; 409 conflicte de lease; 429 isolate ocupat; 503 indisponibilitat. No hi ha scheduler ni cua remota desplegada. El consumidor futur haurà de reintentar o activar el worker de conversió pendent.
+HTTP 200 ready; 202 derivat pendent; 422 error de processament; 401/403 autenticació/autorització; 409 conflicte de lease; 429 isolate ocupat; 503 indisponibilitat. Per HEIC/HEIF, el frontend de prova activa el worker extern quan Supabase Edge retorna `derivative_pending`. El worker valida el JWT d'usuari contra Supabase, utilitza service role només al servidor i reutilitza els mateixos RPC, leases, paths i descriptors immutables.
 
 ## 8. Estats, idempotència i errors
 
@@ -151,3 +151,8 @@ Sense canvis a frontend, navegació, index/404/sw, Builder ni Fotos visibles. M�
 Codi i migració ALB-03 locals; SQL només aplicat a bases descartables de tests. Cap canvi remot, desplegament, db push ni migration repair. Sense commit ni PR. La preservació original i els estats pendents es poden revisar; l'edició immediata de qualsevol fotografia mòbil i el desplegament necessiten les qualificacions i conversions descrites, que no es donen per resoltes.
 
 Resultat final local (2026-10-05): 13/13 JS ALB-03, 16/16 proves d’imatge, SQL/concurrència ALB-03, regressió ALB-02 (11 JS, cinc blocs SQL inicials, 11 curses i quatre blocs post-migració), typecheck, build, paritat i diff check PASS. El build ha usat `NODE_PATH` cap a les dependències macOS ja instal·lades al checkout original; els artefactes generats s’han exclòs del diff. Cap check GitHub executat perquè encara no hi ha PR.
+
+
+## 10. Tancament ALB-03
+
+ALB-03 queda tancat després de la validació física amb una foto HEIC real d'iPhone. Criteris assolits: original byte-for-byte durable, `preview` i `thumbnail` generats fora de Supabase Edge quan cal, read-back i SHA-256, asset `ready`, reintents davant errors transitoris d'Storage, servei Railway desplegat i integrat amb el boundary existent. El següent bloc funcional és **ALB-04 — primera proposta editable del Travel Book**.
