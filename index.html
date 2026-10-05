@@ -1865,10 +1865,11 @@ async function ensureTravelBookProject(){
   return {id,title};
 }
 async function loadTravelBookProposalSources(book){
-  const assetsResult=await db.from('travel_book_assets').select('id,status,source_document_id_at_capture,width_px,height_px').eq('trip_id',trip.id).eq('book_id',book.id).eq('status','ready').order('created_at',{ascending:true});
+  const [assetsResult,galleryCount]=await Promise.all([db.from('travel_book_assets').select('id,status,source_document_id_at_capture,width_px,height_px').eq('trip_id',trip.id).eq('book_id',book.id).eq('status','ready').order('created_at',{ascending:true}),db.from('travel_documents').select('id',{count:'exact',head:true}).eq('trip_id',trip.id).eq('category','Foto')]);
   if(assetsResult.error)throw assetsResult.error;
-  const assets=assetsResult.data||[];
-  if(!assets.length)return {photos:[],visuals:new Map(),ready:0};
+  if(galleryCount.error)throw galleryCount.error;
+  const assets=assetsResult.data||[],totalGallery=galleryCount.count||0;
+  if(!assets.length)return {photos:[],visuals:new Map(),ready:0,totalGallery};
   const ingestionRows=await Promise.all(assets.map(async asset=>{
     const result=await db.rpc('get_travel_book_ingestion_v1',{p_trip_id:trip.id,p_book_id:book.id,p_asset_id:asset.id});
     if(result.error)throw result.error;return {asset,result:result.data};
@@ -1889,16 +1890,16 @@ async function loadTravelBookProposalSources(book){
     const snapshot=bySnapshot.get(result?.snapshot_id),variant=byAssetVariant.get(asset.id);
     return {asset_id:asset.id,status:asset.status,local_date:snapshot?.payload?.local_date||null,selection_index:null,width_px:variant?.width_px||asset.width_px,height_px:variant?.height_px||asset.height_px,source_snapshot_ids:result?.snapshot_id?[result.snapshot_id]:[]};
   });
-  return {photos,visuals,ready:assets.length};
+  return {photos,visuals,ready:assets.length,totalGallery};
 }
 function formatTravelBookDate(value){
   if(!value)return 'Records sense data';
   try{return new Intl.DateTimeFormat('ca-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(value+'T00:00:00Z'))}catch{return value}
 }
-function renderTravelBookProposal(proposal,visuals){
+function renderTravelBookProposal(proposal,visuals,totalGallery=proposal.stats.ready_photos){
   travelBookProposalState={proposal,visuals};
   $('travelBookTitle').textContent=proposal.title;
-  $('travelBookSummary').innerHTML=`<span class="travel-book-chip">${proposal.stats.ready_photos} fotos preparades</span><span class="travel-book-chip">${proposal.sections.length} blocs</span><span class="travel-book-chip">Motor híbrid · base segura</span>`;
+  $('travelBookSummary').innerHTML=`<span class="travel-book-chip">${proposal.stats.ready_photos} de ${totalGallery} fotos preparades</span><span class="travel-book-chip">${proposal.sections.length} blocs</span><span class="travel-book-chip">Motor híbrid · base segura</span>`;
   const cover=$('travelBookCover'),coverUrl=proposal.cover?visuals.get(proposal.cover.asset_id):'';
   cover.classList.toggle('hidden',!proposal.cover);
   cover.innerHTML=proposal.cover?`${coverUrl?`<img src="${esc(coverUrl)}" alt="Portada proposada" loading="eager">`:''}<div class="travel-book-cover-copy"><small>Portada proposada</small><h3>${esc(proposal.title)}</h3></div>`:'';
@@ -1917,7 +1918,7 @@ async function loadTravelBookView(){
     const book=await ensureTravelBookProject(),sources=await loadTravelBookProposalSources(book),api=await travelBookProposalApi();
     const proposal=api.buildInitialTravelBookProposal({trip_id:trip.id,book_id:book.id,title:book.title,photos:sources.photos});
     if(!api.validateInitialTravelBookProposal(proposal))throw new Error('La proposta no ha superat la validació.');
-    renderTravelBookProposal(proposal,sources.visuals);
+    renderTravelBookProposal(proposal,sources.visuals,sources.totalGallery);
     msg('travelBookMessage',proposal.stats.ready_photos?'':'Encara no hi ha fotos editorials en estat ready.');
   }catch(error){msg('travelBookMessage',error?.message||'No s’ha pogut preparar la proposta.',true)}
 }
@@ -1929,7 +1930,6 @@ async function openTravelBookFromPhotos(){
     const book=await ensureTravelBookProject();
     if(trip?.id!==tripId)return;
     setAppView('travelBookView');
-    await loadTravelBookView();
     status.textContent='';
   }catch(error){if(trip?.id===tripId)status.textContent=error?.message||'No s’ha pogut obrir el Travel Book.'}
   finally{if(trip?.id===tripId)button.disabled=false}
