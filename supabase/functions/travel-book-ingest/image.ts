@@ -6,7 +6,7 @@ await initializeImageMagick(wasm);
 ResourceLimits.memory=128n*1024n*1024n;ResourceLimits.disk=0n;ResourceLimits.listLength=8n;ResourceLimits.maxProfileSize=4n*1024n*1024n;
 // Larger originals are preserved without attempting an unbounded Edge decode.
 
-export function detectFormat(bytes:Uint8Array){return ({'image/jpeg':MagickFormat.Jpeg,'image/png':MagickFormat.Png,'image/webp':MagickFormat.WebP} as Record<string,MagickFormat>)[inspectSource(bytes).mime];}
+export function detectFormat(bytes:Uint8Array){return ({'image/jpeg':MagickFormat.Jpeg,'image/png':MagickFormat.Png,'image/webp':MagickFormat.WebP,'image/heic':MagickFormat.Heic,'image/heif':MagickFormat.Heif} as Record<string,MagickFormat>)[inspectSource(bytes).mime];}
 export async function processImage(bytes:Uint8Array){
  const original=inspectSource(bytes);
  requireEdgeCapacity(original);
