@@ -43,13 +43,19 @@ test('ALB-04 cover choice is deterministic and prefers a suitable landscape rend
 });
 
 test('ALB-04 treats photo titles only as attributed user statements, never as invented facts',()=>{
- const proposal=buildInitialTravelBookProposal({...base,photos:[{asset_id:id(10),status:'ready',title:'Vam nedar amb dofins',source_snapshot_ids:[id(30)]}]});
+ const proposal=buildInitialTravelBookProposal({...base,photos:[{asset_id:id(10),status:'ready',title:'Vam nedar amb dofins',title_reviewed:true,source_snapshot_ids:[id(30)]}]});
  const item=proposal.sections[0].items[0];
  assert.equal(item.caption_candidate,'Vam nedar amb dofins');
  assert.equal(item.caption_classification,'user_statement');
  assert.deepEqual(item.source_snapshot_ids,[id(30)]);
  assert.equal('narrative' in item,false);
  assert.equal('fact' in item,false);
+});
+
+test('ALB-04 does not reuse unreviewed free-text photo titles',()=>{
+ const proposal=buildInitialTravelBookProposal({...base,photos:[{asset_id:id(10),status:'ready',title:'Dada privada no revisada'}]});
+ assert.equal(proposal.sections[0].items[0].caption_candidate,null);
+ assert.equal(proposal.sections[0].items[0].caption_classification,null);
 });
 
 test('ALB-04 output does not leak storage paths, file names or arbitrary source fields',()=>{
