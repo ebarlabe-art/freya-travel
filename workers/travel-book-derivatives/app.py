@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import io
 import os
@@ -70,23 +71,39 @@ async def rpc(client, name, args):
         return None
     return r.json()
 
+TRANSIENT_STORAGE_STATUS = {429, 502, 503, 504}
+
+async def storage_request_with_retry(request, attempts=5):
+    response = None
+    for attempt in range(attempts):
+        response = await request()
+        if response.status_code not in TRANSIENT_STORAGE_STATUS:
+            return response
+        if attempt < attempts - 1:
+            await asyncio.sleep(0.5 * (2 ** attempt))
+    return response
+
 async def storage_read(client, bucket, path):
-    r = await client.get(
+    r = await storage_request_with_retry(lambda: client.get(
         f"{SUPABASE_URL}/storage/v1/object/authenticated/{bucket}/{path}",
         headers=service_headers(),
-    )
+    ))
     if r.status_code == 404:
         return None
+    if r.status_code in TRANSIENT_STORAGE_STATUS:
+        raise RuntimeError("STORAGE_ERROR")
     r.raise_for_status()
     return r.content
 
 async def storage_put_verified(client, path, data):
-    r = await client.post(
+    r = await storage_request_with_retry(lambda: client.post(
         f"{SUPABASE_URL}/storage/v1/object/{BUCKET}/{path}",
         headers={**service_headers(), "Content-Type": "image/png", "x-upsert": "false"},
         content=data,
-    )
+    ))
     if r.status_code not in (200, 201, 409):
+        if r.status_code in TRANSIENT_STORAGE_STATUS:
+            raise RuntimeError("STORAGE_ERROR")
         r.raise_for_status()
     stored = await storage_read(client, BUCKET, path)
     if stored is None or hashlib.sha256(stored).hexdigest() != hashlib.sha256(data).hexdigest():
@@ -179,6 +196,13 @@ async def process(req: ProcessRequest, authorization: str | None = Header(defaul
 
         except HTTPException:
             raise
+        except RuntimeError as error:
+            code = "STORAGE_ERROR" if str(error) == "STORAGE_ERROR" else "DERIVATIVE_FAILED"
+            try:
+                await finish(None, code)
+            except Exception:
+                pass
+            raise HTTPException(status_code=503, detail=code)
         except Exception:
             try:
                 await finish(None, "DERIVATIVE_FAILED")
