@@ -1332,7 +1332,7 @@
         </section>
         <section class="photo-upload-card">
           <section id="photoUploadV2" class="hidden" aria-label="Pujada de fotos">
-            <h3>Afegir fotos</h3><p>Fins a 20 fotos per lot · JPEG, PNG o WebP · màxim 15 MB cadascuna. Mantén Freya oberta fins que acabin. No es garanteix la pujada en segon pla.</p>
+            <h3>Afegir fotos</h3><p>Fins a 20 fotos per lot · JPEG, PNG o WebP · màxim 32 MB cadascuna. Mantén Freya oberta fins que acabin. No es garanteix la pujada en segon pla.</p>
             <div id="photoBatchContext"></div>
             <label>Selecciona fotos<input id="photoFilesV2" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
             <p id="photoQueueMessage" role="status" aria-live="polite"></p>
@@ -1346,6 +1346,12 @@
             <button id="uploadPhoto" class="photo-upload-button" type="submit">📷 Afegir a l’àlbum</button>
             <p id="photoMsg" class="photo-message"></p>
           </form>
+        </section>
+        <section id="alb03RuntimeTest" class="photo-upload-card hidden" aria-label="Prova tècnica Travel Book">
+          <h3>🧪 Prova Travel Book</h3>
+          <p>Aquesta prova utilitza la foto seleccionada d’Eivissa per validar la nova ingesta editorial.</p>
+          <button id="alb03RuntimeTestButton" type="button">Executar prova ALB-03</button>
+          <p id="alb03RuntimeTestMessage" role="status" aria-live="polite"></p>
         </section>
         <section>
           <div class="photo-toolbar"><h2>Els vostres records</h2><span id="photoCountLabel" class="photo-count">0 fotos</span></div>
@@ -1785,6 +1791,23 @@ const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function isLondonTrip(value=trip){return value?.experience_key==='london-2026'}
+const ALB03_RUNTIME_TEST_TRIP_ID='f9cf44a7-7c07-4637-afea-5b5c97268085';
+const ALB03_RUNTIME_TEST_ASSET_ID='5305f4e8-5035-4e5d-af79-708d9a366519';
+function updateAlb03RuntimeTestVisibility(){const card=$('alb03RuntimeTest');if(card)card.classList.toggle('hidden',trip?.id!==ALB03_RUNTIME_TEST_TRIP_ID)}
+async function runAlb03RuntimeTest(){
+  const button=$('alb03RuntimeTestButton'),message=$('alb03RuntimeTestMessage');
+  if(!button||!message)return;
+  if(trip?.id!==ALB03_RUNTIME_TEST_TRIP_ID||!session?.access_token){message.textContent='Obre Eivissa amb la teva sessió iniciada.';return}
+  button.disabled=true;message.textContent='Executant la prova…';
+  try{
+    const response=await fetch(SUPABASE_URL+'/functions/v1/travel-book-ingest',{method:'POST',headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({asset_id:ALB03_RUNTIME_TEST_ASSET_ID})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error||('HTTP '+response.status));
+    message.textContent=data.status==='ready'?'✅ ALB-03 OK: original, preview i miniatura verificats.':data.status==='derivative_pending'?'✅ Original preservat; derivats pendents.':'Resultat: '+(data.status||'desconegut');
+  }catch(error){message.textContent='❌ Prova no completada: '+(error?.message||'error desconegut')}
+  finally{button.disabled=false}
+}
+$('alb03RuntimeTestButton').onclick=runAlb03RuntimeTest;
 function selectedTripStorageKey(){return session?.user?.id?`freya-selected-trip-${session.user.id}`:null}
 function readSelectedTripId(){const key=selectedTripStorageKey();if(!key)return null;try{return localStorage.getItem(key)}catch(_){return null}}
 function rememberSelectedTrip(){const key=selectedTripStorageKey();if(!key||!trip)return;try{localStorage.setItem(key,trip.id)}catch(_){}}
@@ -5277,6 +5300,7 @@ document.addEventListener('visibilitychange',updateHomeClock);
 window.addEventListener('pageshow',updateHomeClock);
 function updateTripPresentation(){
   const london=isLondonTrip();
+  updateAlb03RuntimeTestVisibility();
   renderContextHeader(visibleAppView());
   $('globalSearchFab').classList.toggle('hidden',!london);
   $('pushCard').classList.toggle('hidden',!trip||!london);
@@ -6447,7 +6471,7 @@ let photoQueueRunning=false,photoV2LoadSequence=0,photoV2RenderSequence=0;
 let photoNavigation=null,photoSignedRows=[],photoHistoryPending=false,photoReturnPosition=null;
 function photoScope(){return {tripId:trip?.id,userId:session?.user?.id,generation:tripLoadGeneration}}
 function photoScopeCurrent(scope){return !!scope?.tripId&&!!scope.userId&&session?.user?.id===scope.userId&&tripRequestIsCurrent(scope.tripId,scope.generation)&&!isLondonTrip()}
-function photoFileError(file){return !['image/jpeg','image/png','image/webp'].includes(file.type)?'Format no compatible. Tria JPEG, PNG o WebP; converteix HEIC/HEIF abans de seleccionar-lo.':!file.size?'El fitxer és buit.':file.size>15*1024*1024?'La foto supera 15 MB.':''}
+function photoFileError(file){return !['image/jpeg','image/png','image/webp'].includes(file.type)?'Format no compatible. Tria JPEG, PNG o WebP; converteix HEIC/HEIF abans de seleccionar-lo.':!file.size?'El fitxer és buit.':file.size>32*1024*1024?'La foto supera 32 MB.':''}
 function photoStablePath(scope,id,type){return `${scope.tripId}/photos/${scope.userId}/${id}.${{'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[type]||'invalid'}`}
 function photoContextValue(value={}){return {local_date:value.local_date||null,activity_id:value.activity_id||null,itinerary_item_id:value.itinerary_item_id||null}}
 function photoContextsEqual(a,b){return JSON.stringify(photoContextValue(a))===JSON.stringify(photoContextValue(b))}
@@ -6860,8 +6884,8 @@ $('photoForm').onsubmit=async e=>{
   const invalid=files.filter(file=>!file.type.startsWith('image/'));
   if(invalid.length){showPhotoMessage('La selecció conté algun fitxer que no és una imatge.',true);return}
 
-  const oversized=files.filter(file=>file.size>15*1024*1024);
-  if(oversized.length){showPhotoMessage(`${oversized.length} ${oversized.length===1?'foto supera':'fotos superen'} el límit de 15 MB.`,true);return}
+  const oversized=files.filter(file=>file.size>32*1024*1024);
+  if(oversized.length){showPhotoMessage(`${oversized.length} ${oversized.length===1?'foto supera':'fotos superen'} el límit de 32 MB.`,true);return}
 
   const customTitle=$('photoTitle').value.trim();
   const defaultTitle=`${isLondonTrip()?'Londres':trip.name} · ${new Date().toLocaleDateString('ca-ES',{day:'numeric',month:'short'})}`;
