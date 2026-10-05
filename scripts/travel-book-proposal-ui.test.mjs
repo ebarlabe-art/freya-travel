@@ -24,11 +24,20 @@ test('ALB-04 UI consumes the pure proposal module and only ready editorial asset
 
 test('ALB-04 runtime module is packaged and cached for the PWA',()=>{
  assert.match(pack,/'travel-book-proposal\.mjs'/);
- assert.match(sw,/'\.\/domain\/travel-book-proposal\.mjs'/);
- assert.match(sw,/freya-travel-release-6443-v1/);
+ assert.match(sw,/'\.\/domain\/travel-book-proposal\.mjs'/); assert.match(sw,/'\.\/domain\/travel-book-batch\.mjs'/);
+ assert.match(sw,/freya-travel-release-6444-v1/);
 });
 
 test('ALB-04 preview communicates partial source coverage instead of pretending the full gallery is ready',()=>{
  assert.match(html,/galleryCount\.count/);
  assert.match(html,/\$\{proposal\.stats\.ready_photos\} de \$\{totalGallery\} fotos preparades/);
+});
+
+test('ALB-04 bulk preparation is server-resumable and uses bounded reads',()=>{
+ assert.match(html,/request_travel_book_photo_v1/);
+ assert.match(html,/get_travel_book_ingestion_v1/);
+ assert.match(html,/runTravelBookBatch/);
+ assert.match(html,/travelBookMapLimited\(assets,4/);
+ assert.match(html,/createSignedUrls\(/);
+ assert.match(html,/travel-book-derivatives-production\.up\.railway\.app\/process/);
 });
