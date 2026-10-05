@@ -18,6 +18,10 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "postbuild": "node scripts/package-pages.mjs",
+    "test:alb03": "node --test scripts/alb03-ingestion.test.mjs",
+    "test:alb03:db": "node scripts/test-travel-book-ingestion-db.mjs",
+    "test:alb03:image": "deno test --config supabase/functions/travel-book-ingest/deno.json --allow-read --allow-write supabase/functions/travel-book-ingest/image.test.ts",
+    "check:alb03": "npm run test:alb03 && npm run test:alb03:image && npm run test:alb03:db && npm run entries:check",
     "test:alb02": "node --test scripts/travel-book-*.test.mjs",
     "test:alb02:db": "node scripts/test-travel-book-db.mjs",
     "check:alb02": "npm run test:alb02 && npm run test:alb02:db && npm run entries:check"
