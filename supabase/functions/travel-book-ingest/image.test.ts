@@ -40,8 +40,8 @@ Deno.test('48 MP original accepted; heavy decode is explicitly deferred',async()
  const b=fixture(MagickFormat.Jpeg,40,30);let at=2;const v=new DataView(b.buffer,b.byteOffset,b.byteLength);while(at<b.length){const marker=b[at+1],size=v.getUint16(at+2);if(marker===0xc0||marker===0xc2){v.setUint16(at+5,6000);v.setUint16(at+7,8000);break;}at+=size+2;}
  equal(inspectSource(b).width*inspectSource(b).height,48_000_000);await rejects(()=>processImage(b),'DERIVATIVE_CAPACITY');
 });
-Deno.test('real HEIC primary dimensions preserved; explicit pending visual decoder',async()=>{const b=await Deno.readFile(new URL('./fixtures/red.heic',import.meta.url));const info=inspectSource(b);equal(info.mime,'image/heic');equal([info.width,info.height],[40,20]);await rejects(()=>processImage(b),'DERIVATIVE_UNSUPPORTED');});
-Deno.test('HEIF compatible container retains its MIME and pending state',async()=>{const b=await Deno.readFile(new URL('./fixtures/red.heic',import.meta.url));const v=new DataView(b.buffer,b.byteOffset,b.byteLength);for(let at=8;at<v.getUint32(0);at+=4){if(at===12)continue;const brand=new TextDecoder().decode(b.subarray(at,at+4));if(brand==='heic'||brand==='heix')b.set(new TextEncoder().encode('mif1'),at);}equal(inspectSource(b).mime,'image/heif');await rejects(()=>processImage(b),'DERIVATIVE_UNSUPPORTED');});
+Deno.test('real HEIC primary dimensions preserved and rendered',async()=>{const b=await Deno.readFile(new URL('./fixtures/red.heic',import.meta.url));const info=inspectSource(b);equal(info.mime,'image/heic');equal([info.width,info.height],[40,20]);const r=await processImage(b);equal(r.source_hash,await sha256(b));equal([r.preview.width,r.preview.height],[40,20]);equal([r.thumbnail.width,r.thumbnail.height],[40,20]);equal(inspectSource(r.preview.bytes).mime,'image/png');});
+Deno.test('HEIF compatible container retains its MIME and renders',async()=>{const b=await Deno.readFile(new URL('./fixtures/red.heic',import.meta.url));const v=new DataView(b.buffer,b.byteOffset,b.byteLength);for(let at=8;at<v.getUint32(0);at+=4){if(at===12)continue;const brand=new TextDecoder().decode(b.subarray(at,at+4));if(brand==='heic'||brand==='heix')b.set(new TextEncoder().encode('mif1'),at);}equal(inspectSource(b).mime,'image/heif');const r=await processImage(b);equal(inspectSource(r.preview.bytes).mime,'image/png');});
 for(const format of ['jpeg','png','webp','heic'] as const)Deno.test(`physical ${format}: byte-for-byte original, retries, gallery deletion`,async()=>{
  const {ingest}=await import('./handler.mjs'),root=await Deno.makeTempDir({prefix:'alb03-binary-'});
  const id=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
@@ -54,13 +54,13 @@ for(const format of ['jpeg','png','webp','heic'] as const)Deno.test(`physical ${
   await put('trip-documents','photo',bytes);
   const deps={assetId:asset.id,actor:id(6),auth:'Bearer local',hash:sha256,inspectSource,processImage,storage:{read,put},rpc:async(n:string,p:any)=>{
    if(n==='alb03_claim_v1')return {asset:{...asset},job:{...job},variants:[...variants]};
-   if(p.p_error){equal(p.p_error,'DERIVATIVE_UNSUPPORTED');return;}
+   if(p.p_error)throw Error('unexpected '+p.p_error);
    const d=p.p_descriptor;for(const [kind,x] of Object.entries<any>(d)){const row={kind,content_hash:x.hash,storage_path:x.path,width_px:x.width,height_px:x.height,mime_type:x.mime,file_extension:x.ext,byte_size:x.byte_size,orientation:x.orientation};const prev=variants.find(v=>v.kind===kind);if(prev)equal(prev,row);else variants.push(row);}
    if(d.preview)Object.assign(asset,{status:'ready',content_hash:d.preview.hash,storage_path:d.preview.path,width_px:d.preview.width,height_px:d.preview.height});
   }};
-  equal((await ingest(deps)).status,format==='heic'?'derivative_pending':'ready');
+  equal((await ingest(deps)).status,'ready');
   const original=variants.find(v=>v.kind==='original');equal(Array.from((await read('travel-book',original.storage_path))!),Array.from(bytes));equal(original.content_hash,await sha256(bytes));
-  await Deno.remove(root+'/trip-documents/photo');equal((await ingest(deps)).status,format==='heic'?'derivative_pending':'ready');equal(variants.length,format==='heic'?1:3);
+  await Deno.remove(root+'/trip-documents/photo');equal((await ingest(deps)).status,'ready');equal(variants.length,3);
  }finally{await Deno.remove(root,{recursive:true});}
 });
 Deno.test('noisy photographic-sized PNG above 5 MiB decodes without a size rejection',async()=>{
