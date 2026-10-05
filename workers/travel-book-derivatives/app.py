@@ -1,5 +1,4 @@
 import hashlib
-import hmac
 import io
 import os
 import uuid
@@ -7,6 +6,7 @@ import uuid
 import httpx
 import pillow_heif
 from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from PIL import Image, ImageOps
 
@@ -14,15 +14,20 @@ pillow_heif.register_heif_opener()
 
 SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
 SERVICE_ROLE = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
-WORKER_SECRET = os.environ["ALB03_WORKER_SECRET"]
 BUCKET = "travel-book"
 MAX_PIXELS = int(os.environ.get("ALB03_MAX_PIXELS", "60000000"))
 
 app = FastAPI(title="Freya Travel Book Derivative Worker", version="1")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://ebarlabe-art.github.io"],
+    allow_methods=["POST", "GET", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+
 
 class ProcessRequest(BaseModel):
     asset_id: uuid.UUID
-    actor_id: uuid.UUID
 
 def service_headers():
     return {"apikey": SERVICE_ROLE, "Authorization": f"Bearer {SERVICE_ROLE}"}
@@ -91,16 +96,28 @@ async def storage_put_verified(client, path, data):
 async def health():
     return {"ok": True}
 
+async def authenticated_actor(client, authorization):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="UNAUTHENTICATED")
+    r = await client.get(
+        f"{SUPABASE_URL}/auth/v1/user",
+        headers={"apikey": SERVICE_ROLE, "Authorization": authorization},
+    )
+    if r.status_code != 200:
+        raise HTTPException(status_code=401, detail="UNAUTHENTICATED")
+    user = r.json()
+    actor_id = user.get("id")
+    if not actor_id:
+        raise HTTPException(status_code=401, detail="UNAUTHENTICATED")
+    return actor_id
+
 @app.post("/process")
 async def process(req: ProcessRequest, authorization: str | None = Header(default=None)):
-    expected = f"Bearer {WORKER_SECRET}"
-    if not authorization or not hmac.compare_digest(authorization, expected):
-        raise HTTPException(status_code=401, detail="UNAUTHENTICATED")
-
     async with httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=10.0)) as client:
+        actor_id = await authenticated_actor(client, authorization)
         claim = await rpc(client, "alb03_claim_v1", {
             "p_asset_id": str(req.asset_id),
-            "p_actor": str(req.actor_id),
+            "p_actor": actor_id,
         })
         job, asset, variants = claim["job"], claim["asset"], claim.get("variants") or []
         original = next((v for v in variants if v["kind"] == "original"), None)
@@ -109,7 +126,7 @@ async def process(req: ProcessRequest, authorization: str | None = Header(defaul
         async def finish(payload=None, error=None):
             return await rpc(client, "alb03_finish_v1", {
                 "p_asset_id": str(req.asset_id),
-                "p_actor": str(req.actor_id),
+                "p_actor": actor_id,
                 "p_lease_id": lease,
                 "p_descriptor": payload,
                 "p_error": error,
