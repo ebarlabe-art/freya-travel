@@ -156,3 +156,17 @@ Resultat final local (2026-10-05): 13/13 JS ALB-03, 16/16 proves d’imatge, SQL
 ## 10. Tancament ALB-03
 
 ALB-03 queda tancat després de la validació física amb una foto HEIC real d'iPhone. Criteris assolits: original byte-for-byte durable, `preview` i `thumbnail` generats fora de Supabase Edge quan cal, read-back i SHA-256, asset `ready`, reintents davant errors transitoris d'Storage, servei Railway desplegat i integrat amb el boundary existent. El següent bloc funcional és **ALB-04 — primera proposta editable del Travel Book**.
+
+
+## Lease i fencing de processament lent
+
+Després de la prova física massiva d'ALB-04 amb fotografies reals d'Eivissa, es va observar que alguns JPEG podien superar el termini inicial del lease mentre el mateix worker encara continuava processant-los. En aquest cas, el deadline no ha de convertir automàticament el resultat del worker actual en obsolet si ningú no ha reclamat la feina mentrestant.
+
+El contracte queda així:
+
+- `lease_until` determina quan un altre worker pot tornar a reclamar la ingesta;
+- `lease_id` és el token de fencing que determina si un resultat encara pertany al worker vigent;
+- un worker pot finalitzar després del deadline mentre el seu `lease_id` continuï sent l'actual;
+- si un altre worker ha fet takeover, el nou claim canvia el `lease_id` i qualsevol finalització amb el token antic continua fallant amb `ALB_STALE_LEASE`.
+
+Això evita bucles de reintent en imatges lentes sense relaxar la protecció contra escriptures tardanes d'un worker substituït.
