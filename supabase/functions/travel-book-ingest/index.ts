@@ -5,8 +5,15 @@ const processImage=async(bytes:Uint8Array)=>{requireEdgeCapacity(inspectSource(b
 const url=Deno.env.get('SUPABASE_URL')!,service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,anon=Deno.env.get('SUPABASE_ANON_KEY')!;
 const path=(s:string)=>s.split('/').map(encodeURIComponent).join('/');
 const headers=(auth?:string)=>({apikey:auth?anon:service,Authorization:auth||'Bearer '+service});
+const transientStorageStatus=(status:number)=>status===429||status===502||status===503||status===504;
 async function read(bucket:string,name:string,auth?:string){
- const r=await fetch(`${url}/storage/v1/object/authenticated/${bucket}/${path(name)}`,{headers:headers(auth),signal:AbortSignal.timeout(15000)});
+ let r:Response|null=null;
+ for(let attempt=0;attempt<3;attempt++){
+  r=await fetch(`${url}/storage/v1/object/authenticated/${bucket}/${path(name)}`,{headers:headers(auth),signal:AbortSignal.timeout(15000)});
+  if(!transientStorageStatus(r.status))break;
+  if(attempt<2)await new Promise(resolve=>setTimeout(resolve,attempt===0?250:750));
+ }
+ if(!r)throw Error('STORAGE_ERROR');
  if(r.status===404)return null;
  if(!r.ok){const body=await r.json().catch(()=>({}));if(Number(body.statusCode)===404)return null;throw Error('STORAGE_ERROR');}
  const limit=MAX_BYTES;
