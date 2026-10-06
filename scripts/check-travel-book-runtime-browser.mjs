@@ -53,6 +53,41 @@ try{
     await retryCtx.close();
   }
 
+
+  // Functional regression: render one real Travel Book page and drag a sticker.
+  const dragCtx=await context({serviceWorkers:'block'}),dragPage=await dragCtx.newPage();
+  await dragPage.goto(url,{waitUntil:'load'});
+  await dragPage.evaluate(()=>{
+    const proposal={
+      title:'Drag test',
+      stats:{ready_photos:1},
+      cover:null,
+      warnings:[],
+      sections:[{
+        key:'day:2026-10-06',role:'day',local_date:'2026-10-06',items:[{asset_id:'11111111-1111-1111-1111-111111111111'}],
+        pages:[{index:0,layout_hint:'hero',creative_style:'hero_editorial',title:'Test',subtitle:null,stickers:['sparkle'],sticker_positions:{sparkle:{x:82,y:18,rotation:0}},items:[{asset_id:'11111111-1111-1111-1111-111111111111',overlay_text:null}]}]
+      }]
+    };
+    renderTravelBookProposal(proposal,new Map(),1,{});
+    for(let el=document.getElementById('travelBookView');el;el=el.parentElement)el.classList.remove('hidden');
+  });
+  const sticker=dragPage.locator('.travel-book-sticker').first();
+  await sticker.waitFor({state:'visible'});
+  await sticker.scrollIntoViewIfNeeded();
+  const before=await sticker.evaluate(el=>({left:el.style.left,top:el.style.top}));
+  const box=await sticker.boundingBox(); assert.ok(box);
+  const hit=await dragPage.evaluate(({x,y})=>{const el=document.elementFromPoint(x,y);return {tag:el?.tagName||null,cls:el?.className||null,sticker:el?.dataset?.sticker||null};},{x:box.x+box.width/2,y:box.y+box.height/2});
+  console.log('DRAG hit target',JSON.stringify(hit));
+  assert.equal(hit.sticker,'sparkle',`Sticker drag is blocked by ${JSON.stringify(hit)}`);
+  await dragPage.mouse.move(box.x+box.width/2,box.y+box.height/2);
+  await dragPage.mouse.down();
+  await dragPage.mouse.move(box.x-80,box.y+90,{steps:8});
+  await dragPage.mouse.up();
+  const after=await sticker.evaluate(el=>({left:el.style.left,top:el.style.top}));
+  assert.notDeepEqual(after,before,JSON.stringify({before,after}));
+  console.log('PASS functional sticker drag changes rendered position');
+  await dragCtx.close();
+
   const pwaCtx=await context(),pwa=await pwaCtx.newPage();
   // Seed the prior cache before the real new worker installs.
   await pwa.addInitScript(async()=>{if(!sessionStorage.getItem('seeded-old-cache')){sessionStorage.setItem('seeded-old-cache','1');await caches.open('freya-travel-release-6444-v4')}});
