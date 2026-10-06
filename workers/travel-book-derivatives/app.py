@@ -62,11 +62,17 @@ def png_derivative(image, bound, icc):
     data = out.getvalue()
     return data, work.width, work.height
 
+class RpcError(RuntimeError):
+    def __init__(self, code, message):
+        super().__init__(f"RPC:{code}:{message}")
+        self.code = code
+        self.rpc_message = message
+
 async def rpc(client, name, args):
     r = await client.post(f"{SUPABASE_URL}/rest/v1/rpc/{name}", headers=rpc_headers(), json=args)
     if r.status_code >= 400:
         detail = r.json() if "application/json" in r.headers.get("content-type", "") else {}
-        raise RuntimeError(f"RPC:{detail.get('code','UNKNOWN')}")
+        raise RpcError(detail.get("code", "UNKNOWN"), detail.get("message", "RPC_ERROR"))
     if not r.content:
         return None
     return r.json()
@@ -196,6 +202,14 @@ async def process(req: ProcessRequest, authorization: str | None = Header(defaul
 
         except HTTPException:
             raise
+        except RpcError as error:
+            if error.code == "PT409" and error.rpc_message == "ALB_STALE_LEASE":
+                raise HTTPException(status_code=409, detail="ALB_STALE_LEASE")
+            try:
+                await finish(None, "DERIVATIVE_FAILED")
+            except Exception:
+                pass
+            raise HTTPException(status_code=503, detail="DERIVATIVE_FAILED")
         except RuntimeError as error:
             code = "STORAGE_ERROR" if str(error) == "STORAGE_ERROR" else "DERIVATIVE_FAILED"
             try:
