@@ -30,7 +30,7 @@ test('ALB-04 runtime module is packaged and cached for the PWA',()=>{
 });
 
 test('ALB-04 preview communicates partial source coverage instead of pretending the full gallery is ready',()=>{
- assert.match(html,/galleryCount\.count/);
+ assert.match(html,/totalGallery=documents\.length/);
  assert.match(html,/\$\{proposal\.stats\.ready_photos\} de \$\{totalGallery\} fotos preparades/);
 });
 
