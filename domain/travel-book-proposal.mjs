@@ -43,11 +43,38 @@ function compareCover(a,b){
 }
 function layoutHint(count){if(count<=1)return 'hero';if(count===2)return 'duo';if(count===3)return 'triptych';if(count===4)return 'grid';return 'story_grid'}
 function pageSize(remaining,index){if(remaining<=1)return 1;if(index===0&&remaining>=5)return 5;if(remaining===2)return 2;if(remaining===3)return 3;if(remaining===4)return 4;return Math.min(6,remaining)}
+const CREATIVE_STYLES=['hero_editorial','scrapbook','narrative'];
+const STICKERS={
+ hero_editorial:['sparkle'],
+ scrapbook:['tape','postcard','heart'],
+ narrative:['quote','sparkle']
+};
+function creativeStyle(pageIndex,count,hasCaption){
+ if(hasCaption&&count<=2)return 'narrative';
+ if(pageIndex===0&&count<=3)return 'hero_editorial';
+ return pageIndex%3===1?'scrapbook':pageIndex%3===2?'narrative':'scrapbook';
+}
+function creativeCopy(style,hasCaption){
+ if(style==='hero_editorial')return {title:'Un moment per recordar',subtitle:null};
+ if(style==='narrative')return {title:hasCaption?'La nostra història':'Petites històries del viatge',subtitle:null};
+ return {title:'Instants del viatge',subtitle:null};
+}
 function pagesFor(items){
  const pages=[];let cursor=0,pageIndex=0;
  while(cursor<items.length){
   const size=pageSize(items.length-cursor,pageIndex),slice=items.slice(cursor,cursor+size);
-  pages.push({index:pageIndex,layout_hint:layoutHint(slice.length),items:slice});
+  const hasCaption=slice.some(item=>!!item.caption_candidate),style=creativeStyle(pageIndex,slice.length,hasCaption),copy=creativeCopy(style,hasCaption);
+  const firstCaption=slice.find(item=>item.caption_candidate)?.caption_candidate||null;
+  pages.push({
+   index:pageIndex,
+   layout_hint:layoutHint(slice.length),
+   creative_style:style,
+   title:copy.title,
+   subtitle:firstCaption,
+   subtitle_classification:firstCaption?'user_statement':null,
+   stickers:[...STICKERS[style]],
+   items:slice
+  });
   cursor+=size;pageIndex++;
  }
  return pages;
@@ -84,7 +111,7 @@ export function buildInitialTravelBookProposal(input){
  if(undated)warnings.push('photos_without_date_context');
  return {
   schema_version:1,
-  engine:{mode:'hybrid',base_generator:'alb04-deterministic-v1',creative_layer:'pending'},
+  engine:{mode:'hybrid',base_generator:'alb04-deterministic-v1',creative_layer:'alb05-warm-editorial-v1'},
   trip_id:input.trip_id,
   book_id:input.book_id,
   title,
@@ -107,7 +134,9 @@ export function validateInitialTravelBookProposal(value){
   if(section.role==='memories'&&section.local_date!==null)return false;
   const pageAssets=[];
   for(const page of section.pages){
-   if(!Number.isInteger(page.index)||page.index<0||!['hero','duo','triptych','grid','story_grid'].includes(page.layout_hint)||!Array.isArray(page.items)||!page.items.length||page.items.length>6)return false;
+   if(!Number.isInteger(page.index)||page.index<0||!['hero','duo','triptych','grid','story_grid'].includes(page.layout_hint)||!CREATIVE_STYLES.includes(page.creative_style)||typeof page.title!=='string'||!page.title||!Array.isArray(page.stickers)||page.stickers.some(sticker=>!['sparkle','tape','postcard','heart','quote'].includes(sticker))||!Array.isArray(page.items)||!page.items.length||page.items.length>6)return false;
+   if(page.subtitle!==null&&typeof page.subtitle!=='string')return false;
+   if(page.subtitle&&page.subtitle_classification!=='user_statement')return false;
    for(const item of page.items){if(!UUID.test(item.asset_id||''))return false;pageAssets.push(item.asset_id);}
   }
   if(pageAssets.join('|')!==section.items.map(item=>item.asset_id).join('|'))return false;
