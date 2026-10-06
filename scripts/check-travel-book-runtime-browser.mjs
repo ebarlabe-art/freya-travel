@@ -69,7 +69,7 @@ try{
       }]
     };
     renderTravelBookProposal(proposal,new Map(),1,{});
-    document.getElementById('travelBookView')?.classList.remove('hidden');
+    for(let el=document.getElementById('travelBookView');el;el=el.parentElement)el.classList.remove('hidden');
   });
   const sticker=dragPage.locator('.travel-book-sticker').first();
   await sticker.waitFor({state:'visible'});
