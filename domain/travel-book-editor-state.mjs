@@ -55,7 +55,7 @@ export function compositionFromTravelBookPage({page,compositionId,pageId,previou
   if(item.overlay_text){
    const bySnapshot=oldCaptions.find(e=>item.source_snapshot_ids?.some(id=>e.source_snapshot_ids?.includes(id)));
    const oldCaption=bySnapshot||oldCaptions[index];
-   elements.push(textElement(oldCaption?.id||makeId(),'caption',item.overlay_text,item.source_snapshot_ids||[],oldCaption?.geometry||geometry(x+3,y+h-16,w-6,13,0)));
+   elements.push(textElement(oldCaption?.id||makeId(),'caption',item.overlay_text,[],oldCaption?.geometry||geometry(x+3,y+h-16,w-6,13,0)));
   }
  });
  (page.stickers||[]).forEach((sticker,index)=>{
