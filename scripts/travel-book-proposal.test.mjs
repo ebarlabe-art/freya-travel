@@ -103,3 +103,37 @@ test('ALB-05 promotes an explicit reviewed photo comment into narrative copy wit
  assert.deepEqual(page.stickers,['quote','sparkle']);
  assert.equal(validateInitialTravelBookProposal(proposal),true);
 });
+
+
+test('ALB-05.3 avoids neutral title repetition inside the same album',()=>{
+ const photos=Array.from({length:36},(_,i)=>({asset_id:id(300+i),status:'ready',local_date:i<18?'2026-09-10':'2026-09-11',selection_index:i,width_px:1600,height_px:1200}));
+ const proposal=buildInitialTravelBookProposal({...base,photos});
+ const titles=proposal.sections.flatMap(section=>section.pages.map(page=>page.title));
+ assert.equal(new Set(titles).size,titles.length);
+});
+
+test('ALB-05.3 edits one page without regenerating the rest of the proposal',async()=>{
+ const mod=await import('../domain/travel-book-proposal.mjs');
+ const proposal=buildInitialTravelBookProposal({...base,photos:[
+  {asset_id:id(400),status:'ready',local_date:'2026-09-10',selection_index:0,width_px:1600,height_px:1200},
+  {asset_id:id(401),status:'ready',local_date:'2026-09-10',selection_index:1,width_px:1600,height_px:1200}
+ ]});
+ const before=JSON.stringify(proposal.sections[0].pages[0].items);
+ const edited=mod.editTravelBookPage(proposal,{section_index:0,page_index:0,title:'El nostre primer dia',subtitle:'',creative_style:'scrapbook',stickers:['heart','tape']});
+ assert.equal(edited.sections[0].pages[0].title,'El nostre primer dia');
+ assert.equal(edited.sections[0].pages[0].subtitle,null);
+ assert.equal(edited.sections[0].pages[0].creative_style,'scrapbook');
+ assert.deepEqual(edited.sections[0].pages[0].stickers,['heart','tape']);
+ assert.equal(JSON.stringify(edited.sections[0].pages[0].items),before);
+ assert.equal(proposal.sections[0].pages[0].title==='El nostre primer dia',false);
+ assert.equal(validateInitialTravelBookProposal(edited),true);
+});
+
+test('ALB-05.3 proposes a different neutral title for a page',async()=>{
+ const mod=await import('../domain/travel-book-proposal.mjs');
+ const proposal=buildInitialTravelBookProposal({...base,photos:[{asset_id:id(500),status:'ready',local_date:'2026-09-10',width_px:1600,height_px:1200}]});
+ const page=proposal.sections[0].pages[0];
+ const alternative=mod.proposeAlternativeTravelBookTitle(page,[page.title]);
+ assert.ok(alternative);
+ assert.notEqual(alternative,page.title);
+});
