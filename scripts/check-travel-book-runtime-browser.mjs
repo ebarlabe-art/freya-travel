@@ -75,6 +75,8 @@ try{
   await sticker.waitFor({state:'visible'});
   const before=await sticker.evaluate(el=>({left:el.style.left,top:el.style.top}));
   const box=await sticker.boundingBox(); assert.ok(box);
+  const hit=await dragPage.evaluate(({x,y})=>{const el=document.elementFromPoint(x,y);return {tag:el?.tagName||null,cls:el?.className||null,sticker:el?.dataset?.sticker||null};},{x:box.x+box.width/2,y:box.y+box.height/2});
+  console.log('DRAG hit target',JSON.stringify(hit));
   await dragPage.mouse.move(box.x+box.width/2,box.y+box.height/2);
   await dragPage.mouse.down();
   await dragPage.mouse.move(box.x-80,box.y+90,{steps:8});
