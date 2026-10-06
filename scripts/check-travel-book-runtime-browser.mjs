@@ -58,6 +58,10 @@ try{
   await pwa.addInitScript(async()=>{if(!sessionStorage.getItem('seeded-old-cache')){sessionStorage.setItem('seeded-old-cache','1');await caches.open('freya-travel-release-6444-v4')}});
   await pwa.goto(url,{waitUntil:'load'});
   await pwa.waitForFunction(()=>!!navigator.serviceWorker.controller);
+  // The app may reload once when the new worker takes control. Treat that as
+  // part of the upgrade path instead of racing evaluate() against navigation.
+  await pwa.waitForTimeout(250);
+  await pwa.waitForLoadState('load');
   const cacheNames=await pwa.evaluate(()=>caches.keys());
   assert.ok(cacheNames.includes('freya-travel-release-6444-v5'));
   assert.ok(!cacheNames.includes('freya-travel-release-6444-v4'));
