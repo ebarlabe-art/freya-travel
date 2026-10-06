@@ -26,7 +26,7 @@ test('ALB-04 UI consumes the pure proposal module and only ready editorial asset
 test('ALB-04 runtime module is packaged and cached for the PWA',()=>{
  assert.match(pack,/'travel-book-proposal\.mjs'/);
  assert.match(sw,/'\.\/domain\/travel-book-proposal\.mjs'/); assert.match(sw,/'\.\/domain\/travel-book-batch\.mjs'/);
- assert.match(sw,/freya-travel-release-6444-v1/);
+ assert.match(sw,/freya-travel-release-6444-v2/);
 });
 
 test('ALB-04 preview communicates partial source coverage instead of pretending the full gallery is ready',()=>{
@@ -76,7 +76,7 @@ test('ALB-05.4 uses understandable composition names and exposes visible decorat
  assert.match(html,/>Collage<\/option>/);
  assert.match(html,/>Història<\/option>/);
  assert.match(html,/✨ Brilli/);
- assert.match(html,/♡ Cor/);
+ assert.match(html,/♥ Cor/);
  assert.match(html,/▱ Postal/);
 });
 

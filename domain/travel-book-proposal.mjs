@@ -46,7 +46,7 @@ function pageSize(remaining,index){if(remaining<=1)return 1;if(index===0&&remain
 const CREATIVE_STYLES=['hero_editorial','scrapbook','narrative'];
 const STICKERS={
  hero_editorial:['sparkle'],
- scrapbook:['tape','postcard','heart'],
+ scrapbook:['flower','postcard','heart'],
  narrative:['quote','sparkle']
 };
 function creativeStyle(pageIndex,count,hasCaption){
@@ -110,7 +110,7 @@ export function editTravelBookPage(proposal,{section_index,page_index,title,subt
   target.creative_style=creative_style;
  }
  if(stickers!==undefined){
-  if(!Array.isArray(stickers)||stickers.some(sticker=>!['sparkle','tape','postcard','heart','quote'].includes(sticker)))fail('ALB053_INVALID_STICKERS');
+  if(!Array.isArray(stickers)||stickers.some(sticker=>!['sparkle','tape','postcard','heart','quote','flower','leaf','sun'].includes(sticker)))fail('ALB053_INVALID_STICKERS');
   target.stickers=[...new Set(stickers)];
  }
  if(!validateInitialTravelBookProposal(next))fail('ALB053_INVALID_EDIT');
@@ -185,7 +185,7 @@ export function validateInitialTravelBookProposal(value){
   if(section.role==='memories'&&section.local_date!==null)return false;
   const pageAssets=[];
   for(const page of section.pages){
-   if(!Number.isInteger(page.index)||page.index<0||!['hero','duo','triptych','grid','story_grid'].includes(page.layout_hint)||!CREATIVE_STYLES.includes(page.creative_style)||typeof page.title!=='string'||!page.title||!Array.isArray(page.stickers)||page.stickers.some(sticker=>!['sparkle','tape','postcard','heart','quote'].includes(sticker))||!Array.isArray(page.items)||!page.items.length||page.items.length>6)return false;
+   if(!Number.isInteger(page.index)||page.index<0||!['hero','duo','triptych','grid','story_grid'].includes(page.layout_hint)||!CREATIVE_STYLES.includes(page.creative_style)||typeof page.title!=='string'||!page.title||!Array.isArray(page.stickers)||page.stickers.some(sticker=>!['sparkle','tape','postcard','heart','quote','flower','leaf','sun'].includes(sticker))||!Array.isArray(page.items)||!page.items.length||page.items.length>6)return false;
    if(page.subtitle!==null&&typeof page.subtitle!=='string')return false;
    if(page.subtitle&&page.subtitle_classification!=='user_statement')return false;
    for(const item of page.items){
