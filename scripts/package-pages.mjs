@@ -19,6 +19,7 @@ const runtimeDomain=[
   'import-proposal.mjs',
   'travel-book-proposal.mjs',
   'travel-book-batch.mjs',
+  'travel-book-editor-state.mjs',
 ];
 
 await mkdir(new URL('domain/',dist),{recursive:true});
