@@ -26,7 +26,7 @@ test('ALB-04 UI consumes the pure proposal module and only ready editorial asset
 test('ALB-04 runtime module is packaged and cached for the PWA',()=>{
  assert.match(pack,/'travel-book-proposal\.mjs'/);
  assert.match(sw,/'\.\/domain\/travel-book-proposal\.mjs'/); assert.match(sw,/'\.\/domain\/travel-book-batch\.mjs'/);
- assert.match(sw,/freya-travel-release-6444-v2/);
+ assert.match(sw,/freya-travel-release-6444-v3/);
 });
 
 test('ALB-04 preview communicates partial source coverage instead of pretending the full gallery is ready',()=>{
@@ -86,4 +86,30 @@ test('ALB-05.4 supports direct text overlays on each photo',()=>{
  assert.match(html,/travelBookApplyPhotoText/);
  assert.match(html,/editTravelBookPhotoOverlay/);
  assert.match(html,/travel-book-photo-overlay/);
+});
+
+
+test('ALB-05.5 loads and saves the editor through the existing Travel Book persistence model',()=>{
+ assert.match(html,/import\('\.\/domain\/travel-book-editor-state\.mjs'\)/);
+ assert.match(html,/create_travel_book_edition_v1/);
+ assert.match(html,/change_travel_book_structure_v1/);
+ assert.match(html,/save_travel_book_compositions_v1/);
+ assert.match(html,/travel_book_composition_versions/);
+ assert.match(html,/applyTravelBookDocuments/);
+ assert.match(html,/queueTravelBookSave/);
+});
+
+test('ALB-05.5 stickers are movable with pointer input and persist percentage positions',()=>{
+ assert.match(html,/onpointerdown/);
+ assert.match(html,/onpointermove/);
+ assert.match(html,/onpointerup/);
+ assert.match(html,/sticker_positions/);
+ assert.match(html,/touch-action:none/);
+ assert.match(html,/Arrossega per moure-la/);
+});
+
+test('ALB-05.5 persistence runtime is packaged and cached',()=>{
+ assert.match(pack,/'travel-book-editor-state\.mjs'/);
+ assert.match(sw,/'\.\/domain\/travel-book-editor-state\.mjs'/);
+ assert.match(sw,/freya-travel-release-6444-v3/);
 });

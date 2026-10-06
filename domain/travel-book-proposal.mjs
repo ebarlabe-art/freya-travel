@@ -82,6 +82,7 @@ function pagesFor(items,usedTitles){
    subtitle:firstCaption,
    subtitle_classification:firstCaption?'user_statement':null,
    stickers:[...STICKERS[style]],
+   sticker_positions:{},
    items:slice
   });
   cursor+=size;pageIndex++;
@@ -94,7 +95,7 @@ export function proposeAlternativeTravelBookTitle(page,usedTitles=[]){
  used.add(page.title);
  return creativeCopy(page.creative_style,!!page.subtitle,used,Number.isInteger(page.index)?page.index+1:0).title;
 }
-export function editTravelBookPage(proposal,{section_index,page_index,title,subtitle,creative_style,stickers}){
+export function editTravelBookPage(proposal,{section_index,page_index,title,subtitle,creative_style,stickers,sticker_positions}){
  if(!validateInitialTravelBookProposal(proposal))fail('ALB053_INVALID_PROPOSAL');
  const section=proposal.sections?.[section_index],page=section?.pages?.[page_index];
  if(!page)fail('ALB053_PAGE_NOT_FOUND');
@@ -112,6 +113,19 @@ export function editTravelBookPage(proposal,{section_index,page_index,title,subt
  if(stickers!==undefined){
   if(!Array.isArray(stickers)||stickers.some(sticker=>!['sparkle','tape','postcard','heart','quote','flower','leaf','sun'].includes(sticker)))fail('ALB053_INVALID_STICKERS');
   target.stickers=[...new Set(stickers)];
+  target.sticker_positions=Object.fromEntries(Object.entries(target.sticker_positions||{}).filter(([key])=>target.stickers.includes(key)));
+ }
+ if(sticker_positions!==undefined){
+  if(!sticker_positions||typeof sticker_positions!=='object'||Array.isArray(sticker_positions))fail('ALB055_INVALID_STICKER_POSITIONS');
+  const allowed=new Set(target.stickers);
+  const clean={};
+  for(const [key,value] of Object.entries(sticker_positions)){
+   if(!allowed.has(key)||!value||typeof value!=='object')fail('ALB055_INVALID_STICKER_POSITIONS');
+   const x=Number(value.x),y=Number(value.y),rotation=Number(value.rotation||0);
+   if(!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(rotation)||x<0||x>100||y<0||y>100||rotation<-360||rotation>360)fail('ALB055_INVALID_STICKER_POSITIONS');
+   clean[key]={x,y,rotation};
+  }
+  target.sticker_positions=clean;
  }
  if(!validateInitialTravelBookProposal(next))fail('ALB053_INVALID_EDIT');
  return next;
@@ -185,7 +199,7 @@ export function validateInitialTravelBookProposal(value){
   if(section.role==='memories'&&section.local_date!==null)return false;
   const pageAssets=[];
   for(const page of section.pages){
-   if(!Number.isInteger(page.index)||page.index<0||!['hero','duo','triptych','grid','story_grid'].includes(page.layout_hint)||!CREATIVE_STYLES.includes(page.creative_style)||typeof page.title!=='string'||!page.title||!Array.isArray(page.stickers)||page.stickers.some(sticker=>!['sparkle','tape','postcard','heart','quote','flower','leaf','sun'].includes(sticker))||!Array.isArray(page.items)||!page.items.length||page.items.length>6)return false;
+   if(!Number.isInteger(page.index)||page.index<0||!['hero','duo','triptych','grid','story_grid'].includes(page.layout_hint)||!CREATIVE_STYLES.includes(page.creative_style)||typeof page.title!=='string'||!page.title||!Array.isArray(page.stickers)||page.stickers.some(sticker=>!['sparkle','tape','postcard','heart','quote','flower','leaf','sun'].includes(sticker))||!page.sticker_positions||typeof page.sticker_positions!=='object'||Array.isArray(page.sticker_positions)||Object.entries(page.sticker_positions).some(([key,pos])=>!page.stickers.includes(key)||!pos||!Number.isFinite(Number(pos.x))||Number(pos.x)<0||Number(pos.x)>100||!Number.isFinite(Number(pos.y))||Number(pos.y)<0||Number(pos.y)>100||!Number.isFinite(Number(pos.rotation||0))||Math.abs(Number(pos.rotation||0))>360)||!Array.isArray(page.items)||!page.items.length||page.items.length>6)return false;
    if(page.subtitle!==null&&typeof page.subtitle!=='string')return false;
    if(page.subtitle&&page.subtitle_classification!=='user_statement')return false;
    for(const item of page.items){
