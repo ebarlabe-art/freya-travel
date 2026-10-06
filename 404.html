@@ -1967,7 +1967,7 @@ async function runTravelBookBatch({automatic=false}={}){
         done++;
       }catch(error){
         errors++;
-        if(error?.code==='auth')throw error;
+        if(error?.code==='auth'||error?.code==='stale_lease')throw error;
       }
       setTravelBookBatchUi({done,total,errors,message:'Preparades '+done+' de '+total+' fotos. Pots sortir de la pantalla: si iOS suspèn Freya, després reprendrà les pendents sense duplicar-les.',running:true});
     }
