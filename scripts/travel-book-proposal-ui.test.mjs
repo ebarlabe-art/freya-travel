@@ -52,3 +52,20 @@ test('ALB-05 renders a creative Travel Book instead of a plain photo grid',()=>{
  assert.match(html,/scrapbook/);
  assert.match(html,/narrative/);
 });
+
+
+test('ALB-05.3 exposes direct page editing without replacing the creative proposal flow',()=>{
+ assert.match(html,/contenteditable="true"[^>]*data-tb-edit="title"/);
+ assert.match(html,/contenteditable="true"[^>]*data-tb-edit="subtitle"/);
+ assert.match(html,/data-tb-style/);
+ assert.match(html,/Proposa’m un altre text/);
+ assert.match(html,/data-tb-sticker/);
+ assert.match(html,/editTravelBookPage/);
+ assert.match(html,/proposeAlternativeTravelBookTitle/);
+});
+
+test('ALB-05.3 keeps page edits scoped to the selected page and preserves index\/404 parity contract',()=>{
+ assert.match(html,/travelBookApplyPageEdit\(sectionIndex,pageIndex/);
+ assert.match(html,/section_index:sectionIndex,page_index:pageIndex/);
+ assert.match(html,/state\.proposal=api\.editTravelBookPage/);
+});
