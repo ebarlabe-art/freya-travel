@@ -2154,27 +2154,41 @@ function renderTravelBookProposal(proposal,visuals,totalGallery=proposal.stats.r
     travelBookApplyPageEdit(Number(tools.dataset.sectionIndex),Number(tools.dataset.pageIndex),{creative_style:select.value}).catch(error=>msg('travelBookMessage',error?.message||'No s’ha pogut canviar l’estil.',true));
   };
   let stickerDrag=null;
-  sectionsEl.onpointerdown=event=>{
-    const stickerEl=event.target.closest('.travel-book-sticker');if(!stickerEl)return;
-    const pageEl=stickerEl.closest('.travel-book-page'),tools=pageEl?.querySelector('[data-section-index][data-page-index]');if(!pageEl||!tools)return;
-    event.preventDefault();stickerEl.setPointerCapture?.(event.pointerId);stickerEl.classList.add('dragging');
-    stickerDrag={pointerId:event.pointerId,el:stickerEl,pageEl,sectionIndex:Number(tools.dataset.sectionIndex),pageIndex:Number(tools.dataset.pageIndex),sticker:stickerEl.dataset.sticker};
-  };
-  sectionsEl.onpointermove=event=>{
+  const moveSticker=event=>{
     if(!stickerDrag||stickerDrag.pointerId!==event.pointerId)return;
-    const rect=stickerDrag.pageEl.getBoundingClientRect(),x=Math.max(0,Math.min(100,(event.clientX-rect.left)/rect.width*100)),y=Math.max(0,Math.min(100,(event.clientY-rect.top)/rect.height*100));
+    event.preventDefault();
+    const rect=stickerDrag.pageEl.getBoundingClientRect();
+    const x=Math.max(0,Math.min(100,(event.clientX-rect.left)/rect.width*100)),y=Math.max(0,Math.min(100,(event.clientY-rect.top)/rect.height*100));
     stickerDrag.el.style.left=x+'%';stickerDrag.el.style.top=y+'%';
     stickerDrag.x=x;stickerDrag.y=y;
   };
-  sectionsEl.onpointerup=event=>{
+  const stopStickerDrag=(event,cancelled=false)=>{
     if(!stickerDrag||stickerDrag.pointerId!==event.pointerId)return;
-    const drag=stickerDrag;stickerDrag=null;drag.el.classList.remove('dragging');
+    event.preventDefault();
+    const drag=stickerDrag;stickerDrag=null;
+    window.removeEventListener('pointermove',moveSticker,true);
+    window.removeEventListener('pointerup',stopStickerDrag,true);
+    window.removeEventListener('pointercancel',cancelStickerDrag,true);
+    drag.el.classList.remove('dragging');
+    try{drag.el.releasePointerCapture?.(drag.pointerId)}catch{}
+    if(cancelled)return;
     const page=travelBookPageAt(drag.sectionIndex,drag.pageIndex);if(!page)return;
     const current={...(page.sticker_positions||{})},previous=current[drag.sticker]||{};
     current[drag.sticker]={x:drag.x??(Number(previous.x)||82),y:drag.y??(Number(previous.y)||18),rotation:Number(previous.rotation)||0};
     travelBookApplyPageEdit(drag.sectionIndex,drag.pageIndex,{sticker_positions:current}).catch(error=>msg('travelBookMessage',error?.message||'No s’ha pogut desar la posició.',true));
   };
-  sectionsEl.onpointercancel=()=>{if(stickerDrag){stickerDrag.el.classList.remove('dragging');stickerDrag=null}};
+  const cancelStickerDrag=event=>stopStickerDrag(event,true);
+  sectionsEl.onpointerdown=event=>{
+    const stickerEl=event.target.closest('.travel-book-sticker');if(!stickerEl)return;
+    const pageEl=stickerEl.closest('.travel-book-page'),tools=pageEl?.querySelector('[data-section-index][data-page-index]');if(!pageEl||!tools)return;
+    event.preventDefault();
+    try{stickerEl.setPointerCapture?.(event.pointerId)}catch{}
+    stickerEl.classList.add('dragging');
+    stickerDrag={pointerId:event.pointerId,el:stickerEl,pageEl,sectionIndex:Number(tools.dataset.sectionIndex),pageIndex:Number(tools.dataset.pageIndex),sticker:stickerEl.dataset.sticker};
+    window.addEventListener('pointermove',moveSticker,{capture:true,passive:false});
+    window.addEventListener('pointerup',stopStickerDrag,{capture:true,passive:false});
+    window.addEventListener('pointercancel',cancelStickerDrag,{capture:true,passive:false});
+  };
   sectionsEl.onclick=event=>{
     const tools=event.target.closest('[data-section-index][data-page-index]');if(!tools)return;
     const sectionIndex=Number(tools.dataset.sectionIndex),pageIndex=Number(tools.dataset.pageIndex);

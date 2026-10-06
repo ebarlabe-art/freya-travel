@@ -101,8 +101,9 @@ test('ALB-05.5 loads and saves the editor through the existing Travel Book persi
 
 test('ALB-05.5 stickers are movable with pointer input and persist percentage positions',()=>{
  assert.match(html,/onpointerdown/);
- assert.match(html,/onpointermove/);
- assert.match(html,/onpointerup/);
+ assert.match(html,/window\.addEventListener\('pointermove',moveSticker/);
+ assert.match(html,/window\.addEventListener\('pointerup',stopStickerDrag/);
+ assert.match(html,/window\.addEventListener\('pointercancel',cancelStickerDrag/);
  assert.match(html,/sticker_positions/);
  assert.match(html,/touch-action:none/);
  assert.match(html,/Arrossega per moure-la/);
