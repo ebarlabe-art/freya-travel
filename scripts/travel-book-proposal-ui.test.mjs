@@ -18,7 +18,7 @@ test('ALB-04 UI consumes the pure proposal module and only ready editorial asset
  assert.match(html,/import\('\.\/domain\/travel-book-proposal\.mjs'\)/);
  assert.match(html,/from\('travel_book_assets'\)[\s\S]*?\.eq\('status','ready'\)/);
  assert.match(html,/get_travel_book_ingestion_v1/);
- assert.match(html,/travel_book_asset_variants[\s\S]*?\.eq\('kind','thumbnail'\)/);
+ assert.match(html,/travel_book_asset_variants[\s\S]*?\.in\('kind',\['thumbnail','preview'\]\)/);
  assert.doesNotMatch(html.slice(html.indexOf('async function loadTravelBookProposalSources'),html.indexOf('function formatTravelBookDate')),/select\([^)]*title/);
 });
 
