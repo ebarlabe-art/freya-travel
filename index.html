@@ -2158,7 +2158,7 @@ function renderTravelBookProposal(proposal,visuals,totalGallery=proposal.stats.r
     const drag=stickerDrag;stickerDrag=null;drag.el.classList.remove('dragging');
     const page=travelBookPageAt(drag.sectionIndex,drag.pageIndex);if(!page)return;
     const current={...(page.sticker_positions||{})},previous=current[drag.sticker]||{};
-    current[drag.sticker]={x:drag.x??Number(previous.x)||82,y:drag.y??Number(previous.y)||18,rotation:Number(previous.rotation)||0};
+    current[drag.sticker]={x:drag.x??(Number(previous.x)||82),y:drag.y??(Number(previous.y)||18),rotation:Number(previous.rotation)||0};
     travelBookApplyPageEdit(drag.sectionIndex,drag.pageIndex,{sticker_positions:current}).catch(error=>msg('travelBookMessage',error?.message||'No s’ha pogut desar la posició.',true));
   };
   sectionsEl.onpointercancel=()=>{if(stickerDrag){stickerDrag.el.classList.remove('dragging');stickerDrag=null}};
