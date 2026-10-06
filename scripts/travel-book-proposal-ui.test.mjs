@@ -19,7 +19,8 @@ test('ALB-04 UI consumes the pure proposal module and only ready editorial asset
  assert.match(html,/from\('travel_book_assets'\)[\s\S]*?\.eq\('status','ready'\)/);
  assert.match(html,/get_travel_book_ingestion_v1/);
  assert.match(html,/travel_book_asset_variants[\s\S]*?\.in\('kind',\['thumbnail','preview'\]\)/);
- assert.doesNotMatch(html.slice(html.indexOf('async function loadTravelBookProposalSources'),html.indexOf('function formatTravelBookDate')),/select\([^)]*title/);
+ assert.match(html,/from\('travel_documents'\)\.select\('id,title,file_name'\)/);
+ assert.match(html,/title_reviewed:userCaption/);
 });
 
 test('ALB-04 runtime module is packaged and cached for the PWA',()=>{
@@ -40,4 +41,14 @@ test('ALB-04 bulk preparation is server-resumable and uses bounded reads',()=>{
  assert.match(html,/travelBookMapLimited\(assets,4/);
  assert.match(html,/createSignedUrls\(/);
  assert.match(html,/travel-book-derivatives-production\.up\.railway\.app\/process/);
+});
+
+
+test('ALB-05 renders a creative Travel Book instead of a plain photo grid',()=>{
+ assert.match(html,/data-creative="\$\{esc\(page\.creative_style\)\}"/);
+ assert.match(html,/travel-book-creative-copy/);
+ assert.match(html,/travel-book-stickers/);
+ assert.match(html,/hero_editorial/);
+ assert.match(html,/scrapbook/);
+ assert.match(html,/narrative/);
 });
