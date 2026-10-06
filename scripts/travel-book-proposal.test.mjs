@@ -69,3 +69,14 @@ test('ALB-04 output does not leak storage paths, file names or arbitrary source 
 test('ALB-04 rejects invalid scope',()=>{
  assert.throws(()=>buildInitialTravelBookProposal({...base,trip_id:'bad',photos:[]}),error=>error.code==='ALB04_INVALID_SCOPE');
 });
+
+
+test('ALB-04 creates bounded deterministic pages for a navigable first book',()=>{
+ const photos=Array.from({length:13},(_,i)=>({asset_id:id(100+i),status:'ready',local_date:'2026-09-12',selection_index:i,width_px:1600,height_px:1200}));
+ const proposal=buildInitialTravelBookProposal({...base,photos});
+ const section=proposal.sections[0];
+ assert.deepEqual(section.pages.map(page=>page.items.length),[5,6,2]);
+ assert.deepEqual(section.pages.map(page=>page.index),[0,1,2]);
+ assert.equal(section.pages.flatMap(page=>page.items.map(item=>item.asset_id)).join('|'),section.items.map(item=>item.asset_id).join('|'));
+ assert.equal(validateInitialTravelBookProposal(proposal),true);
+});

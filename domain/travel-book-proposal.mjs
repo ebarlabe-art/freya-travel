@@ -42,6 +42,16 @@ function compareCover(a,b){
  return a.asset_id.localeCompare(b.asset_id);
 }
 function layoutHint(count){if(count<=1)return 'hero';if(count===2)return 'duo';if(count===3)return 'triptych';if(count===4)return 'grid';return 'story_grid'}
+function pageSize(remaining,index){if(remaining<=1)return 1;if(index===0&&remaining>=5)return 5;if(remaining===2)return 2;if(remaining===3)return 3;if(remaining===4)return 4;return Math.min(6,remaining)}
+function pagesFor(items){
+ const pages=[];let cursor=0,pageIndex=0;
+ while(cursor<items.length){
+  const size=pageSize(items.length-cursor,pageIndex),slice=items.slice(cursor,cursor+size);
+  pages.push({index:pageIndex,layout_hint:layoutHint(slice.length),items:slice});
+  cursor+=size;pageIndex++;
+ }
+ return pages;
+}
 function sectionKey(localDate){return localDate?'day:'+localDate:'memories:undated'}
 
 export function buildInitialTravelBookProposal(input){
@@ -79,7 +89,7 @@ export function buildInitialTravelBookProposal(input){
   book_id:input.book_id,
   title,
   cover:cover?{asset_id:cover.asset_id,source_snapshot_ids:cover.source_snapshot_ids}:null,
-  sections,
+  sections:sections.map(section=>({...section,pages:pagesFor(section.items)})),
   unplaced_asset_ids:[],
   warnings,
   stats:{ready_photos:photos.length,dated_photos:photos.length-undated,undated_photos:undated}
@@ -92,9 +102,15 @@ export function validateInitialTravelBookProposal(value){
  const assets=new Set();
  if(value.cover&&!UUID.test(value.cover.asset_id||''))return false;
  for(const section of value.sections){
-  if(!['day','memories'].includes(section.role)||!Array.isArray(section.items)||typeof section.key!=='string')return false;
+  if(!['day','memories'].includes(section.role)||!Array.isArray(section.items)||!Array.isArray(section.pages)||typeof section.key!=='string')return false;
   if(section.role==='day'&&!date(section.local_date))return false;
   if(section.role==='memories'&&section.local_date!==null)return false;
+  const pageAssets=[];
+  for(const page of section.pages){
+   if(!Number.isInteger(page.index)||page.index<0||!['hero','duo','triptych','grid','story_grid'].includes(page.layout_hint)||!Array.isArray(page.items)||!page.items.length||page.items.length>6)return false;
+   for(const item of page.items){if(!UUID.test(item.asset_id||''))return false;pageAssets.push(item.asset_id);}
+  }
+  if(pageAssets.join('|')!==section.items.map(item=>item.asset_id).join('|'))return false;
   for(const item of section.items){
    if(!UUID.test(item.asset_id||'')||assets.has(item.asset_id))return false;
    assets.add(item.asset_id);
