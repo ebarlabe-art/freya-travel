@@ -120,3 +120,8 @@ test('ALB-05.5 hotfix packages the editor transitive browser dependency',()=>{
  assert.match(sw,/'\.\/domain\/travel-book-composition\.mjs'/);
  assert.match(sw,/freya-travel-release-6444-v4/);
 });
+
+
+test('ALB-03 stale lease stops the browser batch instead of being counted as retryable noise',()=>{
+ assert.match(html,/error\?\.code==='auth'\|\|error\?\.code==='stale_lease'/);
+});
