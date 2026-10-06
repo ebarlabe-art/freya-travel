@@ -49,7 +49,7 @@ do $$declare i ingestion_fixture;f alb_fixture;j jsonb;begin
  perform public.alb03_finish_v1(i.asset,f.a,(j#>>'{job,lease_id}')::uuid,null,'STORAGE_ERROR');
  perform pg_temp.assert_alb((select status='pending' from public.travel_book_assets where id=i.asset),'retryable failure stays pending');
  j:=public.alb03_claim_v1(i.asset,f.a);
- perform pg_temp.expect_alb_error(format('select public.alb03_finish_v1(%L,%L,%L,%L::jsonb,null)',i.asset,f.a,(select lease from ingestion_fixture),pg_temp.alb_descriptor(i.asset)),'40001');
+ perform pg_temp.expect_alb_error(format('select public.alb03_finish_v1(%L,%L,%L,%L::jsonb,null)',i.asset,f.a,(select lease from ingestion_fixture),pg_temp.alb_descriptor(i.asset)),'PT409');
  perform public.alb03_finish_v1(i.asset,f.a,(j#>>'{job,lease_id}')::uuid,jsonb_build_object('original',pg_temp.alb_descriptor(i.asset)->'original'));
  perform pg_temp.assert_alb((select status='pending' from public.travel_book_assets where id=i.asset),'original alone is not ready');
  perform pg_temp.assert_alb((public.get_travel_book_ingestion_v1(f.trip,f.book,i.asset)->>'processing_state')='derivative_pending','explicit derivative pending');
@@ -69,7 +69,7 @@ do $$declare f alb_fixture;i ingestion_fixture;r jsonb;second uuid;j jsonb;begin
  perform pg_temp.expect_alb_error(format('insert into public.travel_book_asset_variants(trip_id,book_id,asset_id,kind,pipeline_version,content_hash,width_px,height_px,mime_type,storage_bucket,storage_path,file_extension,byte_size,orientation) values(%L,%L,%L,''preview'',1,%L,1,1,''image/png'',''travel-book'',''x'',''png'',100,1)',f.trip,f.other_book,second,repeat('a',64)),'23503');
  j:=public.alb03_claim_v1(second,f.a);
  update storage.objects set updated_at=updated_at+interval '1 second' where bucket_id='trip-documents' and name=f.trip::text||'/photos/'||i.photo::text||'.png';
- perform pg_temp.expect_alb_error(format('select public.alb03_finish_v1(%L,%L,%L,%L::jsonb,null)',second,f.a,j#>>'{job,lease_id}',pg_temp.alb_descriptor(second)),'40001');
+ perform pg_temp.expect_alb_error(format('select public.alb03_finish_v1(%L,%L,%L,%L::jsonb,null)',second,f.a,j#>>'{job,lease_id}',pg_temp.alb_descriptor(second)),'PT409');
  perform public.alb03_finish_v1(second,f.a,(j#>>'{job,lease_id}')::uuid,null,'SOURCE_CHANGED');
  perform pg_temp.assert_alb((select status='pending' from public.travel_book_assets where id=second),'changed source cannot finalize');
 end$$;
