@@ -71,7 +71,8 @@ export function compositionFromTravelBookPage({page,compositionId,pageId,previou
 
 export function applyTravelBookComposition(page,document){
  if(!page||!validateComposition(document))return page;
- const next=structuredClone(page),label=readLabel(document);
+ const label=readLabel(document);if(!label)return page;
+ const next=structuredClone(page);
  if(label?.style&&['hero_editorial','scrapbook','narrative'].includes(label.style))next.creative_style=label.style;
  if(label?.layout&&['hero','duo','triptych','grid','story_grid'].includes(label.layout))next.layout_hint=label.layout;
  const title=document.elements.find(e=>e.type==='text'&&e.role==='title');
