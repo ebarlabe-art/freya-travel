@@ -1,7 +1,7 @@
 -- ALB-03: business conflicts must not use 40001 with PostgREST 14.
 -- 40001 is serialization_failure and may be retried internally by PostgREST.
 -- Use explicit 409 business errors instead.
-create function app_private.alb03_finish_v1(p_asset_id uuid,p_actor uuid,p_lease_id uuid,p_descriptor jsonb,p_error text default null) returns void
+create or replace function app_private.alb03_finish_v1(p_asset_id uuid,p_actor uuid,p_lease_id uuid,p_descriptor jsonb,p_error text default null) returns void
 language plpgsql security definer set search_path='' as $$
 declare j app_private.alb03_ingestions;a public.travel_book_assets;x jsonb;k text;root text;token text;original_exists boolean;complete boolean;old_variant public.travel_book_asset_variants;begin
  select * into j from app_private.alb03_ingestions where asset_id=p_asset_id;
