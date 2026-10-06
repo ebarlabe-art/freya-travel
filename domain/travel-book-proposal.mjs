@@ -54,16 +54,25 @@ function creativeStyle(pageIndex,count,hasCaption){
  if(pageIndex===0&&count<=3)return 'hero_editorial';
  return pageIndex%3===1?'scrapbook':pageIndex%3===2?'narrative':'scrapbook';
 }
-function creativeCopy(style,hasCaption){
- if(style==='hero_editorial')return {title:'Un moment per recordar',subtitle:null};
- if(style==='narrative')return {title:hasCaption?'La nostra història':'Petites històries del viatge',subtitle:null};
- return {title:'Instants del viatge',subtitle:null};
+const TITLE_POOLS={
+ hero_editorial:['Un moment per recordar','Moments que queden','Una pausa en el camí','Això també és viatjar','Un instant només nostre','D’aquells moments','Records en primer pla','Un moment, una història'],
+ scrapbook:['Instants del viatge','Postals del camí','Trossos del viatge','Una mica de tot','Moments en moviment','Dies per guardar','Petits grans moments','Records sense ordre','El viatge, a bocins','Entre fotos i records'],
+ narrative:['Petites històries del viatge','La nostra història','Entre moments i records','Històries que ens emportem','Així va passar','Dies per recordar','Moments amb història','El fil del viatge','Allò que queda','Una història dins del viatge']
+};
+function creativeCopy(style,hasCaption,usedTitles,pageIndex){
+ const pool=hasCaption&&style==='narrative'
+  ?['La nostra història','Així va passar','Moments amb història','Una història dins del viatge',...TITLE_POOLS.narrative]
+  :TITLE_POOLS[style];
+ const unique=[...new Set(pool)];
+ const title=unique.find(candidate=>!usedTitles.has(candidate))||`${unique[pageIndex%unique.length]} · ${usedTitles.size+1}`;
+ usedTitles.add(title);
+ return {title,subtitle:null};
 }
-function pagesFor(items){
+function pagesFor(items,usedTitles){
  const pages=[];let cursor=0,pageIndex=0;
  while(cursor<items.length){
   const size=pageSize(items.length-cursor,pageIndex),slice=items.slice(cursor,cursor+size);
-  const hasCaption=slice.some(item=>!!item.caption_candidate),style=creativeStyle(pageIndex,slice.length,hasCaption),copy=creativeCopy(style,hasCaption);
+  const hasCaption=slice.some(item=>!!item.caption_candidate),style=creativeStyle(pageIndex,slice.length,hasCaption),copy=creativeCopy(style,hasCaption,usedTitles,pageIndex);
   const firstCaption=slice.find(item=>item.caption_candidate)?.caption_candidate||null;
   pages.push({
    index:pageIndex,
@@ -79,6 +88,34 @@ function pagesFor(items){
  }
  return pages;
 }
+export function proposeAlternativeTravelBookTitle(page,usedTitles=[]){
+ if(!page||!CREATIVE_STYLES.includes(page.creative_style))return null;
+ const used=new Set(usedTitles.filter(value=>typeof value==='string'));
+ used.add(page.title);
+ return creativeCopy(page.creative_style,!!page.subtitle,used,Number.isInteger(page.index)?page.index+1:0).title;
+}
+export function editTravelBookPage(proposal,{section_index,page_index,title,subtitle,creative_style,stickers}){
+ if(!validateInitialTravelBookProposal(proposal))fail('ALB053_INVALID_PROPOSAL');
+ const section=proposal.sections?.[section_index],page=section?.pages?.[page_index];
+ if(!page)fail('ALB053_PAGE_NOT_FOUND');
+ const next=structuredClone(proposal),target=next.sections[section_index].pages[page_index];
+ if(title!==undefined){const value=text(title,160);if(!value)fail('ALB053_INVALID_TITLE');target.title=value;}
+ if(subtitle!==undefined){
+  const value=text(subtitle,320);
+  target.subtitle=value;
+  target.subtitle_classification=value?'user_statement':null;
+ }
+ if(creative_style!==undefined){
+  if(!CREATIVE_STYLES.includes(creative_style))fail('ALB053_INVALID_STYLE');
+  target.creative_style=creative_style;
+ }
+ if(stickers!==undefined){
+  if(!Array.isArray(stickers)||stickers.some(sticker=>!['sparkle','tape','postcard','heart','quote'].includes(sticker)))fail('ALB053_INVALID_STICKERS');
+  target.stickers=[...new Set(stickers)];
+ }
+ if(!validateInitialTravelBookProposal(next))fail('ALB053_INVALID_EDIT');
+ return next;
+}
 function sectionKey(localDate){return localDate?'day:'+localDate:'memories:undated'}
 
 export function buildInitialTravelBookProposal(input){
@@ -92,6 +129,7 @@ export function buildInitialTravelBookProposal(input){
   if(!groups.has(key))groups.set(key,{key,role:photo.local_date?'day':'memories',local_date:photo.local_date,items:[]});
   groups.get(key).items.push(photo);
  }
+ const usedTitles=new Set();
  const sections=[...groups.values()].map(group=>({
   key:group.key,
   role:group.role,
@@ -116,7 +154,7 @@ export function buildInitialTravelBookProposal(input){
   book_id:input.book_id,
   title,
   cover:cover?{asset_id:cover.asset_id,source_snapshot_ids:cover.source_snapshot_ids}:null,
-  sections:sections.map(section=>({...section,pages:pagesFor(section.items)})),
+  sections:sections.map(section=>({...section,pages:pagesFor(section.items,usedTitles)})),
   unplaced_asset_ids:[],
   warnings,
   stats:{ready_photos:photos.length,dated_photos:photos.length-undated,undated_photos:undated}
