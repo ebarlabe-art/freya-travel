@@ -8,6 +8,7 @@ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 
 test('Pages build packages every runtime domain module referenced dynamically',()=>{
   const refs=[...html.matchAll(/import\(['"]\.\/domain\/([^'"]+)['"]\)/g)].map(m=>m[1]);
+  refs.push(...[...html.matchAll(/loadTravelBookModule\(['"]([^'"]+)['"]\)/g)].map(m=>m[1]));
   assert.ok(refs.length>0);
   for(const file of new Set(refs)) assert.ok(pack.includes(file),'missing '+file);
   assert.equal(pkg.scripts.postbuild,'node scripts/package-pages.mjs');

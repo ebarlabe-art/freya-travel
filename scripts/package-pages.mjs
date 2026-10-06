@@ -1,5 +1,6 @@
 import { copyFile, cp, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { build } from 'vite';
 
 const root=new URL('../',import.meta.url);
 const dist=new URL('../dist/',import.meta.url);
@@ -27,6 +28,23 @@ await mkdir(new URL('domain/',dist),{recursive:true});
 for(const file of runtimeDomain){
   await copyFile(new URL('domain/'+file,root),new URL('domain/'+file,dist));
 }
+// A single editor module keeps failed imports retryable: browsers cache failed
+// static dependencies separately, so changing only the entry URL is insufficient.
+await build({
+  configFile:false,
+  publicDir:false,
+  build:{
+    outDir:fileURLToPath(new URL('domain/',dist)),
+    emptyOutDir:false,
+    minify:false,
+    lib:{
+      entry:fileURLToPath(new URL('domain/travel-book-editor-state.mjs',root)),
+      formats:['es'],
+      fileName:()=> 'travel-book-editor-state.mjs',
+    },
+  },
+});
+
 for(const file of ['trip-brief.mjs','live-trip-brief.mjs','travel-builder.mjs','import-proposal.mjs','proposal-refinement.mjs','proposal-builder.mjs']){
   const source=await import('node:fs/promises').then(fs=>fs.readFile(new URL('domain/'+file,root),'utf8'));
   const browser=source

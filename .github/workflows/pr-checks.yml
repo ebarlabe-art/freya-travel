@@ -26,6 +26,13 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
 
+      - name: Install isolated browser test tooling
+        run: |
+          npm install --prefix "$RUNNER_TEMP/travel-book-browser" --no-package-lock --ignore-scripts playwright-core@1.63.0
+          node "$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/cli.js" install --with-deps chromium
+      - name: Travel Book real Pages build browser regression
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-travel-book-runtime-browser.mjs
+
   legacy-suite:
     runs-on: ubuntu-latest
     continue-on-error: true

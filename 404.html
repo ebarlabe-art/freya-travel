@@ -1852,10 +1852,23 @@ const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function isLondonTrip(value=trip){return value?.experience_key==='london-2026'}
-let travelBookProposalApiPromise=null,travelBookBatchApiPromise=null,travelBookEditorApiPromise=null,travelBookProposalState=null,travelBookBatchRunning=false,travelBookSaveQueue=Promise.resolve();
-function travelBookProposalApi(){return travelBookProposalApiPromise??=import('./domain/travel-book-proposal.mjs')}
-function travelBookBatchApi(){return travelBookBatchApiPromise??=import('./domain/travel-book-batch.mjs')}
-function travelBookEditorApi(){return travelBookEditorApiPromise??=import('./domain/travel-book-editor-state.mjs')}
+let travelBookProposalState=null,travelBookBatchRunning=false,travelBookSaveQueue=Promise.resolve();
+const travelBookModuleLoads=new Map();
+function loadTravelBookModule(file){
+  let entry=travelBookModuleLoads.get(file);
+  if(!entry){entry={promise:null,attempt:0};travelBookModuleLoads.set(file,entry)}
+  if(!entry.promise){
+    // Keep the complete runtime graph in domain/, outside Vite's HTML asset rewriting.
+    const url=new URL('./domain/'+file,document.baseURI);
+    if(entry.attempt)url.searchParams.set('retry',String(entry.attempt));
+    entry.attempt++;
+    entry.promise=import(/* @vite-ignore */ url.href).catch(error=>{entry.promise=null;throw error});
+  }
+  return entry.promise;
+}
+function travelBookProposalApi(){return loadTravelBookModule('travel-book-proposal.mjs')}
+function travelBookBatchApi(){return loadTravelBookModule('travel-book-batch.mjs')}
+function travelBookEditorApi(){return loadTravelBookModule('travel-book-editor-state.mjs')}
 function updateTravelBookEntryVisibility(){const card=$('travelBookEntry');if(card)card.classList.toggle('hidden',!trip||isLondonTrip())}
 async function ensureTravelBookProject(){
   if(!trip||!session||isLondonTrip())throw new Error('Travel Book encara no està disponible per a aquest viatge.');
