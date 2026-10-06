@@ -113,3 +113,10 @@ test('ALB-05.5 persistence runtime is packaged and cached',()=>{
  assert.match(sw,/'\.\/domain\/travel-book-editor-state\.mjs'/);
  assert.match(sw,/freya-travel-release-6444-v3/);
 });
+
+
+test('ALB-05.5 hotfix packages the editor transitive browser dependency',()=>{
+ assert.match(pack,/'travel-book-composition\.mjs'/);
+ assert.match(sw,/'\.\/domain\/travel-book-composition\.mjs'/);
+ assert.match(sw,/freya-travel-release-6444-v4/);
+});
