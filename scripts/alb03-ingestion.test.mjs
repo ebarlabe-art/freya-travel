@@ -38,3 +38,30 @@ test('HTTP rejects forged actor/URL, oversized input and unauthenticated callers
 test('original is byte-for-byte, with its own MIME, extension and stable hash',async()=>{const f=fixture();const source=f.objects.get('trip-documents/source');await ingest(f.deps);const original=f.variants.find(v=>v.kind==='original');assert.deepEqual(f.objects.get('travel-book/'+original.storage_path),source);assert.equal(original.content_hash,await hash(source));assert.equal(original.mime_type,'image/jpeg');assert.equal(original.file_extension,'jpg');assert.notEqual(original.content_hash,f.asset.content_hash);});
 for(const format of ['heic','heif'])test(`${format} original is durable while derivatives are pending, including retries after source deletion`,async()=>{const f=fixture();f.deps.inspectSource=bytes=>({mime:'image/'+format,ext:format,width:4032,height:3024,orientation:0,byte_size:bytes.length});f.deps.processImage=async()=>{throw Error('DERIVATIVE_UNSUPPORTED');};const r=await ingest(f.deps);assert.equal(r.status,'derivative_pending');assert.equal(r.original_preserved,true);assert.equal(f.asset.status,'pending');assert.equal(f.variants.length,1);assert.equal(f.variants[0].mime_type,'image/'+format);f.objects.delete('trip-documents/source');const size=f.objects.size;assert.equal((await ingest(f.deps)).status,'derivative_pending');assert.equal(f.objects.size,size);assert.equal(f.variants.length,1);});
 test('retry after partial derivative failure uses preserved original even if source is deleted',async()=>{const f=fixture();const put=f.deps.storage.put;f.deps.storage.put=async(b,p,data,mime)=>{if(p.endsWith('thumbnail.png'))throw Error('STORAGE_ERROR');return put(b,p,data,mime);};await ingest(f.deps);assert.equal(f.variants.length,1);f.objects.delete('trip-documents/source');f.deps.storage.put=put;assert.equal((await ingest(f.deps)).status,'ready');assert.equal(f.variants.length,3);assert.equal(f.objects.size,3);});
+
+
+test('stale lease is propagated without a second finish attempt',async()=>{
+ const f=fixture();let finishes=0;
+ const rpc=f.deps.rpc;
+ f.deps.rpc=async(name,args)=>{
+  if(name==='alb03_finish_v1'){
+   finishes++;
+   throw Object.assign(Error('ALB_STALE_LEASE'),{code:'PT409'});
+  }
+  return rpc(name,args);
+ };
+ await assert.rejects(ingest(f.deps),error=>error?.code==='PT409'&&error?.message==='ALB_STALE_LEASE');
+ assert.equal(finishes,1);
+});
+
+test('HTTP exposes stale lease explicitly as a non-generic conflict',async()=>{
+ const f=fixture();
+ f.deps.rpc=async(name,args)=>{
+  if(name==='alb03_claim_v1')return {asset:{...f.asset},job:{...f.job},variants:[]};
+  throw Object.assign(Error('ALB_STALE_LEASE'),{code:'PT409'});
+ };
+ const h=createIngestHandler({...f.deps,authenticate:async()=>id(6)});
+ const response=await h(new Request('http://local/',{method:'POST',headers:{Authorization:'Bearer user'},body:JSON.stringify({asset_id:f.asset.id})}));
+ assert.equal(response.status,409);
+ assert.deepEqual(await response.json(),{error:'ALB_STALE_LEASE'});
+});
