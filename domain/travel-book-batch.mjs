@@ -20,6 +20,7 @@ export function classifyTravelBookProcessResponse({status,body={}}){
  if(status===200&&body?.status==='ready')return {state:'ready',retry:false};
  if(status===202&&body?.status==='derivative_pending')return {state:'derivative_pending',retry:false};
  if(status===401||status===403)return {state:'auth',retry:false};
+ if(status===409&&code==='ALB_STALE_LEASE')return {state:'stale_lease',retry:false};
  if(status===409||status===429||status===502||status===503||status===504)return {state:'transient',retry:true};
  if(status===422&&['STORAGE_ERROR','INGESTION_UNAVAILABLE'].includes(code))return {state:'transient',retry:true};
  return {state:'failed',retry:false};
