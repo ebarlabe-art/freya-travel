@@ -80,3 +80,26 @@ test('ALB-04 creates bounded deterministic pages for a navigable first book',()=
  assert.equal(section.pages.flatMap(page=>page.items.map(item=>item.asset_id)).join('|'),section.items.map(item=>item.asset_id).join('|'));
  assert.equal(validateInitialTravelBookProposal(proposal),true);
 });
+
+
+test('ALB-05 creative layer assigns the three supported visual styles deterministically',()=>{
+ const photos=Array.from({length:15},(_,i)=>({asset_id:id(200+i),status:'ready',local_date:'2026-09-12',selection_index:i,width_px:1600,height_px:1200}));
+ const proposal=buildInitialTravelBookProposal({...base,photos});
+ assert.equal(proposal.engine.creative_layer,'alb05-warm-editorial-v1');
+ const styles=proposal.sections[0].pages.map(page=>page.creative_style);
+ assert.deepEqual(styles,['scrapbook','scrapbook','narrative']);
+ assert.ok(proposal.sections[0].pages.every(page=>page.title&&Array.isArray(page.stickers)));
+ assert.equal(validateInitialTravelBookProposal(proposal),true);
+});
+
+test('ALB-05 promotes an explicit reviewed photo comment into narrative copy without inventing text',()=>{
+ const proposal=buildInitialTravelBookProposal({...base,photos:[
+  {asset_id:id(250),status:'ready',local_date:'2026-09-10',selection_index:0,width_px:1200,height_px:1600,title:'Primer bany a Cala Comte',title_reviewed:true,source_snapshot_ids:[id(251)]}
+ ]});
+ const page=proposal.sections[0].pages[0];
+ assert.equal(page.creative_style,'narrative');
+ assert.equal(page.subtitle,'Primer bany a Cala Comte');
+ assert.equal(page.subtitle_classification,'user_statement');
+ assert.deepEqual(page.stickers,['quote','sparkle']);
+ assert.equal(validateInitialTravelBookProposal(proposal),true);
+});
