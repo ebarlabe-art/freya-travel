@@ -137,3 +137,20 @@ test('ALB-05.3 proposes a different neutral title for a page',async()=>{
  assert.ok(alternative);
  assert.notEqual(alternative,page.title);
 });
+
+
+test('ALB-05.4 adds and removes user text on one exact photo',async()=>{
+ const mod=await import('../domain/travel-book-proposal.mjs');
+ const proposal=buildInitialTravelBookProposal({...base,photos:[
+  {asset_id:id(600),status:'ready',local_date:'2026-09-10',selection_index:0,width_px:1600,height_px:1200},
+  {asset_id:id(601),status:'ready',local_date:'2026-09-10',selection_index:1,width_px:1600,height_px:1200}
+ ]});
+ const edited=mod.editTravelBookPhotoOverlay(proposal,{section_index:0,page_index:0,item_index:1,text:'Quin dia!'});
+ assert.equal(edited.sections[0].pages[0].items[1].overlay_text,'Quin dia!');
+ assert.equal(edited.sections[0].pages[0].items[1].overlay_text_classification,'user_statement');
+ assert.equal(edited.sections[0].pages[0].items[0].overlay_text,null);
+ const cleared=mod.editTravelBookPhotoOverlay(edited,{section_index:0,page_index:0,item_index:1,text:''});
+ assert.equal(cleared.sections[0].pages[0].items[1].overlay_text,null);
+ assert.equal(cleared.sections[0].pages[0].items[1].overlay_text_classification,null);
+ assert.equal(validateInitialTravelBookProposal(cleared),true);
+});

@@ -69,3 +69,21 @@ test('ALB-05.3 keeps page edits scoped to the selected page and preserves index\
  assert.match(html,/section_index:sectionIndex,page_index:pageIndex/);
  assert.match(html,/state\.proposal=api\.editTravelBookPage/);
 });
+
+
+test('ALB-05.4 uses understandable composition names and exposes visible decoration labels',()=>{
+ assert.match(html,/>Foto protagonista<\/option>/);
+ assert.match(html,/>Collage<\/option>/);
+ assert.match(html,/>Història<\/option>/);
+ assert.match(html,/✨ Brilli/);
+ assert.match(html,/♡ Cor/);
+ assert.match(html,/▱ Postal/);
+});
+
+test('ALB-05.4 supports direct text overlays on each photo',()=>{
+ assert.match(html,/data-tb-photo-edit/);
+ assert.match(html,/Text sobre aquesta foto/);
+ assert.match(html,/travelBookApplyPhotoText/);
+ assert.match(html,/editTravelBookPhotoOverlay/);
+ assert.match(html,/travel-book-photo-overlay/);
+});
