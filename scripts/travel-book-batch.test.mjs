@@ -10,6 +10,7 @@ test('ALB-04 batch planner is stable, bounded to valid unique document identitie
 
 test('ALB-04 batch retry policy only retries transient transport/capacity failures',()=>{
  for(const status of [409,429,502,503,504])assert.equal(classifyTravelBookProcessResponse({status,body:{}}).retry,true);
+ assert.deepEqual(classifyTravelBookProcessResponse({status:409,body:{error:'ALB_STALE_LEASE'}}),{state:'stale_lease',retry:false});
  assert.equal(classifyTravelBookProcessResponse({status:422,body:{error:'STORAGE_ERROR'}}).retry,true);
  assert.equal(classifyTravelBookProcessResponse({status:422,body:{error:'SOURCE_MISSING'}}).retry,false);
  assert.equal(classifyTravelBookProcessResponse({status:401,body:{}}).state,'auth');

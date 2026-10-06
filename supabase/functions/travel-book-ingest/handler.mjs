@@ -3,6 +3,7 @@ export const BUCKET='travel-book';
 export const pipelineVersion=1;
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const allowedErrors=new Set(['SOURCE_MISSING','SOURCE_CHANGED','INVALID_IMAGE','LIMIT_EXCEEDED','STORAGE_ERROR','MASTER_MISSING','DERIVATIVE_UNSUPPORTED','DERIVATIVE_CAPACITY','DERIVATIVE_COLOR','DERIVATIVE_FAILED']);
+export const isStaleLeaseError=error=>error?.code==='PT409'&&error?.message==='ALB_STALE_LEASE';
 export function editorialPath(asset,kind,ext='png'){
  if(!['original','preview','thumbnail'].includes(kind)||!['jpg','png','webp','heic','heif'].includes(ext)||![asset.trip_id,asset.book_id,asset.asset_key].every(v=>uuid.test(v))||!Number.isSafeInteger(asset.version)||asset.version<1)throw Error('INVALID_REQUEST');
  return `${asset.trip_id}/${asset.book_id}/${asset.asset_key}/${asset.version}/v1/${kind}.${ext}`;
@@ -46,6 +47,7 @@ export async function ingest({assetId,actor,auth,rpc,storage,processImage,inspec
   }
   await finish(d);return {asset_id:assetId,status:'ready',reused:false};
  }catch(error){
+  if(isStaleLeaseError(error))throw error;
   const code=allowedErrors.has(error.message)?error.message:error.message==='ALB_SOURCE_CHANGED'?'SOURCE_CHANGED':'STORAGE_ERROR';
   await finish(null,code);
   return {asset_id:assetId,status:original&&code.startsWith('DERIVATIVE_')?'derivative_pending':'unavailable',original_preserved:!!original,error:code};
@@ -69,8 +71,9 @@ export function createIngestHandler(deps){
    const result=await ingest({...deps,assetId:body.asset_id,actor,auth});
    return reply(result,result.status==='ready'?200:result.status==='derivative_pending'?202:422);
   }catch(error){
-   const status=error.code==='42501'?403:error.code==='55P03'||error.code==='40001'?409:error instanceof SyntaxError?400:503;
-   return reply({error:status===403?'ACCESS_DENIED':status===409?'RETRY_LATER':status===400?'INVALID_REQUEST':'INGESTION_UNAVAILABLE'},status);
+   const stale=isStaleLeaseError(error);
+   const status=error.code==='42501'?403:error.code==='55P03'||error.code==='40001'||stale?409:error instanceof SyntaxError?400:503;
+   return reply({error:status===403?'ACCESS_DENIED':stale?'ALB_STALE_LEASE':status===409?'RETRY_LATER':status===400?'INVALID_REQUEST':'INGESTION_UNAVAILABLE'},status);
   }
  };
 }

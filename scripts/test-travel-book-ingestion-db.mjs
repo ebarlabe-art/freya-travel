@@ -2,7 +2,7 @@ import {readFileSync,readdirSync} from 'node:fs';
 import {runDatabaseTests} from './test-travel-book-db.mjs';
 await runDatabaseTests({async afterBase({sql,file,container,database}){
  file('supabase/tests/alb03_storage_baseline.sql');
- for(const name of readdirSync('supabase/migrations').filter(n=>n.endsWith('_travel_book_ingestion_v1.sql')))file('supabase/migrations/'+name);
+ for(const name of readdirSync('supabase/migrations').filter(n=>n.endsWith('_travel_book_ingestion_v1.sql')||n.endsWith('_fix_alb03_stale_lease_retry_storm.sql')).sort())file('supabase/migrations/'+name);
  sql(readFileSync('supabase/tests/travel_book_fixture.sql','utf8')+readFileSync('supabase/tests/alb03_ingestion_rollback.sql','utf8'));
  console.log('PASS ALB-03 SQL ingestion, permissions, preservation and lifecycle');
  // Existing behavioral contracts run again against the extended schema.

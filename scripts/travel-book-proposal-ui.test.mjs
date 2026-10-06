@@ -26,7 +26,7 @@ test('ALB-04 UI consumes the pure proposal module and only ready editorial asset
 test('ALB-04 runtime module is packaged and cached for the PWA',()=>{
  assert.match(pack,/'travel-book-proposal\.mjs'/);
  assert.match(sw,/'\.\/domain\/travel-book-proposal\.mjs'/); assert.match(sw,/'\.\/domain\/travel-book-batch\.mjs'/);
- assert.match(sw,/freya-travel-release-6444-v3/);
+ assert.match(sw,/freya-travel-release-6444-v4/);
 });
 
 test('ALB-04 preview communicates partial source coverage instead of pretending the full gallery is ready',()=>{
@@ -111,7 +111,7 @@ test('ALB-05.5 stickers are movable with pointer input and persist percentage po
 test('ALB-05.5 persistence runtime is packaged and cached',()=>{
  assert.match(pack,/'travel-book-editor-state\.mjs'/);
  assert.match(sw,/'\.\/domain\/travel-book-editor-state\.mjs'/);
- assert.match(sw,/freya-travel-release-6444-v3/);
+ assert.match(sw,/freya-travel-release-6444-v4/);
 });
 
 
@@ -119,4 +119,9 @@ test('ALB-05.5 hotfix packages the editor transitive browser dependency',()=>{
  assert.match(pack,/'travel-book-composition\.mjs'/);
  assert.match(sw,/'\.\/domain\/travel-book-composition\.mjs'/);
  assert.match(sw,/freya-travel-release-6444-v4/);
+});
+
+
+test('ALB-03 stale lease stops the browser batch instead of being counted as retryable noise',()=>{
+ assert.match(html,/error\?\.code==='auth'\|\|error\?\.code==='stale_lease'/);
 });
