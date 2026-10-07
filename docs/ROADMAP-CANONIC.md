@@ -155,6 +155,8 @@ Pendents i ampliacions:
 - correu/reserva quan sigui útil;
 - Word/Excel quan aporti valor;
 - **importar un itinerari complet des d'un PDF**: detectar dies, hores, llocs, activitats i altres elements del planning, mostrar una previsualització editable i, només després de confirmació, construir l'itinerari dins Freya;
+- **revisar la coherència de l'itinerari abans d'escriure**: detectar solapaments, seqüències horàries incoherents, marges insuficients entre punts, canvis de dia o zona horària problemàtics i altres conflictes que es puguin acreditar amb les dades disponibles; reutilitzar les regles de revisió de TB-09 sempre que sigui possible;
+- mostrar els conflictes com a avisos amb explicació, sense corregir ni reordenar automàticament el viatge;
 - evitar duplicats si part de l'itinerari ja existeix;
 - conservar el document original com a evidència/font del viatge.
 
