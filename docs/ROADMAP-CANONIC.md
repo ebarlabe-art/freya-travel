@@ -149,16 +149,18 @@ Ha d'arribar a poder detectar/proposar, entre altres:
 ### A2. Importació intel·ligent
 **Prioritat: P0/P1**
 
-Entrada única de:
-- PDF;
-- captura de pantalla;
-- correu/reserva;
-- Word/Excel quan sigui útil;
-- document de vol/hotel/activitat.
+La base d'importació de reserves ja està implementada per PDF/imatge en vols, allotjament, activitats, transport local i cotxe, amb revisió abans d'escriure.
+
+Pendents i ampliacions:
+- correu/reserva quan sigui útil;
+- Word/Excel quan aporti valor;
+- **importar un itinerari complet des d'un PDF**: detectar dies, hores, llocs, activitats i altres elements del planning, mostrar una previsualització editable i, només després de confirmació, construir l'itinerari dins Freya;
+- evitar duplicats si part de l'itinerari ja existeix;
+- conservar el document original com a evidència/font del viatge.
 
 Freya ha d'extreure una proposta de dades i **demanar confirmació abans d'escriure**.
 
-**CLOSED quan:** un document de reserva pot convertir-se en la seva peça operativa sense reintroduir manualment la mateixa informació.
+**CLOSED quan:** una reserva o un itinerari en PDF es pot convertir en peces operatives de Freya sense reintroduir manualment la mateixa informació.
 
 ### A3. Participants
 **Prioritat: P1**
@@ -207,11 +209,30 @@ Prova física real:
 - conflictes Realtime.
 
 ### B3. Offline V2
-**Prioritat: 🔵 només si la prova real ho justifica**
+**Prioritat: P0 abans de publicació**
 
-Possible cua de canvis locals amb sincronització posterior.
+La prova real ja ha demostrat que l'offline actual no és suficient: la PWA pot obrir l'esquelet de l'app, però no garanteix l'accés útil a les dades del viatge quan no hi ha xarxa.
 
-No s'implementa per inèrcia. Només si l'ús real demostra que editar sense xarxa és necessari i es pot resoldre sense conflictes opacs.
+**Primera capa obligatòria (P0): consulta offline fiable**
+- Home Ara/Següent;
+- itinerari;
+- vols;
+- allotjament;
+- activitats;
+- transport local;
+- cotxe;
+- checklist;
+- aparcament;
+- documents/entrades essencials;
+- indicador clar de mode offline i hora de l'última sincronització;
+- resincronització automàtica en recuperar connexió.
+
+**Segona capa (P1): escriptures offline**
+- valorar Fet/Desfer i altres canvis locals amb cua de sincronització;
+- resolució explícita de conflictes entre participants;
+- mai mostrar un fals "desat" si el canvi encara no ha arribat al servidor.
+
+**CLOSED P0 quan:** un viatger pot perdre cobertura i continuar consultant la informació essencial del viatge de manera fiable.
 
 ---
 
