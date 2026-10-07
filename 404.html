@@ -4913,9 +4913,9 @@ function renderTripHome(){
   const state=deriveTripHomeState({trip,ready,items:homeProjection,checklist:null},new Date());
   const heading={future:`Falten ${state.daysUntil} ${state.daysUntil===1?'dia':'dies'}`,active:'El teu viatge, ara',past:'El que vas fer',setup:'Prepara el teu viatge'}[state.phase];
   const home=$('tripHome');
-  const preTrip=state.phase==='future'||state.phase==='setup';
-  if(home)home.classList.toggle('hidden',preTrip);
-  if(preTrip){
+  const hideLiveHome=state.phase==='future'||state.phase==='setup'||state.phase==='past';
+  if(home)home.classList.toggle('hidden',hideLiveHome);
+  if(hideLiveHome){
     const container=$('tripHomeContent');
     if(container){container.innerHTML='';container._homeHtml=null}
     return;

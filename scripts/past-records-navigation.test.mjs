@@ -26,6 +26,11 @@ test('past-trip shell changes hierarchy instead of only labels',()=>{
   assert.ok(html.includes("genericToolsTitle').textContent=pastTrip?'Arxiu i eines':'Eines del viatge'"));
 });
 
+test('past trips never show the DURANT home block',()=>{
+  assert.ok(html.includes("const hideLiveHome=state.phase==='future'||state.phase==='setup'||state.phase==='past'"));
+  assert.ok(html.includes("home.classList.toggle('hidden',hideLiveHome)"));
+});
+
 test('canonical roadmap keeps the four-stage product compass and defines Records',()=>{
   assert.ok(roadmap.includes('Somiar → Preparar → Viure → Recordar'));
   assert.ok(roadmap.includes('Records com a Home natural del viatge passat'));
