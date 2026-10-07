@@ -180,7 +180,7 @@ test('past trips promote Records ahead of operational sections',()=>{
 
 test('Fotos leaves tools when the trip is past and old Records tool is gone',()=>{
   assert.match(html,/id="genericPhotosModuleCard"/);
-  assert.match(html,/genericPhotosModuleCard'\)\?\.classList\.toggle\('hidden',pastTrip\)/);
+  assert.ok(html.includes("genericPhotosModuleCard')?.classList.toggle('hidden',pastTrip)"));
   assert.doesNotMatch(html,/id="genericRecordsModuleCard"/);
 });
 
