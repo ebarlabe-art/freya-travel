@@ -6,40 +6,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply-past-records-once:
-    if: github.head_ref == 'nav/tools-taxonomy'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: nav/tools-taxonomy
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Apply canonical past-trip Records architecture
-        run: node scripts/apply-past-records-architecture.mjs
-      - name: Validate focused regression
-        run: |
-          node --test scripts/past-records-navigation.test.mjs
-          npm run entries:check
-      - name: Restore normal CI and commit product changes
-        run: |
-          git fetch origin main
-          git checkout origin/main -- .github/workflows/pr-checks.yml
-          git rm -f scripts/apply-past-records-architecture.mjs
-          git rm -f .github/workflows/apply-past-records.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html 404.html docs/ROADMAP-CANONIC.md scripts/past-records-navigation.test.mjs .github/workflows/pr-checks.yml
-          git commit -m "Make Records the home of past trips"
-          git push origin HEAD:nav/tools-taxonomy
-
   a2-test-build:
     runs-on: ubuntu-latest
     steps:

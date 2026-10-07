@@ -15,6 +15,8 @@ Freya Travel no és només una app per guardar reserves. És un **assistent pers
 
 **Somiar → Preparar → Viure → Recordar**
 
+Aquesta seqüència és també la jerarquia de navegació del producte: Freya ha de canviar el protagonisme de la interfície segons el moment del viatge. Quan un viatge acaba, **Recordar passa al davant**.
+
 Principis que continuen sent obligatoris:
 
 1. **No fer perdre temps al viatger.**
@@ -215,7 +217,20 @@ No s'implementa per inèrcia. Només si l'ús real demostra que editar sense xar
 
 ## FASE C · Construir DESPRÉS: el viatge no s'acaba quan tornes
 
-### C1. Crear àlbum
+### C0. Records com a Home natural del viatge passat
+**Prioritat: P0**
+
+Quan el viatge passa a estat passat, Freya canvia la jerarquia de la pantalla: **Records passa al davant** i deixa de ser una eina més. Les peces operatives continuen accessibles com a arxiu, però ja no són la prioritat principal.
+
+Records agrupa, sense duplicar dades:
+- Travel Book;
+- Fotos;
+- Diari;
+- Mapes del record.
+
+Les fotos deixen de presentar-se com una eina independent en els viatges passats i passen a formar part de Records. La mateixa galeria i les mateixes dades es reutilitzen; només canvia la navegació.
+
+### C1. Crear àlbum / Travel Book
 **Prioritat: P0 dins de DESPRÉS**
 
 A partir de les fotos contextuals existents:
@@ -223,25 +238,6 @@ A partir de les fotos contextuals existents:
 - drecera “Crear àlbum”;
 - selecció/reordenació;
 - títols i petits records;
-- base reutilitzable pel Travel Book.
-
-### C2. Diari
-**Prioritat: P1**
-
-Per dia:
-- text;
-- fotos;
-- notes/records;
-- activitats i llocs vinculats;
-- restaurants;
-- eventualment àudio/vídeo/ubicació si aporten valor.
-
-No duplicar informació ja existent: el diari la reutilitza.
-
-### C3. Travel Book
-**Prioritat: P0 estratègica**
-
-La peça estrella de RECORDAR:
 - portada;
 - mapa;
 - itinerari;
@@ -254,6 +250,35 @@ La peça estrella de RECORDAR:
 - base per imprimir.
 
 **CLOSED quan:** un viatge acabat pot transformar-se en un record coherent sense reconstruir-lo manualment.
+
+### C2. Diari de viatge, pensat per capturar sense robar temps
+**Prioritat: P1**
+
+El diari s'ha de poder alimentar durant el viatge amb el mínim esforç, especialment **amb veu** des del mòbil. L'objectiu no és obligar a escriure mentre es viatja.
+
+Per dia:
+- nota de veu ràpida;
+- transcripció editable;
+- text manual opcional;
+- fotos;
+- notes/records;
+- activitats i llocs vinculats;
+- restaurants i moments;
+- data i context reutilitzats automàticament.
+
+La veu s'ha de convertir en contingut reutilitzable pel Diari i pel Travel Book. No duplicar informació ja existent ni demanar a l'usuari que torni a explicar allò que Freya ja sap.
+
+### C3. Mapes del record
+**Prioritat: P1**
+
+Crear una representació visual del que es va fer:
+- mapa de cada dia;
+- mapa global del viatge;
+- punts procedents de l'itinerari, activitats, allotjaments i llocs marcats com a fets;
+- ordre del recorregut quan es pugui derivar amb fiabilitat;
+- reutilització dins de Records i del Travel Book.
+
+Per defecte Freya **no ha de rastrejar contínuament la ubicació**. El mapa es reconstrueix a partir de la informació del viatge. Un eventual track GPS real seria una funcionalitat separada, explícita i opt-in.
 
 ---
 
