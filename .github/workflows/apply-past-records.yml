@@ -1,0 +1,38 @@
+name: Apply past Records architecture
+
+on:
+  push:
+    branches: [nav/tools-taxonomy]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-once:
+    if: contains(github.event.head_commit.message, 'Stage Records architecture transform')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: nav/tools-taxonomy
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply canonical Records architecture
+        run: node scripts/apply-past-records-architecture.mjs
+      - name: Validate focused regression and entry parity
+        run: |
+          node --test scripts/past-records-navigation.test.mjs
+          npm run entries:check
+      - name: Commit generated product source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm scripts/apply-past-records-architecture.mjs
+          git rm .github/workflows/apply-past-records.yml
+          git add index.html 404.html docs/ROADMAP-CANONIC.md scripts/past-records-navigation.test.mjs
+          git commit -m "Make Records the home of past trips"
+          git push origin HEAD:nav/tools-taxonomy
