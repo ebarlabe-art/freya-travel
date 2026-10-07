@@ -185,18 +185,18 @@ test('Fotos leaves tools when the trip is past and old Records tool is gone',()=
 });
 
 test('past-trip shell changes hierarchy instead of only labels',()=>{
-  assert.match(html,/genericDashboardIntro'\)\?\.classList\.toggle\('hidden',pastTrip\)/);
-  assert.match(html,/genericBuildCard'\)\?\.classList\.toggle\('hidden',pastTrip\|\|!trip\.tb_handoff\)/);
-  assert.match(html,/genericConfirmedTitle'\).*?'El viatge'/);
-  assert.match(html,/genericToolsTitle'\).*?'Arxiu i eines'/);
+  assert.ok(html.includes("genericDashboardIntro')?.classList.toggle('hidden',pastTrip)"));
+  assert.ok(html.includes("genericBuildCard')?.classList.toggle('hidden',pastTrip||!trip.tb_handoff)"));
+  assert.ok(html.includes("genericConfirmedTitle').textContent=pastTrip?'El viatge':'Peces del viatge'"));
+  assert.ok(html.includes("genericToolsTitle').textContent=pastTrip?'Arxiu i eines':'Eines del viatge'"));
 });
 
 test('canonical roadmap keeps the four-stage product compass and defines Records',()=>{
-  assert.match(roadmap,/Somiar → Preparar → Viure → Recordar/);
-  assert.match(roadmap,/Records com a Home natural del viatge passat/);
-  assert.match(roadmap,/especialment \*\*amb veu\*\*/);
-  assert.match(roadmap,/### C3\. Mapes del record/);
-  assert.match(roadmap,/no ha de rastrejar contínuament la ubicació/);
+  assert.ok(roadmap.includes('Somiar → Preparar → Viure → Recordar'));
+  assert.ok(roadmap.includes('Records com a Home natural del viatge passat'));
+  assert.ok(roadmap.includes('especialment **amb veu**'));
+  assert.ok(roadmap.includes('### C3. Mapes del record'));
+  assert.ok(roadmap.includes('no ha de rastrejar contínuament la ubicació'));
 });
 `;
 await writeFile(testUrl,test);
