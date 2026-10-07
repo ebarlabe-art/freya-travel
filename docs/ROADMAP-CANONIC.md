@@ -1,7 +1,7 @@
 # Freya Travel · Roadmap canònic
 
-**Versió:** 1.0  
-**Data de tall:** 1 d'octubre de 2026  
+**Versió:** 1.1  
+**Data de tall:** 7 d'octubre de 2026  
 **Versió publicada de l'app en aquest tall:** 6.4.19  
 **Estat del document:** CANÒNIC
 
