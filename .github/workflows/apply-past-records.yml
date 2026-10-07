@@ -9,7 +9,6 @@ permissions:
 
 jobs:
   apply-once:
-    if: contains(github.event.head_commit.message, 'Stage Records architecture transform')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,12 +26,14 @@ jobs:
         run: |
           node --test scripts/past-records-navigation.test.mjs
           npm run entries:check
-      - name: Commit generated product source
+      - name: Restore normal CI and commit product changes
         run: |
+          git fetch origin main
+          git checkout origin/main -- .github/workflows/pr-checks.yml
+          git rm -f scripts/apply-past-records-architecture.mjs
+          git rm -f .github/workflows/apply-past-records.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm scripts/apply-past-records-architecture.mjs
-          git rm .github/workflows/apply-past-records.yml
-          git add index.html 404.html docs/ROADMAP-CANONIC.md scripts/past-records-navigation.test.mjs
+          git add index.html 404.html docs/ROADMAP-CANONIC.md scripts/past-records-navigation.test.mjs .github/workflows/pr-checks.yml
           git commit -m "Make Records the home of past trips"
           git push origin HEAD:nav/tools-taxonomy
