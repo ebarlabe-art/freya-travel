@@ -1,7 +1,8 @@
 // LOCAL ONLY: fixed Docker container, own disposable database. Never reads remote URLs/credentials.
 import {spawnSync} from 'node:child_process';
 import {readFileSync,readdirSync} from 'node:fs';
-const container=process.argv.includes('--ci-container')?'freya_alb02_ci':'supabase_db_freya-travel';
+const ciContainer=process.env.FREYA_CI_POSTGRES_CONTAINER||'freya_alb02_ci';
+const container=process.argv.includes('--ci-container')?ciContainer:'supabase_db_freya-travel';
 const database=`freya_alb02_test_${process.pid}`;
 export function runDatabaseTests({afterBase}={}){
  const docker=(args,input)=>{const r=spawnSync('docker',['exec','-i',container,...args],{input,encoding:'utf8',maxBuffer:16*1024*1024});if(r.status!==0)throw Error(r.error?.message||r.stderr||r.stdout);return r.stdout};
