@@ -582,7 +582,8 @@
           <button class="generic-module-card is-ready" type="button" data-open="parkingView"><span class="generic-module-icon">🚗</span><span class="generic-module-copy"><strong>Aparcament</strong><small id="genericParkingModuleStatus">A punt per utilitzar</small></span><span class="generic-module-arrow">›</span></button>
           <button class="generic-module-card is-ready" type="button" data-open="weatherView"><span class="generic-module-icon">🌦️</span><span class="generic-module-copy"><strong>Temps</strong><small>Previsió del viatge</small></span><span class="generic-module-arrow">›</span></button>
           <button class="generic-module-card" type="button" data-generic-module="currency"><span class="generic-module-icon">💱</span><span class="generic-module-copy"><strong>Moneda</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
-          <button class="generic-module-card is-ready" type="button" data-open="photosView"><span class="generic-module-icon">📸</span><span class="generic-module-copy"><strong>Fotos</strong><small id="genericPhotosModuleStatus">Àlbum compartit del viatge</small></span><span class="generic-module-arrow">›</span></button>
+          <button class="generic-module-card is-ready" type="button" data-open="photosView"><span class="generic-module-icon">📸</span><span class="generic-module-copy"><strong>Fotos</strong><small id="genericPhotosModuleStatus">Galeria compartida del viatge</small></span><span class="generic-module-arrow">›</span></button>
+          <button id="genericRecordsModuleCard" class="generic-module-card is-ready" type="button" data-open="travelBookView"><span class="generic-module-icon">📖</span><span class="generic-module-copy"><strong>Records</strong><small>Travel Book del viatge</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericTravelersToggle" class="generic-module-card is-ready" type="button"><span class="generic-module-icon">👥</span><span class="generic-module-copy"><strong>Viatgers</strong><small id="genericTravelersModuleStatus">Invitacions del viatge</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericTripSettingsToggle" class="generic-module-card is-ready hidden" type="button"><span class="generic-module-icon">⚙️</span><span class="generic-module-copy"><strong>Configuració</strong><small>Nom i dates</small></span><span class="generic-module-arrow">›</span></button>
         </div>
@@ -1367,7 +1368,7 @@
       <button class="ghost back" data-back>← Torna al tauler</button>
       <div class="photo-shell">
         <section class="photo-hero">
-          <small id="photoHeroKicker">Records · Londres 2026</small>
+          <small id="photoHeroKicker">Fotos · Londres 2026</small>
           <h2>📸 El vostre àlbum compartit</h2>
           <p id="photoHeroCopy">Pugeu fotografies des del mòbil i compartiu-les entre l’Eva i en Xesc. Apareixeran aquí al moment.</p>
         </section>
@@ -1394,7 +1395,7 @@
           <p id="travelBookEntryMessage" role="status" aria-live="polite"></p>
         </section>
         <section>
-          <div class="photo-toolbar"><h2>Els vostres records</h2><span id="photoCountLabel" class="photo-count">0 fotos</span></div>
+          <div class="photo-toolbar"><h2>Les vostres fotos</h2><span id="photoCountLabel" class="photo-count">0 fotos</span></div>
 
           <div id="photosList" class="photo-grid"></div>
           <div id="photosEmpty" class="photo-empty">Encara no hi ha cap foto. La primera serà l’inici del vostre àlbum de Londres. 💜</div>
@@ -1403,7 +1404,7 @@
     </div>
 
     <div id="travelBookView" class="hidden">
-      <button class="ghost back" data-open="photosView">← Tornar a Fotos</button>
+      <button id="travelBookBack" class="ghost back" type="button">← Tornar</button>
       <div class="travel-book-shell">
         <section class="travel-book-hero">
           <small>📖 Travel Book · Primera proposta</small>
@@ -1852,7 +1853,7 @@ const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hidden'
 function msg(id,text,error=false){const el=$(id);el.textContent=text;el.className='message'+(error?' error':'');text?show(id):hide(id)}
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function isLondonTrip(value=trip){return value?.experience_key==='london-2026'}
-let travelBookProposalState=null,travelBookBatchRunning=false,travelBookSaveQueue=Promise.resolve();
+let travelBookProposalState=null,travelBookBatchRunning=false,travelBookSaveQueue=Promise.resolve(),travelBookReturnView='photosView';
 const travelBookModuleLoads=new Map();
 function loadTravelBookModule(file){
   let entry=travelBookModuleLoads.get(file);
@@ -2223,6 +2224,7 @@ async function openTravelBookFromPhotos(){
   try{
     const book=await ensureTravelBookProject();
     if(trip?.id!==tripId)return;
+    travelBookReturnView='photosView';
     setAppView('travelBookView');
     status.textContent='';
     runTravelBookBatch({automatic:true});
@@ -4913,8 +4915,7 @@ function renderTripHome(){
     return;
   }
   const loading=!!agendaBatch||agendaRequests.size>0||Object.values(itinerarySourceReady).every(value=>value===null)&&!tripHomeAgendaAttempted;
-  let html=`<header class="trip-home-heading"><h2>${esc(heading)}</h2><p>${state.phase==='active'?'Segons el planning · els horaris no confirmen que hi siguis.':state.phase==='future'?'Els propers compromisos i tot el que falta preparar.':state.phase==='past'?'Torna a les fotos, les notes i els llocs del viatge.':'Completa les dates i la zona horària per situar el planning.'}</p></header>`;
-  if(state.phase==='past')html+='<div class="trip-home-actions"><button type="button" data-home-view="photosView">📸 Fotos del viatge</button><button type="button" data-home-view="itineraryView">📅 Planning i records</button></div>';
+  let html=`<header class="trip-home-heading"><h2>${esc(heading)}</h2><p>${state.phase==='active'?'Segons el planning · els horaris no confirmen que hi siguis.':state.phase==='future'?'Els propers compromisos i tot el que falta preparar.':state.phase==='past'?'Reviu el viatge des de Fotos i Records, cadascun amb el seu espai.':'Completa les dates i la zona horària per situar el planning.'}</p></header>`;
   if(!ready)html+=`<p role="status">${loading?'Carregant el context del viatge…':'No tenim tota l’agenda disponible. No podem determinar ARA / SEGÜENT amb fiabilitat.'}</p>${loading?'':'<button type="button" data-home-retry>Torna-ho a provar</button>'}`;
   else if(state.phase!=='past'){
     html+=state.current.map((item,index)=>tripHomeCard(item,index?'TAMBÉ PREVIST ARA · coincidència':'ARA · previst segons el planning')).join('');
@@ -5731,7 +5732,7 @@ function updateTripPresentation(){
   if(!trip)return;
   if($('expenseDate'))$('expenseDate').value=trip.start_date||'';
   if($('documentTitle'))$('documentTitle').placeholder=london?'Nom del document (p. ex. Les Misérables)':'Nom del document';
-  if($('photoHeroKicker'))$('photoHeroKicker').textContent=`Records · ${trip.name}`;
+  if($('photoHeroKicker'))$('photoHeroKicker').textContent=`Fotos · ${trip.name}`;
   if($('photoHeroCopy'))$('photoHeroCopy').textContent=london?'Pugeu fotografies des del mòbil i compartiu-les entre l’Eva i en Xesc. Apareixeran aquí al moment.':'Pugeu fotografies des del mòbil i compartiu-les amb els membres del viatge. Apareixeran aquí al moment.';
   if($('photosEmpty'))$('photosEmpty').textContent=london?'Encara no hi ha cap foto. La primera serà l’inici del vostre àlbum de Londres. 💜':'Encara no hi ha cap foto. La primera serà l’inici de l’àlbum del viatge.';
   if(london){
@@ -5961,6 +5962,7 @@ async function toggleItem(id,done){if(!trip)return;const tripId=trip.id,generati
 async function deleteItem(id,templateKey=''){if(!trip)return;const tripId=trip.id,generation=tripLoadGeneration,dismissTemplate=!isLondonTrip()&&!!templateKey;const query=dismissTemplate?db.from('checklist_items').update({dismissed:true}).eq('id',id).eq('trip_id',tripId):db.from('checklist_items').delete().eq('id',id).eq('trip_id',tripId);const {error}=await query;if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
 document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
   const fromBuild=!!b.closest('#buildView');
+  if(b.dataset.open==='travelBookView')travelBookReturnView=visibleAppView();
   if(fromBuild&&['genericFlightsView','accommodationView','activitiesView','localTransportView','carRentalView'].includes(b.dataset.open))setOperationalReturnRoute(b.dataset.open,'buildView');
   else if(!['documentsView'].includes(b.dataset.open))clearModuleReturnContext();
   if(b.dataset.open==='documentsView'){clearDocumentsReturnContext();clearAccommodationVoucherFocus()}
@@ -5969,6 +5971,7 @@ document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
   if(b.dataset.open==='localTransportView'&&!validItinerarySourceContext())resetLocalTransportForm();
   updateItinerarySourceBack();setAppView(b.dataset.open)
 });
+$('travelBookBack').onclick=()=>setAppView(travelBookReturnView||tripDashboardId());
 $('tripReviewBack').onclick=()=>setAppView('buildView');$('backToTrips').onclick=returnFromHomeTrip;document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=returnFromHomeTrip);document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-generic-module]').forEach(b=>b.onclick=()=>openGenericModule(b.dataset.genericModule));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView(tripDashboardId()));document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
 document.querySelectorAll('[data-source-back]').forEach(button=>button.onclick=handleItinerarySourceBack);
 $('refreshGenericItinerary').onclick=()=>loadGenericItinerary(true);
