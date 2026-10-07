@@ -197,9 +197,9 @@ test('partial render has no authoritative NOW/NEXT card and offers retry',()=>{
   const {content}=renderHarness([item('would-be-current')],{ready:false});
   assert.match(content,/No tenim tota l’agenda/);assert.match(content,/data-home-retry/);assert.doesNotMatch(content,/would-be-current/);
 });
-test('past render offers existing gallery/planning, never fictitious album creation',()=>{
+test('past render does not duplicate Fotos or Itinerari shortcuts',()=>{
   const {content}=renderHarness([],{trip:{...trip,end_date:'2026-09-09',start_date:'2026-09-08'}});
-  assert.match(content,/Un viatge per recordar/);assert.match(content,/data-home-view="photosView"/);assert.doesNotMatch(content,/Crear àlbum/);
+  assert.match(content,/Un viatge per recordar/);assert.doesNotMatch(content,/data-home-view="photosView"/);assert.doesNotMatch(content,/Planning i records/);assert.doesNotMatch(content,/Crear àlbum/);
 });
 test('London render leaves Home untouched',()=>{
   const {content}=renderHarness([item('a')],{london:true});assert.equal(content,'');
@@ -208,9 +208,9 @@ test('completed Home card stays visible in Fet avui with undo and a distinct res
   const {content}=renderHarness([item('done',{isCompleted:true,completedAt:'2026-09-10T10:15:00Z'})]);
   assert.match(content,/<h3>Fet avui<\/h3>/);assert.match(content,/Desfer/);assert.match(content,/trip-progress-badge/);assert.match(content,/generic-itinerary-status confirmed/);assert.doesNotMatch(content,/ARA · previst/);
 });
-test('past trip still exposes completed items and undo, not just gallery',()=>{
+test('past trip still exposes completed items and undo without duplicate navigation',()=>{
   const {content}=renderHarness([item('done',{isCompleted:true,completedAt:'2026-09-09T10:15:00Z'})],{trip:{...trip,start_date:'2026-09-08',end_date:'2026-09-09'}});
-  assert.match(content,/Altres elements fets/);assert.match(content,/Desfer/);assert.match(content,/Fotos del viatge/);
+  assert.match(content,/Altres elements fets/);assert.match(content,/Desfer/);assert.doesNotMatch(content,/Fotos del viatge/);assert.doesNotMatch(content,/Planning i records/);
 });
 
 
