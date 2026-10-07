@@ -1,0 +1,37 @@
+name: Apply past live-home cleanup
+
+on:
+  push:
+    branches: [fix/past-hide-live-home]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-once:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/past-hide-live-home
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply cleanup
+        run: node scripts/apply-hide-past-live-home.mjs
+      - name: Validate focused regression
+        run: |
+          node --test scripts/past-records-navigation.test.mjs
+          npm run entries:check
+      - name: Commit real product changes and remove temporary files
+        run: |
+          git rm scripts/apply-hide-past-live-home.mjs
+          git rm .github/workflows/apply-past-live-home-cleanup.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html 404.html scripts/past-records-navigation.test.mjs
+          git commit -m "Hide DURANT home on past trips"
+          git push origin HEAD:fix/past-hide-live-home
