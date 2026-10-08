@@ -52,8 +52,8 @@ test('user, trip, generation, London are independent isolation guards',()=>{
  s.isLondonTrip=()=>true;assert.equal(s.photoScopeCurrent(scope),false);
 });
 test('selection: limit20, stable batch/index, repeated selection ignored, invalid isolated, no inferred context',()=>{
- const {s,get}=harness(),file=(i,type='image/jpeg')=>({name:`${i}.jpg`,size:10,lastModified:i,type});
- s.selectPhotoFiles([file(1),file(2,'image/heic')]);assert.equal(get('photoQueue.length'),2);assert.equal(get('photoQueue[0].status'),'pending');assert.equal(get('photoQueue[1].status'),'error');assert.equal(get('photoQueue[0].context.local_date'),null);
+ const {s,get}=harness(),file=(i,type='image/jpeg')=>({name:`${i}.${type==='image/gif'?'gif':'jpg'}`,size:10,lastModified:i,type});
+ s.selectPhotoFiles([file(1),file(2,'image/gif')]);assert.equal(get('photoQueue.length'),2);assert.equal(get('photoQueue[0].status'),'pending');assert.equal(get('photoQueue[1].status'),'error');assert.equal(get('photoQueue[0].context.local_date'),null);
  s.selectPhotoFiles([file(1),file(3)]);assert.equal(get('photoQueue.length'),3);assert.equal(get('photoQueue[2].index'),2);assert.equal(get('photoQueue[0].batchId===photoQueue[2].batchId'),true);
  s.selectPhotoFiles(Array.from({length:18},(_,i)=>file(i+4)));assert.equal(get('photoQueue.length'),3);
  s.selectPhotoFiles(Array.from({length:17},(_,i)=>file(i+4)));assert.equal(get('photoQueue.length'),20);
@@ -188,13 +188,14 @@ test('source action offers only activity/manual; explicit click proposes source/
  s.trip.id='b';s.view=null;button.onclick();assert.equal(s.view,null);
 });
 test('unsupported formats, empty and huge files have individual clear errors',()=>{
- const {s}=harness();for(const type of ['image/heic','image/heif','video/mp4','image/svg+xml'])assert.match(s.photoFileError({type,size:1}),/Format/);
- assert.match(s.photoFileError({type:'image/jpeg',size:0}),/buit/);assert.match(s.photoFileError({type:'image/png',size:16*1024*1024}),/15 MB/);assert.equal(s.photoFileError({type:'image/webp',size:100}),'');
+ const {s}=harness();for(const type of ['video/mp4','image/svg+xml','image/gif'])assert.match(s.photoFileError({name:'unsupported.bin',type,size:1}),/Format/);
+ for(const type of ['image/heic','image/heif'])assert.equal(s.photoFileError({name:'phone.heic',type,size:1}),'' ,'HEIC/HEIF are supported photo formats');
+ assert.match(s.photoFileError({type:'image/jpeg',size:0}),/buit/);assert.match(s.photoFileError({type:'image/png',size:33*1024*1024}),/32 MB/);assert.equal(s.photoFileError({type:'image/webp',size:100}),'');
 });
 test('no localStorage/automatic context inference; legacy London uploader remains gated',()=>{
  assert.doesNotMatch(code,/localStorage|exif|geolocation|deriveTripHomeState/);
  assert.match(html,/preparePhotoV2\(\);if\(!isLondonTrip\(\)\)return loadGenericPhotos/);
- assert.match(html,/function clearTripScopedState\(\)\{\s*resetPhotoV2\(\)/);
+ assert.match(html,/function clearTripScopedState\(\)\{\s*offlineSnapshotActive=false;offlineSnapshotSavedAt=null;updateConnectivityBanner\(\);\s*resetPhotoV2\(\)/);
  assert.match(html,/if\(!isLondonTrip\(\)\)return;\s*const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;\s*const files=\[\.\.\.\$\('photoFile'\)/);
 });
 
