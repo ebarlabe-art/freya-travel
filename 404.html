@@ -2255,6 +2255,23 @@ function safeOfflineRead(key){
   try{const value=JSON.parse(localStorage.getItem(key)||'null');if(!value||value.version!==OFFLINE_CACHE_VERSION||!Number.isFinite(Date.parse(value.savedAt||''))||Date.now()-Date.parse(value.savedAt)>OFFLINE_CACHE_MAX_AGE_MS)return null;return value}catch(_){return null}
 }
 function safeOfflineWrite(key,value){if(!key)return false;try{localStorage.setItem(key,JSON.stringify(value));return true}catch(_){return false}}
+function clearOfflineUserData(userId=session?.user?.id){
+  if(!userId)return false;
+  // Deliberate logout invalidates all offline itinerary/document metadata owned
+  // by this account on this device, but never touches another user's snapshots.
+  try{
+    const ownTripPrefix=`freya-offline-trip-v${OFFLINE_CACHE_VERSION}:${userId}:`;
+    const keys=[];
+    for(let index=0;index<localStorage.length;index++){
+      const key=localStorage.key(index);
+      if(key?.startsWith(ownTripPrefix))keys.push(key);
+    }
+    for(const key of keys)localStorage.removeItem(key);
+    localStorage.removeItem(offlineTripsKey(userId));
+    localStorage.removeItem(`freya-selected-trip-${userId}`);
+    return true;
+  }catch(_){return false}
+}
 function rememberOfflineTrips(rows,userId=session?.user?.id){
   if(!userId||!Array.isArray(rows))return false;
   return safeOfflineWrite(offlineTripsKey(userId),{version:OFFLINE_CACHE_VERSION,userId,savedAt:new Date().toISOString(),rows});
@@ -2849,10 +2866,13 @@ async function loadCarRentals(silent=false){
   if(!trip||isLondonTrip())return [];
   if(connectionUnavailable()){restoreOfflineCarRentals();return carRentalRows}
   const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id,sequence=++carRentalLoadSequence;if(!silent)$('carRentalLoading')?.classList.remove('hidden');
-  const [rentals,links]=await Promise.all([
-    db.from('trip_car_rentals').select(CAR_RENTAL_SELECT).eq('trip_id',tripId).order('pickup_at',{ascending:true,nullsFirst:false}).order('created_at'),
-    db.from('trip_car_rental_documents').select('trip_id,car_rental_id,document_id,document_role,created_at').eq('trip_id',tripId).order('created_at')
-  ]);
+  let rentals,links;
+  try{
+    [rentals,links]=await Promise.all([
+      db.from('trip_car_rentals').select(CAR_RENTAL_SELECT).eq('trip_id',tripId).order('pickup_at',{ascending:true,nullsFirst:false}).order('created_at'),
+      db.from('trip_car_rental_documents').select('trip_id,car_rental_id,document_id,document_role,created_at').eq('trip_id',tripId).order('created_at')
+    ]);
+  }catch(fetchError){rentals={error:fetchError};links={error:null}}
   if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId||sequence!==carRentalLoadSequence)return null;
   $('carRentalLoading')?.classList.add('hidden');const error=rentals.error||links.error;if(error){const restored=restoreOfflineCarRentals();if(!silent&&!restored)msg('carRentalMsg',error.message,true);return restored?carRentalRows:null}
   carRentalRows=rentals.data||[];carRentalDocumentLinks=links.data||[];renderCarRentals();persistOfflineCarRentals();return carRentalRows;
@@ -5790,10 +5810,18 @@ async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
   const selected=trips.find(value=>value.id===tripId)||null;if(!selected){trip=null;tripStopRows=[];clearGenericItineraryState();updateTripPresentation();setAppView('tripsHomeView');return false}
   tripLoadGeneration+=1;const generation=tripLoadGeneration;clearGenericItineraryState();await disconnectTripRealtime();if(generation!==tripLoadGeneration)return false;
   clearTripScopedState();trip=selected;tripStopRows=[];rememberSelectedTrip();
-  if(!isLondonTrip()&&!connectionUnavailable()){
-    const stopResult=await db.from('trip_stops').select('id,position,label,canonical_name,time_zone').eq('trip_id',selected.id).order('position',{ascending:true});
+  if(!isLondonTrip()){
+    const cached=readOfflineTripSnapshot(selected.id,session?.user?.id);
+    let stops=null;
+    if(!connectionUnavailable()){
+      try{
+        const result=await db.from('trip_stops').select('id,position,label,canonical_name,time_zone').eq('trip_id',selected.id).order('position',{ascending:true});
+        if(!result.error)stops=result.data||[];
+      }catch(_){ /* An unstable connection must not block cached trip entry. */ }
+    }
     if(generation!==tripLoadGeneration||trip?.id!==selected.id)return false;
-    if(!stopResult.error)tripStopRows=stopResult.data||[];
+    if(stops!==null){tripStopRows=stops;mergeOfflineTripSnapshot({tripStopRows:stops},selected.id,session.user.id)}
+    else tripStopRows=Array.isArray(cached?.tripStopRows)?cached.tripStopRows:[];
   }
   updateTripPresentation();
   if(open){deactivateBuilderNavigation();setAppView(tripDashboardId())}else setAppView('tripsHomeView');
@@ -5808,9 +5836,11 @@ async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
 async function initializeGenericChecklistDefaults(){
   if(!trip||!session||isLondonTrip())return;
   const tripId=trip.id,generation=tripLoadGeneration;
-  const {error}=await db.rpc('initialize_generic_trip_checklist',{p_trip_id:tripId});
+  let error=null;
+  try{({error}=await db.rpc('initialize_generic_trip_checklist',{p_trip_id:tripId}))}
+  catch(fetchError){error=fetchError}
   if(!tripRequestIsCurrent(tripId,generation))return;
-  if(error)msg('checklistMsg','No s’ha pogut preparar la checklist universal: '+error.message,true);
+  if(error)msg('checklistMsg','No s’ha pogut preparar la checklist universal. Es mantindran les dades locals disponibles.',true);
 }
 async function loadHomeTrips(client,owner,current){
   const {data,error}=await client.rpc('get_my_trips');if(error)throw error;
@@ -5874,8 +5904,15 @@ async function renderSession(next){
   try{
     const coldStart=coldStartNavigationPending;
     if(coldStart&&!pendingInitialRoute){show('tripView');setAppView('tripsHomeView')}
-    await refreshTrips({coldStart});
+    const tripsLoaded=await refreshTrips({coldStart});
     if(renderGeneration!==sessionRenderGeneration)return;
+    if(!tripsLoaded){
+      hide('tripView');show('noTrip');
+      $('tripLoadError').textContent=connectionUnavailable()
+        ?'Sense connexió i sense cap viatge desat en aquest dispositiu. Obre Freya amb cobertura per preparar la còpia offline.'
+        :'No s’han pogut carregar els viatges. Torna-ho a provar.';
+      return;
+    }
     show('tripView');
     if(coldStart){
       coldStartNavigationPending=false;
@@ -7701,7 +7738,9 @@ async function loadDocuments(silent=false){
   if(!trip)return;
   if(!isLondonTrip()&&connectionUnavailable()){restoreOfflineDocuments();return documentRows}
   const tripId=trip.id,generation=tripLoadGeneration;
-  const {data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',tripId).neq('category','Foto').order('created_at',{ascending:false});
+  let data,error=null;
+  try{({data,error}=await db.from('travel_documents').select('id,title,category,file_name,file_path,mime_type,created_at,created_by').eq('trip_id',tripId).neq('category','Foto').order('created_at',{ascending:false}))}
+  catch(fetchError){error=fetchError}
   if(!tripRequestIsCurrent(tripId,generation))return [];
   if(error){clearAccommodationVoucherFocus();const restored=!isLondonTrip()&&restoreOfflineDocuments();if(!silent&&!restored)msg('documentMsg',error.message,true);else if(!restored)console.error('No s’han pogut carregar els documents:',error);return restored?documentRows:[]}
   const serverDocs=data||[];
@@ -7956,6 +7995,7 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   msg('authMsg','');
   clearNavigationState(session?.user?.id);
   clearAccommodationVoucherFocus();
+  clearOfflineUserData(session?.user?.id);
   await db.auth.signOut();
   if(password)password.value='';
 });
@@ -8638,17 +8678,24 @@ window.addEventListener('load',()=>{updateInstallUi();refreshPushUi();initGuide(
 window.addEventListener('pageshow',refreshPushUi);
 
 db.auth.onAuthStateChange((event,next)=>{
-  session=next;
+  // Keep the previous user identity until renderSession can clear stale
+  // account-bound UI. Signed-out events also arrive from other open tabs.
+  if(event==='SIGNED_OUT')clearOfflineUserData(session?.user?.id||lastAuthenticatedUserId);
   if(event==='PASSWORD_RECOVERY'){
-    passwordRecoveryMode=true;passwordRecoverySessionValid=!!next;authInitializationResolved=true;renderPasswordRecovery();return;
+    session=next;passwordRecoveryMode=true;passwordRecoverySessionValid=!!next;authInitializationResolved=true;renderPasswordRecovery();return;
   }
-  if(passwordRecoveryMode){if(!next)passwordRecoverySessionValid=false;renderPasswordRecovery();return}
+  if(passwordRecoveryMode){session=next;if(!next)passwordRecoverySessionValid=false;renderPasswordRecovery();return}
   renderSession(next);
 });
 db.auth.getSession().then(({data,error})=>{
   authInitializationResolved=true;
-  if(passwordRecoveryMode){session=data.session;renderPasswordRecovery();return}
-  renderSession(data.session);
+  if(passwordRecoveryMode){session=data?.session||null;renderPasswordRecovery();return}
+  renderSession(data?.session||null);
+}).catch(()=>{
+  // A failed auth initialization must never unlock old cached travel data
+  // merely from knowing a userId. A valid session is required.
+  authInitializationResolved=true;
+  if(!session){renderSession(null);msg('authMsg','No s’ha pogut verificar la sessió. Torna a obrir Freya amb connexió.',true)}
 });
 </script>
 </body>

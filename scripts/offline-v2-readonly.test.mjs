@@ -66,3 +66,35 @@ test('Offline V2 logout clears only current account metadata and no-trip fallbac
   assert.match(html,/clearOfflineUserData\(session\?\.user\?\.id\)/);
 });
 function requireVm(){return vmModule}
+
+test('Offline V2 keeps user-switch teardown and handles rejected auth initialization',()=>{
+  const auth=html.slice(html.indexOf('db.auth.onAuthStateChange('));
+  assert.match(auth,/if\(event==='SIGNED_OUT'\)clearOfflineUserData/);
+  assert.match(auth,/if\(passwordRecoveryMode\)\{session=next/);
+  assert.match(auth,/renderSession\(next\);/);
+  assert.doesNotMatch(auth,/onAuthStateChange\(\(event,next\)=>\{\s*session=next;/);
+  assert.match(auth,/\.catch\(\(\)=>\{/);
+  assert.match(auth,/renderSession\(null\);msg\('authMsg'/);
+});
+
+test('Intermittent network failures must fall back to cached document metadata',async()=>{
+  const snippet=html.slice(html.indexOf('async function loadDocuments('),html.indexOf('function renderDocuments('));
+  const existing=[{id:'one',title:'Boarding pass'}];
+  let restored=0;
+  const ctx=vmModule.createContext({
+    trip:{id:'t'},documentRows:existing,
+    session:{user:{id:'u'}},isLondonTrip:()=>false,connectionUnavailable:()=>false,
+    tripLoadGeneration:4,tripRequestIsCurrent:()=>true,
+    db:{from:()=>({select:()=>({eq:()=>({neq:()=>({order:()=>Promise.reject(Error('network down'))})})})})},
+    clearAccommodationVoucherFocus:()=>{},restoreOfflineDocuments:()=>{restored++;return true},
+    msg:()=>{},console
+  });
+  vmModule.runInContext(snippet,ctx);
+  assert.equal(await ctx.loadDocuments(true),existing);
+  assert.equal(restored,1);
+});
+test('Trip stop and car-rental reads fall back on network exceptions without wiping cache',()=>{
+  assert.match(html,/mergeOfflineTripSnapshot\(\{tripStopRows:stops\}/);
+  assert.match(html,/Array\.isArray\(cached\?\.tripStopRows\)/);
+  assert.match(html,/catch\(fetchError\)\{rentals=\{error:fetchError\}/);
+});
