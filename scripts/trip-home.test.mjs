@@ -92,6 +92,7 @@ function loaderHarness(){
     document:{addEventListener(){}},window:{addEventListener(){}},
     trip:{id:'a'},session:{user:{id:'u1'}},tripLoadGeneration:1,
     itinerarySourceReady:{},isLondonTrip:()=>sandbox.trip?.experience_key==='london-2026',
+    connectionUnavailable:()=>false,
     itinerarySourceMarker:(type,id,generation,user)=>`${type}:${user}:${id}:${generation}`,
     itineraryRequestIsCurrent:(id,generation,user)=>sandbox.trip?.id===id&&sandbox.tripLoadGeneration===generation&&sandbox.session?.user?.id===user,
     renderTripHome:()=>renders.push(`${sandbox.session?.user?.id}:${sandbox.trip?.id}:${sandbox.tripLoadGeneration}`),
@@ -156,6 +157,7 @@ function renderHarness(items,options={}){
     Intl,Date:Clock,URL,Map,console,
     trip:options.trip||trip,session:{user:{id:'u1'}},tripLoadGeneration:1,
     $:element,isLondonTrip:()=>options.london||false,
+    connectionUnavailable:()=>false,
     itinerarySourcesAreReady:()=>options.ready!==false,
     normalizedItineraryProjection:()=>items,
     itineraryRequestIsCurrent:()=>true,
@@ -172,7 +174,9 @@ function renderHarness(items,options={}){
   vm.runInContext(pure,sandbox);
   vm.runInContext(html.split('// TRIP_PROGRESS_START')[1].split('// TRIP_PROGRESS_END')[0].replace(/^ —[^\n]*\n/,''),sandbox);
   vm.runInContext(html.match(/^function esc\(s\).*$/m)[0],sandbox);
-  vm.runInContext(html.slice(html.indexOf('function safeWebsiteUrl'),html.indexOf('function compactLocationParts')),sandbox);
+  // Import only the pure URL/phone helpers. The original broad slice also
+  // executed unrelated currency DOM setup during the test harness bootstrap.
+  vm.runInContext(html.slice(html.indexOf('function safeWebsiteUrl'),html.indexOf('async function tbFindComponent')),sandbox);
   vm.runInContext(html.slice(html.indexOf('function tripHomeSourceRow'),html.indexOf('function updateTripHomeClock')),sandbox);
   sandbox.renderTripHome();
   return {sandbox,elements,content:element('tripHomeContent').innerHTML};
@@ -237,7 +241,7 @@ test('fresh app open never resumes a durable Builder pointer',()=>{
 test('opening a trip card still opens its operational dashboard',()=>{
   assert.match(html,/async function openHomeTrip\(id\)\{recordHomeTripEntry\(id\);await selectTrip\(id,\{open:true\}\)\}/);
   const select=html.slice(html.indexOf('async function selectTrip('),html.indexOf('async function initializeGenericChecklistDefaults('));
-  assert.match(select,/if\(open\)setAppView\(tripDashboardId\(\)\)/);
+  assert.match(select,/if\(open\)\{deactivateBuilderNavigation\(\);setAppView\(tripDashboardId\(\)\)\}/);
 });
 
 
