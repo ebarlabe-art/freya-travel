@@ -98,6 +98,7 @@ function loaderHarness(){
     renderTripHome:()=>renders.push(`${sandbox.session?.user?.id}:${sandbox.trip?.id}:${sandbox.tripLoadGeneration}`),
     scheduleItineraryRebuild:()=>{},loadTripDayMetadata:async()=>[],
     invalidateTripProgressLoads:()=>{},updateConnectivityBanner:()=>{},
+    persistOfflineAgendaSnapshot:()=>true,restoreOfflineAgendaSnapshot:()=>false,markOfflineDataFresh:()=>{},
   });
   for(const [type,name] of [['flight','fetchAgendaFlights'],['activity','fetchAgendaActivities'],['accommodation','fetchAgendaAccommodations'],['manual','fetchAgendaManualItems']])sandbox[name]=()=>{
     const id=sandbox.trip.id,generation=sandbox.tripLoadGeneration,user=sandbox.session.user.id;
