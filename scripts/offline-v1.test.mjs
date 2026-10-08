@@ -23,7 +23,7 @@ test('Offline V1 restores cached travel data and labels it as cached',()=>{
 test('Offline V1 never fakes successful writes',()=>{
  assert.match(html,/Per marcar Fet\/Desfer cal connexió/);
  assert.match(html,/Sense connexió\. Hem mantingut els camps; podràs desar quan torni la xarxa/);
- assert.match(html,/Aquest document necessita connexió per generar un accés segur/);
+ assert.match(html,/Aquest document encara no està preparat offline\. Desa’l abans de viatjar/);
 });
 
 test('Offline V1 reconnects by refreshing authoritative data',()=>{

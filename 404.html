@@ -2339,9 +2339,15 @@ async function offlineDocKey(db,userId,create=false){
   const existing=await offlineDocRead(db,'keys',userId);
   if(existing||!create)return existing;
   const generated=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
-  // All writes are serialized within this tab. An already-created account key wins.
-  await offlineDocTx(db,['keys'],'readwrite',tx=>{tx.objectStore('keys').put(generated,userId)});
-  return generated;
+  // One IDB readwrite transaction elects the key even when two tabs start
+  // their first offline download simultaneously.
+  return offlineDocTx(db,['keys'],'readwrite',(tx,output)=>{
+    const store=tx.objectStore('keys'),request=store.get(userId);
+    request.onsuccess=()=>{
+      if(request.result)output(request.result);
+      else{store.add(generated,userId);output(generated)}
+    };
+  });
 }
 function offlineDocType(doc,blob){
   const name=String(doc.file_name||'').toLowerCase(),type=String(doc.mime_type||'').toLowerCase();
@@ -2367,6 +2373,38 @@ async function offlineDocValidBytes(blob,mime){
   return false;
 }
 function offlineDocEnqueue(job){const result=offlineDocWriteQueue.then(job,job);offlineDocWriteQueue=result.catch(()=>{});return result}
+function offlineDocAtomicSave(db,scope,row){
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(['records'],'readwrite'),store=tx.objectStore('records');
+    let validationError=null;
+    const request=store.index('byUser').getAll(scope.userId);
+    request.onsuccess=()=>{
+      const other=(request.result||[]).filter(value=>value.key!==row.key);
+      const tripBytes=other.filter(value=>value.tripId===scope.tripId).reduce((sum,value)=>sum+value.size,0);
+      const accountBytes=other.reduce((sum,value)=>sum+value.size,0);
+      if(other.length>=OFFLINE_DOC_MAX_COUNT)validationError=Error('Màxim de 30 documents offline per compte.');
+      else if(tripBytes+row.size>OFFLINE_DOC_TRIP_LIMIT)validationError=Error('Aquest viatge supera el límit de 35 MB offline.');
+      else if(accountBytes+row.size>OFFLINE_DOC_ACCOUNT_LIMIT)validationError=Error('Aquest compte supera el límit de 55 MB offline.');
+      if(validationError){tx.abort();return}
+      if(!offlineDocScopeCurrent(scope)){validationError=Error('El compte ha canviat.');tx.abort();return}
+      store.put(row);
+    };
+    tx.oncomplete=()=>resolve(true);
+    tx.onabort=()=>reject(validationError||tx.error||Error('No s’ha pogut desar el document offline.'));
+    tx.onerror=()=>{};
+  });
+}
+async function offlineDocPruneTrip(scope,serverDocs){
+  if(!offlineDocScopeCurrent(scope))return false;
+  const allowed=new Map(serverDocs.map(doc=>[doc.id,doc.file_path]));
+  const database=await offlineDocDatabase(),records=await offlineDocUserRows(database,scope.userId);
+  if(!offlineDocScopeCurrent(scope))return false;
+  const discarded=records.filter(value=>value.tripId===scope.tripId&&allowed.get(value.documentId)!==value.filePath);
+  if(discarded.length)await offlineDocTx(database,['records'],'readwrite',tx=>{
+    for(const record of discarded)tx.objectStore('records').delete(record.key);
+  });
+  return true;
+}
 async function offlineDocSaveBlob(scope,doc,blob){
   if(!offlineDocScopeCurrent(scope))throw Error('El compte o el viatge han canviat.');
   if(!(blob instanceof Blob)||!blob.size||blob.size>OFFLINE_DOC_PER_FILE)throw Error('Aquest fitxer no és vàlid o supera el límit de 12 MB.');
@@ -2384,10 +2422,10 @@ async function offlineDocSaveBlob(scope,doc,blob){
   const bytes=await blob.arrayBuffer();
   const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,bytes);
   if(!offlineDocScopeCurrent(scope))throw Error('El compte ha canviat abans de desar el document.');
-  await offlineDocTx(database,['records'],'readwrite',tx=>{tx.objectStore('records').put({
+  await offlineDocAtomicSave(database,scope,{
     key:id,userId:scope.userId,tripId:scope.tripId,documentId:doc.id,
     filePath:doc.file_path,size:blob.size,mime,iv:Array.from(iv),ciphertext,savedAt:Date.now()
-  })});
+  });
   if(!offlineDocScopeCurrent(scope)){
     await offlineDocTx(database,['records'],'readwrite',tx=>{tx.objectStore('records').delete(id)});
     throw Error('El compte ha canviat. S’ha descartat la còpia.');
@@ -7944,7 +7982,13 @@ async function loadDocuments(silent=false){
   const docs=[...pendingDocumentRows,...serverDocs.filter(d=>!pendingDocumentRows.some(p=>p.id===d.id))];
   documentRows=docs;
   renderDocuments(docs);
-  if(!isLondonTrip())persistOfflineDocuments();
+  if(!isLondonTrip()){
+    persistOfflineDocuments();
+    // Only a successful authoritative server read can invalidate deleted or
+    // replaced downloads. Offline failures never erase the last good copy.
+    const vaultScope=offlineDocScope();
+    if(vaultScope)void offlineDocEnqueue(()=>offlineDocPruneTrip(vaultScope,serverDocs)).then(()=>offlineDocStatus()).catch(()=>{});
+  }
   return docs;
 }
 function renderDocuments(docs=documentRows){

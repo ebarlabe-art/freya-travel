@@ -195,7 +195,7 @@ test('unsupported formats, empty and huge files have individual clear errors',()
 test('no localStorage/automatic context inference; legacy London uploader remains gated',()=>{
  assert.doesNotMatch(code,/localStorage|exif|geolocation|deriveTripHomeState/);
  assert.match(html,/preparePhotoV2\(\);if\(!isLondonTrip\(\)\)return loadGenericPhotos/);
- assert.match(html,/function clearTripScopedState\(\)\{\s*offlineSnapshotActive=false;offlineSnapshotSavedAt=null;updateConnectivityBanner\(\);\s*resetPhotoV2\(\)/);
+ assert.match(html,/function clearTripScopedState\(\)\{\s*closeDocumentViewer\(\);\s*offlineSnapshotActive=false;offlineSnapshotSavedAt=null;updateConnectivityBanner\(\);\s*resetPhotoV2\(\)/);
  assert.match(html,/if\(!isLondonTrip\(\)\)return;\s*const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;\s*const files=\[\.\.\.\$\('photoFile'\)/);
 });
 

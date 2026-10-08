@@ -40,6 +40,39 @@ try{
   console.log('PASS fresh browser: all Travel Book entry modules load from domain/ with the editor dependency bundled');
   await ctx.close();
 
+
+  // Functional encrypted vault regression: real IndexedDB + WebCrypto, no
+  // external Supabase requests, no real documents or credentials.
+  const vaultCtx=await context({serviceWorkers:'block'}),vaultPage=await vaultCtx.newPage();
+  await vaultPage.goto(url,{waitUntil:'load'});
+  const vaultResult=await vaultPage.evaluate(async()=>{
+    session={user:{id:'test-vault-owner'}};
+    trip={id:'test-vault-trip',experience_key:null};
+    tripLoadGeneration++;
+    const scope=offlineDocScope();
+    const bytes=new Uint8Array([37,80,68,70,45,49,46,52,10,65,66,67]);
+    const doc={id:'test-ticket',file_path:'test-vault-trip/boarding.pdf',file_name:'boarding.pdf',mime_type:'application/pdf'};
+    await offlineDocSaveBlob(scope,doc,new Blob([bytes],{type:'application/pdf'}));
+    const database=await offlineDocDatabase(),encrypted=await offlineDocRead(database,'records',offlineDocId(scope.userId,scope.tripId,doc.id));
+    if(!encrypted?.ciphertext||encrypted.ciphertext.byteLength<=bytes.byteLength)throw Error('No encrypted bytes stored');
+    const restored=await offlineDocGetBlob(scope,doc);
+    const actual=new Uint8Array(await restored.blob.arrayBuffer());
+    if(actual.join(',')!==bytes.join(','))throw Error('Offline document contents differ');
+    const alternate=offlineDocId('another-user',scope.tripId,doc.id);
+    if(alternate===encrypted.key)throw Error('Vault keys are not user scoped');
+    const wrongPath=await offlineDocGetBlob(scope,{...doc,file_path:'another-path.pdf'});
+    if(wrongPath)throw Error('Changed document path must invalidate cached bytes');
+    const beforeClose=await offlineDocRead(database,'keys',scope.userId);
+    if(!beforeClose)throw Error('No account key');
+    await clearOfflineDocumentUserData(scope.userId);
+    if(await offlineDocRead(database,'records',encrypted.key))throw Error('Logout kept encrypted bytes');
+    if(await offlineDocRead(database,'keys',scope.userId))throw Error('Logout kept the key');
+    return {bytes:actual.length,encrypted:true,cleaned:true};
+  });
+  assert.ok(vaultResult.encrypted&&vaultResult.cleaned);
+  console.log('PASS functional encrypted offline PDF vault and account data removal');
+  await vaultCtx.close();
+
   for(const api of apis){
     const retryCtx=await context({serviceWorkers:'block'}),retryPage=await retryCtx.newPage();
     const file={travelBookProposalApi:'proposal',travelBookBatchApi:'batch',travelBookEditorApi:'editor-state'}[api];

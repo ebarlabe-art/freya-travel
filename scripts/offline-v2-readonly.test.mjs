@@ -58,7 +58,7 @@ test('Offline V2 logout clears only current account metadata and no-trip fallbac
     ['another-app','keep']
   ]);
   const store={get length(){return values.size},key:index=>[...values.keys()][index]||null,removeItem:key=>values.delete(key)};
-  const scope=vm.createContext({localStorage:store,session:{user:{id:'eva'}},OFFLINE_CACHE_VERSION:1,offlineTripsKey:id=>'freya-offline-trips-v1:'+id});
+  const scope=vm.createContext({localStorage:store,session:{user:{id:'eva'}},OFFLINE_CACHE_VERSION:1,offlineTripsKey:id=>'freya-offline-trips-v1:'+id,offlineDocEpoch:0,closeDocumentViewer(){},clearOfflineDocumentUserData:async()=>{}});
   vm.runInContext(html.slice(begin,end),scope);
   assert.equal(scope.clearOfflineUserData(),true);
   assert.deepEqual([...values.keys()].sort(),['another-app','freya-offline-trip-v1:xesc:trip-b','freya-offline-trips-v1:xesc'].sort());
@@ -116,4 +116,18 @@ test('Offline documents are not served by the service worker, and blob links are
   assert.match(html,/if\(event==='SIGNED_OUT'\)clearOfflineUserData/);
   assert.match(html,/clearOfflineDocumentUserData\(userId\)/);
   assert.match(html,/offlineDocEpoch\+\+/);
+});
+
+test('Concurrent tabs elect one CryptoKey atomically and enforce quotas in IDB transaction',()=>{
+  const start=html.indexOf('async function offlineDocKey('),end=html.indexOf('function offlineDocType(',start);
+  const source=html.slice(start,end);
+  assert.match(source,/store\.get\(userId\)/);
+  assert.match(source,/if\(request\.result\)output\(request\.result\)/);
+  assert.match(source,/store\.add\(generated,userId\)/);
+  const atomic=html.slice(html.indexOf('function offlineDocAtomicSave('),html.indexOf('async function offlineDocSaveBlob('));
+  assert.match(atomic,/store\.index\('byUser'\)\.getAll\(scope\.userId\)/);
+  assert.match(atomic,/OFFLINE_DOC_ACCOUNT_LIMIT/);
+  assert.match(atomic,/OFFLINE_DOC_TRIP_LIMIT/);
+  assert.match(atomic,/offlineDocPruneTrip/);
+  assert.match(html,/offlineDocPruneTrip\(vaultScope,serverDocs\)/);
 });
