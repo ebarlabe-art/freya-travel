@@ -8521,7 +8521,7 @@ async function loadParkingSummary(){
   if(connectionUnavailable()){
     if(cached&&Object.prototype.hasOwnProperty.call(cached,'parkingSummary')){data=cached.parkingSummary;usingOfflineParking=true}
   }else{
-    try{({data,error}=await db.from('travel_parking').select('parking_name,floor,zone,spot,latitude,longitude,photo_path').eq('trip_id',tripId).maybeSingle())}
+    try{({data,error}=await db.from('travel_parking').select('*').eq('trip_id',tripId).maybeSingle())}
     catch(fetchError){error=fetchError}
     if(error&&cached&&Object.prototype.hasOwnProperty.call(cached,'parkingSummary')){data=cached.parkingSummary;usingOfflineParking=true;error=null}
   }
@@ -8530,7 +8530,7 @@ async function loadParkingSummary(){
   if(!status)return;
   if(error||data===undefined){status.textContent=connectionUnavailable()?'Sense dades desades':'No s’ha pogut consultar';return}
   if(usingOfflineParking){offlineSnapshotActive=true;offlineSnapshotSavedAt=cached.savedAt||offlineSnapshotSavedAt;updateConnectivityBanner()}
-  else mergeOfflineTripSnapshot({parkingSummary:data||{}});
+  else mergeOfflineTripSnapshot({parkingSummary:data||{},parkingRow:data||null});
   const row=data||{};
   const label=[row.floor,row.zone,row.spot].filter(Boolean).join(' · ');
   if(label)status.textContent=label;
@@ -8543,18 +8543,24 @@ async function loadParkingSummary(){
 async function loadParking(){
   if(!trip)return;
   const tripId=trip.id,generation=tripLoadGeneration;
-  let usingOfflineParking=connectionUnavailable();
+  let usingOfflineParking=connectionUnavailable(),usingSummaryOnly=false;
   parkingLoadsPending+=1;setParkingControlsDisabled(true);
   try{
     let data,error=null;
     const cached=!isLondonTrip()?readOfflineTripSnapshot():null;
+    const detailAvailable=cached?.parkingRow!=null;
+    const summaryAvailable=!!cached&&Object.prototype.hasOwnProperty.call(cached,'parkingSummary');
     if(usingOfflineParking){
-      if(cached&&Object.prototype.hasOwnProperty.call(cached,'parkingRow'))data=cached.parkingRow;
+      if(detailAvailable)data=cached.parkingRow;
+      else if(summaryAvailable){data=cached.parkingSummary;usingSummaryOnly=true}
       else{parkingMessage('No hi ha cap còpia desada de l’aparcament. Consulta’l quan tornis a tenir cobertura.',true);return}
     }else{
       try{({data,error}=await db.from('travel_parking').select('*').eq('trip_id',tripId).maybeSingle())}
       catch(fetchError){error=fetchError}
-      if(error&&cached&&Object.prototype.hasOwnProperty.call(cached,'parkingRow')){data=cached.parkingRow;usingOfflineParking=true;error=null}
+      if(error&&(detailAvailable||summaryAvailable)){
+        data=detailAvailable?cached.parkingRow:cached.parkingSummary;
+        usingOfflineParking=true;usingSummaryOnly=!detailAvailable;error=null;
+      }
     }
     if(!tripRequestIsCurrent(tripId,generation))return;
     if(error){parkingMessage('Cal activar la taula d’aparcament a Supabase abans d’utilitzar aquesta pantalla.',true);return}
@@ -8573,7 +8579,9 @@ async function loadParking(){
     updateParkingMap(row.latitude,row.longitude);
     if(usingOfflineParking){
       await renderParkingPhoto(null,tripId,generation);
-      parkingMessage('📵 Còpia de consulta. Les fotos i els fitxers adjunts requereixen connexió.');
+      parkingMessage(usingSummaryOnly
+        ?'📵 Es mostra el resum desat de l’aparcament. Obre el viatge amb connexió per preparar-ne el detall complet. Les fotos i els adjunts requereixen connexió.'
+        :'📵 Còpia de consulta. Les fotos i els fitxers adjunts requereixen connexió.');
     }else{
       await renderParkingPhoto(row.photo_path,tripId,generation);if(!tripRequestIsCurrent(tripId,generation))return;
       if(!documentRows.length)await loadDocuments(true);
