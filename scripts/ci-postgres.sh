@@ -14,9 +14,11 @@ diagnose() {
 }
 
 wait_ready() {
+  # The Supabase image starts a temporary Unix-socket-only PostgreSQL during
+  # initialization and then stops it. TCP readiness signals the final server.
   local ready=0
   for attempt in $(seq 1 60); do
-    if docker exec "$container" pg_isready -U postgres >/dev/null 2>&1; then
+    if docker exec "$container" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1; then
       ready=1
       break
     fi
@@ -70,7 +72,7 @@ SQL
     echo "PostgreSQL ready in $container."
     ;;
   check)
-    if ! docker exec "$container" pg_isready -U postgres >/dev/null 2>&1; then
+    if ! docker exec "$container" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1; then
       echo "PostgreSQL is not ready."
       diagnose
       exit 1
