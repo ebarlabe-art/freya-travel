@@ -63,7 +63,7 @@ test('Offline V2 logout clears only current account metadata and no-trip fallbac
   assert.equal(scope.clearOfflineUserData(),true);
   assert.deepEqual([...values.keys()].sort(),['another-app','freya-offline-trip-v1:xesc:trip-b','freya-offline-trips-v1:xesc'].sort());
   assert.match(html,/Sense connexió i sense cap viatge desat en aquest dispositiu/);
-  assert.match(html,/clearOfflineUserData\(session\?\.user\?\.id\)/);
+  assert.match(html,/clearOfflineUserData\(logoutUserId\)/);
 });
 function requireVm(){return vmModule}
 
