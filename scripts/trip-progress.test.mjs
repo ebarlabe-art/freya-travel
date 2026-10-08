@@ -60,6 +60,7 @@ function harness(){
     trip:{...trip},session:{user:{id:'u1'}},tripLoadGeneration:1,
     activityLoadSequence:0,flightLoadSequence:0,accommodationLoadSequence:0,manualItineraryLoadSequence:0,
     isLondonTrip:()=>sandbox.trip?.experience_key==='london-2026',
+    connectionUnavailable:()=>false,
     itineraryRequestIsCurrent:(id,generation,user)=>sandbox.trip?.id===id&&sandbox.tripLoadGeneration===generation&&sandbox.session?.user?.id===user,
     itinerarySourcesAreReady:()=>true,
     tripHomeSourceRow:()=>row,
