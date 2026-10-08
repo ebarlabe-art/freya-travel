@@ -98,8 +98,8 @@ test('unchanged SW precache assets exist and offline entry fallbacks remain vali
       // The Supabase runtime is copied into dist/ at packaging time, not committed
       // as a duplicate vendor file in the source repository.
       const pack = await read('scripts/package-pages.mjs');
-      assert.match(pack, /node_modules\\/@supabase\\/supabase-js\\/dist\\/umd\\/supabase\\.js/);
-      assert.match(pack, /vendor\\/supabase\\.js/);
+      assert.ok(pack.includes('node_modules/@supabase/supabase-js/dist/umd/supabase.js'));
+      assert.ok(pack.includes('vendor/supabase.js'));
       continue;
     }
     await access(new URL(asset, root));
