@@ -97,7 +97,7 @@ function loaderHarness(){
     itineraryRequestIsCurrent:(id,generation,user)=>sandbox.trip?.id===id&&sandbox.tripLoadGeneration===generation&&sandbox.session?.user?.id===user,
     renderTripHome:()=>renders.push(`${sandbox.session?.user?.id}:${sandbox.trip?.id}:${sandbox.tripLoadGeneration}`),
     scheduleItineraryRebuild:()=>{},loadTripDayMetadata:async()=>[],
-    invalidateTripProgressLoads:()=>{},
+    invalidateTripProgressLoads:()=>{},updateConnectivityBanner:()=>{},
   });
   for(const [type,name] of [['flight','fetchAgendaFlights'],['activity','fetchAgendaActivities'],['accommodation','fetchAgendaAccommodations'],['manual','fetchAgendaManualItems']])sandbox[name]=()=>{
     const id=sandbox.trip.id,generation=sandbox.tripLoadGeneration,user=sandbox.session.user.id;
@@ -148,7 +148,7 @@ test('Home clock only recomputes in memory and shared loading does not consume d
 function renderHarness(items,options={}){
   const elements=new Map();
   const element=id=>{
-    if(!elements.has(id))elements.set(id,{innerHTML:'',querySelectorAll:()=>[]});
+    if(!elements.has(id))elements.set(id,{innerHTML:'',classList:{toggle(){},add(){},remove(){},contains(){return false}},querySelectorAll:()=>[]});
     return elements.get(id);
   };
   const NativeDate=Date;
@@ -203,7 +203,7 @@ test('partial render has no authoritative NOW/NEXT card and offers retry',()=>{
 });
 test('past render does not duplicate Fotos or Itinerari shortcuts',()=>{
   const {content}=renderHarness([],{trip:{...trip,end_date:'2026-09-09',start_date:'2026-09-08'}});
-  assert.match(content,/Un viatge per recordar/);assert.doesNotMatch(content,/data-home-view="photosView"/);assert.doesNotMatch(content,/Planning i records/);assert.doesNotMatch(content,/Crear àlbum/);
+  assert.equal(content,'','DURANT must not appear in a completed trip; Records is the post-trip entry');
 });
 test('London render leaves Home untouched',()=>{
   const {content}=renderHarness([item('a')],{london:true});assert.equal(content,'');
@@ -214,7 +214,7 @@ test('completed Home card stays visible in Fet avui with undo and a distinct res
 });
 test('past trip still exposes completed items and undo without duplicate navigation',()=>{
   const {content}=renderHarness([item('done',{isCompleted:true,completedAt:'2026-09-09T10:15:00Z'})],{trip:{...trip,start_date:'2026-09-08',end_date:'2026-09-09'}});
-  assert.match(content,/Altres elements fets/);assert.match(content,/Desfer/);assert.doesNotMatch(content,/Fotos del viatge/);assert.doesNotMatch(content,/Planning i records/);
+  assert.equal(content,'','Past trips must not display the DURANT dashboard; records remain in their dedicated view');
 });
 
 

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
-const migration=readFileSync(new URL('../supabase/migrations/20261001145500_unify_piece_reservation_status.sql',import.meta.url),'utf8');
+const migration=readFileSync(new URL('../supabase/migrations/20261001134333_unify_piece_reservation_status.sql',import.meta.url),'utf8');
 
 const ids=['accommodationStatus','flightStatus','localTransportStatus','activityStatus','carRentalStatus'];
 
