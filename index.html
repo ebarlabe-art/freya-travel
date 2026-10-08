@@ -1540,6 +1540,7 @@
       <div class="card">
         <h2>📄 Documents privats</h2>
         <p class="muted">Puja entrades, reserves, captures o PDF directament des del mòbil. Els documents són compartits només amb els membres del viatge.</p>
+        <p class="muted">🔐 Pots desar voluntàriament còpies xifrades per consultar sense Internet, només en aquest dispositiu. En tancar sessió s’esborren. L’accés depèn també de la seguretat del mòbil; comprova les entrades abans de viatjar.</p>
         <div class="privacy-note">🔒 Els fitxers es guarden en un espai privat de Supabase. No es publiquen a GitHub.</div>
       </div>
       <div class="card">
@@ -1564,6 +1565,7 @@
       </div>
       <div class="card">
         <h3>Documents del viatge</h3>
+        <p id="offlineDocumentsStatus" class="muted" role="status">Prepara els documents que necessitis offline. Límit: 12 MB per fitxer i 55 MB per compte.</p>
         <div id="documentsList" class="doc-grid"></div>
         <div id="documentsEmpty" class="doc-empty">Encara no hi ha cap document.</div>
       </div>
@@ -2257,6 +2259,9 @@ function safeOfflineRead(key){
 function safeOfflineWrite(key,value){if(!key)return false;try{localStorage.setItem(key,JSON.stringify(value));return true}catch(_){return false}}
 function clearOfflineUserData(userId=session?.user?.id){
   if(!userId)return false;
+  offlineDocEpoch++;
+  void clearOfflineDocumentUserData(userId).catch(()=>{});
+  closeDocumentViewer();
   // Deliberate logout invalidates all offline itinerary/document metadata owned
   // by this account on this device, but never touches another user's snapshots.
   try{
@@ -2272,6 +2277,195 @@ function clearOfflineUserData(userId=session?.user?.id){
     return true;
   }catch(_){return false}
 }
+
+// Offline document vault. User-initiated and encrypted, never mirrored into the SW cache.
+// The non-exportable AES-GCM key is scoped to the local browser account; this is not
+// a substitute for the device passcode or an external user-held encryption secret.
+const OFFLINE_DOC_DB='freya-offline-private-documents-v1';
+const OFFLINE_DOC_PER_FILE=12*1024*1024;
+const OFFLINE_DOC_TRIP_LIMIT=35*1024*1024;
+const OFFLINE_DOC_ACCOUNT_LIMIT=55*1024*1024;
+const OFFLINE_DOC_MAX_COUNT=30;
+let offlineDocDbPromise=null,offlineDocWriteQueue=Promise.resolve(),offlineDocEpoch=0;
+let offlineDocRenderSequence=0,documentViewerObjectUrl=null,documentViewerOpenSequence=0;
+function offlineDocId(userId,tripId,documentId){return JSON.stringify([userId,tripId,documentId])}
+function offlineDocScope(){
+  if(!session?.user?.id||!trip?.id||isLondonTrip()||passwordRecoveryMode)return null;
+  return {userId:session.user.id,tripId:trip.id,generation:tripLoadGeneration,epoch:offlineDocEpoch};
+}
+function offlineDocScopeCurrent(scope){
+  return !!scope&&session?.user?.id===scope.userId&&trip?.id===scope.tripId&&tripLoadGeneration===scope.generation&&offlineDocEpoch===scope.epoch&&!passwordRecoveryMode;
+}
+function offlineDocDatabase(){
+  if(!('indexedDB' in window)||!crypto?.subtle)return Promise.reject(Error('Aquest dispositiu no admet l’emmagatzematge privat xifrat.'));
+  if(!offlineDocDbPromise)offlineDocDbPromise=new Promise((resolve,reject)=>{
+    const request=indexedDB.open(OFFLINE_DOC_DB,1);
+    request.onupgradeneeded=()=>{
+      const db=request.result;
+      const records=db.createObjectStore('records',{keyPath:'key'});
+      records.createIndex('byUser','userId',{unique:false});
+      db.createObjectStore('keys');
+    };
+    request.onsuccess=()=>{const db=request.result;db.onversionchange=()=>{db.close();offlineDocDbPromise=null};resolve(db)};
+    request.onerror=()=>reject(request.error||Error('No es pot obrir la caixa forta local.'));
+    request.onblocked=()=>reject(Error('Tanca les altres finestres de Freya i torna-ho a provar.'));
+  }).catch(error=>{offlineDocDbPromise=null;throw error});
+  return offlineDocDbPromise;
+}
+function offlineDocTx(db,stores,mode,callback){
+  return new Promise((resolve,reject)=>{
+    let transaction;
+    try{transaction=db.transaction(stores,mode)}catch(error){reject(error);return}
+    let result=null,settled=false;
+    transaction.oncomplete=()=>{if(!settled){settled=true;resolve(result)}};
+    transaction.onabort=()=>{if(!settled){settled=true;reject(transaction.error||Error('No s’ha desat el document.'))}};
+    transaction.onerror=()=>{};
+    try{callback(transaction,value=>{result=value})}catch(error){try{transaction.abort()}catch(_){}if(!settled){settled=true;reject(error)}}
+  });
+}
+function offlineDocRead(db,store,key){
+  return offlineDocTx(db,[store],'readonly',(tx,output)=>{
+    const request=tx.objectStore(store).get(key);
+    request.onsuccess=()=>output(request.result||null);
+  });
+}
+function offlineDocUserRows(db,userId){
+  return offlineDocTx(db,['records'],'readonly',(tx,output)=>{
+    const request=tx.objectStore('records').index('byUser').getAll(userId);
+    request.onsuccess=()=>output(request.result||[]);
+  });
+}
+async function offlineDocKey(db,userId,create=false){
+  const existing=await offlineDocRead(db,'keys',userId);
+  if(existing||!create)return existing;
+  const generated=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  // All writes are serialized within this tab. An already-created account key wins.
+  await offlineDocTx(db,['keys'],'readwrite',tx=>{tx.objectStore('keys').put(generated,userId)});
+  return generated;
+}
+function offlineDocType(doc,blob){
+  const name=String(doc.file_name||'').toLowerCase(),type=String(doc.mime_type||'').toLowerCase();
+  const actual=String(blob?.type||'').toLowerCase();
+  const mime=type==='application/pdf'||/\.pdf$/.test(name)?'application/pdf':
+    /(?:image\/jpe?g|\.jpe?g$)/.test(type+' '+name)?'image/jpeg':
+    /(?:image\/png|\.png$)/.test(type+' '+name)?'image/png':
+    /(?:image\/webp|\.webp$)/.test(type+' '+name)?'image/webp':
+    /(?:image\/heic|\.heic$)/.test(type+' '+name)?'image/heic':
+    /(?:image\/heif|\.heif$)/.test(type+' '+name)?'image/heif':
+    /(?:image\/gif|\.gif$)/.test(type+' '+name)?'image/gif':null;
+  if(!mime||actual&&actual!=='application/octet-stream'&&actual!==mime)return null;
+  return mime;
+}
+async function offlineDocValidBytes(blob,mime){
+  const data=new Uint8Array(await blob.slice(0,16).arrayBuffer());
+  if(mime==='application/pdf')return data.length>=4&&data[0]===37&&data[1]===80&&data[2]===68&&data[3]===70;
+  if(mime==='image/jpeg')return data[0]===255&&data[1]===216&&data[2]===255;
+  if(mime==='image/png')return data[0]===137&&data[1]===80&&data[2]===78&&data[3]===71;
+  if(mime==='image/webp')return String.fromCharCode(...data.slice(0,4))==='RIFF'&&String.fromCharCode(...data.slice(8,12))==='WEBP';
+  if(mime==='image/gif')return String.fromCharCode(...data.slice(0,4))==='GIF8';
+  if(mime==='image/heic'||mime==='image/heif')return String.fromCharCode(...data.slice(4,8))==='ftyp';
+  return false;
+}
+function offlineDocEnqueue(job){const result=offlineDocWriteQueue.then(job,job);offlineDocWriteQueue=result.catch(()=>{});return result}
+async function offlineDocSaveBlob(scope,doc,blob){
+  if(!offlineDocScopeCurrent(scope))throw Error('El compte o el viatge han canviat.');
+  if(!(blob instanceof Blob)||!blob.size||blob.size>OFFLINE_DOC_PER_FILE)throw Error('Aquest fitxer no és vàlid o supera el límit de 12 MB.');
+  const mime=offlineDocType(doc,blob);
+  if(!mime||!(await offlineDocValidBytes(blob,mime)))throw Error('Només es poden desar offline PDF i imatges vàlides.');
+  const database=await offlineDocDatabase(),rows=await offlineDocUserRows(database,scope.userId);
+  if(!offlineDocScopeCurrent(scope))throw Error('El compte ha canviat.');
+  const id=offlineDocId(scope.userId,scope.tripId,doc.id);
+  const other=rows.filter(value=>value.key!==id);
+  if(other.length>=OFFLINE_DOC_MAX_COUNT)throw Error('Màxim de 30 documents offline per compte.');
+  if(other.filter(value=>value.tripId===scope.tripId).reduce((sum,value)=>sum+value.size,0)+blob.size>OFFLINE_DOC_TRIP_LIMIT)throw Error('Aquest viatge supera el límit de 35 MB offline.');
+  if(other.reduce((sum,value)=>sum+value.size,0)+blob.size>OFFLINE_DOC_ACCOUNT_LIMIT)throw Error('Aquest compte supera el límit de 55 MB offline.');
+  const key=await offlineDocKey(database,scope.userId,true);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const bytes=await blob.arrayBuffer();
+  const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,bytes);
+  if(!offlineDocScopeCurrent(scope))throw Error('El compte ha canviat abans de desar el document.');
+  await offlineDocTx(database,['records'],'readwrite',tx=>{tx.objectStore('records').put({
+    key:id,userId:scope.userId,tripId:scope.tripId,documentId:doc.id,
+    filePath:doc.file_path,size:blob.size,mime,iv:Array.from(iv),ciphertext,savedAt:Date.now()
+  })});
+  if(!offlineDocScopeCurrent(scope)){
+    await offlineDocTx(database,['records'],'readwrite',tx=>{tx.objectStore('records').delete(id)});
+    throw Error('El compte ha canviat. S’ha descartat la còpia.');
+  }
+  return true;
+}
+async function offlineDocGetBlob(scope,doc){
+  if(!offlineDocScopeCurrent(scope))return null;
+  const database=await offlineDocDatabase(),row=await offlineDocRead(database,'records',offlineDocId(scope.userId,scope.tripId,doc.id));
+  if(!row||row.userId!==scope.userId||row.tripId!==scope.tripId||row.filePath!==doc.file_path)return null;
+  const key=await offlineDocKey(database,scope.userId);
+  if(!key||!offlineDocScopeCurrent(scope))return null;
+  const plaintext=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(row.iv)},key,row.ciphertext);
+  return offlineDocScopeCurrent(scope)?{blob:new Blob([plaintext],{type:row.mime}),mime:row.mime}:null;
+}
+async function offlineDocForget(scope,docId){
+  if(!offlineDocScopeCurrent(scope))return false;
+  const database=await offlineDocDatabase();
+  await offlineDocTx(database,['records'],'readwrite',tx=>{tx.objectStore('records').delete(offlineDocId(scope.userId,scope.tripId,docId))});
+  return true;
+}
+async function clearOfflineDocumentUserData(userId){
+  if(!userId)return;
+  const database=await offlineDocDatabase();
+  await offlineDocTx(database,['records','keys'],'readwrite',tx=>{
+    const records=tx.objectStore('records'),cursor=records.index('byUser').openCursor(userId);
+    cursor.onsuccess=()=>{const entry=cursor.result;if(entry){entry.delete();entry.continue()}};
+    tx.objectStore('keys').delete(userId);
+  });
+}
+async function offlineDocStatus(){
+  const scope=offlineDocScope(),sequence=++offlineDocRenderSequence;
+  if(!scope)return;
+  try{
+    const database=await offlineDocDatabase(),records=await offlineDocUserRows(database,scope.userId);
+    if(!offlineDocScopeCurrent(scope)||sequence!==offlineDocRenderSequence)return;
+    const ready=new Map(records.filter(value=>value.tripId===scope.tripId).map(value=>[value.documentId,value]));
+    const usable=documentRows.filter(doc=>ready.get(doc.id)?.filePath===doc.file_path);
+    const label=$('offlineDocumentsStatus');
+    if(label)label.textContent=usable.length+' documents preparats · '+(records.reduce((sum,row)=>sum+row.size,0)/1048576).toFixed(1)+' de 55 MB del compte';
+    document.querySelectorAll('[data-offline-save]').forEach(button=>{
+      const doc=documentRows.find(value=>value.id===button.dataset.offlineSave),stored=doc&&ready.get(doc.id)?.filePath===doc.file_path;
+      button.classList.toggle('hidden',!!stored);
+      button.disabled=connectionUnavailable()||!doc;
+    });
+    document.querySelectorAll('[data-offline-forget]').forEach(button=>{
+      const doc=documentRows.find(value=>value.id===button.dataset.offlineForget),stored=doc&&ready.get(doc.id)?.filePath===doc.file_path;
+      button.classList.toggle('hidden',!stored);
+    });
+  }catch(error){
+    if(offlineDocScopeCurrent(scope)&&sequence===offlineDocRenderSequence){
+      const label=$('offlineDocumentsStatus');if(label)label.textContent=error.message||'No es pot accedir a la caixa forta en aquest dispositiu.';
+    }
+  }
+}
+async function prepareOfflineDocument(id){
+  const scope=offlineDocScope(),doc=documentRows.find(value=>value.id===id);
+  if(!scope||!doc||connectionUnavailable()){msg('documentMsg','Connecta’t a Internet per preparar aquest document.',true);return}
+  msg('documentMsg','Desant una còpia xifrada al dispositiu…');
+  try{
+    await offlineDocEnqueue(async()=>{
+      if(!offlineDocScopeCurrent(scope))throw Error('El compte o el viatge han canviat.');
+      const {data,error}=await db.storage.from(DOC_BUCKET).download(doc.file_path);
+      if(error)throw error;
+      await offlineDocSaveBlob(scope,doc,data);
+    });
+    if(offlineDocScopeCurrent(scope))msg('documentMsg','🔐 Document preparat per obrir-lo sense cobertura.');
+  }catch(error){if(offlineDocScopeCurrent(scope))msg('documentMsg',error.message||'No s’ha pogut preparar el document.',true)}
+  finally{if(offlineDocScopeCurrent(scope))await offlineDocStatus()}
+}
+async function removeOfflineDocument(id){
+  const scope=offlineDocScope();
+  if(!scope)return;
+  try{await offlineDocForget(scope,id);if(offlineDocScopeCurrent(scope))msg('documentMsg','Còpia offline retirada.')}
+  catch(error){if(offlineDocScopeCurrent(scope))msg('documentMsg',error.message||'No s’ha pogut retirar la còpia.',true)}
+  finally{if(offlineDocScopeCurrent(scope))await offlineDocStatus()}
+}
+
 function rememberOfflineTrips(rows,userId=session?.user?.id){
   if(!userId||!Array.isArray(rows))return false;
   return safeOfflineWrite(offlineTripsKey(userId),{version:OFFLINE_CACHE_VERSION,userId,savedAt:new Date().toISOString(),rows});
@@ -5610,6 +5804,7 @@ function clearGenericItineraryState(){
   document.querySelectorAll('.generic-itinerary-source-focus').forEach(card=>card.classList.remove('generic-itinerary-source-focus'));
 }
 function clearTripScopedState(){
+  closeDocumentViewer();
   offlineSnapshotActive=false;offlineSnapshotSavedAt=null;updateConnectivityBanner();
   resetPhotoV2();
   clearDocumentsReturnContext();
@@ -7758,9 +7953,12 @@ function renderDocuments(docs=documentRows){
   if(!isLondonTrip()&&$('genericDocumentsModuleStatus'))$('genericDocumentsModuleStatus').textContent=`${documentRows.length} ${documentRows.length===1?'document':'documents'}`;
   const list=$('documentsList'),empty=$('documentsEmpty');if(!list||!empty)return;
   empty.classList.toggle('hidden',documentRows.length>0);
-  list.innerHTML=documentRows.map(d=>`<article class="doc-card" data-doc-id="${esc(d.id)}"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(categoryLabel(d.category))}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button><button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
+  list.innerHTML=documentRows.map(d=>`<article class="doc-card" data-doc-id="${esc(d.id)}"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(categoryLabel(d.category))}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button>${!isLondonTrip()?`<button type="button" class="secondary" data-offline-save="${esc(d.id)}">🔐 Desa offline</button><button type="button" class="secondary hidden" data-offline-forget="${esc(d.id)}">Retira còpia offline</button>`:''}<button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
   list.querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>openDocument(b.dataset.openDoc,documentRows));
   list.querySelectorAll('[data-delete-doc]').forEach(b=>b.onclick=()=>deleteDocument(b.dataset.deleteDoc,documentRows));
+  list.querySelectorAll('[data-offline-save]').forEach(b=>b.onclick=()=>prepareOfflineDocument(b.dataset.offlineSave));
+  list.querySelectorAll('[data-offline-forget]').forEach(b=>b.onclick=()=>removeOfflineDocument(b.dataset.offlineForget));
+  if(!isLondonTrip())void offlineDocStatus();
   if(isLondonTrip()){
     updateTicketDocumentLinks();
     updateParkingReservationUi();
@@ -7779,6 +7977,8 @@ function renderDocuments(docs=documentRows){
   focusAssociatedAccommodationVoucher(true);
 }
 function closeDocumentViewer(){
+  documentViewerOpenSequence++;
+  if(documentViewerObjectUrl){URL.revokeObjectURL(documentViewerObjectUrl);documentViewerObjectUrl=null}
   const viewer=$('documentViewer'),body=$('documentViewerBody');
   if(!viewer||!body)return;
   body.replaceChildren();
@@ -7810,14 +8010,31 @@ function showDocumentViewer(doc,signedUrl){
 $('documentViewerClose').onclick=closeDocumentViewer;
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('documentViewer').classList.contains('hidden'))closeDocumentViewer()});
 async function openDocument(id,docs,messageId='documentMsg'){
-  if(!trip)return;
-  if(connectionUnavailable()){msg(messageId,'📵 Aquest document necessita connexió per generar un accés segur.',true);updateConnectivityBanner();return}
-  const tripId=trip.id,generation=tripLoadGeneration;
+  if(!trip||!session)return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,openSeq=++documentViewerOpenSequence;
   const doc=docs.find(x=>x.id===id);if(!doc)return;
+  const scope=offlineDocScope();
+  if(scope){
+    try{
+      const cached=await offlineDocGetBlob(scope,doc);
+      if(openSeq!==documentViewerOpenSequence||!offlineDocScopeCurrent(scope))return;
+      if(cached){
+        const objectUrl=URL.createObjectURL(cached.blob);
+        if(openSeq!==documentViewerOpenSequence||!offlineDocScopeCurrent(scope)){URL.revokeObjectURL(objectUrl);return}
+        msg(messageId,'');
+        showDocumentViewer({...doc,mime_type:cached.mime},objectUrl);
+        documentViewerObjectUrl=objectUrl;
+        return;
+      }
+    }catch(error){if(connectionUnavailable()&&openSeq===documentViewerOpenSequence){msg(messageId,'La còpia local no es pot llegir. Obre el document amb cobertura per preparar-lo de nou.',true);return}}
+  }
+  if(connectionUnavailable()){if(openSeq===documentViewerOpenSequence)msg(messageId,'📵 Aquest document encara no està preparat offline. Desa’l abans de viatjar.',true);return}
   msg(messageId,'Generant accés segur…');
-  const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(doc.file_path,300);
-  if(!tripRequestIsCurrent(tripId,generation))return;
-  if(error){msg(messageId,error.message,true);return}
+  let data,error=null;
+  try{({data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(doc.file_path,300))}
+  catch(fetchError){error=fetchError}
+  if(openSeq!==documentViewerOpenSequence||!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId)return;
+  if(error||!data?.signedUrl){msg(messageId,error?.message||'No s’ha pogut obrir el fitxer.',true);return}
   msg(messageId,'');
   showDocumentViewer(doc,data.signedUrl);
 }
@@ -7832,6 +8049,7 @@ async function deleteDocument(id,docs){
   const {error}=await db.from('travel_documents').delete().eq('id',id).eq('trip_id',tripId);
   if(!tripRequestIsCurrent(tripId,generation))return;
   if(error){msg('documentMsg',error.message,true);return}
+  if(!isLondonTrip()&&session?.user?.id){try{await offlineDocForget(offlineDocScope(),id)}catch(_){}}
   msg('documentMsg','Document eliminat.');
   loadDocuments();
 }
@@ -7995,7 +8213,9 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   msg('authMsg','');
   clearNavigationState(session?.user?.id);
   clearAccommodationVoucherFocus();
-  clearOfflineUserData(session?.user?.id);
+  const logoutUserId=session?.user?.id;
+  clearOfflineUserData(logoutUserId);
+  try{await clearOfflineDocumentUserData(logoutUserId)}catch(_){}
   await db.auth.signOut();
   if(password)password.value='';
 });

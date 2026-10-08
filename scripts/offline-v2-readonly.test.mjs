@@ -98,3 +98,22 @@ test('Trip stop and car-rental reads fall back on network exceptions without wip
   assert.match(html,/Array\.isArray\(cached\?\.tripStopRows\)/);
   assert.match(html,/catch\(fetchError\)\{rentals=\{error:fetchError\}/);
 });
+
+test('Offline documents require explicit download, encrypted account-scoped IndexedDB and bounded storage',()=>{
+  assert.match(html,/const OFFLINE_DOC_DB='freya-offline-private-documents-v1'/);
+  assert.match(html,/crypto\.subtle\.generateKey\(\{name:'AES-GCM',length:256\},false/);
+  assert.match(html,/crypto\.subtle\.encrypt\(\{name:'AES-GCM',iv\},key,bytes\)/);
+  assert.match(html,/crypto\.subtle\.decrypt\(\{name:'AES-GCM',iv:new Uint8Array\(row.iv\)\},key,row.ciphertext\)/);
+  assert.match(html,/const OFFLINE_DOC_PER_FILE=12\*1024\*1024/);
+  assert.match(html,/const OFFLINE_DOC_ACCOUNT_LIMIT=55\*1024\*1024/);
+  assert.match(html,/data-offline-save/);
+  assert.match(html,/\.download\(doc.file_path\)/);
+  assert.doesNotMatch(html.slice(html.indexOf('async function offlineDocSaveBlob'),html.indexOf('async function offlineDocGetBlob')),/signedUrl|createSignedUrl/);
+});
+test('Offline documents are not served by the service worker, and blob links are revoked',()=>{
+  assert.doesNotMatch(worker,/offline-private-documents|offline-docs\/.*cache/);
+  assert.match(html,/URL\.revokeObjectURL\(documentViewerObjectUrl\)/);
+  assert.match(html,/if\(event==='SIGNED_OUT'\)clearOfflineUserData/);
+  assert.match(html,/clearOfflineDocumentUserData\(userId\)/);
+  assert.match(html,/offlineDocEpoch\+\+/);
+});
