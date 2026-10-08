@@ -22,11 +22,66 @@ test('Checklist online reads prime the offline cache, and offline reads never in
 });
 
 test('Parking summary and full details use cached data and block offline saves',()=>{
-  assert.match(html,/mergeOfflineTripSnapshot\(\{parkingSummary:data\|\|\{\}\}\)/);
+  assert.match(html,/mergeOfflineTripSnapshot\(\{parkingSummary:data\|\|\{\},parkingRow:data\|\|null\}\)/);
   assert.match(html,/mergeOfflineTripSnapshot\(\{parkingRow\}\)/);
   assert.match(html,/setParkingControlsDisabled\(connectionUnavailable\(\)\|\|usingOfflineParking\)/);
   assert.match(html,/No s’ha desat res; torna-ho a provar/);
   assert.match(html,/No es pot eliminar la foto/);
+});
+
+
+test('Opening a trip online caches full parking details automatically',async()=>{
+  const code=html.slice(html.indexOf('async function loadParkingSummary(){'),html.indexOf('async function loadParking(){'));
+  const row={parking_name:'Aeroport',floor:'P6',zone:'Zona taronja',spot:'219',notes:'A tocar de la sortida',reservation_code:'ABC'};
+  let queried=null,stored=null;const status={textContent:''};
+  const ctx=vmModule.createContext({
+    trip:{id:'trip-1'},session:{user:{id:'user-1'}},tripLoadGeneration:1,
+    isLondonTrip:()=>false,connectionUnavailable:()=>false,readOfflineTripSnapshot:()=>null,
+    tripRequestIsCurrent:()=>true,
+    db:{from:table=>{assert.equal(table,'travel_parking');return {select:fields=>{queried=fields;return {eq:()=>({maybeSingle:async()=>({data:row,error:null})})}}}}},
+    $:id=>id==='genericParkingModuleStatus'?status:null,
+    mergeOfflineTripSnapshot:patch=>{stored=patch;return true},
+    updateConnectivityBanner:()=>{},offlineSnapshotActive:false,offlineSnapshotSavedAt:null
+  });
+  vmModule.runInContext(code,ctx);
+  await ctx.loadParkingSummary();
+  assert.equal(queried,'*','The default trip load must request the complete parking row');
+  assert.equal(stored.parkingSummary.spot,'219');
+  assert.equal(stored.parkingRow.notes,'A tocar de la sortida');
+  assert.equal(stored.parkingRow.reservation_code,'ABC');
+  assert.equal(status.textContent,'P6 · Zona taronja · 219');
+  assert.match(html,/loadParkingSummary\(\)/);
+});
+
+test('Older offline snapshots with only parking summary show the spot within detail view',async()=>{
+  const code=html.slice(html.indexOf('async function loadParking(){'),html.indexOf('function parkingPayload('));
+  const values={};const messages=[];let networkCalls=0,disabled=false;
+  const summary={parking_name:'Aeroport',floor:'P6',zone:'Zona taronja',spot:'219'};
+  const ctx=vmModule.createContext({
+    trip:{id:'trip-1'},session:{user:{id:'user-1'}},tripLoadGeneration:1,
+    parkingLoadsPending:0,parkingRow:null,offlineSnapshotActive:false,offlineSnapshotSavedAt:null,
+    isLondonTrip:()=>false,connectionUnavailable:()=>true,
+    readOfflineTripSnapshot:()=>({parkingSummary:summary,savedAt:'2026-10-08T20:00:00Z'}),
+    tripRequestIsCurrent:()=>true,
+    setParkingControlsDisabled:value=>{disabled=value},
+    parkingMessage:message=>messages.push(message),
+    parkingValue:(id,value)=>{values[id]=value},
+    parkingText:(id,value)=>{values[id]=value},
+    parkingSpotLabel:row=>[row.floor,row.zone,row.spot].filter(Boolean).join(' · '),
+    updateParkingMap:()=>{},renderParkingPhoto:async()=>{},updateParkingReservationUi:async()=>{},
+    updateConnectivityBanner:()=>{},mergeOfflineTripSnapshot:()=>{},
+    $:()=>({classList:{toggle:()=>{}}}),
+    db:{from:()=>{networkCalls++;throw Error('Network access not permitted offline')}}
+  });
+  vmModule.runInContext(code,ctx);
+  await ctx.loadParking();
+  assert.equal(values.parkingFloor,'P6');
+  assert.equal(values.parkingZone,'Zona taronja');
+  assert.equal(values.parkingSpot,'219');
+  assert.equal(values.parkingReturnSpot,'P6 · Zona taronja · 219');
+  assert.equal(disabled,true);
+  assert.equal(networkCalls,0);
+  assert.match(messages.at(-1),/resum desat/);
 });
 
 test('Offline V2 shell includes locally bundled Supabase',()=>{
