@@ -2325,11 +2325,11 @@ async function refreshAfterReconnect(){
   offlineRefreshInFlight=true;updateConnectivityBanner();
   try{
     const ready=await ensureTripAgenda(true);
-    await Promise.all([loadCarRentals(true),loadDocuments(true)]);
+    await Promise.all([loadCarRentals(true),loadDocuments(true),loadItems(),loadParkingSummary()]);
     if(ready){persistOfflineAgendaSnapshot();persistOfflineCarRentals();persistOfflineDocuments();markOfflineDataFresh()}
   }finally{offlineRefreshInFlight=false;updateConnectivityBanner()}
 }
-window.addEventListener('offline',()=>{restoreOfflineAgendaSnapshot();restoreOfflineCarRentals();restoreOfflineDocuments();updateConnectivityBanner()});
+window.addEventListener('offline',()=>{restoreOfflineAgendaSnapshot();restoreOfflineCarRentals();restoreOfflineDocuments();loadItems();loadParkingSummary();updateConnectivityBanner()});
 window.addEventListener('online',()=>{updateConnectivityBanner();refreshAfterReconnect()});
 function navigationStateStorageKey(userId=session?.user?.id){return userId?`freya-navigation-state-v${NAVIGATION_STATE_VERSION}-${userId}`:null}
 function clearNavigationState(userId=session?.user?.id){const key=navigationStateStorageKey(userId);if(!key)return;try{localStorage.removeItem(key)}catch(_){}}
@@ -5799,7 +5799,7 @@ async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
   if(open){deactivateBuilderNavigation();setAppView(tripDashboardId())}else setAppView('tripsHomeView');
   if(!isLondonTrip()&&connectionUnavailable()){restoreOfflineAgendaSnapshot();restoreOfflineCarRentals();restoreOfflineDocuments()}
   if(!isLondonTrip()&&!connectionUnavailable()){await initializeGenericChecklistDefaults();if(!tripRequestIsCurrent(selected.id,generation))return false}
-  await Promise.all([connectionUnavailable()?Promise.resolve():loadItems(),loadDocuments(true),...(isLondonTrip()?[loadExpenses(true)]:[ensureTripAgenda(),connectionUnavailable()?Promise.resolve():loadParkingSummary(),loadCarRentals(true)])]);if(!tripRequestIsCurrent(selected.id,generation))return false;
+  await Promise.all([loadItems(),loadDocuments(true),...(isLondonTrip()?[loadExpenses(true)]:[ensureTripAgenda(),loadParkingSummary(),loadCarRentals(true)])]);if(!tripRequestIsCurrent(selected.id,generation))return false;
   if(isLondonTrip()){await ensureDefaultChecklistItems();if(!tripRequestIsCurrent(selected.id,generation))return false;addFavoriteButtons();initFlightChecklist()}
   if(!connectionUnavailable()){subscribe();subscribeDocuments();if(isLondonTrip())subscribeExpenses();else{subscribeAccommodations();subscribeFlights();subscribeActivities();subscribeCarRentals();subscribeManualItineraryItems();subscribeTripDayMetadata()}}
   if(applyDeepLink)applyPendingInitialView();
@@ -5950,10 +5950,21 @@ function checklistTextParts(value,structuredCategory){
 async function loadItems(){
   if(!trip)return;
   const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id,homeSequence=++tripHomeChecklistSequence;
-  const {data,error}=await db.from('checklist_items').select('id,text,done,category,template_key,dismissed,created_at').eq('trip_id',tripId).order('created_at');
+  let data,error=null,usingOfflineCache=false;
+  const cached=!isLondonTrip()?readOfflineTripSnapshot():null;
+  if(!isLondonTrip()&&connectionUnavailable()){
+    if(Array.isArray(cached?.checklistItems)){data=cached.checklistItems;usingOfflineCache=true}
+    else{msg('checklistMsg','Sense connexió i sense còpia de la checklist. Obre el viatge amb cobertura per preparar-la.',true);return}
+  }else{
+    try{({data,error}=await db.from('checklist_items').select('id,text,done,category,template_key,dismissed,created_at').eq('trip_id',tripId).order('created_at'))}
+    catch(fetchError){error=fetchError}
+    if(error&&!isLondonTrip()&&Array.isArray(cached?.checklistItems)){data=cached.checklistItems;usingOfflineCache=true;error=null}
+  }
+  if(usingOfflineCache){offlineSnapshotActive=true;offlineSnapshotSavedAt=cached.savedAt||offlineSnapshotSavedAt;updateConnectivityBanner()}
   if(!tripRequestIsCurrent(tripId,generation))return;
   if(error){if(!isLondonTrip()&&homeSequence===tripHomeChecklistSequence&&session?.user?.id===userId){tripHomeChecklist=null;renderTripHome()}msg('checklistMsg',error.message,true);return}
   const items=(data||[]).filter(item=>!item.dismissed).map(item=>({...item,...checklistTextParts(item.text,item.category)}));
+  if(!isLondonTrip()&&!usingOfflineCache)mergeOfflineTripSnapshot({checklistItems:items});
   if(!isLondonTrip()&&homeSequence===tripHomeChecklistSequence&&session?.user?.id===userId){tripHomeChecklist=items;renderTripHome()}
   const doneCount=items.filter(i=>i.done).length;
   const overviewChecklist=$('overviewChecklist'),overviewProgress=$('overviewProgress');
@@ -5970,12 +5981,12 @@ async function loadItems(){
     const percent=Math.round(groupDone/group.length*100);
     return `<details class="check-group" open><summary><span class="check-group-icon">${category.icon}</span><span class="check-group-title"><strong>${esc(category.label)}</strong><small>${groupDone} de ${group.length} completades</small></span><span class="check-group-count">${groupDone}/${group.length}</span></summary><div class="check-group-progress"><span style="width:${percent}%"></span></div><div class="check-group-items">${group.map(i=>`<div class="item ${i.done?'done':''}"><label><input type="checkbox" data-toggle="${i.id}" ${i.done?'checked':''}><span>${esc(i.text)}</span></label><button class="delete" data-delete="${i.id}" data-template-key="${esc(i.template_key||'')}" aria-label="Eliminar">×</button></div>`).join('')}</div></details>`;
   }).join('');
-  document.querySelectorAll('[data-toggle]').forEach(el=>el.onchange=()=>toggleItem(el.dataset.toggle,el.checked));
-  document.querySelectorAll('[data-delete]').forEach(el=>el.onclick=()=>deleteItem(el.dataset.delete,el.dataset.templateKey));
+  document.querySelectorAll('[data-toggle]').forEach(el=>{el.disabled=connectionUnavailable()||usingOfflineCache;el.onchange=()=>toggleItem(el.dataset.toggle,el.checked)});
+  document.querySelectorAll('[data-delete]').forEach(el=>{el.disabled=connectionUnavailable()||usingOfflineCache;el.onclick=()=>deleteItem(el.dataset.delete,el.dataset.templateKey)});
 }
 
-async function toggleItem(id,done){if(!trip)return;const tripId=trip.id,generation=tripLoadGeneration;const {error}=await db.from('checklist_items').update({done}).eq('id',id).eq('trip_id',tripId);if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
-async function deleteItem(id,templateKey=''){if(!trip)return;const tripId=trip.id,generation=tripLoadGeneration,dismissTemplate=!isLondonTrip()&&!!templateKey;const query=dismissTemplate?db.from('checklist_items').update({dismissed:true}).eq('id',id).eq('trip_id',tripId):db.from('checklist_items').delete().eq('id',id).eq('trip_id',tripId);const {error}=await query;if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
+async function toggleItem(id,done){if(!trip)return;if(connectionUnavailable()){msg('checklistMsg','📵 Sense connexió. La checklist és només de consulta.',true);await loadItems();return}const tripId=trip.id,generation=tripLoadGeneration;const {error}=await db.from('checklist_items').update({done}).eq('id',id).eq('trip_id',tripId);if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
+async function deleteItem(id,templateKey=''){if(!trip)return;if(connectionUnavailable()){msg('checklistMsg','📵 Sense connexió. No eliminarem res fins que torni la xarxa.',true);return}const tripId=trip.id,generation=tripLoadGeneration,dismissTemplate=!isLondonTrip()&&!!templateKey;const query=dismissTemplate?db.from('checklist_items').update({dismissed:true}).eq('id',id).eq('trip_id',tripId):db.from('checklist_items').delete().eq('id',id).eq('trip_id',tripId);const {error}=await query;if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else loadItems()}
 document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
   const fromBuild=!!b.closest('#buildView');
   if(b.dataset.open==='travelBookView')travelBookReturnView=visibleAppView();
@@ -8201,11 +8212,21 @@ function parkingSpotLabel(row=parkingRow){
 async function loadParkingSummary(){
   if(!trip||!session||isLondonTrip())return;
   const tripId=trip.id,generation=tripLoadGeneration;
-  const {data,error}=await db.from('travel_parking').select('parking_name,floor,zone,spot,latitude,longitude,photo_path').eq('trip_id',tripId).maybeSingle();
+  let data,error=null,usingOfflineParking=false;
+  const cached=readOfflineTripSnapshot();
+  if(connectionUnavailable()){
+    if(cached&&Object.prototype.hasOwnProperty.call(cached,'parkingSummary')){data=cached.parkingSummary;usingOfflineParking=true}
+  }else{
+    try{({data,error}=await db.from('travel_parking').select('parking_name,floor,zone,spot,latitude,longitude,photo_path').eq('trip_id',tripId).maybeSingle())}
+    catch(fetchError){error=fetchError}
+    if(error&&cached&&Object.prototype.hasOwnProperty.call(cached,'parkingSummary')){data=cached.parkingSummary;usingOfflineParking=true;error=null}
+  }
   if(!tripRequestIsCurrent(tripId,generation))return;
   const status=$('genericParkingModuleStatus');
   if(!status)return;
-  if(error){status.textContent='A punt per utilitzar';return}
+  if(error||data===undefined){status.textContent=connectionUnavailable()?'Sense dades desades':'No s’ha pogut consultar';return}
+  if(usingOfflineParking){offlineSnapshotActive=true;offlineSnapshotSavedAt=cached.savedAt||offlineSnapshotSavedAt;updateConnectivityBanner()}
+  else mergeOfflineTripSnapshot({parkingSummary:data||{}});
   const row=data||{};
   const label=[row.floor,row.zone,row.spot].filter(Boolean).join(' · ');
   if(label)status.textContent=label;
@@ -8218,12 +8239,24 @@ async function loadParkingSummary(){
 async function loadParking(){
   if(!trip)return;
   const tripId=trip.id,generation=tripLoadGeneration;
+  let usingOfflineParking=connectionUnavailable();
   parkingLoadsPending+=1;setParkingControlsDisabled(true);
   try{
-    const {data,error}=await db.from('travel_parking').select('*').eq('trip_id',tripId).maybeSingle();
+    let data,error=null;
+    const cached=!isLondonTrip()?readOfflineTripSnapshot():null;
+    if(usingOfflineParking){
+      if(cached&&Object.prototype.hasOwnProperty.call(cached,'parkingRow'))data=cached.parkingRow;
+      else{parkingMessage('No hi ha cap còpia desada de l’aparcament. Consulta’l quan tornis a tenir cobertura.',true);return}
+    }else{
+      try{({data,error}=await db.from('travel_parking').select('*').eq('trip_id',tripId).maybeSingle())}
+      catch(fetchError){error=fetchError}
+      if(error&&cached&&Object.prototype.hasOwnProperty.call(cached,'parkingRow')){data=cached.parkingRow;usingOfflineParking=true;error=null}
+    }
     if(!tripRequestIsCurrent(tripId,generation))return;
     if(error){parkingMessage('Cal activar la taula d’aparcament a Supabase abans d’utilitzar aquesta pantalla.',true);return}
     parkingRow=data||null;
+    if(usingOfflineParking){offlineSnapshotActive=true;offlineSnapshotSavedAt=cached.savedAt||offlineSnapshotSavedAt;updateConnectivityBanner()}
+    else if(!isLondonTrip())mergeOfflineTripSnapshot({parkingRow});
     const row=parkingRow||{};
     parkingValue('parkingName',row.parking_name);parkingValue('parkingReservation',row.reservation_code);
     parkingValue('parkingEntry',row.entry_at?String(row.entry_at).slice(0,16):'');parkingValue('parkingExit',row.exit_at?String(row.exit_at).slice(0,16):'');
@@ -8234,11 +8267,16 @@ async function loadParking(){
     $('parkingReturnEmpty').classList.toggle('hidden',!!label);$('parkingReturnInfo').classList.toggle('hidden',!label);
     parkingText('parkingReturnSpot',label||'—');parkingText('parkingReturnNotes',row.notes||'');
     updateParkingMap(row.latitude,row.longitude);
-    await renderParkingPhoto(row.photo_path,tripId,generation);if(!tripRequestIsCurrent(tripId,generation))return;
-    if(!documentRows.length)await loadDocuments(true);
-    await updateParkingReservationUi(tripId,generation);
+    if(usingOfflineParking){
+      await renderParkingPhoto(null,tripId,generation);
+      parkingMessage('📵 Còpia de consulta. Les fotos i els fitxers adjunts requereixen connexió.');
+    }else{
+      await renderParkingPhoto(row.photo_path,tripId,generation);if(!tripRequestIsCurrent(tripId,generation))return;
+      if(!documentRows.length)await loadDocuments(true);
+      await updateParkingReservationUi(tripId,generation);
+    }
   }finally{
-    if(tripRequestIsCurrent(tripId,generation)){parkingLoadsPending=Math.max(0,parkingLoadsPending-1);if(parkingLoadsPending===0)setParkingControlsDisabled(false)}
+    if(tripRequestIsCurrent(tripId,generation)){parkingLoadsPending=Math.max(0,parkingLoadsPending-1);if(parkingLoadsPending===0)setParkingControlsDisabled(connectionUnavailable()||usingOfflineParking)}
   }
 }
 function parkingPayload(tripId=trip?.id){
@@ -8252,6 +8290,7 @@ function parkingPayload(tripId=trip?.id){
 }
 async function saveParking(message){
   if(!trip||!session)return;
+  if(connectionUnavailable()){parkingMessage('📵 Sense connexió. No s’ha desat res; torna-ho a provar quan tinguis cobertura.',true);return}
   const tripId=trip.id,generation=tripLoadGeneration;const payload=parkingPayload(tripId);if(parkingRow?.photo_path)payload.photo_path=parkingRow.photo_path;
   const {data,error}=await db.from('travel_parking').upsert(payload,{onConflict:'trip_id'}).select().single();
   if(!tripRequestIsCurrent(tripId,generation))return;
@@ -8298,6 +8337,7 @@ function updateParkingMap(lat,lng){
 }
 $('parkingGps').onclick=()=>{
   if(!navigator.geolocation){parkingMessage('Aquest dispositiu no permet obtenir la ubicació.',true);return}
+  if(connectionUnavailable()){parkingMessage('📵 Sense connexió. No es pot desar la ubicació GPS.',true);return}
   const tripId=trip?.id,generation=tripLoadGeneration;
   parkingText('parkingGpsStatus','Obtenint la ubicació…');
   navigator.geolocation.getCurrentPosition(async pos=>{
@@ -8323,7 +8363,7 @@ $('parkingPhotoFile').onchange=()=>{
   parkingPhotoObjectUrl=URL.createObjectURL(file);$('parkingPhotoImage').src=parkingPhotoObjectUrl;$('parkingPhotoPreview').classList.add('visible');$('parkingRemovePhoto').classList.remove('hidden');
 };
 $('parkingUploadPhoto').onclick=async()=>{
-  if(!trip||!session)return;const file=$('parkingPhotoFile').files[0];
+  if(!trip||!session)return;if(connectionUnavailable()){parkingMessage('📵 Sense connexió. No s’ha pujat la foto.',true);return}const file=$('parkingPhotoFile').files[0];
   const tripId=trip.id,generation=tripLoadGeneration;
   if(!file){parkingMessage('Primer selecciona o fes una foto.',true);return}
   if(!file.type.startsWith('image/')){parkingMessage('Selecciona una imatge.',true);return}
@@ -8371,6 +8411,7 @@ $('parkingUploadPhoto').onclick=async()=>{
 };
 $('parkingRemovePhoto').onclick=async()=>{
   if(!trip||!session)return;
+  if(connectionUnavailable()){parkingMessage('📵 Sense connexió. No es pot eliminar la foto.',true);return}
   const tripId=trip.id,generation=tripLoadGeneration;
   const input=$('parkingPhotoFile');
 
@@ -8431,7 +8472,7 @@ $('parkingRemovePhoto').onclick=async()=>{
 };
 
 
-$('itemForm').onsubmit=async e=>{e.preventDefault();if(!trip||!session)return;const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,text=$('newItem').value.trim(),category=$('newItemCategory').value||'other',london=isLondonTrip();if(!text)return;const payload=london?{trip_id:tripId,text:`[[cat:${category}]] ${text}`,created_by:userId}:{trip_id:tripId,text,category,created_by:userId};const {error}=await db.from('checklist_items').insert(payload);if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else{$('newItem').value='';msg('checklistMsg','');loadItems()}};
+$('itemForm').onsubmit=async e=>{e.preventDefault();if(!trip||!session)return;if(connectionUnavailable()){msg('checklistMsg','📵 Sense connexió. No s’ha desat; podràs afegir la tasca quan torni la xarxa.',true);return}const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,text=$('newItem').value.trim(),category=$('newItemCategory').value||'other',london=isLondonTrip();if(!text)return;const payload=london?{trip_id:tripId,text:`[[cat:${category}]] ${text}`,created_by:userId}:{trip_id:tripId,text,category,created_by:userId};const {error}=await db.from('checklist_items').insert(payload);if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else{$('newItem').value='';msg('checklistMsg','');loadItems()}};
 
 if('serviceWorker' in navigator){
   let swReloading=false;
