@@ -140,6 +140,17 @@ try{
   const cached=await pwa.evaluate(async name=>{const c=await caches.open(name);return (await c.keys()).map(r=>new URL(r.url).pathname)},currentCacheName);
   for(const file of ['proposal','batch','editor-state','composition'])assert.ok(cached.includes(`/freya-travel/domain/travel-book-${file}.mjs`));
   assert.ok(cached.includes('/freya-travel/vendor/supabase.js'),'Bundled Supabase runtime must be precached');
+  // Seed one private PDF under an explicitly simulated valid local account
+  // while network is available. Do not use real accounts or Supabase data.
+  await pwa.waitForFunction(()=>authInitializationResolved===true);
+  await pwa.evaluate(async()=>{
+    session={user:{id:'test-offline-cold-owner'}};
+    trip={id:'test-offline-cold-trip',experience_key:null};
+    tripLoadGeneration++;
+    const scope=offlineDocScope();
+    const doc={id:'cold-pass',file_path:'test-offline-cold-trip/pass.pdf',file_name:'pass.pdf',mime_type:'application/pdf'};
+    await offlineDocSaveBlob(scope,doc,new Blob([new Uint8Array([37,80,68,70,45,49,46,55,10])],{type:'application/pdf'}));
+  });
   await pwaCtx.setOffline(true);
   for(const api of apis)await pwa.evaluate(async name=>{await window[name]()},api);
   // Force a cold navigation with network completely unavailable: testing
@@ -150,6 +161,30 @@ try{
   await pwa.waitForFunction(()=>typeof window.supabase?.createClient==='function');
   assert.equal(await pwa.evaluate(()=>navigator.onLine),false);
   assert.deepEqual(offlineErrors,[],'Cold offline PWA bootstrap should have no uncaught JS errors');
+  await pwa.waitForFunction(()=>authInitializationResolved===true);
+  const reopenedDocument=await pwa.evaluate(async()=>{
+    // The app still requires a valid account session. The test simulates
+    // that condition without ever storing real user credentials.
+    session={user:{id:'test-offline-cold-owner'}};
+    trip={id:'test-offline-cold-trip',experience_key:null};
+    tripLoadGeneration++;
+    const doc={id:'cold-pass',file_path:'test-offline-cold-trip/pass.pdf',file_name:'pass.pdf',mime_type:'application/pdf'};
+    const cached=await offlineDocGetBlob(offlineDocScope(),doc);
+    if(!cached)throw Error('Cold reopened PWA cannot decrypt its cached document');
+    await openDocument(doc.id,[doc]);
+    const iframe=document.querySelector('#documentViewerBody iframe');
+    if(!iframe?.src?.startsWith('blob:'))throw Error('Cached PDF was not opened locally');
+    const raw=new Uint8Array(await cached.blob.arrayBuffer());
+    const localUrl=iframe.src;
+    closeDocumentViewer();
+    if(!document.getElementById('documentViewer').classList.contains('hidden'))throw Error('Cached PDF viewer did not close');
+    await clearOfflineDocumentUserData(session.user.id);
+    return {localUrl:localUrl.startsWith('blob:'),byteCount:raw.length,offline:navigator.onLine===false};
+  });
+  assert.equal(reopenedDocument.offline,true);
+  assert.equal(reopenedDocument.localUrl,true);
+  assert.equal(reopenedDocument.byteCount,9);
+  console.log('PASS PWA cold reopens encrypted PDF in mode avio with simulated authenticated user scope');
   console.log('PASS PWA cold reopens offline with locally bundled Supabase runtime');
   assert.deepEqual(missing.filter(path=>/\.m?js$/.test(path)),[]);
   console.log('PASS PWA old cache retired; current cache contains full graph and loads modules offline');
