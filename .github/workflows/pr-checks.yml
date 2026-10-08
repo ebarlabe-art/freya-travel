@@ -21,6 +21,8 @@ jobs:
       - run: npm run prebuild
       - name: A2 focused tests
         run: node --test scripts/import-proposal.test.mjs scripts/import-text-extractor.test.mjs scripts/import-reservation.test.mjs scripts/import-reservation-ui.test.mjs
+      - name: Offline V2 focused tests
+        run: node --test scripts/offline-v2-readonly.test.mjs
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}

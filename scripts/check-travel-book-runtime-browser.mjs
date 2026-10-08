@@ -97,14 +97,17 @@ try{
   // part of the upgrade path instead of racing evaluate() against navigation.
   await pwa.waitForTimeout(250);
   await pwa.waitForLoadState('load');
+  const workerSource=await readFile(resolve(dist,'sw.js'),'utf8');
+  const currentCacheName=workerSource.match(/const CACHE='([^']+)'/)?.[1];
+  assert.ok(currentCacheName,'Service worker must declare a named cache');
   const cacheNames=await pwa.evaluate(()=>caches.keys());
-  assert.ok(cacheNames.includes('freya-travel-release-6444-v5'));
+  assert.ok(cacheNames.includes(currentCacheName));
   assert.ok(!cacheNames.includes('freya-travel-release-6444-v4'));
-  const cached=await pwa.evaluate(async()=>{const c=await caches.open('freya-travel-release-6444-v5');return (await c.keys()).map(r=>new URL(r.url).pathname)});
+  const cached=await pwa.evaluate(async name=>{const c=await caches.open(name);return (await c.keys()).map(r=>new URL(r.url).pathname)},currentCacheName);
   for(const file of ['proposal','batch','editor-state','composition'])assert.ok(cached.includes(`/freya-travel/domain/travel-book-${file}.mjs`));
   await pwaCtx.setOffline(true);
   for(const api of apis)await pwa.evaluate(async name=>{await window[name]()},api);
   assert.deepEqual(missing.filter(path=>/\.m?js$/.test(path)),[]);
-  console.log('PASS PWA v4 cache retired; v5 contains full graph and loads modules offline');
+  console.log('PASS PWA old cache retired; current cache contains full graph and loads modules offline');
   await pwaCtx.close();
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
