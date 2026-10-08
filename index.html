@@ -2255,6 +2255,23 @@ function safeOfflineRead(key){
   try{const value=JSON.parse(localStorage.getItem(key)||'null');if(!value||value.version!==OFFLINE_CACHE_VERSION||!Number.isFinite(Date.parse(value.savedAt||''))||Date.now()-Date.parse(value.savedAt)>OFFLINE_CACHE_MAX_AGE_MS)return null;return value}catch(_){return null}
 }
 function safeOfflineWrite(key,value){if(!key)return false;try{localStorage.setItem(key,JSON.stringify(value));return true}catch(_){return false}}
+function clearOfflineUserData(userId=session?.user?.id){
+  if(!userId)return false;
+  // Deliberate logout invalidates all offline itinerary/document metadata owned
+  // by this account on this device, but never touches another user's snapshots.
+  try{
+    const ownTripPrefix=`freya-offline-trip-v${OFFLINE_CACHE_VERSION}:${userId}:`;
+    const keys=[];
+    for(let index=0;index<localStorage.length;index++){
+      const key=localStorage.key(index);
+      if(key?.startsWith(ownTripPrefix))keys.push(key);
+    }
+    for(const key of keys)localStorage.removeItem(key);
+    localStorage.removeItem(offlineTripsKey(userId));
+    localStorage.removeItem(`freya-selected-trip-${userId}`);
+    return true;
+  }catch(_){return false}
+}
 function rememberOfflineTrips(rows,userId=session?.user?.id){
   if(!userId||!Array.isArray(rows))return false;
   return safeOfflineWrite(offlineTripsKey(userId),{version:OFFLINE_CACHE_VERSION,userId,savedAt:new Date().toISOString(),rows});
@@ -5874,8 +5891,15 @@ async function renderSession(next){
   try{
     const coldStart=coldStartNavigationPending;
     if(coldStart&&!pendingInitialRoute){show('tripView');setAppView('tripsHomeView')}
-    await refreshTrips({coldStart});
+    const tripsLoaded=await refreshTrips({coldStart});
     if(renderGeneration!==sessionRenderGeneration)return;
+    if(!tripsLoaded){
+      hide('tripView');show('noTrip');
+      $('tripLoadError').textContent=connectionUnavailable()
+        ?'Sense connexió i sense cap viatge desat en aquest dispositiu. Obre Freya amb cobertura per preparar la còpia offline.'
+        :'No s’han pogut carregar els viatges. Torna-ho a provar.';
+      return;
+    }
     show('tripView');
     if(coldStart){
       coldStartNavigationPending=false;
@@ -7956,6 +7980,7 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   msg('authMsg','');
   clearNavigationState(session?.user?.id);
   clearAccommodationVoucherFocus();
+  clearOfflineUserData(session?.user?.id);
   await db.auth.signOut();
   if(password)password.value='';
 });

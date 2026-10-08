@@ -90,7 +90,7 @@ try{
 
   const pwaCtx=await context(),pwa=await pwaCtx.newPage();
   // Seed the prior cache before the real new worker installs.
-  await pwa.addInitScript(async()=>{if(!sessionStorage.getItem('seeded-old-cache')){sessionStorage.setItem('seeded-old-cache','1');await caches.open('freya-travel-release-6444-v4')}});
+  await pwa.addInitScript(async()=>{if(!sessionStorage.getItem('seeded-old-cache')){sessionStorage.setItem('seeded-old-cache','1');await Promise.all([caches.open('freya-travel-release-6444-v4'),caches.open('another-app-unrelated-cache')])}});
   await pwa.goto(url,{waitUntil:'load'});
   await pwa.waitForFunction(()=>!!navigator.serviceWorker.controller);
   // The app may reload once when the new worker takes control. Treat that as
@@ -103,6 +103,7 @@ try{
   const cacheNames=await pwa.evaluate(()=>caches.keys());
   assert.ok(cacheNames.includes(currentCacheName));
   assert.ok(!cacheNames.includes('freya-travel-release-6444-v4'));
+  assert.ok(cacheNames.includes('another-app-unrelated-cache'),'A Freya upgrade must not remove another app cache');
   const cached=await pwa.evaluate(async name=>{const c=await caches.open(name);return (await c.keys()).map(r=>new URL(r.url).pathname)},currentCacheName);
   for(const file of ['proposal','batch','editor-state','composition'])assert.ok(cached.includes(`/freya-travel/domain/travel-book-${file}.mjs`));
   assert.ok(cached.includes('/freya-travel/vendor/supabase.js'),'Bundled Supabase runtime must be precached');
