@@ -105,8 +105,18 @@ try{
   assert.ok(!cacheNames.includes('freya-travel-release-6444-v4'));
   const cached=await pwa.evaluate(async name=>{const c=await caches.open(name);return (await c.keys()).map(r=>new URL(r.url).pathname)},currentCacheName);
   for(const file of ['proposal','batch','editor-state','composition'])assert.ok(cached.includes(`/freya-travel/domain/travel-book-${file}.mjs`));
+  assert.ok(cached.includes('/freya-travel/vendor/supabase.js'),'Bundled Supabase runtime must be precached');
   await pwaCtx.setOffline(true);
   for(const api of apis)await pwa.evaluate(async name=>{await window[name]()},api);
+  // Force a cold navigation with network completely unavailable: testing
+  // imports in an already-open page does not cover the PWA bootstrap.
+  const offlineErrors=[];
+  pwa.on('pageerror',error=>offlineErrors.push(error.message));
+  await pwa.reload({waitUntil:'load'});
+  await pwa.waitForFunction(()=>typeof window.supabase?.createClient==='function');
+  assert.equal(await pwa.evaluate(()=>navigator.onLine),false);
+  assert.deepEqual(offlineErrors,[],'Cold offline PWA bootstrap should have no uncaught JS errors');
+  console.log('PASS PWA cold reopens offline with locally bundled Supabase runtime');
   assert.deepEqual(missing.filter(path=>/\.m?js$/.test(path)),[]);
   console.log('PASS PWA old cache retired; current cache contains full graph and loads modules offline');
   await pwaCtx.close();
