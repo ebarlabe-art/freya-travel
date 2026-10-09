@@ -243,5 +243,19 @@ try{
   await coldReopen.locator('#documentsList .doc-card h3').getByText('Reserva ficticia offline').waitFor({state:'visible',timeout:15000});
   assert.equal(await coldReopen.evaluate(()=>trip?.id),'test-offline-ui-trip');
   console.log('PASS new offline page automatically restores local session, trip, itinerary and document cards');
+  await coldReopen.close();
+  // iOS can report navigator.onLine=true despite no server connectivity.
+  // Reopen from scratch with network still blocked and do not inject a session.
+  const unreliableNetwork=await coldCtx.newPage();
+  await unreliableNetwork.addInitScript(()=>{
+    Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});
+  });
+  await unreliableNetwork.goto(url,{waitUntil:'load'});
+  assert.equal(await unreliableNetwork.evaluate(()=>navigator.onLine),true);
+  await unreliableNetwork.locator('[data-select-trip="test-offline-ui-trip"]').waitFor({state:'visible',timeout:8000});
+  assert.deepEqual(await unreliableNetwork.evaluate(()=>({
+    userId:session?.user?.id,readOnly:offlineReadOnlySession,tripCount:trips.length
+  })),{userId:'test-offline-ui-owner',readOnly:true,tripCount:1});
+  console.log('PASS local recovery with unavailable Internet and misleading navigator.onLine');
   await coldCtx.close();
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
