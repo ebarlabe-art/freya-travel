@@ -289,5 +289,39 @@ try{
   assert.equal(await loggedOutColdOpen.locator('[data-select-trip="test-offline-ui-trip"]').count(),0);
   assert.equal(await loggedOutColdOpen.evaluate(()=>!!session||offlineReadOnlySession),false);
   console.log('PASS explicit logout revokes offline access across cold restart with misleading online signal');
+  // Security gate: a grant older than 30 days cannot unlock local data,
+  // even though the trip snapshot is still stored on this same device.
+  await loggedOutColdOpen.close();
+  await coldCtx.setOffline(false);
+  const expiredSeed=await coldCtx.newPage();
+  await expiredSeed.goto(url,{waitUntil:'load'});
+  await expiredSeed.waitForFunction(()=>authInitializationResolved===true);
+  await expiredSeed.evaluate(()=>{
+    const userId='test-expired-owner';
+    session={user:{id:userId,email:'expired-test@example.invalid'},access_token:'test-only-online-token'};
+    if(!rememberOfflineTrips([{
+      id:'test-expired-trip',name:'Viatge amb concessio caducada',
+      start_date:'2026-10-09',end_date:'2026-10-10',time_zone:'Europe/Madrid',
+      is_owner:true,experience_key:null
+    }],userId))throw Error('Could not seed expiring offline grant');
+    const grant=JSON.parse(localStorage.getItem(OFFLINE_AUTH_GRANT_KEY));
+    grant.verifiedAt=Date.now()-OFFLINE_AUTH_GRANT_MAX_AGE_MS-1000;
+    localStorage.setItem(OFFLINE_AUTH_GRANT_KEY,JSON.stringify(grant));
+    if(readOfflineSessionGrant())throw Error('Expired grant was accepted');
+    if(!readOfflineTrips(userId))throw Error('Trip snapshot was unexpectedly removed');
+  });
+  await coldCtx.setOffline(true);
+  await expiredSeed.close();
+  const expiredReopen=await coldCtx.newPage();
+  await expiredReopen.goto(url,{waitUntil:'load'});
+  await expiredReopen.waitForFunction(()=>authInitializationResolved===true);
+  await expiredReopen.locator('#loginCard').waitFor({state:'visible',timeout:10000});
+  assert.deepEqual(await expiredReopen.evaluate(()=>({
+    userId:session?.user?.id||null,readOnly:offlineReadOnlySession,
+    grantAccepted:!!readOfflineSessionGrant(),
+    cachedTripExists:!!readOfflineTrips('test-expired-owner'),
+    tripCardCount:document.querySelectorAll('[data-select-trip="test-expired-trip"]').length
+  })),{userId:null,readOnly:false,grantAccepted:false,cachedTripExists:true,tripCardCount:0});
+  console.log('PASS expired local grant denies offline entry while retaining cached trip metadata');
   await coldCtx.close();
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
