@@ -113,7 +113,7 @@ test('Offline V2 logout clears only current account metadata and no-trip fallbac
     ['another-app','keep']
   ]);
   const store={get length(){return values.size},key:index=>[...values.keys()][index]||null,removeItem:key=>values.delete(key)};
-  const scope=vm.createContext({localStorage:store,session:{user:{id:'eva'}},OFFLINE_CACHE_VERSION:1,offlineTripsKey:id=>'freya-offline-trips-v1:'+id,offlineDocEpoch:0,closeDocumentViewer(){},clearOfflineDocumentUserData:async()=>{}});
+  const scope=vm.createContext({localStorage:store,session:{user:{id:'eva'}},OFFLINE_CACHE_VERSION:1,offlineTripsKey:id=>'freya-offline-trips-v1:'+id,offlineDocEpoch:0,offlineReadOnlySession:false,clearOfflineSessionGrant:()=>true,closeDocumentViewer(){},clearOfflineDocumentUserData:async()=>{}});
   vm.runInContext(html.slice(begin,end),scope);
   assert.equal(scope.clearOfflineUserData(),true);
   assert.deepEqual([...values.keys()].sort(),['another-app','freya-offline-trip-v1:xesc:trip-b','freya-offline-trips-v1:xesc'].sort());
@@ -124,7 +124,10 @@ function requireVm(){return vmModule}
 
 test('Offline V2 keeps user-switch teardown and handles rejected auth initialization',()=>{
   const auth=html.slice(html.indexOf('db.auth.onAuthStateChange('));
-  assert.match(auth,/if\(event==='SIGNED_OUT'\)clearOfflineUserData/);
+  assert.match(auth,/if\(event==='SIGNED_OUT'\)\{/);
+  assert.match(auth,/if\(event==='INITIAL_SESSION'&&navigator\.onLine===false\)/);
+  assert.match(auth,/if\(restoreOfflineReadOnlySession\(\)\)return/);
+  assert.match(auth,/clearOfflineUserData\(session\?\.user\?\.id\|\|lastAuthenticatedUserId\)/);
   assert.match(auth,/if\(passwordRecoveryMode\)\{session=next/);
   assert.match(auth,/renderSession\(next\);/);
   assert.doesNotMatch(auth,/onAuthStateChange\(\(event,next\)=>\{\s*session=next;/);
@@ -154,6 +157,96 @@ test('Trip stop and car-rental reads fall back on network exceptions without wip
   assert.match(html,/catch\(fetchError\)\{rentals=\{error:fetchError\}/);
 });
 
+
+function offlineAuthScope({online=false,withTrips=true,sessionToken=true}={}){
+  const values=new Map();
+  const store={
+    getItem:key=>values.get(key)||null,
+    setItem:(key,value)=>{values.set(key,value)},
+    removeItem:key=>values.delete(key)
+  };
+  const restored=[];
+  const mock={
+    navigator:{onLine:online},localStorage:store,passwordRecoveryMode:false,
+    session:sessionToken?{user:{id:'user-a',email:'tester@example.test'},access_token:'verified-token'}:null,
+    readOfflineTrips:userId=>withTrips&&userId==='user-a'?{rows:[{id:'trip-a'}]}:null,
+    safeOfflineWrite:(key,val)=>{store.setItem(key,JSON.stringify(val));return true},
+    renderSession:next=>{restored.push(next);return Promise.resolve()},
+    Date,offlineDocEpoch:0,
+    clearOfflineDocumentUserData:async()=>{},closeDocumentViewer:()=>{}
+  };
+  const context=vmModule.createContext(mock);
+  const start=html.indexOf('const OFFLINE_AUTH_GRANT_KEY=');
+  const end=html.indexOf('function clearOfflineUserData(',start);
+  assert.ok(start>0&&end>start,'Offline grant helpers must be present');
+  vmModule.runInContext(html.slice(start,end),context);
+  return {context,values,restored,mock};
+}
+
+test('Offline grant is issued ONLY after an online authenticated read and is scoped to cached trips',()=>{
+  const s=offlineAuthScope({online:true});
+  assert.equal(s.context.rememberOfflineSessionGrant('user-a'),true);
+  const grant=JSON.parse(s.values.get('freya-offline-session-grant-v1'));
+  assert.equal(grant.userId,'user-a');
+  assert.equal(s.context.readOfflineSessionGrant().userId,'user-a');
+  assert.equal(s.context.rememberOfflineSessionGrant('user-b'),false);
+  s.mock.navigator.onLine=false;
+  assert.equal(s.context.rememberOfflineSessionGrant('user-a'),false);
+  const noTrips=offlineAuthScope({online:true,withTrips:false});
+  noTrips.context.rememberOfflineSessionGrant('user-a');
+  assert.equal(noTrips.context.readOfflineSessionGrant(),null);
+  const noToken=offlineAuthScope({online:true,sessionToken:false});
+  assert.equal(noToken.context.rememberOfflineSessionGrant('user-a'),false);
+});
+
+test('Cold expired-token recovery permits ONLY local read-only reentry; stale or missing grants fail closed',()=>{
+  const s=offlineAuthScope({online:true});
+  s.context.rememberOfflineSessionGrant('user-a');
+  assert.equal(s.context.restoreOfflineReadOnlySession(),false,'Online cannot use local grant to bypass sign-in');
+  s.mock.navigator.onLine=false;s.mock.session=null;
+  assert.equal(s.context.restoreOfflineReadOnlySession(),true);
+  assert.equal(s.restored.length,1);
+  assert.equal(s.restored[0].offlineOnly,true);
+  assert.equal(s.restored[0].user.id,'user-a');
+  assert.equal(s.restored[0].access_token,undefined);
+  assert.equal(s.context.restoreOfflineReadOnlySession(),true);
+  const expired=JSON.parse(s.values.get('freya-offline-session-grant-v1'));
+  expired.verifiedAt=Date.now()-31*24*60*60*1000;
+  s.values.set('freya-offline-session-grant-v1',JSON.stringify(expired));
+  assert.equal(s.context.readOfflineSessionGrant(),null);
+  const bad=offlineAuthScope({online:false});
+  bad.values.set('freya-offline-session-grant-v1',JSON.stringify({version:1,userId:'other',verifiedAt:Date.now()}));
+  assert.equal(bad.context.restoreOfflineReadOnlySession(),false);
+});
+
+test('Explicit logout revokes the local grant even when offline; no auto reentry',()=>{
+  const s=offlineAuthScope({online:true});
+  s.context.rememberOfflineSessionGrant('user-a');
+  s.mock.navigator.onLine=false;
+  assert.equal(s.context.restoreOfflineReadOnlySession(),true);
+  assert.equal(s.context.clearOfflineSessionGrant('user-a'),true);
+  assert.equal(s.context.readOfflineSessionGrant(),null);
+  // Storage release in another tab must also block a read-only session.
+  assert.match(html,/event\.key===OFFLINE_AUTH_GRANT_KEY&&!event\.newValue&&offlineReadOnlySession/);
+  assert.match(html,/if\(event==='SIGNED_OUT'\)\{\s*if\(restoreOfflineReadOnlySession\(\)\)return/);
+  assert.match(html,/clearOfflineSessionGrant\(userId\)/);
+  assert.match(html,/if\(offlineReadOnlySession\)\{/);
+  assert.match(html,/if\(navigator\.onLine!==false\)void validateOfflineSessionAfterReconnect\(\)/);
+});
+
+test('Offline read-only mode blocks write paths until Supabase getUser has validated reconnection',()=>{
+  assert.match(html,/function connectionUnavailable\(\)\{return .*offlineReadOnlySession/);
+  assert.match(html,/if\(checked\.error\)throw checked\.error/);
+  assert.match(html,/checked\.data\?\.user\?\.id!==previousId/);
+  assert.match(html,/offlineReadOnlySession=false;\s*await renderSession\(data\.session\)/);
+  assert.match(html,/offlineAuthNetworkError\(error\)/);
+  assert.match(html,/Per iniciar sessió cal connexió a Internet/);
+  assert.match(html,/const networkAbsent=navigator\.onLine===false/);
+  assert.match(html,/await db\.auth\.signOut\(\{scope:networkAbsent\?'local':'global'\}\)/);
+  assert.match(html,/finally\{\s*offlineReadOnlySession=false;\s*await renderSession\(null\)/);
+  assert.match(html,/const OFFLINE_AUTH_GRANT_MAX_AGE_MS=30\*24\*60\*60\*1000/);
+});
+
 test('Offline documents require explicit download, encrypted account-scoped IndexedDB and bounded storage',()=>{
   assert.match(html,/const OFFLINE_DOC_DB='freya-offline-private-documents-v1'/);
   assert.match(html,/crypto\.subtle\.generateKey\(\{name:'AES-GCM',length:256\},false/);
@@ -168,7 +261,7 @@ test('Offline documents require explicit download, encrypted account-scoped Inde
 test('Offline documents are not served by the service worker, and blob links are revoked',()=>{
   assert.doesNotMatch(worker,/offline-private-documents|offline-docs\/.*cache/);
   assert.match(html,/URL\.revokeObjectURL\(documentViewerObjectUrl\)/);
-  assert.match(html,/if\(event==='SIGNED_OUT'\)clearOfflineUserData/);
+  assert.match(html,/if\(event==='SIGNED_OUT'\)\{\s*if\(restoreOfflineReadOnlySession\(\)\)return;\s*clearOfflineUserData/);
   assert.match(html,/clearOfflineDocumentUserData\(userId\)/);
   assert.match(html,/offlineDocEpoch\+\+/);
 });

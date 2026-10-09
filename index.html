@@ -2257,8 +2257,53 @@ function safeOfflineRead(key){
   try{const value=JSON.parse(localStorage.getItem(key)||'null');if(!value||value.version!==OFFLINE_CACHE_VERSION||!Number.isFinite(Date.parse(value.savedAt||''))||Date.now()-Date.parse(value.savedAt)>OFFLINE_CACHE_MAX_AGE_MS)return null;return value}catch(_){return null}
 }
 function safeOfflineWrite(key,value){if(!key)return false;try{localStorage.setItem(key,JSON.stringify(value));return true}catch(_){return false}}
+const OFFLINE_AUTH_GRANT_KEY='freya-offline-session-grant-v1';
+const OFFLINE_AUTH_GRANT_MAX_AGE_MS=30*24*60*60*1000;
+let offlineReadOnlySession=false,offlineSessionRevalidating=false;
+function readOfflineSessionGrant(){
+  try{
+    const grant=JSON.parse(localStorage.getItem(OFFLINE_AUTH_GRANT_KEY)||'null');
+    if(grant?.version!==1||typeof grant.userId!=='string'||!grant.userId||
+      !Number.isFinite(grant.verifiedAt)||grant.verifiedAt>Date.now()||
+      Date.now()-grant.verifiedAt>OFFLINE_AUTH_GRANT_MAX_AGE_MS)return null;
+    // A user id alone is not a credential: only a previous successful online
+    // read of this user's trips can authorize limited local read-only reentry.
+    return readOfflineTrips(grant.userId)?grant:null;
+  }catch(_){return null}
+}
+function rememberOfflineSessionGrant(userId){
+  if(!userId||!session?.access_token||session.user?.id!==userId||
+    offlineReadOnlySession||navigator.onLine===false)return false;
+  return safeOfflineWrite(OFFLINE_AUTH_GRANT_KEY,{
+    version:1,userId,email:session.user.email||'',verifiedAt:Date.now()
+  });
+}
+function clearOfflineSessionGrant(userId){
+  try{
+    const value=JSON.parse(localStorage.getItem(OFFLINE_AUTH_GRANT_KEY)||'null');
+    if(userId&&value?.userId!==userId)return false;
+    localStorage.removeItem(OFFLINE_AUTH_GRANT_KEY);return true;
+  }catch(_){try{localStorage.removeItem(OFFLINE_AUTH_GRANT_KEY)}catch(_){}return false}
+}
+function restoreOfflineReadOnlySession(){
+  if(navigator.onLine!==false||passwordRecoveryMode)return false;
+  const grant=readOfflineSessionGrant();
+  if(!grant)return false;
+  if(offlineReadOnlySession&&session?.user?.id===grant.userId)return true;
+  offlineReadOnlySession=true;
+  // This synthetic principal exists ONLY for local, user-scoped snapshots.
+  // It carries no JWT and never authorizes requests against Supabase.
+  void renderSession({user:{id:grant.userId,email:grant.email||''},offlineOnly:true});
+  return true;
+}
+function offlineAuthNetworkError(error){
+  return error?.name==='AuthRetryableFetchError'||error?.status===0||
+    /network|load failed|failed to fetch|fetch failed/i.test(error?.message||'');
+}
 function clearOfflineUserData(userId=session?.user?.id){
   if(!userId)return false;
+  clearOfflineSessionGrant(userId);
+  if(session?.user?.id===userId)offlineReadOnlySession=false;
   offlineDocEpoch++;
   void clearOfflineDocumentUserData(userId).catch(()=>{});
   closeDocumentViewer();
@@ -2506,7 +2551,9 @@ async function removeOfflineDocument(id){
 
 function rememberOfflineTrips(rows,userId=session?.user?.id){
   if(!userId||!Array.isArray(rows))return false;
-  return safeOfflineWrite(offlineTripsKey(userId),{version:OFFLINE_CACHE_VERSION,userId,savedAt:new Date().toISOString(),rows});
+  const saved=safeOfflineWrite(offlineTripsKey(userId),{version:OFFLINE_CACHE_VERSION,userId,savedAt:new Date().toISOString(),rows});
+  if(saved)rememberOfflineSessionGrant(userId);
+  return saved;
 }
 function readOfflineTrips(userId=session?.user?.id){
   const value=safeOfflineRead(offlineTripsKey(userId));return value?.userId===userId&&Array.isArray(value.rows)?value:null;
@@ -2524,14 +2571,17 @@ function formatOfflineSavedAt(value){
   const date=new Date(value);if(!Number.isFinite(date.getTime()))return '';
   try{return new Intl.DateTimeFormat('ca-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(date)}catch(_){return ''}
 }
-function connectionUnavailable(){return typeof navigator!=='undefined'&&navigator.onLine===false}
+function connectionUnavailable(){return (typeof navigator!=='undefined'&&navigator.onLine===false)||offlineReadOnlySession}
 function updateConnectivityBanner(){
   const banner=$('connectivityBanner');if(!banner)return;
-  const offline=connectionUnavailable(),cached=offlineSnapshotActive;
-  if(!offline&&!cached){banner.className='connectivity-banner hidden';banner.textContent='';return}
+  const offline=typeof navigator!=='undefined'&&navigator.onLine===false;
+  const limited=offlineReadOnlySession&&!offline,cached=offlineSnapshotActive;
+  if(!offline&&!cached&&!limited){banner.className='connectivity-banner hidden';banner.textContent='';return}
   const when=offlineSnapshotSavedAt?formatOfflineSavedAt(offlineSnapshotSavedAt):'';
   banner.className='connectivity-banner '+(offline?'offline':'cached');
-  banner.innerHTML=offline
+  banner.innerHTML=limited
+    ?'<strong>🔐 Verificant la sessió</strong>Consulta local disponible. No es poden desar canvis fins que Freya validi la connexió.'
+    :offline
     ?`<strong>📵 Sense connexió</strong>${cached?`Mostrant les últimes dades desades${when?` · ${esc(when)}`:''}. `:''}Pots consultar el viatge; per desar canvis cal connexió.`
     :`<strong>⚠️ Connexió inestable</strong>Mostrant dades desades${when?` · ${esc(when)}`:''}. Freya les actualitzarà quan recuperi connexió.`;
 }
@@ -2579,7 +2629,42 @@ async function refreshAfterReconnect(){
   }finally{offlineRefreshInFlight=false;updateConnectivityBanner()}
 }
 window.addEventListener('offline',()=>{restoreOfflineAgendaSnapshot();restoreOfflineCarRentals();restoreOfflineDocuments();loadItems();loadParkingSummary();updateConnectivityBanner()});
-window.addEventListener('online',()=>{updateConnectivityBanner();refreshAfterReconnect()});
+async function validateOfflineSessionAfterReconnect(){
+  if(!offlineReadOnlySession||offlineSessionRevalidating||navigator.onLine===false)return;
+  offlineSessionRevalidating=true;
+  const previousId=session?.user?.id;
+  try{
+    const {data,error}=await db.auth.getSession();
+    if(error)throw error;
+    if(!data?.session)throw Error('La sessió ja no és vàlida.');
+    const checked=await db.auth.getUser();
+    if(checked.error)throw checked.error;
+    if(checked.data?.user?.id!==previousId||data.session.user?.id!==previousId)
+      throw Error('La identitat del compte ha canviat.');
+    offlineReadOnlySession=false;
+    await renderSession(data.session);
+    if(!connectionUnavailable())await refreshAfterReconnect();
+  }catch(error){
+    if(offlineAuthNetworkError(error)){updateConnectivityBanner();return}
+    clearOfflineUserData(previousId);
+    offlineReadOnlySession=false;
+    await renderSession(null);
+    msg('authMsg','No s’ha pogut revalidar la sessió. Inicia-la de nou amb connexió.',true);
+  }finally{offlineSessionRevalidating=false;updateConnectivityBanner()}
+}
+window.addEventListener('online',()=>{
+  updateConnectivityBanner();
+  if(offlineReadOnlySession)void validateOfflineSessionAfterReconnect();
+  else void refreshAfterReconnect();
+});
+window.addEventListener('storage',event=>{
+  if(event.key===OFFLINE_AUTH_GRANT_KEY&&!event.newValue&&offlineReadOnlySession){
+    const userId=session?.user?.id;
+    clearOfflineUserData(userId);
+    offlineReadOnlySession=false;
+    void renderSession(null);
+  }
+});
 function navigationStateStorageKey(userId=session?.user?.id){return userId?`freya-navigation-state-v${NAVIGATION_STATE_VERSION}-${userId}`:null}
 function clearNavigationState(userId=session?.user?.id){const key=navigationStateStorageKey(userId);if(!key)return;try{localStorage.removeItem(key)}catch(_){}}
 function readNavigationState(userId=session?.user?.id){
@@ -8227,7 +8312,14 @@ $('expenseForm').onsubmit=async e=>{
   if(!tripRequestIsCurrent(tripId,generation))return;$('expenseForm').reset();$('expenseDate').value=trip.start_date||'';msg('expenseMsg','Despesa afegida al registre compartit.');loadExpenses();
 };
 
-$('authForm').onsubmit=async e=>{e.preventDefault();msg('authMsg','');const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)msg('authMsg',error.message,true)};
+$('authForm').onsubmit=async e=>{
+  e.preventDefault();msg('authMsg','');
+  if(navigator.onLine===false){msg('authMsg','Per iniciar sessió cal connexió a Internet. Si havies tancat la sessió, les dades privades locals ja no estan disponibles.',true);return}
+  try{
+    const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+    if(error)msg('authMsg',offlineAuthNetworkError(error)?'No es pot connectar. Comprova Internet i torna-ho a provar.':error.message,true);
+  }catch(error){msg('authMsg',offlineAuthNetworkError(error)?'No es pot connectar. Comprova Internet i torna-ho a provar.':error?.message||'No s’ha pogut iniciar sessió.',true)}
+};
 $('signup').onclick=async()=>{msg('authMsg','');const {data,error}=await db.auth.signUp({email:$('email').value.trim(),password:$('password').value});if(error)msg('authMsg',error.message,true);else msg('authMsg',data.session?'Compte creat i sessió iniciada.':'Compte creat. Revisa el correu per confirmar-lo i després inicia sessió.')};
 $('forgotPassword').onclick=async()=>{
   const email=$('email');msg('authMsg','');if(!email.checkValidity()){email.reportValidity();return}
@@ -8260,8 +8352,19 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   const logoutUserId=session?.user?.id;
   clearOfflineUserData(logoutUserId);
   try{await clearOfflineDocumentUserData(logoutUserId)}catch(_){}
-  await db.auth.signOut();
-  if(password)password.value='';
+  // Device privacy is independent of the network. Explicit logout
+  // immediately closes the local UI even if the server is unreachable.
+  const networkAbsent=navigator.onLine===false;
+  try{
+    const {error}=await db.auth.signOut({scope:networkAbsent?'local':'global'});
+    if(error&&!networkAbsent)throw error;
+  }catch(error){
+    if(!networkAbsent)msg('authMsg','La sessió local s’ha tancat, però no s’ha pogut completar el tancament al servidor. Revisa la connexió.',true);
+  }finally{
+    offlineReadOnlySession=false;
+    await renderSession(null);
+    if(password)password.value='';
+  }
 });
 let manualTripStops=[],manualTripPendingQuery='';
 function manualTripPlaceLabel(place){return [place?.canonical_name,place?.administrative_area,place?.country_code].filter(Boolean).join(' · ')}
@@ -8950,23 +9053,52 @@ window.addEventListener('load',()=>{updateInstallUi();refreshPushUi();initGuide(
 window.addEventListener('pageshow',refreshPushUi);
 
 db.auth.onAuthStateChange((event,next)=>{
-  // Keep the previous user identity until renderSession can clear stale
-  // account-bound UI. Signed-out events also arrive from other open tabs.
-  if(event==='SIGNED_OUT')clearOfflineUserData(session?.user?.id||lastAuthenticatedUserId);
+  // An SDK refresh may fail while offline even though the user never signed out.
+  // Explicit logout deletes the local grant BEFORE triggering SIGNED_OUT.
+  if(event==='SIGNED_OUT'){
+    if(restoreOfflineReadOnlySession())return;
+    clearOfflineUserData(session?.user?.id||lastAuthenticatedUserId);
+    offlineReadOnlySession=false;
+  }
+  if(event==='INITIAL_SESSION'&&navigator.onLine===false){
+    if(restoreOfflineReadOnlySession())return;
+    renderSession(null);
+    return;
+  }
   if(event==='PASSWORD_RECOVERY'){
     session=next;passwordRecoveryMode=true;passwordRecoverySessionValid=!!next;authInitializationResolved=true;renderPasswordRecovery();return;
   }
   if(passwordRecoveryMode){session=next;if(!next)passwordRecoverySessionValid=false;renderPasswordRecovery();return}
+  // SDK auth events alone cannot unlock a locally restored account.
+  // A verified online getUser() response is required to leave read-only mode.
+  if(offlineReadOnlySession){
+    if(navigator.onLine!==false)void validateOfflineSessionAfterReconnect();
+    return;
+  }
+  if(navigator.onLine===false&&next){
+    if(restoreOfflineReadOnlySession())return;
+    renderSession(null);
+    return;
+  }
   renderSession(next);
 });
+if(navigator.onLine===false&&!passwordRecoveryMode){
+  authInitializationResolved=true;
+  restoreOfflineReadOnlySession();
+}
 db.auth.getSession().then(({data,error})=>{
   authInitializationResolved=true;
   if(passwordRecoveryMode){session=data?.session||null;renderPasswordRecovery();return}
+  if(restoreOfflineReadOnlySession()||offlineReadOnlySession)return;
+  if(navigator.onLine===false||error){
+    renderSession(null);
+    msg('authMsg','No s’ha pogut verificar la sessió. Connecta’t a Internet i torna-ho a provar.',true);
+    return;
+  }
   renderSession(data?.session||null);
 }).catch(()=>{
-  // A failed auth initialization must never unlock old cached travel data
-  // merely from knowing a userId. A valid session is required.
   authInitializationResolved=true;
+  if(restoreOfflineReadOnlySession()||offlineReadOnlySession)return;
   if(!session){renderSession(null);msg('authMsg','No s’ha pogut verificar la sessió. Torna a obrir Freya amb connexió.',true)}
 });
 </script>
