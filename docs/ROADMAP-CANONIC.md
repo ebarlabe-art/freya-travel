@@ -232,7 +232,7 @@ La prova real ja ha demostrat que l'offline actual no és suficient: la PWA pot 
 **Porta de seguretat P0, acordada el 8/10/2026: continuïtat local sense cobertura**
 - Amb una sessió prèviament iniciada, el viatger ha de poder consultar la informació autoritzada i preparada offline sense necessitat d'Internet en cada reobertura.
 - **Caducitat de la sessió/token mentre no hi ha xarxa:** validar que no bloqueja per si sola la consulta local. Un token caducat no permet accedir al servidor ni autoritzar edicions.
-- **Tancament de sessió voluntari:** revocar l'accés local i eliminar les dades privades desades i les claus del compte en aquell dispositiu. Un nou inici de sessió exigeix una autenticació real amb connexió.
+- **Tancament de sessió voluntari:** revocar l'accés a la interfície, tancar els visors i eliminar la concessió de consulta local; conservar els documents privats xifrats i la clau local per recuperar-los automàticament quan **el mateix compte** es torni a autenticar en línia. Les dades operatives no xifrades es netegen en sortir. Això **no és un bloqueig criptogràfic de la clau**: Face ID/desbloqueig segur i una opció per esborrar totes les dades locals continuen pendents.
 - **Reconnexió:** revalidar l'accés al servidor; gestionar revocacions, canvis de compte i pèrdua de permisos sense filtracions entre usuaris.
 - **Experiència d'error:** substituir el missatge tècnic «Load failed» per una explicació clara quan falta xarxa per iniciar sessió.
 - **GATE:** no donar aquest bloc per tancat fins a provar amb Safari/PWA instal·lada una caducitat de sessió real, un tancament explícit, la reconnexió i la neteja de dades locals.
@@ -361,7 +361,7 @@ Tots els mòduls principals han de tenir:
 🧪 documents i fotos grans  
 🧪 recuperació de sessió/contrasenya  
 🧪 caducitat real del token offline, reobertura sense xarxa i reconnexió  
-🧪 tancament de sessió: eliminació de dades/claus locals i reentrada amb Internet  
+🧪 tancament de sessió: bloqueig d'accés, persistència de còpies xifrades, reentrada del mateix compte amb Internet i comprovació que no cal tornar a descarregar  
 🧪 errors de login comprensibles quan no hi ha xarxa  
 🧪 notificacions reals
 

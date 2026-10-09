@@ -2305,10 +2305,13 @@ function clearOfflineUserData(userId=session?.user?.id){
   clearOfflineSessionGrant(userId);
   if(session?.user?.id===userId)offlineReadOnlySession=false;
   offlineDocEpoch++;
-  void clearOfflineDocumentUserData(userId).catch(()=>{});
+  // Sign-out closes private viewers and invalidates the account's active scope.
+  // Encrypted bytes and their device-local key remain in IndexedDB so the same
+  // user can recover offline documents after signing in again. This is a UI
+  // lock, not a biometric or cryptographic key-unlock boundary.
   closeDocumentViewer();
-  // Deliberate logout invalidates all offline itinerary/document metadata owned
-  // by this account on this device, but never touches another user's snapshots.
+  // Unencrypted itinerary/document metadata is cleared on sign-out.
+  // Another account's snapshots are never touched.
   try{
     const ownTripPrefix=`freya-offline-trip-v${OFFLINE_CACHE_VERSION}:${userId}:`;
     const keys=[];
@@ -8351,7 +8354,8 @@ document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   clearAccommodationVoucherFocus();
   const logoutUserId=session?.user?.id;
   clearOfflineUserData(logoutUserId);
-  try{await clearOfflineDocumentUserData(logoutUserId)}catch(_){}
+  // Encrypted document copies persist after logout; the signed-out user
+  // cannot access them through the app until authenticating again online.
   // Device privacy is independent of the network. Explicit logout
   // immediately closes the local UI even if the server is unreachable.
   const networkAbsent=navigator.onLine===false;
