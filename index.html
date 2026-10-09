@@ -2655,6 +2655,9 @@ async function validateOfflineSessionAfterReconnect(){
   offlineSessionRevalidating=true;
   const previousId=session?.user?.id;
   try{
+    // A reported connection does not prove Supabase is reachable. Never
+    // interpret an empty SDK session as revocation while the server is down.
+    if(await restoreOfflineWhenAuthServerUnreachable())return;
     const {data,error}=await db.auth.getSession();
     if(error)throw error;
     if(!data?.session)throw Error('La sessió ja no és vàlida.');
