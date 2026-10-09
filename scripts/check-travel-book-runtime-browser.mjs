@@ -170,6 +170,35 @@ try{
   console.log('PASS functional sticker drag changes rendered position');
   await dragCtx.close();
 
+  // Isolated responsive rendering check, independent of offline auth startup.
+  const narrowCtx=await context({serviceWorkers:'block'}),narrowPage=await narrowCtx.newPage();
+  await narrowPage.goto(url,{waitUntil:'load'});
+  await narrowPage.evaluate(()=>{
+    session={user:{id:'responsive-fixture'}};
+    trip={id:'responsive-trip',experience_key:null};
+    document.getElementById('tripView').classList.remove('hidden');
+    document.getElementById('documentsView').classList.remove('hidden');
+    renderDocuments([{id:'responsive-document',title:'Bitllet molt llarg per a una pantalla estreta',
+      file_name:'document-amb-un-nom-extraordinariament-llarg-per-provar-amplada.pdf',
+      file_path:'fixture/test.pdf',mime_type:'application/pdf',category:'Reserva'}]);
+    document.querySelector('#documentsList [data-offline-forget]')?.classList.remove('hidden');
+  });
+  for(const width of [320,375,430]){
+    await narrowPage.setViewportSize({width,height:700});
+    const layout=await narrowPage.evaluate(()=>{
+      const buttons=[...document.querySelectorAll('#documentsView .doc-actions button,#purgeOfflineDocuments')]
+        .filter(el=>el.getClientRects().length);
+      return {count:buttons.length,overflow:buttons.filter(el=>{
+        const rect=el.getBoundingClientRect(),card=el.closest('.doc-card,.card').getBoundingClientRect();
+        return rect.left<card.left-1||rect.right>card.right+1||rect.right>innerWidth+1;
+      }).map(el=>el.textContent.trim())};
+    });
+    assert.ok(layout.count>=5,JSON.stringify({width,layout}));
+    assert.deepEqual(layout.overflow,[],JSON.stringify({width,layout}));
+  }
+  console.log('PASS document actions and offline purge fit 320/375/430px iPhone layouts');
+  await narrowCtx.close();
+
   const pwaCtx=await context(),pwa=await pwaCtx.newPage();
   // Seed the prior cache before the real new worker installs.
   await pwa.addInitScript(async()=>{if(!sessionStorage.getItem('seeded-old-cache')){sessionStorage.setItem('seeded-old-cache','1');await Promise.all([caches.open('freya-travel-release-6444-v4'),caches.open('another-app-unrelated-cache')])}});
@@ -402,22 +431,6 @@ try{
   await isolatedReopen.locator('[data-select-trip="trip-beta"]').click();
   await isolatedReopen.locator('#genericDashboardView [data-open="documentsView"]').click();
   await isolatedReopen.locator('#documentsList .doc-card h3').getByText('Document privat beta').waitFor({state:'visible'});
-  // Narrow iPhone layouts: even long, alternate offline actions stay inside the card.
-  await isolatedReopen.evaluate(()=>document.querySelector('#documentsList [data-offline-forget]')?.classList.remove('hidden'));
-  for(const width of [320,375,430]){
-    await isolatedReopen.setViewportSize({width,height:700});
-    const layout=await isolatedReopen.evaluate(()=>{
-      const buttons=[...document.querySelectorAll('#documentsView .doc-actions button,#purgeOfflineDocuments')]
-        .filter(el=>el.getClientRects().length);
-      return {count:buttons.length,overflow:buttons.filter(el=>{
-        const rect=el.getBoundingClientRect(),card=(el.closest('.doc-card')||el.closest('.card')).getBoundingClientRect();
-        return rect.left<card.left-1||rect.right>card.right+1||rect.right>innerWidth+1||rect.width>card.width+1;
-      }).map(el=>el.textContent.trim())};
-    });
-    assert.ok(layout.count>=5,JSON.stringify({width,layout}));
-    assert.deepEqual(layout.overflow,[],JSON.stringify({width,layout}));
-  }
-  console.log('PASS document actions and offline purge fit 320/375/430px iPhone layouts');
   assert.equal(await isolatedReopen.locator('#documentsList').getByText('Document privat alpha').count(),0);
   await isolatedReopen.evaluate(()=>setAppView('genericDashboardView'));
   await isolatedReopen.locator('#genericDashboardView [data-open="itineraryView"]').click();
