@@ -1540,7 +1540,7 @@
       <div class="card">
         <h2>📄 Documents privats</h2>
         <p class="muted">Puja entrades, reserves, captures o PDF directament des del mòbil. Els documents són compartits només amb els membres del viatge.</p>
-        <p class="muted">🔐 Pots desar voluntàriament còpies xifrades per consultar sense Internet, només en aquest dispositiu. En tancar sessió s’esborren. L’accés depèn també de la seguretat del mòbil; comprova les entrades abans de viatjar.</p>
+        <p class="muted">🔐 Pots desar voluntàriament còpies xifrades per consultar sense Internet, només en aquest dispositiu. En tancar sessió les còpies xifrades es conserven, però només es poden recuperar després de tornar a iniciar sessió amb Internet. L’accés depèn també de la seguretat del mòbil; comprova les entrades abans de viatjar.</p>
         <div class="privacy-note">🔒 Els fitxers es guarden en un espai privat de Supabase. No es publiquen a GitHub.</div>
       </div>
       <div class="card">
@@ -1566,6 +1566,9 @@
       <div class="card">
         <h3>Documents del viatge</h3>
         <p id="offlineDocumentsStatus" class="muted" role="status">Prepara els documents que necessitis offline. Límit: 12 MB per fitxer i 55 MB per compte.</p>
+        <p class="muted">Les còpies xifrades d'aquest compte es poden eliminar d'aquest dispositiu sense esborrar els originals del viatge ni les còpies d'altres comptes.</p>
+        <button id="purgeOfflineDocuments" class="secondary hidden" type="button">Esborra totes les còpies offline d'aquest compte</button>
+        <p id="offlinePurgeMsg" class="message hidden" role="status" aria-live="polite"></p>
         <div id="documentsList" class="doc-grid"></div>
         <div id="documentsEmpty" class="doc-empty">Encara no hi ha cap document.</div>
       </div>
@@ -2522,6 +2525,23 @@ async function clearOfflineDocumentUserData(userId){
     tx.objectStore('keys').delete(userId);
   });
 }
+async function purgeOfflineDocumentCopies(){
+  const scope=offlineDocScope();
+  if(!scope||!confirm("Esborrar totes les còpies offline d'aquest compte en aquest dispositiu? Es perdran els fitxers xifrats i la clau local. Els originals al núvol i els documents d'altres comptes es conservaran. Aquesta acció no es pot desfer."))return;
+  const userId=scope.userId,button=$('purgeOfflineDocuments');
+  button.disabled=true;msg('offlinePurgeMsg','Esborrant les còpies xifrades…');
+  offlineDocEpoch++;closeDocumentViewer();
+  try{
+    await offlineDocEnqueue(()=>clearOfflineDocumentUserData(userId));
+    if(session?.user?.id===userId){
+      msg('offlinePurgeMsg','S’han esborrat les còpies offline i la clau local d’aquest compte.');
+      await offlineDocStatus();
+    }
+  }catch(error){
+    if(session?.user?.id===userId)msg('offlinePurgeMsg',error?.message||'No s’han pogut esborrar les còpies.',true);
+  }finally{button.disabled=false}
+}
+$('purgeOfflineDocuments').onclick=purgeOfflineDocumentCopies;
 async function offlineDocStatus(){
   const scope=offlineDocScope(),sequence=++offlineDocRenderSequence;
   if(!scope)return;
@@ -8111,6 +8131,7 @@ function renderDocuments(docs=documentRows){
   list.querySelectorAll('[data-delete-doc]').forEach(b=>b.onclick=()=>deleteDocument(b.dataset.deleteDoc,documentRows));
   list.querySelectorAll('[data-offline-save]').forEach(b=>b.onclick=()=>prepareOfflineDocument(b.dataset.offlineSave));
   list.querySelectorAll('[data-offline-forget]').forEach(b=>b.onclick=()=>removeOfflineDocument(b.dataset.offlineForget));
+  $('purgeOfflineDocuments').classList.toggle('hidden',isLondonTrip()||!session?.user?.id);
   if(!isLondonTrip())void offlineDocStatus();
   if(isLondonTrip()){
     updateTicketDocumentLinks();
