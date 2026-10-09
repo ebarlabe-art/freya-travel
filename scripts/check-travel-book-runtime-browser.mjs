@@ -323,5 +323,55 @@ try{
     tripCardCount:document.querySelectorAll('[data-select-trip="test-expired-trip"]').length
   })),{userId:null,readOnly:false,grantAccepted:false,cachedTripExists:true,tripCardCount:0});
   console.log('PASS expired local grant denies offline entry while retaining cached trip metadata');
+  await expiredReopen.close();
+  await coldCtx.setOffline(false);
+  // Two account snapshots coexist on one device. Only beta has the latest
+  // valid online grant; do not inject user or trip after offline reopening.
+  const switchSeed=await coldCtx.newPage();
+  await switchSeed.goto(url,{waitUntil:'load'});
+  await switchSeed.waitForFunction(()=>authInitializationResolved===true);
+  await switchSeed.evaluate(()=>{
+    for(const name of ['alpha','beta']){
+      const userId='account-'+name,tripId='trip-'+name;
+      session={user:{id:userId,email:name+'@example.invalid'},access_token:'test-only-online-token'};
+      const rows=[{id:tripId,name:'Viatge privat '+name,start_date:'2026-10-09',
+        end_date:'2026-10-10',time_zone:'Europe/Madrid',is_owner:true,experience_key:null}];
+      const agenda={flightRows:[],flightDocumentLinks:[],accommodationRows:[],
+        accommodationDocumentLinks:[],activityRows:[],activityDocumentLinks:[],
+        dayMetadataRows:[],manualItineraryRows:[{id:'manual-'+name,trip_id:tripId,
+          title:'Pla privat '+name,timing_kind:'all_day',local_date:'2026-10-09',
+          time_zone:'Europe/Madrid',status:'planned'}]};
+      const documentRows=[{id:'doc-'+name,trip_id:tripId,title:'Document privat '+name,
+        category:'Reserva',file_name:name+'.pdf',file_path:'test-only/'+name+'.pdf',
+        mime_type:'application/pdf'}];
+      if(!rememberOfflineTrips(rows,userId)||
+        !mergeOfflineTripSnapshot({agenda,documentRows,tripStopRows:[],checklistItems:[]},tripId,userId))
+        throw Error('Could not prepare isolated account '+name);
+    }
+    if(readOfflineSessionGrant()?.userId!=='account-beta'||
+      !readOfflineTrips('account-alpha')||!readOfflineTripSnapshot('trip-alpha','account-alpha'))
+      throw Error('Expected two cached accounts with only beta authorized');
+  });
+  await coldCtx.setOffline(true);
+  await switchSeed.close();
+  const isolatedReopen=await coldCtx.newPage();
+  await isolatedReopen.goto(url,{waitUntil:'load'});
+  await isolatedReopen.locator('[data-select-trip="trip-beta"]').waitFor({state:'visible',timeout:15000});
+  assert.deepEqual(await isolatedReopen.evaluate(()=>({
+    owner:session?.user?.id,readOnly:offlineReadOnlySession,hasToken:!!session?.access_token,
+    visibleTrips:trips.map(row=>row.id),alphaStillStored:!!readOfflineTrips('account-alpha'),
+    forbiddenRead:readOfflineTripSnapshot('trip-alpha')===null
+  })),{owner:'account-beta',readOnly:true,hasToken:false,
+    visibleTrips:['trip-beta'],alphaStillStored:true,forbiddenRead:true});
+  assert.equal(await isolatedReopen.locator('[data-select-trip="trip-alpha"]').count(),0);
+  await isolatedReopen.locator('[data-select-trip="trip-beta"]').click();
+  await isolatedReopen.locator('#genericDashboardView [data-open="documentsView"]').click();
+  await isolatedReopen.locator('#documentsList .doc-card h3').getByText('Document privat beta').waitFor({state:'visible'});
+  assert.equal(await isolatedReopen.locator('#documentsList').getByText('Document privat alpha').count(),0);
+  await isolatedReopen.evaluate(()=>setAppView('genericDashboardView'));
+  await isolatedReopen.locator('#genericDashboardView [data-open="itineraryView"]').click();
+  await isolatedReopen.locator('#genericItineraryDays').getByText('Pla privat beta').waitFor({state:'visible'});
+  assert.equal(await isolatedReopen.locator('#genericItineraryContent').getByText('Pla privat alpha').count(),0);
+  console.log('PASS same-device accounts isolate cached trips, document cards and itinerary after cold offline start');
   await coldCtx.close();
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
