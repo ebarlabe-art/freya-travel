@@ -188,12 +188,12 @@ try{
     const layout=await narrowPage.evaluate(()=>{
       const buttons=[...document.querySelectorAll('#documentsView .doc-actions button,#purgeOfflineDocuments')]
         .filter(el=>el.getClientRects().length);
-      return {count:buttons.length,overflow:buttons.filter(el=>{
+      return {count:buttons.length,purgeVisible:buttons.some(el=>el.id==='purgeOfflineDocuments'),overflow:buttons.filter(el=>{
         const rect=el.getBoundingClientRect(),card=el.closest('.doc-card,.card').getBoundingClientRect();
         return rect.left<card.left-1||rect.right>card.right+1||rect.right>innerWidth+1;
       }).map(el=>el.textContent.trim())};
     });
-    assert.ok(layout.count>=5,JSON.stringify({width,layout}));
+    assert.ok(layout.count>=4&&layout.purgeVisible,JSON.stringify({width,layout}));
     assert.deepEqual(layout.overflow,[],JSON.stringify({width,layout}));
   }
   console.log('PASS document actions and offline purge fit 320/375/430px iPhone layouts');
