@@ -2541,7 +2541,6 @@ async function purgeOfflineDocumentCopies(){
     if(session?.user?.id===userId)msg('offlinePurgeMsg',error?.message||'No s’han pogut esborrar les còpies.',true);
   }finally{button.disabled=false}
 }
-$('purgeOfflineDocuments').onclick=purgeOfflineDocumentCopies;
 async function offlineDocStatus(){
   const scope=offlineDocScope(),sequence=++offlineDocRenderSequence;
   if(!scope)return;
@@ -8388,6 +8387,7 @@ $('requestAnotherRecovery').onclick=async()=>{
   if(session)await db.auth.signOut();else renderSession(null);
   $('passwordRecoveryForm').reset();hide('passwordRecoveryCard');show('loginCard');show('auth');msg('authMsg','');$('email').focus();
 };
+$('purgeOfflineDocuments').onclick=purgeOfflineDocumentCopies;
 document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
   const password=$('password');
   if(password)password.value='';
