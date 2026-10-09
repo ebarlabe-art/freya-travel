@@ -257,5 +257,21 @@ try{
     userId:session?.user?.id,readOnly:offlineReadOnlySession,tripCount:trips.length
   })),{userId:'test-offline-ui-owner',readOnly:true,tripCount:1});
   console.log('PASS local recovery with unavailable Internet and misleading navigator.onLine');
+  // Security gate: an explicit UI logout must revoke the local grant even
+  // when the browser falsely claims Internet connectivity.
+  await unreliableNetwork.locator('.logout:visible').first().click();
+  await unreliableNetwork.locator('#loginCard').waitFor({state:'visible',timeout:10000});
+  assert.deepEqual(await unreliableNetwork.evaluate(()=>({
+    userId:session?.user?.id||null,offlineGrant:readOfflineSessionGrant(),
+    savedTrips:readOfflineTrips('test-offline-ui-owner')
+  })),{userId:null,offlineGrant:null,savedTrips:null});
+  await unreliableNetwork.close();
+  const loggedOutColdOpen=await coldCtx.newPage();
+  await loggedOutColdOpen.addInitScript(()=>Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true}));
+  await loggedOutColdOpen.goto(url,{waitUntil:'load'});
+  await loggedOutColdOpen.locator('#loginCard').waitFor({state:'visible',timeout:10000});
+  assert.equal(await loggedOutColdOpen.locator('[data-select-trip="test-offline-ui-trip"]').count(),0);
+  assert.equal(await loggedOutColdOpen.evaluate(()=>!!session||offlineReadOnlySession),false);
+  console.log('PASS explicit logout revokes offline access across cold restart with misleading online signal');
   await coldCtx.close();
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
