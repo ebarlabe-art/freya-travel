@@ -98,7 +98,17 @@ try{
     await offlineDocSaveBlob(otherScope,otherDoc,new Blob([bytes],{type:'application/pdf'}));
     const otherId=offlineDocId(otherScope.userId,otherScope.tripId,otherDoc.id);
     session={user:{id:'test-vault-owner'}};tripLoadGeneration++;
-    await clearOfflineDocumentUserData(scope.userId);
+    const purgeButton=document.getElementById('purgeOfflineDocuments');
+    if(purgeButton?.onclick!==purgeOfflineDocumentCopies)throw Error('Purge UI button not connected');
+    const originalConfirm=window.confirm;
+    window.confirm=()=>false;
+    await purgeOfflineDocumentCopies();
+    if(!await offlineDocRead(database,'records',encrypted.key))throw Error('Cancel erased a saved document');
+    window.confirm=()=>true;
+    await purgeOfflineDocumentCopies();
+    window.confirm=originalConfirm;
+    if(!document.getElementById('offlinePurgeMsg').textContent.includes('S’han esborrat'))
+      throw Error('Purge UI did not confirm removal');
     if(await offlineDocRead(database,'records',encrypted.key))throw Error('Purge retained owner encrypted bytes');
     if(await offlineDocRead(database,'keys',scope.userId))throw Error('Purge retained owner key');
     if(!await offlineDocRead(database,'records',otherId)||!await offlineDocRead(database,'keys',otherScope.userId))
