@@ -373,5 +373,24 @@ try{
   await isolatedReopen.locator('#genericItineraryDays').getByText('Pla privat beta').waitFor({state:'visible'});
   assert.equal(await isolatedReopen.locator('#genericItineraryContent').getByText('Pla privat alpha').count(),0);
   console.log('PASS same-device accounts isolate cached trips, document cards and itinerary after cold offline start');
+  // A deliberately expired SDK session must not defeat the valid offline grant.
+  await isolatedReopen.evaluate(()=>{
+    const key=db.auth.storageKey;
+    if(!key||readOfflineSessionGrant()?.userId!=='account-beta')throw Error('Missing verified SDK fixture scope');
+    localStorage.setItem(key,JSON.stringify({
+      access_token:'expired-fixture-access',refresh_token:'expired-fixture-refresh',
+      token_type:'bearer',expires_in:3600,expires_at:Math.floor(Date.now()/1000)-120,
+      user:{id:'account-beta',email:'beta@example.invalid',role:'authenticated',aud:'authenticated'}
+    }));
+  });
+  await isolatedReopen.close();
+  const expiredSdkPage=await coldCtx.newPage();
+  await expiredSdkPage.goto(url,{waitUntil:'load'});
+  await expiredSdkPage.locator('[data-select-trip="trip-beta"]').waitFor({state:'visible',timeout:15000});
+  assert.deepEqual(await expiredSdkPage.evaluate(()=>({
+    account:session?.user?.id,readOnly:offlineReadOnlySession,serverToken:!!session?.access_token,
+    storedAccessExpired:JSON.parse(localStorage.getItem(db.auth.storageKey)).expires_at<Date.now()/1000
+  })),{account:'account-beta',readOnly:true,serverToken:false,storedAccessExpired:true});
+  console.log('PASS expired Supabase SDK session fixture cold-opens cached trip in read-only mode');
   await coldCtx.close();
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
