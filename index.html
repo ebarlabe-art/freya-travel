@@ -2285,16 +2285,34 @@ function clearOfflineSessionGrant(userId){
     localStorage.removeItem(OFFLINE_AUTH_GRANT_KEY);return true;
   }catch(_){try{localStorage.removeItem(OFFLINE_AUTH_GRANT_KEY)}catch(_){}return false}
 }
-function restoreOfflineReadOnlySession(){
-  if(navigator.onLine!==false||passwordRecoveryMode)return false;
+function restoreOfflineReadOnlySession(confirmedNetworkFailure=false){
+  if((navigator.onLine!==false&&!confirmedNetworkFailure)||passwordRecoveryMode)return false;
   const grant=readOfflineSessionGrant();
-  if(!grant)return false;
+  if(!grant||(session?.user?.id&&session.user.id!==grant.userId))return false;
   if(offlineReadOnlySession&&session?.user?.id===grant.userId)return true;
   offlineReadOnlySession=true;
   // This synthetic principal exists ONLY for local, user-scoped snapshots.
   // It carries no JWT and never authorizes requests against Supabase.
   void renderSession({user:{id:grant.userId,email:grant.email||''},offlineOnly:true});
   return true;
+}
+let offlineAuthConnectivityProbe=null;
+function restoreOfflineWhenAuthServerUnreachable(){
+  if(!readOfflineSessionGrant()||passwordRecoveryMode)return Promise.resolve(false);
+  if(navigator.onLine===false)return Promise.resolve(restoreOfflineReadOnlySession());
+  if(offlineAuthConnectivityProbe)return offlineAuthConnectivityProbe;
+  // navigator.onLine can stay true on an unusable Wi-Fi connection.
+  // A reachable auth server (even one returning an error) never unlocks offline fallback.
+  offlineAuthConnectivityProbe=(async()=>{
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),3000);
+    try{
+      await fetch(SUPABASE_URL+'/auth/v1/health',{cache:'no-store',signal:controller.signal});
+      return false;
+    }catch(_){
+      return restoreOfflineReadOnlySession(true);
+    }finally{clearTimeout(timer)}
+  })().finally(()=>{offlineAuthConnectivityProbe=null});
+  return offlineAuthConnectivityProbe;
 }
 function offlineAuthNetworkError(error){
   return error?.name==='AuthRetryableFetchError'||error?.status===0||
@@ -9061,6 +9079,18 @@ db.auth.onAuthStateChange((event,next)=>{
   // Explicit logout deletes the local grant BEFORE triggering SIGNED_OUT.
   if(event==='SIGNED_OUT'){
     if(restoreOfflineReadOnlySession())return;
+    const grant=readOfflineSessionGrant();
+    if(grant&&navigator.onLine!==false&&(!session?.user?.id||session.user.id===grant.userId)){
+      // A failed SDK token refresh can emit SIGNED_OUT while the device still
+      // claims to be online. Do not destroy a valid local grant before probing.
+      void restoreOfflineWhenAuthServerUnreachable().then(restored=>{
+        if(restored||offlineReadOnlySession)return;
+        clearOfflineUserData(session?.user?.id||lastAuthenticatedUserId||grant.userId);
+        offlineReadOnlySession=false;
+        void renderSession(null);
+      });
+      return;
+    }
     clearOfflineUserData(session?.user?.id||lastAuthenticatedUserId);
     offlineReadOnlySession=false;
   }
@@ -9090,10 +9120,12 @@ if(navigator.onLine===false&&!passwordRecoveryMode){
   authInitializationResolved=true;
   restoreOfflineReadOnlySession();
 }
-db.auth.getSession().then(({data,error})=>{
+db.auth.getSession().then(async({data,error})=>{
   authInitializationResolved=true;
   if(passwordRecoveryMode){session=data?.session||null;renderPasswordRecovery();return}
   if(restoreOfflineReadOnlySession()||offlineReadOnlySession)return;
+  if((!data?.session||error)&&(!error||offlineAuthNetworkError(error))
+    &&await restoreOfflineWhenAuthServerUnreachable())return;
   if(navigator.onLine===false||error){
     renderSession(null);
     msg('authMsg','No s’ha pogut verificar la sessió. Connecta’t a Internet i torna-ho a provar.',true);
@@ -9103,7 +9135,9 @@ db.auth.getSession().then(({data,error})=>{
 }).catch(()=>{
   authInitializationResolved=true;
   if(restoreOfflineReadOnlySession()||offlineReadOnlySession)return;
-  if(!session){renderSession(null);msg('authMsg','No s’ha pogut verificar la sessió. Torna a obrir Freya amb connexió.',true)}
+  void restoreOfflineWhenAuthServerUnreachable().then(restored=>{
+    if(!restored&&!session){renderSession(null);msg('authMsg','No s’ha pogut verificar la sessió. Torna a obrir Freya amb connexió.',true)}
+  });
 });
 </script>
 </body>
