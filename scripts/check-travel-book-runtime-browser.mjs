@@ -252,7 +252,23 @@ try{
   });
   await unreliableNetwork.goto(url,{waitUntil:'load'});
   assert.equal(await unreliableNetwork.evaluate(()=>navigator.onLine),true);
-  await unreliableNetwork.locator('[data-select-trip="test-offline-ui-trip"]').waitFor({state:'visible',timeout:8000});
+  try{
+    await unreliableNetwork.locator('[data-select-trip="test-offline-ui-trip"]').waitFor({state:'visible',timeout:8000});
+  }catch(error){
+    const diagnostic=await unreliableNetwork.evaluate(()=>({
+      online:navigator.onLine,authReady:authInitializationResolved,
+      activeUser:session?.user?.id||null,readOnly:offlineReadOnlySession,
+      grantUser:readOfflineSessionGrant()?.userId||null,
+      storedTripCount:readOfflineTrips('test-offline-ui-owner')?.rows?.length??null,
+      loadedTripCount:trips.length,selectedTrip:trip?.id||null,
+      authVisible:!document.getElementById('auth').classList.contains('hidden'),
+      tripVisible:!document.getElementById('tripView').classList.contains('hidden'),
+      noTripVisible:!document.getElementById('noTrip').classList.contains('hidden'),
+      loadMessage:document.getElementById('tripLoadError')?.textContent||''
+    }));
+    console.error('OFFLINE_FALSE_ONLINE_COLD_START_DIAGNOSTIC',JSON.stringify(diagnostic));
+    throw error;
+  }
   assert.deepEqual(await unreliableNetwork.evaluate(()=>({
     userId:session?.user?.id,readOnly:offlineReadOnlySession,tripCount:trips.length
   })),{userId:'test-offline-ui-owner',readOnly:true,tripCount:1});
