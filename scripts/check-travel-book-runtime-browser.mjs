@@ -203,4 +203,45 @@ try{
   assert.deepEqual(missing.filter(path=>/\.m?js$/.test(path)),[]);
   console.log('PASS PWA old cache retired; current cache contains full graph and loads modules offline');
   await pwaCtx.close();
+
+  // E2E: a pre-authorized local account must restore its own trip, document
+  // cards and itinerary after an entirely new page opens without a network.
+  // Seed only while online; do NOT inject session/trip after reopening.
+  const coldCtx=await context(),coldOnline=await coldCtx.newPage();
+  await coldOnline.goto(url,{waitUntil:'load'});
+  await coldOnline.waitForFunction(()=>!!navigator.serviceWorker.controller&&authInitializationResolved===true);
+  await coldOnline.locator('#loginCard').waitFor({state:'visible'});
+  await coldOnline.evaluate(()=>{
+    const userId='test-offline-ui-owner',tripId='test-offline-ui-trip';
+    // Simulated previously authenticated online session (no real credentials).
+    session={user:{id:userId,email:'offline-test@example.invalid'},access_token:'test-only-online-token'};
+    const row={id:tripId,name:'Viatge fictici offline',start_date:'2026-10-09',end_date:'2026-10-10',time_zone:'Europe/Madrid',is_owner:true,experience_key:null};
+    if(!rememberOfflineTrips([row],userId)||readOfflineSessionGrant()?.userId!==userId)
+      throw Error('Online trip snapshot did not establish the genuine local read grant');
+    const agenda={
+      flightRows:[],flightDocumentLinks:[],accommodationRows:[],accommodationDocumentLinks:[],
+      activityRows:[],activityDocumentLinks:[],dayMetadataRows:[],
+      manualItineraryRows:[{id:'test-offline-plan',trip_id:tripId,title:'Passeig fictici offline',timing_kind:'all_day',local_date:'2026-10-09',time_zone:'Europe/Madrid',status:'planned'}]
+    };
+    const documentRows=[{id:'test-offline-doc',trip_id:tripId,title:'Reserva ficticia offline',category:'Reserva',file_name:'reserva-test.pdf',file_path:'test-only/reserva-test.pdf',mime_type:'application/pdf'}];
+    if(!mergeOfflineTripSnapshot({agenda,documentRows,tripStopRows:[],checklistItems:[]},tripId,userId))
+      throw Error('Could not prepare offline trip data while online');
+  });
+  await coldCtx.setOffline(true);
+  await coldOnline.close(); // A fresh page must bootstrap without the previous JS globals.
+  const coldReopen=await coldCtx.newPage();
+  await coldReopen.goto(url,{waitUntil:'load'});
+  await coldReopen.locator('[data-select-trip="test-offline-ui-trip"]').waitFor({state:'visible',timeout:15000});
+  assert.deepEqual(await coldReopen.evaluate(()=>({
+    userId:session?.user?.id,readOnly:offlineReadOnlySession,hasToken:!!session?.access_token,online:navigator.onLine
+  })),{userId:'test-offline-ui-owner',readOnly:true,hasToken:false,online:false});
+  await coldReopen.locator('[data-select-trip="test-offline-ui-trip"]').click();
+  await coldReopen.locator('#genericDashboardView [data-open="itineraryView"]').click();
+  await coldReopen.locator('#genericItineraryDays').getByText('Passeig fictici offline').waitFor({state:'visible',timeout:15000});
+  await coldReopen.evaluate(()=>setAppView('genericDashboardView')); // Navigate only; never inject the account or trip.
+  await coldReopen.locator('#genericDashboardView [data-open="documentsView"]').click();
+  await coldReopen.locator('#documentsList .doc-card h3').getByText('Reserva ficticia offline').waitFor({state:'visible',timeout:15000});
+  assert.equal(await coldReopen.evaluate(()=>trip?.id),'test-offline-ui-trip');
+  console.log('PASS new offline page automatically restores local session, trip, itinerary and document cards');
+  await coldCtx.close();
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
