@@ -72,6 +72,20 @@ try{
     const stillStored=await offlineDocRead(database,'records',encrypted.key);
     const stillKey=await offlineDocRead(database,'keys',scope.userId);
     if(!stillStored||!stillKey)throw Error('Logout deleted a previously saved offline document');
+    if(stillKey.extractable||stillKey.algorithm?.name!=='AES-GCM'||stillKey.algorithm?.length!==256)
+      throw Error('Persistent document key is not non-exportable AES-256-GCM');
+    let exportBlocked=false;
+    try{await crypto.subtle.exportKey('raw',stillKey)}catch(_){exportBlocked=true}
+    if(!exportBlocked)throw Error('Document key was exported');
+    if(await offlineDocGetBlob(scope,doc))throw Error('Old scope survived explicit logout');
+    session={user:{id:'test-vault-other'}};
+    trip={id:'test-vault-trip',experience_key:null};
+    if(await offlineDocGetBlob(offlineDocScope(),doc))throw Error('Other account read private PDF');
+    const otherKey=await offlineDocKey(database,'test-vault-other',true);
+    let wrongKeyBlocked=false;
+    try{await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(encrypted.iv)},otherKey,encrypted.ciphertext)}
+    catch(_){wrongKeyBlocked=true}
+    if(!wrongKeyBlocked)throw Error('Other account decrypted private PDF');
     session={user:{id:'test-vault-owner'}};
     trip={id:'test-vault-trip',experience_key:null};
     const restoredAfterLogin=await offlineDocGetBlob(offlineDocScope(),doc);
