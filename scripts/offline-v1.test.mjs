@@ -27,6 +27,8 @@ test('Offline V1 never fakes successful writes',()=>{
 });
 
 test('Offline V1 reconnects by refreshing authoritative data',()=>{
- assert.match(html,/window\.addEventListener\('online',\(\)=>\{updateConnectivityBanner\(\);refreshAfterReconnect\(\)\}\)/);
+ assert.match(html,/window\.addEventListener\('online',\(\)=>\{/);
+ assert.match(html,/if\(offlineReadOnlySession\)void validateOfflineSessionAfterReconnect\(\)/);
+ assert.match(html,/else void refreshAfterReconnect\(\)/);
  assert.match(html,/ensureTripAgenda\(true\)/);
 });
