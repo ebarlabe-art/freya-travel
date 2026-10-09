@@ -64,6 +64,20 @@ try{
     if(wrongPath)throw Error('Changed document path must invalidate cached bytes');
     const beforeClose=await offlineDocRead(database,'keys',scope.userId);
     if(!beforeClose)throw Error('No account key');
+    // A real in-app logout revokes the active local scope, but must no longer
+    // remove encrypted copies. The same account can reopen them without download.
+    clearOfflineUserData(scope.userId);
+    session=null;trip=null;
+    if(offlineDocScope())throw Error('Signed-out account retained an offline document scope');
+    const stillStored=await offlineDocRead(database,'records',encrypted.key);
+    const stillKey=await offlineDocRead(database,'keys',scope.userId);
+    if(!stillStored||!stillKey)throw Error('Logout deleted a previously saved offline document');
+    session={user:{id:'test-vault-owner'}};
+    trip={id:'test-vault-trip',experience_key:null};
+    const restoredAfterLogin=await offlineDocGetBlob(offlineDocScope(),doc);
+    if(!restoredAfterLogin)throw Error('Same account cannot reopen offline document after login');
+    if(new Uint8Array(await restoredAfterLogin.blob.arrayBuffer()).join(',')!==bytes.join(','))
+      throw Error('Preserved offline document contents changed after logout');
     await clearOfflineDocumentUserData(scope.userId);
     if(await offlineDocRead(database,'records',encrypted.key))throw Error('Logout kept encrypted bytes');
     if(await offlineDocRead(database,'keys',scope.userId))throw Error('Logout kept the key');

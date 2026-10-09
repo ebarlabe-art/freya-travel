@@ -113,14 +113,33 @@ test('Offline V2 logout clears only current account metadata and no-trip fallbac
     ['another-app','keep']
   ]);
   const store={get length(){return values.size},key:index=>[...values.keys()][index]||null,removeItem:key=>values.delete(key)};
-  const scope=vm.createContext({localStorage:store,session:{user:{id:'eva'}},OFFLINE_CACHE_VERSION:1,offlineTripsKey:id=>'freya-offline-trips-v1:'+id,offlineDocEpoch:0,offlineReadOnlySession:false,clearOfflineSessionGrant:()=>true,closeDocumentViewer(){},clearOfflineDocumentUserData:async()=>{}});
+  let privateVaultDeletes=0;
+  const scope=vm.createContext({localStorage:store,session:{user:{id:'eva'}},OFFLINE_CACHE_VERSION:1,offlineTripsKey:id=>'freya-offline-trips-v1:'+id,offlineDocEpoch:0,offlineReadOnlySession:false,clearOfflineSessionGrant:()=>true,closeDocumentViewer(){},clearOfflineDocumentUserData:async()=>{privateVaultDeletes++}});
   vm.runInContext(html.slice(begin,end),scope);
   assert.equal(scope.clearOfflineUserData(),true);
+  assert.equal(privateVaultDeletes,0,'Logout must not delete encrypted document bytes or keys');
   assert.deepEqual([...values.keys()].sort(),['another-app','freya-offline-trip-v1:xesc:trip-b','freya-offline-trips-v1:xesc'].sort());
   assert.match(html,/Sense connexió i sense cap viatge desat en aquest dispositiu/);
   assert.match(html,/clearOfflineUserData\(logoutUserId\)/);
 });
 function requireVm(){return vmModule}
+
+test('Logout preserves encrypted account vault while denying signed-out reads',()=>{
+  const logout=html.slice(html.indexOf("document.querySelectorAll('.logout')"),html.indexOf("let manualTripStops="));
+  const cleanup=html.slice(html.indexOf('function clearOfflineUserData('),html.indexOf('// Offline document vault.'));
+  const vault=html.slice(html.indexOf('async function offlineDocForget('),html.indexOf('async function offlineDocStatus('));
+  assert.match(logout,/clearOfflineUserData\(logoutUserId\)/);
+  assert.doesNotMatch(logout,/clearOfflineDocumentUserData\(/);
+  assert.doesNotMatch(cleanup,/clearOfflineDocumentUserData\(/);
+  assert.match(cleanup,/offlineDocEpoch\+\+/);
+  assert.match(cleanup,/closeDocumentViewer\(\)/);
+  assert.match(vault,/async function clearOfflineDocumentUserData\(userId\)/,
+    'Account-wide vault purge stays available for an explicit delete action');
+  assert.match(html,/async function offlineDocGetBlob\(scope,doc\)\{\s*if\(!offlineDocScopeCurrent\(scope\)\)return null/);
+  assert.match(html,/row\.userId!==scope\.userId\|\|row\.tripId!==scope\.tripId/);
+  assert.match(html,/await offlineDocForget\(scope,id\)/);
+  assert.match(html,/const key=await offlineDocKey\(database,scope\.userId\)/);
+});
 
 test('Offline V2 keeps user-switch teardown and handles rejected auth initialization',()=>{
   const auth=html.slice(html.indexOf('db.auth.onAuthStateChange('));

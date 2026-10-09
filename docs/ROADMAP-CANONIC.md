@@ -1,8 +1,8 @@
 # Freya Travel · Roadmap canònic
 
-**Versió:** 1.1  
-**Data de tall:** 7 d'octubre de 2026  
-**Versió publicada de l'app en aquest tall:** 6.4.19  
+**Versió:** 1.2  
+**Data de tall:** 8 d'octubre de 2026  
+**Versió publicada documentada al tall anterior (7 oct.):** 6.4.19  
 **Estat del document:** CANÒNIC
 
 > Aquest document substitueix els roadmaps anteriors com a guia operativa del projecte. Els documents i roadmaps previs es conserven com a historial de decisions. Qualsevol nova idea s'ha d'ubicar dins d'aquest roadmap o incorporar-se mitjançant una revisió numerada.
@@ -45,14 +45,14 @@ Principis que continuen sent obligatoris:
 
 | Bloc | Estat | Situació real |
 | --- | :---: | --- |
-| Login i sessió | ✅ | Estable |
+| Login i sessió | 🟡 | Estable en línia; pendent validar la sessió caducada sense Internet i el tancament voluntari |
 | Recuperació de contrasenya | ✅ | Validada també en ús real |
 | PWA / instal·lació | ✅ | Operativa |
 | Múltiples viatges | ✅ | Crear, llistar, seleccionar i reprendre |
 | Navegació i retorn de context | ✅ | Home, viatge, Builder, historial i retorns específics |
 | Checklist universal | ✅ | Compartida dins del viatge |
 | Documents | ✅ | Mòdul operatiu |
-| Offline V1 | ✅ | Lectura de l'última informació bona + estat de connexió + reintent |
+| Offline V1 | ✅ | Lectura de l'última informació bona + estat de connexió + reintent; Offline V2 en validació a la PR #106 |
 | Escriure offline | 🔵 | No es fingeix desament; una possible cua offline queda per una V2 si aporta valor |
 
 ### 3.2 Peces operatives del viatge
@@ -229,6 +229,19 @@ La prova real ja ha demostrat que l'offline actual no és suficient: la PWA pot 
 - indicador clar de mode offline i hora de l'última sincronització;
 - resincronització automàtica en recuperar connexió.
 
+**Porta de seguretat P0, acordada el 8/10/2026: continuïtat local sense cobertura**
+- Amb una sessió prèviament iniciada, el viatger ha de poder consultar la informació autoritzada i preparada offline sense necessitat d'Internet en cada reobertura.
+- **Caducitat de la sessió/token mentre no hi ha xarxa:** validar que no bloqueja per si sola la consulta local. Un token caducat no permet accedir al servidor ni autoritzar edicions.
+- **Tancament de sessió voluntari:** revocar l'accés a la interfície, tancar els visors i eliminar la concessió de consulta local; conservar els documents privats xifrats i la clau local per recuperar-los automàticament quan **el mateix compte** es torni a autenticar en línia. Les dades operatives no xifrades es netegen en sortir. Això **no és un bloqueig criptogràfic de la clau**: Face ID/desbloqueig segur i una opció per esborrar totes les dades locals continuen pendents.
+- **Reconnexió:** revalidar l'accés al servidor; gestionar revocacions, canvis de compte i pèrdua de permisos sense filtracions entre usuaris.
+- **Experiència d'error:** substituir el missatge tècnic «Load failed» per una explicació clara quan falta xarxa per iniciar sessió.
+- **GATE:** no donar aquest bloc per tancat fins a provar amb Safari/PWA instal·lada una caducitat de sessió real, un tancament explícit, la reconnexió i la neteja de dades locals.
+
+**Desbloqueig local amb Face ID / codi del dispositiu (P1, pendent d'estudi tècnic)**
+- Estudiar la viabilitat amb WebAuthn i autenticadors de plataforma a Safari i en una PWA instal·lada, amb registre inicial en línia i alternativa accessible.
+- Face ID no substitueix l'autenticació al servidor, no renova sessions de Supabase i no s'ha de presentar com a garantia de seguretat sense validar el control criptogràfic de les claus locals.
+- Verificar si el desbloqueig és realment possible sense Internet, la revocació, el canvi de compte i la compatibilitat abans d'implementar-lo. No convertir-lo en requisit de publicació fins que la viabilitat estigui acreditada.
+
 **Segona capa (P1): escriptures offline**
 - valorar Fet/Desfer i altres canvis locals amb cua de sincronització;
 - resolució explícita de conflictes entre participants;
@@ -347,6 +360,9 @@ Tots els mòduls principals han de tenir:
 🧪 connexió intermitent  
 🧪 documents i fotos grans  
 🧪 recuperació de sessió/contrasenya  
+🧪 caducitat real del token offline, reobertura sense xarxa i reconnexió  
+🧪 tancament de sessió: bloqueig d'accés, persistència de còpies xifrades, reentrada del mateix compte amb Internet i comprovació que no cal tornar a descarregar  
+🧪 errors de login comprensibles quan no hi ha xarxa  
 🧪 notificacions reals
 
 ### E3. Qualitat de producte
@@ -381,7 +397,7 @@ No forma part del camí crític fins a publicació:
 - 🔵 Pagaments/reserva automàtica dins de Freya.
 - 🔵 Xarxa social o sistema d'“amics”.
 - 🔵 Automatitzacions que decideixin o modifiquin el viatge sense confirmació.
-- 🔵 Offline V2 si l'ús real no el necessita.
+- 🔵 Escriptures offline amb cua i resolució de conflictes, si l'ús real ho justifica.
 
 ---
 
