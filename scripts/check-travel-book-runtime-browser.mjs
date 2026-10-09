@@ -92,9 +92,20 @@ try{
     if(!restoredAfterLogin)throw Error('Same account cannot reopen offline document after login');
     if(new Uint8Array(await restoredAfterLogin.blob.arrayBuffer()).join(',')!==bytes.join(','))
       throw Error('Preserved offline document contents changed after logout');
+    // Purging one account must not erase another account's encrypted copies.
+    session={user:{id:'test-vault-other'}};tripLoadGeneration++;
+    const otherScope=offlineDocScope(),otherDoc={id:'other-document',file_path:'test-vault-trip/other.pdf',file_name:'other.pdf',mime_type:'application/pdf'};
+    await offlineDocSaveBlob(otherScope,otherDoc,new Blob([bytes],{type:'application/pdf'}));
+    const otherId=offlineDocId(otherScope.userId,otherScope.tripId,otherDoc.id);
+    session={user:{id:'test-vault-owner'}};tripLoadGeneration++;
     await clearOfflineDocumentUserData(scope.userId);
-    if(await offlineDocRead(database,'records',encrypted.key))throw Error('Logout kept encrypted bytes');
-    if(await offlineDocRead(database,'keys',scope.userId))throw Error('Logout kept the key');
+    if(await offlineDocRead(database,'records',encrypted.key))throw Error('Purge retained owner encrypted bytes');
+    if(await offlineDocRead(database,'keys',scope.userId))throw Error('Purge retained owner key');
+    if(!await offlineDocRead(database,'records',otherId)||!await offlineDocRead(database,'keys',otherScope.userId))
+      throw Error('Purge erased a different account');
+    session={user:{id:'test-vault-other'}};tripLoadGeneration++;
+    if(!await offlineDocGetBlob(offlineDocScope(),otherDoc))throw Error('Other account lost its document');
+    await clearOfflineDocumentUserData(otherScope.userId);
     return {bytes:actual.length,encrypted:true,cleaned:true};
   });
   assert.ok(vaultResult.encrypted&&vaultResult.cleaned);
