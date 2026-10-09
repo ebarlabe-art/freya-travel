@@ -402,6 +402,22 @@ try{
   await isolatedReopen.locator('[data-select-trip="trip-beta"]').click();
   await isolatedReopen.locator('#genericDashboardView [data-open="documentsView"]').click();
   await isolatedReopen.locator('#documentsList .doc-card h3').getByText('Document privat beta').waitFor({state:'visible'});
+  // Narrow iPhone layouts: even long, alternate offline actions stay inside the card.
+  await isolatedReopen.evaluate(()=>document.querySelector('#documentsList [data-offline-forget]')?.classList.remove('hidden'));
+  for(const width of [320,375,430]){
+    await isolatedReopen.setViewportSize({width,height:700});
+    const layout=await isolatedReopen.evaluate(()=>{
+      const buttons=[...document.querySelectorAll('#documentsView .doc-actions button,#purgeOfflineDocuments')]
+        .filter(el=>el.getClientRects().length);
+      return {count:buttons.length,overflow:buttons.filter(el=>{
+        const rect=el.getBoundingClientRect(),card=(el.closest('.doc-card')||el.closest('.card')).getBoundingClientRect();
+        return rect.left<card.left-1||rect.right>card.right+1||rect.right>innerWidth+1||rect.width>card.width+1;
+      }).map(el=>el.textContent.trim())};
+    });
+    assert.ok(layout.count>=5,JSON.stringify({width,layout}));
+    assert.deepEqual(layout.overflow,[],JSON.stringify({width,layout}));
+  }
+  console.log('PASS document actions and offline purge fit 320/375/430px iPhone layouts');
   assert.equal(await isolatedReopen.locator('#documentsList').getByText('Document privat alpha').count(),0);
   await isolatedReopen.evaluate(()=>setAppView('genericDashboardView'));
   await isolatedReopen.locator('#genericDashboardView [data-open="itineraryView"]').click();
