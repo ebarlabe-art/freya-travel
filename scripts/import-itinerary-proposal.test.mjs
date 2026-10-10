@@ -48,6 +48,10 @@ test('an unverified time zone is flagged, never silently converted into UTC',()=
  assert.equal(v.candidates[0].fields.start_local_time.value,'09:30');
  assert.equal(v.candidates[0].fields.starts_at,undefined);
 });
+test('rejects fictitious or invalid time zone names',()=>{
+ const p=proposal();p.candidates[0].fields.time_zone=field('Europe/Atlantis');
+ assert.throws(()=>normalizeItineraryImportProposal(p),/Zona horària no verificada/);
+});
 test('end before start is flagged, not silently rewritten',()=>{
  const p=proposal();p.candidates[0].fields.end_local_time=field('08:00');
  assert.ok(normalizeItineraryImportProposal(p).candidates[0].review_flags.includes('time_order_needs_review'));
