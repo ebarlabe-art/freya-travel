@@ -66,11 +66,11 @@ function canonicalTime(value){
  const match=/^(\d{1,2})[:.h](\d{2})$/.exec(value);
  return match?match[1].padStart(2,'0')+':'+match[2]:null;
 }
-function explicitZone(line){
+function explicitZone(line,page){
  const match=line.match(TZ_RE);
  if(!match)return null;
  const value=match[1];
- try{new Intl.DateTimeFormat('en-US',{timeZone:value});return {value,evidence:line};}
+ try{new Intl.DateTimeFormat('en-US',{timeZone:value});return {value,evidence:line,page};}
  catch{return {invalid:true,evidence:line};}
 }
 function hintFromTitle(value){
@@ -135,7 +135,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
    const dayMarker=CALENDAR.test(work);
    if(dayMarker)work=work.replace(CALENDAR,'');
    const datePart=readDatePrefix(work);
-   const tz=explicitZone(line);
+   const tz=explicitZone(line,page);
    if(tz?.invalid)warnings.add('Zona horària no reconeguda: cal revisar-la.');
    if(dayMarker&&!datePart){
     current=null;
@@ -153,7 +153,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     const inline=readItem(tail,false);
     if(inline){
      // Explicit date on the same line belongs only to that item.
-     const candidate=makeCandidate(inline,line,page,{date:datePart.date,evidence:line},tz);
+     const candidate=makeCandidate(inline,line,page,{date:datePart.date,evidence:line,page},tz&&!tz?.invalid?tz:null,candidates.length);
      candidates.push(candidate);
     }else{
      // A dated day heading controls subsequent entries, including next PDF page.
@@ -169,7 +169,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
    const item=readItem(line,!!current);
    if(item){
     candidates.push(makeCandidate(item,line,page,current?{date:current.date,evidence:current.evidence,page:current.page}:null,
-      tz&&!tz.invalid?tz:current?.zone));
+      tz&&!tz.invalid?tz:current?.zone,candidates.length));
    }else if(current&&!ADMIN.test(line)&&!tz)unparsed++;
    if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
   }
@@ -182,18 +182,17 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
   schema_version:1,source,candidates,warnings:[...warnings]
  });
 }
-function makeCandidate(item,line,page,date,zone){
+function makeCandidate(item,line,page,date,zone,sourceOrder){
  const fields={title:makeField(item.title,line,page,item.confidence)};
  if(date)fields.local_date=makeField(date.date,date.evidence,date.page);
  if(item.start)fields.start_local_time=makeField(item.start,line,page);
  if(item.end)fields.end_local_time=makeField(item.end,line,page);
  if(item.daypart)fields.daypart=makeField(item.daypart,line,page);
- if(zone)fields.time_zone=makeField(zone.value,zone.evidence,
-  date&&zone===date.zone?date.page:page);
+ if(zone)fields.time_zone=makeField(zone.value,zone.evidence,zone.page);
  const warnings=[];
  if(item.confidence==='medium')warnings.push('Element sense hora explícita: revisa’n la classificació.');
  if(!date)warnings.push('Falta la data de l’activitat.');
- return {source_order:0,classification_hint:hintFromTitle(item.title),fields,warnings};
+ return {source_order:sourceOrder,classification_hint:hintFromTitle(item.title),fields,warnings};
 }
 export function extractItineraryProposalFromText(rawText,source={kind:'manual'}){
  if(typeof rawText!=='string')fail('Text d’itinerari invàlid.');
