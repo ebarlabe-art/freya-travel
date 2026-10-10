@@ -41,6 +41,74 @@ try{
   await ctx.close();
 
 
+
+  // A2.7 E2E: interactive review against the actual built Pages runtime,
+  // with a fake private PDF provider and no production network or writes.
+  const itineraryCtx=await context({serviceWorkers:'block'});
+  const itineraryPage=await itineraryCtx.newPage(),itineraryErrors=[];
+  itineraryPage.on('pageerror',err=>itineraryErrors.push(err.message));
+  await itineraryPage.goto(url,{waitUntil:'load'});
+  await itineraryPage.waitForFunction(()=>authInitializationResolved===true);
+  await itineraryPage.evaluate(()=>{
+    const userId='test-a27-owner',tripId='test-a27-trip',docId='6bada382-4bfb-4e15-a102-f590a750671d';
+    session={user:{id:userId,email:'a27@example.invalid'},access_token:'test-a27-token'};
+    trip={id:tripId,name:'Viatge A2.7',experience_key:null,time_zone:'Europe/Riga'};
+    tripLoadGeneration++;
+    documentRows=[{id:docId,trip_id:tripId,title:'Ruta de prova',file_name:'ruta.pdf',
+      mime_type:'application/pdf',file_path:tripId+'/ruta.pdf'}];
+    // Use existing UI wiring but intercept only external resources.
+    loadDocuments=async()=>documentRows;
+    window.__a27Calls=[];
+    db.functions.invoke=async(name,options)=>{
+      window.__a27Calls.push({name,body:options?.body});
+      if(name!=='import-itinerary')throw Error('Unexpected backend request');
+      const field=(value,confidence='high')=>({value,confidence,
+        evidence:[{kind:'text',excerpt:value,page:2}]});
+      return {data:{proposal:{
+        schema_version:1,source:{kind:'document',document_id:docId,
+          file_name:'ruta.pdf',mime_type:'application/pdf'},
+        candidates:[{
+          source_order:0,classification_hint:'activity',
+          fields:{title:field('Museu marítim'),local_date:field('2026-12-27'),
+            start_local_time:field('09:30'),time_zone:field('Europe/Riga'),
+            notes:field('Ruta de prova','medium')},
+          warnings:[],review_flags:['uncertain_extraction']
+        }],warnings:[],read_only:true,requires_user_confirmation:true
+      }},error:null};
+    };
+    show('tripView');hide('auth');setAppView('itineraryView');
+  });
+  await itineraryPage.locator('#openItineraryImport').click();
+  await itineraryPage.locator('#itineraryImportExisting option').last().waitFor({state:'attached'});
+  await itineraryPage.locator('#itineraryImportExisting').selectOption('6bada382-4bfb-4e15-a102-f590a750671d');
+  assert.equal(await itineraryPage.locator('#itineraryImportAnalyze').isEnabled(),false,
+    'Consent must gate even an existing private PDF');
+  assert.equal(await itineraryPage.evaluate(()=>window.__a27Calls.length),0);
+  await itineraryPage.locator('#itineraryImportConsent').check();
+  await itineraryPage.locator('#itineraryImportAnalyze').click();
+  await itineraryPage.locator('#itineraryImportCandidates [data-import-field="title"]').waitFor({state:'visible'});
+  assert.deepEqual(await itineraryPage.evaluate(()=>window.__a27Calls),[{
+    name:'import-itinerary',body:{trip_id:'test-a27-trip',document_id:'6bada382-4bfb-4e15-a102-f590a750671d'}
+  }]);
+  assert.equal(await itineraryPage.locator('#itineraryImportWrite').isEnabled(),false,
+    'Preview cannot save itinerary items');
+  await itineraryPage.locator('[data-import-edit="0"][data-import-field="title"]').fill('Museu corregit');
+  await itineraryPage.locator('[data-import-edit="0"][data-import-field="title"]').dispatchEvent('change');
+  assert.equal(await itineraryPage.locator('[data-import-edit="0"][data-import-field="title"]').inputValue(),'Museu corregit');
+  assert.deepEqual(await itineraryPage.evaluate(()=>({
+    title:itineraryImportState.review.items[0].edits.title,
+    original:itineraryImportState.review.items[0].original.title,
+    evidence:itineraryImportState.review.items[0].evidence.title[0].excerpt,
+    readOnly:itineraryImportState.review.read_only,
+    count:window.__a27Calls.length
+  })),{title:'Museu corregit',original:'Museu marítim',evidence:'Museu marítim',readOnly:true,count:1});
+  await itineraryPage.locator('#itineraryImportClose').click();
+  assert.equal(await itineraryPage.locator('#itineraryImportPanel').isVisible(),false);
+  assert.equal(await itineraryPage.evaluate(()=>itineraryImportState),null);
+  assert.deepEqual(itineraryErrors,[]);
+  await itineraryCtx.close();
+  console.log('PASS A2.7 real Pages UI consent, private-PDF preview, corrections and no-write gate');
+
   // Functional encrypted vault regression: real IndexedDB + WebCrypto, no
   // external Supabase requests, no real documents or credentials.
   const vaultCtx=await context({serviceWorkers:'block'}),vaultPage=await vaultCtx.newPage();
