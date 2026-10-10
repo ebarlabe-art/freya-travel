@@ -48,7 +48,8 @@ La sortida és normalitzada i afegeix `read_only: true`, `requires_user_confirma
 
 ## Propers talls
 
-- **A2.6**: extractor read-only de text d'itineraris (dies, hores, punts, classificació i evidències per pàgina), amb documents de prova i casos ambigus.
+- **A2.6 (implementat en aquest PR, pendent validació CI final)**: parser determinista, read-only, per text **ja extret** per pàgines. No llegeix fitxers PDF binaris, no incorpora OCR ni IA i no està connectat encara a la pantalla de Freya. Es troba a `domain/import-itinerary-text-extractor.mjs` i té 16 proves noves a `scripts/import-itinerary-text-extractor.test.mjs`. Reconeix capçaleres amb dates completes en formats explícits, hores locals, franges del dia, activitats amb hora i llistes sense hora. Manté dies entre pàgines, conserva pàgina i fragment com a evidència, detecta duplicats dins de la font i genera avisos de dates incompletes, impossibles, zones horàries desconegudes i horaris invertits. No converteix zones horàries a UTC, no dedueix un any absent i no crea reserves confirmades. Només accepta un màxim de 150 pàgines, 500.000 caràcters i 200 elements.
+- **A2.6.1 (pendent)**: connectar el parser amb l'extracció segura del PDF privat existent, mantenint identificadors verificats, permisos i paginació reals; els PDFs escanejats sense text necessiten OCR i un tractament específic d'incertesa.
 - **A2.7**: previsualització editable i comprovacions de coherència reutilitzant TB-09; consulta de duplicats contra les dades actuals del viatge, incloent-hi peces operatives.
 - **A2.8**: confirmació explícita i escriptura segura amb permisos, revalidació al servidor, conflictes, idempotència i enllaç al document original.
 - **GATE**: prova real a l'iPhone/PWA i comprovació de tornada, recuperació de sessió i errors.
