@@ -60,7 +60,21 @@ const builtIndexUrl=new URL('index.html',dist);
 const builtIndex=await readFile(builtIndexUrl,'utf8');
 const cdnSupabase='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 if(!builtIndex.includes(cdnSupabase))throw new Error('Supabase CDN runtime marker not found in built index');
-await writeFile(builtIndexUrl,builtIndex.replace(cdnSupabase,'./vendor/supabase.js'));
+// Only the separately pinned iPhone preview branch is hosted at the domain root.
+// Never port these replacements to main, where GitHub Pages lives at /freya-travel/.
+let previewIndex=builtIndex.replace(cdnSupabase,'/vendor/supabase.js');
+const rootPreviewRewrites=[
+  ["'/freya-travel/domain/","'/domain/"],
+  ["'/freya-travel/sw.js'","'/sw.js'"],
+  ["scope:'/freya-travel/'","scope:'/'"],
+  ['content="Freya Travel"','content="Freya PROVES"'],
+  ['<title>Freya Travel</title>','<title>Freya PROVES · Offline V2</title>'],
+];
+for(const [needle,replacement] of rootPreviewRewrites){
+  if(!previewIndex.includes(needle))throw new Error('Missing root preview route: '+needle);
+  previewIndex=previewIndex.replaceAll(needle,replacement);
+}
+await writeFile(builtIndexUrl,previewIndex);
 
 for(const file of ['sw.js','manifest.webmanifest','itinerary.html']){
   await copyFile(new URL(file,root),new URL(file,dist));
