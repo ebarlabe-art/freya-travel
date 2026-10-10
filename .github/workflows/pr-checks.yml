@@ -20,7 +20,7 @@ jobs:
       - run: npm ci
       - run: npm run prebuild
       - name: A2 focused tests
-        run: node --test scripts/import-proposal.test.mjs scripts/import-text-extractor.test.mjs scripts/import-itinerary-proposal.test.mjs scripts/import-itinerary-text-extractor.test.mjs scripts/import-reservation.test.mjs scripts/import-reservation-ui.test.mjs
+        run: node --test scripts/import-proposal.test.mjs scripts/import-text-extractor.test.mjs scripts/import-itinerary-proposal.test.mjs scripts/import-itinerary-text-extractor.test.mjs scripts/import-itinerary-pdf.test.mjs scripts/import-reservation.test.mjs scripts/import-reservation-ui.test.mjs
       - name: Offline V2 focused tests
         run: node --test scripts/offline-v2-readonly.test.mjs
       - run: npm run build
@@ -66,6 +66,8 @@ jobs:
           deno-version: v2.9.6
       - run: npm run test:alb03
       - run: npm run test:alb03:image
+      - name: A2 itinerary function type check
+        run: deno check supabase/functions/import-itinerary/index.ts
       - run: deno check --config supabase/functions/travel-book-ingest/deno.json supabase/functions/travel-book-ingest/index.ts
       - name: Start isolated ALB-03 database just in time
         run: bash scripts/ci-postgres.sh start freya_alb03_ci
