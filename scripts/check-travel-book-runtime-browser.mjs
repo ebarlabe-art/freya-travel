@@ -339,7 +339,7 @@ try{
     // Seed an SDK-shaped *expired* browser token; never use real credentials.
     // The app must recover through its separately authorized local read grant,
     // not by treating this expired JWT as an authenticated online session.
-    const token=part=>btoa(JSON.stringify(part)).replace(/=/g,'').replace(/\\+/g,'-').replace(/\\//g,'_');
+    const token=part=>btoa(JSON.stringify(part)).replaceAll('=','').replaceAll('+','-').replaceAll('/','_');
     const fakeJwt=token({alg:'HS256',typ:'JWT'})+'.'+token({sub:userId,aud:'authenticated',exp:Math.floor(Date.now()/1000)-7200})+'.expired-signature';
     localStorage.setItem('sb-otueskpksylzvkhldoft-auth-token',JSON.stringify({
       access_token:fakeJwt,refresh_token:'expired-test-refresh-token',token_type:'bearer',
