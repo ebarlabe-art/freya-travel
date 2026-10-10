@@ -303,4 +303,5 @@ test('Concurrent tabs elect one CryptoKey atomically and enforce quotas in IDB t
   assert.match(atomic,/OFFLINE_DOC_TRIP_LIMIT/);
   assert.match(atomic,/offlineDocPruneTrip/);
   assert.match(html,/offlineDocPruneTrip\(vaultScope,serverDocs\)/);
+  assert.match(html,/value\.documentId!=='freya-parking-photo-v1'/);
 });

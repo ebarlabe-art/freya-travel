@@ -2468,7 +2468,8 @@ async function offlineDocPruneTrip(scope,serverDocs){
   const allowed=new Map(serverDocs.map(doc=>[doc.id,doc.file_path]));
   const database=await offlineDocDatabase(),records=await offlineDocUserRows(database,scope.userId);
   if(!offlineDocScopeCurrent(scope))return false;
-  const discarded=records.filter(value=>value.tripId===scope.tripId&&allowed.get(value.documentId)!==value.filePath);
+  // Parking photos live outside travel_documents and must survive its sync.
+  const discarded=records.filter(value=>value.tripId===scope.tripId&&value.documentId!=='freya-parking-photo-v1'&&allowed.get(value.documentId)!==value.filePath);
   if(discarded.length)await offlineDocTx(database,['records'],'readwrite',tx=>{
     for(const record of discarded)tx.objectStore('records').delete(record.key);
   });
