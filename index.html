@@ -1841,6 +1841,17 @@
     <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.30</p>
   </section>
 </main>
+<script>
+// Standalone-safe bootstrap diagnostic: executes even if the Supabase script
+// cannot be read from the local service worker cache in airplane mode.
+setTimeout(()=>{
+  const splash=document.getElementById('loading');
+  if(!splash||splash.classList.contains('hidden'))return;
+  splash.textContent=navigator.onLine===false
+    ?'📵 Freya no ha pogut iniciar-se sense Internet. Connecta’t per actualitzar-la. No cal esborrar l’app ni les còpies offline.'
+    :'Freya està trigant a iniciar-se. Comprova la connexió i torna a obrir-la.';
+},10000);
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
@@ -9215,7 +9226,14 @@ db.auth.onAuthStateChange((event,next)=>{
 });
 if(navigator.onLine===false&&!passwordRecoveryMode){
   authInitializationResolved=true;
-  restoreOfflineReadOnlySession();
+  // Safari can leave getSession() pending indefinitely while fully offline.
+  // Without a valid local grant, show the signed-out screen immediately;
+  // never grant offline data access just because the network is unavailable.
+  if(!restoreOfflineReadOnlySession()){
+    void renderSession(null).then(()=>{
+      if(navigator.onLine===false)msg('authMsg','📵 No hi ha una sessió offline autoritzada en aquest dispositiu. Connecta’t a Internet i inicia sessió per preparar-la.',true);
+    });
+  }
 }
 db.auth.getSession().then(async({data,error})=>{
   authInitializationResolved=true;

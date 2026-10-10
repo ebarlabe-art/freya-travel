@@ -1,4 +1,4 @@
-const CACHE='freya-travel-release-6444-v7';
+const CACHE='freya-travel-release-6444-v8';
 const CACHE_FAMILY='freya-travel-release-6444-';
 const ASSETS=['./vendor/supabase.js','./domain/place-resolution.mjs','./domain/place-resolution-ui.mjs','./domain/proposal-handoff.mjs','./domain/tb-confirmation.mjs','./domain/tb-budget.mjs','./domain/tb-build.mjs','./domain/travel-search.mjs','./domain/live-trip-brief.mjs','./domain/travel-builder.mjs','./domain/trip-brief.mjs','./domain/import-proposal.mjs','./domain/travel-book-proposal.mjs','./domain/travel-book-batch.mjs','./domain/travel-book-editor-state.mjs','./domain/travel-book-composition.mjs','./domain/import-proposal.js','./domain/proposal-refinement.js','./domain/proposal-builder.js','./domain/live-trip-brief.js','./domain/travel-builder.js','./domain/trip-brief.js','./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./itinerary.html','./freya-travel-v1.5/index.html','./freya-travel-v1.5/itinerary.html'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()))});

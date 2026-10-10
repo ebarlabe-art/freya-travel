@@ -92,12 +92,12 @@ test('Offline V2 shell includes locally bundled Supabase',()=>{
 test('Service worker removes only Freya-owned cache generations',async()=>{
   const vm=await import('node:vm');
   let onActivate,deleted=[],claimed=false;
-  const names=['freya-travel-release-6444-v4','freya-travel-release-6444-v5','freya-travel-release-6444-v7','another-app-unrelated-cache'];
+  const names=['freya-travel-release-6444-v4','freya-travel-release-6444-v5','freya-travel-release-6444-v7','freya-travel-release-6444-v8','another-app-unrelated-cache'];
   const sandbox=vm.createContext({URL,self:{location:new URL('https://example.test/freya-travel/sw.js'),addEventListener(type,fn){if(type==='activate')onActivate=fn},clients:{claim:async()=>{claimed=true}}},caches:{keys:async()=>names,delete:async key=>{deleted.push(key);return true}}});
   vm.runInContext(worker,sandbox);
   let pending;onActivate({waitUntil:p=>pending=p});await pending;
   assert.equal(claimed,true);
-  assert.deepEqual(deleted.sort(),['freya-travel-release-6444-v4','freya-travel-release-6444-v5']);
+  assert.deepEqual(deleted.sort(),['freya-travel-release-6444-v4','freya-travel-release-6444-v5','freya-travel-release-6444-v7']);
 });
 
 test('Offline V2 logout clears only current account metadata and no-trip fallback is explicit',()=>{
@@ -368,4 +368,45 @@ test('Encrypted parking reservation preview opens offline without a second downl
   assert.deepEqual(revoked,['blob:local-private']);
   assert.equal($('parkingReservationImage').src,'');
   assert.match(html,/if\(nextUserId!==session\?\.user\?\.id\)\{resetBuilderUi\(\);clearParkingReservationPreview\(\)\}/);
+});
+
+test('Cold offline without a prior valid grant must show login even if Supabase auth never resolves',async()=>{
+  const begin=html.lastIndexOf('if(navigator.onLine===false&&!passwordRecoveryMode){');
+  const end=html.indexOf('db.auth.getSession().then(',begin);
+  assert.ok(begin>0&&end>begin);
+  const piece=html.slice(begin,end),calls=[];
+  const context=vmModule.createContext({
+    navigator:{onLine:false},passwordRecoveryMode:false,authInitializationResolved:false,
+    restoreOfflineReadOnlySession:()=>false,
+    renderSession:async(value)=>{calls.push(['renderSession',value])},
+    msg:(id,message,isError)=>calls.push(['msg',id,message,isError])
+  });
+  vmModule.runInContext(piece,context);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(context.authInitializationResolved,true);
+  assert.equal(calls[0][0],'renderSession');
+  assert.equal(calls[0][1],null,'Fail closed: do not synthesize a session');
+  assert.match(calls.find(x=>x[0]==='msg')[2],/No hi ha una sessió offline autoritzada/);
+});
+test('Valid offline grant still opens cached data without showing login',()=>{
+  const begin=html.lastIndexOf('if(navigator.onLine===false&&!passwordRecoveryMode){');
+  const end=html.indexOf('db.auth.getSession().then(',begin);
+  const calls=[];
+  const context=vmModule.createContext({
+    navigator:{onLine:false},passwordRecoveryMode:false,authInitializationResolved:false,
+    restoreOfflineReadOnlySession:()=>{calls.push('grant');return true},
+    renderSession:()=>{calls.push('login');return Promise.resolve()},
+    msg:()=>calls.push('error')
+  });
+  vmModule.runInContext(html.slice(begin,end),context);
+  assert.equal(context.authInitializationResolved,true);
+  assert.deepEqual(calls,['grant']);
+});
+test('An SDK/bootstrap failure cannot keep an infinite splash on the iPhone',()=>{
+  const sdkIndex=html.indexOf('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>');
+  const fallbackIndex=html.indexOf('Standalone-safe bootstrap diagnostic');
+  assert.ok(fallbackIndex>0&&fallbackIndex<sdkIndex);
+  assert.match(html.slice(fallbackIndex,sdkIndex),/setTimeout\(/);
+  assert.match(html.slice(fallbackIndex,sdkIndex),/No cal esborrar l’app ni les còpies offline/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v8'/);
 });
