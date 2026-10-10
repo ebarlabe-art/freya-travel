@@ -14,15 +14,15 @@ const cors={
  'Content-Type':'application/json',
  'Cache-Control':'no-store'
 };
-const json=(value,status=200)=>new Response(JSON.stringify(value),{status,headers:cors});
-const errorCode=code=>Object.assign(new Error(code),{code});
-const safePath=path=>path.split('/').map(encodeURIComponent).join('/');
-function toBase64(bytes){
+const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:cors});
+const errorCode=(code:string)=>Object.assign(new Error(code),{code});
+const safePath=(path:string)=>path.split('/').map(encodeURIComponent).join('/');
+function toBase64(bytes:Uint8Array){
  let out='';const chunk=0x8000;
  for(let i=0;i<bytes.length;i+=chunk)out+=String.fromCharCode(...bytes.subarray(i,i+chunk));
  return btoa(out);
 }
-async function privateDocument(auth,tripId,documentId){
+async function privateDocument(auth:string,tripId:string,documentId:string){
  const url=new URL(SUPABASE_URL+'/rest/v1/travel_documents');
  url.searchParams.set('select','id,trip_id,file_path,file_name,mime_type');
  url.searchParams.set('trip_id','eq.'+tripId);
@@ -41,7 +41,7 @@ async function privateDocument(auth,tripId,documentId){
  if(doc.mime_type!=='application/pdf')throw errorCode('unsupported_file_type');
  return doc;
 }
-async function pdfBytes(auth,doc){
+async function pdfBytes(auth:string,doc:{file_path:string;file_name:string;mime_type:string;id:string;trip_id:string}){
  const url=SUPABASE_URL+'/storage/v1/object/authenticated/'+BUCKET+'/'+safePath(doc.file_path);
  const r=await fetch(url,{headers:{Authorization:auth,apikey:ANON},signal:AbortSignal.timeout(20000)});
  if(!r.ok)throw errorCode('document_unavailable');
@@ -54,7 +54,7 @@ async function pdfBytes(auth,doc){
  if(!marker.includes('%PDF-'))throw errorCode('invalid_file_type');
  return bytes;
 }
-async function transcribePrivatePdf(doc,bytes){
+async function transcribePrivatePdf(doc:{file_path:string;file_name:string;mime_type:string;id:string;trip_id:string},bytes:Uint8Array){
  if(!OPENAI_API_KEY||!MODEL)throw errorCode('import_not_configured');
  const file='data:application/pdf;base64,'+toBase64(bytes);
  const response=await fetch('https://api.openai.com/v1/responses',{
@@ -77,9 +77,9 @@ async function transcribePrivatePdf(doc,bytes){
  }
  const data=await response.json();
  if(data.status!=='completed'||!Array.isArray(data.output))throw errorCode('provider_invalid_response');
- const content=data.output.filter(x=>x.type==='message').flatMap(x=>x.content||[]);
- if(content.some(x=>x.type==='refusal'))throw errorCode('provider_refusal');
- const result=content.filter(x=>x.type==='output_text');
+ const content=data.output.filter((x:any)=>x.type==='message').flatMap((x:any)=>x.content||[]);
+ if(content.some((x:any)=>x.type==='refusal'))throw errorCode('provider_refusal');
+ const result=content.filter((x:any)=>x.type==='output_text');
  if(result.length!==1||typeof result[0].text!=='string')throw errorCode('provider_invalid_response');
  try{return JSON.parse(result[0].text);}
  catch{throw errorCode('provider_invalid_response');}
@@ -110,8 +110,8 @@ Deno.serve(async request=>{
   });
   return json({proposal});
  }catch(err){
-  const code=err?.code||'provider_error';
-  const codes={
+  const code=err instanceof Error&&'code' in err?String(err.code):'provider_error';
+  const codes:Record<string,number>={
    document_unavailable:404,unsupported_file_type:415,invalid_file_type:415,
    invalid_file_size:413,provider_rate_limited:429,provider_refusal:422,
    transcription_incomplete:422,invalid_transcript:422,transcript_too_long:422,
