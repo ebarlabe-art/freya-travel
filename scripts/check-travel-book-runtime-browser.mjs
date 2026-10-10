@@ -306,6 +306,29 @@ try{
   console.log('PASS PWA old cache retired; current cache contains full graph and loads modules offline');
   await pwaCtx.close();
 
+
+async function visibleOfflineTripCard(page,tripId,timeout=15000){
+  const card=page.locator('[data-select-trip="'+tripId+'"]');
+  await card.waitFor({state:'attached',timeout});
+  // Home classifies trips by their date relative to today. A dated fixture
+  // eventually moves from En curs to Passats; navigate via the real UI.
+  const destination=await card.evaluate(element=>{
+    if(element.closest('#pastTripsList'))return 'pastTripsView';
+    if(element.closest('#upcomingTripsList'))return 'upcomingTripsView';
+    if(element.closest('#constructionTripsList'))return 'constructionView';
+    if(element.closest('#activeTripsList,#undatedTripsList'))return 'tripsHomeView';
+    return null;
+  });
+  assert.ok(destination,'Offline trip must appear in exactly one expected Home category');
+  const current=await page.evaluate(()=>visibleAppView());
+  if(current!==destination){
+    if(current!=='tripsHomeView')throw Error('Unexpected Home view before selecting offline trip');
+    await page.locator('[data-home-view="'+destination+'"]').click();
+  }
+  await card.waitFor({state:'visible',timeout});
+  return card;
+}
+
   // E2E: a pre-authorized local account must restore its own trip, document
   // cards and itinerary after an entirely new page opens without a network.
   // Seed only while online; do NOT inject session/trip after reopening.
@@ -342,7 +365,7 @@ try{
   const coldReopen=await coldCtx.newPage();
   await coldReopen.goto(url,{waitUntil:'load'});
   try{
-    await coldReopen.locator('[data-select-trip="test-offline-ui-trip"]').waitFor({state:'visible',timeout:15000});
+    await visibleOfflineTripCard(coldReopen,'test-offline-ui-trip');
   }catch(error){
     // Diagnose hidden cards without weakening the access gate or injecting a session.
     const diagnostic=await coldReopen.evaluate(()=>({
@@ -394,7 +417,7 @@ try{
   await unreliableNetwork.goto(url,{waitUntil:'load'});
   assert.equal(await unreliableNetwork.evaluate(()=>navigator.onLine),true);
   try{
-    await unreliableNetwork.locator('[data-select-trip="test-offline-ui-trip"]').waitFor({state:'visible',timeout:8000});
+    await visibleOfflineTripCard(unreliableNetwork,'test-offline-ui-trip',8000);
   }catch(error){
     const diagnostic=await unreliableNetwork.evaluate(()=>({
       online:navigator.onLine,authReady:authInitializationResolved,
