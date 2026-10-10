@@ -137,7 +137,7 @@ test('Logout preserves encrypted account vault while denying signed-out reads',(
     'Account-wide vault purge stays available for an explicit delete action');
   assert.match(html,/async function offlineDocGetBlob\(scope,doc\)\{\s*if\(!offlineDocScopeCurrent\(scope\)\)return null/);
   assert.match(html,/row\.userId!==scope\.userId\|\|row\.tripId!==scope\.tripId/);
-  assert.match(html,/await offlineDocForget\(scope,id\)/);
+  assert.match(html,/await offlineDocEnqueue\(\(\)=>offlineDocForget\(scope,id\)\)/);
   assert.match(html,/const key=await offlineDocKey\(database,scope\.userId\)/);
 });
 
@@ -484,4 +484,10 @@ test('Offline auto-save is opt-out per account and removes no cloud originals',(
   assert.match(html,/id="parkingSaveReservationOffline"/);
   assert.match(html,/save\.onclick=\(\)=>prepareOfflineDocument\(doc.id,'parkingMsg'\)/);
   assert.match(html,/data-offline-state=/);
+});
+
+test('Auto-save errors are retried after reconnection and parking refreshes its viewer',()=>{
+  assert.match(html,/offlineAutoErrors\.clear\(\); \/\/ Retry pending downloads after reconnection/);
+  assert.match(html,/await offlineDocSaveBlob\(scope,doc,data\);\s*if\(offlineDocScopeCurrent\(scope\)&&parkingDocumentScore\(doc\)>0\)void updateParkingReservationUi/);
+  assert.match(html,/await offlineDocEnqueue\(\(\)=>offlineDocForget\(scope,id\)\)/);
 });

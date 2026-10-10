@@ -2644,6 +2644,7 @@ async function autoPrepareOfflineDocuments(scope,docs){
       if(error)throw error;
       if(!offlineDocScopeCurrent(scope))return;
       await offlineDocSaveBlob(scope,doc,data);
+      if(offlineDocScopeCurrent(scope)&&parkingDocumentScore(doc)>0)void updateParkingReservationUi(scope.tripId,scope.generation);
     }catch(error){
       if(offlineDocScopeCurrent(scope))offlineAutoErrors.set(tag,error?.message||'No s’ha pogut desar. Torna a provar amb connexió.');
     }finally{
@@ -2652,18 +2653,6 @@ async function autoPrepareOfflineDocuments(scope,docs){
     }
   }
 }
-$('offlineAutoDocuments').onchange=()=>{
-  const scope=offlineDocScope();
-  if(!scope)return;
-  const enabled=$('offlineAutoDocuments').checked;
-  try{localStorage.setItem(OFFLINE_AUTO_DOCS_PREF+scope.userId,enabled?'on':'off')}catch(_){}
-  if(enabled&&!connectionUnavailable()){
-    offlineAutoErrors.clear();
-    const docs=[...documentRows];
-    void offlineDocEnqueue(()=>autoPrepareOfflineDocuments(scope,docs)).catch(()=>{}).then(()=>offlineDocStatus());
-  }
-  void offlineDocStatus();
-};
 async function prepareOfflineDocument(id,messageId='documentMsg'){
   const scope=offlineDocScope(),doc=documentRows.find(value=>value.id===id);
   if(!scope||!doc||connectionUnavailable()){msg(messageId,'Connecta’t a Internet per preparar aquest document.',true);return}
@@ -2706,6 +2695,18 @@ function rememberOfflineTrips(rows,userId=session?.user?.id){
   if(saved)rememberOfflineSessionGrant(userId);
   return saved;
 }
+$('offlineAutoDocuments').onchange=()=>{
+  const scope=offlineDocScope();
+  if(!scope)return;
+  const enabled=$('offlineAutoDocuments').checked;
+  try{localStorage.setItem(OFFLINE_AUTO_DOCS_PREF+scope.userId,enabled?'on':'off')}catch(_){}
+  if(enabled&&!connectionUnavailable()){
+    offlineAutoErrors.clear();
+    const docs=[...documentRows];
+    void offlineDocEnqueue(()=>autoPrepareOfflineDocuments(scope,docs)).catch(()=>{}).then(()=>offlineDocStatus());
+  }
+  void offlineDocStatus();
+};
 function readOfflineTrips(userId=session?.user?.id){
   const value=safeOfflineRead(offlineTripsKey(userId));return value?.userId===userId&&Array.isArray(value.rows)?value:null;
 }
@@ -2775,6 +2776,7 @@ async function refreshAfterReconnect(){
   offlineRefreshInFlight=true;updateConnectivityBanner();
   try{
     const ready=await ensureTripAgenda(true);
+    offlineAutoErrors.clear(); // Retry pending downloads after reconnection.
     await Promise.all([loadCarRentals(true),loadDocuments(true),loadItems(),loadParkingSummary()]);
     if(ready){persistOfflineAgendaSnapshot();persistOfflineCarRentals();persistOfflineDocuments();markOfflineDataFresh()}
   }finally{offlineRefreshInFlight=false;updateConnectivityBanner()}
