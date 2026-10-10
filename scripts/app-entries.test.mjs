@@ -93,7 +93,17 @@ test('unchanged SW precache assets exist and offline entry fallbacks remain vali
     caches: { match: async key => { lookups.push(key); return { key }; } },
   });
   vm.runInContext(sw, context);
-  for (const asset of vm.runInContext('ASSETS', context)) await access(new URL(asset, root));
+  for (const asset of vm.runInContext('ASSETS', context)) {
+    if (asset === './vendor/supabase.js') {
+      // The Supabase runtime is copied into dist/ at packaging time, not committed
+      // as a duplicate vendor file in the source repository.
+      const pack = await read('scripts/package-pages.mjs');
+      assert.ok(pack.includes('node_modules/@supabase/supabase-js/dist/umd/supabase.js'));
+      assert.ok(pack.includes('vendor/supabase.js'));
+      continue;
+    }
+    await access(new URL(asset, root));
+  }
   for (const [path, expected] of [
     ['freya-travel-v1.5/', './freya-travel-v1.5/index.html'],
     ['freya-travel-v1.5/index.html', './freya-travel-v1.5/index.html'],
