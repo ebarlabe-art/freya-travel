@@ -199,6 +199,44 @@ try{
   console.log('PASS document actions and offline purge fit 320/375/430px iPhone layouts');
   await narrowCtx.close();
 
+
+  // Automatic document preparation uses the real encrypted vault and does not
+  // download the same reservation twice. Ordinary travel photos never enter it.
+  const autoCtx=await context({serviceWorkers:'block'}),autoPage=await autoCtx.newPage();
+  await autoPage.goto(url,{waitUntil:'load'});
+  await autoPage.waitForFunction(()=>authInitializationResolved===true);
+  const autoResult=await autoPage.evaluate(async()=>{
+    session={user:{id:'test-auto-document-owner'}};
+    trip={id:'test-auto-document-trip',experience_key:null};
+    tripLoadGeneration++;
+    const scope=offlineDocScope();
+    const reservation={id:'auto-reservation',file_path:'test-auto-document-trip/parking.pdf',
+      file_name:'parking.pdf',mime_type:'application/pdf',category:'Reserva'};
+    const travelPhoto={id:'album-photo',file_path:'test-auto-document-trip/holiday.jpg',
+      file_name:'holiday.jpg',mime_type:'image/jpeg',category:'Foto'};
+    let downloads=0;const paths=[];
+    const originalFrom=db.storage.from;
+    db.storage.from=()=>({download:async path=>{
+      downloads++;paths.push(path);
+      return {data:new Blob([new Uint8Array([37,80,68,70,45,49,46,52,10])],{type:'application/pdf'}),error:null};
+    }});
+    try{
+      await autoPrepareOfflineDocuments(scope,[reservation,travelPhoto]);
+      await autoPrepareOfflineDocuments(scope,[reservation,travelPhoto]);
+      const cached=await offlineDocGetBlob(scope,reservation);
+      const missingPhoto=await offlineDocGetBlob(scope,travelPhoto);
+      const crypted=await offlineDocRead(await offlineDocDatabase(),'records',offlineDocId(scope.userId,scope.tripId,reservation.id));
+      if(!cached||missingPhoto||!crypted?.ciphertext)throw Error('Expected encrypted reservation but no ordinary photo');
+      await clearOfflineDocumentUserData(scope.userId);
+      return {downloads,paths,encrypted:crypted.ciphertext.byteLength>cached.blob.size};
+    }finally{db.storage.from=originalFrom}
+  });
+  assert.equal(autoResult.downloads,1,'Automatic sync must never re-download saved documents');
+  assert.deepEqual(autoResult.paths,['test-auto-document-trip/parking.pdf']);
+  assert.equal(autoResult.encrypted,true);
+  console.log('PASS auto offline preparation encrypts reservation once and excludes ordinary photos');
+  await autoCtx.close();
+
   const pwaCtx=await context(),pwa=await pwaCtx.newPage();
   // Seed the prior cache before the real new worker installs.
   await pwa.addInitScript(async()=>{if(!sessionStorage.getItem('seeded-old-cache')){sessionStorage.setItem('seeded-old-cache','1');await Promise.all([caches.open('freya-travel-release-6444-v4'),caches.open('another-app-unrelated-cache')])}});

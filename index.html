@@ -2614,7 +2614,7 @@ async function offlineDocStatus(){
     document.querySelectorAll('[data-offline-save]').forEach(button=>{
       const doc=documentRows.find(value=>value.id===button.dataset.offlineSave),stored=doc&&ready.get(doc.id)?.filePath===doc.file_path;
       button.classList.toggle('hidden',!!stored);
-      button.disabled=connectionUnavailable()||!doc||offlineAutoBusy.has(offlineAutoTag(scope,doc));
+      button.disabled=connectionUnavailable()||!doc||(doc&&offlineAutoBusy.has(offlineAutoTag(scope,doc)));
     });
     document.querySelectorAll('[data-offline-forget]').forEach(button=>{
       const doc=documentRows.find(value=>value.id===button.dataset.offlineForget),stored=doc&&ready.get(doc.id)?.filePath===doc.file_path;
@@ -8384,7 +8384,11 @@ $('documentForm').onsubmit=async e=>{
         .catch(error=>{if(offlineDocScopeCurrent(vaultScope))offlineAutoErrors.set(tag,error?.message||'No s’ha pogut desar el document')})
         .finally(()=>{
           offlineAutoBusy.delete(tag);
-          if(offlineDocScopeCurrent(vaultScope))void offlineDocStatus();
+          if(offlineDocScopeCurrent(vaultScope)){
+            void offlineDocStatus();
+            if(!offlineAutoErrors.has(tag)&&parkingDocumentScore(visibleInserted)>0)
+              void updateParkingReservationUi(vaultScope.tripId,vaultScope.generation);
+          }
         });
     }
     requestAnimationFrame(()=>{
