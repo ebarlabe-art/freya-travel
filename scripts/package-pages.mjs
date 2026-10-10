@@ -18,6 +18,8 @@ const runtimeDomain=[
   'travel-builder.mjs',
   'trip-brief.mjs',
   'import-proposal.mjs',
+  'import-itinerary-proposal.mjs',
+  'import-itinerary-review.mjs',
   'travel-book-proposal.mjs',
   'travel-book-batch.mjs',
   'travel-book-editor-state.mjs',
