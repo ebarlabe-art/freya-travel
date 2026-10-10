@@ -280,7 +280,13 @@ test('Offline documents require explicit download, encrypted account-scoped Inde
 test('Offline documents are not served by the service worker, and blob links are revoked',()=>{
   assert.doesNotMatch(worker,/offline-private-documents|offline-docs\/.*cache/);
   assert.match(html,/URL\.revokeObjectURL\(documentViewerObjectUrl\)/);
-  assert.match(html,/if\(event==='SIGNED_OUT'\)\{\s*if\(restoreOfflineReadOnlySession\(\)\)return;\s*clearOfflineUserData/);
+  const auth=html.slice(html.indexOf('db.auth.onAuthStateChange('));
+  assert.match(auth,/if\(event==='SIGNED_OUT'\)\{/);
+  assert.match(auth,/if\(restoreOfflineReadOnlySession\(\)\)return;/);
+  assert.match(auth,/restoreOfflineWhenAuthServerUnreachable\(\)\.then\(restored=>/);
+  assert.match(auth,/if\(restored\|\|offlineReadOnlySession\)return;/);
+  assert.match(auth,/clearOfflineUserData\(session\?\.user\?\.id\|\|lastAuthenticatedUserId\|\|grant\.userId\)/);
+  assert.match(html,/if\(!grant\|\|\(session\?\.user\?\.id&&session\.user\.id!==grant\.userId\)\)return false;/);
   assert.match(html,/clearOfflineDocumentUserData\(userId\)/);
   assert.match(html,/offlineDocEpoch\+\+/);
 });

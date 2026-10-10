@@ -72,15 +72,50 @@ try{
     const stillStored=await offlineDocRead(database,'records',encrypted.key);
     const stillKey=await offlineDocRead(database,'keys',scope.userId);
     if(!stillStored||!stillKey)throw Error('Logout deleted a previously saved offline document');
+    if(stillKey.extractable||stillKey.algorithm?.name!=='AES-GCM'||stillKey.algorithm?.length!==256)
+      throw Error('Persistent document key is not non-exportable AES-256-GCM');
+    let exportBlocked=false;
+    try{await crypto.subtle.exportKey('raw',stillKey)}catch(_){exportBlocked=true}
+    if(!exportBlocked)throw Error('Document key was exported');
+    if(await offlineDocGetBlob(scope,doc))throw Error('Old scope survived explicit logout');
+    session={user:{id:'test-vault-other'}};
+    trip={id:'test-vault-trip',experience_key:null};
+    if(await offlineDocGetBlob(offlineDocScope(),doc))throw Error('Other account read private PDF');
+    const otherKey=await offlineDocKey(database,'test-vault-other',true);
+    let wrongKeyBlocked=false;
+    try{await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(encrypted.iv)},otherKey,encrypted.ciphertext)}
+    catch(_){wrongKeyBlocked=true}
+    if(!wrongKeyBlocked)throw Error('Other account decrypted private PDF');
     session={user:{id:'test-vault-owner'}};
     trip={id:'test-vault-trip',experience_key:null};
     const restoredAfterLogin=await offlineDocGetBlob(offlineDocScope(),doc);
     if(!restoredAfterLogin)throw Error('Same account cannot reopen offline document after login');
     if(new Uint8Array(await restoredAfterLogin.blob.arrayBuffer()).join(',')!==bytes.join(','))
       throw Error('Preserved offline document contents changed after logout');
-    await clearOfflineDocumentUserData(scope.userId);
-    if(await offlineDocRead(database,'records',encrypted.key))throw Error('Logout kept encrypted bytes');
-    if(await offlineDocRead(database,'keys',scope.userId))throw Error('Logout kept the key');
+    // Purging one account must not erase another account's encrypted copies.
+    session={user:{id:'test-vault-other'}};tripLoadGeneration++;
+    const otherScope=offlineDocScope(),otherDoc={id:'other-document',file_path:'test-vault-trip/other.pdf',file_name:'other.pdf',mime_type:'application/pdf'};
+    await offlineDocSaveBlob(otherScope,otherDoc,new Blob([bytes],{type:'application/pdf'}));
+    const otherId=offlineDocId(otherScope.userId,otherScope.tripId,otherDoc.id);
+    session={user:{id:'test-vault-owner'}};tripLoadGeneration++;
+    const purgeButton=document.getElementById('purgeOfflineDocuments');
+    if(purgeButton?.onclick!==purgeOfflineDocumentCopies)throw Error('Purge UI button not connected');
+    const originalConfirm=window.confirm;
+    window.confirm=()=>false;
+    await purgeOfflineDocumentCopies();
+    if(!await offlineDocRead(database,'records',encrypted.key))throw Error('Cancel erased a saved document');
+    window.confirm=()=>true;
+    await purgeOfflineDocumentCopies();
+    window.confirm=originalConfirm;
+    if(!document.getElementById('offlinePurgeMsg').textContent.includes('S’han esborrat'))
+      throw Error('Purge UI did not confirm removal');
+    if(await offlineDocRead(database,'records',encrypted.key))throw Error('Purge retained owner encrypted bytes');
+    if(await offlineDocRead(database,'keys',scope.userId))throw Error('Purge retained owner key');
+    if(!await offlineDocRead(database,'records',otherId)||!await offlineDocRead(database,'keys',otherScope.userId))
+      throw Error('Purge erased a different account');
+    session={user:{id:'test-vault-other'}};tripLoadGeneration++;
+    if(!await offlineDocGetBlob(offlineDocScope(),otherDoc))throw Error('Other account lost its document');
+    await clearOfflineDocumentUserData(otherScope.userId);
     return {bytes:actual.length,encrypted:true,cleaned:true};
   });
   assert.ok(vaultResult.encrypted&&vaultResult.cleaned);
@@ -134,6 +169,35 @@ try{
   assert.notDeepEqual(after,before,JSON.stringify({before,after}));
   console.log('PASS functional sticker drag changes rendered position');
   await dragCtx.close();
+
+  // Isolated responsive rendering check, independent of offline auth startup.
+  const narrowCtx=await context({serviceWorkers:'block'}),narrowPage=await narrowCtx.newPage();
+  await narrowPage.goto(url,{waitUntil:'load'});
+  await narrowPage.evaluate(()=>{
+    session={user:{id:'responsive-fixture'}};
+    trip={id:'responsive-trip',experience_key:null};
+    document.getElementById('tripView').classList.remove('hidden');
+    document.getElementById('documentsView').classList.remove('hidden');
+    renderDocuments([{id:'responsive-document',title:'Bitllet molt llarg per a una pantalla estreta',
+      file_name:'document-amb-un-nom-extraordinariament-llarg-per-provar-amplada.pdf',
+      file_path:'fixture/test.pdf',mime_type:'application/pdf',category:'Reserva'}]);
+    document.querySelector('#documentsList [data-offline-forget]')?.classList.remove('hidden');
+  });
+  for(const width of [320,375,430]){
+    await narrowPage.setViewportSize({width,height:700});
+    const layout=await narrowPage.evaluate(()=>{
+      const buttons=[...document.querySelectorAll('#documentsView .doc-actions button,#purgeOfflineDocuments')]
+        .filter(el=>el.getClientRects().length);
+      return {count:buttons.length,purgeVisible:buttons.some(el=>el.id==='purgeOfflineDocuments'),overflow:buttons.filter(el=>{
+        const rect=el.getBoundingClientRect(),card=el.closest('.doc-card,.card').getBoundingClientRect();
+        return rect.left<card.left-1||rect.right>card.right+1||rect.right>innerWidth+1;
+      }).map(el=>el.textContent.trim())};
+    });
+    assert.ok(layout.count>=4&&layout.purgeVisible,JSON.stringify({width,layout}));
+    assert.deepEqual(layout.overflow,[],JSON.stringify({width,layout}));
+  }
+  console.log('PASS document actions and offline purge fit 320/375/430px iPhone layouts');
+  await narrowCtx.close();
 
   const pwaCtx=await context(),pwa=await pwaCtx.newPage();
   // Seed the prior cache before the real new worker installs.
@@ -203,4 +267,196 @@ try{
   assert.deepEqual(missing.filter(path=>/\.m?js$/.test(path)),[]);
   console.log('PASS PWA old cache retired; current cache contains full graph and loads modules offline');
   await pwaCtx.close();
+
+  // E2E: a pre-authorized local account must restore its own trip, document
+  // cards and itinerary after an entirely new page opens without a network.
+  // Seed only while online; do NOT inject session/trip after reopening.
+  const coldCtx=await context(),coldOnline=await coldCtx.newPage();
+  await coldOnline.goto(url,{waitUntil:'load'});
+  await coldOnline.waitForFunction(()=>!!navigator.serviceWorker.controller&&authInitializationResolved===true);
+  await coldOnline.locator('#loginCard').waitFor({state:'visible'});
+  await coldOnline.evaluate(()=>{
+    const userId='test-offline-ui-owner',tripId='test-offline-ui-trip';
+    // Simulated previously authenticated online session (no real credentials).
+    session={user:{id:userId,email:'offline-test@example.invalid'},access_token:'test-only-online-token'};
+    const row={id:tripId,name:'Viatge fictici offline',start_date:'2026-10-09',end_date:'2026-10-10',time_zone:'Europe/Madrid',is_owner:true,experience_key:null};
+    if(!rememberOfflineTrips([row],userId)||readOfflineSessionGrant()?.userId!==userId)
+      throw Error('Online trip snapshot did not establish the genuine local read grant');
+    const agenda={
+      flightRows:[],flightDocumentLinks:[],accommodationRows:[],accommodationDocumentLinks:[],
+      activityRows:[],activityDocumentLinks:[],dayMetadataRows:[],
+      manualItineraryRows:[{id:'test-offline-plan',trip_id:tripId,title:'Passeig fictici offline',timing_kind:'all_day',local_date:'2026-10-09',time_zone:'Europe/Madrid',status:'planned'}]
+    };
+    const documentRows=[{id:'test-offline-doc',trip_id:tripId,title:'Reserva ficticia offline',category:'Reserva',file_name:'reserva-test.pdf',file_path:'test-only/reserva-test.pdf',mime_type:'application/pdf'}];
+    if(!mergeOfflineTripSnapshot({agenda,documentRows,tripStopRows:[],checklistItems:[]},tripId,userId))
+      throw Error('Could not prepare offline trip data while online');
+  });
+  await coldCtx.setOffline(true);
+  await coldOnline.close(); // A fresh page must bootstrap without the previous JS globals.
+  const coldReopen=await coldCtx.newPage();
+  await coldReopen.goto(url,{waitUntil:'load'});
+  await coldReopen.locator('[data-select-trip="test-offline-ui-trip"]').waitFor({state:'visible',timeout:15000});
+  assert.deepEqual(await coldReopen.evaluate(()=>({
+    userId:session?.user?.id,readOnly:offlineReadOnlySession,hasToken:!!session?.access_token,online:navigator.onLine
+  })),{userId:'test-offline-ui-owner',readOnly:true,hasToken:false,online:false});
+  await coldReopen.locator('[data-select-trip="test-offline-ui-trip"]').click();
+  await coldReopen.locator('#genericDashboardView [data-open="itineraryView"]').click();
+  await coldReopen.locator('#genericItineraryDayTabs [data-generic-itinerary-day="2026-10-09"]').click();
+  await coldReopen.locator('#genericItineraryDays').getByText('Passeig fictici offline').waitFor({state:'visible',timeout:15000});
+  await coldReopen.evaluate(()=>setAppView('genericDashboardView')); // Navigate only; never inject the account or trip.
+  await coldReopen.locator('#genericDashboardView [data-open="documentsView"]').click();
+  await coldReopen.locator('#documentsList .doc-card h3').getByText('Reserva ficticia offline').waitFor({state:'visible',timeout:15000});
+  assert.equal(await coldReopen.evaluate(()=>trip?.id),'test-offline-ui-trip');
+  console.log('PASS new offline page automatically restores local session, trip, itinerary and document cards');
+  await coldReopen.close();
+  // iOS can report navigator.onLine=true despite no server connectivity.
+  // Reopen from scratch with network still blocked and do not inject a session.
+  const unreliableNetwork=await coldCtx.newPage();
+  await unreliableNetwork.addInitScript(()=>{
+    Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});
+  });
+  await unreliableNetwork.goto(url,{waitUntil:'load'});
+  assert.equal(await unreliableNetwork.evaluate(()=>navigator.onLine),true);
+  try{
+    await unreliableNetwork.locator('[data-select-trip="test-offline-ui-trip"]').waitFor({state:'visible',timeout:8000});
+  }catch(error){
+    const diagnostic=await unreliableNetwork.evaluate(()=>({
+      online:navigator.onLine,authReady:authInitializationResolved,
+      activeUser:session?.user?.id||null,readOnly:offlineReadOnlySession,
+      grantUser:readOfflineSessionGrant()?.userId||null,
+      storedTripCount:readOfflineTrips('test-offline-ui-owner')?.rows?.length??null,
+      loadedTripCount:trips.length,selectedTrip:trip?.id||null,
+      authVisible:!document.getElementById('auth').classList.contains('hidden'),
+      tripVisible:!document.getElementById('tripView').classList.contains('hidden'),
+      noTripVisible:!document.getElementById('noTrip').classList.contains('hidden'),
+      loadMessage:document.getElementById('tripLoadError')?.textContent||''
+    }));
+    console.error('OFFLINE_FALSE_ONLINE_COLD_START_DIAGNOSTIC',JSON.stringify(diagnostic));
+    throw error;
+  }
+  assert.deepEqual(await unreliableNetwork.evaluate(()=>({
+    userId:session?.user?.id,readOnly:offlineReadOnlySession,tripCount:trips.length
+  })),{userId:'test-offline-ui-owner',readOnly:true,tripCount:1});
+  console.log('PASS local recovery with unavailable Internet and misleading navigator.onLine');
+  // Security gate: an explicit UI logout must revoke the local grant even
+  // when the browser falsely claims Internet connectivity.
+  await unreliableNetwork.locator('.logout:visible').first().click();
+  await unreliableNetwork.locator('#loginCard').waitFor({state:'visible',timeout:10000});
+  assert.deepEqual(await unreliableNetwork.evaluate(()=>({
+    userId:session?.user?.id||null,offlineGrant:readOfflineSessionGrant(),
+    savedTrips:readOfflineTrips('test-offline-ui-owner')
+  })),{userId:null,offlineGrant:null,savedTrips:null});
+  await unreliableNetwork.close();
+  const loggedOutColdOpen=await coldCtx.newPage();
+  await loggedOutColdOpen.addInitScript(()=>Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true}));
+  await loggedOutColdOpen.goto(url,{waitUntil:'load'});
+  await loggedOutColdOpen.locator('#loginCard').waitFor({state:'visible',timeout:10000});
+  assert.equal(await loggedOutColdOpen.locator('[data-select-trip="test-offline-ui-trip"]').count(),0);
+  assert.equal(await loggedOutColdOpen.evaluate(()=>!!session||offlineReadOnlySession),false);
+  console.log('PASS explicit logout revokes offline access across cold restart with misleading online signal');
+  // Security gate: a grant older than 30 days cannot unlock local data,
+  // even though the trip snapshot is still stored on this same device.
+  await loggedOutColdOpen.close();
+  await coldCtx.setOffline(false);
+  const expiredSeed=await coldCtx.newPage();
+  await expiredSeed.goto(url,{waitUntil:'load'});
+  await expiredSeed.waitForFunction(()=>authInitializationResolved===true);
+  await expiredSeed.evaluate(()=>{
+    const userId='test-expired-owner';
+    session={user:{id:userId,email:'expired-test@example.invalid'},access_token:'test-only-online-token'};
+    if(!rememberOfflineTrips([{
+      id:'test-expired-trip',name:'Viatge amb concessio caducada',
+      start_date:'2026-10-09',end_date:'2026-10-10',time_zone:'Europe/Madrid',
+      is_owner:true,experience_key:null
+    }],userId))throw Error('Could not seed expiring offline grant');
+    const grant=JSON.parse(localStorage.getItem(OFFLINE_AUTH_GRANT_KEY));
+    grant.verifiedAt=Date.now()-OFFLINE_AUTH_GRANT_MAX_AGE_MS-1000;
+    localStorage.setItem(OFFLINE_AUTH_GRANT_KEY,JSON.stringify(grant));
+    if(readOfflineSessionGrant())throw Error('Expired grant was accepted');
+    if(!readOfflineTrips(userId))throw Error('Trip snapshot was unexpectedly removed');
+  });
+  await coldCtx.setOffline(true);
+  await expiredSeed.close();
+  const expiredReopen=await coldCtx.newPage();
+  await expiredReopen.goto(url,{waitUntil:'load'});
+  await expiredReopen.waitForFunction(()=>authInitializationResolved===true);
+  await expiredReopen.locator('#loginCard').waitFor({state:'visible',timeout:10000});
+  assert.deepEqual(await expiredReopen.evaluate(()=>({
+    userId:session?.user?.id||null,readOnly:offlineReadOnlySession,
+    grantAccepted:!!readOfflineSessionGrant(),
+    cachedTripExists:!!readOfflineTrips('test-expired-owner'),
+    tripCardCount:document.querySelectorAll('[data-select-trip="test-expired-trip"]').length
+  })),{userId:null,readOnly:false,grantAccepted:false,cachedTripExists:true,tripCardCount:0});
+  console.log('PASS expired local grant denies offline entry while retaining cached trip metadata');
+  await expiredReopen.close();
+  await coldCtx.setOffline(false);
+  // Two account snapshots coexist on one device. Only beta has the latest
+  // valid online grant; do not inject user or trip after offline reopening.
+  const switchSeed=await coldCtx.newPage();
+  await switchSeed.goto(url,{waitUntil:'load'});
+  await switchSeed.waitForFunction(()=>authInitializationResolved===true);
+  await switchSeed.evaluate(()=>{
+    for(const name of ['alpha','beta']){
+      const userId='account-'+name,tripId='trip-'+name;
+      session={user:{id:userId,email:name+'@example.invalid'},access_token:'test-only-online-token'};
+      const rows=[{id:tripId,name:'Viatge privat '+name,start_date:'2026-10-09',
+        end_date:'2026-10-10',time_zone:'Europe/Madrid',is_owner:true,experience_key:null}];
+      const agenda={flightRows:[],flightDocumentLinks:[],accommodationRows:[],
+        accommodationDocumentLinks:[],activityRows:[],activityDocumentLinks:[],
+        dayMetadataRows:[],manualItineraryRows:[{id:'manual-'+name,trip_id:tripId,
+          title:'Pla privat '+name,timing_kind:'all_day',local_date:'2026-10-09',
+          time_zone:'Europe/Madrid',status:'planned'}]};
+      const documentRows=[{id:'doc-'+name,trip_id:tripId,title:'Document privat '+name,
+        category:'Reserva',file_name:name+'.pdf',file_path:'test-only/'+name+'.pdf',
+        mime_type:'application/pdf'}];
+      if(!rememberOfflineTrips(rows,userId)||
+        !mergeOfflineTripSnapshot({agenda,documentRows,tripStopRows:[],checklistItems:[]},tripId,userId))
+        throw Error('Could not prepare isolated account '+name);
+    }
+    if(readOfflineSessionGrant()?.userId!=='account-beta'||
+      !readOfflineTrips('account-alpha')||!readOfflineTripSnapshot('trip-alpha','account-alpha'))
+      throw Error('Expected two cached accounts with only beta authorized');
+  });
+  await coldCtx.setOffline(true);
+  await switchSeed.close();
+  const isolatedReopen=await coldCtx.newPage();
+  await isolatedReopen.goto(url,{waitUntil:'load'});
+  await isolatedReopen.locator('[data-select-trip="trip-beta"]').waitFor({state:'visible',timeout:15000});
+  assert.deepEqual(await isolatedReopen.evaluate(()=>({
+    owner:session?.user?.id,readOnly:offlineReadOnlySession,hasToken:!!session?.access_token,
+    visibleTrips:trips.map(row=>row.id),alphaStillStored:!!readOfflineTrips('account-alpha'),
+    forbiddenRead:readOfflineTripSnapshot('trip-alpha')===null
+  })),{owner:'account-beta',readOnly:true,hasToken:false,
+    visibleTrips:['trip-beta'],alphaStillStored:true,forbiddenRead:true});
+  assert.equal(await isolatedReopen.locator('[data-select-trip="trip-alpha"]').count(),0);
+  await isolatedReopen.locator('[data-select-trip="trip-beta"]').click();
+  await isolatedReopen.locator('#genericDashboardView [data-open="documentsView"]').click();
+  await isolatedReopen.locator('#documentsList .doc-card h3').getByText('Document privat beta').waitFor({state:'visible'});
+  assert.equal(await isolatedReopen.locator('#documentsList').getByText('Document privat alpha').count(),0);
+  await isolatedReopen.evaluate(()=>setAppView('genericDashboardView'));
+  await isolatedReopen.locator('#genericDashboardView [data-open="itineraryView"]').click();
+  await isolatedReopen.locator('#genericItineraryDayTabs [data-generic-itinerary-day="2026-10-09"]').click();
+  await isolatedReopen.locator('#genericItineraryDays').getByText('Pla privat beta').waitFor({state:'visible'});
+  assert.equal(await isolatedReopen.locator('#genericItineraryContent').getByText('Pla privat alpha').count(),0);
+  console.log('PASS same-device accounts isolate cached trips, document cards and itinerary after cold offline start');
+  // A deliberately expired SDK session must not defeat the valid offline grant.
+  await isolatedReopen.evaluate(()=>{
+    const key=db.auth.storageKey;
+    if(!key||readOfflineSessionGrant()?.userId!=='account-beta')throw Error('Missing verified SDK fixture scope');
+    localStorage.setItem(key,JSON.stringify({
+      access_token:'expired-fixture-access',refresh_token:'expired-fixture-refresh',
+      token_type:'bearer',expires_in:3600,expires_at:Math.floor(Date.now()/1000)-120,
+      user:{id:'account-beta',email:'beta@example.invalid',role:'authenticated',aud:'authenticated'}
+    }));
+  });
+  await isolatedReopen.close();
+  const expiredSdkPage=await coldCtx.newPage();
+  await expiredSdkPage.goto(url,{waitUntil:'load'});
+  await expiredSdkPage.locator('[data-select-trip="trip-beta"]').waitFor({state:'visible',timeout:15000});
+  assert.deepEqual(await expiredSdkPage.evaluate(()=>({
+    account:session?.user?.id,readOnly:offlineReadOnlySession,serverToken:!!session?.access_token,
+    storedAccessExpired:JSON.parse(localStorage.getItem(db.auth.storageKey)).expires_at<Date.now()/1000
+  })),{account:'account-beta',readOnly:true,serverToken:false,storedAccessExpired:true});
+  console.log('PASS expired Supabase SDK session fixture cold-opens cached trip in read-only mode');
+  await coldCtx.close();
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
