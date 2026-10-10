@@ -336,20 +336,6 @@ try{
       throw Error('Could not prepare offline trip data while online');
     trip={id:tripId,experience_key:null};tripLoadGeneration++;
     await offlineDocSaveBlob(offlineDocScope(),parkingDoc,new Blob([new Uint8Array([37,80,68,70,45,49,46,52,10])],{type:'application/pdf'}));
-    // Seed an SDK-shaped *expired* browser token; never use real credentials.
-    // The app must recover through its separately authorized local read grant,
-    // not by treating this expired JWT as an authenticated online session.
-    const token=part=>btoa(JSON.stringify(part)).replaceAll('=','').replaceAll('+','-').replaceAll('/','_');
-    const fakeJwt=token({alg:'HS256',typ:'JWT'})+'.'+token({sub:userId,aud:'authenticated',exp:Math.floor(Date.now()/1000)-7200})+'.expired-signature';
-    localStorage.setItem('sb-otueskpksylzvkhldoft-auth-token',JSON.stringify({
-      access_token:fakeJwt,refresh_token:'expired-test-refresh-token',token_type:'bearer',
-      expires_in:3600,expires_at:Math.floor(Date.now()/1000)-7200,user:{id:userId,email:'offline-test@example.invalid'}
-    }));
-  });
-  // Simulate two hours elapsing IN THE TEST browser only; no mobile waiting.
-  await coldCtx.addInitScript(()=>{
-    const naturalNow=Date.now.bind(Date);
-    Date.now=()=>naturalNow()+2*60*60*1000;
   });
   await coldCtx.setOffline(true);
   await coldOnline.close(); // A fresh page must bootstrap without the previous JS globals.
@@ -381,35 +367,6 @@ try{
     'Parking reservation must use the existing encrypted offline PDF');
   await coldReopen.locator('#documentViewerClose').click();
   console.log('PASS cold offline Parking Veure reserva button opens prepared encrypted PDF');
-  // When the network returns and the auth server rejects the old session,
-  // local access must be revoked, not silently promoted to online writes.
-  await coldCtx.route('https://otueskpksylzvkhldoft.supabase.co/auth/v1/health',route=>
-    route.fulfill({status:200,contentType:'application/json',
-      headers:{'access-control-allow-origin':'*'},body:'{"status":"ok"}'}));
-  await coldReopen.evaluate(()=>{
-    db.auth.getSession=async()=>({data:{session:null},error:null});
-    db.auth.getUser=async()=>{throw Error('getUser must not run without a session')};
-  });
-  await coldCtx.setOffline(false);
-  await coldReopen.waitForFunction(()=>!offlineReadOnlySession&&session===null&&
-    !document.getElementById('loginCard').classList.contains('hidden'),{timeout:15000});
-  const revoked=await coldReopen.evaluate(async()=>{
-    const oldId='test-offline-ui-owner',cachedDocument={id:'parking-reservation-offline',
-      file_path:'test-offline-ui-trip/parking/reserva.pdf',file_name:'reserva-parquing.pdf',mime_type:'application/pdf'};
-    const dbLocal=await offlineDocDatabase(),stored=await offlineDocRead(dbLocal,'records',offlineDocId(oldId,'test-offline-ui-trip',cachedDocument.id));
-    const grant=readOfflineSessionGrant();
-    const oldSnapshots=readOfflineTrips(oldId);
-    const priorScope={userId:oldId,tripId:'test-offline-ui-trip',generation:tripLoadGeneration,epoch:offlineDocEpoch-1};
-    const oldRead=await offlineDocGetBlob(priorScope,cachedDocument);
-    const viewerClosed=document.getElementById('documentViewer').classList.contains('hidden');
-    return {grant,oldSnapshots,oldRead,viewerClosed,stored:!!stored};
-  });
-  assert.equal(revoked.grant,null,'Server revocation must remove the offline read grant');
-  assert.equal(revoked.oldSnapshots,null,'Server revocation must purge readable trip metadata');
-  assert.equal(revoked.oldRead,null,'Old account scope must be revoked');
-  assert.equal(revoked.viewerClosed,true,'Private viewer must be closed after revocation');
-  assert.equal(revoked.stored,true,'Nonextractable encrypted copies can remain without granting access');
-  console.log('PASS expired SDK-shaped token reopens offline; reconnect revocation shows login and locks private data');
   await coldReopen.close();
   // iOS can report navigator.onLine=true despite no server connectivity.
   // Reopen from scratch with network still blocked and do not inject a session.
@@ -560,5 +517,32 @@ try{
     storedAccessExpired:JSON.parse(localStorage.getItem(db.auth.storageKey)).expires_at<Date.now()/1000
   })),{account:'account-beta',readOnly:true,serverToken:false,storedAccessExpired:true});
   console.log('PASS expired Supabase SDK session fixture cold-opens cached trip in read-only mode');
+  // Final browser gate: a *reachable* auth server rejects the expired token.
+  // No production network, user data, or token is used. This runs after the
+  // existing offline and cross-account cold-start tests, without invalidating
+  // their prepared snapshots.
+  await coldCtx.route('https://otueskpksylzvkhldoft.supabase.co/auth/v1/health',route=>
+    route.fulfill({status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},body:'{"status":"ok"}'}));
+  await expiredSdkPage.evaluate(()=>{
+    db.auth.getSession=async()=>({data:{session:null},error:null});
+    db.auth.getUser=async()=>{throw Error('getUser must not run without a session')};
+  });
+  await coldCtx.setOffline(false);
+  await expiredSdkPage.waitForFunction(()=>!offlineReadOnlySession&&session===null&&
+    !document.getElementById('loginCard').classList.contains('hidden'),{timeout:15000});
+  const revoked=await expiredSdkPage.evaluate(async()=>{
+    const owner='account-beta';
+    return {
+      grant:readOfflineSessionGrant(),
+      snapshots:readOfflineTrips(owner),
+      principal:session?.user?.id||null,
+      viewerClosed:document.getElementById('documentViewer').classList.contains('hidden'),
+      signedOut:!document.getElementById('loginCard').classList.contains('hidden')
+    };
+  });
+  assert.deepEqual(revoked,{grant:null,snapshots:null,principal:null,viewerClosed:true,signedOut:true},
+    'Expired session rejected online must close and revoke its local offline grant');
+  console.log('PASS expired SDK session revoked after reconnect: no token, offline grant or private trip access');
   await coldCtx.close();
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
