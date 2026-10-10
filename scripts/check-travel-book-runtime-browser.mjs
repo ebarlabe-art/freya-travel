@@ -390,6 +390,28 @@ try{
   console.log('PASS PWA old cache retired; current cache contains full graph and loads modules offline');
   await pwaCtx.close();
 
+async function visibleOfflineTripCard(page,tripId,timeout=15000){
+  const card=page.locator('[data-select-trip="'+tripId+'"]');
+  await card.waitFor({state:'attached',timeout});
+  // Home classifies trips by their date relative to today. A dated fixture
+  // eventually moves from En curs to Passats; navigate via the real UI.
+  const destination=await card.evaluate(element=>{
+    if(element.closest('#pastTripsList'))return 'pastTripsView';
+    if(element.closest('#upcomingTripsList'))return 'upcomingTripsView';
+    if(element.closest('#constructionTripsList'))return 'constructionView';
+    if(element.closest('#activeTripsList,#undatedTripsList'))return 'tripsHomeView';
+    return null;
+  });
+  assert.ok(destination,'Offline trip must appear in exactly one expected Home category');
+  const current=await page.evaluate(()=>visibleAppView());
+  if(current!==destination){
+    if(current!=='tripsHomeView')throw Error('Unexpected Home view before selecting offline trip');
+    await page.locator('[data-home-view="'+destination+'"]').click();
+  }
+  await card.waitFor({state:'visible',timeout});
+  return card;
+}
+
   // E2E: a pre-authorized local account must restore its own trip, document
   // cards and itinerary after an entirely new page opens without a network.
   // Seed only while online; do NOT inject session/trip after reopening.
@@ -425,7 +447,7 @@ try{
   await coldOnline.close(); // A fresh page must bootstrap without the previous JS globals.
   const coldReopen=await coldCtx.newPage();
   await coldReopen.goto(url,{waitUntil:'load'});
-  await coldReopen.locator('[data-select-trip="test-offline-ui-trip"]').waitFor({state:'visible',timeout:15000});
+  await visibleOfflineTripCard(coldReopen,'test-offline-ui-trip');
   assert.deepEqual(await coldReopen.evaluate(()=>({
     userId:session?.user?.id,readOnly:offlineReadOnlySession,hasToken:!!session?.access_token,online:navigator.onLine
   })),{userId:'test-offline-ui-owner',readOnly:true,hasToken:false,online:false});
@@ -461,7 +483,7 @@ try{
   await unreliableNetwork.goto(url,{waitUntil:'load'});
   assert.equal(await unreliableNetwork.evaluate(()=>navigator.onLine),true);
   try{
-    await unreliableNetwork.locator('[data-select-trip="test-offline-ui-trip"]').waitFor({state:'visible',timeout:8000});
+    await visibleOfflineTripCard(unreliableNetwork,'test-offline-ui-trip',8000);
   }catch(error){
     const diagnostic=await unreliableNetwork.evaluate(()=>({
       online:navigator.onLine,authReady:authInitializationResolved,
@@ -564,7 +586,7 @@ try{
   await switchSeed.close();
   const isolatedReopen=await coldCtx.newPage();
   await isolatedReopen.goto(url,{waitUntil:'load'});
-  await isolatedReopen.locator('[data-select-trip="trip-beta"]').waitFor({state:'visible',timeout:15000});
+  await visibleOfflineTripCard(isolatedReopen,'trip-beta');
   assert.deepEqual(await isolatedReopen.evaluate(()=>({
     owner:session?.user?.id,readOnly:offlineReadOnlySession,hasToken:!!session?.access_token,
     visibleTrips:trips.map(row=>row.id),alphaStillStored:!!readOfflineTrips('account-alpha'),
@@ -595,7 +617,7 @@ try{
   await isolatedReopen.close();
   const expiredSdkPage=await coldCtx.newPage();
   await expiredSdkPage.goto(url,{waitUntil:'load'});
-  await expiredSdkPage.locator('[data-select-trip="trip-beta"]').waitFor({state:'visible',timeout:15000});
+  await visibleOfflineTripCard(expiredSdkPage,'trip-beta');
   assert.deepEqual(await expiredSdkPage.evaluate(()=>({
     account:session?.user?.id,readOnly:offlineReadOnlySession,serverToken:!!session?.access_token,
     storedAccessExpired:JSON.parse(localStorage.getItem(db.auth.storageKey)).expires_at<Date.now()/1000
