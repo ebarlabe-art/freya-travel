@@ -28,7 +28,7 @@ test('A2.7: a chosen existing document is reused, file upload is user initiated'
  assert.match(script,/\$\('itineraryImportUpload'\)\.onclick/);
 });
 test('A2.7: UI does not write itinerary and leaves final save disabled',()=>{
- assert.match(script,/read_only/);
+ assert.match(script,/state\.api\.summarizeItineraryReview\(state\.review,existing\)/);
  assert.doesNotMatch(script,/db\.from\('trip_itinerary_items'\)/);
  assert.doesNotMatch(script,/db\.rpc\(/);
  assert.doesNotMatch(script,/\.insert\(|\.update\(|\.delete\(|\.upsert\(/);
