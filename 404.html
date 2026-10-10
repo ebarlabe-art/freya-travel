@@ -5995,11 +5995,10 @@ function clearTripScopedState(){
 
   updateTicketDocumentLinks();
 
-  const parkingCard=$('parkingReservationCard'),parkingButton=$('parkingViewReservation'),parkingPreview=$('parkingReservationPreview'),parkingImage=$('parkingReservationImage');
+  const parkingCard=$('parkingReservationCard'),parkingButton=$('parkingViewReservation');
   if(parkingCard)parkingCard.classList.remove('visible');
   if(parkingButton){parkingButton.classList.add('hidden');parkingButton.onclick=null}
-  if(parkingPreview)parkingPreview.classList.remove('visible');
-  if(parkingImage){parkingImage.removeAttribute('src');parkingImage.onclick=null}
+  clearParkingReservationPreview();
 
   if($('parkingForm'))$('parkingForm').reset();
   if($('parkingSpotForm'))$('parkingSpotForm').reset();
@@ -6263,7 +6262,7 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
 }
 async function renderSession(next){
   const renderGeneration=++sessionRenderGeneration,nextUserId=next?.user?.id||null;
-  if(nextUserId!==session?.user?.id)resetBuilderUi();
+  if(nextUserId!==session?.user?.id){resetBuilderUi();clearParkingReservationPreview()}
   if(nextUserId&&lastAuthenticatedUserId&&nextUserId!==lastAuthenticatedUserId){clearNavigationState(lastAuthenticatedUserId);clearDocumentsReturnContext();clearAccommodationVoucherFocus();clearGenericItineraryState()}
   if(nextUserId)lastAuthenticatedUserId=nextUserId;session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');
   if(!session){if(lastAuthenticatedUserId)clearNavigationState(lastAuthenticatedUserId);lastAuthenticatedUserId=null;trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();clearGenericItineraryState();await disconnectTripRealtime();clearTripScopedState();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
@@ -8635,7 +8634,15 @@ $('genericTripSettingsForm').onsubmit=async e=>{
   }
 };
 
-let parkingRow=null,parkingLoadsPending=0,parkingPhotoObjectUrl=null;
+let parkingRow=null,parkingLoadsPending=0,parkingPhotoObjectUrl=null,parkingReservationObjectUrl=null;
+let parkingReservationRenderSequence=0;
+function clearParkingReservationPreview(){
+  parkingReservationRenderSequence++;
+  if(parkingReservationObjectUrl){URL.revokeObjectURL(parkingReservationObjectUrl);parkingReservationObjectUrl=null}
+  const preview=$('parkingReservationPreview'),img=$('parkingReservationImage');
+  if(preview)preview.classList.remove('visible');
+  if(img){img.removeAttribute('src');img.onclick=null}
+}
 function parkingOfflinePhotoDocument(path){
   return {id:'freya-parking-photo-v1',file_path:path,
     file_name:String(path||'').split('/').pop()||'parking.jpg',mime_type:''};
@@ -8739,16 +8746,14 @@ async function loadParking(){
     $('parkingSavePhotoOffline').classList.toggle('hidden',!row.photo_path);
     $('parkingSavePhotoOffline').disabled=usingOfflineParking||connectionUnavailable();
     $('parkingPhotoOfflineStatus').textContent='';
-    if(usingOfflineParking){
-      await renderParkingPhoto(row.photo_path,tripId,generation);
-      parkingMessage(usingSummaryOnly
-        ?'📵 Es mostra el resum desat de l’aparcament. Obre el viatge amb connexió per preparar-ne el detall complet. Les fotos i els adjunts requereixen connexió.'
-        :'📵 Còpia de consulta. Les fotos preparades offline es poden consultar; els altres adjunts poden requerir connexió.');
-    }else{
-      await renderParkingPhoto(row.photo_path,tripId,generation);if(!tripRequestIsCurrent(tripId,generation))return;
-      if(!documentRows.length)await loadDocuments(true);
-      await updateParkingReservationUi(tripId,generation);
-    }
+    await renderParkingPhoto(row.photo_path,tripId,generation);
+    if(!tripRequestIsCurrent(tripId,generation))return;
+    if(usingOfflineParking)parkingMessage(usingSummaryOnly
+      ?'📵 Es mostra el resum desat de l’aparcament. Obre el viatge amb connexió per preparar-ne el detall complet.'
+      :'📵 Còpia de consulta. Les fotos i les reserves preparades offline es poden obrir sense Internet.');
+    if(!documentRows.length)await loadDocuments(true);
+    if(!tripRequestIsCurrent(tripId,generation))return;
+    await updateParkingReservationUi(tripId,generation,usingOfflineParking);
   }finally{
     if(tripRequestIsCurrent(tripId,generation)){parkingLoadsPending=Math.max(0,parkingLoadsPending-1);if(parkingLoadsPending===0)setParkingControlsDisabled(connectionUnavailable()||usingOfflineParking)}
   }
@@ -8786,22 +8791,48 @@ function parkingDocumentScore(doc){
 function findParkingReservationDocument(){
   return [...(documentRows||[])].sort((a,b)=>parkingDocumentScore(b)-parkingDocumentScore(a)).find(d=>parkingDocumentScore(d)>0)||null;
 }
-async function updateParkingReservationUi(tripId=trip?.id,generation=tripLoadGeneration){
+async function updateParkingReservationUi(tripId=trip?.id,generation=tripLoadGeneration,forceOffline=false){
   const card=$('parkingReservationCard'),button=$('parkingViewReservation'),preview=$('parkingReservationPreview'),img=$('parkingReservationImage');
   if(!card||!button||!preview||!img)return;
+  clearParkingReservationPreview();
+  const sequence=parkingReservationRenderSequence;
+  button.classList.add('hidden');button.onclick=null;
   const doc=findParkingReservationDocument();
-  if(!doc){card.classList.remove('visible');button.classList.add('hidden');preview.classList.remove('visible');img.removeAttribute('src');return}
-  card.classList.add('visible');button.classList.remove('hidden');
+  if(!doc){card.classList.remove('visible');return}
+  card.classList.add('visible');
   parkingText('parkingReservationTitle','✅ Reserva carregada');
   parkingText('parkingReservationFile',doc.title||doc.file_name||'Document disponible');
   parkingText('parkingReservationIcon',(doc.mime_type||'').startsWith('image/')?'🖼️':'📄');
+  const offline=forceOffline||connectionUnavailable(),scope=offlineDocScope();
+  let cached=null;
+  if(scope){
+    try{cached=await offlineDocGetBlob(scope,doc)}
+    catch(_){cached=null}
+    if(sequence!==parkingReservationRenderSequence||!tripRequestIsCurrent(tripId,generation)||!offlineDocScopeCurrent(scope))return;
+  }
+  if(offline&&!cached){
+    parkingText('parkingReservationTitle','📵 Reserva pendent de preparar offline');
+    parkingText('parkingReservationFile','Prepara aquesta reserva a Documents quan tinguis connexió.');
+    return;
+  }
+  button.classList.remove('hidden');
   button.onclick=()=>openDocument(doc.id,documentRows);
-  if((doc.mime_type||'').startsWith('image/')){
-    const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(doc.file_path,3600);
-    if(!tripRequestIsCurrent(tripId,generation))return;
-    if(!error&&data?.signedUrl){img.src=data.signedUrl;preview.classList.add('visible');img.onclick=()=>openDocument(doc.id,documentRows)}
-    else{preview.classList.remove('visible');img.removeAttribute('src')}
-  }else{preview.classList.remove('visible');img.removeAttribute('src')}
+  if(cached?.mime?.startsWith('image/')){
+    parkingText('parkingReservationIcon','🖼️');
+    parkingReservationObjectUrl=URL.createObjectURL(cached.blob);
+    img.src=parkingReservationObjectUrl;preview.classList.add('visible');
+    img.onclick=()=>openDocument(doc.id,documentRows);
+    return;
+  }
+  if(offline||cached||!(doc.mime_type||'').startsWith('image/'))return;
+  let data,error=null;
+  try{({data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(doc.file_path,3600))}
+  catch(fetchError){error=fetchError}
+  if(sequence!==parkingReservationRenderSequence||!tripRequestIsCurrent(tripId,generation)||scope&&!offlineDocScopeCurrent(scope)||connectionUnavailable())return;
+  if(!error&&data?.signedUrl){
+    img.src=data.signedUrl;preview.classList.add('visible');
+    img.onclick=()=>openDocument(doc.id,documentRows);
+  }
 }
 $('parkingOpenDocuments').onclick=()=>{if(!$('documentTitle').value.trim())$('documentTitle').value='Reserva pàrquing';setAppView('documentsView');setTimeout(()=>{const form=$('documentForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'})},80)};
 function updateParkingMap(lat,lng){

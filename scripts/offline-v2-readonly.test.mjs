@@ -59,7 +59,7 @@ test('Older offline snapshots with only parking summary show the spot within det
   const summary={parking_name:'Aeroport',floor:'P6',zone:'Zona taronja',spot:'219'};
   const ctx=vmModule.createContext({
     trip:{id:'trip-1'},session:{user:{id:'user-1'}},tripLoadGeneration:1,
-    parkingLoadsPending:0,parkingRow:null,offlineSnapshotActive:false,offlineSnapshotSavedAt:null,
+    parkingLoadsPending:0,parkingRow:null,offlineSnapshotActive:false,offlineSnapshotSavedAt:null,documentRows:[],
     isLondonTrip:()=>false,connectionUnavailable:()=>true,
     readOfflineTripSnapshot:()=>({parkingSummary:summary,savedAt:'2026-10-08T20:00:00Z'}),
     tripRequestIsCurrent:()=>true,
@@ -68,7 +68,7 @@ test('Older offline snapshots with only parking summary show the spot within det
     parkingValue:(id,value)=>{values[id]=value},
     parkingText:(id,value)=>{values[id]=value},
     parkingSpotLabel:row=>[row.floor,row.zone,row.spot].filter(Boolean).join(' · '),
-    updateParkingMap:()=>{},renderParkingPhoto:async()=>{},updateParkingReservationUi:async()=>{},
+    updateParkingMap:()=>{},renderParkingPhoto:async()=>{},loadDocuments:async()=>[],updateParkingReservationUi:async()=>{},
     updateConnectivityBanner:()=>{},mergeOfflineTripSnapshot:()=>{},
     $:()=>({classList:{toggle:()=>{}}}),
     db:{from:()=>{networkCalls++;throw Error('Network access not permitted offline')}}
@@ -308,4 +308,64 @@ test('Concurrent tabs elect one CryptoKey atomically and enforce quotas in IDB t
   assert.match(html,/offlineDocGetBlob\(scope,parkingOfflinePhotoDocument\(path\)\)/);
   assert.match(html,/await renderParkingPhoto\(row\.photo_path,tripId,generation\)/);
   assert.match(html,/value\.documentId!=='freya-parking-photo-v1'/);
+});
+
+test('Offline parking loads cached document metadata and restores its reservation action',async()=>{
+  const snippet=html.slice(html.indexOf('async function loadParking(){'),html.indexOf('function parkingPayload('));
+  const doc={id:'res-1',title:'Reserva aparcament',file_path:'t/reserva.pdf',mime_type:'application/pdf'};
+  let metadataLoads=0,renderCalls=0,remoteCalls=0;
+  const $=()=>({classList:{toggle(){}},textContent:'',disabled:false});
+  const ctx=vmModule.createContext({
+    trip:{id:'t'},session:{user:{id:'u'}},tripLoadGeneration:1,parkingLoadsPending:0,
+    parkingRow:null,documentRows:[],offlineSnapshotActive:false,offlineSnapshotSavedAt:null,
+    isLondonTrip:()=>false,connectionUnavailable:()=>true,
+    readOfflineTripSnapshot:()=>({parkingRow:{parking_name:'Aeroport'}}),
+    tripRequestIsCurrent:()=>true,setParkingControlsDisabled:()=>{},parkingMessage:()=>{},
+    parkingValue:()=>{},parkingText:()=>{},parkingSpotLabel:()=>'',updateParkingMap:()=>{},
+    renderParkingPhoto:async()=>{},updateConnectivityBanner:()=>{},$,
+    loadDocuments:async()=>{metadataLoads++;ctx.documentRows=[doc];return [doc]},
+    updateParkingReservationUi:async()=>{renderCalls++;assert.equal(ctx.documentRows[0]?.id,'res-1')},
+    db:{from:()=>{remoteCalls++;throw Error('unexpected network')}} 
+  });
+  vmModule.runInContext(snippet,ctx);
+  await ctx.loadParking();
+  assert.equal(metadataLoads,1);assert.equal(renderCalls,1);assert.equal(remoteCalls,0);
+});
+
+test('Encrypted parking reservation preview opens offline without a second download, and is cleared',async()=>{
+  const helper=html.slice(html.indexOf('function clearParkingReservationPreview(){'),html.indexOf('function parkingOfflinePhotoDocument('));
+  const fn=html.slice(html.indexOf('async function updateParkingReservationUi('),html.indexOf("$('parkingOpenDocuments').onclick=",html.indexOf('async function updateParkingReservationUi(')));
+  const doc={id:'res-1',title:'Reserva aparcament',file_path:'t/reserva.png',mime_type:'image/png'};
+  const elems=new Map(),flags=new Map();
+  function $(id){
+    if(!elems.has(id)){
+      const present=new Set();flags.set(id,present);
+      elems.set(id,{src:'',textContent:'',onclick:null,
+        classList:{add:v=>present.add(v),remove:v=>present.delete(v)},
+        removeAttribute(name){if(name==='src')this.src=''}
+      });
+    }
+    return elems.get(id);
+  }
+  let downloads=0,opens=0;const revoked=[];
+  const ctx=vmModule.createContext({
+    parkingReservationObjectUrl:null,parkingReservationRenderSequence:0,documentRows:[doc],
+    $,findParkingReservationDocument:()=>doc,parkingText:(id,v)=>{$(id).textContent=v},
+    connectionUnavailable:()=>true,offlineDocScope:()=>({userId:'u',tripId:'t'}),
+    offlineDocScopeCurrent:()=>true,tripRequestIsCurrent:()=>true,
+    offlineDocGetBlob:async()=>({blob:{},mime:'image/png'}),
+    openDocument:()=>{opens++},URL:{createObjectURL:()=> 'blob:local-private',revokeObjectURL:v=>revoked.push(v)},
+    db:{storage:{from:()=>{downloads++;throw Error('unexpected network')}}},DOC_BUCKET:'documents'
+  });
+  vmModule.runInContext(helper+fn,ctx);
+  await ctx.updateParkingReservationUi('t',1,true);
+  assert.equal($('parkingReservationImage').src,'blob:local-private');
+  assert.equal(flags.get('parkingReservationPreview').has('visible'),true);
+  assert.equal(flags.get('parkingViewReservation').has('hidden'),false);
+  $('parkingViewReservation').onclick();
+  assert.equal(opens,1);assert.equal(downloads,0);
+  ctx.clearParkingReservationPreview();
+  assert.deepEqual(revoked,['blob:local-private']);
+  assert.equal($('parkingReservationImage').src,'');
+  assert.match(html,/if\(nextUserId!==session\?\.user\?\.id\)\{resetBuilderUi\(\);clearParkingReservationPreview\(\)\}/);
 });
