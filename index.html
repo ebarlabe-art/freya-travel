@@ -1460,6 +1460,7 @@
               <div class="parking-actions">
                 <button type="submit">💾 Desa-ho</button>
                 <button id="parkingViewReservation" type="button" class="secondary hidden">👁️ Veure reserva</button>
+                <button id="parkingSaveReservationOffline" type="button" class="secondary hidden">🔐 Desa reserva offline</button>
                 <button id="parkingOpenDocuments" type="button" class="secondary">📄 Afegir o substituir reserva</button>
               </div>
               <div id="parkingReservationCard" class="parking-reservation-card">
@@ -1567,7 +1568,9 @@
       </div>
       <div class="card">
         <h3>Documents del viatge</h3>
-        <p id="offlineDocumentsStatus" class="muted" role="status">Prepara els documents que necessitis offline. Límit: 12 MB per fitxer i 55 MB per compte.</p>
+        <p id="offlineDocumentsStatus" class="muted" role="status" aria-live="polite">Preparant els documents offline…</p>
+        <label class="muted" style="display:flex;gap:10px;align-items:center;margin:12px 0"><input id="offlineAutoDocuments" type="checkbox" checked> Prepara automàticament reserves, bitllets, contractes i captures de documents en aquest dispositiu (no les fotos de l'àlbum).</label>
+        <p class="muted">Les còpies són xifrades i privades per compte; límits actuals: 12 MB per fitxer, 35 MB per viatge, 55 MB i 30 documents per compte. Si falta espai o connexió, el document quedarà pendent.</p>
         <p class="muted">Les còpies xifrades d'aquest compte es poden eliminar d'aquest dispositiu sense esborrar els originals del viatge ni les còpies d'altres comptes.</p>
         <button id="purgeOfflineDocuments" class="secondary hidden" type="button">Esborra totes les còpies offline d'aquest compte</button>
         <p id="offlinePurgeMsg" class="message hidden" role="status" aria-live="polite"></p>
@@ -2368,6 +2371,32 @@ const OFFLINE_DOC_PER_FILE=12*1024*1024;
 const OFFLINE_DOC_TRIP_LIMIT=35*1024*1024;
 const OFFLINE_DOC_ACCOUNT_LIMIT=55*1024*1024;
 const OFFLINE_DOC_MAX_COUNT=30;
+const OFFLINE_AUTO_DOCS_PREF='freya-auto-private-documents-v1:';
+const OFFLINE_AUTO_DOCS_IGNORED='freya-auto-private-exclusions-v1:';
+const offlineAutoErrors=new Map(),offlineAutoBusy=new Set();
+function offlineAutoEnabled(){
+  if(!session?.user?.id)return false;
+  try{return localStorage.getItem(OFFLINE_AUTO_DOCS_PREF+session.user.id)!=='off'}catch(_){return true}
+}
+function offlineAutoEligible(doc){
+  if(!doc?.id||!doc?.file_path||String(doc.category||'').toLowerCase()==='foto')return false;
+  const type=String(doc.mime_type||'').toLowerCase(),name=String(doc.file_name||'').toLowerCase();
+  return type==='application/pdf'||type.startsWith('image/')||/\.(pdf|png|jpe?g|webp|heic|heif|gif)$/.test(name);
+}
+function offlineAutoExclusionKey(scope){return OFFLINE_AUTO_DOCS_IGNORED+scope.userId+':'+scope.tripId}
+function offlineAutoIgnored(scope,id){
+  if(!scope)return false;
+  try{return JSON.parse(localStorage.getItem(offlineAutoExclusionKey(scope))||'[]').includes(id)}catch(_){return false}
+}
+function offlineAutoSetIgnored(scope,id,ignored){
+  if(!offlineDocScopeCurrent(scope))return;
+  try{
+    const key=offlineAutoExclusionKey(scope),items=new Set(JSON.parse(localStorage.getItem(key)||'[]'));
+    if(ignored)items.add(id);else items.delete(id);
+    localStorage.setItem(key,JSON.stringify([...items]));
+  }catch(_){}
+}
+function offlineAutoTag(scope,doc){return offlineDocId(scope.userId,scope.tripId,doc.id)+':'+doc.file_path}
 let offlineDocDbPromise=null,offlineDocWriteQueue=Promise.resolve(),offlineDocEpoch=0;
 let offlineDocRenderSequence=0,documentViewerObjectUrl=null,documentViewerOpenSequence=0;
 function offlineDocId(userId,tripId,documentId){return JSON.stringify([userId,tripId,documentId])}
@@ -2562,13 +2591,30 @@ async function offlineDocStatus(){
     const database=await offlineDocDatabase(),records=await offlineDocUserRows(database,scope.userId);
     if(!offlineDocScopeCurrent(scope)||sequence!==offlineDocRenderSequence)return;
     const ready=new Map(records.filter(value=>value.tripId===scope.tripId).map(value=>[value.documentId,value]));
-    const usable=documentRows.filter(doc=>ready.get(doc.id)?.filePath===doc.file_path);
+    const eligible=documentRows.filter(offlineAutoEligible);
+    const usable=eligible.filter(doc=>ready.get(doc.id)?.filePath===doc.file_path);
+    const pending=eligible.filter(doc=>ready.get(doc.id)?.filePath!==doc.file_path);
+    const busy=pending.filter(doc=>offlineAutoBusy.has(offlineAutoTag(scope,doc)));
     const label=$('offlineDocumentsStatus');
-    if(label)label.textContent=usable.length+' documents preparats · '+(records.reduce((sum,row)=>sum+row.size,0)/1048576).toFixed(1)+' de 55 MB del compte';
+    if(label)label.textContent=usable.length+' de '+eligible.length+' documents offline · '+pending.length+' pendents'+(busy.length?' · '+busy.length+' preparant-se':'')+' · '+(records.reduce((sum,row)=>sum+row.size,0)/1048576).toFixed(1)+' de 55 MB del compte';
+    const setting=$('offlineAutoDocuments');
+    if(setting)setting.checked=offlineAutoEnabled();
+    document.querySelectorAll('[data-offline-state]').forEach(el=>{
+      const doc=documentRows.find(value=>value.id===el.dataset.offlineState);
+      if(!doc)return;
+      const stored=ready.get(doc.id)?.filePath===doc.file_path,tag=offlineAutoTag(scope,doc);
+      el.textContent=!offlineAutoEligible(doc)?'No apte per a còpia offline':
+        stored?'✅ Disponible offline':
+        offlineAutoBusy.has(tag)?'⏳ Preparant còpia xifrada…':
+        offlineAutoErrors.has(tag)?'⚠️ Pendent: '+offlineAutoErrors.get(tag):
+        offlineAutoIgnored(scope,doc.id)?'No es prepara automàticament':
+        connectionUnavailable()?'📵 Pendent de connexió':
+        offlineAutoEnabled()?'Pendent de preparar':'Còpia offline no preparada';
+    });
     document.querySelectorAll('[data-offline-save]').forEach(button=>{
       const doc=documentRows.find(value=>value.id===button.dataset.offlineSave),stored=doc&&ready.get(doc.id)?.filePath===doc.file_path;
       button.classList.toggle('hidden',!!stored);
-      button.disabled=connectionUnavailable()||!doc;
+      button.disabled=connectionUnavailable()||!doc||offlineAutoBusy.has(offlineAutoTag(scope,doc));
     });
     document.querySelectorAll('[data-offline-forget]').forEach(button=>{
       const doc=documentRows.find(value=>value.id===button.dataset.offlineForget),stored=doc&&ready.get(doc.id)?.filePath===doc.file_path;
@@ -2580,25 +2626,76 @@ async function offlineDocStatus(){
     }
   }
 }
-async function prepareOfflineDocument(id){
+async function autoPrepareOfflineDocuments(scope,docs){
+  if(!scope||!offlineDocScopeCurrent(scope)||connectionUnavailable()||!offlineAutoEnabled())return;
+  const database=await offlineDocDatabase();
+  for(const doc of docs){
+    if(!offlineDocScopeCurrent(scope)||connectionUnavailable()||!offlineAutoEnabled())return;
+    if(!offlineAutoEligible(doc)||offlineAutoIgnored(scope,doc.id))continue;
+    const tag=offlineAutoTag(scope,doc);
+    if(offlineAutoErrors.has(tag))continue;
+    const previous=await offlineDocRead(database,'records',offlineDocId(scope.userId,scope.tripId,doc.id));
+    if(previous?.filePath===doc.file_path)continue; // Do not download a second copy.
+    if(!offlineDocScopeCurrent(scope)||connectionUnavailable())return;
+    offlineAutoBusy.add(tag);
+    void offlineDocStatus();
+    try{
+      const {data,error}=await db.storage.from(DOC_BUCKET).download(doc.file_path);
+      if(error)throw error;
+      if(!offlineDocScopeCurrent(scope))return;
+      await offlineDocSaveBlob(scope,doc,data);
+    }catch(error){
+      if(offlineDocScopeCurrent(scope))offlineAutoErrors.set(tag,error?.message||'No s’ha pogut desar. Torna a provar amb connexió.');
+    }finally{
+      offlineAutoBusy.delete(tag);
+      if(offlineDocScopeCurrent(scope))void offlineDocStatus();
+    }
+  }
+}
+$('offlineAutoDocuments').onchange=()=>{
+  const scope=offlineDocScope();
+  if(!scope)return;
+  const enabled=$('offlineAutoDocuments').checked;
+  try{localStorage.setItem(OFFLINE_AUTO_DOCS_PREF+scope.userId,enabled?'on':'off')}catch(_){}
+  if(enabled&&!connectionUnavailable()){
+    offlineAutoErrors.clear();
+    const docs=[...documentRows];
+    void offlineDocEnqueue(()=>autoPrepareOfflineDocuments(scope,docs)).catch(()=>{}).then(()=>offlineDocStatus());
+  }
+  void offlineDocStatus();
+};
+async function prepareOfflineDocument(id,messageId='documentMsg'){
   const scope=offlineDocScope(),doc=documentRows.find(value=>value.id===id);
-  if(!scope||!doc||connectionUnavailable()){msg('documentMsg','Connecta’t a Internet per preparar aquest document.',true);return}
-  msg('documentMsg','Desant una còpia xifrada al dispositiu…');
+  if(!scope||!doc||connectionUnavailable()){msg(messageId,'Connecta’t a Internet per preparar aquest document.',true);return}
+  offlineAutoErrors.delete(offlineAutoTag(scope,doc));
+  offlineAutoSetIgnored(scope,id,false);
+  msg(messageId,'Desant una còpia xifrada al dispositiu…');
   try{
     await offlineDocEnqueue(async()=>{
       if(!offlineDocScopeCurrent(scope))throw Error('El compte o el viatge han canviat.');
+      const existing=await offlineDocRead(await offlineDocDatabase(),'records',offlineDocId(scope.userId,scope.tripId,id));
+      if(existing?.filePath===doc.file_path)return;
       const {data,error}=await db.storage.from(DOC_BUCKET).download(doc.file_path);
       if(error)throw error;
       await offlineDocSaveBlob(scope,doc,data);
     });
-    if(offlineDocScopeCurrent(scope))msg('documentMsg','🔐 Document preparat per obrir-lo sense cobertura.');
-  }catch(error){if(offlineDocScopeCurrent(scope))msg('documentMsg',error.message||'No s’ha pogut preparar el document.',true)}
+    if(offlineDocScopeCurrent(scope)){
+      msg(messageId,'🔐 Document preparat per obrir-lo sense cobertura.');
+      if(parkingDocumentScore(doc)>0)await updateParkingReservationUi(scope.tripId,scope.generation);
+    }
+  }catch(error){if(offlineDocScopeCurrent(scope))msg(messageId,error.message||'No s’ha pogut preparar el document.',true)}
   finally{if(offlineDocScopeCurrent(scope))await offlineDocStatus()}
 }
 async function removeOfflineDocument(id){
   const scope=offlineDocScope();
   if(!scope)return;
-  try{await offlineDocForget(scope,id);if(offlineDocScopeCurrent(scope))msg('documentMsg','Còpia offline retirada.')}
+  try{
+    await offlineDocEnqueue(()=>offlineDocForget(scope,id));
+    if(offlineDocScopeCurrent(scope)){
+      offlineAutoSetIgnored(scope,id,true);
+      msg('documentMsg','Còpia retirada. Aquest document queda exclòs de la preparació automàtica; prem «Desa offline» per recuperar-la.');
+    }
+  }
   catch(error){if(offlineDocScopeCurrent(scope))msg('documentMsg',error.message||'No s’ha pogut retirar la còpia.',true)}
   finally{if(offlineDocScopeCurrent(scope))await offlineDocStatus()}
 }
@@ -6009,6 +6106,7 @@ function clearTripScopedState(){
   const parkingCard=$('parkingReservationCard'),parkingButton=$('parkingViewReservation');
   if(parkingCard)parkingCard.classList.remove('visible');
   if(parkingButton){parkingButton.classList.add('hidden');parkingButton.onclick=null}
+  if($('parkingSaveReservationOffline'))$('parkingSaveReservationOffline').classList.add('hidden');
   clearParkingReservationPreview();
 
   if($('parkingForm'))$('parkingForm').reset();
@@ -8131,7 +8229,15 @@ async function loadDocuments(silent=false){
     // Only a successful authoritative server read can invalidate deleted or
     // replaced downloads. Offline failures never erase the last good copy.
     const vaultScope=offlineDocScope();
-    if(vaultScope)void offlineDocEnqueue(()=>offlineDocPruneTrip(vaultScope,serverDocs)).then(()=>offlineDocStatus()).catch(()=>{});
+    if(vaultScope)void offlineDocEnqueue(async()=>{
+      await offlineDocPruneTrip(vaultScope,serverDocs);
+      await autoPrepareOfflineDocuments(vaultScope,serverDocs);
+    }).then(()=>offlineDocStatus()).catch(error=>{
+      if(offlineDocScopeCurrent(vaultScope)){
+        const el=$('offlineDocumentsStatus');
+        if(el)el.textContent='⚠️ No s’ha pogut preparar la còpia offline: '+(error?.message||'Error local');
+      }
+    });
   }
   return docs;
 }
@@ -8141,7 +8247,7 @@ function renderDocuments(docs=documentRows){
   if(!isLondonTrip()&&$('genericDocumentsModuleStatus'))$('genericDocumentsModuleStatus').textContent=`${documentRows.length} ${documentRows.length===1?'document':'documents'}`;
   const list=$('documentsList'),empty=$('documentsEmpty');if(!list||!empty)return;
   empty.classList.toggle('hidden',documentRows.length>0);
-  list.innerHTML=documentRows.map(d=>`<article class="doc-card" data-doc-id="${esc(d.id)}"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(categoryLabel(d.category))}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button>${!isLondonTrip()?`<button type="button" class="secondary" data-offline-save="${esc(d.id)}">🔐 Desa offline</button><button type="button" class="secondary hidden" data-offline-forget="${esc(d.id)}">Retira còpia offline</button>`:''}<button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
+  list.innerHTML=documentRows.map(d=>`<article class="doc-card" data-doc-id="${esc(d.id)}"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(categoryLabel(d.category))}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p><small class="muted" data-offline-state="${esc(d.id)}">Comprovant còpia offline…</small></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button>${!isLondonTrip()?`<button type="button" class="secondary" data-offline-save="${esc(d.id)}">🔐 Desa offline</button><button type="button" class="secondary hidden" data-offline-forget="${esc(d.id)}">Retira còpia offline</button>`:''}<button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
   list.querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>openDocument(b.dataset.openDoc,documentRows));
   list.querySelectorAll('[data-delete-doc]').forEach(b=>b.onclick=()=>deleteDocument(b.dataset.deleteDoc,documentRows));
   list.querySelectorAll('[data-offline-save]').forEach(b=>b.onclick=()=>prepareOfflineDocument(b.dataset.offlineSave));
@@ -8267,6 +8373,18 @@ $('documentForm').onsubmit=async e=>{
     if(!tripRequestIsCurrent(tripId,generation))return;
     $('documentForm').reset();renderDocuments(documentRows);
     msg('documentMsg',`Document pujat correctament. Ara hi ha ${documentRows.length} documents.`);
+    // The file is already on this device: encrypt it directly, without a second download.
+    const vaultScope=offlineDocScope();
+    if(vaultScope&&offlineAutoEnabled()&&offlineAutoEligible(visibleInserted)){
+      const tag=offlineAutoTag(vaultScope,visibleInserted);
+      offlineAutoBusy.add(tag);void offlineDocStatus();
+      void offlineDocEnqueue(()=>offlineDocSaveBlob(vaultScope,visibleInserted,file))
+        .catch(error=>{if(offlineDocScopeCurrent(vaultScope))offlineAutoErrors.set(tag,error?.message||'No s’ha pogut desar el document')})
+        .finally(()=>{
+          offlineAutoBusy.delete(tag);
+          if(offlineDocScopeCurrent(vaultScope))void offlineDocStatus();
+        });
+    }
     requestAnimationFrame(()=>{
       if(!tripRequestIsCurrent(tripId,generation))return;
       const card=document.querySelector(`[data-doc-id="${visibleInserted.id}"]`);
@@ -8803,13 +8921,15 @@ function findParkingReservationDocument(){
   return [...(documentRows||[])].sort((a,b)=>parkingDocumentScore(b)-parkingDocumentScore(a)).find(d=>parkingDocumentScore(d)>0)||null;
 }
 async function updateParkingReservationUi(tripId=trip?.id,generation=tripLoadGeneration,forceOffline=false){
-  const card=$('parkingReservationCard'),button=$('parkingViewReservation'),preview=$('parkingReservationPreview'),img=$('parkingReservationImage');
-  if(!card||!button||!preview||!img)return;
+  const card=$('parkingReservationCard'),button=$('parkingViewReservation'),preview=$('parkingReservationPreview'),img=$('parkingReservationImage'),save=$('parkingSaveReservationOffline');
+  if(!card||!button||!preview||!img||!save)return;
   clearParkingReservationPreview();
   const sequence=parkingReservationRenderSequence;
   button.classList.add('hidden');button.disabled=true;button.onclick=null;
+  save.classList.add('hidden');save.onclick=null;
   const doc=findParkingReservationDocument();
   if(!doc){card.classList.remove('visible');return}
+  save.onclick=()=>prepareOfflineDocument(doc.id,'parkingMsg');
   card.classList.add('visible');
   parkingText('parkingReservationTitle','✅ Reserva carregada');
   parkingText('parkingReservationFile',doc.title||doc.file_name||'Document disponible');
@@ -8821,9 +8941,13 @@ async function updateParkingReservationUi(tripId=trip?.id,generation=tripLoadGen
     catch(_){cached=null}
     if(sequence!==parkingReservationRenderSequence||!tripRequestIsCurrent(tripId,generation)||!offlineDocScopeCurrent(scope))return;
   }
+  if(!cached){
+    save.classList.remove('hidden');
+    save.disabled=offline;
+  }
   if(offline&&!cached){
     parkingText('parkingReservationTitle','📵 Reserva pendent de preparar offline');
-    parkingText('parkingReservationFile','Prepara aquesta reserva a Documents quan tinguis connexió.');
+    parkingText('parkingReservationFile','Obre Freya amb Internet: la còpia es prepararà automàticament, o prem «Desa reserva offline».');
     return;
   }
   button.classList.remove('hidden');button.disabled=false;

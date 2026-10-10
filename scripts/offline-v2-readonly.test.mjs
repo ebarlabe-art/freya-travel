@@ -92,12 +92,12 @@ test('Offline V2 shell includes locally bundled Supabase',()=>{
 test('Service worker removes only Freya-owned cache generations',async()=>{
   const vm=await import('node:vm');
   let onActivate,deleted=[],claimed=false;
-  const names=['freya-travel-release-6444-v4','freya-travel-release-6444-v5','freya-travel-release-6444-v7','freya-travel-release-6444-v8','freya-travel-release-6444-v9','another-app-unrelated-cache'];
+  const names=['freya-travel-release-6444-v4','freya-travel-release-6444-v5','freya-travel-release-6444-v7','freya-travel-release-6444-v8','freya-travel-release-6444-v9','freya-travel-release-6444-v10','another-app-unrelated-cache'];
   const sandbox=vm.createContext({URL,self:{location:new URL('https://example.test/freya-travel/sw.js'),addEventListener(type,fn){if(type==='activate')onActivate=fn},clients:{claim:async()=>{claimed=true}}},caches:{keys:async()=>names,delete:async key=>{deleted.push(key);return true}}});
   vm.runInContext(worker,sandbox);
   let pending;onActivate({waitUntil:p=>pending=p});await pending;
   assert.equal(claimed,true);
-  assert.deepEqual(deleted.sort(),['freya-travel-release-6444-v4','freya-travel-release-6444-v5','freya-travel-release-6444-v7','freya-travel-release-6444-v8']);
+  assert.deepEqual(deleted.sort(),['freya-travel-release-6444-v4','freya-travel-release-6444-v5','freya-travel-release-6444-v7','freya-travel-release-6444-v8','freya-travel-release-6444-v9']);
 });
 
 test('Offline V2 logout clears only current account metadata and no-trip fallback is explicit',()=>{
@@ -408,7 +408,7 @@ test('An SDK/bootstrap failure cannot keep an infinite splash on the iPhone',()=
   assert.ok(fallbackIndex>0&&fallbackIndex<sdkIndex);
   assert.match(html.slice(fallbackIndex,sdkIndex),/setTimeout\(/);
   assert.match(html.slice(fallbackIndex,sdkIndex),/No cal esborrar l’app ni les còpies offline/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v9'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v10'/);
 });
 
 test('Parking offline leaves read-only Veure reserva enabled while disabling edits',()=>{
@@ -431,5 +431,57 @@ test('Parking offline leaves read-only Veure reserva enabled while disabling edi
   assert.ok(edits.every(e=>!e.disabled));
   assert.equal(selectors.length,2);
   assert.match(html,/button\.classList\.remove\('hidden'\);button\.disabled=false;\s*button\.onclick=\(\)=>openDocument\(doc\.id,documentRows,'parkingMsg'\)/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v9'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v10'/);
+});
+
+test('Automatic encrypted document rules include useful screenshots and exclude travel photos',()=>{
+  const a=html.indexOf('function offlineAutoEligible(');
+  const b=html.indexOf('function offlineAutoExclusionKey(',a);
+  assert.ok(a>0&&b>a);
+  const ctx=vmModule.createContext({});
+  vmModule.runInContext(html.slice(a,b),ctx);
+  const pdf={id:'1',file_path:'a/pdf',file_name:'ticket.pdf',category:'Entrada',mime_type:'application/pdf'};
+  const screenshot={id:'2',file_path:'a/img',file_name:'reserva.png',category:'Reserva',mime_type:'image/png'};
+  assert.equal(ctx.offlineAutoEligible(pdf),true);
+  assert.equal(ctx.offlineAutoEligible(screenshot),true);
+  assert.equal(ctx.offlineAutoEligible({...screenshot,category:'Foto'}),false);
+  assert.equal(ctx.offlineAutoEligible({...pdf,mime_type:'application/zip',file_name:'trip.zip'}),false);
+});
+test('Automatic saves skip already encrypted files, never request ordinary photos, and honor account exclusions',async()=>{
+  const start=html.indexOf('async function autoPrepareOfflineDocuments(');
+  const end=html.indexOf("$('offlineAutoDocuments').onchange=",start);
+  assert.ok(start>=0&&end>start);
+  const paths=[],written=[],records=new Map(),errors=new Map(),busy=new Set();
+  const docs=[
+    {id:'pdf',file_path:'trip/a.pdf',mime_type:'application/pdf',category:'Reserva'},
+    {id:'photo',file_path:'trip/photo.jpg',mime_type:'image/jpeg',category:'Foto'},
+    {id:'excluded',file_path:'trip/skip.png',mime_type:'image/png',category:'Reserva'}
+  ];
+  const scope={userId:'u',tripId:'trip',generation:1,epoch:0};
+  const ctx=vmModule.createContext({
+    offlineDocScopeCurrent:()=>true,connectionUnavailable:()=>false,offlineAutoEnabled:()=>true,
+    offlineAutoEligible:d=>d.category!=='Foto',offlineAutoIgnored:(_s,id)=>id==='excluded',
+    offlineAutoTag:(_s,d)=>d.id+':'+d.file_path,
+    offlineAutoErrors:errors,offlineAutoBusy:busy,offlineDocStatus:async()=>{},
+    offlineDocDatabase:async()=>({}),offlineDocId:(_u,_t,id)=>id,
+    offlineDocRead:async(_db,_store,key)=>records.get(key)||null,
+    DOC_BUCKET:'trip-documents',
+    db:{storage:{from:()=>({download:async path=>{paths.push(path);return {data:{size:10},error:null}}})}},
+    offlineDocSaveBlob:async(_scope,doc)=>{written.push(doc.id);records.set(doc.id,{filePath:doc.file_path})}
+  });
+  vmModule.runInContext(html.slice(start,end),ctx);
+  await ctx.autoPrepareOfflineDocuments(scope,docs);
+  await ctx.autoPrepareOfflineDocuments(scope,docs);
+  assert.deepEqual(paths,['trip/a.pdf']);
+  assert.deepEqual(written,['pdf']);
+});
+test('Offline auto-save is opt-out per account and removes no cloud originals',()=>{
+  assert.match(html,/offlineAutoEnabled\(\)/);
+  assert.match(html,/OFFLINE_AUTO_DOCS_PREF\+session\.user\.id/);
+  assert.match(html,/offlineAutoSetIgnored\(scope,id,true\)/);
+  assert.match(html,/offlineDocEnqueue\(async\(\)=>\{\s*await offlineDocPruneTrip\(vaultScope,serverDocs\);\s*await autoPrepareOfflineDocuments\(vaultScope,serverDocs\)/);
+  assert.match(html,/offlineDocSaveBlob\(vaultScope,visibleInserted,file\)/);
+  assert.match(html,/id="parkingSaveReservationOffline"/);
+  assert.match(html,/save\.onclick=\(\)=>prepareOfflineDocument\(doc.id,'parkingMsg'\)/);
+  assert.match(html,/data-offline-state=/);
 });
