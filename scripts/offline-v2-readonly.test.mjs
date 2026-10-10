@@ -491,3 +491,86 @@ test('Auto-save errors are retried after reconnection and parking refreshes its 
   assert.match(html,/await offlineDocSaveBlob\(scope,doc,data\);\s*if\(offlineDocScopeCurrent\(scope\)&&parkingDocumentScore\(doc\)>0\)void updateParkingReservationUi/);
   assert.match(html,/await offlineDocEnqueue\(\(\)=>offlineDocForget\(scope,id\)\)/);
 });
+
+test('Reconnection retains read-only mode until getUser confirms the same user',async()=>{
+  const begin=html.indexOf('async function validateOfflineSessionAfterReconnect(){');
+  const end=html.indexOf("window.addEventListener('online'",begin);
+  assert.ok(begin>=0&&end>begin);
+  const validate=html.slice(begin,end);
+  let resolveUser;
+  const userCheck=new Promise(resolve=>{resolveUser=resolve});
+  const events=[];
+  const ctx=vmModule.createContext({
+    offlineReadOnlySession:true,offlineSessionRevalidating:false,
+    navigator:{onLine:true},session:{user:{id:'local-owner'}},
+    restoreOfflineWhenAuthServerUnreachable:async()=>false,
+    db:{auth:{
+      getSession:async()=>({data:{session:{user:{id:'local-owner'},access_token:'fresh-online-token'}},error:null}),
+      getUser:()=>userCheck
+    }},
+    renderSession:async value=>events.push(['render',value?.user?.id]),
+    refreshAfterReconnect:async()=>events.push(['refresh']),
+    connectionUnavailable:()=>false,updateConnectivityBanner:()=>events.push(['status']),
+    clearOfflineUserData:id=>events.push(['clear',id]),
+    msg:()=>events.push(['message']),
+    offlineAuthNetworkError:()=>false
+  });
+  vmModule.runInContext(validate,ctx);
+  const pending=ctx.validateOfflineSessionAfterReconnect();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(ctx.offlineReadOnlySession,true,'A token from getSession alone must not grant writes');
+  assert.deepEqual(events,[],'No online data may render before getUser verification');
+  resolveUser({data:{user:{id:'local-owner'}},error:null});
+  await pending;
+  assert.equal(ctx.offlineReadOnlySession,false);
+  assert.deepEqual(events.slice(0,2),[['render','local-owner'],['refresh']]);
+  assert.equal(ctx.offlineSessionRevalidating,false);
+});
+
+test('Reconnection rejects a different account and never restores old local access',async()=>{
+  const begin=html.indexOf('async function validateOfflineSessionAfterReconnect(){');
+  const end=html.indexOf("window.addEventListener('online'",begin);
+  const events=[];
+  const ctx=vmModule.createContext({
+    offlineReadOnlySession:true,offlineSessionRevalidating:false,
+    navigator:{onLine:true},session:{user:{id:'owner'}},
+    restoreOfflineWhenAuthServerUnreachable:async()=>false,
+    db:{auth:{
+      getSession:async()=>({data:{session:{user:{id:'owner'},access_token:'jwt'}},error:null}),
+      getUser:async()=>({data:{user:{id:'other'}},error:null})
+    }},
+    renderSession:async value=>events.push(['render',value]),
+    refreshAfterReconnect:async()=>events.push(['refresh']),
+    connectionUnavailable:()=>false,updateConnectivityBanner:()=>{},
+    clearOfflineUserData:id=>events.push(['clear',id]),
+    msg:()=>events.push(['message']),
+    offlineAuthNetworkError:()=>false
+  });
+  vmModule.runInContext(html.slice(begin,end),ctx);
+  await ctx.validateOfflineSessionAfterReconnect();
+  assert.deepEqual(events.filter(e=>e[0]==='clear'),[['clear','owner']]);
+  assert.equal(events.filter(e=>e[0]==='render')[0][1],null);
+  assert.equal(events.some(e=>e[0]==='refresh'),false);
+  assert.equal(ctx.offlineReadOnlySession,false);
+});
+
+test('Reconnection network failure never destroys the authorized local grant',async()=>{
+  const begin=html.indexOf('async function validateOfflineSessionAfterReconnect(){');
+  const end=html.indexOf("window.addEventListener('online'",begin);
+  const calls=[];
+  const ctx=vmModule.createContext({
+    offlineReadOnlySession:true,offlineSessionRevalidating:false,
+    navigator:{onLine:true},session:{user:{id:'owner'}},
+    restoreOfflineWhenAuthServerUnreachable:async()=>false,
+    db:{auth:{getSession:async()=>{throw Error('Failed to fetch')},getUser:async()=>{throw Error('Should not verify')}}},
+    renderSession:async()=>calls.push('render'),refreshAfterReconnect:async()=>calls.push('refresh'),
+    connectionUnavailable:()=>true,updateConnectivityBanner:()=>{},
+    clearOfflineUserData:()=>calls.push('clear'),msg:()=>calls.push('message'),
+    offlineAuthNetworkError:e=>/fetch/i.test(e.message)
+  });
+  vmModule.runInContext(html.slice(begin,end),ctx);
+  await ctx.validateOfflineSessionAfterReconnect();
+  assert.equal(ctx.offlineReadOnlySession,true);
+  assert.deepEqual(calls,[]);
+  assert.equal(ctx.offlineSessionRevalidating,false);
+});
