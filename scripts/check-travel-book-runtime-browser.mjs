@@ -341,7 +341,24 @@ try{
   await coldOnline.close(); // A fresh page must bootstrap without the previous JS globals.
   const coldReopen=await coldCtx.newPage();
   await coldReopen.goto(url,{waitUntil:'load'});
-  await coldReopen.locator('[data-select-trip="test-offline-ui-trip"]').waitFor({state:'visible',timeout:15000});
+  try{
+    await coldReopen.locator('[data-select-trip="test-offline-ui-trip"]').waitFor({state:'visible',timeout:15000});
+  }catch(error){
+    // Diagnose hidden cards without weakening the access gate or injecting a session.
+    const diagnostic=await coldReopen.evaluate(()=>({
+      online:navigator.onLine,authReady:authInitializationResolved,
+      user:session?.user?.id||null,readOnly:offlineReadOnlySession,
+      localGrantUser:readOfflineSessionGrant()?.userId||null,
+      storedTripCount:readOfflineTrips('test-offline-ui-owner')?.rows?.length??null,
+      loadedTripCount:trips.length,selectedTrip:trip?.id||null,
+      selectedView:visibleAppView(),
+      tripViewVisible:!document.getElementById('tripView').classList.contains('hidden'),
+      authVisible:!document.getElementById('auth').classList.contains('hidden'),
+      noTripVisible:!document.getElementById('noTrip').classList.contains('hidden')
+    }));
+    console.error('OFFLINE_COLD_REOPEN_DIAGNOSTIC',JSON.stringify(diagnostic));
+    throw error;
+  }
   assert.deepEqual(await coldReopen.evaluate(()=>({
     userId:session?.user?.id,readOnly:offlineReadOnlySession,hasToken:!!session?.access_token,online:navigator.onLine
   })),{userId:'test-offline-ui-owner',readOnly:true,hasToken:false,online:false});
