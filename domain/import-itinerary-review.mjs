@@ -77,7 +77,7 @@ function candidateFlags(item,existing){
  if(c.start_local_time&&!c.local_date)issues.push('date_required_for_time');
  if(c.start_local_time&&!c.time_zone)issues.push('timezone_needs_confirmation');
  if(c.start_local_time&&c.end_local_time&&TIME.test(c.start_local_time)&&TIME.test(c.end_local_time)&&c.end_local_time<=c.start_local_time)issues.push('time_order_needs_review');
- if(Object.values(item.confidence).some(v=>v!=='high')&&!Object.keys(item.edits).length)issues.push('uncertain_extraction');
+ if(Object.entries(item.confidence).some(([key,v])=>v!=='high'&&!Object.hasOwn(item.edits,key)))issues.push('uncertain_extraction');
  for(const row of (Array.isArray(existing)?existing:[])){
   const found=existingMatch(c,row);
   if(found&&!issues.includes(found))issues.push(found);
