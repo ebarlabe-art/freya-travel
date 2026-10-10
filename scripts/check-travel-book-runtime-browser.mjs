@@ -520,7 +520,7 @@ async function visibleOfflineTripCard(page,tripId,timeout=15000){
   await switchSeed.close();
   const isolatedReopen=await coldCtx.newPage();
   await isolatedReopen.goto(url,{waitUntil:'load'});
-  await isolatedReopen.locator('[data-select-trip="trip-beta"]').waitFor({state:'visible',timeout:15000});
+  await visibleOfflineTripCard(isolatedReopen,'trip-beta');
   assert.deepEqual(await isolatedReopen.evaluate(()=>({
     owner:session?.user?.id,readOnly:offlineReadOnlySession,hasToken:!!session?.access_token,
     visibleTrips:trips.map(row=>row.id),alphaStillStored:!!readOfflineTrips('account-alpha'),
@@ -551,7 +551,7 @@ async function visibleOfflineTripCard(page,tripId,timeout=15000){
   await isolatedReopen.close();
   const expiredSdkPage=await coldCtx.newPage();
   await expiredSdkPage.goto(url,{waitUntil:'load'});
-  await expiredSdkPage.locator('[data-select-trip="trip-beta"]').waitFor({state:'visible',timeout:15000});
+  await visibleOfflineTripCard(expiredSdkPage,'trip-beta');
   assert.deepEqual(await expiredSdkPage.evaluate(()=>({
     account:session?.user?.id,readOnly:offlineReadOnlySession,serverToken:!!session?.access_token,
     storedAccessExpired:JSON.parse(localStorage.getItem(db.auth.storageKey)).expires_at<Date.now()/1000
