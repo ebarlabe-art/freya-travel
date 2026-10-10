@@ -6327,6 +6327,7 @@ function updateTripPresentation(){
 }
 let tripStopRows=[];
 async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
+  closeItineraryImport();
   const selected=trips.find(value=>value.id===tripId)||null;if(!selected){trip=null;tripStopRows=[];clearGenericItineraryState();updateTripPresentation();setAppView('tripsHomeView');return false}
   tripLoadGeneration+=1;const generation=tripLoadGeneration;clearGenericItineraryState();await disconnectTripRealtime();if(generation!==tripLoadGeneration)return false;
   clearTripScopedState();trip=selected;tripStopRows=[];rememberSelectedTrip();
@@ -6415,6 +6416,7 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
   if(pendingInitialRoute&&!initialViewApplied)applyPendingInitialView();return true;
 }
 async function renderSession(next){
+  if(next?.user?.id!==session?.user?.id)closeItineraryImport();
   const renderGeneration=++sessionRenderGeneration,nextUserId=next?.user?.id||null;
   if(nextUserId!==session?.user?.id){resetBuilderUi();clearParkingReservationPreview()}
   if(nextUserId&&lastAuthenticatedUserId&&nextUserId!==lastAuthenticatedUserId){clearNavigationState(lastAuthenticatedUserId);clearDocumentsReturnContext();clearAccommodationVoucherFocus();clearGenericItineraryState()}
@@ -8315,7 +8317,7 @@ async function processItineraryImportDocument(doc){
    try{code=(await error.context.clone().json())?.error||null}catch(_){}
   }
   if(error||code)throw new Error(itineraryImportErrorMessage(code));
-  const api=await import('./domain/import-itinerary-review.mjs');
+  const api=await loadTravelBookModule('import-itinerary-review.mjs');
   if(!itineraryImportStillCurrent(state)||state.epoch!==requestEpoch)return;
   state.api=api;state.documentId=doc.id;
   state.review=api.createItineraryReview(data?.proposal,{
@@ -8347,6 +8349,8 @@ function renderItineraryImportPreview(){
  const state=itineraryImportState;if(!itineraryImportStillCurrent(state)||!state.review||!state.api)return;
  const existing=itinerarySourcesAreReady(state.tripId,state.generation,state.userId)?itineraryProjection:[];
  const result=state.api.summarizeItineraryReview(state.review,existing);
+ const expanded=new Set([...$('itineraryImportCandidates').querySelectorAll('details[open]')].map(node=>Number(node.dataset.importCandidate)));
+ const keepFirstOpen=!$('itineraryImportCandidates').children.length;
  $('itineraryImportSummary').textContent=result.selected+' de '+result.total+' elements seleccionats · '+result.needsReview+' amb avisos. Cap canvi desat.';
  const allWarnings=result.warnings.slice();
  if(!itinerarySourcesAreReady(state.tripId,state.generation,state.userId))
@@ -8362,7 +8366,7 @@ function renderItineraryImportPreview(){
   const flags=[...new Set([...item.source_flags,...item.review_flags])];
   const warnings=[...item.source_warnings,...flags.map(flag=>itineraryImportReviewLabels[flag]||flag)];
   const day=item.values.local_date||'Dia pendent',time=item.values.start_local_time||'Sense hora';
-  return '<details class="itinerary-import-candidate" data-import-candidate="'+i+'"'+(i===0?' open':'')+'>'+
+  return '<details class="itinerary-import-candidate" data-import-candidate="'+i+'"'+(expanded.has(i)||(keepFirstOpen&&i===0)?' open':'')+'>'+
    '<summary>'+esc(day)+' · '+esc(time)+' — '+esc(item.values.title||'Sense títol')+
    ' <span>('+warnings.length+' avisos)</span></summary>'+
    '<div class="itinerary-import-grid">'+
