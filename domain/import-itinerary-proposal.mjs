@@ -56,6 +56,7 @@ function normalizeField(key,raw){
  if(key==='local_date'&&!trueDate(value))fail('Data impossible o mal formada.');
  if((key==='start_local_time'||key==='end_local_time')&&!trueTime(value))fail('Hora local invàlida.');
  if(key==='daypart'&&!DAYPARTS.has(value))fail('Franja horària invàlida.');
+ if(key==='time_zone'){try{new Intl.DateTimeFormat('en-US',{timeZone:value});}catch{fail('Zona horària no verificada.');}}
  return {value,confidence:raw.confidence,evidence:normalizeEvidence(raw.evidence)};
 }
 function normalizeList(raw,name,limit=50){
