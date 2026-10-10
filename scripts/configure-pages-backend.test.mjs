@@ -10,7 +10,7 @@ const staging={
 };
 test('preview uses an isolated Supabase project and never edits source',()=>{
  const edited=configurePagesBackend(source,staging);
- assert.match(edited,/const SUPABASE_URL="https:\/\/safe-synthetic-project\.supabase\.co";/);
+ assert.match(edited,/const SUPABASE_URL="https:\/\/waatqrqyddurultrazbn\.supabase\.co";/);
  assert.match(edited,/const SUPABASE_KEY="sb_publishable_aaa/);
  assert.match(source,/const SUPABASE_URL='https:\/\/otueskpksylzvkhldoft\.supabase\.co';/);
  assert.equal((edited.match(/const SUPABASE_URL=/g)||[]).length,1);
