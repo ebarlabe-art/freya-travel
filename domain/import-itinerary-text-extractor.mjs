@@ -149,15 +149,15 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
      warnings.add('Hi ha una data impossible: no s’ha assignat a cap activitat.');
      continue;
     }
+    // Keep the explicit date as the active day for subsequent entries, even if
+    // the heading also includes the first activity of that day.
+    current={date:datePart.date,evidence:line,page,zone:tz&&!tz.invalid?tz:null};
     const tail=datePart.rest.replace(/^(?:[-–—·|]\s*)/,'');
     const inline=readItem(tail,false);
     if(inline){
      // Explicit date on the same line belongs only to that item.
      const candidate=makeCandidate(inline,line,page,{date:datePart.date,evidence:line,page},tz&&!tz?.invalid?tz:null,candidates.length);
      candidates.push(candidate);
-    }else{
-     // A dated day heading controls subsequent entries, including next PDF page.
-     current={date:datePart.date,evidence:line,page,zone:tz&&!tz.invalid?tz:null};
     }
     if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
     continue;
@@ -166,6 +166,11 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     current=null;warnings.add('Hi ha dates sense any: cal confirmar-les.');continue;
    }
    if(HEADER.test(line)||/^p[àa]g(?:ina)?\s*\d+$/i.test(line))continue;
+   // A standalone explicit time-zone line annotates the current day.
+   if(tz&&!tz.invalid&&/^\s*(?:TZ|time\s*zone|timezone|zona\s+hor[aà]ria)\b/i.test(line)){
+    if(current)current.zone=tz;
+    continue;
+   }
    const item=readItem(line,!!current);
    if(item){
     candidates.push(makeCandidate(item,line,page,current?{date:current.date,evidence:current.evidence,page:current.page}:null,
