@@ -8684,7 +8684,7 @@ function parkingValue(id,value=''){const el=$(id);if(el)el.value=value??''}
 function parkingText(id,value=''){const el=$(id);if(el)el.textContent=value??''}
 function parkingMessage(message,error=false){msg('parkingMsg',message,error)}
 function setParkingControlsDisabled(disabled){
-  document.querySelectorAll('#parkingForm input,#parkingForm textarea,#parkingForm button,#parkingSpotForm input,#parkingSpotForm textarea,#parkingSpotForm button,#parkingPhotoFile,#parkingUploadPhoto,#parkingRemovePhoto').forEach(control=>{control.disabled=disabled});
+  document.querySelectorAll('#parkingForm input,#parkingForm textarea,#parkingForm button:not(#parkingViewReservation),#parkingSpotForm input,#parkingSpotForm textarea,#parkingSpotForm button,#parkingPhotoFile,#parkingUploadPhoto,#parkingRemovePhoto').forEach(control=>{control.disabled=disabled});
 }
 function parkingSpotLabel(row=parkingRow){
   if(!row)return '';
@@ -8807,7 +8807,7 @@ async function updateParkingReservationUi(tripId=trip?.id,generation=tripLoadGen
   if(!card||!button||!preview||!img)return;
   clearParkingReservationPreview();
   const sequence=parkingReservationRenderSequence;
-  button.classList.add('hidden');button.onclick=null;
+  button.classList.add('hidden');button.disabled=true;button.onclick=null;
   const doc=findParkingReservationDocument();
   if(!doc){card.classList.remove('visible');return}
   card.classList.add('visible');
@@ -8826,13 +8826,13 @@ async function updateParkingReservationUi(tripId=trip?.id,generation=tripLoadGen
     parkingText('parkingReservationFile','Prepara aquesta reserva a Documents quan tinguis connexió.');
     return;
   }
-  button.classList.remove('hidden');
-  button.onclick=()=>openDocument(doc.id,documentRows);
+  button.classList.remove('hidden');button.disabled=false;
+  button.onclick=()=>openDocument(doc.id,documentRows,'parkingMsg');
   if(cached?.mime?.startsWith('image/')){
     parkingText('parkingReservationIcon','🖼️');
     parkingReservationObjectUrl=URL.createObjectURL(cached.blob);
     img.src=parkingReservationObjectUrl;preview.classList.add('visible');
-    img.onclick=()=>openDocument(doc.id,documentRows);
+    img.onclick=()=>openDocument(doc.id,documentRows,'parkingMsg');
     return;
   }
   if(offline||cached||!(doc.mime_type||'').startsWith('image/'))return;
@@ -8842,7 +8842,7 @@ async function updateParkingReservationUi(tripId=trip?.id,generation=tripLoadGen
   if(sequence!==parkingReservationRenderSequence||!tripRequestIsCurrent(tripId,generation)||scope&&!offlineDocScopeCurrent(scope)||connectionUnavailable())return;
   if(!error&&data?.signedUrl){
     img.src=data.signedUrl;preview.classList.add('visible');
-    img.onclick=()=>openDocument(doc.id,documentRows);
+    img.onclick=()=>openDocument(doc.id,documentRows,'parkingMsg');
   }
 }
 $('parkingOpenDocuments').onclick=()=>{if(!$('documentTitle').value.trim())$('documentTitle').value='Reserva pàrquing';setAppView('documentsView');setTimeout(()=>{const form=$('documentForm');if(form)form.scrollIntoView({behavior:'smooth',block:'start'})},80)};

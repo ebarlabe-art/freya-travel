@@ -275,7 +275,7 @@ try{
   await coldOnline.goto(url,{waitUntil:'load'});
   await coldOnline.waitForFunction(()=>!!navigator.serviceWorker.controller&&authInitializationResolved===true);
   await coldOnline.locator('#loginCard').waitFor({state:'visible'});
-  await coldOnline.evaluate(()=>{
+  await coldOnline.evaluate(async()=>{
     const userId='test-offline-ui-owner',tripId='test-offline-ui-trip';
     // Simulated previously authenticated online session (no real credentials).
     session={user:{id:userId,email:'offline-test@example.invalid'},access_token:'test-only-online-token'};
@@ -287,9 +287,17 @@ try{
       activityRows:[],activityDocumentLinks:[],dayMetadataRows:[],
       manualItineraryRows:[{id:'test-offline-plan',trip_id:tripId,title:'Passeig fictici offline',timing_kind:'all_day',local_date:'2026-10-09',time_zone:'Europe/Madrid',status:'planned'}]
     };
-    const documentRows=[{id:'test-offline-doc',trip_id:tripId,title:'Reserva ficticia offline',category:'Reserva',file_name:'reserva-test.pdf',file_path:'test-only/reserva-test.pdf',mime_type:'application/pdf'}];
-    if(!mergeOfflineTripSnapshot({agenda,documentRows,tripStopRows:[],checklistItems:[]},tripId,userId))
+    const parkingDoc={id:'parking-reservation-offline',trip_id:tripId,title:'Reserva aparcament de proves',
+      category:'Reserva',file_name:'reserva-parquing.pdf',file_path:tripId+'/parking/reserva.pdf',mime_type:'application/pdf'};
+    const documentRows=[
+      {id:'test-offline-doc',trip_id:tripId,title:'Reserva ficticia offline',category:'Reserva',file_name:'reserva-test.pdf',file_path:'test-only/reserva-test.pdf',mime_type:'application/pdf'},
+      parkingDoc
+    ];
+    const parkingRow={trip_id:tripId,parking_name:'Aparcament de proves',floor:'P6',zone:'Zona taronja',spot:'219'};
+    if(!mergeOfflineTripSnapshot({agenda,documentRows,tripStopRows:[],checklistItems:[],parkingRow,parkingSummary:parkingRow},tripId,userId))
       throw Error('Could not prepare offline trip data while online');
+    trip={id:tripId,experience_key:null};tripLoadGeneration++;
+    await offlineDocSaveBlob(offlineDocScope(),parkingDoc,new Blob([new Uint8Array([37,80,68,70,45,49,46,52,10])],{type:'application/pdf'}));
   });
   await coldCtx.setOffline(true);
   await coldOnline.close(); // A fresh page must bootstrap without the previous JS globals.
@@ -308,6 +316,19 @@ try{
   await coldReopen.locator('#documentsList .doc-card h3').getByText('Reserva ficticia offline').waitFor({state:'visible',timeout:15000});
   assert.equal(await coldReopen.evaluate(()=>trip?.id),'test-offline-ui-trip');
   console.log('PASS new offline page automatically restores local session, trip, itinerary and document cards');
+  // True end-to-end regression: navigate to Parking and click its REAL button.
+  // Earlier mocks only invoked onclick, missing the disabled form button.
+  await coldReopen.evaluate(()=>setAppView('genericDashboardView'));
+  await coldReopen.locator('#genericDashboardView [data-open="parkingView"]').click();
+  const reservationButton=coldReopen.locator('#parkingViewReservation');
+  await reservationButton.waitFor({state:'visible',timeout:15000});
+  assert.equal(await reservationButton.isEnabled(),true,'Veure reserva must stay enabled offline');
+  await reservationButton.click();
+  await coldReopen.locator('#documentViewerBody iframe').waitFor({state:'attached',timeout:10000});
+  assert.equal(await coldReopen.locator('#documentViewerBody iframe').evaluate(el=>el.src.startsWith('blob:')),true,
+    'Parking reservation must use the existing encrypted offline PDF');
+  await coldReopen.locator('#documentViewerClose').click();
+  console.log('PASS cold offline Parking Veure reserva button opens prepared encrypted PDF');
   await coldReopen.close();
   // iOS can report navigator.onLine=true despite no server connectivity.
   // Reopen from scratch with network still blocked and do not inject a session.
