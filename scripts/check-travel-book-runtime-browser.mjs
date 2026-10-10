@@ -86,7 +86,21 @@ try{
   assert.equal(await itineraryPage.evaluate(()=>window.__a27Calls.length),0);
   await itineraryPage.locator('#itineraryImportConsent').check();
   await itineraryPage.locator('#itineraryImportAnalyze').click();
-  await itineraryPage.locator('#itineraryImportCandidates [data-import-field="title"]').waitFor({state:'visible'});
+  try{
+    await itineraryPage.locator('#itineraryImportCandidates [data-import-field="title"]').waitFor({state:'visible',timeout:9000});
+  }catch(error){
+    const diagnostic=await itineraryPage.evaluate(()=>({
+      status:document.getElementById('itineraryImportStatus')?.textContent,
+      sourceVisible:!document.getElementById('itineraryImportSource')?.classList.contains('hidden'),
+      previewVisible:!document.getElementById('itineraryImportPreview')?.classList.contains('hidden'),
+      candidateCount:document.querySelectorAll('[data-import-candidate]').length,
+      hasReview:!!itineraryImportState?.review,
+      busy:itineraryImportState?.busy,
+      calls:window.__a27Calls
+    }));
+    console.error('A27_E2E_DIAGNOSTIC',JSON.stringify({diagnostic,errors:itineraryErrors}));
+    throw error;
+  }
   assert.deepEqual(await itineraryPage.evaluate(()=>window.__a27Calls),[{
     name:'import-itinerary',body:{trip_id:'test-a27-trip',document_id:'6bada382-4bfb-4e15-a102-f590a750671d'}
   }]);
