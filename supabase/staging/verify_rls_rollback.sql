@@ -25,8 +25,8 @@ begin
  if (select count(*) from public.trips)<>1 then raise exception 'A_TRIP_RLS_FAILED'; end if;
  if (select count(*) from public.travel_documents)<>1 then raise exception 'A_DOCUMENT_RLS_FAILED'; end if;
  if (select count(*) from storage.objects where bucket_id='trip-documents')<>1 then raise exception 'A_STORAGE_RLS_FAILED'; end if;
- if public.staging_document_storage_member('trip-documents','d4444444-4444-4444-8444-444444444444/b.pdf') then raise exception 'A_CAN_READ_B_STORAGE'; end if;
- if public.staging_document_storage_member('trip-documents','not-a-uuid/a.pdf') then raise exception 'UNSAFE_STORAGE_PATH'; end if;
+ if app_private.staging_document_storage_member('trip-documents','d4444444-4444-4444-8444-444444444444/b.pdf') then raise exception 'A_CAN_READ_B_STORAGE'; end if;
+ if app_private.staging_document_storage_member('trip-documents','not-a-uuid/a.pdf') then raise exception 'UNSAFE_STORAGE_PATH'; end if;
  rejected:=false;
  begin
   insert into public.travel_documents(trip_id,title,file_name,file_path,mime_type,created_by)
@@ -49,7 +49,7 @@ begin
  if (select count(*) from public.trips)<>1 then raise exception 'B_TRIP_RLS_FAILED'; end if;
  if (select count(*) from public.travel_documents)<>1 then raise exception 'B_DOCUMENT_RLS_FAILED'; end if;
  if (select count(*) from storage.objects where bucket_id='trip-documents')<>1 then raise exception 'B_STORAGE_RLS_FAILED'; end if;
- if public.staging_document_storage_member('trip-documents','c3333333-3333-4333-8333-333333333333/a.pdf') then raise exception 'B_CAN_READ_A_STORAGE'; end if;
+ if app_private.staging_document_storage_member('trip-documents','c3333333-3333-4333-8333-333333333333/a.pdf') then raise exception 'B_CAN_READ_A_STORAGE'; end if;
 end $check$;
 
 reset role;
