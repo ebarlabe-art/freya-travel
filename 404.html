@@ -1498,6 +1498,8 @@
             <button id="parkingUploadPhoto" type="button">📷 Puja la foto</button>
             <button id="parkingRemovePhoto" type="button" class="secondary hidden">🗑️ Treu-la</button>
           </div>
+          <button id="parkingSavePhotoOffline" type="button" class="secondary hidden">🔐 Desa la foto offline</button>
+          <p id="parkingPhotoOfflineStatus" class="muted" role="status"></p>
           <div id="parkingPhotoPreview" class="parking-photo-preview"><img id="parkingPhotoImage" alt="Foto de la plaça d'aparcament"></div>
         </section>
 
@@ -6003,7 +6005,10 @@ function clearTripScopedState(){
   if($('parkingSpotForm'))$('parkingSpotForm').reset();
   if($('parkingPhotoFile'))$('parkingPhotoFile').value='';
   if($('parkingPhotoPreview'))$('parkingPhotoPreview').classList.remove('visible');
+  if(parkingPhotoObjectUrl){URL.revokeObjectURL(parkingPhotoObjectUrl);parkingPhotoObjectUrl=null}
   if($('parkingPhotoImage'))$('parkingPhotoImage').removeAttribute('src');
+  if($('parkingSavePhotoOffline'))$('parkingSavePhotoOffline').classList.add('hidden');
+  if($('parkingPhotoOfflineStatus'))$('parkingPhotoOfflineStatus').textContent='';
   if($('parkingRemovePhoto'))$('parkingRemovePhoto').classList.add('hidden');
   if($('parkingMapLink')){$('parkingMapLink').classList.add('hidden');$('parkingMapLink').removeAttribute('href')}
   if($('parkingGpsStatus'))$('parkingGpsStatus').textContent='';
@@ -8631,6 +8636,10 @@ $('genericTripSettingsForm').onsubmit=async e=>{
 };
 
 let parkingRow=null,parkingLoadsPending=0,parkingPhotoObjectUrl=null;
+function parkingOfflinePhotoDocument(path){
+  return {id:'freya-parking-photo-v1',file_path:path,
+    file_name:String(path||'').split('/').pop()||'parking.jpg',mime_type:''};
+}
 async function ensureDefaultChecklistItems(){
   if(!trip||!session||!isLondonTrip())return;
   const tripId=trip.id,generation=tripLoadGeneration;
@@ -8727,11 +8736,14 @@ async function loadParking(){
     $('parkingReturnEmpty').classList.toggle('hidden',!!label);$('parkingReturnInfo').classList.toggle('hidden',!label);
     parkingText('parkingReturnSpot',label||'—');parkingText('parkingReturnNotes',row.notes||'');
     updateParkingMap(row.latitude,row.longitude);
+    $('parkingSavePhotoOffline').classList.toggle('hidden',!row.photo_path);
+    $('parkingSavePhotoOffline').disabled=usingOfflineParking||connectionUnavailable();
+    $('parkingPhotoOfflineStatus').textContent='';
     if(usingOfflineParking){
-      await renderParkingPhoto(null,tripId,generation);
+      await renderParkingPhoto(row.photo_path,tripId,generation);
       parkingMessage(usingSummaryOnly
         ?'📵 Es mostra el resum desat de l’aparcament. Obre el viatge amb connexió per preparar-ne el detall complet. Les fotos i els adjunts requereixen connexió.'
-        :'📵 Còpia de consulta. Les fotos i els fitxers adjunts requereixen connexió.');
+        :'📵 Còpia de consulta. Les fotos preparades offline es poden consultar; els altres adjunts poden requerir connexió.');
     }else{
       await renderParkingPhoto(row.photo_path,tripId,generation);if(!tripRequestIsCurrent(tripId,generation))return;
       if(!documentRows.length)await loadDocuments(true);
@@ -8813,12 +8825,41 @@ async function renderParkingPhoto(path,tripId=trip?.id,generation=tripLoadGenera
   if($('parkingPhotoFile').files[0]){remove.classList.remove('hidden');return}
   if(parkingPhotoObjectUrl){URL.revokeObjectURL(parkingPhotoObjectUrl);parkingPhotoObjectUrl=null}
   if(!path){wrap.classList.remove('visible');img.removeAttribute('src');remove.classList.add('hidden');return}
+  if(connectionUnavailable()){
+    remove.classList.add('hidden');
+    const scope=offlineDocScope();
+    const cached=scope?await offlineDocGetBlob(scope,parkingOfflinePhotoDocument(path)):null;
+    if(!tripRequestIsCurrent(tripId,generation)||!offlineDocScopeCurrent(scope))return;
+    if(cached?.mime?.startsWith('image/')){
+      parkingPhotoObjectUrl=URL.createObjectURL(cached.blob);
+      img.src=parkingPhotoObjectUrl;wrap.classList.add('visible');
+      $('parkingPhotoOfflineStatus').textContent='🔐 Foto disponible sense Internet.';
+    }else{
+      wrap.classList.remove('visible');img.removeAttribute('src');
+      $('parkingPhotoOfflineStatus').textContent='Prepara la foto amb connexió per consultar-la offline.';
+    }
+    return;
+  }
   remove.classList.remove('hidden');
   const {data,error}=await db.storage.from(DOC_BUCKET).createSignedUrl(path,3600);
   if(!tripRequestIsCurrent(tripId,generation))return;
   if(error){wrap.classList.remove('visible');img.removeAttribute('src');return}
   img.src=data.signedUrl;wrap.classList.add('visible');
 }
+$('parkingSavePhotoOffline').onclick=async()=>{
+  const scope=offlineDocScope(),path=parkingRow?.photo_path,button=$('parkingSavePhotoOffline');
+  if(!scope||!path||connectionUnavailable())return;
+  button.disabled=true;$('parkingPhotoOfflineStatus').textContent='Desant la foto xifrada…';
+  try{
+    const {data,error}=await db.storage.from(DOC_BUCKET).download(path);
+    if(error)throw error;
+    await offlineDocEnqueue(()=>offlineDocSaveBlob(scope,parkingOfflinePhotoDocument(path),data));
+    if(offlineDocScopeCurrent(scope)&&parkingRow?.photo_path===path)
+      $('parkingPhotoOfflineStatus').textContent='🔐 Foto preparada per consultar sense Internet.';
+  }catch(error){
+    if(offlineDocScopeCurrent(scope))$('parkingPhotoOfflineStatus').textContent=error?.message||'No s’ha pogut desar la foto.';
+  }finally{if(offlineDocScopeCurrent(scope))button.disabled=connectionUnavailable()}
+};
 $('parkingPhotoFile').onchange=()=>{
   const file=$('parkingPhotoFile').files[0];if(!file)return;
   if(parkingPhotoObjectUrl)URL.revokeObjectURL(parkingPhotoObjectUrl);
