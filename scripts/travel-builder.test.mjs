@@ -10,8 +10,10 @@ const memory=()=>{const map=new Map();return {getItem:k=>map.get(k)||null,setIte
 const known=(field,value)=>({field,scope:'global',knowledge:'known',origin:'explicit_user',strength:'preference',value});
 function harness(){
  const nodes=new Map();const $=id=>{if(!nodes.has(id))nodes.set(id,{value:'',textContent:'',innerHTML:'',disabled:false,classList:{add(){},toggle(){},contains(){return false}},querySelectorAll:()=>[],setAttribute(){},removeAttribute(){}});return nodes.get(id)};
- const listeners={};const context=vm.createContext({setInterval,clearInterval,console,Date,session:{user:{id:'u'}},sessionStorage:memory(),confirm:()=>true,history:{state:null,length:1,pushState(s){this.state=s;this.length++},replaceState(s){this.state=s},back(){this.backCalled=true}},window:{addEventListener:(event,fn)=>listeners[event]=fn},document:{querySelectorAll:()=>[]},$,esc:v=>String(v??''),db:{},visibleAppView:()=>context.view||'designTripView',setAppView:view=>context.view=view});
- vm.runInContext(code,context);context.loadBuilderApi=async()=>api;
+ const listeners={};const context=vm.createContext({setInterval,clearInterval,console,Date,session:{user:{id:'u'}},sessionStorage:memory(),confirm:()=>true,history:{state:null,length:1,pushState(s){this.state=s;this.length++},replaceState(s){this.state=s},back(){this.backCalled=true}},window:{addEventListener:(event,fn)=>listeners[event]=fn},photoNavigation:null,handlePhotoHistory:()=>{},handleHomeTripPopState:()=>false,document:{querySelectorAll:()=>[]},$,esc:v=>String(v??''),db:{},visibleAppView:()=>context.view||'designTripView',setAppView:view=>context.view=view});
+ vm.runInContext(code,context);
+ vm.runInContext(html.slice(html.indexOf('function handleFreyaPopState('),html.indexOf('function resetPhotoNavigation(')),context);
+ context.loadBuilderApi=async()=>api;
  return {s:context,$,listeners,get:value=>vm.runInContext(value,context)};
 }
 function server(rows=[]){
@@ -121,7 +123,7 @@ test('separate views, complete manual form, old Search entry removed, backend in
  assert.match(html,/create_trip_with_stops_v1/);assert.match(html,/data-delete-brief/);
  assert.match(html,/Ja tinc el viatge muntat/);assert.match(html,/Afegeix el meu viatge/);
  assert.doesNotMatch(html,/Buscar amb Freya|createTripSearchMethod|tripSearchForm/);
- assert.match(html,/db.rpc\('create_trip_v2'/);assert.ok(readFileSync(new URL('../supabase/functions/travel-search/index.ts',import.meta.url),'utf8'));
+ assert.match(html,/db\.rpc\('create_trip_with_stops_v1'/);assert.ok(readFileSync(new URL('../supabase/functions/travel-search/index.ts',import.meta.url),'utf8'));
  assert.doesNotMatch(code,/initialize_generic_trip_checklist|create_trip_v2|selectTrip\(/);
 });
 test('Back is owner-scoped, guards dirty state, ignores photo history and restored entry has safe fallback',async()=>{

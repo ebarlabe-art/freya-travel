@@ -1,4 +1,4 @@
-import { copyFile, cp, mkdir } from 'node:fs/promises';
+import { copyFile, cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
 
@@ -53,6 +53,14 @@ for(const file of ['trip-brief.mjs','live-trip-brief.mjs','travel-builder.mjs','
     .replaceAll("./proposal-refinement.mjs","./proposal-refinement.js");
   await import('node:fs/promises').then(fs=>fs.writeFile(new URL('domain/'+file.replace(/\.mjs$/,'.js'),dist),browser));
 }
+
+await mkdir(new URL('vendor/',dist),{recursive:true});
+await copyFile(new URL('node_modules/@supabase/supabase-js/dist/umd/supabase.js',root),new URL('vendor/supabase.js',dist));
+const builtIndexUrl=new URL('index.html',dist);
+const builtIndex=await readFile(builtIndexUrl,'utf8');
+const cdnSupabase='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+if(!builtIndex.includes(cdnSupabase))throw new Error('Supabase CDN runtime marker not found in built index');
+await writeFile(builtIndexUrl,builtIndex.replace(cdnSupabase,'./vendor/supabase.js'));
 
 for(const file of ['sw.js','manifest.webmanifest','itinerary.html']){
   await copyFile(new URL(file,root),new URL(file,dist));

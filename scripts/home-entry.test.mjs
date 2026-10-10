@@ -9,8 +9,11 @@ const home=html.slice(html.indexOf('function renderTripsHome(){'),html.indexOf('
 function harness(){
  const nodes=new Map(),listeners={},docListeners={};
  const $=id=>{if(!nodes.has(id)){const hidden=new Set();nodes.set(id,{value:'',textContent:'',innerHTML:'',removeAttribute(){},setAttribute(){},disabled:false,classList:{add:k=>hidden.add(k),contains:k=>hidden.has(k),toggle(k,yes){yes?hidden.add(k):hidden.delete(k)}},querySelectorAll:()=>[]})}return nodes.get(id)};
- const ctx=vm.createContext({setInterval,clearInterval,console,Date,Intl,session:{user:{id:'u'}},trips:[],trip:null,history:{state:null,pushState(s){this.state=s},replaceState(s){this.state=s},back(){this.backCalled=true}},window:{addEventListener:(k,f)=>(listeners[k]??=[]).push(f)},document:{visibilityState:'visible',querySelectorAll:()=>[],addEventListener:(k,f)=>docListeners[k]=f},sessionStorage:{getItem:()=>null,setItem(){}},confirm:()=>true,$,esc:String,db:{},visibleAppView:()=>ctx.view||'tripsHomeView',setAppView:v=>ctx.view=v,selectTrip:async(id)=>{ctx.selected=id;ctx.view='genericDashboardView'},tripDuration:()=>1,isLondonTrip:()=>false,tripDateRange:()=>'',clearTimeout:()=>{},setTimeout:(fn,ms)=>{ctx.timer={fn,ms};return 1}});
+ const ctx=vm.createContext({setInterval,clearInterval,console,Date,Intl,session:{user:{id:'u'}},trips:[],trip:null,history:{state:null,pushState(s){this.state=s},replaceState(s){this.state=s},back(){this.backCalled=true}},window:{addEventListener:(k,f)=>(listeners[k]??=[]).push(f)},photoNavigation:null,handlePhotoHistory:()=>{},document:{visibilityState:'visible',querySelectorAll:()=>[],addEventListener:(k,f)=>docListeners[k]=f},sessionStorage:{getItem:()=>null,setItem(){}},confirm:()=>true,$,esc:String,db:{},visibleAppView:()=>ctx.view||'tripsHomeView',setAppView:v=>ctx.view=v,selectTrip:async(id)=>{ctx.selected=id;ctx.view='genericDashboardView'},tripDuration:()=>1,isLondonTrip:()=>false,tripDateRange:()=>'',clearTimeout:()=>{},setTimeout:(fn,ms)=>{ctx.timer={fn,ms};return 1}});
  vm.runInContext(builder,ctx);vm.runInContext(home,ctx);
+ // Exercise the real shared popstate dispatcher, rather than expecting the
+ // previous per-module listeners.
+ vm.runInContext(html.slice(html.indexOf('function handleFreyaPopState('),html.indexOf('function resetPhotoNavigation(')),ctx);
  const realLoadBuilderList=ctx.loadBuilderList;
  ctx.getBuilderController=async()=>({controller:{state:{}}});ctx.loadBuilderList=()=>ctx.loadedBriefs=true;
  return {s:ctx,$,realLoadBuilderList,pop:state=>listeners.popstate.forEach(f=>f({state})),docListeners};
