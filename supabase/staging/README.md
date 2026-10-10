@@ -14,7 +14,7 @@
 6. `supabase/staging/04_harden_api_permissions.sql` — retirat l'EXECUTE anònim de quatre RPCs antigues que Supabase havia concedit directament a `anon` i mogut el validador de Storage a `app_private` (fora de l'esquema API). L'auditoria de seguretat posterior no mostra cap advertiment de `SECURITY DEFINER` accessible anònim. Els avisos de funcions autenticades continuen i s'han de revisar funcionalment, no suprimir a cegues.
 7. Edge Function **`import-itinerary` versió 1**, desplegada **únicament** a Supabase PROVES amb `verify_jwt=true`. Rep referències a PDFs del bucket privat però no escriu itineraris. Per fer extraccions reals li caldran secrets propis de proves `OPENAI_API_KEY` i `A2_ITINERARY_MODEL` (i validació prèvia de cost/privacitat).
 
-Hi ha **13 taules públiques** actualment, totes amb RLS, i bucket privat. Les migracions registrades al projecte de proves són les indicades; **no equivalen a una rèplica integral** de Londres-2026.
+Hi ha **21 taules públiques** actualment, totes amb RLS, i bucket privat. A més del nucli inicial s'han aplicat les migracions canòniques seleccionades de `update_trip_metadata`, `trip_briefs_v1`, `trip_brief_contract_v1_1`, `trip_stops_and_draft_delete`, `extend_flight_travel_pack_documents`, `create_trip_reminders`, `shared_trip_progress`, `contextual_photos_v1`, `local_transport_fields`, `validate_local_transport_arrival_timezone`, `unify_piece_reservation_status`, `flight_passengers`, `trip_travelers_flight_documents`, `fix_trip_flight_travelers_rpc`, `accommodation_stay_dates`, `expand_trip_documents_mobile_photo_limit` i `enable_heic_photo_uploads`. Les migracions registrades al projecte de proves són les indicades; **no equivalen a una rèplica integral** de Londres-2026.
 
 ## Verificacions passades
 
@@ -24,10 +24,11 @@ Hi ha **13 taules públiques** actualment, totes amb RLS, i bucket privat. Les m
 
 ## Què encara NO funciona per a usuaris
 
-- Railway Freya PROVES està servint encara la branca anterior de previsualització d'Offline V2. Aquesta branca **no és la nova pantalla A2.7 i podria apuntar al Supabase de producció**. No usar-la per provar importacions fins a verificar explícitament el backend generat.
+- Railway Freya PROVES encara **serveix** la branca anterior de previsualització d'Offline V2. S'han **preparat però no aplicat** les variables `FREYA_BACKEND_ENV=staging`, la URL i la clau pública del nou Supabase, i un canvi de codi fixat al commit de la PR #107 (pinned), dins el mateix patch pendent de Railway. Aquesta branca **no és la nova pantalla A2.7 i podria apuntar al Supabase de producció**. No usar-la per provar importacions fins a verificar explícitament el backend generat.
 - El nou `configure-pages-backend.mjs` exigeix mode `FREYA_BACKEND_ENV=staging` i paràmetres del projecte independent per generar la futura PWA aïllada. No hem canviat la configuració del servei Railway.
 - El projecte encara no té usuaris reals ni de prova persistents i no té tots els mòduls/esquemes de l'app completa (alguns components operatius, pressupost, Travel Book, etc.); completar migracions en l'ordre de dependències correcte abans d'habilitar-ne les pantalles.
 - El servei d'IA i els PDFs de prova reals no s'han exercitat encara en HTTP E2E. La lectura de PDFs per model no demostra exhaustivitat; el consentiment explícit i la revisió humana continuen sent obligatoris.
+- L'auditoria del backend actual indica `rls_enabled_no_policy` per `trip_reminders` i `trip_brief_operations`: tenen RLS deliberadament sense policies d'accés directe a usuaris (servei intern). Resta comprovar les advertències de funcions `SECURITY DEFINER` autenticades segons l'abast de cadascuna; no confondre-ho amb accés anònim, que ja no hi apareix.
 - `A2.8` (escriptura segura al viatge) **pendent**: el botó «Desar al viatge» continua desactivat.
 
 ## Següents portes
@@ -35,5 +36,5 @@ Hi ha **13 taules públiques** actualment, totes amb RLS, i bucket privat. Les m
 1. Conciliar l'esquema staging restant amb la base pública, sense exportar-ne dades ni fer canvis al projecte productiu.
 2. Preparar dos comptes de prova nous i un PDF totalment sintètic. Verificar via API HTTP real JWT, RLS, membres/expulsió, errors i cost d'IA.
 3. Configurar els secrets d'IA **només** al projecte de proves, amb límits de despesa.
-4. Generar una PWA de proves amb `FREYA_BACKEND_ENV=staging` i la clau **pública** (mai service role). Canviar Railway només després dels smoke tests.
+4. La compilació CI en mode staging ha passat i comprova que no es filtra la URL de producció al HTML generat ni al fallback `404.html`. El canvi de Railway **és pendent d'aprovació/aplicació**, no hi ha cap deploy nou. La pantalla de l'app no és encara un test d'integració real.
 5. Fer una prova física iPhone i revisar A2.7 abans de plantejar fusió/publicació.
