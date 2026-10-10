@@ -59,7 +59,9 @@ try{
     // Use existing UI wiring but intercept only external resources.
     loadDocuments=async()=>documentRows;
     window.__a27Calls=[];
-    db.functions.invoke=async(name,options)=>{
+    // Supabase exposes .functions through a getter returning a new client.
+    // Shadow that getter on this isolated mock page instead of mutating its transient result.
+    Object.defineProperty(db,'functions',{configurable:true,value:{invoke:async(name,options)=>{
       window.__a27Calls.push({name,body:options?.body});
       if(name!=='import-itinerary')throw Error('Unexpected backend request');
       const field=(value,confidence='high')=>({value,confidence,
@@ -75,7 +77,7 @@ try{
           warnings:[],review_flags:['uncertain_extraction']
         }],warnings:[],read_only:true,requires_user_confirmation:true
       }},error:null};
-    };
+    }}});
     show('tripView');hide('auth');setAppView('itineraryView');
   });
   await itineraryPage.locator('#openItineraryImport').click();
