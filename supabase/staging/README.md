@@ -11,9 +11,10 @@
 3. Migracions canòniques seleccionades del repositori: `20260901000000` (activitats d'itinerari), `20260903165549` (multi-viatge), `20260904151039` (checklist genèric), `20260908173557` i `20260908203753` (itinerari manual i hores aproximades).
 4. `supabase/staging/03_before_accommodations.sql` — conciliació del duplicat del constraint únic `travel_documents(trip_id,id)` que la migració canònica següent crea per si mateixa. Només s'usa **abans** d'aquesta migració i amb la base encara buida.
 5. Migracions canòniques seleccionades: `20260905094850`, `20260905145609` (allotjaments), `20260906123000` (vols), `20260907184020` (activitats), `20260908221942` (metadades de dia). Els fitxers canònics no s'han modificat.
-6. Edge Function **`import-itinerary` versió 1**, desplegada **únicament** a Supabase PROVES amb `verify_jwt=true`. Rep referències a PDFs del bucket privat però no escriu itineraris. Per fer extraccions reals li caldran secrets propis de proves `OPENAI_API_KEY` i `A2_ITINERARY_MODEL` (i validació prèvia de cost/privacitat).
+6. `supabase/staging/04_harden_api_permissions.sql` — retirat l'EXECUTE anònim de quatre RPCs antigues que Supabase havia concedit directament a `anon` i mogut el validador de Storage a `app_private` (fora de l'esquema API). L'auditoria de seguretat posterior no mostra cap advertiment de `SECURITY DEFINER` accessible anònim. Els avisos de funcions autenticades continuen i s'han de revisar funcionalment, no suprimir a cegues.
+7. Edge Function **`import-itinerary` versió 1**, desplegada **únicament** a Supabase PROVES amb `verify_jwt=true`. Rep referències a PDFs del bucket privat però no escriu itineraris. Per fer extraccions reals li caldran secrets propis de proves `OPENAI_API_KEY` i `A2_ITINERARY_MODEL` (i validació prèvia de cost/privacitat).
 
-Hi ha **13 taules públiques** actualment, totes amb RLS, i bucket privat. Les 13 migracions registrades al projecte de proves són les indicades; **no equivalen a una rèplica integral** de Londres-2026.
+Hi ha **13 taules públiques** actualment, totes amb RLS, i bucket privat. Les migracions registrades al projecte de proves són les indicades; **no equivalen a una rèplica integral** de Londres-2026.
 
 ## Verificacions passades
 
