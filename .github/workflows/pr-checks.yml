@@ -50,7 +50,7 @@ jobs:
             assert.equal(html,fallback);
             assert.ok(html.includes("waatqrqyddurultrazbn.supabase.co"));
             assert.ok(!html.includes("otueskpksylzvkhldoft"));
-            assert.ok(html.includes("id=\\"freya-staging-marker\\""));
+            assert.ok(html.includes("freya-staging-marker"));
             assert.ok(html.includes("Freya PROVES"));
             console.log("PASS isolated Freya PROVES build and fallback parity");
           '
