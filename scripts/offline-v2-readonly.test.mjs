@@ -97,7 +97,7 @@ test('Service worker removes only Freya-owned cache generations',async()=>{
   vm.runInContext(worker,sandbox);
   let pending;onActivate({waitUntil:p=>pending=p});await pending;
   assert.equal(claimed,true);
-  assert.deepEqual(deleted.sort(),['freya-travel-release-6444-v4','freya-travel-release-6444-v5','freya-travel-release-6444-v7','freya-travel-release-6444-v8','freya-travel-release-6444-v9','freya-travel-release-6444-v10']);
+  assert.deepEqual(deleted.sort(),['freya-travel-release-6444-v4','freya-travel-release-6444-v5','freya-travel-release-6444-v7','freya-travel-release-6444-v8','freya-travel-release-6444-v9','freya-travel-release-6444-v10'].sort());
 });
 
 test('Offline V2 logout clears only current account metadata and no-trip fallback is explicit',()=>{
