@@ -42,7 +42,7 @@ test('A2.6: incomplete date headings do not invent a year',()=>{
  assert.equal(val(p.candidates[0],'local_date'),undefined);
  assert.ok(p.candidates[0].review_flags.includes('date_required_for_time'));
  assert.equal(val(p.candidates[1],'local_date'),'2026-12-28');
- assert.ok(p.warnings.some(x=>/sense any/.test(x)));
+ assert.ok(p.warnings.some(x=>/sense data completa/.test(x)));
 });
 
 test('A2.6: impossible date terminates earlier day context',()=>{
