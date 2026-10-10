@@ -301,6 +301,7 @@ try{
   })),{userId:'test-offline-ui-owner',readOnly:true,hasToken:false,online:false});
   await coldReopen.locator('[data-select-trip="test-offline-ui-trip"]').click();
   await coldReopen.locator('#genericDashboardView [data-open="itineraryView"]').click();
+  await coldReopen.locator('#genericItineraryDayTabs [data-generic-itinerary-day="2026-10-09"]').click();
   await coldReopen.locator('#genericItineraryDays').getByText('Passeig fictici offline').waitFor({state:'visible',timeout:15000});
   await coldReopen.evaluate(()=>setAppView('genericDashboardView')); // Navigate only; never inject the account or trip.
   await coldReopen.locator('#genericDashboardView [data-open="documentsView"]').click();
@@ -434,6 +435,7 @@ try{
   assert.equal(await isolatedReopen.locator('#documentsList').getByText('Document privat alpha').count(),0);
   await isolatedReopen.evaluate(()=>setAppView('genericDashboardView'));
   await isolatedReopen.locator('#genericDashboardView [data-open="itineraryView"]').click();
+  await isolatedReopen.locator('#genericItineraryDayTabs [data-generic-itinerary-day="2026-10-09"]').click();
   await isolatedReopen.locator('#genericItineraryDays').getByText('Pla privat beta').waitFor({state:'visible'});
   assert.equal(await isolatedReopen.locator('#genericItineraryContent').getByText('Pla privat alpha').count(),0);
   console.log('PASS same-device accounts isolate cached trips, document cards and itinerary after cold offline start');
