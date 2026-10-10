@@ -84,3 +84,11 @@ test('A2.7: full date/time and timezone are required for exact mapping, never im
  const warnings=summarizeItineraryReview(r).items[0].review_flags;
  assert.ok(warnings.includes('timezone_needs_confirmation'));
 });
+
+test('A2.7: consumes already normalized endpoint proposals with read-only metadata',async()=>{
+ const {normalizeItineraryImportProposal}=await import('../domain/import-itinerary-proposal.mjs');
+ const backend=normalizeItineraryImportProposal(proposal());
+ const r=createItineraryReview(backend,scope);
+ assert.equal(r.items.length,2);
+ assert.equal(summarizeItineraryReview(r).can_write,false);
+});
