@@ -21,7 +21,16 @@ function immutableItem(raw){
   source_warnings:[...raw.warnings],source_flags:[...raw.review_flags],edits:{},included:true};
 }
 export function createItineraryReview(proposal,scope){
- const normalized=normalizeItineraryImportProposal(proposal);
+ // The A2.6 endpoint returns an already-normalized proposal with derived
+ // review_flags/read_only metadata; revalidate ONLY its contract fields.
+ const normalized=normalizeItineraryImportProposal({
+  schema_version:proposal?.schema_version,source:proposal?.source,
+  warnings:proposal?.warnings,
+  candidates:proposal?.candidates?.map(candidate=>({
+   source_order:candidate.source_order,classification_hint:candidate.classification_hint,
+   fields:candidate.fields,warnings:candidate.warnings
+  }))
+ });
  if(!scope||typeof scope.tripId!=='string'||!scope.tripId||typeof scope.userId!=='string'||!scope.userId||
     typeof scope.documentId!=='string'||scope.documentId!==normalized.source.document_id)
   throw Error('Abast del document i viatge invàlid.');
