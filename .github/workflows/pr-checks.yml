@@ -34,6 +34,26 @@ jobs:
           node "$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/cli.js" install --with-deps chromium
       - name: Travel Book real Pages build browser regression
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-travel-book-runtime-browser.mjs
+      - name: Build isolated Freya PROVES and reject production URLs
+        env:
+          FREYA_BACKEND_ENV: staging
+          FREYA_STAGING_SUPABASE_URL: https://waatqrqyddurultrazbn.supabase.co
+          FREYA_STAGING_SUPABASE_PUBLISHABLE_KEY: sb_publishable_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          RAILWAY_ENVIRONMENT_NAME: preview
+        run: |
+          npm run build
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            import assert from "node:assert/strict";
+            const html=readFileSync("dist/index.html","utf8");
+            const fallback=readFileSync("dist/404.html","utf8");
+            assert.equal(html,fallback);
+            assert.ok(html.includes("waatqrqyddurultrazbn.supabase.co"));
+            assert.ok(!html.includes("otueskpksylzvkhldoft"));
+            assert.ok(html.includes("id=\\"freya-staging-marker\\""));
+            assert.ok(html.includes("Freya PROVES"));
+            console.log("PASS isolated Freya PROVES build and fallback parity");
+          '
 
   legacy-suite:
     runs-on: ubuntu-latest
