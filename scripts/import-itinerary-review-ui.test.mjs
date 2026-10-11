@@ -52,5 +52,5 @@ test('A2.7: Pages includes the same module graph as PWA cache',()=>{
  assert.match(pack,/'import-itinerary-review\.mjs'/);
  assert.match(worker,/\.\/domain\/import-itinerary-proposal\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-review\.mjs/);
- assert.match(worker,/freya-travel-release-6444-v11/);
+ assert.match(worker,/freya-travel-release-6444-v12/);
 });
