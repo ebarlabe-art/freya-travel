@@ -7,7 +7,7 @@ export function boundedCanvasSize(width,height,ratio=1,maxPixels=5000000){
   const density=Math.max(1,Math.min(Number.isFinite(d)?d:1,2));
   const reduction=Math.min(1,Math.sqrt(maxPixels/(w*h*density*density)));
   const factor=density*reduction;
-  return {width:Math.max(1,Math.round(w*factor)),height:Math.max(1,Math.round(h*factor)),factor};
+  return {width:Math.max(1,Math.floor(w*factor)),height:Math.max(1,Math.floor(h*factor)),factor};
 }
 export function pageWithinBounds(page,count){
   return Math.max(1,Math.min(Math.max(1,count),Number(page)||1));
