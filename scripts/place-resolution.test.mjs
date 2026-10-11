@@ -1,3 +1,4 @@
+import {normalizeOpenMeteoPlace,openMeteoAdapter} from '../supabase/functions/place-resolution/providers/open-meteo-staging.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {normalizeGeoapify,geoapifyAdapter} from '../supabase/functions/place-resolution/providers/geoapify.mjs';
 import {placeConfig} from '../supabase/functions/place-resolution/config.mjs';
@@ -17,3 +18,53 @@ test('handler cache hit/miss and no-match cache; normalized input only',async()=
 test('unauthenticated caller never consumes provider quota',async()=>{const handler=createPlaceHandler({authenticate:async()=>null,rpc:()=>{throw Error('should not call')}});assert.equal((await handler(new Request('https://test',{method:'POST'}))).status,401)});
 
 test('client transport error carries normalized code for offline UX',async()=>{const client=new PlaceClient({functions:{invoke:async()=>({error:{message:'offline'}})}});await assert.rejects(client.searchPlaces({text:'test'}),error=>error.code==='provider_unavailable'&&error.message==='provider_unavailable')});
+
+const rigaRow={id:456172,name:'Riga',feature_code:'PPLC',country_code:'LV',latitude:56.946,longitude:24.106,timezone:'Europe/Riga',admin1:'Riga'};
+test('staging Open-Meteo Riga is a verified city and retains GeoNames attribution',()=>{
+ const candidate=normalizeOpenMeteoPlace(rigaRow);
+ assert.equal(candidate.canonical_name,'Riga');
+ assert.equal(candidate.timezone,'Europe/Riga');
+ assert.equal(candidate.timezone_status,'verified');
+ assert.equal(candidate.provider,'open-meteo');
+ assert.equal(candidate.provider_place_id,'456172');
+ assert.match(candidate.attribution,/CC BY 4.0/);
+ assert.equal(candidate.country_code,'LV');
+});
+test('staging non-city region cannot inherit inaccurate centroid time zone',()=>{
+ const region=normalizeOpenMeteoPlace({...rigaRow,feature_code:'ADM1'});
+ assert.equal(region.timezone,null);
+ assert.equal(region.timezone_status,'needs_specific_location');
+});
+test('staging Open-Meteo adapter sends no secret and validates response',async()=>{
+ let calls=0;
+ const api=openMeteoAdapter({config:placeConfig(),fetcher:async url=>{
+  calls++;
+  assert.equal(url.hostname,'geocoding-api.open-meteo.com');
+  assert.equal(url.searchParams.get('name'),'Riga');
+  assert.equal(url.searchParams.get('count'),'5');
+  assert.equal(url.searchParams.get('language'),'ca');
+  assert.equal(url.searchParams.get('apikey'),null);
+  return new Response(JSON.stringify({results:[rigaRow]}),{status:200});
+ }});
+ const list=await api.search({text:'Riga',language:'ca'});
+ assert.equal(calls,1);
+ assert.equal(list[0].timezone,'Europe/Riga');
+});
+test('staging Open-Meteo rejects corrupt data, 429 and outages',async()=>{
+ for(const body of ['not-json','{"results":[{}]}','{"results":"bad"}']){
+  const api=openMeteoAdapter({config:placeConfig(),fetcher:async()=>new Response(body)});
+  await assert.rejects(api.search({text:'Riga',language:'ca'}),/invalid_response/);
+ }
+ const rate=openMeteoAdapter({config:placeConfig(),fetcher:async()=>new Response('',{status:429})});
+ await assert.rejects(rate.search({text:'Riga',language:'ca'}),/rate_limited/);
+});
+test('staging Edge entrypoint has project guard; production remains Geoapify',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const preview=readFileSync(new URL('../supabase/functions/place-resolution/index.staging.ts',import.meta.url),'utf8');
+ const production=readFileSync(new URL('../supabase/functions/place-resolution/index.ts',import.meta.url),'utf8');
+ assert.match(preview,/staging_only_project_mismatch/);
+ assert.match(preview,/waatqrqyddurultrazbn/);
+ assert.match(preview,/openMeteoAdapter/);
+ assert.match(production,/geoapifyAdapter/);
+ assert.doesNotMatch(production,/openMeteoAdapter/);
+});

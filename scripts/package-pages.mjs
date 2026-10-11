@@ -1,6 +1,7 @@
 import { copyFile, cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
+import { configurePagesBackend } from './configure-pages-backend.mjs';
 
 const root=new URL('../',import.meta.url);
 const dist=new URL('../dist/',import.meta.url);
@@ -18,6 +19,8 @@ const runtimeDomain=[
   'travel-builder.mjs',
   'trip-brief.mjs',
   'import-proposal.mjs',
+  'import-itinerary-proposal.mjs',
+  'import-itinerary-review.mjs',
   'travel-book-proposal.mjs',
   'travel-book-batch.mjs',
   'travel-book-editor-state.mjs',
@@ -60,7 +63,7 @@ const builtIndexUrl=new URL('index.html',dist);
 const builtIndex=await readFile(builtIndexUrl,'utf8');
 const cdnSupabase='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 if(!builtIndex.includes(cdnSupabase))throw new Error('Supabase CDN runtime marker not found in built index');
-await writeFile(builtIndexUrl,builtIndex.replace(cdnSupabase,'./vendor/supabase.js'));
+await writeFile(builtIndexUrl,configurePagesBackend(builtIndex.replace(cdnSupabase,'./vendor/supabase.js'),process.env));
 
 for(const file of ['sw.js','manifest.webmanifest','itinerary.html']){
   await copyFile(new URL(file,root),new URL(file,dist));

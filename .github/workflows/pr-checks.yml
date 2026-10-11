@@ -20,7 +20,7 @@ jobs:
       - run: npm ci
       - run: npm run prebuild
       - name: A2 focused tests
-        run: node --test scripts/import-proposal.test.mjs scripts/import-text-extractor.test.mjs scripts/import-reservation.test.mjs scripts/import-reservation-ui.test.mjs
+        run: node --test scripts/import-proposal.test.mjs scripts/import-text-extractor.test.mjs scripts/import-itinerary-proposal.test.mjs scripts/import-itinerary-text-extractor.test.mjs scripts/import-itinerary-pdf.test.mjs scripts/import-itinerary-review.test.mjs scripts/import-itinerary-review-ui.test.mjs scripts/configure-pages-backend.test.mjs scripts/place-resolution.test.mjs scripts/import-reservation.test.mjs scripts/import-reservation-ui.test.mjs
       - name: Offline V2 focused tests
         run: node --test scripts/offline-v2-readonly.test.mjs
       - run: npm run build
@@ -34,6 +34,26 @@ jobs:
           node "$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/cli.js" install --with-deps chromium
       - name: Travel Book real Pages build browser regression
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-travel-book-runtime-browser.mjs
+      - name: Build isolated Freya PROVES and reject production URLs
+        env:
+          FREYA_BACKEND_ENV: staging
+          FREYA_STAGING_SUPABASE_URL: https://waatqrqyddurultrazbn.supabase.co
+          FREYA_STAGING_SUPABASE_PUBLISHABLE_KEY: sb_publishable_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          RAILWAY_ENVIRONMENT_NAME: preview
+        run: |
+          npm run build
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            import assert from "node:assert/strict";
+            const html=readFileSync("dist/index.html","utf8");
+            const fallback=readFileSync("dist/404.html","utf8");
+            assert.equal(html,fallback);
+            assert.ok(html.includes("waatqrqyddurultrazbn.supabase.co"));
+            assert.ok(!html.includes("otueskpksylzvkhldoft"));
+            assert.ok(html.includes("freya-staging-marker"));
+            assert.ok(html.includes("Freya PROVES"));
+            console.log("PASS isolated Freya PROVES build and fallback parity");
+          '
 
   legacy-suite:
     runs-on: ubuntu-latest
@@ -66,6 +86,10 @@ jobs:
           deno-version: v2.9.6
       - run: npm run test:alb03
       - run: npm run test:alb03:image
+      - name: A2 itinerary function type check
+        run: deno check supabase/functions/import-itinerary/index.ts
+      - name: Staging-only location resolution function type check
+        run: deno check --config supabase/functions/place-resolution/deno.json supabase/functions/place-resolution/index.staging.ts
       - run: deno check --config supabase/functions/travel-book-ingest/deno.json supabase/functions/travel-book-ingest/index.ts
       - name: Start isolated ALB-03 database just in time
         run: bash scripts/ci-postgres.sh start freya_alb03_ci
