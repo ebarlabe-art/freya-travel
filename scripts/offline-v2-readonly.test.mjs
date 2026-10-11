@@ -97,7 +97,7 @@ test('Service worker removes only Freya-owned cache generations',async()=>{
   vm.runInContext(worker,sandbox);
   let pending;onActivate({waitUntil:p=>pending=p});await pending;
   assert.equal(claimed,true);
-  assert.deepEqual(deleted.sort(),['freya-travel-release-6444-v4','freya-travel-release-6444-v5','freya-travel-release-6444-v7','freya-travel-release-6444-v8','freya-travel-release-6444-v9']);
+  assert.deepEqual(deleted.sort(),['freya-travel-release-6444-v4','freya-travel-release-6444-v5','freya-travel-release-6444-v7','freya-travel-release-6444-v8','freya-travel-release-6444-v9','freya-travel-release-6444-v10']);
 });
 
 test('Offline V2 logout clears only current account metadata and no-trip fallback is explicit',()=>{
@@ -408,7 +408,7 @@ test('An SDK/bootstrap failure cannot keep an infinite splash on the iPhone',()=
   assert.ok(fallbackIndex>0&&fallbackIndex<sdkIndex);
   assert.match(html.slice(fallbackIndex,sdkIndex),/setTimeout\(/);
   assert.match(html.slice(fallbackIndex,sdkIndex),/No cal esborrar l’app ni les còpies offline/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v10'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v11'/);
 });
 
 test('Parking offline leaves read-only Veure reserva enabled while disabling edits',()=>{
@@ -431,7 +431,7 @@ test('Parking offline leaves read-only Veure reserva enabled while disabling edi
   assert.ok(edits.every(e=>!e.disabled));
   assert.equal(selectors.length,2);
   assert.match(html,/button\.classList\.remove\('hidden'\);button\.disabled=false;\s*button\.onclick=\(\)=>openDocument\(doc\.id,documentRows,'parkingMsg'\)/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v10'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v11'/);
 });
 
 test('Automatic encrypted document rules include useful screenshots and exclude travel photos',()=>{
