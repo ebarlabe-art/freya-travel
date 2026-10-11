@@ -6,6 +6,7 @@ import { configurePagesBackend } from './configure-pages-backend.mjs';
 const root=new URL('../',import.meta.url);
 const dist=new URL('../dist/',import.meta.url);
 const runtimeDomain=[
+  'pdf-viewer.mjs',
   'place-resolution.mjs',
   'place-resolution-ui.mjs',
   'proposal-handoff.mjs',
@@ -59,6 +60,9 @@ for(const file of ['trip-brief.mjs','live-trip-brief.mjs','travel-builder.mjs','
 
 await mkdir(new URL('vendor/',dist),{recursive:true});
 await copyFile(new URL('node_modules/@supabase/supabase-js/dist/umd/supabase.js',root),new URL('vendor/supabase.js',dist));
+for(const [source,target] of [['build/pdf.mjs','pdf.mjs'],['build/pdf.worker.min.mjs','pdf.worker.mjs']]){
+  await copyFile(new URL('node_modules/pdfjs-dist/'+source,root),new URL('vendor/'+target,dist));
+}
 const builtIndexUrl=new URL('index.html',dist);
 const builtIndex=await readFile(builtIndexUrl,'utf8');
 const cdnSupabase='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
