@@ -18,7 +18,7 @@ const create=(tag,className,text)=>{
   if(text!==undefined)element.textContent=text;
   return element;
 };
-export async function mountPdfViewer({root,src,signal,isCurrent=()=>true,pdfjs:injectedPdfjs=null,fetcher=fetch,pixelRatio=()=>window.devicePixelRatio||1}){
+export async function mountPdfViewer({root,src,signal,isCurrent=()=>true,pdfjs:injectedPdfjs=null,fetcher=fetch,pixelRatio=()=>globalThis.window?.devicePixelRatio||1}){
   if(!root||!src)throw new Error('Document PDF no disponible.');
   let disposed=false,loadingTask=null,pdf=null,activeRender=null,renderToken=0,pageNumber=1,zoom=1;
   const live=()=>!disposed&&!signal?.aborted&&isCurrent();
