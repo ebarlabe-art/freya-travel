@@ -288,10 +288,10 @@ try{
     const cached=await offlineDocGetBlob(offlineDocScope(),doc);
     if(!cached)throw Error('Cold reopened PWA cannot decrypt its cached document');
     await openDocument(doc.id,[doc]);
-    const iframe=document.querySelector('#documentViewerBody iframe');
-    if(!iframe?.src?.startsWith('blob:'))throw Error('Cached PDF was not opened locally');
+    const localUrl=documentViewerObjectUrl;
+    const pdfRoot=document.querySelector('#documentViewerBody .freya-pdf-viewer');
+    if(!pdfRoot||!localUrl?.startsWith('blob:'))throw Error('Cached PDF was not opened from the encrypted local Blob');
     const raw=new Uint8Array(await cached.blob.arrayBuffer());
-    const localUrl=iframe.src;
     closeDocumentViewer();
     if(!document.getElementById('documentViewer').classList.contains('hidden'))throw Error('Cached PDF viewer did not close');
     await clearOfflineDocumentUserData(session.user.id);
