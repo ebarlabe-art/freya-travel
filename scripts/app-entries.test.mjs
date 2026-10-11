@@ -101,7 +101,7 @@ test('unchanged SW precache assets exist and offline entry fallbacks remain vali
         : 'node_modules/pdfjs-dist/build/pdf.mjs';
       const pack = await read('scripts/package-pages.mjs');
       assert.ok(pack.includes(packagePath.replace('node_modules/pdfjs-dist/','')));
-      assert.ok(pack.includes(asset.slice(2)));
+      assert.ok(pack.includes("new URL('vendor/'+target,dist)"));
       await access(new URL(packagePath, root));
       continue;
     }
