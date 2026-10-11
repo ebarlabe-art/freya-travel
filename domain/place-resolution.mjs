@@ -4,7 +4,7 @@ export function primaryStop(candidate){return candidate.route.stops.find(s=>s.ni
 export function placeLabel(p){return [p.canonical_name,p.administrative_area,p.country_code,p.kind].filter(Boolean).join(' · ');}
 export function validIana(value){if(typeof value!=='string'||!value.trim())return false;try{new Intl.DateTimeFormat('en',{timeZone:value}).format();return true}catch{return false}}
 export function validatePlace(p){
- if(!p||typeof p!=='object'||typeof p.provider_place_id!=='string'||!p.provider_place_id||p.provider!=='geoapify'||typeof p.canonical_name!=='string'||!p.canonical_name.trim()||p.canonical_name.length>500||!Number.isFinite(p.latitude)||Math.abs(p.latitude)>90||!Number.isFinite(p.longitude)||Math.abs(p.longitude)>180)throw Error('invalid_response');
+ if(!p||typeof p!=='object'||typeof p.provider_place_id!=='string'||!p.provider_place_id||!['geoapify','open-meteo'].includes(p.provider)||typeof p.canonical_name!=='string'||!p.canonical_name.trim()||p.canonical_name.length>500||!Number.isFinite(p.latitude)||Math.abs(p.latitude)>90||!Number.isFinite(p.longitude)||Math.abs(p.longitude)>180)throw Error('invalid_response');
  if(p.country_code!==null&&!/^[A-Z]{2}$/.test(p.country_code))throw Error('invalid_response');
  if(!['representative_point','exact_location'].includes(p.coordinate_role)||!['verified','needs_specific_location','unavailable'].includes(p.timezone_status))throw Error('invalid_response');
  if(p.timezone_status==='verified'?!validIana(p.timezone):p.timezone!==null)throw Error('invalid_response');
