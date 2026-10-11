@@ -18,7 +18,7 @@ test('app uses an internal paginated PDF.js reader instead of iOS iframe',()=>{
   const chunk=src.slice(src.indexOf('function showDocumentViewer('),src.indexOf("$('documentViewerClose').onclick"));
   assert.match(chunk,/mountPdfViewer/);
   assert.match(chunk,/documentViewerPdfAbort/);
-  assert.match(chunk,/isPdf/);
+  assert.match(chunk,/mime==='application\/pdf'/);
   assert.match(chunk,/createElement\('iframe'\)/);
 });
 test('local PDF.js engine and worker ship in the Pages build and PWA cache',()=>{
@@ -57,7 +57,7 @@ test('PDF reader renders and navigates all pages with bounded memory',async()=>{
     const reader=await mountPdfViewer({
       root,src:'blob:fake',fetcher:async()=>({ok:true,arrayBuffer:async()=>new Uint8Array([37,80,68,70]).buffer}),
       pixelRatio:()=>3,
-      injectedPdfjs:{getDocument:()=>({promise:Promise.resolve({
+      pdfjs:{getDocument:()=>({promise:Promise.resolve({
         numPages:3,
         getPage:async n=>({
           getViewport:({scale})=>({width:200*scale,height:300*scale}),
@@ -101,7 +101,7 @@ test('offline loading is fetchable from an existing Blob URL and abortable',asyn
     const reader=await mountPdfViewer({
       root,src:'blob:private-copy',signal:abort.signal,
       fetcher:async(url)=>{fetches.push(url);return {ok:true,arrayBuffer:async()=>new Uint8Array([37,80,68,70]).buffer}},
-      injectedPdfjs:{getDocument:()=>({promise:Promise.resolve({
+      pdfjs:{getDocument:()=>({promise:Promise.resolve({
         numPages:1,getPage:async()=>({getViewport:({scale})=>({width:100*scale,height:200*scale}),render:()=>({promise:Promise.resolve(),cancel(){}}),cleanup(){}}),destroy(){}
       }),destroy(){}})}
     });
