@@ -372,10 +372,10 @@ try{
     const cached=await offlineDocGetBlob(offlineDocScope(),doc);
     if(!cached)throw Error('Cold reopened PWA cannot decrypt its cached document');
     await openDocument(doc.id,[doc]);
-    const iframe=document.querySelector('#documentViewerBody iframe');
-    if(!iframe?.src?.startsWith('blob:'))throw Error('Cached PDF was not opened locally');
+    const localUrl=documentViewerObjectUrl;
+    const pdfRoot=document.querySelector('#documentViewerBody .freya-pdf-viewer');
+    if(!pdfRoot||!localUrl?.startsWith('blob:'))throw Error('Cached PDF was not opened from the encrypted local Blob');
     const raw=new Uint8Array(await cached.blob.arrayBuffer());
-    const localUrl=iframe.src;
     closeDocumentViewer();
     if(!document.getElementById('documentViewer').classList.contains('hidden'))throw Error('Cached PDF viewer did not close');
     await clearOfflineDocumentUserData(session.user.id);
@@ -468,8 +468,8 @@ async function visibleOfflineTripCard(page,tripId,timeout=15000){
   await reservationButton.waitFor({state:'visible',timeout:15000});
   assert.equal(await reservationButton.isEnabled(),true,'Veure reserva must stay enabled offline');
   await reservationButton.click();
-  await coldReopen.locator('#documentViewerBody iframe').waitFor({state:'attached',timeout:10000});
-  assert.equal(await coldReopen.locator('#documentViewerBody iframe').evaluate(el=>el.src.startsWith('blob:')),true,
+  await coldReopen.locator('#documentViewerBody .freya-pdf-viewer').waitFor({state:'attached',timeout:10000});
+  assert.equal(await coldReopen.evaluate(()=>documentViewerObjectUrl?.startsWith('blob:')),true,
     'Parking reservation must use the existing encrypted offline PDF');
   await coldReopen.locator('#documentViewerClose').click();
   console.log('PASS cold offline Parking Veure reserva button opens prepared encrypted PDF');
