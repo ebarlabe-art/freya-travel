@@ -94,6 +94,16 @@ test('unchanged SW precache assets exist and offline entry fallbacks remain vali
   });
   vm.runInContext(sw, context);
   for (const asset of vm.runInContext('ASSETS', context)) {
+    if (asset === './vendor/pdf.mjs' || asset === './vendor/pdf.worker.mjs') {
+      const packagePath = asset.endsWith('pdf.worker.mjs')
+        ? 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'
+        : 'node_modules/pdfjs-dist/build/pdf.mjs';
+      const pack = await read('scripts/package-pages.mjs');
+      assert.ok(pack.includes(packagePath.replace('node_modules/pdfjs-dist/','')));
+      assert.ok(pack.includes("new URL('vendor/'+target,dist)"));
+      await access(new URL(packagePath, root));
+      continue;
+    }
     if (asset === './vendor/supabase.js') {
       // The Supabase runtime is copied into dist/ at packaging time, not committed
       // as a duplicate vendor file in the source repository.
