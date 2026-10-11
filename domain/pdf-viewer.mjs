@@ -28,7 +28,8 @@ export async function mountPdfViewer({root,src,signal,isCurrent=()=>true,pdfjs:i
     try{activeRender?.cancel()}catch(_){}
     try{loadingTask?.destroy()}catch(_){}
     try{pdf?.destroy()}catch(_){}
-    root.replaceChildren();
+    // Do not clear a newer viewer mounted into the same parent after close/reopen.
+    if(root.contains(toolbar))root.replaceChildren();
   };
   const toolbar=create('div','freya-pdf-controls');
   const previous=create('button','','← Anterior'),next=create('button','','Següent →');
