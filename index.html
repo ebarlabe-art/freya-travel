@@ -8542,7 +8542,7 @@ function showDocumentViewer(doc,signedUrl){
     body.append(pdfRoot);
     const controller=new AbortController(),viewerToken=documentViewerOpenSequence;
     documentViewerPdfAbort=controller;
-    void import('./domain/pdf-viewer.mjs').then(async({mountPdfViewer})=>{
+    void import(new URL('./domain/pdf-viewer.mjs',document.baseURI).href).then(async({mountPdfViewer})=>{
       if(controller.signal.aborted||viewerToken!==documentViewerOpenSequence)return;
       const instance=await mountPdfViewer({
         root:pdfRoot,src:signedUrl,signal:controller.signal,
