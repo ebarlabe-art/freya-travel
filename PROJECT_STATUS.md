@@ -12,6 +12,7 @@
 - **Nova mancança física observada:** activitats desades sense ubicacions, ni distàncies ni diagnòstic de factibilitat.
 - **Diagnòstic al codi:** `domain/import-itinerary-text-extractor.mjs` no genera camps de lloc; `domain/import-itinerary-write.mjs` sí els admet però arriben buits. Geoapify `place-resolution` existeix per a briefs/propostes, no per a `trip_itinerary_items`. `trip-transfer-estimate` només produeix una aproximació de cotxe entre textos i no està connectat al planning; no equival a una ruta real.
 - **Següent feina P0:** [#118 — ubicacions i viabilitat](https://github.com/ebarlabe-art/freya-travel/issues/118). Primer completar ubicacions de les activitats **ja desades**, sense tornar a importar ni inventar llocs; després trajectes per mode de transport i advertiments segons horaris, durades i marges, amb «dades insuficients» quan pertoqui.
+- **En preparació, A2.10 / branca `feature/a2-10-confirm-itinerary-locations-20261013`:** cerca Geoapify activada voluntàriament des de les activitats sense lloc, resultats seleccionables, emplenament de `location_name` i desament explícit amb el formulari existent. No es guarden coordenades, ni es considera un mapa de ruta confirmat. Pendent proves CI, prova iPhone i publicació. No fer reimportació.
 
 ## Camí crític Bolonya (per ordre)
 
