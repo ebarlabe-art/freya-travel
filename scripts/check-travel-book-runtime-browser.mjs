@@ -413,7 +413,8 @@ try{
       hasCanvas:!!document.querySelector('.freya-pdf-canvas'),
       hasPdfRoot:!!document.querySelector('.freya-pdf-viewer'),
       hidden:document.getElementById('documentViewer')?.classList.contains('hidden'),
-      docScope:typeof session?.user?.id
+      docScope:typeof session?.user?.id,
+      pdfFailure:window.__freyaPreviewPdfError||null
     }));
     throw new Error('Offline PDF page-render diagnostic: '+JSON.stringify({state,offlineErrors,missing}),{cause:error});
   }
