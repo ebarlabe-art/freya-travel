@@ -1848,6 +1848,10 @@
             <p class="muted">Revisa les activitats i desmarca les que no vulguis importar. Freya no modificarà cap element que ja tinguis al viatge.</p>
             <p id="itineraryImportSaveStatus" class="message" role="status" aria-live="polite">Encara no s'ha desat cap activitat.</p>
             <button type="button" id="itineraryImportWrite" disabled>Desar activitats seleccionades</button>
+            <div id="itineraryImportConfirm" class="stack hidden" role="group" aria-label="Confirmació de la importació">
+              <p id="itineraryImportConfirmText" class="message"></p>
+              <div class="row"><button type="button" id="itineraryImportConfirmYes">Confirmar i afegir</button><button type="button" id="itineraryImportConfirmNo">Cancel·lar</button></div>
+            </div>
           </section>
         </section>
 
@@ -8260,6 +8264,8 @@ function itineraryImportStillCurrent(state){
   !$('itineraryImportPanel').classList.contains('hidden');
 }
 function closeItineraryImport(){
+ itineraryImportState?.confirmResolver?.(false);
+ $('itineraryImportConfirm').classList.add('hidden');
  itineraryImportEpoch++;itineraryImportState=null;
  $('itineraryImportPanel').classList.add('hidden');
  $('itineraryImportPreview').classList.add('hidden');
@@ -8377,7 +8383,11 @@ async function processItineraryImportDocument(doc){
    $('itineraryImportStatus').textContent=(state.uploadedDoc?'El document és a Documents del viatge, però l’anàlisi ha fallat. ':'')+
     (error?.message||'No s’ha pogut llegir el PDF.');
  }finally{
-  if(itineraryImportStillCurrent(state)&&state.epoch===requestEpoch){state.busy=false;updateItineraryImportConsent()}
+  if(itineraryImportStillCurrent(state)&&state.epoch===requestEpoch){
+   state.busy=false;
+   updateItineraryImportConsent();
+   if(state.review)renderItineraryImportPreview();
+  }
  }
 }
 const itineraryImportReviewLabels={
@@ -8538,6 +8548,27 @@ async function processItineraryImportSelected(){
  }
 }
 $('itineraryImportAnalyze').onclick=()=>{void processItineraryImportSelected()};
+function requestItineraryImportConfirmation(state,count,warnings){
+ return new Promise(resolve=>{
+  const panel=$('itineraryImportConfirm');
+  $('itineraryImportConfirmText').textContent='Vols afegir '+count+
+   ' activitats seleccionades al planning compartit de «'+trip.name+'»? No es modificarà cap activitat existent.'+
+   (warnings?' '+warnings+' activitats tenen avisos; revisa-les abans de confirmar.':'');
+  const settle=ok=>{
+   if(state.confirmResolver!==settle)return;
+   state.confirmResolver=null;
+   panel.classList.add('hidden');
+   $('itineraryImportConfirmYes').onclick=null;
+   $('itineraryImportConfirmNo').onclick=null;
+   resolve(ok);
+  };
+  state.confirmResolver=settle;
+  $('itineraryImportConfirmYes').onclick=()=>settle(true);
+  $('itineraryImportConfirmNo').onclick=()=>settle(false);
+  panel.classList.remove('hidden');
+  panel.scrollIntoView({block:'nearest'});
+ });
+}
 async function writeConfirmedItineraryImport(){
  const state=itineraryImportState;
  if(!itineraryImportStillCurrent(state)||state.busy||state.saveCompleted||!state.review||!state.api||!state.saveApi||
@@ -8570,10 +8601,9 @@ async function writeConfirmedItineraryImport(){
    tripStartDate:trip?.start_date||null,tripEndDate:trip?.end_date||null
   });
   if(!itineraryImportStillCurrent(state))return;
-  const warning=snapshot.needsReview?
-   '\\n\\n'+snapshot.needsReview+' activitats tenen avisos. Revisa-les abans de confirmar.':'';
-  const ok=confirm('Vols afegir '+rows.length+' activitats seleccionades al planning compartit de «'+trip.name+'»?'+
-    '\\n\\nNo es modificarà cap activitat existent.'+warning);
+  $('itineraryImportSaveStatus').textContent='Revisa i confirma la importació a continuació.';
+  const ok=await requestItineraryImportConfirmation(state,rows.length,snapshot.needsReview);
+  if(!itineraryImportStillCurrent(state))return;
   if(!ok){$('itineraryImportSaveStatus').textContent='Desament cancel·lat. La proposta continua disponible.';return}
   if(!itineraryImportStillCurrent(state)||connectionUnavailable())return;
   $('itineraryImportSaveStatus').textContent='Desant les activitats seleccionades…';
