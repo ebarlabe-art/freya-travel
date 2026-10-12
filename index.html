@@ -5282,7 +5282,7 @@ function restoreManualItineraryDraft(){
 function closeManualItineraryForm(){clearManualItineraryDraft($('manualItineraryForm').dataset.tripId||trip?.id);resetManualItineraryFormUi();renderGenericItinerary()}
 function manualItineraryMapUrl(row){const query=[row.location_name,row.address,row.city].filter(Boolean).join(', ');return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:''}
 function manualItineraryPlaceQuery(row){
- const title=String(row?.location_name||row?.title||'').trim().replace(/^(?:visita(?:\\s+(?:a|al|a la))?|passejada(?:\\s+per)?|visit(?:\\s+to)?|excursió(?:\\s+a)?)[\\s:–-]+/i,'');
+ const title=String(row?.location_name||row?.title||'').trim().replace(/^(?:visita(?:\s+(?:a|al|a la))?|passejada(?:\s+per)?|visit(?:\s+to)?|excursió(?:\s+a)?)[\s:–-]+/i,'');
  const city=String(row?.city||trip?.name||'').trim();
  return (title+(city&&!title.toLocaleLowerCase().includes(city.toLocaleLowerCase())?', '+city:'')).slice(0,500);
 }
