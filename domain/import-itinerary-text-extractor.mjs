@@ -7,11 +7,12 @@ const WEEKDAY=/^(?:(?:dilluns|dimarts|dimecres|dijous|divendres|dissabte|diumeng
 const DATE_PREFIX=/^(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{4})(?!\d)/;
 const PARTIAL_DATE=/^\d{1,2}[/.]\d{1,2}(?![/.]\d)/;
 const MONTH_DATE=/^(\d{1,2})\s+(?:de\s+)?([a-zà-ÿ]+)\s+(?:de\s+)?(\d{4})(?!\d)/i;
-const TZ_RE=/(?:\bTZ\b|\btime\s*zone\b|\btimezone\b|\bzona\s+hor[aà]ria\b)\s*[:=]?\s*([A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?)/i;
+const TZ_RE=/(?:\bTZ\b|\btime\s*zone\b|\btimezone\b|\bzona\s+hor[aà]ria\b|\bhora\s+local\b|\blocal\s+time\b)\s*[:=]?\s*([A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?)/i;
 const TIME='((?:[01]?\\d|2[0-3])[:.h][0-5]\\d)';
 const CLOCK=new RegExp('^'+TIME+'(?:\\s*(?:-|–|—|a|to)\\s*'+TIME+')?\\s*(?:[-–—:·]\\s*)?(.+)$','i');
 const BULLET=/^(?:[-*•]\s+|\d{1,2}[.)]\s+)(.+)$/;
 const DAYPART=/^(mat[ií]|morning|mañana|tarda|afternoon|vespre|evening|nit|night|migdia|mediod[ií]a)\s*[:–—-]\s*(.+)$/i;
+const UNTYPED_DAYPART=/^(mat[ií]|morning|mañana|tarda|afternoon|vespre|evening|nit|night|migdia|mediod[ií]a)\s*,\s*(?:sense hora exacta|sin hora exacta|no exact time)\s*(?:[:–—-]\s*(.+))?$/i;
 const ADMIN=/^(?:(?:reserva|booking|reference|refer[eè]ncia|localitzador|confirmaci[oó]|tel[eè]fon|phone|contacte|total|preu|price|cost|notes?|document|passaport|passport|p[aà]gina|page)\s*[:#])/i;
 const HEADER=/^(?:(?:itinerari|itinerary|programa|planning|pla de viatge|ruta|destinaci[oó])(?:\s+.{0,80})?)$/i;
 const MONTHS={
@@ -85,6 +86,12 @@ function hintFromTitle(value){
 function cleanTitle(value){
  return value.replace(/^\s*[-*•]\s*/,'').replace(/^\s*[·:–—-]\s*/,'').trim();
 }
+function daypartValue(label){
+ const mapping={mati:'morning',morning:'morning',manana:'morning',tarda:'afternoon',
+  afternoon:'afternoon',vespre:'evening',evening:'evening',nit:'night',night:'night',
+  migdia:'midday',mediodia:'midday'};
+ return mapping[stripAccents(label)]||null;
+}
 function readItem(line,hasDay){
  const normalized=line.trim().replace(/^\u2022\s*/,'• ');
  const clock=normalized.match(CLOCK);
@@ -93,14 +100,11 @@ function readItem(line,hasDay){
   if(!title)return null;
   return {title,start:canonicalTime(clock[1]),end:clock[2]?canonicalTime(clock[2]):null,confidence:'high'};
  }
- const daypart=normalized.match(DAYPART);
- if(daypart){
-  const mapping={mati:'morning',morning:'morning',manana:'morning',tarda:'afternoon',
-   afternoon:'afternoon',vespre:'evening',evening:'evening',nit:'night',night:'night',
-   migdia:'midday',mediodia:'midday'};
+ const daypart=normalized.match(DAYPART)||normalized.match(UNTYPED_DAYPART);
+ if(daypart&&daypart[2]){
   const title=cleanTitle(daypart[2]);
   if(!title)return null;
-  return {title,daypart:mapping[stripAccents(daypart[1])],confidence:'high'};
+  return {title,daypart:daypartValue(daypart[1]),confidence:'high'};
  }
  if(hasDay){
   const bullet=normalized.match(BULLET);
@@ -126,52 +130,73 @@ function normalizePages(rawPages){
 }
 export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'}){
  const pages=normalizePages(rawPages),candidates=[],warnings=new Set();
- let current=null,unparsed=0,invalidDate=false;
+ let current=null,documentZone=null,pendingDaypart=null,unparsed=0,invalidDate=false;
  for(const {page,text} of pages){
   for(const raw of text.split('\n')){
    const line=raw.trim().replace(/\s+/g,' ');
    if(!line||line.length>1000){if(line.length>1000)warnings.add('Línia massa llarga: cal revisar el document.');continue;}
    let work=line.replace(WEEKDAY,'');
    const dayMarker=CALENDAR.test(work);
-   if(dayMarker)work=work.replace(CALENDAR,'');
+   // Day labels often precede a weekday: "DIA 1 · Diumenge 27/12/2026".
+   if(dayMarker)work=work.replace(CALENDAR,'').replace(WEEKDAY,'').trim();
    const datePart=readDatePrefix(work);
    const tz=explicitZone(line,page);
-   if(tz?.invalid)warnings.add('Zona horària no reconeguda: cal revisar-la.');
+   if(tz?.invalid){
+    documentZone=null;
+    if(current)current.zone=null;
+    warnings.add('Zona horària no reconeguda: cal revisar-la.');
+   }else if(tz&&!current&&!datePart&&!dayMarker)documentZone=tz;
    if(dayMarker&&!datePart){
-    current=null;
+    current=null;pendingDaypart=null;
     warnings.add('Hi ha dies numerats sense data completa: no s’ha inventat l’any.');
     continue;
    }
    if(datePart){
     if(!datePart.date){
-     current=null;
+     current=null;pendingDaypart=null;
      invalidDate=true;
      warnings.add('Hi ha una data impossible: no s’ha assignat a cap activitat.');
      continue;
     }
     // Keep the explicit date as the active day for subsequent entries, even if
     // the heading also includes the first activity of that day.
-    current={date:datePart.date,evidence:line,page,zone:tz&&!tz.invalid?tz:null};
+    pendingDaypart=null;
+    current={date:datePart.date,evidence:line,page,zone:tz&&!tz.invalid?tz:documentZone};
     const tail=datePart.rest.replace(/^(?:[-–—·|]\s*)/,'');
     const inline=readItem(tail,false);
     if(inline){
      // Explicit date on the same line belongs only to that item.
-     const candidate=makeCandidate(inline,line,page,{date:datePart.date,evidence:line,page},tz&&!tz?.invalid?tz:null,candidates.length);
+     const candidate=makeCandidate(inline,line,page,{date:datePart.date,evidence:line,page},current.zone,candidates.length);
      candidates.push(candidate);
     }
     if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
     continue;
    }
    if(PARTIAL_DATE.test(work)||/^(?:dia|día|day)\s*\d{1,3}\s*$/.test(line)){
-    current=null;warnings.add('Hi ha dates sense any: cal confirmar-les.');continue;
+    current=null;pendingDaypart=null;warnings.add('Hi ha dates sense any: cal confirmar-les.');continue;
    }
    if(HEADER.test(line)||/^p[àa]g(?:ina)?\s*\d+$/i.test(line))continue;
    // A standalone explicit time-zone line annotates the current day.
-   if(tz&&!tz.invalid&&/^\s*(?:TZ|time\s*zone|timezone|zona\s+hor[aà]ria)\b/i.test(line)){
+   if(tz&&!tz.invalid&&/^\s*(?:TZ|time\s*zone|timezone|zona\s+hor[aà]ria|hora\s+local|local\s+time)\b/i.test(line)){
     if(current)current.zone=tz;
     continue;
    }
-   const item=readItem(line,!!current);
+   const untimed=line.match(UNTYPED_DAYPART);
+   if(untimed&&!untimed[2]){
+    pendingDaypart={value:daypartValue(untimed[1]),line,page};
+    continue;
+   }
+   let item=readItem(line,!!current);
+   if(pendingDaypart){
+    // A PDF table may place "Tarda, sense hora exacta" in one column
+    // and the title on the next line. Only the immediate next safe line is used.
+    if(!item&&!ADMIN.test(line)&&!HEADER.test(line)&&!tz&&
+       !/^(?:observaci[oó]|nota\s+de|important|hora\s*\/\s*franja|activitat\s+i\s+lloc)\b/i.test(line)){
+      const title=cleanTitle(line);
+      if(title&&title.length<=200)item={title,daypart:pendingDaypart.value,confidence:'medium'};
+    }
+    pendingDaypart=null;
+   }
    if(item){
     candidates.push(makeCandidate(item,line,page,current?{date:current.date,evidence:current.evidence,page:current.page}:null,
       tz&&!tz.invalid?tz:current?.zone,candidates.length));

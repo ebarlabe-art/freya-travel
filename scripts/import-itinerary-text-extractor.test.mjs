@@ -27,6 +27,60 @@ test('A2.6: extracts dates and times across PDF pages with evidence',()=>{
  assert.equal(proposal.candidates[3].fields.time_zone,undefined);
 });
 
+test('A2.6 real PROVA 6: numbered weekday dates, explicit Riga zone, overlap and duplicate',async()=>{
+ const pages=[
+  {page:1,text:[
+   'RIGA · Itinerari fictici',
+   '27 i 28 de desembre de 2026 · Hora local: Europe/Riga · Freya Travel PROVES',
+   'DIA 1 · Diumenge 27/12/2026',
+   '09:00 - 09:45 Esmorzar lliure al centre històric de Riga (Vecrīga).',
+   '10:00 - 11:00 Visita a la Catedral de Riga, plaça Doma laukums.',
+   '11:15 - 12:00 Visita exterior de la Casa dels Caps Negres, plaça Rātslaukums.',
+   '12:20 - 13:00 Passeig per la riba del riu Daugava.',
+   '13:15 - 14:15 Dinar lliure al centre de Riga.',
+   '15:00 - 16:15 Visita al Mercat Central de Riga (Rīgas Centrāltirgus).',
+   '18:00 - 19:00 Passeig pel Mercat de Nadal del centre històric (activitat orientativa).'
+  ].join('\n')},
+  {page:2,text:[
+   'RIGA · Itinerari fictici · continuació',
+   '27 i 28 de desembre de 2026 · Hora local: Europe/Riga',
+   'DIA 2 · Dilluns 28/12/2026',
+   '09:15 - 10:00 Esmorzar lliure prop del centre.',
+   '10:30 - 12:00 Visita al Museu Nacional d’Art de Letònia, Jaņa Rozentāla laukums 1.',
+   '11:45 - 12:15 Passeig pel parc Bastejkalna, a Riga.',
+   '13:00 - 14:00 Dinar lliure a Riga.',
+   '15:00 - 16:00 Passeig pel barri modernista d’Alberta iela.',
+   '15:00 - 16:00 Passeig pel barri modernista d’Alberta iela.',
+   'Tarda, sense hora exacta',
+   'Temps lliure per comprar records al centre de Riga.'
+  ].join('\n')}
+ ];
+ const p=extractItineraryProposalFromPages(pages,source);
+ assert.equal(p.candidates.length,14);
+ assert.deepEqual(p.candidates.map(x=>val(x,'local_date')),
+  [...Array(7).fill('2026-12-27'),...Array(7).fill('2026-12-28')]);
+ assert.ok(p.candidates.every(x=>val(x,'time_zone')==='Europe/Riga'));
+ assert.equal(val(p.candidates[13],'daypart'),'afternoon');
+ assert.match(val(p.candidates[13],'title'),/Temps lliure/);
+ assert.equal(val(p.candidates[13],'start_local_time'),undefined);
+ assert.ok(p.candidates[11].review_flags.includes('possible_duplicate_in_source'));
+ assert.ok(p.candidates[12].review_flags.includes('possible_duplicate_in_source'));
+ assert.ok(!p.warnings.some(x=>/dies numerats sense data completa|activitats sense data completa/.test(x)));
+ const {createItineraryReview,summarizeItineraryReview}=await import('../domain/import-itinerary-review.mjs');
+ const review=createItineraryReview(p,{tripId:'trip-prova',userId:'user-prova',documentId:source.document_id});
+ const summary=summarizeItineraryReview(review,[]);
+ assert.ok(summary.items[8].review_flags.includes('possible_overlap_in_review'));
+ assert.ok(summary.items[9].review_flags.includes('possible_overlap_in_review'));
+ assert.ok(summary.items[11].review_flags.includes('possible_duplicate_in_review'));
+ assert.ok(summary.items[12].review_flags.includes('possible_duplicate_in_review'));
+});
+test('A2.6: invalid explicit timezone prevents accidental reuse across days',()=>{
+ const p=parse('Hora local: Europe/Riga\nDIA 1 · Diumenge 27/12/2026\n09:00 Visita\nZona horària: Europe/Atlantis\nDIA 2 · Dilluns 28/12/2026\n10:00 Museu');
+ assert.equal(val(p.candidates[0],'time_zone'),'Europe/Riga');
+ assert.equal(val(p.candidates[1],'time_zone'),undefined);
+ assert.ok(p.warnings.some(x=>/no reconeguda/.test(x)));
+});
+
 test('A2.6: inline-dated first item retains date for subsequent activities',()=>{
  const p=parse('28/12/2026 09:00 Museu marítim\n10:00 Passeig\n29/12/2026 14:00 Castell');
  assert.deepEqual(p.candidates.map(x=>val(x,'local_date')),['2026-12-28','2026-12-28','2026-12-29']);
