@@ -417,6 +417,7 @@ try{
       pdfOutput:document.querySelector('.freya-pdf-controls output')?.textContent,
       hasCanvas:!!document.querySelector('.freya-pdf-canvas'),
       hasPdfRoot:!!document.querySelector('.freya-pdf-viewer'),
+      pdfDebugError:document.querySelector('.freya-pdf-viewer')?.dataset?.pdfDebugError,
       hidden:document.getElementById('documentViewer')?.classList.contains('hidden'),
       docScope:typeof session?.user?.id,
       pdfFailure:window.__freyaPreviewPdfError||null
