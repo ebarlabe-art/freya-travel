@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const pack=readFileSync(new URL('./package-pages.mjs',import.meta.url),'utf8');
 const worker=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
@@ -87,5 +88,74 @@ test('A2.7: Pages includes the same module graph as PWA cache',()=>{
  assert.match(worker,/\.\/domain\/import-itinerary-proposal\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-review\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-write\.mjs/);
- assert.match(worker,/freya-travel-release-6444-v12/);
+ assert.match(worker,/freya-travel-release-6444-v13/);
+});
+
+test('A2.9: real async completion re-enables the imported itinerary save button',async()=>{
+ const start=script.indexOf('async function processItineraryImportDocument(');
+ const end=script.indexOf('const itineraryImportReviewLabels',start);
+ assert.ok(start>0&&end>start);
+ const source=script.slice(start,end);
+ const el=new Map();
+ const $=id=>{
+  if(!el.has(id))el.set(id,{disabled:false,checked:id==='itineraryImportConsent',
+   textContent:'',classList:{add(){},remove(){}}});
+  return el.get(id);
+ };
+ const state={tripId:'trip-1',userId:'user-1',generation:1,epoch:0,
+  busy:false,review:null,api:null,saveApi:null,documentId:null};
+ const renders=[];
+ const scope={
+  itineraryImportState:state,itineraryImportEpoch:0,$,
+  itineraryImportStillCurrent:current=>current===state,
+  itineraryImportMimeAllowed:()=>true,
+  updateItineraryImportConsent:()=>{},
+  renderItineraryImportPreview:()=>{
+   // Simulate renderItineraryImportPreview's real disabled condition.
+   $('itineraryImportWrite').disabled=!!state.busy||!state.review;
+   renders.push({busy:state.busy,disabled:$('itineraryImportWrite').disabled});
+  },
+  db:{functions:{invoke:async()=>({data:{proposal:{candidates:[]}}})}},
+  loadTravelBookModule:async name=>name==='import-itinerary-review.mjs'?
+   {createItineraryReview:()=>({items:[{included:true}]})}:
+   {deselectExactImportDuplicates:()=>0},
+  itineraryImportErrorMessage:()=>'' 
+ };
+ const fn=vm.runInNewContext(source+'; processItineraryImportDocument',scope);
+ await fn({id:'doc-1',mime_type:'application/pdf'});
+ assert.deepEqual(renders,[{busy:true,disabled:true},{busy:false,disabled:false}]);
+ assert.equal(state.busy,false);
+ assert.equal($('itineraryImportWrite').disabled,false);
+});
+
+test('A2.9: inline iPhone confirmation resolves only from explicit user interaction',async()=>{
+ const start=script.indexOf('function requestItineraryImportConfirmation(');
+ const end=script.indexOf('async function writeConfirmedItineraryImport(',start);
+ assert.ok(start>0&&end>start);
+ const elements=new Map();
+ const $=id=>{
+  if(!elements.has(id))elements.set(id,{textContent:'',onclick:null,
+   classList:{hidden:true,add(name){if(name==='hidden')this.hidden=true},
+    remove(name){if(name==='hidden')this.hidden=false}},
+   scrollIntoView(){}});
+  return elements.get(id);
+ };
+ const confirm=vm.runInNewContext(script.slice(start,end)+'; requestItineraryImportConfirmation',
+  {$,trip:{name:'Riga'}});
+ const state={confirmResolver:null};
+ let saved=false;
+ const accepted=confirm(state,13,2).then(ok=>{saved=ok;return ok});
+ assert.equal(saved,false);
+ assert.equal($('itineraryImportConfirm').classList.hidden,false);
+ assert.match($('itineraryImportConfirmText').textContent,/13 activitats/);
+ assert.match($('itineraryImportConfirmText').textContent,/2 activitats tenen avisos/);
+ $('itineraryImportConfirmYes').onclick();
+ assert.equal(await accepted,true);
+ assert.equal(state.confirmResolver,null);
+ assert.equal($('itineraryImportConfirm').classList.hidden,true);
+ const cancelled=confirm(state,13,0);
+ $('itineraryImportConfirmNo').onclick();
+ assert.equal(await cancelled,false);
+ assert.equal(state.confirmResolver,null);
+ assert.equal($('itineraryImportConfirm').classList.hidden,true);
 });
