@@ -84,6 +84,11 @@ try{
       mime_type:'application/pdf',file_path:tripId+'/ruta.pdf'}];
     // Use existing UI wiring but intercept only external resources.
     loadDocuments=async()=>documentRows;
+    const originalFrom=db.from.bind(db);
+    Object.defineProperty(db,'from',{configurable:true,value:(name)=>{
+      if(name!=='travel_documents')return originalFrom(name);
+      return {select:()=>({eq:()=>({eq:()=>({order:async()=>({data:[],error:null})})})})};
+    }});
     window.__a27Calls=[];
     // Supabase exposes .functions through a getter returning a new client.
     // Shadow that getter on this isolated mock page instead of mutating its transient result.
@@ -107,6 +112,12 @@ try{
     show('tripView');hide('auth');setAppView('itineraryView');
   });
   await itineraryPage.locator('#openItineraryImport').click();
+  assert.equal(await itineraryPage.locator('#itineraryImportSourceMenu').isVisible(),false,
+    'The document-source menu must start collapsed');
+  assert.equal(await itineraryPage.locator('#itineraryImportAnalyze').isEnabled(),false);
+  await itineraryPage.locator('#itineraryImportUpload').click();
+  assert.equal(await itineraryPage.locator('#itineraryImportSourceMenu').isVisible(),true);
+  await itineraryPage.locator('#itineraryImportChooseExisting').click();
   await itineraryPage.locator('#itineraryImportExisting option').last().waitFor({state:'attached'});
   await itineraryPage.locator('#itineraryImportExisting').selectOption('6bada382-4bfb-4e15-a102-f590a750671d');
   assert.equal(await itineraryPage.locator('#itineraryImportAnalyze').isEnabled(),false,
