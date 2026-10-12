@@ -40,7 +40,7 @@ test('A2.6 real PROVA 6: numbered weekday dates, explicit Riga zone, overlap and
    '13:15 - 14:15 Dinar lliure al centre de Riga.',
    '15:00 - 16:15 Visita al Mercat Central de Riga (Rīgas Centrāltirgus).',
    '18:00 - 19:00 Passeig pel Mercat de Nadal del centre històric (activitat orientativa).'
-  ].join('\\n')},
+  ].join('\n')},
   {page:2,text:[
    'RIGA · Itinerari fictici · continuació',
    '27 i 28 de desembre de 2026 · Hora local: Europe/Riga',
@@ -53,7 +53,7 @@ test('A2.6 real PROVA 6: numbered weekday dates, explicit Riga zone, overlap and
    '15:00 - 16:00 Passeig pel barri modernista d’Alberta iela.',
    'Tarda, sense hora exacta',
    'Temps lliure per comprar records al centre de Riga.'
-  ].join('\\n')}
+  ].join('\n')}
  ];
  const p=extractItineraryProposalFromPages(pages,source);
  assert.equal(p.candidates.length,14);
@@ -75,7 +75,7 @@ test('A2.6 real PROVA 6: numbered weekday dates, explicit Riga zone, overlap and
  assert.ok(summary.items[12].review_flags.includes('possible_duplicate_in_review'));
 });
 test('A2.6: invalid explicit timezone prevents accidental reuse across days',()=>{
- const p=parse('Hora local: Europe/Riga\\nDIA 1 · Diumenge 27/12/2026\\n09:00 Visita\\nZona horària: Europe/Atlantis\\nDIA 2 · Dilluns 28/12/2026\\n10:00 Museu');
+ const p=parse('Hora local: Europe/Riga\nDIA 1 · Diumenge 27/12/2026\n09:00 Visita\nZona horària: Europe/Atlantis\nDIA 2 · Dilluns 28/12/2026\n10:00 Museu');
  assert.equal(val(p.candidates[0],'time_zone'),'Europe/Riga');
  assert.equal(val(p.candidates[1],'time_zone'),undefined);
  assert.ok(p.warnings.some(x=>/no reconeguda/.test(x)));
