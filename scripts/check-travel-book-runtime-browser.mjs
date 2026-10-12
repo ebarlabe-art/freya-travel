@@ -10,6 +10,32 @@ const dist=resolve(process.env.PAGES_DIST||resolve(root,'dist'));
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE?pathToFileURL(process.env.PLAYWRIGHT_MODULE).href:'playwright');
 const mime={'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript','.css':'text/css','.png':'image/png','.webmanifest':'application/manifest+json'};
 const missing=[];
+
+function samplePrivatePdf(){
+  // Three genuine PDF pages. Stable ASCII cross-reference offsets for offline E2E.
+  const contents='<< /Length 0 >>\nstream\nendstream';
+  const objects=[
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Count 3 /Kids [3 0 R 5 0 R 7 0 R] >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Resources << >> /Contents 4 0 R >>',
+    contents,
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Resources << >> /Contents 6 0 R >>',
+    contents,
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Resources << >> /Contents 8 0 R >>',
+    contents
+  ];
+  let pdf='%PDF-1.4\n',offsets=[0];
+  for(let i=0;i<objects.length;i++){
+    offsets.push(pdf.length);
+    pdf+=String(i+1)+' 0 obj\n'+objects[i]+'\nendobj\n';
+  }
+  const xref=pdf.length;
+  pdf+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
+  for(const pos of offsets.slice(1))pdf+=String(pos).padStart(10,'0')+' 00000 n \n';
+  pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF\n';
+  return Array.from(Buffer.from(pdf,'ascii'));
+}
+
 const server=createServer(async(req,res)=>{
   const pathname=new URL(req.url,'http://localhost').pathname;
   const file=resolve(dist,decodeURIComponent(pathname.replace(/^\/freya-travel\//,''))||'index.html');
@@ -343,14 +369,14 @@ try{
   // Seed one private PDF under an explicitly simulated valid local account
   // while network is available. Do not use real accounts or Supabase data.
   await pwa.waitForFunction(()=>authInitializationResolved===true);
-  await pwa.evaluate(async()=>{
+  await pwa.evaluate(async sampleBytes=>{
     session={user:{id:'test-offline-cold-owner'}};
     trip={id:'test-offline-cold-trip',experience_key:null};
     tripLoadGeneration++;
     const scope=offlineDocScope();
     const doc={id:'cold-pass',file_path:'test-offline-cold-trip/pass.pdf',file_name:'pass.pdf',mime_type:'application/pdf'};
-    await offlineDocSaveBlob(scope,doc,new Blob([new Uint8Array([37,80,68,70,45,49,46,55,10])],{type:'application/pdf'}));
-  });
+    await offlineDocSaveBlob(scope,doc,new Blob([new Uint8Array(sampleBytes)],{type:'application/pdf'}));
+  },samplePrivatePdf());
   await pwaCtx.setOffline(true);
   for(const api of apis)await pwa.evaluate(async name=>{await window[name]()},api);
   // Force a cold navigation with network completely unavailable: testing
@@ -372,19 +398,25 @@ try{
     const cached=await offlineDocGetBlob(offlineDocScope(),doc);
     if(!cached)throw Error('Cold reopened PWA cannot decrypt its cached document');
     await openDocument(doc.id,[doc]);
-    const iframe=document.querySelector('#documentViewerBody iframe');
-    if(!iframe?.src?.startsWith('blob:'))throw Error('Cached PDF was not opened locally');
+    const reader=document.querySelector('#documentViewerBody .freya-pdf-viewer');
+    if(!reader)throw Error('Private offline PDF did not mount the internal reader');
     const raw=new Uint8Array(await cached.blob.arrayBuffer());
-    const localUrl=iframe.src;
+    if(raw[0]!==37||raw[1]!==80||raw[2]!==68||raw[3]!==70)throw Error('Offline bytes are not a PDF');
+    return {byteCount:raw.length,offline:navigator.onLine===false};
+  });
+  await pwa.waitForFunction(()=>document.querySelector('.freya-pdf-controls output')?.textContent==='Pàgina 1 de 3' && !!document.querySelector('.freya-pdf-canvas'),null,{timeout:12000});
+  await pwa.locator('.freya-pdf-controls button[aria-label="Pàgina següent"]').click();
+  await pwa.waitForFunction(()=>document.querySelector('.freya-pdf-controls output')?.textContent==='Pàgina 2 de 3',null,{timeout:12000});
+  await pwa.locator('.freya-pdf-controls button[aria-label="Pàgina següent"]').click();
+  await pwa.waitForFunction(()=>document.querySelector('.freya-pdf-controls output')?.textContent==='Pàgina 3 de 3',null,{timeout:12000});
+  await pwa.evaluate(async()=>{
     closeDocumentViewer();
     if(!document.getElementById('documentViewer').classList.contains('hidden'))throw Error('Cached PDF viewer did not close');
     await clearOfflineDocumentUserData(session.user.id);
-    return {localUrl:localUrl.startsWith('blob:'),byteCount:raw.length,offline:navigator.onLine===false};
   });
   assert.equal(reopenedDocument.offline,true);
-  assert.equal(reopenedDocument.localUrl,true);
-  assert.equal(reopenedDocument.byteCount,9);
-  console.log('PASS PWA cold reopens encrypted PDF in mode avio with simulated authenticated user scope');
+  assert.ok(reopenedDocument.byteCount>100,'The offline reader must use genuine PDF bytes');
+  console.log('PASS PWA cold reopens a 3-page encrypted PDF offline and navigates all pages inside Freya');
   console.log('PASS PWA cold reopens offline with locally bundled Supabase runtime');
   assert.deepEqual(missing.filter(path=>/\.m?js$/.test(path)),[]);
   console.log('PASS PWA old cache retired; current cache contains full graph and loads modules offline');
