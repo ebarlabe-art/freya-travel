@@ -20,6 +20,7 @@ const runtimeDomain=[
   'import-proposal.mjs',
   'import-itinerary-proposal.mjs',
   'import-itinerary-review.mjs',
+  'import-itinerary-write.mjs',
   'travel-book-proposal.mjs',
   'travel-book-batch.mjs',
   'travel-book-editor-state.mjs',
