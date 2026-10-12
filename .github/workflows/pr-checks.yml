@@ -34,6 +34,8 @@ jobs:
           node "$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/cli.js" install --with-deps chromium
       - name: Travel Book real Pages build browser regression
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-travel-book-runtime-browser.mjs
+      - name: Private PDF three-page browser regression
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-pdf-browser.mjs
 
   legacy-suite:
     runs-on: ubuntu-latest
