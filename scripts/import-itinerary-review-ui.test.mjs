@@ -10,6 +10,7 @@ test('A2.7: import lives inside generic itinerary without affecting London',()=>
  assert.match(html,/id="itineraryImportPanel"/);
  assert.match(html,/id="itineraryImportCandidates"/);
  assert.match(html,/id="itineraryImportWrite" disabled/);
+ assert.match(html,/Desar activitats seleccionades/);
  assert.match(script,/isLondonTrip\(\)/);
 });
 test('A2.7: AI PDF processing requires explicit opt-in, with no silent document sends',()=>{
@@ -50,11 +51,20 @@ test('A2.7 public: a document-source menu chooses PDF, photo, or a Freya file',(
  assert.doesNotMatch(script.slice(start,stop),/uploadTripDocument|functions\.invoke/);
  assert.match(script,/\$\('itineraryImportAnalyze'\)\.onclick/);
 });
-test('A2.7: UI does not write itinerary and leaves final save disabled',()=>{
+test('A2.8: write requires a real click, authenticated scope, confirmation and conflict-ignore insert',()=>{
  assert.match(script,/state\.api\.summarizeItineraryReview\(state\.review,existing\)/);
- assert.doesNotMatch(script,/db\.from\('trip_itinerary_items'\)/);
- assert.doesNotMatch(script,/db\.rpc\(/);
- assert.doesNotMatch(script,/\.insert\(|\.update\(|\.delete\(|\.upsert\(/);
+ assert.match(script,/async function writeConfirmedItineraryImport\(/);
+ assert.match(script,/itineraryImportStillCurrent\(state\)/);
+ assert.match(script,/state\.saveApi\.prepareItineraryImportRows/);
+ assert.match(script,/if\(!ok\)/);
+ assert.match(script,/db\.from\('trip_itinerary_items'\)\.upsert\(rows/);
+ assert.match(script,/onConflict:'trip_id,id',ignoreDuplicates:true/);
+ assert.match(script,/\$\('itineraryImportWrite'\)\.onclick/);
+ assert.doesNotMatch(script,/db\.from\('trip_itinerary_items'\)\.delete/);
+ assert.doesNotMatch(script,/db\.from\('trip_itinerary_items'\)\.update/);
+ const analyze=script.slice(script.indexOf('async function processItineraryImportDocument('),
+  script.indexOf('const itineraryImportReviewLabels'));
+ assert.doesNotMatch(analyze,/\.upsert\(|\.insert\(|\.update\(/);
 });
 test('A2.7: account, trip and view changes clear preview and block stale requests',()=>{
  assert.match(html,/if\(next\?\.user\?\.id!==session\?\.user\?\.id\)closeItineraryImport\(\)/);
@@ -73,7 +83,9 @@ test('A2.7: reviewed fields are escaped before being inserted in HTML',()=>{
 test('A2.7: Pages includes the same module graph as PWA cache',()=>{
  assert.match(pack,/'import-itinerary-proposal\.mjs'/);
  assert.match(pack,/'import-itinerary-review\.mjs'/);
+ assert.match(pack,/'import-itinerary-write\.mjs'/);
  assert.match(worker,/\.\/domain\/import-itinerary-proposal\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-review\.mjs/);
- assert.match(worker,/freya-travel-release-6444-v11/);
+ assert.match(worker,/\.\/domain\/import-itinerary-write\.mjs/);
+ assert.match(worker,/freya-travel-release-6444-v12/);
 });
