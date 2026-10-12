@@ -8552,7 +8552,6 @@ function showDocumentViewer(doc,signedUrl){
       documentViewerPdfController=instance;
     }).catch(error=>{
       if(controller.signal.aborted||viewerToken!==documentViewerOpenSequence)return;
-      window.__freyaPreviewPdfError={name:error?.name,message:error?.message,stack:String(error?.stack||'').slice(0,500)};
       const message=document.createElement('p');
       message.className='freya-pdf-error';
       message.textContent='No s’ha pogut mostrar aquest PDF. Tanca i torna-ho a provar.';
