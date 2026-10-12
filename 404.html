@@ -436,6 +436,11 @@
 
     /* A2.7 · La revisió no aplica cap canvi a les dades del viatge. */
     #itineraryImportPanel .topbar h3{margin:0}
+    .itinerary-import-source-choice{display:grid;gap:10px;padding:16px;border:1px solid #ded4e7;border-radius:16px;background:#faf8fc}
+    .itinerary-import-source-choice p{margin:0;color:var(--muted);font-size:.9rem}
+    .itinerary-import-source-choice button{min-height:48px}
+    #itineraryImportSelectedName{font-weight:700;overflow-wrap:anywhere}
+    #itineraryImportAnalyze{width:100%;min-height:48px}
     #itineraryImportPanel select,#itineraryImportPanel input:not([type=checkbox]),#itineraryImportPanel textarea{width:100%;max-width:100%;padding:12px;border:1px solid #cac4d0;border-radius:12px;font:inherit;background:#fff}
     #itineraryImportPanel textarea{min-height:78px}
     #itineraryImportPanel button:disabled{opacity:.55;cursor:not-allowed}
@@ -1816,18 +1821,24 @@
         <div id="genericItineraryLoading" class="generic-itinerary-loading hidden">Preparant l’itinerari…</div>
         <section id="itineraryImportPanel" class="card hidden" aria-labelledby="itineraryImportTitle">
           <div class="topbar"><h3 id="itineraryImportTitle">Importa un itinerari des d’un PDF</h3><button id="itineraryImportClose" class="ghost" type="button">Tanca</button></div>
-          <p class="muted">Tria un PDF que ja tinguis a Documents o puja'n un de nou. Freya prepararà una proposta editable, però no afegirà res al viatge sense una confirmació posterior.</p>
-          <p id="itineraryImportStatus" class="message" role="status" aria-live="polite">Tria un document per començar.</p>
+          <p class="muted">Primer tria d'on vols agafar el PDF. Després, si ho autoritzes, Freya prepararà una proposta editable. No afegirà cap activitat al viatge automàticament.</p>
           <div id="itineraryImportSource" class="stack">
-            <label for="itineraryImportExisting"><strong>PDF privat del viatge</strong></label>
-            <select id="itineraryImportExisting"><option value="">Selecciona un PDF…</option></select>
-            <label class="itinerary-import-consent"><input id="itineraryImportConsent" type="checkbox"> Entenc que el contingut complet del PDF seleccionat s'enviarà al servei d'IA d'OpenAI per interpretar-lo. Revisaré la proposta abans de desar-la al viatge.</label>
-            <div class="import-reservation-actions">
-              <button id="itineraryImportAnalyze" type="button" disabled>Analitza el PDF seleccionat</button>
-              <button id="itineraryImportUpload" type="button" class="secondary" disabled>Puja un PDF i analitza'l</button>
+            <div class="itinerary-import-source-choice">
+              <strong>1 · Des de l'iPhone</strong>
+              <p>Obre Fitxers i tria un PDF. Només es pujarà a Documents del viatge quan demanis analitzar-lo.</p>
+              <button id="itineraryImportUpload" type="button" class="secondary">📁 Tria un PDF a Fitxers</button>
               <input id="itineraryImportUploadFile" type="file" accept="application/pdf,.pdf" class="hidden">
             </div>
+            <div class="itinerary-import-source-choice">
+              <label for="itineraryImportExisting"><strong>2 · O des de Documents de Freya</strong></label>
+              <p>Aquí només trobaràs els PDF guardats dins d'aquest viatge.</p>
+              <select id="itineraryImportExisting"><option value="">Tria un PDF de Freya…</option></select>
+            </div>
+            <p id="itineraryImportSelectedName" class="muted">Encara no has triat cap PDF.</p>
+            <label class="itinerary-import-consent"><input id="itineraryImportConsent" type="checkbox"> Autoritzo que Freya enviï aquest PDF complet al servei d'IA d'OpenAI per interpretar-lo. Revisaré les dades abans de desar-les al viatge.</label>
+            <button id="itineraryImportAnalyze" type="button" disabled>Analitza aquest PDF</button>
           </div>
+          <p id="itineraryImportStatus" class="message" role="status" aria-live="polite">Tria un PDF per començar.</p>
           <section id="itineraryImportPreview" class="hidden" aria-labelledby="itineraryImportPreviewTitle">
             <h3 id="itineraryImportPreviewTitle">Revisa la proposta</h3>
             <p id="itineraryImportSummary" class="muted"></p>
@@ -8258,9 +8269,14 @@ function closeItineraryImport(){
  $('itineraryImportUploadFile').value='';
 }
 function updateItineraryImportConsent(){
- const state=itineraryImportState,allowed=!!state&&itineraryImportStillCurrent(state)&&$('itineraryImportConsent').checked;
- $('itineraryImportAnalyze').disabled=!allowed||!$('itineraryImportExisting').value;
- $('itineraryImportUpload').disabled=!allowed;
+ const state=itineraryImportState,current=!!state&&itineraryImportStillCurrent(state);
+ const selected=current&&$('itineraryImportExisting').value;
+ $('itineraryImportUpload').disabled=!current||!!state.busy;
+ $('itineraryImportAnalyze').disabled=!current||!!state.busy||
+  !$('itineraryImportConsent').checked||!(state.file||selected);
+ $('itineraryImportSelectedName').textContent=state?.file?'PDF de l’iPhone: '+state.file.name:
+  selected?'PDF de Freya: '+($('itineraryImportExisting').selectedOptions[0]?.textContent||'Document'):
+  'Encara no has triat cap PDF.';
 }
 async function openItineraryImport(){
  if(!trip||!session||isLondonTrip()||offlineReadOnlySession||connectionUnavailable()){
@@ -8268,19 +8284,19 @@ async function openItineraryImport(){
  }
  closeItineraryImport();
  const state={tripId:trip.id,userId:session.user.id,generation:tripLoadGeneration,
-  epoch:++itineraryImportEpoch,review:null,api:null,busy:false,documentId:null};
+  epoch:++itineraryImportEpoch,review:null,api:null,busy:false,documentId:null,file:null,uploadedDoc:null};
  itineraryImportState=state;
  $('itineraryImportPanel').classList.remove('hidden');
  $('itineraryImportSource').classList.remove('hidden');
  $('itineraryImportPreview').classList.add('hidden');
  $('itineraryImportStatus').textContent='Carregant els PDFs del viatge…';
- $('itineraryImportExisting').innerHTML='<option value="">Selecciona un PDF…</option>';
+ $('itineraryImportExisting').innerHTML='<option value="">Tria un PDF de Freya…</option>';
  updateItineraryImportConsent();
  try{
   await loadDocuments(true);
   if(!itineraryImportStillCurrent(state))return;
   const docs=(documentRows||[]).filter(row=>row.mime_type==='application/pdf');
-  $('itineraryImportExisting').innerHTML='<option value="">Selecciona un PDF…</option>'+
+  $('itineraryImportExisting').innerHTML='<option value="">Tria un PDF de Freya…</option>'+
    docs.map(doc=>'<option value="'+esc(doc.id)+'">'+esc(doc.title||doc.file_name||'PDF')+'</option>').join('');
   $('itineraryImportStatus').textContent=docs.length?'Tria un PDF existent o puja’n un de nou.':'Encara no hi ha PDFs al viatge. Pots pujar-ne un de nou.';
  }catch(error){
@@ -8299,7 +8315,7 @@ function itineraryImportErrorMessage(code){
   no_itinerary_candidates:'No s’han trobat activitats amb prou evidència.',
   invalid_transcript:'La lectura automàtica no és prou fiable per crear una proposta.',
   provider_rate_limited:'El servei està ocupat. Torna-ho a provar més tard.',
-  import_not_configured:'Aquesta funció encara no està activada en l’entorn de proves.',
+  import_not_configured:'La lectura amb IA encara no està configurada a Freya PROVES. No s’ha afegit cap activitat a l’itinerari.',
   provider_error:'No s’ha pogut interpretar el PDF. Prova-ho més tard.',
   provider_invalid_response:'El servei de lectura ha retornat una resposta incorrecta.'
  })[code]||'No s’ha pogut completar la lectura. El viatge no s’ha modificat.';
@@ -8330,7 +8346,8 @@ async function processItineraryImportDocument(doc){
   renderItineraryImportPreview();
  }catch(error){
   if(itineraryImportStillCurrent(state)&&state.epoch===requestEpoch)
-   $('itineraryImportStatus').textContent=error?.message||'No s’ha pogut llegir el PDF.';
+   $('itineraryImportStatus').textContent=(state.uploadedDoc?'El PDF és als Documents del viatge, però l’anàlisi ha fallat. ':'')+
+    (error?.message||'No s’ha pogut llegir el PDF.');
  }finally{
   if(itineraryImportStillCurrent(state)&&state.epoch===requestEpoch){state.busy=false;updateItineraryImportConsent()}
  }
@@ -8385,31 +8402,47 @@ function renderItineraryImportPreview(){
 $('openItineraryImport').onclick=openItineraryImport;
 $('itineraryImportClose').onclick=closeItineraryImport;
 $('itineraryImportConsent').onchange=updateItineraryImportConsent;
-$('itineraryImportExisting').onchange=updateItineraryImportConsent;
-$('itineraryImportAnalyze').onclick=()=>{
- const state=itineraryImportState;
- if(!itineraryImportStillCurrent(state)||!$('itineraryImportConsent').checked)return;
- const doc=(documentRows||[]).find(row=>row.id===$('itineraryImportExisting').value&&row.mime_type==='application/pdf');
- if(!doc){$('itineraryImportStatus').textContent='Selecciona un PDF privat del viatge.';return}
- void processItineraryImportDocument(doc);
+$('itineraryImportExisting').onchange=()=>{
+ const state=itineraryImportState;if(!itineraryImportStillCurrent(state)||state.busy)return;
+ state.file=null;state.uploadedDoc=null;$('itineraryImportUploadFile').value='';
+ $('itineraryImportConsent').checked=false;
+ $('itineraryImportStatus').textContent=$('itineraryImportExisting').value?
+  'PDF de Freya seleccionat. Autoritza l’anàlisi per continuar.':'Tria un PDF per començar.';
+ updateItineraryImportConsent();
 };
 $('itineraryImportUpload').onclick=()=>{
- if(!itineraryImportStillCurrent(itineraryImportState)||!$('itineraryImportConsent').checked)return;
+ const state=itineraryImportState;
+ if(!itineraryImportStillCurrent(state)||state.busy)return;
  $('itineraryImportUploadFile').value='';$('itineraryImportUploadFile').click();
 };
-$('itineraryImportUploadFile').onchange=async()=>{
+$('itineraryImportUploadFile').onchange=()=>{
  const state=itineraryImportState,file=$('itineraryImportUploadFile').files?.[0];
- if(!itineraryImportStillCurrent(state)||!$('itineraryImportConsent').checked||!file||state.busy)return;
+ if(!itineraryImportStillCurrent(state)||!file||state.busy)return;
  if(file.type!=='application/pdf'||!file.name.toLowerCase().endsWith('.pdf')||file.size>10*1024*1024||file.size===0){
   $('itineraryImportStatus').textContent='Tria un PDF vàlid de 10 MB com a màxim.';return;
  }
+ state.file=file;state.uploadedDoc=null;$('itineraryImportExisting').value='';
+ $('itineraryImportConsent').checked=false;
+ $('itineraryImportStatus').textContent='PDF de l’iPhone seleccionat. Encara no s’ha pujat ni analitzat. Autoritza l’anàlisi per continuar.';
+ updateItineraryImportConsent();
+};
+async function processItineraryImportSelected(){
+ const state=itineraryImportState;
+ if(!itineraryImportStillCurrent(state)||state.busy||!$('itineraryImportConsent').checked)return;
+ if(!state.file){
+  const doc=(documentRows||[]).find(row=>row.id===$('itineraryImportExisting').value&&row.mime_type==='application/pdf');
+  if(!doc){$('itineraryImportStatus').textContent='Tria un PDF de Freya o de Fitxers.';return}
+  await processItineraryImportDocument(doc);return;
+ }
+ if(state.uploadedDoc){await processItineraryImportDocument(state.uploadedDoc);return}
+ const file=state.file;
  state.busy=true;state.epoch=++itineraryImportEpoch;const requestEpoch=state.epoch;
- $('itineraryImportAnalyze').disabled=true;$('itineraryImportUpload').disabled=true;
- $('itineraryImportStatus').textContent='Desant el PDF al viatge abans de llegir-lo…';
+ updateItineraryImportConsent();
+ $('itineraryImportStatus').textContent='Desant el PDF a Documents del viatge…';
  try{
   const doc=await uploadTripDocument(file,file.name.replace(/\.pdf$/i,'')||'Itinerari','Altres');
   if(!itineraryImportStillCurrent(state)||state.epoch!==requestEpoch)return;
-  state.busy=false;
+  state.uploadedDoc=doc;state.busy=false;
   await processItineraryImportDocument(doc);
  }catch(error){
   if(itineraryImportStillCurrent(state)&&state.epoch===requestEpoch)
@@ -8417,7 +8450,8 @@ $('itineraryImportUploadFile').onchange=async()=>{
  }finally{
   if(itineraryImportStillCurrent(state)&&state.epoch===requestEpoch){state.busy=false;updateItineraryImportConsent()}
  }
-};
+}
+$('itineraryImportAnalyze').onclick=()=>{void processItineraryImportSelected()};
 $('itineraryImportCandidates').addEventListener('change',event=>{
  const target=event.target,state=itineraryImportState;
  if(!itineraryImportStillCurrent(state)||!state.review||!state.api)return;
