@@ -77,6 +77,16 @@ test('A2.6.2: PDF and photo formats are explicitly restricted and signature-vali
  assert.match(endpoint,/MAX_PDF_BYTES=10\*1024\*1024/);
  assert.match(itineraryPdfTextInstructions(),/PDF o foto/);
 });
+test('A2 pilot: AI requires explicit server-side switch and approved model; provider output bounded',()=>{
+ assert.match(endpoint,/const AI_ENABLED=Deno\.env\.get\('A2_IMPORT_ENABLED'\)==='true'/);
+ assert.match(endpoint,/const MODEL=Deno\.env\.get\('A2_ITINERARY_MODEL'\)\|\|''/);
+ assert.match(endpoint,/const PILOT_MODEL='gpt-4\.1-mini'/);
+ assert.match(endpoint,/!AI_ENABLED\|\|!OPENAI_API_KEY\|\|MODEL!==PILOT_MODEL/);
+ assert.match(endpoint,/const PILOT_MAX_OUTPUT_TOKENS=5000/);
+ assert.match(endpoint,/max_output_tokens:PILOT_MAX_OUTPUT_TOKENS/);
+ assert.match(endpoint,/store:false/);
+ assert.doesNotMatch(endpoint,/console\.log|console\.error/);
+});
 test('A2.6.1: bounded PDF payload, provider content not logged, no auto deployment',()=>{
  assert.match(endpoint,/MAX_PDF_BYTES=10\*1024\*1024/);
  assert.match(endpoint,/store:false/);
