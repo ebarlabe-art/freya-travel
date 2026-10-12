@@ -10,6 +10,32 @@ const dist=resolve(process.env.PAGES_DIST||resolve(root,'dist'));
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE?pathToFileURL(process.env.PLAYWRIGHT_MODULE).href:'playwright');
 const mime={'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript','.css':'text/css','.png':'image/png','.webmanifest':'application/manifest+json'};
 const missing=[];
+
+function samplePrivatePdf(){
+  // Three genuine PDF pages. Stable ASCII cross-reference offsets for offline E2E.
+  const contents='<< /Length 0 >>\nstream\nendstream';
+  const objects=[
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Count 3 /Kids [3 0 R 5 0 R 7 0 R] >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Resources << >> /Contents 4 0 R >>',
+    contents,
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Resources << >> /Contents 6 0 R >>',
+    contents,
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Resources << >> /Contents 8 0 R >>',
+    contents
+  ];
+  let pdf='%PDF-1.4\n',offsets=[0];
+  for(let i=0;i<objects.length;i++){
+    offsets.push(pdf.length);
+    pdf+=String(i+1)+' 0 obj\n'+objects[i]+'\nendobj\n';
+  }
+  const xref=pdf.length;
+  pdf+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
+  for(const pos of offsets.slice(1))pdf+=String(pos).padStart(10,'0')+' 00000 n \n';
+  pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF\n';
+  return Array.from(Buffer.from(pdf,'ascii'));
+}
+
 const server=createServer(async(req,res)=>{
   const pathname=new URL(req.url,'http://localhost').pathname;
   const file=resolve(dist,decodeURIComponent(pathname.replace(/^\/freya-travel\//,''))||'index.html');
@@ -40,6 +66,101 @@ try{
   console.log('PASS fresh browser: all Travel Book entry modules load from domain/ with the editor dependency bundled');
   await ctx.close();
 
+
+
+  // A2.7 E2E: interactive review against the actual built Pages runtime,
+  // with a fake private PDF provider and no production network or writes.
+  const itineraryCtx=await context({serviceWorkers:'block'});
+  const itineraryPage=await itineraryCtx.newPage(),itineraryErrors=[];
+  itineraryPage.on('pageerror',err=>itineraryErrors.push(err.message));
+  await itineraryPage.goto(url,{waitUntil:'load'});
+  await itineraryPage.waitForFunction(()=>authInitializationResolved===true);
+  await itineraryPage.evaluate(()=>{
+    const userId='test-a27-owner',tripId='test-a27-trip',docId='6bada382-4bfb-4e15-a102-f590a750671d';
+    session={user:{id:userId,email:'a27@example.invalid'},access_token:'test-a27-token'};
+    trip={id:tripId,name:'Viatge A2.7',experience_key:null,time_zone:'Europe/Riga'};
+    tripLoadGeneration++;
+    documentRows=[{id:docId,trip_id:tripId,title:'Ruta de prova',file_name:'ruta.pdf',
+      mime_type:'application/pdf',file_path:tripId+'/ruta.pdf'}];
+    // Use existing UI wiring but intercept only external resources.
+    loadDocuments=async()=>documentRows;
+    const originalFrom=db.from.bind(db);
+    Object.defineProperty(db,'from',{configurable:true,value:(name)=>{
+      if(name!=='travel_documents')return originalFrom(name);
+      return {select:()=>({eq:()=>({eq:()=>({order:async()=>({data:[],error:null})})})})};
+    }});
+    window.__a27Calls=[];
+    // Supabase exposes .functions through a getter returning a new client.
+    // Shadow that getter on this isolated mock page instead of mutating its transient result.
+    Object.defineProperty(db,'functions',{configurable:true,value:{invoke:async(name,options)=>{
+      window.__a27Calls.push({name,body:options?.body});
+      if(name!=='import-itinerary')throw Error('Unexpected backend request');
+      const field=(value,confidence='high')=>({value,confidence,
+        evidence:[{kind:'text',excerpt:value,page:2}]});
+      return {data:{proposal:{
+        schema_version:1,source:{kind:'document',document_id:docId,
+          file_name:'ruta.pdf',mime_type:'application/pdf'},
+        candidates:[{
+          source_order:0,classification_hint:'activity',
+          fields:{title:field('Museu marítim'),local_date:field('2026-12-27'),
+            start_local_time:field('09:30'),time_zone:field('Europe/Riga'),
+            notes:field('Ruta de prova','medium')},
+          warnings:[],review_flags:['uncertain_extraction']
+        }],warnings:[],read_only:true,requires_user_confirmation:true
+      }},error:null};
+    }}});
+    show('tripView');hide('auth');setAppView('itineraryView');
+  });
+  await itineraryPage.locator('#openItineraryImport').click();
+  assert.equal(await itineraryPage.locator('#itineraryImportSourceMenu').isVisible(),false,
+    'The document-source menu must start collapsed');
+  assert.equal(await itineraryPage.locator('#itineraryImportAnalyze').isEnabled(),false);
+  await itineraryPage.locator('#itineraryImportUpload').click();
+  assert.equal(await itineraryPage.locator('#itineraryImportSourceMenu').isVisible(),true);
+  await itineraryPage.locator('#itineraryImportChooseExisting').click();
+  await itineraryPage.locator('#itineraryImportExisting option').last().waitFor({state:'attached'});
+  await itineraryPage.locator('#itineraryImportExisting').selectOption('6bada382-4bfb-4e15-a102-f590a750671d');
+  assert.equal(await itineraryPage.locator('#itineraryImportAnalyze').isEnabled(),false,
+    'Consent must gate even an existing private PDF');
+  assert.equal(await itineraryPage.evaluate(()=>window.__a27Calls.length),0);
+  await itineraryPage.locator('#itineraryImportConsent').check();
+  await itineraryPage.locator('#itineraryImportAnalyze').click();
+  try{
+    await itineraryPage.locator('#itineraryImportCandidates [data-import-field="title"]').waitFor({state:'visible',timeout:9000});
+  }catch(error){
+    const diagnostic=await itineraryPage.evaluate(()=>({
+      status:document.getElementById('itineraryImportStatus')?.textContent,
+      sourceVisible:!document.getElementById('itineraryImportSource')?.classList.contains('hidden'),
+      previewVisible:!document.getElementById('itineraryImportPreview')?.classList.contains('hidden'),
+      candidateCount:document.querySelectorAll('[data-import-candidate]').length,
+      hasReview:!!itineraryImportState?.review,
+      busy:itineraryImportState?.busy,
+      calls:window.__a27Calls
+    }));
+    console.error('A27_E2E_DIAGNOSTIC',JSON.stringify({diagnostic,errors:itineraryErrors}));
+    throw error;
+  }
+  assert.deepEqual(await itineraryPage.evaluate(()=>window.__a27Calls),[{
+    name:'import-itinerary',body:{trip_id:'test-a27-trip',document_id:'6bada382-4bfb-4e15-a102-f590a750671d'}
+  }]);
+  assert.equal(await itineraryPage.locator('#itineraryImportWrite').isEnabled(),false,
+    'Preview cannot save itinerary items');
+  await itineraryPage.locator('[data-import-edit="0"][data-import-field="title"]').fill('Museu corregit');
+  await itineraryPage.locator('[data-import-edit="0"][data-import-field="title"]').dispatchEvent('change');
+  assert.equal(await itineraryPage.locator('[data-import-edit="0"][data-import-field="title"]').inputValue(),'Museu corregit');
+  assert.deepEqual(await itineraryPage.evaluate(()=>({
+    title:itineraryImportState.review.items[0].edits.title,
+    original:itineraryImportState.review.items[0].original.title,
+    evidence:itineraryImportState.review.items[0].evidence.title[0].excerpt,
+    readOnly:itineraryImportState.review.read_only,
+    count:window.__a27Calls.length
+  })),{title:'Museu corregit',original:'Museu marítim',evidence:'Museu marítim',readOnly:true,count:1});
+  await itineraryPage.locator('#itineraryImportClose').click();
+  assert.equal(await itineraryPage.locator('#itineraryImportPanel').isVisible(),false);
+  assert.equal(await itineraryPage.evaluate(()=>itineraryImportState),null);
+  assert.deepEqual(itineraryErrors,[]);
+  await itineraryCtx.close();
+  console.log('PASS A2.7 real Pages UI consent, private-PDF preview, corrections and no-write gate');
 
   // Functional encrypted vault regression: real IndexedDB + WebCrypto, no
   // external Supabase requests, no real documents or credentials.
@@ -259,14 +380,14 @@ try{
   // Seed one private PDF under an explicitly simulated valid local account
   // while network is available. Do not use real accounts or Supabase data.
   await pwa.waitForFunction(()=>authInitializationResolved===true);
-  await pwa.evaluate(async()=>{
+  await pwa.evaluate(async sampleBytes=>{
     session={user:{id:'test-offline-cold-owner'}};
     trip={id:'test-offline-cold-trip',experience_key:null};
     tripLoadGeneration++;
     const scope=offlineDocScope();
     const doc={id:'cold-pass',file_path:'test-offline-cold-trip/pass.pdf',file_name:'pass.pdf',mime_type:'application/pdf'};
-    await offlineDocSaveBlob(scope,doc,new Blob([new Uint8Array([37,80,68,70,45,49,46,55,10])],{type:'application/pdf'}));
-  });
+    await offlineDocSaveBlob(scope,doc,new Blob([new Uint8Array(sampleBytes)],{type:'application/pdf'}));
+  },samplePrivatePdf());
   await pwaCtx.setOffline(true);
   for(const api of apis)await pwa.evaluate(async name=>{await window[name]()},api);
   // Force a cold navigation with network completely unavailable: testing
@@ -287,25 +408,49 @@ try{
     const doc={id:'cold-pass',file_path:'test-offline-cold-trip/pass.pdf',file_name:'pass.pdf',mime_type:'application/pdf'};
     const cached=await offlineDocGetBlob(offlineDocScope(),doc);
     if(!cached)throw Error('Cold reopened PWA cannot decrypt its cached document');
+    // Mirror a real signed-in traveler: the operational trip host must be visible.
+    show('tripView');hide('auth');setAppView('documentsView');
     await openDocument(doc.id,[doc]);
-    const iframe=document.querySelector('#documentViewerBody iframe');
-    if(!iframe?.src?.startsWith('blob:'))throw Error('Cached PDF was not opened locally');
+    const reader=document.querySelector('#documentViewerBody .freya-pdf-viewer');
+    if(!reader)throw Error('Private offline PDF did not mount the internal reader');
     const raw=new Uint8Array(await cached.blob.arrayBuffer());
-    const localUrl=iframe.src;
+    if(raw[0]!==37||raw[1]!==80||raw[2]!==68||raw[3]!==70)throw Error('Offline bytes are not a PDF');
+    // Expose the actual trip screen in this synthetic signed-in test session.
+    // A PDF overlay nested in a hidden trip view is not interactable by Playwright.
+    show('tripView');hide('auth');
+    return {byteCount:raw.length,offline:navigator.onLine===false};
+  });
+  try{
+    await pwa.waitForFunction(()=>document.querySelector('.freya-pdf-controls output')?.textContent==='Pàgina 1 de 3' && !!document.querySelector('.freya-pdf-canvas'),null,{timeout:12000});
+  }catch(error){
+    const state=await pwa.evaluate(()=>({
+      pageText:document.getElementById('documentViewerBody')?.textContent?.slice(0,500),
+      pdfOutput:document.querySelector('.freya-pdf-controls output')?.textContent,
+      hasCanvas:!!document.querySelector('.freya-pdf-canvas'),
+      hasPdfRoot:!!document.querySelector('.freya-pdf-viewer'),
+      pdfDebugError:document.querySelector('.freya-pdf-viewer')?.dataset?.pdfDebugError,
+      hidden:document.getElementById('documentViewer')?.classList.contains('hidden'),
+      docScope:typeof session?.user?.id,
+      pdfFailure:window.__freyaPreviewPdfError||null
+    }));
+    throw new Error('Offline PDF page-render diagnostic: '+JSON.stringify({state,offlineErrors,missing}),{cause:error});
+  }
+  await pwa.locator('.freya-pdf-controls button[aria-label="Pàgina següent"]').click();
+  await pwa.waitForFunction(()=>document.querySelector('.freya-pdf-controls output')?.textContent==='Pàgina 2 de 3',null,{timeout:12000});
+  await pwa.locator('.freya-pdf-controls button[aria-label="Pàgina següent"]').click();
+  await pwa.waitForFunction(()=>document.querySelector('.freya-pdf-controls output')?.textContent==='Pàgina 3 de 3',null,{timeout:12000});
+  await pwa.evaluate(async()=>{
     closeDocumentViewer();
     if(!document.getElementById('documentViewer').classList.contains('hidden'))throw Error('Cached PDF viewer did not close');
     await clearOfflineDocumentUserData(session.user.id);
-    return {localUrl:localUrl.startsWith('blob:'),byteCount:raw.length,offline:navigator.onLine===false};
   });
   assert.equal(reopenedDocument.offline,true);
-  assert.equal(reopenedDocument.localUrl,true);
-  assert.equal(reopenedDocument.byteCount,9);
-  console.log('PASS PWA cold reopens encrypted PDF in mode avio with simulated authenticated user scope');
+  assert.ok(reopenedDocument.byteCount>100,'The offline reader must use genuine PDF bytes');
+  console.log('PASS PWA cold reopens a 3-page encrypted PDF offline and navigates all pages inside Freya');
   console.log('PASS PWA cold reopens offline with locally bundled Supabase runtime');
   assert.deepEqual(missing.filter(path=>/\.m?js$/.test(path)),[]);
   console.log('PASS PWA old cache retired; current cache contains full graph and loads modules offline');
   await pwaCtx.close();
-
 
 async function visibleOfflineTripCard(page,tripId,timeout=15000){
   const card=page.locator('[data-select-trip="'+tripId+'"]');
@@ -336,7 +481,7 @@ async function visibleOfflineTripCard(page,tripId,timeout=15000){
   await coldOnline.goto(url,{waitUntil:'load'});
   await coldOnline.waitForFunction(()=>!!navigator.serviceWorker.controller&&authInitializationResolved===true);
   await coldOnline.locator('#loginCard').waitFor({state:'visible'});
-  await coldOnline.evaluate(async()=>{
+  await coldOnline.evaluate(async sampleBytes=>{
     const userId='test-offline-ui-owner',tripId='test-offline-ui-trip';
     // Simulated previously authenticated online session (no real credentials).
     session={user:{id:userId,email:'offline-test@example.invalid'},access_token:'test-only-online-token'};
@@ -358,30 +503,13 @@ async function visibleOfflineTripCard(page,tripId,timeout=15000){
     if(!mergeOfflineTripSnapshot({agenda,documentRows,tripStopRows:[],checklistItems:[],parkingRow,parkingSummary:parkingRow},tripId,userId))
       throw Error('Could not prepare offline trip data while online');
     trip={id:tripId,experience_key:null};tripLoadGeneration++;
-    await offlineDocSaveBlob(offlineDocScope(),parkingDoc,new Blob([new Uint8Array([37,80,68,70,45,49,46,52,10])],{type:'application/pdf'}));
-  });
+    await offlineDocSaveBlob(offlineDocScope(),parkingDoc,new Blob([new Uint8Array(sampleBytes)],{type:'application/pdf'}));
+  },samplePrivatePdf());
   await coldCtx.setOffline(true);
   await coldOnline.close(); // A fresh page must bootstrap without the previous JS globals.
   const coldReopen=await coldCtx.newPage();
   await coldReopen.goto(url,{waitUntil:'load'});
-  try{
-    await visibleOfflineTripCard(coldReopen,'test-offline-ui-trip');
-  }catch(error){
-    // Diagnose hidden cards without weakening the access gate or injecting a session.
-    const diagnostic=await coldReopen.evaluate(()=>({
-      online:navigator.onLine,authReady:authInitializationResolved,
-      user:session?.user?.id||null,readOnly:offlineReadOnlySession,
-      localGrantUser:readOfflineSessionGrant()?.userId||null,
-      storedTripCount:readOfflineTrips('test-offline-ui-owner')?.rows?.length??null,
-      loadedTripCount:trips.length,selectedTrip:trip?.id||null,
-      selectedView:visibleAppView(),
-      tripViewVisible:!document.getElementById('tripView').classList.contains('hidden'),
-      authVisible:!document.getElementById('auth').classList.contains('hidden'),
-      noTripVisible:!document.getElementById('noTrip').classList.contains('hidden')
-    }));
-    console.error('OFFLINE_COLD_REOPEN_DIAGNOSTIC',JSON.stringify(diagnostic));
-    throw error;
-  }
+  await visibleOfflineTripCard(coldReopen,'test-offline-ui-trip');
   assert.deepEqual(await coldReopen.evaluate(()=>({
     userId:session?.user?.id,readOnly:offlineReadOnlySession,hasToken:!!session?.access_token,online:navigator.onLine
   })),{userId:'test-offline-ui-owner',readOnly:true,hasToken:false,online:false});
@@ -402,11 +530,12 @@ async function visibleOfflineTripCard(page,tripId,timeout=15000){
   await reservationButton.waitFor({state:'visible',timeout:15000});
   assert.equal(await reservationButton.isEnabled(),true,'Veure reserva must stay enabled offline');
   await reservationButton.click();
-  await coldReopen.locator('#documentViewerBody iframe').waitFor({state:'attached',timeout:10000});
-  assert.equal(await coldReopen.locator('#documentViewerBody iframe').evaluate(el=>el.src.startsWith('blob:')),true,
-    'Parking reservation must use the existing encrypted offline PDF');
+  await coldReopen.waitForFunction(()=>document.querySelector('.freya-pdf-controls output')?.textContent==='Pàgina 1 de 3' && !!document.querySelector('.freya-pdf-canvas'),null,{timeout:12000});
+  await coldReopen.locator('.freya-pdf-controls button[aria-label="Pàgina següent"]').click();
+  await coldReopen.waitForFunction(()=>document.querySelector('.freya-pdf-controls output')?.textContent==='Pàgina 2 de 3',null,{timeout:12000});
   await coldReopen.locator('#documentViewerClose').click();
-  console.log('PASS cold offline Parking Veure reserva button opens prepared encrypted PDF');
+  assert.equal(await coldReopen.locator('#documentViewer').evaluate(el=>el.classList.contains('hidden')),true);
+  console.log('PASS cold offline Parking Veure reserva opens and paginates encrypted PDF without leaving Freya');
   await coldReopen.close();
   // iOS can report navigator.onLine=true despite no server connectivity.
   // Reopen from scratch with network still blocked and do not inject a session.
