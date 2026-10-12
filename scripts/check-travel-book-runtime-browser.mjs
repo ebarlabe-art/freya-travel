@@ -397,6 +397,8 @@ try{
     const doc={id:'cold-pass',file_path:'test-offline-cold-trip/pass.pdf',file_name:'pass.pdf',mime_type:'application/pdf'};
     const cached=await offlineDocGetBlob(offlineDocScope(),doc);
     if(!cached)throw Error('Cold reopened PWA cannot decrypt its cached document');
+    // Mirror a real signed-in traveler: the operational trip host must be visible.
+    show('tripView');hide('auth');setAppView('documentsView');
     await openDocument(doc.id,[doc]);
     const reader=document.querySelector('#documentViewerBody .freya-pdf-viewer');
     if(!reader)throw Error('Private offline PDF did not mount the internal reader');
