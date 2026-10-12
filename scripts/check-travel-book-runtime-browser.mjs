@@ -469,7 +469,7 @@ async function visibleOfflineTripCard(page,tripId,timeout=15000){
   await coldOnline.goto(url,{waitUntil:'load'});
   await coldOnline.waitForFunction(()=>!!navigator.serviceWorker.controller&&authInitializationResolved===true);
   await coldOnline.locator('#loginCard').waitFor({state:'visible'});
-  await coldOnline.evaluate(async()=>{
+  await coldOnline.evaluate(async sampleBytes=>{
     const userId='test-offline-ui-owner',tripId='test-offline-ui-trip';
     // Simulated previously authenticated online session (no real credentials).
     session={user:{id:userId,email:'offline-test@example.invalid'},access_token:'test-only-online-token'};
@@ -491,8 +491,8 @@ async function visibleOfflineTripCard(page,tripId,timeout=15000){
     if(!mergeOfflineTripSnapshot({agenda,documentRows,tripStopRows:[],checklistItems:[],parkingRow,parkingSummary:parkingRow},tripId,userId))
       throw Error('Could not prepare offline trip data while online');
     trip={id:tripId,experience_key:null};tripLoadGeneration++;
-    await offlineDocSaveBlob(offlineDocScope(),parkingDoc,new Blob([new Uint8Array([37,80,68,70,45,49,46,52,10])],{type:'application/pdf'}));
-  });
+    await offlineDocSaveBlob(offlineDocScope(),parkingDoc,new Blob([new Uint8Array(sampleBytes)],{type:'application/pdf'}));
+  },samplePrivatePdf());
   await coldCtx.setOffline(true);
   await coldOnline.close(); // A fresh page must bootstrap without the previous JS globals.
   const coldReopen=await coldCtx.newPage();
@@ -518,11 +518,12 @@ async function visibleOfflineTripCard(page,tripId,timeout=15000){
   await reservationButton.waitFor({state:'visible',timeout:15000});
   assert.equal(await reservationButton.isEnabled(),true,'Veure reserva must stay enabled offline');
   await reservationButton.click();
-  await coldReopen.locator('#documentViewerBody iframe').waitFor({state:'attached',timeout:10000});
-  assert.equal(await coldReopen.locator('#documentViewerBody iframe').evaluate(el=>el.src.startsWith('blob:')),true,
-    'Parking reservation must use the existing encrypted offline PDF');
+  await coldReopen.waitForFunction(()=>document.querySelector('.freya-pdf-controls output')?.textContent==='Pàgina 1 de 3' && !!document.querySelector('.freya-pdf-canvas'),null,{timeout:12000});
+  await coldReopen.locator('.freya-pdf-controls button[aria-label="Pàgina següent"]').click();
+  await coldReopen.waitForFunction(()=>document.querySelector('.freya-pdf-controls output')?.textContent==='Pàgina 2 de 3',null,{timeout:12000});
   await coldReopen.locator('#documentViewerClose').click();
-  console.log('PASS cold offline Parking Veure reserva button opens prepared encrypted PDF');
+  assert.equal(await coldReopen.locator('#documentViewer').evaluate(el=>el.classList.contains('hidden')),true);
+  console.log('PASS cold offline Parking Veure reserva opens and paginates encrypted PDF without leaving Freya');
   await coldReopen.close();
   // iOS can report navigator.onLine=true despite no server connectivity.
   // Reopen from scratch with network still blocked and do not inject a session.
