@@ -145,7 +145,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     documentZone=null;
     if(current)current.zone=null;
     warnings.add('Zona horària no reconeguda: cal revisar-la.');
-   }else if(tz)documentZone=tz;
+   }else if(tz&&!current&&!datePart&&!dayMarker)documentZone=tz;
    if(dayMarker&&!datePart){
     current=null;pendingDaypart=null;
     warnings.add('Hi ha dies numerats sense data completa: no s’ha inventat l’any.');
