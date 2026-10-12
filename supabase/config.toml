@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.import-reservation]
 verify_jwt = true
+
+[functions.import-itinerary]
+verify_jwt = true
