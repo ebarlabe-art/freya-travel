@@ -38,7 +38,7 @@ export async function stableItineraryImportId(tripId,documentId,sourceOrder){
   !Number.isInteger(sourceOrder)||sourceOrder<0||sourceOrder>=200)abort('Identificador de la importació invàlid.');
  const seed=new TextEncoder().encode('freya-import-itinerary-v1|'+tripId+'|'+documentId+'|'+sourceOrder);
  const bytes=new Uint8Array(await crypto.subtle.digest('SHA-256',seed)).slice(0,16);
- bytes[6]=(bytes[6]&15)|80;bytes[8]=(bytes[8]&63)|128;
+ bytes[6]=(bytes[6]&15)|0x80;bytes[8]=(bytes[8]&63)|128;
  const hex=[...bytes].map(byte=>byte.toString(16).padStart(2,'0')).join('');
  return [hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join('-');
 }
