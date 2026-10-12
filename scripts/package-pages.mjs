@@ -1,10 +1,12 @@
 import { copyFile, cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
+import { configurePagesBackend } from './configure-pages-backend.mjs';
 
 const root=new URL('../',import.meta.url);
 const dist=new URL('../dist/',import.meta.url);
 const runtimeDomain=[
+  'pdf-viewer.mjs',
   'place-resolution.mjs',
   'place-resolution-ui.mjs',
   'proposal-handoff.mjs',
@@ -18,6 +20,8 @@ const runtimeDomain=[
   'travel-builder.mjs',
   'trip-brief.mjs',
   'import-proposal.mjs',
+  'import-itinerary-proposal.mjs',
+  'import-itinerary-review.mjs',
   'travel-book-proposal.mjs',
   'travel-book-batch.mjs',
   'travel-book-editor-state.mjs',
@@ -56,11 +60,14 @@ for(const file of ['trip-brief.mjs','live-trip-brief.mjs','travel-builder.mjs','
 
 await mkdir(new URL('vendor/',dist),{recursive:true});
 await copyFile(new URL('node_modules/@supabase/supabase-js/dist/umd/supabase.js',root),new URL('vendor/supabase.js',dist));
+for(const [source,target] of [['build/pdf.mjs','pdf.mjs'],['build/pdf.worker.min.mjs','pdf.worker.mjs']]){
+  await copyFile(new URL('node_modules/pdfjs-dist/'+source,root),new URL('vendor/'+target,dist));
+}
 const builtIndexUrl=new URL('index.html',dist);
 const builtIndex=await readFile(builtIndexUrl,'utf8');
 const cdnSupabase='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 if(!builtIndex.includes(cdnSupabase))throw new Error('Supabase CDN runtime marker not found in built index');
-await writeFile(builtIndexUrl,builtIndex.replace(cdnSupabase,'./vendor/supabase.js'));
+await writeFile(builtIndexUrl,configurePagesBackend(builtIndex.replace(cdnSupabase,'./vendor/supabase.js'),process.env));
 
 for(const file of ['sw.js','manifest.webmanifest','itinerary.html']){
   await copyFile(new URL(file,root),new URL(file,dist));
