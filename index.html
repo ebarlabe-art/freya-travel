@@ -1830,11 +1830,11 @@
               <button id="itineraryImportChooseExisting" type="button" class="secondary">📂 Document o foto de Freya Travel</button>
             </div>
             <input id="itineraryImportUploadFile" type="file" accept="application/pdf,.pdf" class="hidden">
-            <input id="itineraryImportPhotoFile" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" class="hidden">
+            <input id="itineraryImportPhotoFile" type="file" accept="image/*,.heic,.heif" class="hidden">
             <div id="itineraryImportExistingWrap" class="itinerary-import-source-choice hidden">
               <label for="itineraryImportExisting"><strong>Documents i fotos d'aquest viatge</strong></label>
               <select id="itineraryImportExisting"><option value="">Selecciona un document o foto…</option></select>
-              <small>Les fotos HEIC/HEIF encara no es poden analitzar; tria una versió JPG, PNG o WebP.</small>
+              <small>Formats admesos: PDF, JPG, PNG i WebP. Les fotos HEIC de l'iPhone es convertiran a JPG si el dispositiu ho permet.</small>
             </div>
             <p id="itineraryImportSelectedName" class="muted">Encara no has triat cap document.</p>
             <label id="itineraryImportConsentWrap" class="itinerary-import-consent hidden"><input id="itineraryImportConsent" type="checkbox"> Autoritzo que el contingut complet d'aquest document s'enviï al servei d'IA d'OpenAI per interpretar-lo. Revisaré la proposta abans de desar-la al viatge.</label>
@@ -8448,24 +8448,55 @@ $('itineraryImportChooseExisting').onclick=()=>{
  $('itineraryImportExistingWrap').classList.remove('hidden');
  $('itineraryImportExisting').focus();
 };
-function itineraryImportSelectedLocalFile(file){
+async function itineraryImportNormalizePhoto(file){
+ if(itineraryImportMimeAllowed(file.type))return file;
+ if(!/\.(heic|heif)$/i.test(file.name)&&!/^image\/hei[cf]$/i.test(file.type))return file;
+ if(file.size>25*1024*1024)throw new Error('La foto HEIC és massa gran per convertir-la.');
+ const url=URL.createObjectURL(file);
+ try{
+  const image=new Image();image.src=url;await image.decode();
+  const originalWidth=image.naturalWidth,originalHeight=image.naturalHeight;
+  if(!originalWidth||!originalHeight)throw new Error('Imatge buida.');
+  const ratio=Math.min(1,2048/Math.max(originalWidth,originalHeight));
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.max(1,Math.round(originalWidth*ratio));
+  canvas.height=Math.max(1,Math.round(originalHeight*ratio));
+  const context=canvas.getContext('2d');if(!context)throw new Error('No es pot convertir la foto.');
+  context.drawImage(image,0,0,canvas.width,canvas.height);
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.87));
+  if(!blob||blob.type!=='image/jpeg')throw new Error('No es pot convertir la foto.');
+  return new File([blob],file.name.replace(/\.(heic|heif)$/i,'.jpg'),{type:'image/jpeg'});
+ }finally{URL.revokeObjectURL(url)}
+}
+async function itineraryImportSelectedLocalFile(file){
  const state=itineraryImportState;
  if(!itineraryImportStillCurrent(state)||!file||state.busy)return;
- if(!itineraryImportMimeAllowed(file.type)||file.size>10*1024*1024||file.size===0){
-  $('itineraryImportStatus').textContent='Tria un PDF o foto JPG, PNG o WebP de 10 MB com a màxim. Les fotos HEIC encara no es poden analitzar.';
-  return;
- }
- state.file=file;state.uploadedDoc=null;$('itineraryImportExisting').value='';
- $('itineraryImportExistingWrap').classList.add('hidden');
+ const requestEpoch=++itineraryImportEpoch;
+ state.epoch=requestEpoch;state.file=null;state.uploadedDoc=null;
  $('itineraryImportConsent').checked=false;
- $('itineraryImportStatus').textContent='Document seleccionat. Encara no s’ha pujat ni analitzat. Autoritza l’anàlisi per continuar.';
  updateItineraryImportConsent();
+ $('itineraryImportStatus').textContent='Preparant el document…';
+ try{
+  const result=await itineraryImportNormalizePhoto(file);
+  if(!itineraryImportStillCurrent(state)||state.epoch!==requestEpoch)return;
+  if(!itineraryImportMimeAllowed(result.type)||result.size>10*1024*1024||result.size===0){
+   $('itineraryImportStatus').textContent='Tria un PDF o foto JPG, PNG o WebP de 10 MB com a màxim.';
+   return;
+  }
+  state.file=result;$('itineraryImportExisting').value='';
+  $('itineraryImportExistingWrap').classList.add('hidden');
+  $('itineraryImportStatus').textContent='Document seleccionat. Encara no s’ha pujat ni analitzat. Autoritza l’anàlisi per continuar.';
+  updateItineraryImportConsent();
+ }catch(error){
+  if(itineraryImportStillCurrent(state)&&state.epoch===requestEpoch)
+   $('itineraryImportStatus').textContent='No s’ha pogut convertir la foto HEIC. Desa-la com a JPG i torna-ho a provar.';
+ }
 }
 $('itineraryImportUploadFile').onchange=()=>{
- itineraryImportSelectedLocalFile($('itineraryImportUploadFile').files?.[0]);
+ void itineraryImportSelectedLocalFile($('itineraryImportUploadFile').files?.[0]);
 };
 $('itineraryImportPhotoFile').onchange=()=>{
- itineraryImportSelectedLocalFile($('itineraryImportPhotoFile').files?.[0]);
+ void itineraryImportSelectedLocalFile($('itineraryImportPhotoFile').files?.[0]);
 };
 $('itineraryImportExisting').onchange=()=>{
  const state=itineraryImportState;if(!itineraryImportStillCurrent(state)||state.busy)return;
