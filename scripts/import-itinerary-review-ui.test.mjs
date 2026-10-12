@@ -21,25 +21,34 @@ test('A2.7: AI PDF processing requires explicit opt-in, with no silent document 
  assert.doesNotMatch(script,/setInterval\(/);
 });
 test('A2.7: a chosen existing document is reused, file upload is user initiated',()=>{
- assert.match(script,/row\.mime_type==='application\/pdf'/);
+ assert.match(script,/itineraryImportMimeAllowed\(row\.mime_type\)/);
  assert.match(script,/processItineraryImportDocument\(doc\)/);
  assert.match(script,/uploadTripDocument\(file,/);
- assert.match(script,/file\.size>10\*1024\*1024/);
+ assert.match(script,/result\.size>10\*1024\*1024/);
  assert.match(script,/\$\('itineraryImportUpload'\)\.onclick/);
 });
-test('A2.7 PROVES: choosing a file is separate from consent and upload',()=>{
- assert.match(html,/Des de l.iPhone/);
- assert.match(html,/O des de Documents de Freya/);
+test('A2.7 PROVES: a document-source menu chooses PDF, photo, or a Freya file',()=>{
+ assert.match(html,/id="itineraryImportUpload"[^>]*>＋ Pujar un document/);
+ assert.match(html,/id="itineraryImportSourceMenu"[^>]*hidden/);
+ assert.match(html,/id="itineraryImportChoosePdf"/);
+ assert.match(html,/id="itineraryImportChoosePhoto"/);
+ assert.match(html,/id="itineraryImportChooseExisting"/);
  assert.match(html,/id="itineraryImportSelectedName"/);
- assert.match(script,/state\.file=file;state\.uploadedDoc=null/);
- const start=script.indexOf("$('itineraryImportUploadFile').onchange=");
- const stop=script.indexOf("async function processItineraryImportSelected()",start);
- assert.ok(start>0&&stop>start);
- const fileSelection=script.slice(start,stop);
- assert.doesNotMatch(fileSelection,/uploadTripDocument|functions\.invoke/);
- assert.match(script,/\$\('itineraryImportAnalyze'\)\.onclick/);
+ assert.match(html,/Analitza el document/);
+ assert.match(html,/id="itineraryImportConsentWrap"[^>]*hidden/);
+ assert.match(script,/showItineraryImportSourceMenu/);
+ assert.match(script,/\.eq\('category','Foto'\)/);
+ assert.match(script,/itineraryImportMimeAllowed\(row\.mime_type\)/);
+ assert.match(script,/state\.file=result/);
  assert.match(script,/state\.uploadedDoc=doc/);
+ assert.match(script,/itineraryImportNormalizePhoto/);
+ assert.match(script,/canvas\.toBlob/);
  assert.match(script,/\$\('itineraryImportConsent'\)\.checked=false/);
+ const start=script.indexOf('async function itineraryImportSelectedLocalFile(');
+ const stop=script.indexOf('async function processItineraryImportSelected()',start);
+ assert.ok(start>0&&stop>start);
+ assert.doesNotMatch(script.slice(start,stop),/uploadTripDocument|functions\.invoke/);
+ assert.match(script,/\$\('itineraryImportAnalyze'\)\.onclick/);
 });
 test('A2.7: UI does not write itinerary and leaves final save disabled',()=>{
  assert.match(script,/state\.api\.summarizeItineraryReview\(state\.review,existing\)/);
