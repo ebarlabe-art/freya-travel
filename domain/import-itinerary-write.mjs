@@ -48,7 +48,8 @@ export async function prepareItineraryImportRows(snapshot,{tripId,userId,documen
   !Array.isArray(existing)||typeof convertLocalTime!=='function')abort('La revisió no és vàlida.');
  const selected=snapshot.items.filter(item=>item.included);
  if(!selected.length)abort('No hi ha cap activitat seleccionada.');
- const seen=new Set(),already=new Set(existing.map(existingFingerprint));
+ const seen=new Set(),already=new Map(existing.map(row=>[existingFingerprint(row),row])),
+  existingIds=new Map(existing.filter(row=>row?.id).map(row=>[row.id,row]));
  const rows=[];
  for(const item of selected){
   const v=item.values||{},title=trim(v.title),date=trim(v.local_date),start=trim(v.start_local_time),
@@ -66,7 +67,11 @@ export async function prepareItineraryImportRows(snapshot,{tripId,userId,documen
   if(end&&end<=start)abort('L’hora final de «'+title+'» ha de ser posterior a la inicial.');
   const key=fingerprint(v);
   if(seen.has(key))abort('Hi ha un duplicat seleccionat: «'+title+'». Desmarca’l abans de desar.');
-  if(already.has(key))abort('«'+title+'» ja consta al planning. Desmarca aquesta activitat abans de desar.');
+  const id=await stableItineraryImportId(tripId,documentId,item.source_order);
+  const matched=already.get(key);
+  if(matched&&matched.id!==id)abort('«'+title+'» ja consta al planning. Desmarca aquesta activitat abans de desar.');
+  if(existingIds.has(id)&&existingIds.get(id).title!==title)
+   abort('«'+title+'» ja s’havia importat. Per modificar-la, edita-la directament al planning.');
   seen.add(key);
   let kind='unscheduled',starts_at=null,ends_at=null,local_date=null,daypart=null,time_zone=null;
   if(start){
@@ -80,7 +85,7 @@ export async function prepareItineraryImportRows(snapshot,{tripId,userId,documen
   else if(date){kind='date';local_date=date;time_zone=zone||null}
   const optional=(value,max)=>{const v=trim(value);if([...v].length>max)abort('Un camp de «'+title+'» és massa llarg.');return v||null};
   rows.push({
-   id:await stableItineraryImportId(tripId,documentId,item.source_order),
+   id,
    trip_id:tripId,created_by:userId,title,timing_kind:kind,
    starts_at,ends_at,local_date,daypart,time_zone,
    approximate_start_time:null,approximate_end_time:null,
