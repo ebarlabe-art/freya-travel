@@ -27,6 +27,20 @@ test('A2.7: a chosen existing document is reused, file upload is user initiated'
  assert.match(script,/file\.size>10\*1024\*1024/);
  assert.match(script,/\$\('itineraryImportUpload'\)\.onclick/);
 });
+test('A2.7 PROVES: choosing a file is separate from consent and upload',()=>{
+ assert.match(html,/Des de l.iPhone/);
+ assert.match(html,/O des de Documents de Freya/);
+ assert.match(html,/id="itineraryImportSelectedName"/);
+ assert.match(script,/state\.file=file;state\.uploadedDoc=null/);
+ const start=script.indexOf("$('itineraryImportUploadFile').onchange=");
+ const stop=script.indexOf("async function processItineraryImportSelected()",start);
+ assert.ok(start>0&&stop>start);
+ const fileSelection=script.slice(start,stop);
+ assert.doesNotMatch(fileSelection,/uploadTripDocument|functions\.invoke/);
+ assert.match(script,/\$\('itineraryImportAnalyze'\)\.onclick/);
+ assert.match(script,/state\.uploadedDoc=doc/);
+ assert.match(script,/\$\('itineraryImportConsent'\)\.checked=false/);
+});
 test('A2.7: UI does not write itinerary and leaves final save disabled',()=>{
  assert.match(script,/state\.api\.summarizeItineraryReview\(state\.review,existing\)/);
  assert.doesNotMatch(script,/db\.from\('trip_itinerary_items'\)/);
