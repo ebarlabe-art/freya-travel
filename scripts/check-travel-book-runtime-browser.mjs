@@ -404,7 +404,19 @@ try{
     if(raw[0]!==37||raw[1]!==80||raw[2]!==68||raw[3]!==70)throw Error('Offline bytes are not a PDF');
     return {byteCount:raw.length,offline:navigator.onLine===false};
   });
-  await pwa.waitForFunction(()=>document.querySelector('.freya-pdf-controls output')?.textContent==='Pàgina 1 de 3' && !!document.querySelector('.freya-pdf-canvas'),null,{timeout:12000});
+  try{
+    await pwa.waitForFunction(()=>document.querySelector('.freya-pdf-controls output')?.textContent==='Pàgina 1 de 3' && !!document.querySelector('.freya-pdf-canvas'),null,{timeout:12000});
+  }catch(error){
+    const state=await pwa.evaluate(()=>({
+      pageText:document.getElementById('documentViewerBody')?.textContent?.slice(0,500),
+      pdfOutput:document.querySelector('.freya-pdf-controls output')?.textContent,
+      hasCanvas:!!document.querySelector('.freya-pdf-canvas'),
+      hasPdfRoot:!!document.querySelector('.freya-pdf-viewer'),
+      hidden:document.getElementById('documentViewer')?.classList.contains('hidden'),
+      docScope:typeof session?.user?.id
+    }));
+    throw new Error('Offline PDF page-render diagnostic: '+JSON.stringify({state,offlineErrors,missing}),{cause:error});
+  }
   await pwa.locator('.freya-pdf-controls button[aria-label="Pàgina següent"]').click();
   await pwa.waitForFunction(()=>document.querySelector('.freya-pdf-controls output')?.textContent==='Pàgina 2 de 3',null,{timeout:12000});
   await pwa.locator('.freya-pdf-controls button[aria-label="Pàgina següent"]').click();
