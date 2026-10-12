@@ -404,6 +404,9 @@ try{
     if(!reader)throw Error('Private offline PDF did not mount the internal reader');
     const raw=new Uint8Array(await cached.blob.arrayBuffer());
     if(raw[0]!==37||raw[1]!==80||raw[2]!==68||raw[3]!==70)throw Error('Offline bytes are not a PDF');
+    // Expose the actual trip screen in this synthetic signed-in test session.
+    // A PDF overlay nested in a hidden trip view is not interactable by Playwright.
+    show('tripView');hide('auth');
     return {byteCount:raw.length,offline:navigator.onLine===false};
   });
   try{
