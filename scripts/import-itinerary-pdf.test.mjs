@@ -65,6 +65,18 @@ test('A2.6.1: no session/service-role bypass; reuses private trip documents',()=
  assert.doesNotMatch(endpoint,/\.insert\(|\.update\(|\.upsert\(|\.delete\(/);
  assert.match(config,/\[functions\.import-itinerary\]\s*\nverify_jwt = true/);
 });
+test('A2.6.2: PDF and photo formats are explicitly restricted and signature-validated',()=>{
+ assert.match(endpoint,/MIME_TYPES=new Set\(\['application\/pdf','image\/jpeg','image\/png','image\/webp'\]\)/);
+ assert.match(endpoint,/if\(!MIME_TYPES\.has\(doc\.mime_type\)\)/);
+ assert.match(endpoint,/const isJpeg=/);
+ assert.match(endpoint,/const isPng=/);
+ assert.match(endpoint,/const isWebp=/);
+ assert.match(endpoint,/const attachment=isPdf\?/);
+ assert.match(endpoint,/type:'input_image',image_url:file,detail:'high'/);
+ assert.match(endpoint,/type:'input_file',filename:doc\.file_name/);
+ assert.match(endpoint,/MAX_PDF_BYTES=10\*1024\*1024/);
+ assert.match(itineraryPdfTextInstructions(),/PDF o foto/);
+});
 test('A2.6.1: bounded PDF payload, provider content not logged, no auto deployment',()=>{
  assert.match(endpoint,/MAX_PDF_BYTES=10\*1024\*1024/);
  assert.match(endpoint,/store:false/);
