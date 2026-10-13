@@ -14,6 +14,13 @@
 - **Següent feina P0:** [#118 — ubicacions i viabilitat](https://github.com/ebarlabe-art/freya-travel/issues/118). Primer completar ubicacions de les activitats **ja desades**, sense tornar a importar ni inventar llocs; després trajectes per mode de transport i advertiments segons horaris, durades i marges, amb «dades insuficients» quan pertoqui.
 - **En preparació, A2.10 / branca `feature/a2-10-confirm-itinerary-locations-20261013`:** cerca Geoapify activada voluntàriament des de les activitats sense lloc, resultats seleccionables, emplenament de `location_name` i desament explícit amb el formulari existent. No es guarden coordenades, ni es considera un mapa de ruta confirmat. Pendent proves CI, prova iPhone i publicació. No fer reimportació.
 
+## A2.11 — Suggeriments automàtics agrupats (pendent de validar)
+- Branca `feature/a2-11-batch-place-suggestions-20261013`, basada en la cerca guiada A2.10 de la PR #119.
+- Quan es consulta el planning d'un dia, Freya busca propostes de lloc per als elements **ja desats** sense ubicació, de manera automàtica i en segon terme. Les mostra en un panell per revisar-les conjuntament.
+- Coincidències estrictes es preseleccionen com a **proposta**, mai es desen automàticament; casos ambigus queden pendents fins que la persona seleccioni un resultat. Desament agrupat només després de prémer «Confirmar ubicacions seleccionades».
+- Les consultes queden limitades a 24 per sessió de viatge, s'eviten consultes duplicades, no s'analitzen genèrics com dinar i trasllats i no hi ha afegit de coordenades ni trajectes suposats. Conflictes d'edició s'aturen amb comprovació de versió.
+- **Criteri pendent:** CI completa i iPhone PROVES. No desplegar a pública sense validació. Els itineraris futurs han d'acabar extraient també les mencions de llocs del document original; és una altra millora pendent, no inclosa encara.
+
 ## Camí crític Bolonya (per ordre)
 
 | Prioritat | Funció | Estat de comprovació |
