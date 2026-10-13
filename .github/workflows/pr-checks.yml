@@ -20,7 +20,7 @@ jobs:
       - run: npm ci
       - run: npm run prebuild
       - name: A2 focused tests
-        run: node --test scripts/import-proposal.test.mjs scripts/import-text-extractor.test.mjs scripts/import-reservation.test.mjs scripts/import-reservation-ui.test.mjs scripts/import-itinerary-review-ui.test.mjs scripts/itinerary-place-enrichment.test.mjs
+        run: node --test scripts/import-proposal.test.mjs scripts/import-text-extractor.test.mjs scripts/import-reservation.test.mjs scripts/import-reservation-ui.test.mjs scripts/import-itinerary-review-ui.test.mjs scripts/itinerary-place-enrichment.test.mjs scripts/itinerary-auto-place.test.mjs
       - name: Offline V2 focused tests
         run: node --test scripts/offline-v2-readonly.test.mjs
       - run: npm run build
