@@ -1,6 +1,6 @@
 # Freya Travel — Estat únic i següent pas
 
-**Actualització:** 13 octubre 2026. **Objectiu immediat:** beta amb amigues a Bolonya, cap al 27/10/2026.
+**Actualització:** 13 octubre 2026, 18:00. **Objectiu immediat:** beta amb amigues a Bolonya, cap al 27/10/2026.
 
 > Font de veritat operacional. Actualitzar **en cada PR fusionada**, no recrear-la en xats nous. Separar sempre: codi implementat, tests automatitzats, comprovació física i publicació. No donar mai una funcionalitat per validada només perquè hi ha una PR fusionada.
 
@@ -11,7 +11,7 @@
 - Incidència [#116](https://github.com/ebarlabe-art/freya-travel/issues/116), PR #117 fusionada; cerca d'ubicacions individual en preparació per a main, sense recarregar el PDF.
 - **Nova mancança física observada:** activitats desades sense ubicacions, ni distàncies ni diagnòstic de factibilitat.
 - **Diagnòstic al codi:** `domain/import-itinerary-text-extractor.mjs` no genera camps de lloc; `domain/import-itinerary-write.mjs` sí els admet però arriben buits. Geoapify `place-resolution` existeix per a briefs/propostes, no per a `trip_itinerary_items`. `trip-transfer-estimate` només produeix una aproximació de cotxe entre textos i no està connectat al planning; no equival a una ruta real.
-- **Següent feina P0:** [#118 — ubicacions i viabilitat](https://github.com/ebarlabe-art/freya-travel/issues/118). Primer completar ubicacions de les activitats **ja desades**, sense tornar a importar ni inventar llocs; després trajectes per mode de transport i advertiments segons horaris, durades i marges, amb «dades insuficients» quan pertoqui.
+- **Següent feina P0:** [#118 — ubicacions i viabilitat](https://github.com/ebarlabe-art/freya-travel/issues/118). **A2.12 preparant PR** des de `main`: proposta automàtica agrupada per dia a partir dels títols existents, cerca Geoapify pública i confirmació explícita en bloc de només `location_name`. Sense reimportació, duplicats, coordenades inventades ni automodificacions. Circuit breaker en fallades de servei, límit de 20 consultes i resultats reutilitzats. **No donar per feta fins CI verda i deploy de GitHub Pages.** Següent: trajectes/viabilitat realista.
 
 ## Camí crític Bolonya (per ordre)
 
@@ -41,3 +41,5 @@
 - 13/10: confirmació física a PROVES que les activitats de Riga es desen. Detectat que les ubicacions arriben buides i que encara no hi ha càlcul de trajecte/viabilitat; issue #118. No tornar a importar les 13 activitats com a solució.
 
 - 13/10: decisió de concentrar desenvolupament a la pública. A2.9/#117 fusionada. A2.10 cerca manual és una alternativa, no substitueix l'extracció automàtica de llocs. A2.11/#120 bloquejada per error real de servei a PROVES i CI fallida: NO publicar-la a main fins corregir i passar tests.
+
+- 13/10 tarda: A2.12 preparació d'una única PR de propostes de llocs a l'app pública, corregint el flux A2.11 fallit: no depèn d'Open-Meteo PROVES, millora presentació, atura cerques si proveïdor cau i evita regenerar/duplicar activitats. No repetir proves prèvies d'Eivissa. Pendent CI i fusió.
