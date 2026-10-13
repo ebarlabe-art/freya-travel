@@ -1888,6 +1888,16 @@
         <div id="genericItineraryBrowse">
           <div id="genericItineraryDayTabs" class="generic-itinerary-day-tabs" role="tablist" aria-label="Dies del viatge"></div>
           <div id="genericItineraryEmpty" class="generic-itinerary-empty hidden"><strong>Encara no hi ha cap element programat.</strong>Afegeix un pla o configura vols, allotjaments i activitats.</div>
+          <section id="itineraryAutoPlacePanel" class="card hidden" aria-labelledby="itineraryAutoPlaceTitle">
+            <h3 id="itineraryAutoPlaceTitle">📍 Ubicacions proposades</h3>
+            <p class="muted">Freya cerca llocs per als elements d'aquest dia. Les propostes s'han de verificar abans de confirmar-les; si el servei de mapes falla, les activitats continuen intactes.</p>
+            <p id="itineraryAutoPlaceStatus" class="message" role="status" aria-live="polite"></p>
+            <div id="itineraryAutoPlaceList" class="stack"></div>
+            <div class="row">
+              <button type="button" id="itineraryAutoPlaceSave" disabled>Confirmar ubicacions seleccionades</button>
+              <button type="button" id="itineraryAutoPlaceRetry" class="secondary hidden">Reintenta les pendents</button>
+            </div>
+          </section>
           <div id="genericItineraryDays" class="generic-itinerary-days"></div>
           <section id="genericItineraryUnscheduled" class="generic-itinerary-unscheduled hidden"><h3>Per planificar</h3><p>Plans i activitats que encara no tenen dia ni hora.</p><div id="genericItineraryUnscheduledList" class="generic-itinerary-timeline"></div></section>
         </div>
@@ -3278,6 +3288,7 @@ let manualItineraryChannel=null;
 let manualItineraryRows=[];
 let manualItinerarySubmitting=false;
 let manualItineraryPlaceQueryEpoch=0;
+let itineraryAutoPlaceContext=null;
 let manualItineraryLoadSequence=0;
 let dayMetadataChannel=null;
 let dayMetadataRows=[];
@@ -5332,6 +5343,198 @@ async function searchManualItineraryPlaces(){
  }catch(_){if(current())status.textContent='No s’ha pogut buscar. Pots omplir el lloc manualment.'}
  finally{if(current())search.disabled=false}
 }
+function itineraryAutoPlaceRows(day){
+ if(!day||day==='pending')return [];
+ const ids=new Set(itineraryProjection.filter(item=>item.sourceType==='manual'&&item.localDate===day).map(item=>item.sourceId));
+ return manualItineraryRows.filter(row=>ids.has(row.id)&&!row.location_name&&!row.address&&row.status!=='cancelled').slice(0,10);
+}
+function itineraryAutoPlaceScope(){
+ return trip&&session?session.user.id+':'+trip.id+':'+tripLoadGeneration:'';
+}
+function itineraryAutoPlaceContextFor(day){
+ const scope=itineraryAutoPlaceScope();
+ if(!scope)return null;
+ if(itineraryAutoPlaceContext?.scope!==scope)itineraryAutoPlaceContext={scope,days:new Map(),queries:new Map(),requestCount:0,blocked:false};
+ if(!itineraryAutoPlaceContext.days.has(day))itineraryAutoPlaceContext.days.set(day,{records:new Map(),running:false,saving:false});
+ return itineraryAutoPlaceContext.days.get(day);
+}
+function itineraryAutoPlaceText(value){
+ return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('ca').replace(/[^a-z0-9]+/g,' ').trim();
+}
+function itineraryAutoPlaceShouldSearch(row){
+ const title=itineraryAutoPlaceText(row?.title);
+ return title.length>=5&&!/^(?:dinar|sopar|esmorzar|temps lliure|descans|arribada|sortida|trasllat|transfer|vol|flight|check in|check out|transport|metro|tren|bus)(?: |$)/.test(title);
+}
+function itineraryAutoPlaceQuery(row){
+ const raw=String(row?.title||'').trim();
+ const alias=raw.match(/\(([^)]{5,80})\)/)?.[1]||'';
+ // Honor a specific local-language alias; never geocode free time or generic stops.
+ const chosen=alias&&!/\b(?:orientativa|opcional|lliure|aproximad|reserv|pendent)\b/i.test(alias)?alias:raw;
+ const name=chosen.replace(/^(?:visita(?:\s+exterior)?|passeig|passejada|excursió)(?:\s+(?:a|al|a la|a l[’']|de|del|de la|pel|per))?\s+/i,'')
+  .replace(/,\s*(?:plaça|plaza|square|carrer|street)\s+.*$/i,'')
+  .replace(/\s*\([^)]*\)\.?$/,'').replace(/[.,;]+$/,'').trim();
+ const city=String(row?.city||tripStopRows?.[0]?.canonical_name||trip?.name||'')
+  .replace(/^(?:viatge|escapada|ruta|cap de setmana)\s+(?:a|al|a la|a l[’'])\s+/i,'').trim();
+ return (name+(city&&!itineraryAutoPlaceText(name).includes(itineraryAutoPlaceText(city))?', '+city:'')).slice(0,500);
+}
+function itineraryAutoPlaceOptions(data){
+ return (Array.isArray(data?.candidates)?data.candidates:[]).slice(0,5).map(candidate=>candidate?.place)
+  .filter(place=>place&&typeof place.canonical_name==='string'&&place.canonical_name.trim()&&place.canonical_name.length<=200&&
+   typeof place.country_code==='string'&&/^[A-Z]{2}$/.test(place.country_code)&&
+   Number.isFinite(place.latitude)&&Number.isFinite(place.longitude)&&
+   ['exact_location','representative_point'].includes(place.coordinate_role));
+}
+function itineraryAutoPlaceDefault(row,options){
+ const wanted=itineraryAutoPlaceText(itineraryAutoPlaceQuery(row).split(',')[0]);
+ if(wanted.length<6)return -1;
+ const indexes=options.map((place,index)=>({place,index})).filter(({place})=>
+  place.coordinate_role==='exact_location'&&
+  (itineraryAutoPlaceText(place.canonical_name)===wanted||
+   (itineraryAutoPlaceText(place.canonical_name).length>=6&&wanted.includes(itineraryAutoPlaceText(place.canonical_name)))));
+ return indexes.length===1?indexes[0].index:-1;
+}
+function itineraryAutoPlaceFailure(error,data){
+ const code=data?.error||null;
+ const http=Number(error?.context?.status||error?.status||0);
+ if(code==='rate_limited'||http===429)return 'Límit de consultes: torna-ho a provar més tard';
+ if(code==='resolution_pending')return 'Consulta encara en curs: reintenta-la';
+ if(code==='unauthorized'||http===401)return 'Cal renovar la sessió per cercar ubicacions';
+ if(http===404)return 'El servei de llocs no està activat en aquest entorn';
+ if(code==='provider_unavailable'||http>=500)return 'El servei de mapes no respon';
+ return 'La cerca ha fallat; mantinc la ubicació pendent';
+}
+function itineraryAutoPlaceRecordKey(row){return row.id+':'+row.updated_at}
+function renderItineraryAutoPlacePanel(day){
+ const panel=$('itineraryAutoPlacePanel'),rows=itineraryAutoPlaceRows(day);
+ if(!rows.length||connectionUnavailable()||!trip||isLondonTrip()){
+  panel.classList.add('hidden');return;
+ }
+ const state=itineraryAutoPlaceContextFor(day);
+ panel.classList.remove('hidden');
+ const waiting=rows.filter(row=>state.records.get(itineraryAutoPlaceRecordKey(row))?.status==='loading').length;
+ const completed=rows.filter(row=>['done','pending','failed','limit'].includes(state.records.get(itineraryAutoPlaceRecordKey(row))?.status)).length;
+ const failed=rows.filter(row=>state.records.get(itineraryAutoPlaceRecordKey(row))?.status==='failed').length;
+ const selected=rows.filter(row=>Number.isInteger(state.records.get(itineraryAutoPlaceRecordKey(row))?.selected)&&state.records.get(itineraryAutoPlaceRecordKey(row)).selected>=0).length;
+ $('itineraryAutoPlaceStatus').textContent=(waiting?'Buscant '+waiting+' ubicacions… ':'')+
+  completed+' de '+rows.length+' activitats examinades. '+selected+' ubicacions seleccionades per revisar.'+
+  (failed?' '+failed+' cerques no disponibles.':'')+(state.blocked?' He aturat les altres cerques per no repetir errors.':'');
+ $('itineraryAutoPlaceList').innerHTML=rows.map(row=>{
+  const record=state.records.get(itineraryAutoPlaceRecordKey(row));
+  const options=record?.options||[];
+  const label=record?.status==='failed'?(record.failure||'Servei de llocs no disponible'):record?.status==='limit'?'Límit preventiu de consultes: utilitza Cerca ubicació si cal':record?.status==='pending'?'No es pot deduir el lloc del títol':
+   record?.status==='done'&&!options.length?'Cap ubicació trobada':record?.status==='done'?'Tria o confirma la proposta':'Cercant suggeriments…';
+  return `<div style="border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0"><div><strong>${esc(row.title)}</strong></div>
+   <p class="muted" style="margin:8px 0 12px">${esc(label)}</p>
+   <label style="display:block">Ubicació
+   <select data-itinerary-auto-place="${esc(row.id)}" ${record?.status!=='done'||state.saving?'disabled':''}>
+    <option value="-1">Pendent — no assignar ubicació</option>
+    ${options.map((place,index)=>`<option value="${index}" ${record?.selected===index?'selected':''}>${esc([place.canonical_name,place.administrative_area,place.country_code,place.coordinate_role==='exact_location'?'Lloc concret':'Zona aproximada'].filter(Boolean).join(' · '))}</option>`).join('')}
+   </select></label></div>`;
+ }).join('');
+ $('itineraryAutoPlaceList').querySelectorAll('[data-itinerary-auto-place]').forEach(select=>{
+  select.onchange=()=>{
+   const row=rows.find(value=>value.id===select.dataset.itineraryAutoPlace);
+   const record=row&&state.records.get(itineraryAutoPlaceRecordKey(row));
+   if(!record||record.status!=='done'||state.saving)return;
+   const number=Number(select.value);
+   record.selected=Number.isInteger(number)&&number>=0&&number<record.options.length?number:-1;
+   renderItineraryAutoPlacePanel(day);
+  };
+ });
+ const save=$('itineraryAutoPlaceSave');save.disabled=state.saving||!selected||!!waiting;
+ save.textContent=state.saving?'Desant ubicacions…':!selected?'Cap ubicació per confirmar':selected===1?'Confirmar 1 ubicació':'Confirmar '+selected+' ubicacions';
+ save.onclick=()=>{void saveItineraryAutoPlaces(day)};
+ const retry=$('itineraryAutoPlaceRetry');retry.classList.toggle('hidden',(!failed&&!state.blocked)||state.saving);
+ retry.onclick=()=>{
+  context.blocked=false;
+  for(const row of rows){const key=itineraryAutoPlaceRecordKey(row);if(state.records.get(key)?.status==='failed')state.records.delete(key)}
+  proposeItineraryAutoPlaces(day);
+ };
+}
+function proposeItineraryAutoPlaces(day){
+ const rows=itineraryAutoPlaceRows(day);
+ if(!rows.length||!trip||isLondonTrip()||connectionUnavailable()){$('itineraryAutoPlacePanel').classList.add('hidden');return}
+ const state=itineraryAutoPlaceContextFor(day),scope=itineraryAutoPlaceScope(),context=itineraryAutoPlaceContext;
+ if(!state||state.running||state.saving||context.blocked){renderItineraryAutoPlacePanel(day);return}
+ const tasks=rows.filter(row=>!state.records.has(itineraryAutoPlaceRecordKey(row)));
+ if(!tasks.length){renderItineraryAutoPlacePanel(day);return}
+ state.running=true;
+ const current=()=>itineraryAutoPlaceContext===context&&itineraryAutoPlaceScope()===scope;
+ void (async()=>{
+  for(const row of tasks){
+   if(!current()||connectionUnavailable())break;
+   const key=itineraryAutoPlaceRecordKey(row);
+   if(!itineraryAutoPlaceShouldSearch(row)){state.records.set(key,{status:'pending',options:[],selected:-1});continue}
+   const query=itineraryAutoPlaceQuery(row),queryKey=itineraryAutoPlaceText(query);
+   const cached=context.queries.get(queryKey);
+   if(cached){
+    state.records.set(key,{status:'done',options:cached.options,selected:itineraryAutoPlaceDefault(row,cached.options)});
+    if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day);
+    continue;
+   }
+   if(context.requestCount>=20){
+    state.records.set(key,{status:'limit',options:[],selected:-1});
+    if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day);
+    continue;
+   }
+   context.requestCount++;
+   state.records.set(key,{status:'loading',options:[],selected:-1});
+   if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day);
+   try{
+    const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text:query,language:'ca'}});
+    if(!current())return;
+    const options=error||data?.error?[]:itineraryAutoPlaceOptions(data);
+    const status=(error||data?.error)&&data?.error!=='no_match'?'failed':'done';
+    if(status==='done')context.queries.set(queryKey,{options});
+    state.records.set(key,{status,options,selected:itineraryAutoPlaceDefault(row,options),
+      ...(status==='failed'?{failure:itineraryAutoPlaceFailure(error,data)}:{})});
+    if(status==='failed'&&['provider_unavailable','rate_limited','unavailable','unauthorized'].includes(data?.error)){context.blocked=true;}
+   }catch(error){if(!current())return;state.records.set(key,{status:'failed',options:[],selected:-1,
+     failure:itineraryAutoPlaceFailure(error,null)});context.blocked=true}
+   if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day);
+   if(context.blocked)break;
+  }
+  if(current()){state.running=false;if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day)}
+ })();
+ renderItineraryAutoPlacePanel(day);
+}
+async function saveItineraryAutoPlaces(day){
+ if(!trip||!session||isLondonTrip()||connectionUnavailable())return;
+ const state=itineraryAutoPlaceContextFor(day);
+ if(!state||state.saving||state.running)return;
+ const rows=itineraryAutoPlaceRows(day);
+ const patches=rows.flatMap(row=>{
+  const record=state.records.get(itineraryAutoPlaceRecordKey(row));
+  const place=record?.options?.[record.selected];
+  return record?.status==='done'&&place?[{row,place}]:[];
+ });
+ if(!patches.length)return;
+ const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
+ state.saving=true;renderItineraryAutoPlacePanel(day);
+ let saved=0,failed=0;
+ try{
+  for(const {row,place} of patches){
+   if(!itineraryRequestIsCurrent(tripId,generation,userId))return;
+   try{
+    // Update only the chosen location text; an optimistic revision protects concurrent edits.
+    const {data,error}=await db.from('trip_itinerary_items').update({location_name:place.canonical_name})
+     .eq('trip_id',tripId).eq('id',row.id).eq('updated_at',row.updated_at)
+     .is('location_name',null).select('id').maybeSingle();
+    if(error||!data){failed++;continue}
+    saved++;
+   }catch(_){failed++}
+  }
+ }finally{
+  if(itineraryRequestIsCurrent(tripId,generation,userId)){
+   state.saving=false;
+   await loadManualItineraryItems(true);
+   if(itineraryRequestIsCurrent(tripId,generation,userId)){
+    renderItineraryAutoPlacePanel(day);
+    msg('genericItineraryMessage',saved+' ubicacions desades.'+(failed?' '+failed+' no s’han desat perquè han canviat o hi ha hagut un error.':''));
+   }
+  }
+ }
+}
 async function fetchAgendaManualItems(silent=false){
   if(!trip||!session||isLondonTrip())return [];const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,sequence=++manualItineraryLoadSequence;if(!silent)$('genericItineraryLoading').classList.remove('hidden');
   try{const {data,error}=await db.from('trip_itinerary_items').select('*').eq('trip_id',tripId).order('local_date',{ascending:true,nullsFirst:false}).order('starts_at',{ascending:true,nullsFirst:false}).order('sort_order',{ascending:true}).order('id',{ascending:true});if(!itineraryRequestIsCurrent(tripId,generation,userId)||sequence!==manualItineraryLoadSequence||isLondonTrip())return manualItineraryRows;if(error)throw error;manualItineraryRows=data||[];markItinerarySourceReady('manual',tripId,generation,userId);
@@ -6033,6 +6236,7 @@ function renderGenericItinerary(){
     });
   }
   renderItineraryDayWeather();
+  proposeItineraryAutoPlaces(selected);
 }
 function rebuildGenericItinerary(tripId=trip?.id,generation=tripLoadGeneration,userId=session?.user?.id){
   if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip()||!itinerarySourcesAreReady(tripId,generation,userId))return false;
