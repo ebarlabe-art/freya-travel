@@ -5417,11 +5417,11 @@ function renderItineraryAutoPlacePanel(day){
  const selected=rows.filter(row=>Number.isInteger(state.records.get(itineraryAutoPlaceRecordKey(row))?.selected)&&state.records.get(itineraryAutoPlaceRecordKey(row)).selected>=0).length;
  $('itineraryAutoPlaceStatus').textContent=(waiting?'Buscant '+waiting+' ubicacions… ':'')+
   completed+' de '+rows.length+' activitats examinades. '+selected+' ubicacions seleccionades per revisar.'+
-  (failed?' '+failed+' cerques no disponibles.':'')+(state.blocked?' He aturat les altres cerques per no repetir errors.':'');
+  (failed?' '+failed+' cerques no disponibles.':'')+(itineraryAutoPlaceContext?.blocked?' He aturat les altres cerques per no repetir errors.':'');
  $('itineraryAutoPlaceList').innerHTML=rows.map(row=>{
   const record=state.records.get(itineraryAutoPlaceRecordKey(row));
   const options=record?.options||[];
-  const label=record?.status==='failed'?(record.failure||'Servei de llocs no disponible'):record?.status==='limit'?'Límit preventiu de consultes: utilitza Cerca ubicació si cal':record?.status==='pending'?'No es pot deduir el lloc del títol':
+  const label=record?.status==='failed'?(record.failure||'Servei de llocs no disponible'):record?.status==='limit'?'Límit preventiu de consultes: utilitza Cerca ubicació si cal':record?.status==='pending'?'No es pot deduir el lloc del títol':!record&&itineraryAutoPlaceContext?.blocked?'Cerca ajornada perquè el servei no respon':
    record?.status==='done'&&!options.length?'Cap ubicació trobada':record?.status==='done'?'Tria o confirma la proposta':'Cercant suggeriments…';
   return `<div style="border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0"><div><strong>${esc(row.title)}</strong></div>
    <p class="muted" style="margin:8px 0 12px">${esc(label)}</p>
@@ -5441,12 +5441,12 @@ function renderItineraryAutoPlacePanel(day){
    renderItineraryAutoPlacePanel(day);
   };
  });
- const save=$('itineraryAutoPlaceSave');save.disabled=state.saving||!selected||!!waiting;
+ const save=$('itineraryAutoPlaceSave');save.disabled=state.saving||state.running||!selected||!!waiting;
  save.textContent=state.saving?'Desant ubicacions…':!selected?'Cap ubicació per confirmar':selected===1?'Confirmar 1 ubicació':'Confirmar '+selected+' ubicacions';
  save.onclick=()=>{void saveItineraryAutoPlaces(day)};
- const retry=$('itineraryAutoPlaceRetry');retry.classList.toggle('hidden',(!failed&&!state.blocked)||state.saving);
+ const retry=$('itineraryAutoPlaceRetry');retry.classList.toggle('hidden',(!failed&&!itineraryAutoPlaceContext?.blocked)||state.saving);
  retry.onclick=()=>{
-  context.blocked=false;
+  if(itineraryAutoPlaceContext)itineraryAutoPlaceContext.blocked=false;
   for(const row of rows){const key=itineraryAutoPlaceRecordKey(row);if(state.records.get(key)?.status==='failed')state.records.delete(key)}
   proposeItineraryAutoPlaces(day);
  };
@@ -5488,7 +5488,7 @@ function proposeItineraryAutoPlaces(day){
     if(status==='done')context.queries.set(queryKey,{options});
     state.records.set(key,{status,options,selected:itineraryAutoPlaceDefault(row,options),
       ...(status==='failed'?{failure:itineraryAutoPlaceFailure(error,data)}:{})});
-    if(status==='failed'&&['provider_unavailable','rate_limited','unavailable','unauthorized'].includes(data?.error)){context.blocked=true;}
+    if(status==='failed'&&(error||!data?.error||data.error!=='resolution_pending'))context.blocked=true;
    }catch(error){if(!current())return;state.records.set(key,{status:'failed',options:[],selected:-1,
      failure:itineraryAutoPlaceFailure(error,null)});context.blocked=true}
    if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day);
