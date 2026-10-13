@@ -60,9 +60,9 @@ test('operational Builder trips in construction expose safe discard only for own
 test('clock repaints at next minute boundary and resumes on visibility without backend requests',()=>{
  const h=harness();h.s.updateHomeClock();assert.ok(h.s.timer.ms>0&&h.s.timer.ms<=60020);h.s.document.visibilityState='hidden';h.s.timer=null;h.s.updateHomeClock();assert.equal(h.s.timer,null);h.s.document.visibilityState='visible';h.docListeners.visibilitychange();assert.ok(h.s.timer);const clock=home.slice(home.indexOf('function updateHomeClock'));assert.doesNotMatch(clock,/db\.|loadBuilderList|selectTrip/);
 });
-test('join and manual mutation handlers, Photos and Smart Home remain byte-identical',()=>{
+test('Join, Photos and Smart Home remain byte-identical',()=>{
  const old=execFileSync('git',['show','HEAD:index.html'],{encoding:'utf8'});
- for(const [start,end] of [["$('createTripForm').onsubmit=","$('copyCode').onclick="],['// PHOTO_V2_START','// PHOTO_V2_END'],['// TRIP_HOME_PURE_START','// TRIP_HOME_PURE_END']]){assert.ok(html.includes(start));assert.equal(html.slice(html.indexOf(start),html.indexOf(end)),old.slice(old.indexOf(start),old.indexOf(end)))}
+ for(const [start,end] of [["$('joinTrip').onclick=","$('copyCode').onclick="],['// PHOTO_V2_START','// PHOTO_V2_END'],['// TRIP_HOME_PURE_START','// TRIP_HOME_PURE_END']]){assert.ok(html.includes(start));assert.equal(html.slice(html.indexOf(start),html.indexOf(end)),old.slice(old.indexOf(start),old.indexOf(end)))}
 });
 test('construction empty and multiple briefs keep truthful labels, without any mutation',async()=>{
  const h=harness();let rows=[];

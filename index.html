@@ -6673,7 +6673,9 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
     catch(error){const cached=readOfflineTrips(requestUserId);if(!cached)throw error;loaded=cached.rows;usedOfflineTrips=true;offlineSnapshotSavedAt=cached.savedAt||offlineSnapshotSavedAt}
   }
   if(!loaded)return false;trips=loaded;if(usedOfflineTrips){offlineSnapshotActive=true;updateConnectivityBanner()}else if(!connectionUnavailable()){markOfflineDataFresh()}
-  if(open&&preferredTripId&&trips.some(t=>t.id===preferredTripId))recordHomeTripEntry(preferredTripId);
+  // A stale/offline list must not open a different trip after create or join.
+  if(open&&preferredTripId&&!trips.some(t=>t.id===preferredTripId)){renderTripsHome();return false}
+  if(open&&preferredTripId)recordHomeTripEntry(preferredTripId);
   if(coldStart&&!pendingInitialRoute){
     const savedId=readSelectedTripId();if(savedId&&!trips.some(value=>value.id===savedId))forgetSelectedTrip();
     trip=null;tripLoadGeneration+=1;await disconnectTripRealtime();clearTripScopedState();updateTripPresentation();renderTripsHome();setAppView('tripsHomeView');return true;
@@ -9372,13 +9374,16 @@ $('createTripForm').onsubmit=async e=>{
     if(error)throw error;
     const createdId=data?.[0]?.id;
     if(!createdId)throw new Error('El servidor no ha confirmat la creació del viatge.');
+    // The confirmed trip is durable even if the subsequent read fails.
+    // Consume the form before refreshing so retrying cannot create it twice.
+    $('createTripForm').reset();manualTripStops=[];clearManualTripCandidate();renderManualTripStops();
     msg('tripMsg','✅ Viatge desat. Obrint-lo…');
-    const refreshed=await refreshTrips({preferredTripId:createdId,open:true});
+    let refreshed=false;
+    try{refreshed=await refreshTrips({preferredTripId:createdId,open:true})}catch(_){/* Confirmed write; recover from Home. */}
     if(!refreshed||!trips.some(value=>value.id===createdId)){
       msg('tripMsg','El viatge s’ha desat correctament, però no s’ha pogut recarregar. No el tornis a crear: torna a Els meus viatges.',true);
       return;
     }
-    $('createTripForm').reset();manualTripStops=[];clearManualTripCandidate();renderManualTripStops();
   }catch(error){msg('tripMsg',error?.message||'No s’ha pogut crear el viatge. No s’ha desat cap viatge parcial.',true)}
   finally{$('createTrip').disabled=false;$('createTrip').textContent='Crear el viatge'}
 };

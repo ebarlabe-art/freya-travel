@@ -4,6 +4,23 @@
 
 > Font de veritat operacional. Actualitzar **en cada PR fusionada**, no recrear-la en xats nous. Separar sempre: codi implementat, tests automatitzats, comprovació física i publicació. No donar mai una funcionalitat per validada només perquè hi ha una PR fusionada.
 
+
+## Issue #125 — circuit de creació i compartició (branca, pendent de fusió/publicació)
+
+- Base auditada: `main` després de PR #124 (`055f77b`). `manualTripView` → `create_trip_with_stops_v1` → `get_my_trips` / `refreshTrips` → tauler → codi → `join_trip_v2`. Reutilitza els permisos i l’agenda existents; Londres no canvia.
+- Defecte reproduït: creació confirmada seguida de recàrrega fallida deixava el formulari reenviable i podia mostrar només l’error de xarxa. Correcció: consumir el formulari quan arriba la confirmació i indicar que el viatge està desat encara que falli la lectura posterior. Una llista obsoleta tampoc obre un altre viatge en lloc del creat/convidat. Una petició sense confirmació continua conservant les dades; no s’afegeix idempotència de servidor a la creació.
+- **PASS local:** `npm test` (654 tests), `npm run entries:check`, `npm run build`; PostgreSQL descartable amb baselines existents i migracions cronològiques (sense Cron): propietària, amiga i tercera persona sintètiques, dos viatges, RLS de lectura/escriptura/eliminació, invitació repetida sense duplicats, edició concurrent amb `updated_at` i relectura des de les dues sessions.
+- **PASS navegador automatitzat:** build de Pages real, Chromium a 390 px, crear/compartir/copiar, Back/Forward, error de xarxa després de desar sense duplicació ni obertura d’un altre viatge, segon compte sintètic, recàrrega i reobertura offline amb service worker; 1024 px amb tacte i identificació d’escriptori. Auth, dades i compartir són adaptadors sintètics; la prova SQL és independent. No acredita el transport Realtime remot ni el full de compartir natiu.
+- CI de PR incorpora aquests dos circuits; consultar el resultat sobre el commit de la PR. Cache incrementada a v17 i paritat `index.html` / `404.html` preservada. El test antic d’identitat textual del formulari se substitueix per regressions de comportament; les comprovacions de cache s’actualitzen explícitament a v17.
+- **Pendent físic:** dos comptes reals a Freya pública, Safari/PWA iPhone (inclosa suspensió/reobertura), full natiu de compartir i actualització entre telèfons. Cap viatge real de Bolonya creat, cap data/reserva inventada, cap dada remota modificada, cap migració ni Edge Function desplegada. La disponibilitat a pública depèn de fusió i publicació.
+
+Per crear Bolonya (només quan l’Eva tingui les dates):
+1. A Freya pública, iniciar sessió → Dissenya un viatge → Crear un viatge nou.
+2. Afegir Bolonya i confirmar la destinació; introduir les dates reals i crear.
+3. Al tauler, obrir Viatgers → Compartir invitació o Copiar codi.
+4. L’amiga inicia sessió al seu compte → Uneix-te a un viatge → enganxa el codi.
+5. Obrir el mateix viatge i comprovar una edició d’agenda des dels dos telèfons.
+
 ## Estat de la prova física (13/10): desament desbloquejat
 
 - **Verificat a iPhone / Freya PROVES:** les activitats del PDF de Riga s'han **afegit** al planning després de confirmar. Correcció provada en ús real.
