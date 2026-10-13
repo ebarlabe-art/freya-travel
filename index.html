@@ -5375,7 +5375,7 @@ function itineraryAutoPlaceQuery(row){
   .replace(/\s*\([^)]*\)\.?$/,'').replace(/[.,;]+$/,'').trim();
  const city=String(row?.city||tripStopRows?.[0]?.canonical_name||trip?.name||'')
   .replace(/^(?:viatge|escapada|ruta|cap de setmana)\s+(?:a|al|a la|a l[’'])\s+/i,'').trim();
- return (name+(city&&!itineraryAutoPlaceText(name).includes(itineraryAutoPlaceText(city))?', '+city:'')).slice(0,500);
+ return (name+(city&&!(' '+itineraryAutoPlaceText(name)+' ').includes(' '+itineraryAutoPlaceText(city)+' ')?', '+city:'')).slice(0,500);
 }
 function itineraryAutoPlaceOptions(data){
  return (Array.isArray(data?.candidates)?data.candidates:[]).slice(0,5).map(candidate=>candidate?.place)
