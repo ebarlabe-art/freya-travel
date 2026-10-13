@@ -11,7 +11,9 @@
 - Incidència [#116](https://github.com/ebarlabe-art/freya-travel/issues/116), PR #117 fusionada; cerca d'ubicacions individual en preparació per a main, sense recarregar el PDF.
 - **Nova mancança física observada:** activitats desades sense ubicacions, ni distàncies ni diagnòstic de factibilitat.
 - **Diagnòstic al codi:** `domain/import-itinerary-text-extractor.mjs` no genera camps de lloc; `domain/import-itinerary-write.mjs` sí els admet però arriben buits. Geoapify `place-resolution` existeix per a briefs/propostes, no per a `trip_itinerary_items`. `trip-transfer-estimate` només produeix una aproximació de cotxe entre textos i no està connectat al planning; no equival a una ruta real.
-- **Següent feina P0:** [#118 — ubicacions i viabilitat](https://github.com/ebarlabe-art/freya-travel/issues/118). **A2.12 preparant PR** des de `main`: proposta automàtica agrupada per dia a partir dels títols existents, cerca Geoapify pública i confirmació explícita en bloc de només `location_name`. Sense reimportació, duplicats, coordenades inventades ni automodificacions. Circuit breaker en fallades de servei, límit de 20 consultes i resultats reutilitzats. **No donar per feta fins CI verda i deploy de GitHub Pages.** Següent: trajectes/viabilitat realista.
+- **A2.12 incorporada a `main` (commit `3955a439`, 13/10):** propostes agrupades de llocs amb confirmació explícita, sense reimportar ni duplicar. La fusió no equival a prova física en la PWA pública.
+- **A2.13 — PR [#123](https://github.com/ebarlabe-art/freya-travel/pull/123) oberta:** conservar `Lloc`, `Adreça` i `Ciutat` quan són etiquetes explícites immediatament posteriors a l'activitat en PDFs transcrits, amb proves específiques al control obligatori de CI. **No desplegada ni fusionada**; el codi s'utilitza des de l'Edge Function `import-itinerary`, que requerirà desplegament propi després de la validació. Això només afecta futures importacions, no les activitats ja desades.
+- **Següent P0 després d'ubicacions:** trajectes i viabilitat realista per a Bolonya, [#118](https://github.com/ebarlabe-art/freya-travel/issues/118), sense estimacions fictícies.
 
 ## Camí crític Bolonya (per ordre)
 
@@ -42,4 +44,4 @@
 
 - 13/10: decisió de concentrar desenvolupament a la pública. A2.9/#117 fusionada. A2.10 cerca manual és una alternativa, no substitueix l'extracció automàtica de llocs. A2.11/#120 bloquejada per error real de servei a PROVES i CI fallida: NO publicar-la a main fins corregir i passar tests.
 
-- 13/10 tarda: A2.12 preparació d'una única PR de propostes de llocs a l'app pública, corregint el flux A2.11 fallit: no depèn d'Open-Meteo PROVES, millora presentació, atura cerques si proveïdor cau i evita regenerar/duplicar activitats. No repetir proves prèvies d'Eivissa. Pendent CI i fusió.
+- 13/10 tarda: A2.12 incorporada a `main`: propostes agrupades sense reimportar. A2.13 oberta en PR #123 per preservar etiquetes explícites de lloc des del PDF; pendent CI, revisió i desplegament d'Edge Function. No repetir proves prèvies d'Eivissa.
