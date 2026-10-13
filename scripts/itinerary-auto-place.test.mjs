@@ -167,7 +167,7 @@ test('A2.12: first provider outage stops remaining requests and explains failure
  assert.equal(h.updates.length,0);
  assert.equal(h.$('itineraryAutoPlaceSave').disabled,true);
  assert.match(h.$('itineraryAutoPlaceStatus').textContent,/aturat/);
- assert.match(h.$('itineraryAutoPlaceList').innerHTML,/Servei de mapes no respon/);
+ assert.match(h.$('itineraryAutoPlaceList').innerHTML,/servei de mapes no respon/i);
  assert.equal(typeof h.$('itineraryAutoPlaceRetry').onclick,'function');
 });
 
