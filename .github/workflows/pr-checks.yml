@@ -32,6 +32,8 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/travel-book-browser" --no-package-lock --ignore-scripts playwright-core@1.63.0
           node "$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/cli.js" install --with-deps chromium
+      - name: Itinerary routes mobile and PWA regression
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-route-browser.mjs
       - name: Shared trip mobile and PWA regression
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-shared-trip-browser.mjs
       - name: Travel Book real Pages build browser regression
@@ -66,6 +68,10 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.9.6
+      - name: Itinerary routing domain and HTTP contracts
+        run: node --test scripts/itinerary-route.test.mjs
+      - name: Itinerary route Edge Function typecheck
+        run: deno check --config supabase/functions/itinerary-route/deno.json supabase/functions/itinerary-route/index.ts
       - run: npm run test:alb03
       - run: npm run test:alb03:image
       - run: deno check --config supabase/functions/travel-book-ingest/deno.json supabase/functions/travel-book-ingest/index.ts

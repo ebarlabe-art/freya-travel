@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.import-itinerary]
 verify_jwt = true
+
+[functions.itinerary-route]
+verify_jwt = true

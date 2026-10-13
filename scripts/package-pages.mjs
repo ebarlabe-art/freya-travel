@@ -5,6 +5,8 @@ import { build } from 'vite';
 const root=new URL('../',import.meta.url);
 const dist=new URL('../dist/',import.meta.url);
 const runtimeDomain=[
+  'itinerary-route.mjs',
+  'itinerary-route-ui.mjs',
   'place-resolution.mjs',
   'place-resolution-ui.mjs',
   'proposal-handoff.mjs',
