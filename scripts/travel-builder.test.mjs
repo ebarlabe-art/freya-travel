@@ -121,7 +121,7 @@ test('separate views, complete manual form, old Search entry removed, backend in
  assert.match(manual,/id="createTripForm"[\s\S]*id="tripDestination"[\s\S]*id="addTripDestination"[\s\S]*id="tripStopsList"[\s\S]*id="createTrip"[\s\S]*<\/form>/);
  assert.doesNotMatch(manual,/tripTimeZone|Selecciona una zona horària/);
  assert.match(html,/create_trip_with_stops_v1/);assert.match(html,/data-delete-brief/);
- assert.match(html,/Ja tinc el viatge muntat/);assert.match(html,/Afegeix el meu viatge/);
+ assert.match(html,/Comença un viatge nou/);assert.match(html,/Crear un viatge nou/);assert.match(html,/No cal tenir reserves ni itinerari preparats/);assert.match(html,/Crear el viatge/);
  assert.doesNotMatch(html,/Buscar amb Freya|createTripSearchMethod|tripSearchForm/);
  assert.match(html,/db\.rpc\('create_trip_with_stops_v1'/);assert.ok(readFileSync(new URL('../supabase/functions/travel-search/index.ts',import.meta.url),'utf8'));
  assert.doesNotMatch(code,/initialize_generic_trip_checklist|create_trip_v2|selectTrip\(/);
