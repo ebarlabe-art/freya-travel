@@ -102,3 +102,40 @@ test('Builder distinguishes drafts from operational trips and offers direct open
  assert.match(html,/Obre el viatge i afegeix reserves/);
  assert.match(html,/💭 Idea en esborrany/);
 });
+
+
+test('Bologna start: sharing a new trip uses the native phone share sheet with its own code',async()=>{
+ const h=harness();let shared;
+ h.s.trip=trip({name:'Bolonya',invite_code:'BOLO-123'});
+ h.s.location={origin:'https://ebarlabe-art.github.io'};
+ h.s.navigator={share:async details=>{shared=details}};
+ h.s.msg=()=>{};
+ const code=html.slice(html.indexOf("$('shareGenericTrip').onclick="),html.indexOf("$('genericTripStartDate').onchange="));
+ assert.match(code,/navigator\\.share/);
+ vm.runInContext(code,h.s);
+ await h.$('shareGenericTrip').onclick();
+ assert.equal(shared.title,'Invitació a Freya Travel');
+ assert.match(shared.text,/Bolonya/);
+ assert.match(shared.text,/BOLO-123/);
+ assert.match(shared.text,/https:\/\/ebarlabe-art\\.github\\.io\/freya-travel\//);
+ assert.match(html,/id="shareGenericTrip"/);
+});
+test('Bologna invite: confirmed join with stale trip list retains the invite code and explains refresh',async()=>{
+ const h=harness(),messages=[];
+ h.s.msg=(id,value)=>messages.push({id,value});
+ h.s.db={rpc:async()=>({data:[{id:'joined'}]})};
+ h.s.refreshTrips=async()=>true;
+ h.$('inviteInput').value=' abc ';
+ const code=html.slice(html.indexOf("$('joinTrip').onclick="),html.indexOf("$('copyCode').onclick="));
+ vm.runInContext(code,h.s);
+ await h.$('joinTrip').onclick();
+ assert.equal(h.$('inviteInput').value,' abc ');
+ assert.ok(messages.some(x=>/No tornis a introduir el codi/.test(x.value)));
+});
+test('Bologna beta entry: new-trip wording, invitation and Pages fallback remain aligned',()=>{
+ assert.match(html,/Comença un viatge nou/);
+ assert.match(html,/Crear un viatge nou/);
+ assert.match(html,/No cal tenir reserves ni itinerari preparats/);
+ assert.match(html,/id="shareGenericTrip"/);
+ assert.equal(html,fs.readFileSync(new URL('../404.html',import.meta.url),'utf8'));
+});
