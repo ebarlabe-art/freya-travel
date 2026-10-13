@@ -408,7 +408,7 @@ test('An SDK/bootstrap failure cannot keep an infinite splash on the iPhone',()=
   assert.ok(fallbackIndex>0&&fallbackIndex<sdkIndex);
   assert.match(html.slice(fallbackIndex,sdkIndex),/setTimeout\(/);
   assert.match(html.slice(fallbackIndex,sdkIndex),/No cal esborrar l’app ni les còpies offline/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v15'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v16'/);
 });
 
 test('Parking offline leaves read-only Veure reserva enabled while disabling edits',()=>{
@@ -431,7 +431,7 @@ test('Parking offline leaves read-only Veure reserva enabled while disabling edi
   assert.ok(edits.every(e=>!e.disabled));
   assert.equal(selectors.length,2);
   assert.match(html,/button\.classList\.remove\('hidden'\);button\.disabled=false;\s*button\.onclick=\(\)=>openDocument\(doc\.id,documentRows,'parkingMsg'\)/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v15'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v16'/);
 });
 
 test('Automatic encrypted document rules include useful screenshots and exclude travel photos',()=>{

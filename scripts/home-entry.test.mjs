@@ -34,7 +34,7 @@ test('London and Eivissa are past using only real metadata, independent of their
 });
 test('five doors; forms are outside Home; active above doors and undated below',()=>{
  const entry=html.split('id="tripsHomeView"')[1].split('id="upcomingTripsView"')[0];assert.equal((entry.match(/data-home-view=/g)||[]).length,5);assert.doesNotMatch(entry,/<form|inviteInput|builderBriefList/);assert.ok(entry.indexOf('id="homeActive"')<entry.indexOf('class="home-doors"'));assert.match(entry,/Dates pendents/);
- const design=html.split('id="designTripView"')[1].split('id="manualTripView"')[0];assert.equal((design.match(/data-builder-mode=/g)||[]).length,3);assert.doesNotMatch(design,/builderBriefList/);assert.match(design,/Afegeix el meu viatge/);
+ const design=html.split('id="designTripView"')[1].split('id="manualTripView"')[0];assert.equal((design.match(/data-builder-mode=/g)||[]).length,3);assert.doesNotMatch(design,/builderBriefList/);assert.match(design,/Crear un viatge nou/);
  const construction=html.split('id="constructionView"')[1].split('id="designTripView"')[0];assert.match(construction,/Idees en esborrany.*builderBriefList/s);assert.doesNotMatch(construction,/data-builder-mode/);
  const join=html.split('id="joinTripView"')[1].split('id="constructionView"')[0];assert.match(join,/inviteInput/);
 });
@@ -101,4 +101,41 @@ test('Builder distinguishes drafts from operational trips and offers direct open
  assert.match(html,/✅ Viatge creat/);
  assert.match(html,/Obre el viatge i afegeix reserves/);
  assert.match(html,/💭 Idea en esborrany/);
+});
+
+
+test('Bologna start: sharing a new trip uses the native phone share sheet with its own code',async()=>{
+ const h=harness();let shared;
+ h.s.trip=trip({name:'Bolonya',invite_code:'BOLO-123'});
+ h.s.location={origin:'https://ebarlabe-art.github.io'};
+ h.s.navigator={share:async details=>{shared=details}};
+ h.s.msg=()=>{};
+ const code=html.slice(html.indexOf("$('shareGenericTrip').onclick="),html.indexOf("$('genericTripStartDate').onchange="));
+ assert.match(code,/navigator\.share/);
+ vm.runInContext(code,h.s);
+ await h.$('shareGenericTrip').onclick();
+ assert.equal(shared.title,'Invitació a Freya Travel');
+ assert.match(shared.text,/Bolonya/);
+ assert.match(shared.text,/BOLO-123/);
+ assert.match(shared.text,/https:\/\/ebarlabe-art\.github\.io\/freya-travel\//);
+ assert.match(html,/id="shareGenericTrip"/);
+});
+test('Bologna invite: confirmed join with stale trip list retains the invite code and explains refresh',async()=>{
+ const h=harness(),messages=[];
+ h.s.msg=(id,value)=>messages.push({id,value});
+ h.s.db={rpc:async()=>({data:[{id:'joined'}]})};
+ h.s.refreshTrips=async()=>true;
+ h.$('inviteInput').value=' abc ';
+ const code=html.slice(html.indexOf("$('joinTrip').onclick="),html.indexOf("$('copyCode').onclick="));
+ vm.runInContext(code,h.s);
+ await h.$('joinTrip').onclick();
+ assert.equal(h.$('inviteInput').value,' abc ');
+ assert.ok(messages.some(x=>/No tornis a introduir el codi/.test(x.value)));
+});
+test('Bologna beta entry: new-trip wording, invitation and Pages fallback remain aligned',()=>{
+ assert.match(html,/Comença un viatge nou/);
+ assert.match(html,/Crear un viatge nou/);
+ assert.match(html,/No cal tenir reserves ni itinerari preparats/);
+ assert.match(html,/id="shareGenericTrip"/);
+ assert.equal(html,fs.readFileSync(new URL('../404.html',import.meta.url),'utf8'));
 });
