@@ -15,6 +15,7 @@ const DAYPART=/^(mat[ií]|morning|mañana|tarda|afternoon|vespre|evening|nit|nig
 const UNTYPED_DAYPART=/^(mat[ií]|morning|mañana|tarda|afternoon|vespre|evening|nit|night|migdia|mediod[ií]a)\s*,\s*(?:sense hora exacta|sin hora exacta|no exact time)\s*(?:[:–—-]\s*(.+))?$/i;
 const ADMIN=/^(?:(?:reserva|booking|reference|refer[eè]ncia|localitzador|confirmaci[oó]|tel[eè]fon|phone|contacte|total|preu|price|cost|notes?|document|passaport|passport|p[aà]gina|page)\s*[:#])/i;
 const HEADER=/^(?:(?:itinerari|itinerary|programa|planning|pla de viatge|ruta|destinaci[oó])(?:\s+.{0,80})?)$/i;
+const EXPLICIT_PLACE=/^(lloc|ubicaci[oó]|localitzaci[oó]|place|location|venue|adre[cç]a|address|ciutat|city)\s*:\s*(.+)$/i;
 const MONTHS={
  gener:1,enero:1,january:1,jan:1,
  febrer:2,febrero:2,february:2,feb:2,
@@ -62,6 +63,15 @@ function readDatePrefix(input){
 }
 function makeField(value,excerpt,page,confidence='high'){
  return {value,confidence,evidence:[{kind:'text',excerpt:excerpt.slice(0,500),page}]};
+}
+function readExplicitPlace(line){
+ const match=line.match(EXPLICIT_PLACE);
+ if(!match)return null;
+ const label=stripAccents(match[1]);
+ const field=label==='adreca'||label==='address'?'address':
+  label==='ciutat'||label==='city'?'city':'location_name';
+ const value=match[2].trim();
+ return {field,value:value&&[...value].length<=(field==='address'?500:200)?value:null};
 }
 function canonicalTime(value){
  const match=/^(\d{1,2})[:.h](\d{2})$/.exec(value);
@@ -132,9 +142,24 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
  const pages=normalizePages(rawPages),candidates=[],warnings=new Set();
  let current=null,documentZone=null,pendingDaypart=null,unparsed=0,invalidDate=false;
  for(const {page,text} of pages){
+  // Only the activity immediately preceding an explicit label on the same page
+  // receives that place. Do not attribute nearby or inferred places.
+  let locationCandidate=null;
   for(const raw of text.split('\n')){
    const line=raw.trim().replace(/\s+/g,' ');
-   if(!line||line.length>1000){if(line.length>1000)warnings.add('Línia massa llarga: cal revisar el document.');continue;}
+   if(!line||line.length>1000){
+    locationCandidate=null;
+    if(line.length>1000)warnings.add('Línia massa llarga: cal revisar el document.');
+    continue;
+   }
+   const place=readExplicitPlace(line);
+   if(place){
+    if(locationCandidate&&place.value&&!locationCandidate.fields[place.field])
+     locationCandidate.fields[place.field]=makeField(place.value,line,page);
+    else if(!place.value)warnings.add('Camp de lloc massa llarg: cal revisar-lo.');
+    continue;
+   }
+   locationCandidate=null;
    let work=line.replace(WEEKDAY,'');
    const dayMarker=CALENDAR.test(work);
    // Day labels often precede a weekday: "DIA 1 · Diumenge 27/12/2026".
@@ -168,6 +193,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
      // Explicit date on the same line belongs only to that item.
      const candidate=makeCandidate(inline,line,page,{date:datePart.date,evidence:line,page},current.zone,candidates.length);
      candidates.push(candidate);
+     locationCandidate=candidate;
     }
     if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
     continue;
@@ -198,8 +224,10 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     pendingDaypart=null;
    }
    if(item){
-    candidates.push(makeCandidate(item,line,page,current?{date:current.date,evidence:current.evidence,page:current.page}:null,
-      tz&&!tz.invalid?tz:current?.zone,candidates.length));
+    const candidate=makeCandidate(item,line,page,current?{date:current.date,evidence:current.evidence,page:current.page}:null,
+      tz&&!tz.invalid?tz:current?.zone,candidates.length);
+    candidates.push(candidate);
+    locationCandidate=candidate;
    }else if(current&&!ADMIN.test(line)&&!tz)unparsed++;
    if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
   }

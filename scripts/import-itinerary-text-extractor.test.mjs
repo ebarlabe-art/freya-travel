@@ -171,3 +171,37 @@ test('A2.6: does not interpret text inside user notes as commands',()=>{
  assert.equal(p.candidates[0].fields.id,undefined);
  assert.equal(p.read_only,true);
 });
+
+
+test('A2.13: preserves explicitly labelled location, address and city with PDF evidence',()=>{
+ const p=extractItineraryProposalFromPages([
+  {page:1,text:'DIA 1 · Diumenge 27/12/2026\n10:00 Visita a la Catedral\nLloc: Catedral de Riga\nAdreça: Herdera laukums 6\nCiutat: Riga\n11:00 Passeig pel riu'},
+  {page:2,text:'28/12/2026\n09:00 Museu\nLocation: Latvian National Museum of Art\nAddress: Jaņa Rozentāla laukums 1\nCity: Riga'}
+ ],source);
+ assert.equal(p.candidates.length,3);
+ assert.equal(val(p.candidates[0],'location_name'),'Catedral de Riga');
+ assert.equal(val(p.candidates[0],'address'),'Herdera laukums 6');
+ assert.equal(val(p.candidates[0],'city'),'Riga');
+ assert.equal(p.candidates[0].fields.location_name.evidence[0].page,1);
+ assert.equal(p.candidates[0].fields.address.evidence[0].excerpt,'Adreça: Herdera laukums 6');
+ assert.equal(val(p.candidates[1],'location_name'),undefined);
+ assert.equal(val(p.candidates[2],'location_name'),'Latvian National Museum of Art');
+ assert.equal(val(p.candidates[2],'city'),'Riga');
+ assert.equal(p.candidates[2].fields.location_name.evidence[0].page,2);
+});
+test('A2.13: location labels never spill over to other activities, dates or pages',()=>{
+ const p=extractItineraryProposalFromPages([
+  {page:1,text:'27/12/2026\n10:00 Primer museu\nNota: reservar entrada\nLloc: No s’ha d’atribuir\n11:00 Segon museu'},
+  {page:2,text:'Lloc: No s’ha d’atribuir a la pàgina nova\n12:00 Tercer museu\nLloc: Museu explícit'}
+ ],source);
+ assert.equal(p.candidates.length,3);
+ assert.equal(val(p.candidates[0],'location_name'),undefined);
+ assert.equal(val(p.candidates[1],'location_name'),undefined);
+ assert.equal(val(p.candidates[2],'location_name'),'Museu explícit');
+});
+test('A2.13: never invents locations from an activity title or unrelated booking labels',()=>{
+ const p=parse('27/12/2026\n09:00 Visita a la Catedral de Riga\nReserva: ABC123\n10:00 Visita al Mercat Central\nLloc: Riga Central Market');
+ assert.equal(val(p.candidates[0],'location_name'),undefined);
+ assert.equal(val(p.candidates[1],'location_name'),'Riga Central Market');
+ assert.equal(val(p.candidates[1],'city'),undefined);
+});
