@@ -1,0 +1,32 @@
+name: Itinerary route unauthenticated HTTP smoke (temporary)
+on:
+  push:
+    branches:
+      - diag/itinerary-route-http-20261014
+permissions:
+  contents: read
+jobs:
+  http-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify protected itinerary-route endpoint is reachable
+        env:
+          URL: https://otueskpksylzvkhldoft.supabase.co/functions/v1/itinerary-route
+        shell: bash
+        run: |
+          set -euo pipefail
+          for case_name in no_token malformed_token; do
+            if [ "$case_name" = "no_token" ]; then
+              status=$(curl --silent --show-error --connect-timeout 10 --max-time 20 -o /tmp/freya_response -w '%{http_code}' -X POST "$URL" -H 'Content-Type: application/json' --data '{}')
+            else
+              status=$(curl --silent --show-error --connect-timeout 10 --max-time 20 -o /tmp/freya_response -w '%{http_code}' -X POST "$URL" -H 'Content-Type: application/json' -H 'Authorization: Bearer invalid-token' --data '{}')
+            fi
+            echo "$case_name status=$status"
+            if [ "$status" != 401 ] && [ "$status" != 403 ]; then
+              echo 'Expected authentication rejection (401/403); got a different HTTP status'
+              head -c 300 /tmp/freya_response || true
+              exit 1
+            fi
+          done
+          echo 'PASS: live endpoint reachable; unauthenticated/malformed credentials rejected. No trips or Geoapify requests involved.'
