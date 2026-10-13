@@ -111,13 +111,13 @@ test('Bologna start: sharing a new trip uses the native phone share sheet with i
  h.s.navigator={share:async details=>{shared=details}};
  h.s.msg=()=>{};
  const code=html.slice(html.indexOf("$('shareGenericTrip').onclick="),html.indexOf("$('genericTripStartDate').onchange="));
- assert.match(code,/navigator\\.share/);
+ assert.match(code,/navigator\.share/);
  vm.runInContext(code,h.s);
  await h.$('shareGenericTrip').onclick();
  assert.equal(shared.title,'Invitació a Freya Travel');
  assert.match(shared.text,/Bolonya/);
  assert.match(shared.text,/BOLO-123/);
- assert.match(shared.text,/https:\/\/ebarlabe-art\\.github\\.io\/freya-travel\//);
+ assert.match(shared.text,/https:\/\/ebarlabe-art\.github\.io\/freya-travel\//);
  assert.match(html,/id="shareGenericTrip"/);
 });
 test('Bologna invite: confirmed join with stale trip list retains the invite code and explains refresh',async()=>{
