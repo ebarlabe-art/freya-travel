@@ -518,15 +518,15 @@
         </div>
       </section>
       <section class="new-trip-card">
-        <h2>🧳 Ja tinc el viatge muntat</h2>
-        <p class="muted">Ja tens destinació, dates, reserves o planning? Crea el viatge i afegeix en una sola pàgina vols, allotjament, activitats, transport i cotxe de lloguer.</p>
+        <h2>🧳 Comença un viatge nou</h2>
+        <p class="muted">No cal tenir reserves ni itinerari preparats. Crea el viatge amb la destinació i les dates; després hi podràs afegir activitats i compartir-lo amb qui viatgi amb tu.</p>
         <div class="builder-doors">
-          <button type="button" data-home-view="manualTripView"><strong>Afegeix el meu viatge</strong><span>Vull entrar a Freya el viatge que ja tinc preparat.</span></button>
+          <button type="button" data-home-view="manualTripView"><strong>Crear un viatge nou</strong><span>Comença amb destinació i dates, i prepara la resta quan vulguis.</span></button>
         </div>
       </section>
     </div>
-    <div id="manualTripView" class="hidden trips-home"><button type="button" data-builder-back="designTripView">← Tornar</button><section class="new-trip-card"><h1>Afegeix el teu viatge</h1>
-          <p class="muted">Afegeix totes les destinacions del viatge. Freya verificarà cada lloc i gestionarà automàticament la seva zona horària.</p>
+    <div id="manualTripView" class="hidden trips-home"><button type="button" data-builder-back="designTripView">← Tornar</button><section class="new-trip-card"><h1>Crea el teu viatge</h1>
+          <p class="muted">Només necessites destinació i dates. No cal tenir vols, hotel ni activitats reservats. Després podràs completar el viatge i convidar-hi les altres persones.</p>
           <form id="createTripForm" class="trip-form">
             <div class="trip-form-grid">
               <label class="wide">Destinació<input id="tripDestination" maxlength="120" placeholder="Ex.: Riga, Letònia" autocomplete="off"></label>
@@ -538,7 +538,7 @@
               <label>Data d’inici<input id="tripStartDate" type="date" required></label>
               <label>Data de fi<input id="tripEndDate" type="date" required></label>
             </div>
-            <button id="createTrip" type="submit">Crear viatge i afegir reserves</button>
+            <button id="createTrip" type="submit">Crear el viatge</button>
           </form>
       <p id="tripMsg" class="message hidden" role="status" aria-live="polite"></p>
     </section></div>
@@ -632,7 +632,7 @@
         <p id="genericTripSettingsMsg" class="message hidden" role="status" aria-live="polite"></p>
       </div>
 
-      <div id="genericTravelersCard" class="card generic-invite-card hidden"><h2>👥 Viatgers</h2><p>Comparteix aquest codi per convidar algú al viatge:</p><div id="genericInviteCode" class="code"></div><p><button id="copyGenericCode" type="button" class="secondary">Copiar codi</button></p><p id="genericAppMsg" class="message hidden"></p></div>
+      <div id="genericTravelersCard" class="card generic-invite-card hidden"><h2>👥 Viatgers</h2><p>Comparteix aquest codi per convidar algú al viatge:</p><div id="genericInviteCode" class="code"></div><p><button id="shareGenericTrip" type="button">Compartir invitació</button> <button id="copyGenericCode" type="button" class="secondary">Copiar codi</button></p><p id="genericAppMsg" class="message hidden"></p></div>
     </div>
 
     <div id="buildView" class="hidden">
@@ -9380,7 +9380,7 @@ $('createTripForm').onsubmit=async e=>{
     }
     $('createTripForm').reset();manualTripStops=[];clearManualTripCandidate();renderManualTripStops();
   }catch(error){msg('tripMsg',error?.message||'No s’ha pogut crear el viatge. No s’ha desat cap viatge parcial.',true)}
-  finally{$('createTrip').disabled=false;$('createTrip').textContent='Crear viatge i afegir reserves'}
+  finally{$('createTrip').disabled=false;$('createTrip').textContent='Crear el viatge'}
 };
 $('joinTrip').onclick=async()=>{
   msg('joinTripMsg','');
@@ -9404,7 +9404,11 @@ $('joinTrip').onclick=async()=>{
     const joinedId=data?.[0]?.id||null;
 
     try{
-      await refreshTrips({preferredTripId:joinedId,open:true});
+      const refreshed=await refreshTrips({preferredTripId:joinedId,open:true});
+      if(!refreshed||!joinedId||!trips.some(value=>value.id===joinedId)){
+        msg('joinTripMsg','T’has unit al viatge, però encara no el podem mostrar. No tornis a introduir el codi: actualitza Els meus viatges.',true);
+        return;
+      }
       $('inviteInput').value='';
     }catch(loadError){
       msg(
@@ -9422,6 +9426,17 @@ $('joinTrip').onclick=async()=>{
 };
 $('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.invite_code);msg('appMsg','Codi copiat.')}catch(_){msg('appMsg','Codi: '+trip.invite_code)}};
 $('copyGenericCode').onclick=async()=>{try{await navigator.clipboard.writeText(trip.invite_code);msg('genericAppMsg','Codi copiat.')}catch(_){msg('genericAppMsg','Codi: '+trip.invite_code)}};
+$('shareGenericTrip').onclick=async()=>{
+  if(!trip?.invite_code)return;
+  const text='T’he convidat al viatge «'+trip.name+'» a Freya Travel.\nObre '+location.origin+'/freya-travel/ i prem «Uneix-te a un viatge».\nCodi d’invitació: '+trip.invite_code;
+  if(typeof navigator.share==='function'){
+    try{await navigator.share({title:'Invitació a Freya Travel',text});}
+    catch(error){if(error?.name!=='AbortError')msg('genericAppMsg','No s’ha pogut compartir. Copia el codi per enviar-lo.',true)}
+  }else{
+    try{await navigator.clipboard.writeText(text);msg('genericAppMsg','Invitació copiada per compartir-la.');}
+    catch(_){msg('genericAppMsg','Codi d’invitació: '+trip.invite_code)}
+  }
+};
 
 $('genericTripStartDate').onchange=()=>{
   const startDate=$('genericTripStartDate').value;
