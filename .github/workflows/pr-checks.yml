@@ -32,6 +32,8 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/travel-book-browser" --no-package-lock --ignore-scripts playwright-core@1.63.0
           node "$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/cli.js" install --with-deps chromium
+      - name: Shared trip mobile and PWA regression
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-shared-trip-browser.mjs
       - name: Travel Book real Pages build browser regression
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-travel-book-runtime-browser.mjs
 
@@ -103,3 +105,22 @@ jobs:
       - name: Remove isolated ALB-02 database container
         if: always()
         run: bash scripts/ci-postgres.sh stop freya_alb02_ci
+
+  shared-trip-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test scripts/shared-trip.test.mjs scripts/home-entry.test.mjs
+      - run: bash scripts/ci-postgres.sh start freya_shared_trip_ci
+      - name: Creation, invitation, RLS and concurrent agenda edits
+        run: node scripts/test-shared-trip-db.mjs --ci-container
+      - name: Diagnose isolated database on failure
+        if: failure()
+        run: bash scripts/ci-postgres.sh diagnose freya_shared_trip_ci
+      - name: Remove isolated database
+        if: always()
+        run: bash scripts/ci-postgres.sh stop freya_shared_trip_ci
