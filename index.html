@@ -5356,7 +5356,7 @@ function itineraryAutoPlaceScope(){
 function itineraryAutoPlaceContextFor(day){
  const scope=itineraryAutoPlaceScope();
  if(!scope)return null;
- if(itineraryAutoPlaceContext?.scope!==scope)itineraryAutoPlaceContext={scope,days:new Map()};
+ if(itineraryAutoPlaceContext?.scope!==scope)itineraryAutoPlaceContext={scope,days:new Map(),queries:new Map(),requestCount:0};
  if(!itineraryAutoPlaceContext.days.has(day))itineraryAutoPlaceContext.days.set(day,{records:new Map(),running:false,saving:false});
  return itineraryAutoPlaceContext.days.get(day);
 }
@@ -5368,7 +5368,7 @@ function itineraryAutoPlaceShouldSearch(row){
  return title.length>=5&&!/^(?:dinar|sopar|esmorzar|temps lliure|descans|arribada|sortida|trasllat|transfer|vol|flight|check in|check out|transport|metro|tren|bus)(?: |$)/.test(title);
 }
 function itineraryAutoPlaceOptions(data){
- return (Array.isArray(data?.candidates)?data.candidates:[]).slice(0,5).map(({place})=>place)
+ return (Array.isArray(data?.candidates)?data.candidates:[]).slice(0,5).map(candidate=>candidate?.place)
   .filter(place=>place&&typeof place.canonical_name==='string'&&place.canonical_name.trim()&&place.canonical_name.length<=200&&
    typeof place.country_code==='string'&&/^[A-Z]{2}$/.test(place.country_code)&&
    Number.isFinite(place.latitude)&&Number.isFinite(place.longitude)&&
@@ -5401,7 +5401,7 @@ function renderItineraryAutoPlacePanel(day){
  $('itineraryAutoPlaceList').innerHTML=rows.map(row=>{
   const record=state.records.get(itineraryAutoPlaceRecordKey(row));
   const options=record?.options||[];
-  const label=record?.status==='failed'?'Consulta no disponible':record?.status==='pending'?'No es pot deduir el lloc del títol':
+  const label=record?.status==='failed'?'Consulta no disponible':record?.status==='limit'?'Límit preventiu de consultes: utilitza Cerca ubicació si cal':record?.status==='pending'?'No es pot deduir el lloc del títol':
    record?.status==='done'&&!options.length?'Cap ubicació trobada':record?.status==='done'?'Tria o confirma la proposta':'Cercant suggeriments…';
   return `<div class="card"><strong>${esc(row.title)}</strong><small>${esc(label)}</small><label>Ubicació
    <select data-itinerary-auto-place="${esc(row.id)}" ${record?.status!=='done'||state.saving?'disabled':''}>
@@ -5442,14 +5442,28 @@ function proposeItineraryAutoPlaces(day){
    if(!current()||connectionUnavailable())break;
    const key=itineraryAutoPlaceRecordKey(row);
    if(!itineraryAutoPlaceShouldSearch(row)){state.records.set(key,{status:'pending',options:[],selected:-1});continue}
+   const query=manualItineraryPlaceQuery(row),queryKey=itineraryAutoPlaceText(query);
+   const cached=context.queries.get(queryKey);
+   if(cached){
+    state.records.set(key,{status:'done',options:cached.options,selected:itineraryAutoPlaceDefault(row,cached.options)});
+    if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day);
+    continue;
+   }
+   if(context.requestCount>=24){
+    state.records.set(key,{status:'limit',options:[],selected:-1});
+    if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day);
+    continue;
+   }
+   context.requestCount++;
    state.records.set(key,{status:'loading',options:[],selected:-1});
    if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day);
    try{
-    const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text:manualItineraryPlaceQuery(row),language:'ca'}});
+    const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text:query,language:'ca'}});
     if(!current())return;
     const options=error||data?.error?[]:itineraryAutoPlaceOptions(data);
-    state.records.set(key,{status:(error||data?.error)&&data?.error!=='no_match'?'failed':'done',
-     options,selected:itineraryAutoPlaceDefault(row,options)});
+    const status=(error||data?.error)&&data?.error!=='no_match'?'failed':'done';
+    if(status==='done')context.queries.set(queryKey,{options});
+    state.records.set(key,{status,options,selected:itineraryAutoPlaceDefault(row,options)});
    }catch(_){if(!current())return;state.records.set(key,{status:'failed',options:[],selected:-1})}
    if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day);
   }
