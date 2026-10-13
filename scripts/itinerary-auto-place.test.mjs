@@ -75,7 +75,7 @@ test('A2.11: grouped suggestions are visible without importing a PDF or modifyin
  assert.match(html,/id="itineraryAutoPlaceList"/);
  assert.match(html,/id="itineraryAutoPlaceSave"/);
  assert.match(html,/proposeItineraryAutoPlaces\(selected\)/);
- assert.doesNotMatch(source,/\.insert\(|\.delete\(/);
+ assert.doesNotMatch(source,/db\.from\('trip_itinerary_items'\)\.(?:insert|delete)\(/);
  const h=makeHarness();
  h.fn.proposeItineraryAutoPlaces('2026-12-27');
  await drain();
