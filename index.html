@@ -1890,7 +1890,7 @@
           <div id="genericItineraryEmpty" class="generic-itinerary-empty hidden"><strong>Encara no hi ha cap element programat.</strong>Afegeix un pla o configura vols, allotjaments i activitats.</div>
           <section id="itineraryAutoPlacePanel" class="card hidden" aria-labelledby="itineraryAutoPlaceTitle">
             <h3 id="itineraryAutoPlaceTitle">📍 Ubicacions proposades</h3>
-            <p class="muted">Freya les busca a partir de les activitats d'aquest dia. Revisa els llocs: no canviarà res fins que els confirmis.</p>
+            <p class="muted">Freya cerca llocs per als elements d'aquest dia. Les propostes s'han de verificar abans de confirmar-les; si el servei de mapes falla, les activitats continuen intactes.</p>
             <p id="itineraryAutoPlaceStatus" class="message" role="status" aria-live="polite"></p>
             <div id="itineraryAutoPlaceList" class="stack"></div>
             <div class="row">
@@ -5293,7 +5293,12 @@ function restoreManualItineraryDraft(){
 function closeManualItineraryForm(){clearManualItineraryDraft($('manualItineraryForm').dataset.tripId||trip?.id);resetManualItineraryFormUi();renderGenericItinerary()}
 function manualItineraryMapUrl(row){const query=[row.location_name,row.address,row.city].filter(Boolean).join(', ');return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:''}
 function manualItineraryPlaceQuery(row){
- const title=String(row?.location_name||row?.title||'').trim().replace(/^(?:visita(?:\s+(?:a|al|a la))?|passejada(?:\s+per)?|visit(?:\s+to)?|excursió(?:\s+a)?)[\s:–-]+/i,'');
+ const raw=String(row?.location_name||row?.title||'').trim();
+ const title=raw.replace(/^visita(?:\s+exterior)?\s+(?:a\s+la|a\s+l[’']|al|de\s+la|del|a|de)\s+/i,'')
+  .replace(/^visita(?:\s+exterior)?\s+/i,'')
+  .replace(/^(?:passeig\s+pel|passejada\s+per|excursió\s+a)\s+/i,'')
+  .replace(/,\s*(?:plaça|plaza|square|carrer|street)\s+.*$/i,'')
+  .replace(/\s*\([^)]*\)\.?$/,'').replace(/\.$/,'').trim();
  const city=String(row?.city||trip?.name||'').trim();
  return (title+(city&&!title.toLocaleLowerCase().includes(city.toLocaleLowerCase())?', '+city:'')).slice(0,500);
 }
@@ -5383,6 +5388,16 @@ function itineraryAutoPlaceDefault(row,options){
    (itineraryAutoPlaceText(place.canonical_name).length>=6&&wanted.includes(itineraryAutoPlaceText(place.canonical_name)))));
  return indexes.length===1?indexes[0].index:-1;
 }
+function itineraryAutoPlaceFailure(error,data){
+ const code=data?.error||null;
+ const http=Number(error?.context?.status||error?.status||0);
+ if(code==='rate_limited'||http===429)return 'Límit de consultes: torna-ho a provar més tard';
+ if(code==='resolution_pending')return 'Consulta encara en curs: reintenta-la';
+ if(code==='unauthorized'||http===401)return 'Cal renovar la sessió per cercar ubicacions';
+ if(http===404)return 'El servei de llocs no està activat en aquest entorn';
+ if(code==='provider_unavailable'||http>=500)return 'El servei de mapes no respon';
+ return 'La cerca ha fallat; mantinc la ubicació pendent';
+}
 function itineraryAutoPlaceRecordKey(row){return row.id+':'+row.updated_at}
 function renderItineraryAutoPlacePanel(day){
  const panel=$('itineraryAutoPlacePanel'),rows=itineraryAutoPlaceRows(day);
@@ -5401,9 +5416,11 @@ function renderItineraryAutoPlacePanel(day){
  $('itineraryAutoPlaceList').innerHTML=rows.map(row=>{
   const record=state.records.get(itineraryAutoPlaceRecordKey(row));
   const options=record?.options||[];
-  const label=record?.status==='failed'?'Consulta no disponible':record?.status==='limit'?'Límit preventiu de consultes: utilitza Cerca ubicació si cal':record?.status==='pending'?'No es pot deduir el lloc del títol':
+  const label=record?.status==='failed'?(record.failure||'Servei de llocs no disponible'):record?.status==='limit'?'Límit preventiu de consultes: utilitza Cerca ubicació si cal':record?.status==='pending'?'No es pot deduir el lloc del títol':
    record?.status==='done'&&!options.length?'Cap ubicació trobada':record?.status==='done'?'Tria o confirma la proposta':'Cercant suggeriments…';
-  return `<div class="card"><strong>${esc(row.title)}</strong><small>${esc(label)}</small><label>Ubicació
+  return `<div class="card"><div><strong>${esc(row.title)}</strong></div>
+   <p class="muted" style="margin:8px 0 12px">${esc(label)}</p>
+   <label style="display:block">Ubicació
    <select data-itinerary-auto-place="${esc(row.id)}" ${record?.status!=='done'||state.saving?'disabled':''}>
     <option value="-1">Pendent — no assignar ubicació</option>
     ${options.map((place,index)=>`<option value="${index}" ${record?.selected===index?'selected':''}>${esc([place.canonical_name,place.administrative_area,place.country_code,place.coordinate_role==='exact_location'?'Lloc concret':'Zona aproximada'].filter(Boolean).join(' · '))}</option>`).join('')}
@@ -5420,7 +5437,7 @@ function renderItineraryAutoPlacePanel(day){
   };
  });
  const save=$('itineraryAutoPlaceSave');save.disabled=state.saving||!selected||!!waiting;
- save.textContent=state.saving?'Desant ubicacions…':selected===1?'Confirmar 1 ubicació':'Confirmar '+selected+' ubicacions';
+ save.textContent=state.saving?'Desant ubicacions…':!selected?'Cap ubicació per confirmar':selected===1?'Confirmar 1 ubicació':'Confirmar '+selected+' ubicacions';
  save.onclick=()=>{void saveItineraryAutoPlaces(day)};
  const retry=$('itineraryAutoPlaceRetry');retry.classList.toggle('hidden',!failed||state.saving);
  retry.onclick=()=>{
@@ -5463,8 +5480,10 @@ function proposeItineraryAutoPlaces(day){
     const options=error||data?.error?[]:itineraryAutoPlaceOptions(data);
     const status=(error||data?.error)&&data?.error!=='no_match'?'failed':'done';
     if(status==='done')context.queries.set(queryKey,{options});
-    state.records.set(key,{status,options,selected:itineraryAutoPlaceDefault(row,options)});
-   }catch(_){if(!current())return;state.records.set(key,{status:'failed',options:[],selected:-1})}
+    state.records.set(key,{status,options,selected:itineraryAutoPlaceDefault(row,options),
+      ...(status==='failed'?{failure:itineraryAutoPlaceFailure(error,data)}:{})});
+   }catch(error){if(!current())return;state.records.set(key,{status:'failed',options:[],selected:-1,
+     failure:itineraryAutoPlaceFailure(error,null)})}
    if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day);
   }
   if(current()){state.running=false;if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day)}
