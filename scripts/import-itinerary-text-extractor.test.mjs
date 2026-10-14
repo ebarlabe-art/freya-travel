@@ -171,3 +171,20 @@ test('A2.6: does not interpret text inside user notes as commands',()=>{
  assert.equal(p.candidates[0].fields.id,undefined);
  assert.equal(p.read_only,true);
 });
+
+test('P0 #135: Bolonya PDF headings use the explicit cover year with review flags',()=>{
+ const p=extractItineraryProposalFromPages([
+  {page:1,text:"Escapada a Bolonya\nDel divendres 23 al diumenge 25 d’octubre de 2026\nDivendres 23 d’octubre · Arribada\n21.15 h Sortida del vol\n23.00 h Arribada a Bolonya\nDissabte 24 d’octubre · Centre històric\n09.30 h Esmorzar"},
+  {page:2,text:"Diumenge 25 d’octubre · Tornada\n18.30 h Vol de tornada"}
+ ],source);
+ assert.deepEqual(p.candidates.map(x=>val(x,'local_date')),['2026-10-23','2026-10-23','2026-10-24','2026-10-25']);
+ assert.deepEqual(p.candidates.map(x=>val(x,'start_local_time')),['21:15','23:00','09:30','18:30']);
+ assert.equal(val(p.candidates[0],'title'),'Sortida del vol');
+ assert.equal(p.candidates[0].fields.local_date.confidence,'medium');
+ assert.ok(p.candidates[0].warnings.some(x=>/Any agafat/.test(x)));
+});
+test('P0 #135: without explicit unique year do not invent full dates',()=>{
+ const p=parse("Divendres 23 d’octubre\n21.15 h Sortida del vol");
+ assert.equal(val(p.candidates[0],'local_date'),undefined);
+ assert.ok(p.candidates[0].review_flags.includes('date_required_for_time'));
+});
