@@ -17,6 +17,9 @@ async function shellResponse(request,fallbackKey){
     throw error;
   }finally{clearTimeout(timer)}
 }
+self.addEventListener('message',event=>{
+  if(event.data?.type==='FREYA_BOOT_VERSION')event.ports?.[0]?.postMessage({cache:CACHE});
+});
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;
   const request=event.request;

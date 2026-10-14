@@ -1974,8 +1974,8 @@
       else if(typeof window.showUpdateToast==='function')window.showUpdateToast();
     });
     navigator.serviceWorker.register('/freya-travel/sw.js',{scope:'/freya-travel/',updateViaCache:'none'}).then(function(registration){
-      var check=function(){registration.update().catch(function(){workerFailure=true})};
-      check();
+      var check=function(){if(registration)registration.update().catch(function(){workerFailure=true})};
+      // register() already checks for an update; do not race it with a second fetch.
       document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')check()});
       window.addEventListener('pageshow',check);window.addEventListener('focus',check);setInterval(check,15*60*1000);
     }).catch(function(){workerFailure=true;if(!finished&&stage!=='sdk')fail('worker')});
