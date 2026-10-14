@@ -41,12 +41,12 @@ try{
  await page.locator('#pwaDiagnostic summary').click();
  await page.waitForFunction(()=>document.querySelector('#pwaDiagnosticSummary')?.textContent.includes('Planning llegit: 13'));
  const diagnosis=await page.locator('#pwaDiagnosticSummary').innerText();
- assert.match(diagnosis,/Versió de la pàgina: pwa-diagnostic-v20/);
+ assert.match(diagnosis,/Versió de la pàgina: pwa-bootstrap-v21/);
  assert.match(diagnosis,/Mode: Safari \/ navegador · Ruta: \/freya-travel\//);
  assert.match(diagnosis,/Planning llegit: 13 · Planning visible: 13/);
  assert.doesNotMatch(diagnosis,/synthetic@example|12800000-0000-4000/);
  await page.locator('#pwaDiagnosticRefresh').click();
- await page.waitForFunction(()=>document.querySelector('#pwaDiagnosticSummary')?.textContent.includes('Versió pública consultada: pwa-diagnostic-v20'));
+ await page.waitForFunction(()=>document.querySelector('#pwaDiagnosticSummary')?.textContent.includes('Versió pública consultada: pwa-bootstrap-v21'));
  assert.equal(await page.evaluate(()=>fixture.writes),0);
  await page.locator('#pwaDiagnostic summary').click();
  for(const [day,count] of [['27',7],['28',6]]){
@@ -133,6 +133,24 @@ try{
  assert.match(await page.locator('#genericItineraryMessage').innerText(),/sessió ha caducat/);
  await page.locator('[data-generic-itinerary-day="2026-12-27"]').click();
  await page.screenshot({path:process.env.ITINERARY_TABLET?'/tmp/freya-itinerary-loading-tablet.png':'/tmp/freya-itinerary-loading-mobile.png',fullPage:true});
+ // A fresh standalone installation must explain a missing SDK, not falsely say 'connection failed'.
+ const broken=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
+ await broken.route('**/vendor/supabase.js',route=>route.abort());
+ await broken.route('**/*',route=>new URL(route.request().url()).origin===new URL(url).origin?route.continue():route.abort());
+ const cold=await broken.newPage();
+ await cold.addInitScript(()=>{
+   Object.defineProperty(navigator,'standalone',{configurable:true,value:true});
+   const original=window.setTimeout.bind(window);
+   window.setTimeout=(callback,delay,...args)=>original(callback,delay===10000?200:delay,...args);
+ });
+ await cold.goto(url);
+ await cold.locator('#freyaBootstrapRetry').waitFor({state:'visible',timeout:10000});
+ const coldText=await cold.locator('#loading').innerText();
+ assert.match(coldText,/Diagnòstic: SDK/);
+ assert.match(coldText,/App instal·lada/);
+ assert.match(coldText,/No s’han esborrat/);
+ assert.doesNotMatch(coldText,/Torna a instal·lar|Esborra les dades/);
+ await broken.close();
  // Late completions after switching user/trip must not paint old activities.
  await page.evaluate(()=>{fixture.expired=false;fixture.delay=new Promise(r=>window.releaseFlight=r);void loadGenericItinerary(true)});
  await page.waitForFunction(()=>agendaRequests.size>0);
