@@ -42,6 +42,14 @@ export async function stableItineraryImportId(tripId,documentId,sourceOrder){
  const hex=[...bytes].map(byte=>byte.toString(16).padStart(2,'0')).join('');
  return [hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join('-');
 }
+// Uses the same exact title/date/local-time identity as the write guard.
+export function findExistingItineraryImportItems(snapshot,existing=[]){
+ const byKey=new Map(existing.map(row=>[existingFingerprint(row),row]));
+ return (snapshot?.items||[]).filter(item=>item.included).flatMap(item=>{
+  const row=byKey.get(fingerprint(item.values||{}));
+  return row?[row]:[];
+ });
+}
 export async function prepareItineraryImportRows(snapshot,{tripId,userId,documentId,existing=[],convertLocalTime,tripStartDate=null,tripEndDate=null}){
  if(!UUID.test(tripId)||!UUID.test(userId)||!UUID.test(documentId))abort('Viatge o document invàlid.');
  if(!snapshot||!Array.isArray(snapshot.items)||snapshot.items.length>200||
@@ -69,7 +77,7 @@ export async function prepareItineraryImportRows(snapshot,{tripId,userId,documen
   if(seen.has(key))abort('Hi ha un duplicat seleccionat: «'+title+'». Desmarca’l abans de desar.');
   const id=await stableItineraryImportId(tripId,documentId,item.source_order);
   const matched=already.get(key);
-  if(matched&&matched.id!==id)abort('«'+title+'» ja consta al planning. Desmarca aquesta activitat abans de desar.');
+  if(matched&&matched.id!==id)abort('«'+title+'» ja consta al planning. Obre l’itinerari per consultar les activitats desades.');
   if(existingIds.has(id)&&existingIds.get(id).title!==title)
    abort('«'+title+'» ja s’havia importat. Per modificar-la, edita-la directament al planning.');
   seen.add(key);

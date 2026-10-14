@@ -32,6 +32,12 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/travel-book-browser" --no-package-lock --ignore-scripts playwright-core@1.63.0
           node "$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/cli.js" install --with-deps chromium
+      - name: Itinerary partial loading and duplicate contracts
+        run: node --test scripts/itinerary-loading.test.mjs scripts/trip-home.test.mjs scripts/import-itinerary-write.test.mjs
+      - name: Itinerary partial loading mobile and PWA regression
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-loading-browser.mjs
+      - name: Itinerary partial loading tablet with desktop identification
+        run: ITINERARY_TABLET=1 PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-loading-browser.mjs
       - name: Itinerary routes mobile and PWA regression
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-route-browser.mjs
       - name: Shared trip mobile and PWA regression
