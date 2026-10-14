@@ -74,8 +74,8 @@ const sdkTag = `<script id="freyaSdk" src="${cdnSupabase}" onload="window.freyaB
 if(!builtIndex.includes(sdkTag))throw new Error('Supabase bootstrap tag not found in built index');
 // An HTML parser treats a raw closing script tag as markup even within JS strings.
 const safeSdk=sdk.replace(/<\/script/gi,'<\\/script');
-const inlineSdk = '<script id="freyaSdk">\\n'+safeSdk+
-  "\\nwindow.freyaBoot.step(window.supabase?.createClient?'app':'sdk');\\n</script>";
+const inlineSdk = '<script id="freyaSdk">\n'+safeSdk+
+  "\nwindow.freyaBoot.step(window.supabase?.createClient?'app':'sdk');\n</script>";
 const finalIndex=builtIndex.replace(sdkTag,inlineSdk);
 if(finalIndex.includes('src="'+cdnSupabase+'"'))throw new Error('Unexpected external critical SDK');
 await writeFile(builtIndexUrl,finalIndex);
