@@ -1820,6 +1820,12 @@
           <div class="generic-itinerary-hero-actions"><button id="addManualItineraryItem" type="button">＋ Afegir al planning</button><button id="openItineraryImport" type="button" class="secondary">📄 Importa document</button><button id="refreshGenericItinerary" type="button">Actualitza</button></div>
         </section>
         <div id="itinerarySourceStatus" class="message hidden" role="status" aria-live="polite"></div>
+        <details id="pwaDiagnostic" class="card" style="padding:12px 16px">
+          <summary style="cursor:pointer;min-height:44px;display:flex;align-items:center">Estat de l’app i actualitzacions</summary>
+          <p class="muted">Consulta la versió i la càrrega de l’itinerari. No esborra dades ni esborranys.</p>
+          <p id="pwaDiagnosticSummary" role="status" aria-live="polite" style="white-space:pre-line;overflow-wrap:anywhere">Obre aquest apartat per consultar l’estat.</p>
+          <button id="pwaDiagnosticRefresh" type="button" class="secondary" style="min-height:44px">Comprova la versió pública</button>
+        </details>
         <p id="genericItineraryMessage" class="message hidden" role="status" aria-live="polite"></p>
         <div id="genericItineraryLoading" class="generic-itinerary-loading hidden">Preparant l’itinerari…</div>
         <section id="itineraryImportPanel" class="card hidden" aria-labelledby="itineraryImportTitle">
@@ -1938,6 +1944,7 @@ setTimeout(()=>{
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const FREYA_FRONTEND_RELEASE='pwa-diagnostic-v20';
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
 const VAPID_PUBLIC_KEY='BCDiQCUSP-o3QmkZ1sxNZtglQvyhVkRfVKdGv_w7Q9v4iT57y7awfseqg-lzlawT2wpmpGzfVDDgepmODcD1UBc';
@@ -6242,6 +6249,61 @@ async function renderAgendaRoutes(items,day){
    onEdit:item=>item.sourceType==='manual'?openManualItineraryForm(item.sourceId):openItinerarySource(item.sourceType,item.sourceId)});
  }catch(_){if(current())msg('genericItineraryMessage','No s’han pogut carregar els trajectes. Torna a obrir el dia per reintentar.',true)}
 }
+// Visible, read-only diagnostics. Never expose tokens, user IDs or cached document contents.
+let pwaDiagnosticSequence=0;
+async function refreshPwaDiagnostics(checkNetwork=false){
+  const panel=$('pwaDiagnostic'),output=$('pwaDiagnosticSummary'),button=$('pwaDiagnosticRefresh');
+  if(!panel?.open||!output)return;
+  const sequence=++pwaDiagnosticSequence;
+  const existing=manualItineraryRows.filter(row=>row.trip_id===trip?.id).length;
+  const displayed=itineraryProjection.filter(item=>item.sourceType==='manual').length;
+  const labels={flight:'Vols',accommodation:'Hotels',activity:'Activitats',manual:'Planning'};
+  const sourceInfo=Object.keys(labels).map(type=>{
+    const marker=itinerarySourceMarker(type,trip?.id,tripLoadGeneration,session?.user?.id);
+    return labels[type]+': '+(itinerarySourceReady[type]===marker?'actualitzat':itinerarySourceAvailable[type]===marker?'anterior / sense verificar':'pendent');
+  }).join(' · ');
+  const lines=[
+    'Versió de la pàgina: '+FREYA_FRONTEND_RELEASE,
+    'Mode: '+(isStandalone()?'icona instal·lada':'Safari / navegador')+' · Ruta: '+location.pathname,
+    'Connexió: '+(connectionUnavailable()?'limitada o sense xarxa':'disponible'),
+    'Planning llegit: '+existing+' · Planning visible: '+displayed,
+    'Fonts: '+sourceInfo
+  ];
+  output.textContent=lines.join('\n');
+  if(button)button.disabled=checkNetwork;
+  try{
+    if('caches' in window){
+      const names=await caches.keys();
+      const own=names.filter(name=>name.startsWith('freya-travel-release-6444-'));
+      lines.push('Cache de Freya: '+(own.length?own.join(', '):'cap'));
+    }else lines.push('Cache: no disponible');
+    if('serviceWorker' in navigator){
+      const registration=await navigator.serviceWorker.getRegistration('/freya-travel/');
+      lines.push('Service worker: '+(navigator.serviceWorker.controller?'actiu':'sense control')+
+        (registration?.waiting?' · actualització pendent':''));
+      if(checkNetwork&&registration)await registration.update();
+    }else lines.push('Service worker: no disponible');
+    if(checkNetwork){
+      const response=await fetch('/freya-travel/?freya_diag=1',{cache:'no-store'});
+      if(!response.ok)throw new Error('offline');
+      const source=await response.text();
+      const match=/const FREYA_FRONTEND_RELEASE='([^']+)'/.exec(source);
+      const publicRelease=match?.[1]||'no identificada';
+      lines.push('Versió pública consultada: '+publicRelease);
+      if(match&&match[1]!==FREYA_FRONTEND_RELEASE)
+        lines.push('Hi ha una versió diferent al web. Reobre Freya amb connexió; si persisteix, avisa’ns.');
+    }
+  }catch(_){lines.push('No s’ha pogut verificar tota la informació en línia. No s’ha esborrat res.')}
+  finally{
+    if(sequence===pwaDiagnosticSequence&&panel.open){
+      output.textContent=lines.join('\n');
+      if(button)button.disabled=false;
+    }
+  }
+}
+$('pwaDiagnostic').addEventListener('toggle',()=>{if($('pwaDiagnostic').open)void refreshPwaDiagnostics()});
+$('pwaDiagnosticRefresh').onclick=()=>{void refreshPwaDiagnostics(true)};
+
 function renderItinerarySourceStatus(){
   const panel=$('itinerarySourceStatus');if(!panel)return;
   const labels={flight:'Vols i documents de vol',accommodation:'Allotjaments',activity:'Activitats i transports',manual:'Plans manuals i importats'};
@@ -6257,6 +6319,7 @@ function renderItinerarySourceStatus(){
 function renderGenericItinerary(){
   if(!trip||isLondonTrip())return;
   renderItinerarySourceStatus();
+  if($('pwaDiagnostic').open)void refreshPwaDiagnostics();
   const scheduled=itineraryProjection.filter(item=>item.localDate),unscheduled=itineraryProjection.filter(item=>!item.localDate);
   const groups=new Map();scheduled.forEach(item=>{if(!groups.has(item.localDate))groups.set(item.localDate,[]);groups.get(item.localDate).push(item)});
   const dates=[...new Set([...genericItineraryTripDates(),...scheduled.map(item=>item.localDate)])].sort(),today=genericItineraryToday(),selected=resolveGenericItineraryDay(dates,unscheduled.length>0),tabs=$('genericItineraryDayTabs');
