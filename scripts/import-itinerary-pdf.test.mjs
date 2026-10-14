@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
  itineraryPdfTextSchema,itineraryPdfTextInstructions,
- validateItineraryPdfTranscript,itineraryPdfTranscriptToProposal
+ validateItineraryPdfTranscript,itineraryPdfTranscriptToProposal,
+ itineraryPdfNeedsDateRecovery,itineraryPdfPreferRetry
 } from '../supabase/functions/import-itinerary/transcript.mjs';
 import {readFileSync} from 'node:fs';
 const endpoint=readFileSync(new URL('../supabase/functions/import-itinerary/index.ts',import.meta.url),'utf8');
@@ -108,8 +109,34 @@ test('P0 #135: incomplete transcript without candidates stays blocked',()=>{
  assert.throws(()=>itineraryPdfTranscriptToProposal(p,source,{allowIncomplete:true}),e=>e.code==='transcription_incomplete');
 });
 test('P0 #135: controlled retry and no silent saves',()=>{
- assert.match(endpoint,/if\(transcript\?\.complete===false\)/);
+ assert.match(endpoint,/itineraryPdfNeedsDateRecovery\(transcript,proposal\)/);
  assert.match(endpoint,/transcribePrivateFile\(doc,bytes,true\)/);
  assert.match(endpoint,/allowIncomplete:true/);
  assert.doesNotMatch(endpoint,/\.insert\(|\.upsert\(/);
+});
+
+test('P0 #135: PDF header date context is explicitly preserved',()=>{
+ const instructions=itineraryPdfTextInstructions();
+ assert.match(instructions,/període global/);
+ assert.match(instructions,/portada/);
+ assert.match(instructions,/capçaleres de dia/);
+ assert.match(endpoint,/el primer intent pot haver perdut dates/);
+});
+test('P0 #135: 21 timed items without any dates cause a second reading even when complete',()=>{
+ const proposal={candidates:Array.from({length:21},(_,i)=>({fields:{
+  title:{value:'Visita '+i},start_local_time:{value:'10:00'}
+ }}))};
+ assert.equal(itineraryPdfNeedsDateRecovery({complete:true},proposal),true);
+ assert.equal(itineraryPdfNeedsDateRecovery({complete:true},{candidates:[
+  {fields:{start_local_time:{value:'10:00'},local_date:{value:'2026-10-23'}}}
+ ]}),false);
+});
+test('P0 #135: improved dates accepted only if retry keeps all 21 activities',()=>{
+ const make=(n,dates)=>({candidates:Array.from({length:n},(_,i)=>({
+  fields:{title:{value:'Activitat '+i},...(i<dates?{local_date:{value:'2026-10-23'}}:{})}
+ }))});
+ const initial=make(21,0);
+ assert.equal(itineraryPdfPreferRetry({complete:true},initial,{complete:true},make(21,21)),true);
+ assert.equal(itineraryPdfPreferRetry({complete:true},initial,{complete:true},make(20,20)),false);
+ assert.equal(itineraryPdfPreferRetry({complete:true},initial,{complete:true},make(21,0)),false);
 });
