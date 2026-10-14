@@ -189,7 +189,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
     continue;
    }
-   if(PARTIAL_DATE.test(work)||/^(?:dia|día|day)\s*\d{1,3}\s*$/.test(line)){
+   if((!CLOCK.test(line)&&PARTIAL_DATE.test(work))||/^(?:dia|día|day)\s*\d{1,3}\s*$/.test(line)){
     current=null;pendingDaypart=null;warnings.add('Hi ha dates sense any: cal confirmar-les.');continue;
    }
    if(HEADER.test(line)||/^p[àa]g(?:ina)?\s*\d+$/i.test(line))continue;
