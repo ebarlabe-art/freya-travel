@@ -1932,19 +1932,54 @@
   </section>
 </main>
 <script>
-// Standalone-safe bootstrap diagnostic: executes even if the Supabase script
-// cannot be read from the local service worker cache in airplane mode.
-setTimeout(()=>{
-  const splash=document.getElementById('loading');
-  if(!splash||splash.classList.contains('hidden'))return;
-  splash.textContent=navigator.onLine===false
-    ?'📵 Freya no ha pogut iniciar-se sense Internet. Connecta’t per actualitzar-la. No cal esborrar l’app ni les còpies offline.'
-    :'Freya està trigant a iniciar-se. Comprova la connexió i torna a obrir-la.';
-},10000);
+// Safe bootstrap watchdog runs before the SDK and the large application script.
+// It never reads credentials, changes sessions or clears browser storage.
+window.__freyaBoot={stage:'sdk',failure:null};
+window.__freyaBootStage=stage=>{window.__freyaBoot.stage=stage};
+(function(){
+  const state=window.__freyaBoot;
+  window.addEventListener('error',event=>{
+    if(event.target?.tagName==='SCRIPT'&&/supabase(?:\.js|\-js)/.test(event.target.src||'')){
+      state.failure='sdk_unavailable';
+    }else if(event.target===window&&!state.failure){
+      state.failure='startup_error';
+    }
+  },true);
+  setTimeout(()=>{
+    const splash=document.getElementById('loading');
+    if(!splash||splash.classList.contains('hidden'))return;
+    const sdkMissing=state.failure==='sdk_unavailable'||!window.supabase?.createClient;
+    const category=sdkMissing?'SDK':state.failure==='startup_error'?'JS':state.stage==='auth'?'AUTH':state.stage==='session'?'SESSION':'BOOT';
+    const explanations={
+      SDK:'No s’ha pogut carregar el motor de Freya.',
+      JS:'El codi de Freya s’ha interromput durant l’inici.',
+      AUTH:'La verificació de la sessió està trigant.',
+      SESSION:'Freya està preparant l’accés als viatges.',
+      BOOT:'La preparació inicial està trigant.'
+    };
+    const title=document.createElement('strong');
+    title.textContent='Freya encara no ha acabat d’iniciar-se.';
+    const detail=document.createElement('p');
+    detail.textContent=explanations[category]+' Diagnòstic: '+category+
+      ' · '+(navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches?'App instal·lada':'Navegador')+
+      ' · '+(navigator.onLine===false?'sense connexió':'connexió detectada')+'.';
+    const help=document.createElement('p');
+    help.textContent='No s’han esborrat els viatges, documents ni esborranys. Si continua passant, envia una captura d’aquesta pantalla.';
+    const retry=document.createElement('button');
+    retry.type='button';
+    retry.id='freyaBootstrapRetry';
+    retry.className='secondary';
+    retry.style.minHeight='44px';
+    retry.textContent='Reintenta sense esborrar dades';
+    retry.onclick=()=>location.reload();
+    splash.replaceChildren(title,detail,help,retry);
+  },10000);
+})();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-diagnostic-v20';
+window.__freyaBootStage?.('main');
+const FREYA_FRONTEND_RELEASE='pwa-bootstrap-v21';
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
 const VAPID_PUBLIC_KEY='BCDiQCUSP-o3QmkZ1sxNZtglQvyhVkRfVKdGv_w7Q9v4iT57y7awfseqg-lzlawT2wpmpGzfVDDgepmODcD1UBc';
@@ -6817,6 +6852,7 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
   if(pendingInitialRoute&&!initialViewApplied)applyPendingInitialView();return true;
 }
 async function renderSession(next){
+  window.__freyaBootStage?.('session');
   if(next?.user?.id!==session?.user?.id)closeItineraryImport();
   const renderGeneration=++sessionRenderGeneration,nextUserId=next?.user?.id||null;
   if(nextUserId!==session?.user?.id){resetBuilderUi();clearParkingReservationPreview()}
@@ -10196,6 +10232,7 @@ $('genericEnablePush').onclick=enablePushNotifications;
 window.addEventListener('load',()=>{updateInstallUi();refreshPushUi();initGuide()});
 window.addEventListener('pageshow',refreshPushUi);
 
+window.__freyaBootStage?.('auth');
 db.auth.onAuthStateChange((event,next)=>{
   // An SDK refresh may fail while offline even though the user never signed out.
   // Explicit logout deletes the local grant BEFORE triggering SIGNED_OUT.
