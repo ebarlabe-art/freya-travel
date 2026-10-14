@@ -7,7 +7,7 @@ const worker=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
 
 test('PWA diagnostic is read only, scoped and has an explicit version marker',()=>{
   assert.equal(html,fallback,'404.html must match index.html');
-  assert.match(html,/const FREYA_FRONTEND_RELEASE='pwa-bootstrap-v21'/);
+  assert.match(html,/const FREYA_FRONTEND_RELEASE='pwa-inline-sdk-v22'/);
   assert.match(html,/id="pwaDiagnostic"/);
   assert.match(html,/id="pwaDiagnosticSummary"/);
   assert.match(html,/id="pwaDiagnosticRefresh"/);
@@ -21,7 +21,7 @@ test('PWA diagnostic is read only, scoped and has an explicit version marker',()
   assert.doesNotMatch(diagnostic,/access_token|refresh_token|session\.user\.email|\.invite_code/);
 });
 test('The new SW cache version is unique and the existing network-first navigation remains',()=>{
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v21'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v22'/);
   assert.match(worker,/if\(isNavigation \|\| isIndexRequest\)/);
   assert.match(worker,/fetch\(request\)\.then\(response/);
   assert.match(worker,/keys\(\)\.then\(keys=>Promise\.all\(keys\.filter/);

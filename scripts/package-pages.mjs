@@ -65,7 +65,20 @@ const builtIndexUrl=new URL('index.html',dist);
 const builtIndex=await readFile(builtIndexUrl,'utf8');
 const cdnSupabase='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 if(!builtIndex.includes(cdnSupabase))throw new Error('Supabase CDN runtime marker not found in built index');
-await writeFile(builtIndexUrl,builtIndex.replace(cdnSupabase,'./vendor/supabase.js'));
+// Eliminate the second critical request during standalone iOS bootstrap.
+// Keep the pinned UMD SDK in the built HTML; the source HTML remains lightweight.
+const sdk=await readFile(new URL('vendor/supabase.js',dist),'utf8');
+if(!sdk.includes('createClient')||Buffer.byteLength(sdk)>2*1024*1024)
+  throw new Error('Supabase SDK is missing or unexpectedly large');
+const sdkTag = `<script id="freyaSdk" src="${cdnSupabase}" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>`;
+if(!builtIndex.includes(sdkTag))throw new Error('Supabase bootstrap tag not found in built index');
+// An HTML parser treats a raw closing script tag as markup even within JS strings.
+const safeSdk=sdk.replace(/<\/script/gi,'<\\/script');
+const inlineSdk = '<script id="freyaSdk">\n'+safeSdk+
+  "\nwindow.freyaBoot.step(window.supabase?.createClient?'app':'sdk');\n</script>";
+const finalIndex=builtIndex.replace(sdkTag,inlineSdk);
+if(finalIndex.includes('src="'+cdnSupabase+'"'))throw new Error('Unexpected external critical SDK');
+await writeFile(builtIndexUrl,finalIndex);
 
 for(const file of ['sw.js','manifest.webmanifest','itinerary.html']){
   await copyFile(new URL(file,root),new URL(file,dist));
