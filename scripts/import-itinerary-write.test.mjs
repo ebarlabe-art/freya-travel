@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {deselectExactImportDuplicates,stableItineraryImportId,prepareItineraryImportRows}
+import {findExistingItineraryImportItems,deselectExactImportDuplicates,stableItineraryImportId,prepareItineraryImportRows}
  from '../domain/import-itinerary-write.mjs';
 
 const tripId='56c825cb-d857-42b5-a101-d53014b69df1';
@@ -66,4 +66,14 @@ test('A2.8: incomplete date, zone, order and unknown trip are blocked',async()=>
  await assert.rejects(prepareItineraryImportRows(snapshot(item(1,'Fora viatge','2027-02-01','17:00','')),base),/dins de les dates/);
  await assert.rejects(prepareItineraryImportRows(snapshot(item(1,'Museu')), {...base,tripId:'intrus'}),/invàlid/);
  await assert.rejects(prepareItineraryImportRows(snapshot({...item(1,'Visita'),values:{...item(1,'Visita').values,time_zone:'Invalid/Zone'}}),base),/Zona horària/);
+});
+
+test('P0: existing import detection is exact, read-only, and independent of source document',()=>{
+ const existing=[{id:'existing',title:'Esmorzar lliure al centre històric de Riga (Vecrīga).',localDate:'2026-12-27',timeLabel:'09:00'}];
+ const match=item(0,existing[0].title,'2026-12-27','09:00','');
+ const differentTime=item(1,existing[0].title,'2026-12-27','10:00','');
+ const excluded={...match,included:false};
+ const input=snapshot(match,differentTime,excluded),before=JSON.stringify([input,existing]);
+ assert.deepEqual(findExistingItineraryImportItems(input,existing),[existing[0]]);
+ assert.equal(JSON.stringify([input,existing]),before);
 });

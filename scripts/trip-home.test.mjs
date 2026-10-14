@@ -327,3 +327,11 @@ test('closing the internal document viewer does not navigate away from its sourc
   assert.match(close,/viewer\.classList\.add\('hidden'\)/);
   assert.doesNotMatch(close,/setAppView|history\.|location/);
 });
+
+test('P0: non-forced retry reads only failed sources and keeps completeness conservative',async()=>{
+ const {sandbox,pending,calls}=loaderHarness();
+ const first=sandbox.ensureTripAgenda();pending.forEach(entry=>entry.finish(entry.type!=='flight'));
+ assert.equal(await first,false);assert.equal(sandbox.itinerarySourcesAreReady(),false);
+ const retry=sandbox.ensureTripAgenda();assert.deepEqual(calls,['flight','accommodation','activity','manual','flight']);
+ pending.at(-1).finish();assert.equal(await retry,true);
+});

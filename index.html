@@ -1819,6 +1819,7 @@
           <div><small>Agenda compartida</small><h2 id="genericItineraryTitle">Itinerari</h2><p>Vols, allotjaments, activitats i plans personals en una sola agenda.</p></div>
           <div class="generic-itinerary-hero-actions"><button id="addManualItineraryItem" type="button">＋ Afegir al planning</button><button id="openItineraryImport" type="button" class="secondary">📄 Importa document</button><button id="refreshGenericItinerary" type="button">Actualitza</button></div>
         </section>
+        <div id="itinerarySourceStatus" class="message hidden" role="status" aria-live="polite"></div>
         <p id="genericItineraryMessage" class="message hidden" role="status" aria-live="polite"></p>
         <div id="genericItineraryLoading" class="generic-itinerary-loading hidden">Preparant l’itinerari…</div>
         <section id="itineraryImportPanel" class="card hidden" aria-labelledby="itineraryImportTitle">
@@ -1849,6 +1850,7 @@
             <div id="itineraryImportWarnings" class="stack" role="status"></div>
             <div id="itineraryImportCandidates" class="stack"></div>
             <p class="muted">Revisa les activitats i desmarca les que no vulguis importar. Freya no modificarà cap element que ja tinguis al viatge.</p>
+            <button type="button" id="itineraryImportViewExisting" class="hidden">Veure les activitats desades</button>
             <p id="itineraryImportSaveStatus" class="message" role="status" aria-live="polite">Encara no s'ha desat cap activitat.</p>
             <button type="button" id="itineraryImportWrite" disabled>Desar activitats seleccionades</button>
             <div id="itineraryImportConfirm" class="stack hidden" role="group" aria-label="Confirmació de la importació">
@@ -2828,11 +2830,15 @@ function persistOfflineAgendaSnapshot(){
 function restoreOfflineAgendaSnapshot(){
   if(!trip||!session||isLondonTrip())return false;const value=readOfflineTripSnapshot();
   const agenda=value?.agenda;if(!agenda||!Array.isArray(agenda.flightRows)||!Array.isArray(agenda.accommodationRows)||!Array.isArray(agenda.activityRows)||!Array.isArray(agenda.manualItineraryRows))return false;
-  flightRows=agenda.flightRows;flightDocumentLinks=agenda.flightDocumentLinks||[];
-  accommodationRows=agenda.accommodationRows;accommodationDocumentLinks=agenda.accommodationDocumentLinks||[];
-  activityRows=agenda.activityRows;activityDocumentLinks=agenda.activityDocumentLinks||[];
-  manualItineraryRows=agenda.manualItineraryRows;dayMetadataRows=agenda.dayMetadataRows||[];
-  for(const type of ['flight','accommodation','activity','manual'])markItinerarySourceReady(type,trip.id,tripLoadGeneration,session.user.id);
+  // A failed source must never replace a newer successful read with an older snapshot.
+  const missing=type=>itinerarySourceAvailable[type]!==itinerarySourceMarker(type,trip.id,tripLoadGeneration,session.user.id);
+  if(missing('flight')){flightRows=agenda.flightRows;flightDocumentLinks=agenda.flightDocumentLinks||[]}
+  if(missing('accommodation')){accommodationRows=agenda.accommodationRows;accommodationDocumentLinks=agenda.accommodationDocumentLinks||[]}
+  if(missing('activity')){activityRows=agenda.activityRows;activityDocumentLinks=agenda.activityDocumentLinks||[]}
+  if(missing('manual'))manualItineraryRows=agenda.manualItineraryRows;
+  if(!dayMetadataRows.length)dayMetadataRows=agenda.dayMetadataRows||[];
+  for(const type of ['flight','accommodation','activity','manual'])
+    itinerarySourceAvailable[type]=itinerarySourceMarker(type,trip.id,tripLoadGeneration,session.user.id);
   renderFlights();renderAccommodations();renderActivities();renderLocalTransports();scheduleItineraryRebuild();
   offlineSnapshotActive=true;offlineSnapshotSavedAt=value.savedAt||null;updateConnectivityBanner();return true;
 }
@@ -3280,6 +3286,8 @@ let accommodationVoucherFocus=null,accommodationVoucherFocusTimer=null;
 let itineraryProjection=[];
 let accommodationArrivalEstimates=new Map();
 let accommodationArrivalEstimateRequests=new Set();
+// Available rows survive failed refreshes; ready means a successful current source read.
+let itinerarySourceAvailable={};
 let itinerarySourceReady={flight:null,accommodation:null,activity:null,manual:null};
 let itineraryLoadSequence=0;
 let itineraryLoadBatch=0;
@@ -5544,7 +5552,7 @@ async function fetchAgendaManualItems(silent=false){
     const form=$('manualItineraryForm'),editingId=form.dataset.tripId===tripId?form.dataset.editId||'':'';
     if(editingId){const current=manualItineraryRows.find(item=>item.id===editingId);if(!current){clearManualItineraryDraft(tripId,userId);resetManualItineraryFormUi();msg('genericItineraryMessage','Aquest element s’ha eliminat mentre l’editaves. Hem actualitzat l’itinerari.',true)}else if(current.updated_at!==(form.dataset.originalUpdatedAt||'')){form.dataset.remoteConflict='true';msg('genericItineraryMessage','Aquest element ha canviat mentre l’editaves. Els teus camps no s’han sobreescrit; desa per revisar el conflicte.',true)}}else if(pendingInitialRoute?.view!=='itinerary'&&!$('itineraryView').classList.contains('hidden')&&$('manualItineraryFormCard').classList.contains('hidden'))restoreManualItineraryDraft();
     return manualItineraryRows;
-  }catch(error){if(itineraryRequestIsCurrent(tripId,generation,userId)&&sequence===manualItineraryLoadSequence&&!isLondonTrip())msg('genericItineraryMessage',error?.message||'No s’han pogut carregar els elements manuals.',true);return manualItineraryRows}finally{if(!silent&&itineraryRequestIsCurrent(tripId,generation,userId)&&sequence===manualItineraryLoadSequence)$('genericItineraryLoading').classList.add('hidden')}
+  }catch(error){if(itineraryRequestIsCurrent(tripId,generation,userId)&&sequence===manualItineraryLoadSequence&&!isLondonTrip())msg('genericItineraryMessage',error?.code==='PGRST303'||error?.status===401?'La sessió ha caducat. Torna a iniciar sessió per actualitzar l’itinerari.':error?.message||'No s’han pogut carregar els elements manuals.',true);return manualItineraryRows}finally{if(!silent&&itineraryRequestIsCurrent(tripId,generation,userId)&&sequence===manualItineraryLoadSequence)$('genericItineraryLoading').classList.add('hidden')}
 }
 async function recoverManualItineraryConflict(id,tripId,generation){
   await loadManualItineraryItems(true);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;const current=manualItineraryRows.find(item=>item.id===id);if(!current){clearManualItineraryDraft(tripId);resetManualItineraryFormUi();msg('genericItineraryMessage','Aquest element ja no existeix.',true);return}clearManualItineraryDraft(tripId);populateManualItineraryForm(current);saveManualItineraryDraft();msg('genericItineraryMessage','Aquest element ha canviat mentre l’editaves. Hem carregat la versió més recent; revisa-la abans de tornar a desar.',true);
@@ -5686,7 +5694,7 @@ function loadAgendaSource(type,loader,refresh){
     do{
       request.again=false;
       if(!itineraryRequestIsCurrent(tripId,generation,userId))return null;
-      itinerarySourceReady[type]=null;renderTripHome();
+      itinerarySourceReady[type]=null;renderTripHome();scheduleItineraryRebuild();
       try{result=await loader()}catch(error){console.error('No s’ha pogut carregar la font de l’agenda:',type,error);result=null}
     }while(request.again&&itineraryRequestIsCurrent(tripId,generation,userId));
     return result;
@@ -5706,10 +5714,11 @@ function ensureTripAgenda(force=false){
     const restored=restoreOfflineAgendaSnapshot();renderTripHome();scheduleItineraryRebuild();return Promise.resolve(restored);
   }
   const batch={key,promise:null};agendaBatch=batch;
-  batch.promise=Promise.allSettled([loadFlights(true,false),loadAccommodations(true,false),loadActivities(true,false),loadManualItineraryItems(true,false),loadTripDayMetadata(true)]).then(()=>{
+  const needed=(type,loader)=>force||itinerarySourceReady[type]!==itinerarySourceMarker(type,tripId,generation,userId)?loader(true,false):Promise.resolve();
+  batch.promise=Promise.allSettled([needed('flight',loadFlights),needed('accommodation',loadAccommodations),needed('activity',loadActivities),needed('manual',loadManualItineraryItems),loadTripDayMetadata(true)]).then(()=>{
     if(!itineraryRequestIsCurrent(tripId,generation,userId))return false;
     if(itinerarySourcesAreReady(tripId,generation,userId)){persistOfflineAgendaSnapshot();markOfflineDataFresh();return true}
-    return restoreOfflineAgendaSnapshot();
+    restoreOfflineAgendaSnapshot();return false;
   }).finally(()=>{
     if(agendaBatch===batch)agendaBatch=null;
     if(itineraryRequestIsCurrent(tripId,generation,userId)){renderTripHome();scheduleItineraryRebuild();updateConnectivityBanner()}
@@ -5826,6 +5835,7 @@ function itinerarySourceMarker(type,tripId,generation,userId){return `${type}:${
 function markItinerarySourceReady(type,tripId,generation,userId){
   if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return;
   itinerarySourceReady[type]=itinerarySourceMarker(type,tripId,generation,userId);
+  itinerarySourceAvailable[type]=itinerarySourceReady[type];
   scheduleItineraryRebuild();
 }
 function itinerarySourcesAreReady(tripId=trip?.id,generation=tripLoadGeneration,userId=session?.user?.id){
@@ -5919,9 +5929,10 @@ async function ensureAccommodationArrivalEstimates(){
   if(changed&&itineraryRequestIsCurrent(tripId,generation,userId)){rebuildGenericItinerary(tripId,generation,userId);renderTripHome()}
 }
 function normalizedItineraryProjection(tripId,generation,userId=session?.user?.id){
-  if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip()||!itinerarySourcesAreReady(tripId,generation,userId))return [];
+  if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return [];
   const items=[];
   flightRows.forEach(row=>{
+    if(row.trip_id!==tripId||itinerarySourceAvailable['flight']!==itinerarySourceMarker('flight',tripId,generation,userId))return;
     const departure=itineraryDateTime(row.departure_at,row.departure_time_zone);if(!departure)return;
     const arrival=itineraryDateTime(row.arrival_at,row.arrival_time_zone);
     const origin=row.departure_airport_code||row.departure_city||row.departure_airport_name||'Origen pendent';
@@ -5934,6 +5945,7 @@ function normalizedItineraryProjection(tripId,generation,userId=session?.user?.i
     items.push({key:`flight:${row.id}:departure`,tripId,sourceType:'flight',sourceId:row.id,sourceEvent:'departure',title:`${origin} → ${destination}`,eyebrow:'Vol',subtitle:carrier,details:detail,icon:'✈️',startsAt:row.departure_at,endsAt:row.arrival_at,timeZone:departure.timeZone,localDate:departure.date,timeLabel:departure.time,timingKind:'exact',localOrder:itineraryLocalOrder(departure.time),sortInstant:departure.instant,sortOrder:0,status:row.flight_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:flightItineraryMapUrl(row),documents:itineraryDocumentsFor('flight',row.id),tags:[]});
   });
   accommodationRows.forEach(row=>{
+    if(row.trip_id!==tripId||itinerarySourceAvailable['accommodation']!==itinerarySourceMarker('accommodation',tripId,generation,userId))return;
     const estimatedArrival=estimatedHotelArrivalItem(row,tripId);if(estimatedArrival)items.push(estimatedArrival);
     const estimatedDeparture=estimatedHotelDepartureItem(row,tripId);if(estimatedDeparture)items.push(estimatedDeparture);
     [['check_in',row.check_in_at,row.check_in_date,'Check-in','🏠'],['check_out',row.check_out_at,row.check_out_date,'Check-out','🧳']].forEach(([sourceEvent,value,dateOnly,label,icon])=>{
@@ -5948,6 +5960,7 @@ function normalizedItineraryProjection(tripId,generation,userId=session?.user?.i
     });
   });
   activityRows.forEach(row=>{
+    if(row.trip_id!==tripId||itinerarySourceAvailable['activity']!==itinerarySourceMarker('activity',tripId,generation,userId))return;
     const type=ACTIVITY_TYPES[row.activity_type]||ACTIVITY_TYPES.other;
     const timing=itineraryDateTime(row.start_at,row.time_zone);
     const end=itineraryDateTime(row.end_at,row.time_zone);
@@ -5956,6 +5969,7 @@ function normalizedItineraryProjection(tripId,generation,userId=session?.user?.i
   });
   const daypartLabels={morning:'Matí',midday:'Migdia',afternoon:'Tarda',evening:'Vespre',night:'Nit'},daypartOrder={morning:480,midday:720,afternoon:900,evening:1080,night:1320};
   manualItineraryRows.forEach(row=>{
+    if(row.trip_id!==tripId||itinerarySourceAvailable['manual']!==itinerarySourceMarker('manual',tripId,generation,userId))return;
     const timing=row.timing_kind==='exact'?itineraryDateTime(row.starts_at,row.time_zone):null,end=row.timing_kind==='exact'?itineraryDateTime(row.ends_at,row.time_zone):null;
     const approximateStart=itineraryLocalTime(row.approximate_start_time),approximateEnd=itineraryLocalTime(row.approximate_end_time);
     const timeLabel=row.timing_kind==='exact'?timing?.time||'':row.timing_kind==='approximate'?`~ ${approximateStart}${approximateEnd?`–${approximateEnd}`:''}`:row.timing_kind==='all_day'?'Tot el dia':row.timing_kind==='date'?'Durant el dia':row.timing_kind==='daypart'?daypartLabels[row.daypart]||'Part del dia':'';
@@ -6217,7 +6231,7 @@ let agendaRouteModule=null,agendaRouteImport=null;
 async function renderAgendaRoutes(items,day){
  if(!trip||!session||isLondonTrip()||visibleAppView()!=='itineraryView'||day==='pending')return;
  const tripId=trip.id,userId=session.user.id,generation=tripLoadGeneration;
- const current=()=>itineraryRequestIsCurrent(tripId,generation,userId)&&visibleAppView()==='itineraryView'&&genericItinerarySelectedDay===day;
+ const current=()=>itinerarySourcesAreReady()&&itineraryRequestIsCurrent(tripId,generation,userId)&&visibleAppView()==='itineraryView'&&genericItinerarySelectedDay===day;
  try{
   const url='/freya-travel/domain/itinerary-route-ui.mjs';
   agendaRouteModule=await (agendaRouteImport??=import(/* @vite-ignore */ url).catch(error=>{agendaRouteImport=null;throw error}));
@@ -6228,15 +6242,28 @@ async function renderAgendaRoutes(items,day){
    onEdit:item=>item.sourceType==='manual'?openManualItineraryForm(item.sourceId):openItinerarySource(item.sourceType,item.sourceId)});
  }catch(_){if(current())msg('genericItineraryMessage','No s’han pogut carregar els trajectes. Torna a obrir el dia per reintentar.',true)}
 }
+function renderItinerarySourceStatus(){
+  const panel=$('itinerarySourceStatus');if(!panel)return;
+  const labels={flight:'Vols i documents de vol',accommodation:'Allotjaments',activity:'Activitats i transports',manual:'Plans manuals i importats'};
+  const missing=Object.keys(labels).filter(type=>itinerarySourceReady[type]!==itinerarySourceMarker(type,trip.id,tripLoadGeneration,session?.user?.id));
+  panel.classList.toggle('hidden',!missing.length);
+  panel.innerHTML=missing.length?'<p>Itinerari parcial. Es mostren les dades disponibles.</p>'+missing.map(type=>{
+    const pending=agendaRequests.has(itinerarySourceMarker(type,trip.id,tripLoadGeneration,session?.user?.id));
+    const cached=itinerarySourceAvailable[type]===itinerarySourceMarker(type,trip.id,tripLoadGeneration,session?.user?.id);
+    return '<p>'+labels[type]+': '+(pending?'carregant…':cached?'no s’ha pogut actualitzar; dades anteriors, pendents de verificar.':'no s’ha pogut carregar.')+'</p>';
+  }).join('')+'<button type="button" id="retryItinerarySources" style="min-height:44px">Reintenta les fonts pendents</button>':'';
+  const retry=$('retryItinerarySources');if(retry)retry.onclick=()=>{void loadGenericItinerary()};
+}
 function renderGenericItinerary(){
   if(!trip||isLondonTrip())return;
+  renderItinerarySourceStatus();
   const scheduled=itineraryProjection.filter(item=>item.localDate),unscheduled=itineraryProjection.filter(item=>!item.localDate);
   const groups=new Map();scheduled.forEach(item=>{if(!groups.has(item.localDate))groups.set(item.localDate,[]);groups.get(item.localDate).push(item)});
   const dates=[...new Set([...genericItineraryTripDates(),...scheduled.map(item=>item.localDate)])].sort(),today=genericItineraryToday(),selected=resolveGenericItineraryDay(dates,unscheduled.length>0),tabs=$('genericItineraryDayTabs');
   $('genericItineraryTitle').textContent=trip.name;
   tabs.innerHTML=dates.map(date=>`<button type="button" role="tab" class="generic-itinerary-day-tab ${date===selected?'active':''} ${date===today?'is-today':''}" data-generic-itinerary-day="${esc(date)}" aria-selected="${date===selected}"${date===today?' aria-current="date"':''}>${esc(genericItineraryDayTabLabel(date))}</button>`).join('')+(unscheduled.length?`<button type="button" role="tab" class="generic-itinerary-day-tab ${selected==='pending'?'active':''}" data-generic-itinerary-day="pending" aria-selected="${selected==='pending'}">Pendents</button>`:'');
   const activeItems=groups.get(selected)||[];
-  $('genericItineraryDays').innerHTML=selected&&selected!=='pending'?`<section class="generic-itinerary-day">${dayMetadataEditorialHtml(selected)}${activeItems.length?`<div class="generic-itinerary-timeline">${activeItems.map(item=>renderItineraryItem(item)).join('')}</div>`:'<div class="generic-itinerary-empty"><strong>Cap pla per a aquest dia.</strong>Pots afegir-ne un quan vulguis.</div>'}</section>`:'';
+  $('genericItineraryDays').innerHTML=selected&&selected!=='pending'?`<section class="generic-itinerary-day">${dayMetadataEditorialHtml(selected)}${activeItems.length?`<div class="generic-itinerary-timeline">${activeItems.map(item=>renderItineraryItem(item)).join('')}</div>`:`<div class="generic-itinerary-empty"><strong>${itinerarySourcesAreReady()?'Cap pla per a aquest dia.':'Encara no hi ha plans carregats per a aquest dia.'}</strong>${itinerarySourcesAreReady()?'Pots afegir-ne un quan vulguis.':'Hi ha fonts pendents; consulta l’avís de càrrega.'}</div>`}</section>`:'';
   $('genericItineraryDays').classList.toggle('hidden',selected==='pending');
   $('genericItineraryUnscheduledList').innerHTML=unscheduled.map(item=>renderItineraryItem(item,true)).join('');
   $('genericItineraryUnscheduled').classList.toggle('hidden',selected!=='pending'||!unscheduled.length);
@@ -6255,10 +6282,10 @@ function renderGenericItinerary(){
   }
   renderItineraryDayWeather();
   proposeItineraryAutoPlaces(selected);
-  if(typeof renderAgendaRoutes==='function')renderAgendaRoutes(activeItems,selected);
+  if(typeof renderAgendaRoutes==='function'&&itinerarySourcesAreReady())renderAgendaRoutes(activeItems,selected);
 }
 function rebuildGenericItinerary(tripId=trip?.id,generation=tripLoadGeneration,userId=session?.user?.id){
-  if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip()||!itinerarySourcesAreReady(tripId,generation,userId))return false;
+  if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return false;
 
   itineraryProjection=normalizedItineraryProjection(tripId,generation,userId);
 
@@ -6274,6 +6301,7 @@ function rebuildGenericItinerary(tripId=trip?.id,generation=tripLoadGeneration,u
     requestAnimationFrame(()=>focusPendingInitialReminderItinerary(reminderItem));
   }else if(
     pendingInitialRoute?.view==='itinerary'&&
+    itinerarySourcesAreReady(tripId,generation,userId)&&
     !initialReminderFocusApplied&&
     trip?.id===pendingInitialRoute.tripId
   ){
@@ -6290,8 +6318,8 @@ function rebuildGenericItinerary(tripId=trip?.id,generation=tripLoadGeneration,u
 function scheduleItineraryRebuild(){
   if(!trip||isLondonTrip())return;
   renderTripHome();
-  if(itineraryLoadBatch||$('itineraryView').classList.contains('hidden')||$('genericItineraryContent').classList.contains('hidden'))return;
-  const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id;if(!itinerarySourcesAreReady(tripId,generation,userId))return;
+  if($('itineraryView').classList.contains('hidden')||$('genericItineraryContent').classList.contains('hidden'))return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id;
   if(itineraryRenderTimer)clearTimeout(itineraryRenderTimer);
   itineraryRenderTimer=setTimeout(()=>{itineraryRenderTimer=null;if(itineraryRequestIsCurrent(tripId,generation,userId))rebuildGenericItinerary(tripId,generation,userId)},40);
 }
@@ -6300,14 +6328,14 @@ async function loadGenericItinerary(force=false){
   const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id,sequence=++itineraryLoadSequence;if(!userId)return;
   itineraryLoadBatch=sequence;
   $('genericItineraryLoading').classList.remove('hidden');msg('genericItineraryMessage','');
+  rebuildGenericItinerary(tripId,generation,userId);
   try{
     await ensureTripAgenda(force);
     if(!itineraryRequestIsCurrent(tripId,generation,userId)||sequence!==itineraryLoadSequence||isLondonTrip())return;
-    if(!itinerarySourcesAreReady(tripId,generation,userId)){itineraryProjection=[];renderGenericItinerary();msg('genericItineraryMessage','No s’ha pogut carregar tot l’itinerari. Torna-ho a provar.',true);return}
     if(pendingInitialRoute?.view!=='itinerary'&&!$('itineraryView').classList.contains('hidden')&&$('manualItineraryFormCard').classList.contains('hidden'))restoreManualItineraryDraft();
-    rebuildGenericItinerary(tripId,generation,userId);ensureAccommodationArrivalEstimates();
+    rebuildGenericItinerary(tripId,generation,userId);if(itinerarySourcesAreReady(tripId,generation,userId))ensureAccommodationArrivalEstimates();
   }catch(error){
-    if(itineraryRequestIsCurrent(tripId,generation,userId)&&sequence===itineraryLoadSequence&&!isLondonTrip()){itineraryProjection=[];renderGenericItinerary();msg('genericItineraryMessage',error?.message||'No s’ha pogut carregar tot l’itinerari. Torna-ho a provar.',true)}
+    if(itineraryRequestIsCurrent(tripId,generation,userId)&&sequence===itineraryLoadSequence&&!isLondonTrip()){rebuildGenericItinerary(tripId,generation,userId);msg('genericItineraryMessage',error?.message||'No s’ha pogut carregar tot l’itinerari. Torna-ho a provar.',true)}
   }finally{
     if(sequence===itineraryLoadSequence)itineraryLoadBatch=0;
     if(itineraryRequestIsCurrent(tripId,generation,userId)&&sequence===itineraryLoadSequence)$('genericItineraryLoading').classList.add('hidden');
@@ -6422,7 +6450,7 @@ function clearGenericItineraryState(){
   if(typeof agendaRouteModule!=='undefined')agendaRouteModule?.resetAgendaRoutes();
   clearTripHomeState();
   clearItinerarySourceContext();
-  itineraryProjection=[];itinerarySourceReady={flight:null,accommodation:null,activity:null,manual:null};genericItinerarySelectedDay=null;genericItinerarySelectedTripId=null;dayMetadataRows=[];dayMetadataEditor=null;dayMetadataSubmitting=false;dayMetadataLoadSequence+=1;itineraryLoadSequence+=1;itineraryLoadBatch=0;if(itineraryRenderTimer)clearTimeout(itineraryRenderTimer);itineraryRenderTimer=null;
+  itineraryProjection=[];itinerarySourceAvailable={};itinerarySourceReady={flight:null,accommodation:null,activity:null,manual:null};genericItinerarySelectedDay=null;genericItinerarySelectedTripId=null;dayMetadataRows=[];dayMetadataEditor=null;dayMetadataSubmitting=false;dayMetadataLoadSequence+=1;itineraryLoadSequence+=1;itineraryLoadBatch=0;if(itineraryRenderTimer)clearTimeout(itineraryRenderTimer);itineraryRenderTimer=null;
   resetManualItineraryFormUi();
   if($('genericItineraryDayTabs'))$('genericItineraryDayTabs').innerHTML='';
   if($('genericItineraryDays'))$('genericItineraryDays').innerHTML='';
@@ -8564,6 +8592,7 @@ function itineraryImportStillCurrent(state){
   !$('itineraryImportPanel').classList.contains('hidden');
 }
 function closeItineraryImport(){
+ $('itineraryImportViewExisting').classList.add('hidden');
  itineraryImportState?.confirmResolver?.(false);
  $('itineraryImportConfirm').classList.add('hidden');
  itineraryImportEpoch++;itineraryImportState=null;
@@ -8895,6 +8924,19 @@ async function writeConfirmedItineraryImport(){
     existing.push({id:row.sourceId,title:row.title,localDate:row.localDate||'',timeLabel:row.timeLabel||''});
   }
   const snapshot=state.api.summarizeItineraryReview(state.review,existing);
+  const duplicates=state.saveApi.findExistingItineraryImportItems(snapshot,existing);
+  if(duplicates.length){
+   $('itineraryImportSaveStatus').textContent=duplicates.length+' activitats seleccionades ja consten al planning. Hi ha '+(manual||[]).length+' plans manuals o importats desats. No cal tornar-los a importar. Obre l’itinerari per consultar-los; si vols afegir altres activitats, conserva només les noves a la selecció.';
+   const view=$('itineraryImportViewExisting');view.classList.remove('hidden');
+   view.onclick=()=>{
+    if(!itineraryImportStillCurrent(state))return;
+    const day=duplicates[0].localDate||duplicates[0].local_date||'pending';
+    closeItineraryImport();genericItinerarySelectedTripId=tripId;genericItinerarySelectedDay=day;
+    void loadGenericItinerary(true);
+   };
+   return;
+  }
+  $('itineraryImportViewExisting').classList.add('hidden');
   const rows=await state.saveApi.prepareItineraryImportRows(snapshot,{
    tripId,userId,documentId:state.documentId,existing,
    convertLocalTime:zonedLocalToIso,
