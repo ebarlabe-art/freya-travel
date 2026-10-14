@@ -45,12 +45,12 @@ export function itineraryPdfTextInstructions(){
   'La sortida és text provisional subjecte a revisió humana i no autoritza escrits al viatge.'
  ].join('\n');
 }
-export function validateItineraryPdfTranscript(raw){
+export function validateItineraryPdfTranscript(raw,{allowIncomplete=false}={}){
  if(!raw||typeof raw!=='object'||Array.isArray(raw)||
     Object.keys(raw).some(k=>!['pages','warnings','complete'].includes(k))||
     !Array.isArray(raw.pages)||!Array.isArray(raw.warnings)||typeof raw.complete!=='boolean')
   fail('invalid_transcript');
- if(!raw.complete)fail('transcription_incomplete');
+ if(!raw.complete&&!allowIncomplete)fail('transcription_incomplete');
  if(!raw.pages.length||raw.pages.length>MAX_PAGES||raw.warnings.length>MAX_WARNINGS)
   fail('invalid_transcript');
  let prev=0,total=0;
@@ -69,13 +69,25 @@ export function validateItineraryPdfTranscript(raw){
   if(typeof value!=='string'||!value.trim()||value.length>300)fail('invalid_transcript');
   return value.trim();
  });
- return {pages,warnings};
+ return {pages,warnings,complete:raw.complete};
 }
-export function itineraryPdfTranscriptToProposal(raw,source){
- const transcript=validateItineraryPdfTranscript(raw);
- const proposal=extractItineraryProposalFromPages(transcript.pages,source);
+export function itineraryPdfTranscriptToProposal(raw,source,{allowIncomplete=false}={}){
+ const transcript=validateItineraryPdfTranscript(raw,{allowIncomplete});
+ let proposal;
+ try{proposal=extractItineraryProposalFromPages(transcript.pages,source);}
+ catch(error){
+  // A document without any evidenced itinerary items remains blocked.
+  if(!transcript.complete&&error?.code==='no_itinerary_candidates')fail('transcription_incomplete');
+  throw error;
+ }
+ if(transcript.complete)return {
+  ...proposal,warnings:[...new Set([...transcript.warnings,...proposal.warnings])].slice(0,50)
+ };
+ const incomplete='ATENCIÓ: lectura parcial del PDF. Compara totes les activitats amb el document original abans de desar; en poden faltar.';
+ const itemWarning='Lectura parcial: comprova aquesta activitat i si hi ha activitats absents.';
  return {
   ...proposal,
-  warnings:[...new Set([...transcript.warnings,...proposal.warnings])].slice(0,50)
+  candidates:proposal.candidates.map(item=>({...item,warnings:[...new Set([...item.warnings,itemWarning])]})),
+  warnings:[...new Set([incomplete,...transcript.warnings,...proposal.warnings])].slice(0,50)
  };
 }
