@@ -25,7 +25,7 @@ const server=createServer(async(req,res)=>{
     fault==='init'?"window.supabase.createClient=function(){throw Error('synthetic init')};":
     "const originalCreate=window.supabase.createClient;window.supabase.createClient=function(...args){const client=originalCreate(...args);client.auth.getSession=()=>new Promise(()=>{});client.auth.onAuthStateChange=()=>({data:{subscription:{unsubscribe(){}}}});return client};";
    const text=body.toString();if(!text.includes(marker))throw Error('Missing inline SDK marker');
-   body=text.replace(marker,inject+'\\n'+marker);
+   body=text.replace(marker,inject+'\n'+marker);
   }
   res.setHeader('Cache-Control','no-store');res.setHeader('Content-Type',({'.js':'text/javascript','.mjs':'text/javascript','.html':'text/html','.css':'text/css','.webmanifest':'application/manifest+json'})[extname(path)]||'application/octet-stream');res.end(body);
  }catch{res.writeHead(404).end()}
