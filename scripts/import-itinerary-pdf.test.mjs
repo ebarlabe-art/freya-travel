@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
  itineraryPdfTextSchema,itineraryPdfTextInstructions,
  validateItineraryPdfTranscript,itineraryPdfTranscriptToProposal,
- itineraryPdfNeedsDateRecovery,itineraryPdfPreferRetry
+ itineraryPdfNeedsDateRecovery,itineraryPdfPreferRetry,itineraryPdfEnrichTimeZones
 } from '../supabase/functions/import-itinerary/transcript.mjs';
 import {readFileSync} from 'node:fs';
 const endpoint=readFileSync(new URL('../supabase/functions/import-itinerary/index.ts',import.meta.url),'utf8');
@@ -139,4 +139,42 @@ test('P0 #135: improved dates accepted only if retry keeps all 21 activities',()
  assert.equal(itineraryPdfPreferRetry({complete:true},initial,{complete:true},make(21,21)),true);
  assert.equal(itineraryPdfPreferRetry({complete:true},initial,{complete:true},make(20,20)),false);
  assert.equal(itineraryPdfPreferRetry({complete:true},initial,{complete:true},make(21,0)),false);
+});
+
+test('P0 #135: verified city zones unblock Bologna itinerary; airport local zones differ',async()=>{
+ const raw={complete:true,warnings:[],pages:[{page:1,text:[
+  'Escapada a Bolonya','23 a 25 octubre de 2026',
+  '23/10/2026','21:15 Sortida del vol des de l’aeroport de Barcelona-El Prat (BCN)',
+  '23:00 Arribada a l’aeroport de Bolonya Guglielmo Marconi (BLQ)',
+  '24/10/2026','10:15 Piazza Maggiore i basílica',
+  '25/10/2026','18:30 Vol de tornada Bolonya (BLQ) → Barcelona (BCN)',
+  '20:15 Arribada prevista a Barcelona.'
+ ].join('\n')}]};
+ const proposal=itineraryPdfTranscriptToProposal(raw,source);
+ const calls=[];
+ const enriched=await itineraryPdfEnrichTimeZones(proposal,{
+  transcript:raw,source:{...source,file_name:'Itinerari_Bolonya_23-25_octubre_2026.pdf'},
+  resolvePlace:async city=>{calls.push(city);return ({Bolonya:'Europe/Rome',Barcelona:'Europe/Madrid'})[city]||null}
+ });
+ assert.deepEqual(enriched.candidates.map(c=>c.fields.time_zone?.value),[
+  'Europe/Madrid','Europe/Rome','Europe/Rome','Europe/Rome','Europe/Madrid'
+ ]);
+ assert.ok(enriched.candidates.every(c=>c.fields.time_zone.confidence==='medium'));
+ assert.ok(enriched.candidates.every(c=>!c.review_flags.includes('timezone_needs_confirmation')));
+ assert.deepEqual([...new Set(calls)],['Bolonya','Barcelona']);
+});
+test('P0 #135: ambiguous or failed place resolution leaves timezone unset',async()=>{
+ const transcript={complete:true,warnings:[],pages:[{page:1,text:'Escapada a Somewhere\n2026-10-23\n09:00 Passeig'}]};
+ const proposal=itineraryPdfTranscriptToProposal(transcript,source);
+ const enriched=await itineraryPdfEnrichTimeZones(proposal,{
+  transcript,source,resolvePlace:async()=>null
+ });
+ assert.deepEqual(enriched,proposal);
+ assert.ok(enriched.candidates[0].review_flags.includes('timezone_needs_confirmation'));
+});
+test('P0 #135: explicit PDF timezone is never replaced',async()=>{
+ const transcript={complete:true,warnings:[],pages:[{page:1,text:'Escapada a Bolonya\nHora local: Europe/Riga\n2026-10-23\n09:00 Passeig'}]};
+ const proposal=itineraryPdfTranscriptToProposal(transcript,source);
+ const enriched=await itineraryPdfEnrichTimeZones(proposal,{transcript,source:{...source,file_name:'Itinerari_Bolonya.pdf'},resolvePlace:async()=> 'Europe/Rome'});
+ assert.equal(enriched.candidates[0].fields.time_zone.value,'Europe/Riga');
 });

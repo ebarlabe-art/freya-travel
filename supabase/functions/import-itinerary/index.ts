@@ -1,4 +1,4 @@
-import {itineraryPdfTextInstructions,itineraryPdfTextSchema,itineraryPdfTranscriptToProposal,itineraryPdfNeedsDateRecovery,itineraryPdfPreferRetry} from './transcript.mjs';
+import {itineraryPdfTextInstructions,itineraryPdfTextSchema,itineraryPdfTranscriptToProposal,itineraryPdfNeedsDateRecovery,itineraryPdfPreferRetry,itineraryPdfEnrichTimeZones} from './transcript.mjs';
 
 const SUPABASE_URL=Deno.env.get('SUPABASE_URL')||'';
 const ANON=Deno.env.get('SUPABASE_ANON_KEY')||'';
@@ -137,7 +137,27 @@ Deno.serve(async request=>{
    }catch(_){}
   }
   if(!proposal)throw firstError||errorCode('invalid_transcript');
-  return json({proposal});
+  // Validate origin/destination against the authenticated place resolver.
+  // The PDF is never sent to this service; only short place names.
+  const lookup=async city=>{
+   const response=await fetch(SUPABASE_URL+'/functions/v1/place-resolution',{
+    method:'POST',signal:AbortSignal.timeout(12000),
+    headers:{Authorization:auth,apikey:ANON,'Content-Type':'application/json'},
+    body:JSON.stringify({action:'search',text:city,language:'ca'})
+   });
+   if(!response.ok)return null;
+   const data=await response.json();
+   const candidates=(data?.candidates||[]).filter(row=>
+    row?.place?.timezone_status==='verified'&&typeof row.place.timezone==='string');
+   if(candidates.length===1)return candidates[0].place.timezone;
+   const canonical=name=>String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+   const exact=candidates.filter(row=>canonical(row.place.canonical_name)===canonical(city));
+   return exact.length===1?exact[0].place.timezone:null;
+  };
+  const enriched=await itineraryPdfEnrichTimeZones(proposal,{
+   transcript,source,resolvePlace:lookup
+  });
+  return json({proposal:enriched});
  }catch(err){
   const code=err instanceof Error&&'code' in err?String(err.code):'provider_error';
   const codes:Record<string,number>={
