@@ -6,10 +6,11 @@ const CALENDAR=/^(?:dia|día|day)\s*\d{1,3}\s*(?:[-:·.–—]\s*|\s+)?/i;
 const WEEKDAY=/^(?:(?:dilluns|dimarts|dimecres|dijous|divendres|dissabte|diumenge|lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*,?\s+)/i;
 const DATE_PREFIX=/^(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{4})(?!\d)/;
 const PARTIAL_DATE=/^\d{1,2}[/.]\d{1,2}(?![/.]\d)/;
-const MONTH_DATE=/^(\d{1,2})\s+(?:de\s+)?([a-zà-ÿ]+)\s+(?:de\s+)?(\d{4})(?!\d)/i;
+const MONTH_DATE=/^(\d{1,2})\s+(?:(?:de\s+)|d['’])?([a-zà-ÿ]+)\s+(?:de\s+)?(\d{4})(?!\d)/i;
+const DAY_MONTH=/^(\d{1,2})\s+(?:(?:de\s+)|d['’])?([a-zà-ÿ]+)\b/i;
 const TZ_RE=/(?:\bTZ\b|\btime\s*zone\b|\btimezone\b|\bzona\s+hor[aà]ria\b|\bhora\s+local\b|\blocal\s+time\b)\s*[:=]?\s*([A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?)/i;
 const TIME='((?:[01]?\\d|2[0-3])[:.h][0-5]\\d)';
-const CLOCK=new RegExp('^'+TIME+'(?:\\s*(?:-|–|—|a|to)\\s*'+TIME+')?\\s*(?:[-–—:·]\\s*)?(.+)$','i');
+const CLOCK=new RegExp('^'+TIME+'(?:\\s*h\\b)?(?:\\s*(?:-|–|—|a|to)\\s*'+TIME+'(?:\\s*h\\b)?)?\\s*(?:[-–—:·]\\s*)?(.+)$','i');
 const BULLET=/^(?:[-*•]\s+|\d{1,2}[.)]\s+)(.+)$/;
 const DAYPART=/^(mat[ií]|morning|mañana|tarda|afternoon|vespre|evening|nit|night|migdia|mediod[ií]a)\s*[:–—-]\s*(.+)$/i;
 const UNTYPED_DAYPART=/^(mat[ií]|morning|mañana|tarda|afternoon|vespre|evening|nit|night|migdia|mediod[ií]a)\s*,\s*(?:sense hora exacta|sin hora exacta|no exact time)\s*(?:[:–—-]\s*(.+))?$/i;
@@ -40,7 +41,7 @@ function calendarDate(year,month,day){
  if(new Date(Date.UTC(y,m,0)).getUTCDate()<d)return null;
  return String(y).padStart(4,'0')+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
 }
-function readDatePrefix(input){
+function readDatePrefix(input,yearHint=null){
  const clean=input.trim();
  const numeric=clean.match(DATE_PREFIX);
  if(numeric){
@@ -57,6 +58,12 @@ function readDatePrefix(input){
    return {date:calendarDate(word[3],month,word[1]),token:word[0],
     rest:clean.slice(word[0].length).trim()};
   }
+ }
+ const short=clean.match(DAY_MONTH);
+ if(short&&yearHint){
+  const month=MONTHS[stripAccents(short[2])];
+  if(month)return {date:calendarDate(yearHint.year,month,short[1]),token:short[0],
+   rest:clean.slice(short[0].length).trim(),confidence:'medium',yearEvidence:yearHint.evidence};
  }
  return null;
 }
@@ -128,8 +135,18 @@ function normalizePages(rawPages){
   return {page:raw.page,text:raw.text.replace(/\r\n?/g,'\n')};
  });
 }
+function documentYearHint(pages){
+ const matches=new Map();
+ for(const {page,text} of pages)for(const raw of text.split('\n')){
+  const line=raw.trim();
+  if(!/^(?:escapada|itinerari|viatge|planning|programa|pla de viatge|del\s+)/i.test(line))continue;
+  for(const match of line.matchAll(/(?<!\d)(?:19|20)\d{2}(?!\d)/g))
+   if(!matches.has(match[0]))matches.set(match[0],{year:match[0],evidence:line,page});
+ }
+ return matches.size===1?[...matches.values()][0]:null;
+}
 export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'}){
- const pages=normalizePages(rawPages),candidates=[],warnings=new Set();
+ const pages=normalizePages(rawPages),candidates=[],warnings=new Set(),yearHint=documentYearHint(pages);
  let current=null,documentZone=null,pendingDaypart=null,unparsed=0,invalidDate=false;
  for(const {page,text} of pages){
   for(const raw of text.split('\n')){
@@ -139,7 +156,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
    const dayMarker=CALENDAR.test(work);
    // Day labels often precede a weekday: "DIA 1 · Diumenge 27/12/2026".
    if(dayMarker)work=work.replace(CALENDAR,'').replace(WEEKDAY,'').trim();
-   const datePart=readDatePrefix(work);
+   const datePart=readDatePrefix(work,yearHint);
    const tz=explicitZone(line,page);
    if(tz?.invalid){
     documentZone=null;
@@ -161,18 +178,18 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     // Keep the explicit date as the active day for subsequent entries, even if
     // the heading also includes the first activity of that day.
     pendingDaypart=null;
-    current={date:datePart.date,evidence:line,page,zone:tz&&!tz.invalid?tz:documentZone};
+    current={date:datePart.date,evidence:datePart.yearEvidence?line+' | Any explícit al document: '+datePart.yearEvidence:line,page,confidence:datePart.confidence||'high',zone:tz&&!tz.invalid?tz:documentZone};
     const tail=datePart.rest.replace(/^(?:[-–—·|]\s*)/,'');
     const inline=readItem(tail,false);
     if(inline){
      // Explicit date on the same line belongs only to that item.
-     const candidate=makeCandidate(inline,line,page,{date:datePart.date,evidence:line,page},current.zone,candidates.length);
+     const candidate=makeCandidate(inline,line,page,{date:datePart.date,evidence:current.evidence,page,confidence:current.confidence},current.zone,candidates.length);
      candidates.push(candidate);
     }
     if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
     continue;
    }
-   if(PARTIAL_DATE.test(work)||/^(?:dia|día|day)\s*\d{1,3}\s*$/.test(line)){
+   if((!CLOCK.test(line)&&PARTIAL_DATE.test(work))||/^(?:dia|día|day)\s*\d{1,3}\s*$/.test(line)){
     current=null;pendingDaypart=null;warnings.add('Hi ha dates sense any: cal confirmar-les.');continue;
    }
    if(HEADER.test(line)||/^p[àa]g(?:ina)?\s*\d+$/i.test(line))continue;
@@ -198,7 +215,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     pendingDaypart=null;
    }
    if(item){
-    candidates.push(makeCandidate(item,line,page,current?{date:current.date,evidence:current.evidence,page:current.page}:null,
+    candidates.push(makeCandidate(item,line,page,current?{date:current.date,evidence:current.evidence,page:current.page,confidence:current.confidence}:null,
       tz&&!tz.invalid?tz:current?.zone,candidates.length));
    }else if(current&&!ADMIN.test(line)&&!tz)unparsed++;
    if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
@@ -214,13 +231,14 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
 }
 function makeCandidate(item,line,page,date,zone,sourceOrder){
  const fields={title:makeField(item.title,line,page,item.confidence)};
- if(date)fields.local_date=makeField(date.date,date.evidence,date.page);
+ if(date)fields.local_date=makeField(date.date,date.evidence,date.page,date.confidence||'high');
  if(item.start)fields.start_local_time=makeField(item.start,line,page);
  if(item.end)fields.end_local_time=makeField(item.end,line,page);
  if(item.daypart)fields.daypart=makeField(item.daypart,line,page);
  if(zone)fields.time_zone=makeField(zone.value,zone.evidence,zone.page);
  const warnings=[];
  if(item.confidence==='medium')warnings.push('Element sense hora explícita: revisa’n la classificació.');
+ if(date?.confidence==='medium')warnings.push('Any agafat del títol general del document: comprova la data.');
  if(!date)warnings.push('Falta la data de l’activitat.');
  return {source_order:sourceOrder,classification_hint:hintFromTitle(item.title),fields,warnings};
 }

@@ -93,3 +93,23 @@ test('A2.6.1: bounded PDF payload, provider content not logged, no auto deployme
  assert.match(endpoint,/provider_rate_limited/);
  assert.match(endpoint,/invalid_file_size/);
 });
+
+test('P0 #135: incomplete transcription yields flagged read-only review only when requested',()=>{
+ const p=read();p.complete=false;p.warnings=['Una línia no llegible'];
+ const proposal=itineraryPdfTranscriptToProposal(p,source,{allowIncomplete:true});
+ assert.equal(proposal.read_only,true);
+ assert.equal(proposal.requires_user_confirmation,true);
+ assert.equal(proposal.candidates.length,2);
+ assert.match(proposal.warnings[0],/lectura parcial/i);
+ assert.ok(proposal.candidates.every(c=>c.warnings.some(w=>/Lectura parcial/.test(w))));
+});
+test('P0 #135: incomplete transcript without candidates stays blocked',()=>{
+ const p=read();p.complete=false;p.pages=[{page:1,text:'Només la portada'}];
+ assert.throws(()=>itineraryPdfTranscriptToProposal(p,source,{allowIncomplete:true}),e=>e.code==='transcription_incomplete');
+});
+test('P0 #135: controlled retry and no silent saves',()=>{
+ assert.match(endpoint,/if\(transcript\?\.complete===false\)/);
+ assert.match(endpoint,/transcribePrivateFile\(doc,bytes,true\)/);
+ assert.match(endpoint,/allowIncomplete:true/);
+ assert.doesNotMatch(endpoint,/\.insert\(|\.upsert\(/);
+});
