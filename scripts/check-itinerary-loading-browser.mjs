@@ -135,8 +135,8 @@ try{
  await page.screenshot({path:process.env.ITINERARY_TABLET?'/tmp/freya-itinerary-loading-tablet.png':'/tmp/freya-itinerary-loading-mobile.png',fullPage:true});
  // A fresh standalone installation must explain a missing SDK, not falsely say 'connection failed'.
  const broken=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
- await broken.route('**/vendor/supabase.js',route=>route.abort());
  await broken.route('**/*',route=>new URL(route.request().url()).origin===new URL(url).origin?route.continue():route.abort());
+ await broken.route('**/vendor/supabase.js',route=>route.abort());
  const cold=await broken.newPage();
  await cold.addInitScript(()=>{
    Object.defineProperty(navigator,'standalone',{configurable:true,value:true});
