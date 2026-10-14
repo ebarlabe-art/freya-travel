@@ -404,10 +404,10 @@ test('Valid offline grant still opens cached data without showing login',()=>{
 });
 test('An SDK/bootstrap failure cannot keep an infinite splash on the iPhone',()=>{
   const sdkIndex=html.indexOf('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>');
-  const fallbackIndex=html.indexOf('Standalone-safe bootstrap diagnostic');
+  const fallbackIndex=html.indexOf('Safe bootstrap watchdog runs before the SDK');
   assert.ok(fallbackIndex>0&&fallbackIndex<sdkIndex);
   assert.match(html.slice(fallbackIndex,sdkIndex),/setTimeout\(/);
-  assert.match(html.slice(fallbackIndex,sdkIndex),/No cal esborrar l’app ni les còpies offline/);
+  assert.match(html.slice(fallbackIndex,sdkIndex),/No s’han esborrat els viatges, documents ni esborranys/);
   assert.match(worker,/const CACHE='freya-travel-release-6444-v21'/);
 });
 
