@@ -37,6 +37,18 @@ try{
  await boot();
  await page.waitForFunction(()=>itineraryProjection.length===13);
  assert.equal(await page.locator('[data-generic-itinerary-day]').count(),8);
+ // On-device diagnosis is visible without exposing account IDs or resetting offline data.
+ await page.locator('#pwaDiagnostic summary').click();
+ await page.waitForFunction(()=>document.querySelector('#pwaDiagnosticSummary')?.textContent.includes('Planning llegit: 13'));
+ const diagnosis=await page.locator('#pwaDiagnosticSummary').innerText();
+ assert.match(diagnosis,/Versió de la pàgina: pwa-diagnostic-v20/);
+ assert.match(diagnosis,/Mode: Safari \/ navegador · Ruta: \/freya-travel\//);
+ assert.match(diagnosis,/Planning llegit: 13 · Planning visible: 13/);
+ assert.doesNotMatch(diagnosis,/synthetic@example|12800000-0000-4000/);
+ await page.locator('#pwaDiagnosticRefresh').click();
+ await page.waitForFunction(()=>document.querySelector('#pwaDiagnosticSummary')?.textContent.includes('Versió pública consultada: pwa-diagnostic-v20'));
+ assert.equal(await page.evaluate(()=>fixture.writes),0);
+ await page.locator('#pwaDiagnostic summary').click();
  for(const [day,count] of [['27',7],['28',6]]){
   await page.locator(`[data-generic-itinerary-day="2026-12-${day}"]`).click();
   assert.equal(await page.locator('#genericItineraryDays [data-itinerary-key]').count(),count);
