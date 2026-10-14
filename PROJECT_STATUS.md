@@ -1,13 +1,13 @@
 # Freya Travel — Estat únic i següent pas
 
-**Actualització:** 13 octubre 2026, 18:00. **Objectiu immediat:** beta amb amigues a Bolonya, cap al 27/10/2026.
+**Actualització:** 14 octubre 2026. **Objectiu immediat:** beta amb amigues a Bolonya, cap al 27/10/2026.
 
 > Font de veritat operacional. Actualitzar **en cada PR fusionada**, no recrear-la en xats nous. Separar sempre: codi implementat, tests automatitzats, comprovació física i publicació. No donar mai una funcionalitat per validada només perquè hi ha una PR fusionada.
 
 
-## Issue #125 — circuit de creació i compartició (branca, pendent de fusió/publicació)
+## Issue #125 — circuit de creació i compartició (PR #126 fusionada)
 
-- Base auditada: `main` després de PR #124 (`055f77b`). `manualTripView` → `create_trip_with_stops_v1` → `get_my_trips` / `refreshTrips` → tauler → codi → `join_trip_v2`. Reutilitza els permisos i l’agenda existents; Londres no canvia.
+- PR #126 fusionada a `main` (`b86970cc`), segons la base verificada de P0-B. Prova física/publicació diferenciades del codi. Base auditada de #125: `main` després de PR #124 (`055f77b`). `manualTripView` → `create_trip_with_stops_v1` → `get_my_trips` / `refreshTrips` → tauler → codi → `join_trip_v2`. Reutilitza els permisos i l’agenda existents; Londres no canvia.
 - Defecte reproduït: creació confirmada seguida de recàrrega fallida deixava el formulari reenviable i podia mostrar només l’error de xarxa. Correcció: consumir el formulari quan arriba la confirmació i indicar que el viatge està desat encara que falli la lectura posterior. Una llista obsoleta tampoc obre un altre viatge en lloc del creat/convidat. Una petició sense confirmació continua conservant les dades; no s’afegeix idempotència de servidor a la creació.
 - **PASS local:** `npm test` (654 tests), `npm run entries:check`, `npm run build`; PostgreSQL descartable amb baselines existents i migracions cronològiques (sense Cron): propietària, amiga i tercera persona sintètiques, dos viatges, RLS de lectura/escriptura/eliminació, invitació repetida sense duplicats, edició concurrent amb `updated_at` i relectura des de les dues sessions.
 - **PASS navegador automatitzat:** build de Pages real, Chromium a 390 px, crear/compartir/copiar, Back/Forward, error de xarxa després de desar sense duplicació ni obertura d’un altre viatge, segon compte sintètic, recàrrega i reobertura offline amb service worker; 1024 px amb tacte i identificació d’escriptori. Auth, dades i compartir són adaptadors sintètics; la prova SQL és independent. No acredita el transport Realtime remot ni el full de compartir natiu.
@@ -28,16 +28,26 @@ Per crear Bolonya (només quan l’Eva tingui les dates):
 - Incidència [#116](https://github.com/ebarlabe-art/freya-travel/issues/116), PR #117 fusionada; cerca d'ubicacions individual en preparació per a main, sense recarregar el PDF.
 - **Nova mancança física observada:** activitats desades sense ubicacions, ni distàncies ni diagnòstic de factibilitat.
 - **Diagnòstic al codi:** `domain/import-itinerary-text-extractor.mjs` no genera camps de lloc; `domain/import-itinerary-write.mjs` sí els admet però arriben buits. Geoapify `place-resolution` existeix per a briefs/propostes, no per a `trip_itinerary_items`. `trip-transfer-estimate` només produeix una aproximació de cotxe entre textos i no està connectat al planning; no equival a una ruta real.
-- **Següent feina P0:** [#118 — ubicacions i viabilitat](https://github.com/ebarlabe-art/freya-travel/issues/118). **A2.12 preparant PR** des de `main`: proposta automàtica agrupada per dia a partir dels títols existents, cerca Geoapify pública i confirmació explícita en bloc de només `location_name`. Sense reimportació, duplicats, coordenades inventades ni automodificacions. Circuit breaker en fallades de servei, límit de 20 consultes i resultats reutilitzats. **No donar per feta fins CI verda i deploy de GitHub Pages.** Següent: trajectes/viabilitat realista.
+- **Estat actualitzat de #118:** A2.12 és a `main` via PR #122 i consta publicada segons l’encàrrec vigent de la issue; els textos de lloc continuen sense coordenades verificades persistides. La PR #123 segueix separada (etiquetes PDF i Edge Function); aquesta entrega no en depèn. Els estats «preparant PR» de l’historial són antecedents, no feina pendent.
+
+## #118 P0-B — trajectes i viabilitat (branca, sense fusió ni desplegament)
+
+- Targetes contextuals entre visites consecutives del dia de l’agenda consolidada, sense reordenar. Geoapify Routing al servidor; modes a peu/cotxe/transport públic, font i qualitat explícites. No es modifica l’estimador geodèsic anterior ni Londres.
+- Resolució contextual de noms existents; ambigüitats seleccionables, correcció amb l’editor existent i cap coordenada suggerida persistent. Diagnòstic només amb hores exactes, final conegut, ruta i marge explícit; dades incompletes/error/offline expliquen què falta.
+- Auth i lectura de viatge/font via JWT/RLS, sense dades privades innecessàries; dues peticions simultànies, cache breu i límits preventius. La quota real de Geoapify no està verificada; límits del servidor per instància, no pressupost global garantit.
+- Codi frontend + nova Edge Function `itinerary-route`, sense migracions ni dependències de producte. La funció nova no està desplegada. Consulta remota de només lectura: `place-resolution` ACTIVE v1 i `trip-transfer-estimate` ACTIVE v2; això no valida cap ruta real.
+- **PASS local:** 666 tests (`npm test`), 12 de domini/HTTP simulat, navegador sobre build real a 390 px/PWA i 1024 px tàctil en mode d’escriptori, tests generals, paritat i build. Deno check de la nova funció també PASS. Resultat de CI al cos de la PR. Pendent Geoapify real, quota del compte i prova física Safari/iPhone/iPad; cap validació física atribuïda a aquestes simulacions.
+- Contracte, límits i pas de desplegament **separat i no executat**: [docs/P0B_ITINERARY_ROUTES.md](docs/P0B_ITINERARY_ROUTES.md).
+
 
 ## Camí crític Bolonya (per ordre)
 
 | Prioritat | Funció | Estat de comprovació |
 | --- | --- | --- |
 | P0 | Importar itinerari i confirmar-ne les activitats | **Validat en prova física a iPhone** i PR #117 a main; pendent comprovació a pública i reimportació sense duplicats |
-| P0 | Recuperar/confirmar ubicacions dels elements importats; trajectes i viabilitat honestos | Pendent; issue #118, dividir en dues entregues |
-| P0 | Crear viatge de Bolonya i compartir-lo amb les amigues amb permisos per viatge | Pendent de prova específica multiusuària |
-| P0 | Revisar l'agenda compartida, edicions i coherència entre mòbils | Pendent de prova específica multiusuària |
+| P0 | Recuperar/confirmar ubicacions dels elements importats; trajectes i viabilitat honestos | A2.12 a main; P0-B en PR independent, pendent de desplegament i prova física |
+| P0 | Crear viatge de Bolonya i compartir-lo amb les amigues amb permisos per viatge | PR #126 fusionada, proves sintètiques/CI; pendent prova física multiusuària |
+| P0 | Revisar l'agenda compartida, edicions i coherència entre mòbils | PR #126 fusionada, proves sintètiques/CI; pendent prova física multiusuària |
 | P1 | Documents/reserves, accés a l'itinerari i ús real al telèfon | Existeixen fluxos, cal comprovació específica per Bolonya |
 | P1 | Avisos abans de les activitats | Ja es van fer proves després d'Eivissa: **no reiniciar la bateria sencera**. Només regressió dirigida davant canvis o incidències reproduïbles |
 | P2 | Funcionalitats noves no necessàries per al viatge | Ajornades fins a superar la prova real |
