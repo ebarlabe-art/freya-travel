@@ -376,7 +376,7 @@ test('Cold offline without a prior valid grant must show login even if Supabase 
   assert.ok(begin>0&&end>begin);
   const piece=html.slice(begin,end),calls=[];
   const context=vmModule.createContext({
-    navigator:{onLine:false},passwordRecoveryMode:false,authInitializationResolved:false,
+    window:{freyaBoot:{step(){}}},navigator:{onLine:false},passwordRecoveryMode:false,authInitializationResolved:false,
     restoreOfflineReadOnlySession:()=>false,
     renderSession:async(value)=>{calls.push(['renderSession',value])},
     msg:(id,message,isError)=>calls.push(['msg',id,message,isError])
@@ -393,7 +393,7 @@ test('Valid offline grant still opens cached data without showing login',()=>{
   const end=html.indexOf('db.auth.getSession().then(',begin);
   const calls=[];
   const context=vmModule.createContext({
-    navigator:{onLine:false},passwordRecoveryMode:false,authInitializationResolved:false,
+    window:{freyaBoot:{step(){}}},navigator:{onLine:false},passwordRecoveryMode:false,authInitializationResolved:false,
     restoreOfflineReadOnlySession:()=>{calls.push('grant');return true},
     renderSession:()=>{calls.push('login');return Promise.resolve()},
     msg:()=>calls.push('error')
@@ -403,12 +403,12 @@ test('Valid offline grant still opens cached data without showing login',()=>{
   assert.deepEqual(calls,['grant']);
 });
 test('An SDK/bootstrap failure cannot keep an infinite splash on the iPhone',()=>{
-  const sdkIndex=html.indexOf('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>');
-  const fallbackIndex=html.indexOf('Standalone-safe bootstrap diagnostic');
+  const sdkIndex=html.indexOf('<script id="freyaSdk"');
+  const fallbackIndex=html.indexOf('// Runs before SDK/application parsing.');
   assert.ok(fallbackIndex>0&&fallbackIndex<sdkIndex);
   assert.match(html.slice(fallbackIndex,sdkIndex),/setTimeout\(/);
   assert.match(html.slice(fallbackIndex,sdkIndex),/No cal esborrar l’app ni les còpies offline/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v20'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v21'/);
 });
 
 test('Parking offline leaves read-only Veure reserva enabled while disabling edits',()=>{
@@ -431,7 +431,7 @@ test('Parking offline leaves read-only Veure reserva enabled while disabling edi
   assert.ok(edits.every(e=>!e.disabled));
   assert.equal(selectors.length,2);
   assert.match(html,/button\.classList\.remove\('hidden'\);button\.disabled=false;\s*button\.onclick=\(\)=>openDocument\(doc\.id,documentRows,'parkingMsg'\)/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v20'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v21'/);
 });
 
 test('Automatic encrypted document rules include useful screenshots and exclude travel photos',()=>{

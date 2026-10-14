@@ -34,7 +34,7 @@ try{
   const response=await handler(new Request('https://synthetic/route',{method:'POST',headers:{authorization:'Bearer '+user},body:JSON.stringify(body)}));return response.json();
  });
  async function boot(target=page,pwa=true){
-  await target.goto(url);await target.waitForFunction(pwa=>typeof renderSession==='function'&&(!pwa||(Number(sessionStorage.routeTestBoot)>=2&&navigator.serviceWorker.controller)),pwa);await target.locator('#loginCard').waitFor({state:'visible'});
+  await target.goto(url);await target.waitForFunction(pwa=>typeof renderSession==='function'&&(!pwa||(navigator.serviceWorker.controller)),pwa);await target.locator('#loginCard').waitFor({state:'visible'});
   await target.evaluate(async({tripRow,rows,stops})=>{
    window.testRows=rows;
    db.rpc=async name=>({data:name==='get_my_trips'?[tripRow]:[],error:null});
