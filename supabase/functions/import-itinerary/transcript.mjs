@@ -1,4 +1,5 @@
 import {extractItineraryProposalFromPages} from '../../../domain/import-itinerary-text-extractor.mjs';
+import {normalizeItineraryImportProposal} from '../../../domain/import-itinerary-proposal.mjs';
 
 // A2.6.1: model-assisted transcription is a preliminary reading of a PRIVATE PDF or photo.
 // Page numbers and quoted lines are model reported, not independently verified
@@ -109,4 +110,68 @@ export function itineraryPdfPreferRetry(primaryTranscript,primaryProposal,retryT
  const dated=items=>items.filter(item=>item.fields?.local_date).length;
  if(dated(next)>dated(current))return true;
  return dated(next)===dated(current)&&primaryTranscript?.complete===false&&retryTranscript?.complete===true;
+}
+
+
+// Time zones are *verified geographic suggestions*, never strings invented by
+// the language model. Original PDF values always override these suggestions.
+const normalizeCity=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+const validCity=value=>typeof value==='string'&&value.length<=64&&/^[\p{L}][\p{L} '’.-]+$/u.test(value);
+export function itineraryPdfCityHints(transcript,source,proposal){
+ const file=String(source?.file_name||'');
+ const named=file.match(/^(?:itinerari|itinerary|viatge|trip|escapada)[ _-]+([\p{L}]+)(?=[ _.\d-]|$)/iu);
+ const cover=(transcript?.pages||[]).flatMap(page=>String(page.text||'').split('\n').slice(0,10));
+ const coverPlace=cover.map(line=>line.match(/^(?:escapada|viatge|itinerari|trip|itinerary)\s+(?:a|en|de|to)\s+([\p{Lu}][\p{L}]+(?:\s+[\p{Lu}][\p{L}]+){0,2})/u)?.[1]).find(Boolean);
+ const destination=coverPlace||named?.[1]||null;
+ const hints=(proposal?.candidates||[]).map(item=>{
+  const title=item.fields?.title?.value||'';
+  // An airport's city or the first departure airport in a flight route.
+  const airport=title.match(/\baeroport\s+(?:de|d['’])\s+([\p{L}][\p{L}’'-]*)/iu)?.[1]?.split('-')[0];
+  const route=/\b(?:vol|flight|vuelo|avió)\b/iu.test(title)?
+   title.match(/([\p{Lu}][\p{L}]+)\s*\([A-Z]{3}\)/u)?.[1]:null;
+  const arrival=/^(?:arribada|llegada|arrival)\b/iu.test(title)?
+   title.match(/\ba\s+([\p{Lu}][\p{L}]+)(?=[.,\s]|$)/u)?.[1]:null;
+  return [airport||route||arrival||null,title];
+ });
+ return {destination:validCity(destination)?destination:null,
+  hints:hints.map(([city])=>validCity(city)?city:null)};
+}
+export async function itineraryPdfEnrichTimeZones(proposal,{transcript,source,resolvePlace}={}){
+ if(!proposal||!Array.isArray(proposal.candidates)||typeof resolvePlace!=='function')return proposal;
+ const {destination,hints}=itineraryPdfCityHints(transcript,source,proposal);
+ const keys=[...new Set([destination,...hints].filter(Boolean))].slice(0,6);
+ const resolved=new Map();
+ for(const city of keys){
+  try{
+   const zone=await resolvePlace(city);
+   if(typeof zone==='string'){
+    new Intl.DateTimeFormat('en-US',{timeZone:zone});
+    resolved.set(normalizeCity(city),zone);
+   }
+  }catch(_){}
+ }
+ const fallback=destination?resolved.get(normalizeCity(destination)):null;
+ let count=0;
+ const candidates=proposal.candidates.map((item,index)=>{
+  if(item.fields.time_zone||!item.fields.start_local_time)return {
+   source_order:item.source_order,classification_hint:item.classification_hint,
+   fields:item.fields,warnings:item.warnings
+  };
+  const explicit=hints[index],city=explicit||destination,zone=
+    (explicit?resolved.get(normalizeCity(explicit)):null)||(!explicit?fallback:null);
+  if(!zone)return {source_order:item.source_order,classification_hint:item.classification_hint,
+   fields:item.fields,warnings:item.warnings};
+  const evidence=explicit?(item.fields.title.evidence||[]):
+   [{kind:'metadata',excerpt:'Nom i context del viatge: '+source.file_name}];
+  const field={value:zone,confidence:'medium',evidence};
+  count++;
+  return {source_order:item.source_order,classification_hint:item.classification_hint,
+   fields:{...item.fields,time_zone:field},
+   warnings:[...new Set([...(item.warnings||[]),
+     'Zona horària suggerida per la ubicació '+city+' (servei geogràfic): comprova-la abans de desar.'])]};
+ });
+ if(!count)return proposal;
+ return normalizeItineraryImportProposal({schema_version:1,source:proposal.source,candidates,
+  warnings:[...new Set([...(proposal.warnings||[]),
+   'Zones horàries verificades per ubicació: revisa especialment els vols i els trasllats entre ciutats.'])].slice(0,50)});
 }
