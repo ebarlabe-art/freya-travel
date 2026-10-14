@@ -159,7 +159,9 @@ test('P0 #135: verified city zones unblock Bologna itinerary; airport local zone
  assert.deepEqual(enriched.candidates.map(c=>c.fields.time_zone?.value),[
   'Europe/Madrid','Europe/Rome','Europe/Rome','Europe/Rome','Europe/Madrid'
  ]);
- assert.ok(enriched.candidates.every(c=>c.fields.time_zone.confidence==='medium'));
+ assert.ok(enriched.candidates.every(c=>c.fields.time_zone.confidence==='high'));
+ assert.ok(enriched.candidates.every(c=>!c.warnings.some(w=>/zona horària/i.test(w))));
+ assert.ok(!enriched.warnings.some(w=>/zones horàries verificades/i.test(w)));
  assert.ok(enriched.candidates.every(c=>!c.review_flags.includes('timezone_needs_confirmation')));
  assert.deepEqual([...new Set(calls)],['Bolonya','Barcelona']);
 });
@@ -177,4 +179,35 @@ test('P0 #135: explicit PDF timezone is never replaced',async()=>{
  const proposal=itineraryPdfTranscriptToProposal(transcript,source);
  const enriched=await itineraryPdfEnrichTimeZones(proposal,{transcript,source:{...source,file_name:'Itinerari_Bolonya.pdf'},resolvePlace:async()=> 'Europe/Rome'});
  assert.equal(enriched.candidates[0].fields.time_zone.value,'Europe/Riga');
+});
+
+test('P0 #135: IATA fallback fills time zones by default without asking traveller',async()=>{
+ const raw={complete:true,warnings:[],pages:[{page:1,text:[
+  'Escapada a Bolonya', 'Del divendres 23 al diumenge 25 d’octubre de 2026',
+  'Divendres 23 d’octubre', '21:15 Sortida del vol des de l’aeroport de Barcelona-El Prat (BCN)',
+  '23:00 Arribada a l’aeroport de Bolonya Guglielmo Marconi (BLQ)',
+  'Dissabte 24 d’octubre', '10:15 Piazza Maggiore',
+  'Diumenge 25 d’octubre', '18:30 Vol de tornada Bolonya (BLQ) → Barcelona (BCN)',
+  '20:15 Arribada prevista a Barcelona'
+ ].join('\n')}]};
+ const sourceWithName={...source,file_name:'Itinerari_Bolonya_23-25_octubre_2026.pdf'};
+ const original=itineraryPdfTranscriptToProposal(raw,sourceWithName);
+ const enriched=await itineraryPdfEnrichTimeZones(original,{
+  transcript:raw,source:sourceWithName,resolvePlace:async()=>null
+ });
+ assert.deepEqual(enriched.candidates.map(c=>c.fields.time_zone?.value),[
+  'Europe/Madrid','Europe/Rome','Europe/Rome','Europe/Rome','Europe/Madrid'
+ ]);
+ assert.ok(enriched.candidates.every(c=>c.fields.time_zone.confidence==='high'));
+ assert.ok(enriched.candidates.every(c=>!c.review_flags.includes('timezone_needs_confirmation')));
+ assert.ok(enriched.candidates.every(c=>!c.warnings.some(w=>/zona horària/i.test(w))));
+});
+test('P0 #135: non-verifiable city without IATA remains unresolved, never use phone zone',async()=>{
+ const raw={complete:true,warnings:[],pages:[{page:1,text:'Escapada a Somewhere\n2026-10-23\n09:00 Visita'}]};
+ const p=itineraryPdfTranscriptToProposal(raw,source);
+ const enriched=await itineraryPdfEnrichTimeZones(p,{
+  transcript:raw,source,resolvePlace:async()=>null
+ });
+ assert.equal(enriched.candidates[0].fields.time_zone,undefined);
+ assert.ok(enriched.candidates[0].review_flags.includes('timezone_needs_confirmation'));
 });
