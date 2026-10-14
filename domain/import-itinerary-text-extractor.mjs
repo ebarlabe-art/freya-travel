@@ -10,7 +10,7 @@ const MONTH_DATE=/^(\d{1,2})\s+(?:(?:de\s+)|d['’])?([a-zà-ÿ]+)\s+(?:de\s+)?(
 const DAY_MONTH=/^(\d{1,2})\s+(?:(?:de\s+)|d['’])?([a-zà-ÿ]+)\b/i;
 const TZ_RE=/(?:\bTZ\b|\btime\s*zone\b|\btimezone\b|\bzona\s+hor[aà]ria\b|\bhora\s+local\b|\blocal\s+time\b)\s*[:=]?\s*([A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?)/i;
 const TIME='((?:[01]?\\d|2[0-3])[:.h][0-5]\\d)';
-const CLOCK=new RegExp('^'+TIME+'(?:\\s*h\b)?(?:\\s*(?:-|–|—|a|to)\\s*'+TIME+'(?:\\s*h\b)?)?\\s*(?:[-–—:·]\\s*)?(.+)
+const CLOCK=new RegExp('^'+TIME+'(?:\\s*h\\b)?(?:\\s*(?:-|–|—|a|to)\\s*'+TIME+'(?:\\s*h\\b)?)?\\s*(?:[-–—:·]\\s*)?(.+)
 const BULLET=/^(?:[-*•]\s+|\d{1,2}[.)]\s+)(.+)$/;
 const DAYPART=/^(mat[ií]|morning|mañana|tarda|afternoon|vespre|evening|nit|night|migdia|mediod[ií]a)\s*[:–—-]\s*(.+)$/i;
 const UNTYPED_DAYPART=/^(mat[ií]|morning|mañana|tarda|afternoon|vespre|evening|nit|night|migdia|mediod[ií]a)\s*,\s*(?:sense hora exacta|sin hora exacta|no exact time)\s*(?:[:–—-]\s*(.+))?$/i;
