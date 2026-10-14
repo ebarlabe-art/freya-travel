@@ -27,6 +27,7 @@ test('Watchdog classifies missing SDK and offers a user-triggered retry with no 
   location:{reload:()=>{ctx.reloads++}},reloads:0
  };
  ctx.window.setTimeout=(callback)=>{ctx.tick=callback};
+ ctx.setTimeout=ctx.window.setTimeout;
  vm.runInNewContext(first.replace(/^<script>\n|<\/script>$/g,''),ctx);
  ctx.tick();
  const message=elements.map(e=>e.textContent).join(' ');
