@@ -87,10 +87,10 @@ test('unchanged SW precache assets exist and offline entry fallbacks remain vali
   const lookups = [];
   const sw = await read('sw.js');
   const context = vm.createContext({
-    URL,
+    URL,AbortController,setTimeout,clearTimeout,
     self: { location: new URL('https://example.test/freya-travel/sw.js'), addEventListener: (name, handler) => { handlers[name] = handler; } },
     fetch: () => Promise.reject(new Error('offline')),
-    caches: { match: async key => { lookups.push(key); return { key }; } },
+    caches: { open: async()=>({match: async key => { lookups.push(key); return { key }; }}) },
   });
   vm.runInContext(sw, context);
   for (const asset of vm.runInContext('ASSETS', context)) {

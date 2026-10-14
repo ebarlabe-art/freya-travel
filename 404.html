@@ -1932,19 +1932,60 @@
   </section>
 </main>
 <script>
-// Standalone-safe bootstrap diagnostic: executes even if the Supabase script
-// cannot be read from the local service worker cache in airplane mode.
-setTimeout(()=>{
-  const splash=document.getElementById('loading');
-  if(!splash||splash.classList.contains('hidden'))return;
-  splash.textContent=navigator.onLine===false
-    ?'📵 Freya no ha pogut iniciar-se sense Internet. Connecta’t per actualitzar-la. No cal esborrar l’app ni les còpies offline.'
-    :'Freya està trigant a iniciar-se. Comprova la connexió i torna a obrir-la.';
-},10000);
+// Runs before SDK/application parsing. No session, URL, token or error payload is logged.
+(function(){
+  var stage='sdk',finished=false,timer,workerFailure=false;
+  var release='pwa-bootstrap-v21';
+  var messages={sdk:'No s’ha pogut carregar el component d’accés de Freya.',app:'No s’ha pogut iniciar aquesta versió de Freya.',session:'La comprovació de la sessió no ha acabat.',worker:'No s’ha pogut actualitzar la còpia de Freya en aquest dispositiu.'};
+  function fail(reason){
+    if(finished)return;
+    clearTimeout(timer);
+    var splash=document.getElementById('loading');if(!splash)return;
+    splash.classList.remove('hidden');splash.replaceChildren();
+    var text=document.createElement('p');text.textContent=messages[reason]||messages.app;splash.appendChild(text);
+    var help=document.createElement('p');help.textContent='Torna-ho a provar des d’aquesta mateixa icona. No cal esborrar l’app ni les còpies offline.';splash.appendChild(help);
+    var detail=document.createElement('small');detail.textContent=release+' · '+reason+(workerFailure?' · actualització pendent':'');splash.appendChild(detail);
+    var button=document.createElement('button');button.type='button';button.id='retryFreyaBoot';button.textContent='Torna a obrir Freya';button.style.minHeight='44px';button.style.display='block';button.style.margin='16px auto 0';
+    button.onclick=function(){
+      button.disabled=true;
+      // Reload the same entry, keeping recovery parameters/hash and every local store.
+      var reload=function(){var target=new URL(location.href);target.searchParams.set('freya_boot_retry',String(Date.now()));location.replace(target.href)};
+      if('serviceWorker' in navigator){
+        Promise.race([navigator.serviceWorker.getRegistration('/freya-travel/').then(function(r){if(r)return r.update()}).catch(function(){}),new Promise(function(resolve){setTimeout(resolve,1500)})]).then(reload);
+      }else reload();
+    };
+    splash.appendChild(button);
+  }
+  function step(next){if(finished)return;stage=next;clearTimeout(timer);timer=setTimeout(function(){fail(stage)},10000)}
+  window.freyaBoot={step:step,fail:fail,ready:function(){finished=true;clearTimeout(timer);var splash=document.getElementById('loading');if(splash)splash.classList.add('hidden')},workerFailed:function(){workerFailure=true;if(!finished)fail('worker')}};
+  window.addEventListener('error',function(event){
+    if(finished)return;
+    if(event.target&&event.target.id==='freyaSdk')fail('sdk');
+    else if(event.error||event.target===window)fail(stage==='sdk'?'sdk':'app');
+  },true);
+  window.addEventListener('unhandledrejection',function(){if(!finished)fail(stage)});
+  step('sdk');
+  // Worker recovery must also run when the main script cannot parse or the SDK stalls.
+  if('serviceWorker' in navigator){
+    var reloading=false;
+    navigator.serviceWorker.addEventListener('controllerchange',function(){
+      if(reloading)return;
+      if(!finished){reloading=true;location.reload()}
+      else if(typeof window.showUpdateToast==='function')window.showUpdateToast();
+    });
+    navigator.serviceWorker.register('/freya-travel/sw.js',{scope:'/freya-travel/',updateViaCache:'none'}).then(function(registration){
+      var check=function(){registration.update().catch(function(){workerFailure=true})};
+      check();
+      document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')check()});
+      window.addEventListener('pageshow',check);window.addEventListener('focus',check);setInterval(check,15*60*1000);
+    }).catch(function(){workerFailure=true;if(!finished&&stage!=='sdk')fail('worker')});
+  }
+})();
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-diagnostic-v20';
+const FREYA_FRONTEND_RELEASE='pwa-bootstrap-v21';
+window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
 const VAPID_PUBLIC_KEY='BCDiQCUSP-o3QmkZ1sxNZtglQvyhVkRfVKdGv_w7Q9v4iT57y7awfseqg-lzlawT2wpmpGzfVDDgepmODcD1UBc';
@@ -6504,6 +6545,7 @@ function renderPasswordRecovery(){
   if(passwordRecoverySessionValid)msg('passwordRecoveryMsg','Introdueix i confirma la nova contrasenya.');
   else if(authInitializationResolved)msg('passwordRecoveryMsg','L’enllaç de recuperació ha caducat o no és vàlid. Sol·licita’n un altre.',true);
   else msg('passwordRecoveryMsg','Validant l’enllaç de recuperació…');
+  window.freyaBoot?.ready();
 }
 async function disconnectTripRealtime(){
   const active=[channel,checklistChannel,documentChannel,expenseChannel,accommodationChannel,flightChannel,activityChannel,carRentalChannel,manualItineraryChannel,dayMetadataChannel].filter(Boolean);channel=checklistChannel=documentChannel=expenseChannel=accommodationChannel=flightChannel=activityChannel=carRentalChannel=manualItineraryChannel=dayMetadataChannel=null;
@@ -6822,11 +6864,11 @@ async function renderSession(next){
   if(nextUserId!==session?.user?.id){resetBuilderUi();clearParkingReservationPreview()}
   if(nextUserId&&lastAuthenticatedUserId&&nextUserId!==lastAuthenticatedUserId){clearNavigationState(lastAuthenticatedUserId);clearDocumentsReturnContext();clearAccommodationVoucherFocus();clearGenericItineraryState()}
   if(nextUserId)lastAuthenticatedUserId=nextUserId;session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');
-  if(!session){if(lastAuthenticatedUserId)clearNavigationState(lastAuthenticatedUserId);lastAuthenticatedUserId=null;trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();clearGenericItineraryState();await disconnectTripRealtime();clearTripScopedState();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');return}
+  if(!session){if(lastAuthenticatedUserId)clearNavigationState(lastAuthenticatedUserId);lastAuthenticatedUserId=null;trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();clearGenericItineraryState();await disconnectTripRealtime();clearTripScopedState();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');window.freyaBoot?.ready();return}
   $('userEmail1').textContent=session.user.email||'';$('userEmail2').textContent='';
   try{
     const coldStart=coldStartNavigationPending;
-    if(coldStart&&!pendingInitialRoute){show('tripView');setAppView('tripsHomeView')}
+    if(coldStart&&!pendingInitialRoute){show('tripView');setAppView('tripsHomeView');window.freyaBoot?.ready()}
     const tripsLoaded=await refreshTrips({coldStart});
     if(renderGeneration!==sessionRenderGeneration)return;
     if(!tripsLoaded){
@@ -6834,9 +6876,9 @@ async function renderSession(next){
       $('tripLoadError').textContent=connectionUnavailable()
         ?'Sense connexió i sense cap viatge desat en aquest dispositiu. Obre Freya amb cobertura per preparar la còpia offline.'
         :'No s’han pogut carregar els viatges. Torna-ho a provar.';
-      return;
+      window.freyaBoot?.ready();return;
     }
-    show('tripView');
+    show('tripView');window.freyaBoot?.ready();
     if(coldStart){
       coldStartNavigationPending=false;
       if(!pendingInitialRoute){
@@ -6846,7 +6888,7 @@ async function renderSession(next){
         setAppView('tripsHomeView');
       }
     }
-  }catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut'}
+  }catch(error){if(renderGeneration!==sessionRenderGeneration)return;hide('tripView');show('noTrip');$('tripLoadError').textContent=error?.message||'Error desconegut';window.freyaBoot?.ready()}
 }
 const LONDON_CHECKLIST_CATEGORIES=[
   {id:'equipment',icon:'🧳',label:'Equipatge'},
@@ -10033,33 +10075,6 @@ $('parkingRemovePhoto').onclick=async()=>{
 
 $('itemForm').onsubmit=async e=>{e.preventDefault();if(!trip||!session)return;if(connectionUnavailable()){msg('checklistMsg','📵 Sense connexió. No s’ha desat; podràs afegir la tasca quan torni la xarxa.',true);return}const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,text=$('newItem').value.trim(),category=$('newItemCategory').value||'other',london=isLondonTrip();if(!text)return;const payload=london?{trip_id:tripId,text:`[[cat:${category}]] ${text}`,created_by:userId}:{trip_id:tripId,text,category,created_by:userId};const {error}=await db.from('checklist_items').insert(payload);if(!tripRequestIsCurrent(tripId,generation))return;if(error)msg('checklistMsg',error.message,true);else{$('newItem').value='';msg('checklistMsg','');loadItems()}};
 
-if('serviceWorker' in navigator){
-  let swReloading=false;
-  navigator.serviceWorker.addEventListener('controllerchange',()=>{
-    if(swReloading)return;
-    swReloading=true;
-    location.reload();
-  });
-  window.addEventListener('load',async()=>{
-    try{
-      const legacyScope=new URL('/freya-travel/freya-travel-v1.5/',location.origin).href;
-      const registrations=await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.filter(item=>item.scope===legacyScope).map(item=>item.unregister()));
-      if('caches' in window)await caches.delete('freya-travel-v1.5');
-      const registration=await navigator.serviceWorker.register('/freya-travel/sw.js',{scope:'/freya-travel/',updateViaCache:'none'});
-      const checkUpdate=()=>registration.update().catch(()=>{});
-      await checkUpdate();
-      registration.addEventListener('updatefound',()=>{
-        const worker=registration.installing;if(!worker)return;
-        worker.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)showUpdateToast()});
-      });
-      document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate()});
-      window.addEventListener('pageshow',checkUpdate);
-      window.addEventListener('focus',checkUpdate);
-      setInterval(checkUpdate,15*60*1000);
-    }catch(_){ }
-  });
-}
 function showUpdateToast(){
   if($('updateToast'))return;const toast=document.createElement('div');toast.id='updateToast';toast.className='update-toast';toast.innerHTML='<span>Hi ha una versió nova de Freya Travel.</span><button type="button">Actualitzar</button>';toast.querySelector('button').onclick=()=>location.reload();document.body.appendChild(toast);
 }
@@ -10249,6 +10264,7 @@ if(navigator.onLine===false&&!passwordRecoveryMode){
     });
   }
 }
+window.freyaBoot.step('session');
 db.auth.getSession().then(async({data,error})=>{
   authInitializationResolved=true;
   if(passwordRecoveryMode){session=data?.session||null;renderPasswordRecovery();return}
