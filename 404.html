@@ -1967,11 +1967,12 @@
   step('sdk');
   // Worker recovery must also run when the main script cannot parse or the SDK stalls.
   if('serviceWorker' in navigator){
-    var reloading=false;
+    var reloading=false,hadController=!!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener('controllerchange',function(){
       if(reloading)return;
       if(!finished){reloading=true;location.reload()}
-      else if(typeof window.showUpdateToast==='function')window.showUpdateToast();
+      else if(hadController&&typeof window.showUpdateToast==='function')window.showUpdateToast();
+      hadController=true;
     });
     navigator.serviceWorker.register('/freya-travel/sw.js',{scope:'/freya-travel/',updateViaCache:'none'}).then(function(registration){
       var check=function(){if(registration)registration.update().catch(function(){workerFailure=true})};

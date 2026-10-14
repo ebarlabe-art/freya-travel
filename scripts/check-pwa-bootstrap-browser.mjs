@@ -75,6 +75,7 @@ try{
   oldWorker=version;const ctx=await context({sw:true}),page=await ctx.newPage();page.setDefaultTimeout(25000);
   await page.goto(url);await page.waitForFunction(()=>navigator.serviceWorker.controller);await page.locator('#loginCard').waitFor({state:'visible'});
   await page.evaluate(async()=>{const c=await caches.open('freya-travel-v1.5');await c.put('/freya-travel/local-copy',new Response('keep'));});
+  assert.equal(await page.locator('#updateToast').isVisible(),false,'First installation is not an app update');
   const boots=await page.evaluate(()=>sessionStorage.boots);
   oldWorker=null;await page.evaluate(async()=>{const r=await navigator.serviceWorker.getRegistration();await r.update()});
   await page.waitForFunction(async version=>{const keys=await caches.keys(),r=await navigator.serviceWorker.getRegistration();return keys.includes('freya-travel-release-6444-v21')&&!keys.includes('freya-travel-release-6444-v'+version)&&r?.active?.state==='activated'&&!r.installing&&!r.waiting&&navigator.serviceWorker.controller?.state==='activated'},version);
