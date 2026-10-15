@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {mountQuickItineraryPlace} from '../domain/itinerary-quick-place.mjs';
+import {mountQuickItineraryPlace,prioritizeItineraryPlaces} from '../domain/itinerary-quick-place.mjs';
 
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const fallback=readFileSync(new URL('../404.html',import.meta.url),'utf8');
@@ -144,5 +144,57 @@ test('v25: provider outage leaves existing itinerary unchanged and keeps search 
   assert.match(view.section.children[3].textContent,/mapes no respon/);
   assert.equal(view.section.children[2].disabled,false);
   assert.equal(saves,0);
+ });
+});
+
+
+test('v26: Archiginnasio + Anatomical Theatre ranks the actual compound POI above nearby street and library',()=>{
+ const row={title:'Archiginnasio i Teatro Anatomico (entrada subjecta a horaris i disponibilitat).'};
+ const names=[
+  "Biblioteca Comunale dell'Archiginnasio",
+  "Via dell'Archiginnasio",
+  "Archiginnasio Palace and Anatomical Theater",
+  "Archiginnasio di Bologna"
+ ].map(n=>place(n));
+ const result=prioritizeItineraryPlaces(row,'Archiginnasio, Bolonya',names);
+ assert.equal(result.recommended?.canonical_name,'Archiginnasio Palace and Anatomical Theater');
+ assert.equal(result.choices.length,4);
+ assert.equal(result.choices[0].canonical_name,'Archiginnasio Palace and Anatomical Theater');
+});
+
+test('v26: a genuinely ambiguous name never picks one city or site automatically',()=>{
+ const row={title:'Visita al Museu Central'};
+ const names=[place('Museu Central'),place('Museu Central')];
+ assert.equal(prioritizeItineraryPlaces(row,'Museu Central, Bolonya',names).recommended,null);
+ const generic=[place('Via del Pratello'),place('Via del Pratello 12')];
+ assert.equal(prioritizeItineraryPlaces({title:'Passeig per Via del Pratello'},'Via del Pratello, Bolonya',generic).recommended,null);
+});
+
+test('v26: compound landmark is promoted; other search results remain accessible without any automatic save',async()=>{
+ await harness(async({add})=>{
+  let saves=0;
+  const row={id:'item-1',title:'Archiginnasio i Teatro Anatomico (entrada subjecta a horaris)'};
+  const view=add({
+   row,
+   initialOptions:[
+    place("Biblioteca Comunale dell'Archiginnasio"),
+    place("Via dell'Archiginnasio"),
+    place("Archiginnasio Palace and Anatomical Theater"),
+    place("Archiginnasio di Bologna")
+   ],
+   search:async()=>{throw Error('Initial options should be reused')},
+   save:async()=>{saves++;return true}
+  });
+  const choices=view.section.children.at(-1);
+  assert.equal(choices.children.length,2,'One primary action and collapsed alternatives');
+  assert.match(choices.children[0].textContent,/Confirma: Archiginnasio Palace and Anatomical Theater/);
+  assert.equal(choices.children[1].tagName,'details');
+  assert.match(choices.children[1].children[0].textContent,/altres ubicacions \(3\)/);
+  assert.equal(choices.children[1].querySelectorAll('button').length,3);
+  assert.equal(saves,0,'No database write just from a strong suggestion');
+  const heading=view.section.children[0];
+  assert.match(heading.children[1].style.cssText,/white-space:nowrap/);
+  assert.match(heading.children[1].textContent,/Tanca/);
+  assert.match(heading.style.cssText,/flex-wrap:wrap/);
  });
 });
