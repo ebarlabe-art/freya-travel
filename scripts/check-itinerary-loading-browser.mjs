@@ -41,12 +41,12 @@ try{
  await page.locator('#pwaDiagnostic summary').click();
  await page.waitForFunction(()=>document.querySelector('#pwaDiagnosticSummary')?.textContent.includes('Planning llegit: 13'));
  const diagnosis=await page.locator('#pwaDiagnosticSummary').innerText();
- assert.match(diagnosis,/Versió de la pàgina: pwa-inline-sdk-v22/);
+ assert.match(diagnosis,/Versió de la pàgina: pwa-home-itinerary-v23/);
  assert.match(diagnosis,/Mode: Safari \/ navegador · Ruta: \/freya-travel\//);
  assert.match(diagnosis,/Planning llegit: 13 · Planning visible: 13/);
  assert.doesNotMatch(diagnosis,/synthetic@example|12800000-0000-4000/);
  await page.locator('#pwaDiagnosticRefresh').click();
- await page.waitForFunction(()=>document.querySelector('#pwaDiagnosticSummary')?.textContent.includes('Versió pública consultada: pwa-inline-sdk-v22'));
+ await page.waitForFunction(()=>document.querySelector('#pwaDiagnosticSummary')?.textContent.includes('Versió pública consultada: pwa-home-itinerary-v23'));
  assert.equal(await page.evaluate(()=>fixture.writes),0);
  await page.locator('#pwaDiagnostic summary').click();
  for(const [day,count] of [['27',7],['28',6]]){
