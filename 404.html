@@ -5430,7 +5430,7 @@ function itineraryAutoPlaceFocusedName(row){
     !/^(?:entrada|hores?|visitants|opcional)\b/i.test(alias))return alias.trim();
  // Prefer the first concrete place in a complex itinerary line, never the
  // entire sentence ("Piazza Maggiore, Fontana ... i basílica ...").
- const place=raw.match(/\b(?:Piazza|Plaça|Plaza|Square|Via|Carrer|Street|Trattoria|Ristorante|Restaurant|Caffè|Cafè|Café|Museu|Museum|Catedral|Cathedral|Castell|Castle|Basílica|Basilica|Torre|Mercat|Market|Parc|Park|Palau|Palazzo|Finestrella|Archiginnasio|Quadrilatero|Due Torri)\b(?:\s+(?:[\p{L}’'-]+)){0,7}/iu)?.[0]||'';
+ const place=raw.match(/\b(?:Piazza|Plaça|Plaza|Square|Via|Carrer|Street|Trattoria|Ristorante|Restaurant|Caffè|Cafè|Café|Museu|Museum|Catedral|Cathedral|Castell|Castle|Basílica|Basilica|Torre|Mercat|Market|Parc|Park|Palau|Palazzo|Finestrella|Archiginnasio|Quadrilatero|Due Torri)(?=\s|$|[.,;])(?:\s+(?:[\p{L}’'-]+)){0,7}/iu)?.[0]||'';
  const focused=place.split(/\s+i\s+(?=(?:visita|retorn|dinar|passeig|sopar|esmorzar|zona|barri)\b|[A-ZÀ-Ü])/i)[0]
   .split(/\s*[,.·;()]\s*/)[0].trim();
  if(!focused||itineraryAutoPlaceText(focused).length<5)return '';
