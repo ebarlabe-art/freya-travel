@@ -29,18 +29,18 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    const needs=result&&!route?[error,...['origin','destination'].map(side=>result[side]?.error)].filter(Boolean):[];
    const modeIcon=route?.mode==='drive'?'🚗':route?.mode==='transit'?'🚌':'🚶';
    const summary=!result?'Calculant trajecte…':route?
-     `${{modeIcon} ${{Math.ceil(route.duration_seconds/60)} min · ${{(route.distance_m/1000).toFixed(1)} km · ${{esc(routeModes[route.mode])}`:
+     `${modeIcon} ${Math.ceil(route.duration_seconds/60)} min · ${(route.distance_m/1000).toFixed(1)} km · ${esc(routeModes[route.mode])}`:
      'Trajecte pendent de verificar';
-   card.innerHTML=`<div class="agenda-route-compact" role="status" aria-live="polite">↳ ${{summary}</div>
-    <details data-route-options ${{state.detailsOpen?'open':''}><summary>Opcions del trajecte</summary>
-      <p>${{route?esc(result.origin?.label||pair.origin.title)+' → '+esc(result.destination?.label||pair.destination.title):
+   card.innerHTML=`<div class="agenda-route-compact" role="status" aria-live="polite">↳ ${summary}</div>
+    <details data-route-options ${state.detailsOpen?'open':''}><summary>Opcions del trajecte</summary>
+      <p>${route?esc(result.origin?.label||pair.origin.title)+' → '+esc(result.destination?.label||pair.destination.title):
         (needs.map(code=>esc(routeReasons[code]||'No s’ha pogut consultar la ruta.')).join(' ')||'Encara no hi ha cap trajecte verificat.')}</p>
-      <div class="agenda-route-controls"><label>Com vols anar-hi?<select data-route-mode>${{Object.entries(routeModes).map(([value,label])=>`<option value="${{value}" ${{state.mode===value?'selected':''}>${{label}</option>`).join('')}</select></label>
-      <label>Marge addicional (min)<input data-route-buffer type="number" inputmode="numeric" min="0" max="180" step="1" placeholder="Opcional" value="${{state.buffer??''}"></label></div>
-      ${{route&&diagnosis?`<p class="agenda-route-diagnosis">${{esc(diagnosis.status)} · ${{esc(diagnosis.reason)}</p>`:''}
-      ${{route?`<small><a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · ${{esc(route.quality)}</small>`:''}
-      ${{['origin','destination'].map(side=>result?.[side]?.candidates?.length?`<label>${{side==='origin'?'Lloc de sortida':'Lloc d’arribada'}<select data-route-choice="${{side}"><option value="">Tria el lloc per a aquest càlcul</option>${{result[side].candidates.map(c=>`<option value="${{esc(c.id)}">${{esc(c.label)}</option>`).join('')}</select></label>`:'').join('')}
-      <div class="agenda-route-actions">${{result&&!route?'<button type="button" data-route-retry>Reintenta</button>':''}<button type="button" data-route-edit="origin">Corregeix l’origen</button><button type="button" data-route-edit="destination">Corregeix la destinació</button></div>
+      <div class="agenda-route-controls"><label>Com vols anar-hi?<select data-route-mode>${Object.entries(routeModes).map(([value,label])=>`<option value="${value}" ${state.mode===value?'selected':''}>${label}</option>`).join('')}</select></label>
+      <label>Marge addicional (min)<input data-route-buffer type="number" inputmode="numeric" min="0" max="180" step="1" placeholder="Opcional" value="${state.buffer??''}"></label></div>
+      ${route&&diagnosis?`<p class="agenda-route-diagnosis">${esc(diagnosis.status)} · ${esc(diagnosis.reason)}</p>`:''}
+      ${route?`<small><a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · ${esc(route.quality)}</small>`:''}
+      ${['origin','destination'].map(side=>result?.[side]?.candidates?.length?`<label>${side==='origin'?'Lloc de sortida':'Lloc d’arribada'}<select data-route-choice="${side}"><option value="">Tria el lloc per a aquest càlcul</option>${result[side].candidates.map(c=>`<option value="${esc(c.id)}">${esc(c.label)}</option>`).join('')}</select></label>`:'').join('')}
+      <div class="agenda-route-actions">${result&&!route?'<button type="button" data-route-retry>Reintenta</button>':''}<button type="button" data-route-edit="origin">Corregeix l’origen</button><button type="button" data-route-edit="destination">Corregeix la destinació</button></div>
     </details>`;
    const details=card.querySelector('[data-route-options]');
    details.addEventListener('toggle',()=>{if(live())state.detailsOpen=details.open});
