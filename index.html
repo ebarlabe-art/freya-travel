@@ -6651,11 +6651,24 @@ function renderTripsHome(){
   for(const [key,id] of [['active','activeTripsList'],['upcoming','upcomingTripsList'],['past','pastTripsList'],['undated','undatedTripsList']]){
     $(id).innerHTML=rows(key).length?rows(key).map(value=>{
     const duration=tripDuration(value),london=isLondonTrip(value),selected=value.id===trip?.id;
-    return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(({active:'En curs',upcoming:'En preparació',past:'Completat',undated:'Dates pendents',undated:'Dates pendents'})[key])}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button></article>`;
+    return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(({active:'En curs',upcoming:'En preparació',past:'Completat',undated:'Dates pendents'})[key])}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button>${key==='undated'&&value.is_owner&&value.tb_handoff&&!london?`<button class="secondary" type="button" data-discard-trip="${esc(value.id)}" data-discard-name="${esc(value.name)}">🗑️ Eliminar viatge</button>`:''}</article>`;
 
     }).join(''):`<p class="muted">${key==='upcoming'?'Encara no tens viatges propers.':key==='past'?'Encara no tens viatges passats.':''}</p>`;
     $(id).querySelectorAll('[data-select-trip]').forEach(button=>button.onclick=()=>openHomeTrip(button.dataset.selectTrip));
+    $(id).querySelectorAll('[data-discard-trip]').forEach(button=>button.onclick=()=>discardUndatedTrip(button.dataset.discardTrip,button.dataset.discardName));
   }
+}
+async function discardUndatedTrip(id,name){
+  const row=trips.find(value=>value.id===id);
+  if(!row||!row.is_owner||!row.tb_handoff||homeTripPhase(row)!=='undated'||isLondonTrip(row))return;
+  if(!confirm('Eliminar «'+name+'» de Freya? Deixarà d’aparèixer a Els meus viatges i no es podrà obrir.'))return;
+  const {data,error}=await db.rpc('discard_construction_trip_v1',{p_trip_id:id});
+  if(error){alert(error.message||'No s’ha pogut eliminar el viatge.');return}
+  if(data!==true){alert('No s’ha pogut confirmar l’eliminació del viatge.');return}
+  if(trip?.id===id){trip=null;tripLoadGeneration+=1;await disconnectTripRealtime();clearTripScopedState()}
+  forgetSelectedTrip();
+  clearNavigationState(session?.user?.id);
+  await refreshTrips({coldStart:true});
 }
 // HOME-01 navigation is scoped to category entry/detail; Photos retains its own history.
 let homeTripReturn=null,homeClockTimer=null;
