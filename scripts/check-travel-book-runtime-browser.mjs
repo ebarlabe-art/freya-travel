@@ -315,8 +315,8 @@ async function visibleOfflineTripCard(page,tripId,timeout=15000){
   const destination=await card.evaluate(element=>{
     if(element.closest('#pastTripsList'))return 'pastTripsView';
     if(element.closest('#upcomingTripsList'))return 'upcomingTripsView';
-    if(element.closest('#constructionTripsList'))return 'constructionView';
-    if(element.closest('#activeTripsList,#undatedTripsList'))return 'tripsHomeView';
+    if(element.closest('#undatedTripsList'))return 'upcomingTripsView';
+    if(element.closest('#activeTripsList'))return 'tripsHomeView';
     return null;
   });
   assert.ok(destination,'Offline trip must appear in exactly one expected Home category');
