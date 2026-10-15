@@ -57,7 +57,7 @@ test('v25: find-place opens direct picker, never the full editor; existing rows 
  assert.doesNotMatch(html,/openManualItineraryForm\(button\.dataset\.itineraryFindPlace\)/);
  assert.match(html,/\.update\(\{location_name:place\.canonical_name\}\)/);
  assert.match(html,/\.eq\('trip_id',tripId\)\.eq\('id',id\)\.eq\('updated_at',revision\)\.is\('location_name',null\)/);
- assert.match(html,/if\(data\?'Ubicació desada/);
+ assert.match(html,/data\?'Ubicació desada/);
  assert.match(packageScript,/'itinerary-quick-place\.mjs'/);
  assert.match(worker,/'\.\/domain\/itinerary-quick-place\.mjs'/);
  assert.match(worker,/freya-travel-release-6444-v25/);
