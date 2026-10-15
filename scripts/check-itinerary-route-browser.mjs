@@ -56,7 +56,7 @@ try{
  const before=routeCalls;await page.locator('[data-generic-itinerary-day="2030-04-01"]').click();await page.waitForFunction(()=>document.querySelectorAll('[data-agenda-route]').length===0);assert.equal(routeCalls,before,'No routes or provider calls without two locations');
  await page.locator('[data-generic-itinerary-day="2030-03-31"]').click();await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));assert.equal(routeCalls,before,'same pair/mode remains cached');
  await ctx.setOffline(true);await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('Sense connexió'));assert.equal(routeCalls,before);await ctx.setOffline(false);await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));
- await page.locator('[data-route-options] > summary').click().catch(async()=>{if(!(await page.locator('[data-route-options]').evaluate(node=>node.open)))throw Error('route options unavailable')});
+ await ensureRouteOptionsOpen();
  await page.locator('[data-route-edit="origin"]').click();await page.locator('#manualItineraryFormCard').waitFor({state:'visible'});assert.equal(await page.evaluate(()=>manualItineraryRows[0].location_name),'Museum A'); // Opening correction does not mutate the source.
  await page.evaluate(()=>closeManualItineraryForm());
  // Reopen the real PWA; preferences survive, route is recalculated rather than persisted as fact.
