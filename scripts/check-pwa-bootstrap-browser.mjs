@@ -88,7 +88,7 @@ try{
    });
   });
   const panel=page.locator('#quickPlacePhoneFixture');
-  assert.equal(await panel.locator('button').count(),2,'Recommended place plus close, with alternatives collapsed');
+  assert.equal(await panel.locator('button:visible').count(),3,'Only close, search and recommended place are visible; alternatives remain collapsed');
   assert.match(await panel.locator('[data-quick-place-results] > button').innerText(),/Confirma: Archiginnasio Palace and Anatomical Theater/);
   assert.equal(await panel.locator('[data-quick-place-results] details button').count(),3);
   assert.equal(await panel.locator('button.ghost').evaluate(button=>{
