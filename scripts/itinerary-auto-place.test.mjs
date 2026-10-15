@@ -63,7 +63,7 @@ function makeHarness({rows,answers=[{data:{candidates:[{place:place('Castell de 
  };
  const context=vm.createContext(scope);
  const fn=vm.runInContext('let itineraryAutoPlaceContext=null;'+source+
-  ';({itineraryAutoPlaceRows,itineraryAutoPlaceShouldSearch,itineraryAutoPlaceDefault,itineraryAutoPlaceOptions,'+
+  ';({itineraryAutoPlaceRows,itineraryAutoPlaceFocusedName,itineraryAutoPlaceShouldSearch,itineraryAutoPlaceDefault,itineraryAutoPlaceOptions,'+
   'itineraryAutoPlaceContextFor,itineraryAutoPlaceQuery,proposeItineraryAutoPlaces,saveItineraryAutoPlaces,renderItineraryAutoPlacePanel})',context);
  return {fn,scope,$,queries,updates,messages,rows,context};
 }
@@ -183,4 +183,35 @@ test('A2.12: a retry after a temporary provider failure can restart safely witho
  assert.equal(h.queries.length,2);
  assert.equal(h.fn.itineraryAutoPlaceContextFor('2026-12-27').records.get('activity-a:rev-1').status,'done');
  assert.equal(h.updates.length,0);
+});
+
+test('P0 #140: real Bolonya composite titles query one specific first place, not an invented whole sentence',()=>{
+ const h=makeHarness();
+ const cases=[
+  ['Piazza Maggiore, Fontana del Nettuno i basílica de San Petronio.','Piazza Maggiore'],
+  ['Archiginnasio i Teatro Anatomico (entrada subjecta a horaris i disponibilitat).','Archiginnasio'],
+  ['Passeig pel Quadrilatero i dinar. Opcions: Salumeria Simoni o Sfoglia Rina.','Quadrilatero'],
+  ['Passeig per l’entorn de les Due Torri i visita a Piazza Santo Stefano.','Due Torri'],
+  ['Opcional: visita a la Torre dell’Orologio, amb reserva prèvia.','Torre dell’Orologio'],
+  ['Aperitiu a la zona de Via del Pratello.','Via del Pratello'],
+  ['Sopar proposat a Trattoria da Me · Via San Felice, 50. Recomanable reservar.','Trattoria da Me'],
+  ['Esmorzar proposat a Caffè Terzi.','Caffè Terzi'],
+  ['Finestrella di Via Piella.','Finestrella di Via Piella'],
+  ['Passeig per Via Zamboni, el barri universitari i l’antic gueto jueu.','Via Zamboni'],
+  ['Dinar proposat a Trattoria del Rosso.','Trattoria del Rosso']
+ ];
+ for(const [title,wanted]of cases){
+  const row={title};
+  assert.equal(h.fn.itineraryAutoPlaceFocusedName(row),wanted,title);
+  assert.equal(h.fn.itineraryAutoPlaceQuery(row).split(',')[0],wanted,title);
+  assert.equal(h.fn.itineraryAutoPlaceShouldSearch(row),true,title);
+ }
+ for(const title of ['Dinar','Esmorzar i passeig pel centre històric','Sortida del vol de Barcelona (BCN)','Trasllat orientatiu en taxi cap al centre de Bolonya.']){
+  assert.equal(h.fn.itineraryAutoPlaceShouldSearch({title}),false,title);
+ }
+});
+test('P0 #140: itinerary agenda appears before place proposals so hours are visible',()=>{
+ assert.ok(html.indexOf('id="genericItineraryDays"')<html.indexOf('id="itineraryAutoPlacePanel"'));
+ assert.match(html,/item\.timeLabel/);
+ assert.match(html,/item\.sourceType==='manual'&&\/\^\(\?:sortida\|arribada\|trasllat/);
 });

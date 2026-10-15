@@ -145,6 +145,19 @@ function documentYearHint(pages){
  }
  return matches.size===1?[...matches.values()][0]:null;
 }
+// Only shift a post-midnight event if the text explicitly says it occurs
+// on the immediately following weekday AND its calendar day matches.
+function explicitNextMorningDate(line,start,current){
+ if(!start||!current?.date||Number(start.slice(0,2))>=6)return null;
+ const match=line.match(/\bmatinada\s+del\s+(dilluns|dimarts|dimecres|dijous|divendres|dissabte|diumenge)\s+(\d{1,2})(?!\d)/i);
+ if(!match)return null;
+ const next=new Date(current.date+'T12:00:00Z');if(!Number.isFinite(next.getTime()))return null;
+ next.setUTCDate(next.getUTCDate()+1);
+ const expected=new Intl.DateTimeFormat('ca-ES',{timeZone:'UTC',weekday:'long'}).format(next);
+ if(stripAccents(expected)!==stripAccents(match[1])||next.getUTCDate()!==Number(match[2]))return null;
+ return {date:next.toISOString().slice(0,10),page:current.page,
+  evidence:line+' | Dia següent explícit: '+match[1]+' '+match[2],confidence:'high'};
+}
 export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'}){
  const pages=normalizePages(rawPages),candidates=[],warnings=new Set(),yearHint=documentYearHint(pages);
  let current=null,documentZone=null,pendingDaypart=null,unparsed=0,invalidDate=false;
@@ -215,7 +228,10 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     pendingDaypart=null;
    }
    if(item){
-    candidates.push(makeCandidate(item,line,page,current?{date:current.date,evidence:current.evidence,page:current.page,confidence:current.confidence}:null,
+    const dateContext=current?{date:current.date,evidence:current.evidence,page:current.page,confidence:current.confidence}:null;
+    const dateForItem=explicitNextMorningDate(line,item.start,dateContext)||dateContext;
+    if(dateForItem!==dateContext)warnings.add('Una activitat de matinada indica explícitament el dia següent: comprova-la.');
+    candidates.push(makeCandidate(item,line,page,dateForItem,
       tz&&!tz.invalid?tz:current?.zone,candidates.length));
    }else if(current&&!ADMIN.test(line)&&!tz)unparsed++;
    if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
@@ -229,8 +245,23 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
   schema_version:1,source,candidates,warnings:[...warnings]
  });
 }
+// Read a literal, named first stop only. This is NOT a verified map position;
+// the routing service must still resolve it in the destination context.
+function mentionedPlace(title){
+ if(/^(?:sortida|arribada|trasllat|transfer|vol|flight|tren|taxi|bus|metro)\b/i.test(title))return null;
+ const raw=title.match(/\b(?:Piazza|Plaça|Plaza|Square|Via|Carrer|Street|Trattoria|Ristorante|Restaurant|Caffè|Cafè|Café|Museu|Museum|Catedral|Cathedral|Castell|Castle|Basílica|Basilica|Torre|Mercat|Market|Parc|Park|Palau|Palazzo|Finestrella|Archiginnasio|Quadrilatero|Due Torri)(?=\s|$|[.,;])(?:\s+[\p{L}’'-]+){0,7}/iu)?.[0];
+ if(!raw)return null;
+ const place=raw.split(/\s+i\s+(?=(?:visita|retorn|dinar|passeig|sopar|esmorzar|zona|barri)\b|[A-ZÀ-Ü])/i)[0]
+  .split(/\s*[,.·;()]\s*/)[0].trim();
+ if(place.length<6||place.length>160)return null;
+ // Generic words alone cannot become locations.
+ if(/^(?:museu|museum|mercat|market|restaurant|parc|park|torre|via|carrer|piazza|plaça|plaza|castell)$/i.test(place))return null;
+ return place;
+}
 function makeCandidate(item,line,page,date,zone,sourceOrder){
  const fields={title:makeField(item.title,line,page,item.confidence)};
+ const place=mentionedPlace(item.title);
+ if(place)fields.location_name=makeField(place,line,page,'medium');
  if(date)fields.local_date=makeField(date.date,date.evidence,date.page,date.confidence||'high');
  if(item.start)fields.start_local_time=makeField(item.start,line,page);
  if(item.end)fields.end_local_time=makeField(item.end,line,page);

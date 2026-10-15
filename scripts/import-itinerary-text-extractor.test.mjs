@@ -188,3 +188,30 @@ test('P0 #135: without explicit unique year do not invent full dates',()=>{
  assert.equal(val(p.candidates[0],'local_date'),undefined);
  assert.ok(p.candidates[0].review_flags.includes('date_required_for_time'));
 });
+
+test('P0 #140: explicit next-day midnight event belongs to Saturday, not Friday',()=>{
+ const p=extractItineraryProposalFromPages([{page:1,text:[
+  'Escapada a Bolonya','Del divendres 23 al diumenge 25 d’octubre de 2026',
+  'Divendres 23 d’octubre','23.30 h Trasllat en taxi',
+  '00.15 h Arribada aproximada a l’apartament, ja de matinada del dissabte 24.',
+  '01.00 h Nota sense referència al dia següent',
+  'Dissabte 24 d’octubre','09.30 h Esmorzar'
+ ].join('\n')}],source);
+ assert.deepEqual(p.candidates.map(c=>val(c,'local_date')),[
+  '2026-10-23','2026-10-24','2026-10-23','2026-10-24']);
+ assert.match(p.warnings.join(' '),/dia següent/);
+});
+test('P0 #140: date is never advanced for ambiguous or inconsistent midnight descriptions',()=>{
+ const p=parse('23/10/2026\n00:15 Arribada a l’apartament\n00:45 Arribada de matinada del dimarts 24');
+ assert.deepEqual(p.candidates.map(c=>val(c,'local_date')),['2026-10-23','2026-10-23']);
+});
+
+test('P0 #140: names of explicit POIs survive as source-backed locations for future PDFs',()=>{
+ const p=parse("24/10/2026\n10:15 Piazza Maggiore, Fontana del Nettuno i basílica de San Petronio\n11:30 Archiginnasio i Teatro Anatomico\n13:00 Dinar\n20:30 Sopar a Trattoria da Me · Via San Felice, 50");
+ assert.equal(val(p.candidates[0],'location_name'),'Piazza Maggiore');
+ assert.equal(val(p.candidates[1],'location_name'),'Archiginnasio');
+ assert.equal(val(p.candidates[2],'location_name'),undefined);
+ assert.equal(val(p.candidates[3],'location_name'),'Trattoria da Me');
+ assert.equal(p.candidates[0].fields.location_name.confidence,'medium');
+ assert.equal(p.candidates[0].fields.location_name.evidence[0].kind,'text');
+});

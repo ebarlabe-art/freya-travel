@@ -82,3 +82,11 @@ test('client request timeout leaves a recoverable error instead of an infinite p
 test('handler returns ambiguous candidates without computing any route',async()=>{
  let routed=0;const h=handler({provider:{resolve:async()=>({error:'ambiguous',candidates:[{id:'one',label:'Museum'}]}),route:async()=>{routed++}}});const r=await(await h.invoke()).json();assert.equal(r.status,'insufficient');assert.equal(routed,0);assert.equal(r.origin.candidates.length,1);
 });
+
+test('P0 #140: manual imported flight and taxi legs remain routing barriers',()=>{
+ const a=visit(aId),b=visit(bId);
+ for(const title of ['Sortida del vol Barcelona','Arribada a l’aeroport','Trasllat en taxi','Vol Bolonya a Barcelona']){
+  const barrier=visit('imported', {title,sourceType:'manual',isTransport:true});
+  assert.equal(visitPairs([a,barrier,b],tid,a.localDate).length,0);
+ }
+});
