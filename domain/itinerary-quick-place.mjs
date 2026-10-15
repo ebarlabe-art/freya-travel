@@ -5,6 +5,47 @@ function usable(place){
  return place&&clean(place.canonical_name)&&clean(place.canonical_name).length<=200&&
   place.coordinate_role==='exact_location'&&Number.isFinite(place.latitude)&&Number.isFinite(place.longitude);
 }
+
+// Candidate relevance is a visual suggestion only: no writes or route geometry.
+// Compare the full activity meaning, not only the first keyword used for geocoding.
+const canonicalWords={
+ teatro:'theater',teatre:'theater',theatre:'theater',theater:'theater',anatòmic:'anatomical',
+ anatomico:'anatomical',anatomica:'anatomical',anatomical:'anatomical',
+ palazzo:'palace',palau:'palace',palacio:'palace',piazza:'square',placa:'square',
+ plaza:'square',square:'square',castell:'castle',castillo:'castle',castle:'castle',
+ basilica:'basilica',basílica:'basilica',museum:'museum',museu:'museum',museo:'museum'
+};
+const genericWords=new Set('a al alla alle amb and at barcelona bologna bolonya ca catalunya de del della delle dell des di el els en entrada horaris i in la las le les lloc on or per subjecta the to una un visita visit visites disponibilitat aprox aproximada opcional possible proposat reservar amb sota avui aturada passeig pel pels punt entorn proper zona'.split(' '));
+function words(value){
+ const clean=String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .toLocaleLowerCase('ca').replace(/[’']/g,' ').replace(/[^a-z0-9]+/g,' ');
+ return [...new Set(clean.split(' ').filter(word=>word.length>2&&!genericWords.has(word))
+  .map(word=>canonicalWords[word]||word))];
+}
+export function prioritizeItineraryPlaces(row,query,places){
+ const title=String(row?.title||'').split(/[(.;]/)[0].slice(0,200);
+ const context=words(title),focus=words(String(query||'').split(',')[0]);
+ const candidates=places.filter(usable);
+ const ranked=candidates.map((place,index)=>{
+  const name=words(place.canonical_name);
+  const match=context.filter(token=>name.includes(token)).length;
+  const focused=focus.filter(token=>name.includes(token)).length;
+  const street=/^(?:via|viale|street|carrer|calle|road)\b/i.test(place.canonical_name);
+  const score=3*focused/Math.max(1,focus.length)+
+   3*match/Math.max(1,context.length)+
+   (context.length>=2&&match>=2?1:0)-(street?1:0);
+  return {place,index,match,focused,score};
+ }).sort((a,b)=>b.score-a.score||a.index-b.index);
+ const first=ranked[0],second=ranked[1];
+ // Do not collapse ambiguous matches with same relevance. User confirms all writes.
+ const strong=!!first&&focus.length>0&&first.focused===focus.length&&
+   (first.match>=2||(focus.length>=2&&first.focused>=2))&&
+   (!second||first.score-second.score>=1.25)&&
+   !/^(?:via|viale|street|carrer|calle|road)\b/i.test(first.place.canonical_name);
+ return {recommended:strong?first.place:null,
+  choices:ranked.map(item=>item.place)};
+}
+
 export function mountQuickItineraryPlace({host,row,query,search,save,current,initialOptions=null}){
  if(!host||!row||typeof search!=='function'||typeof save!=='function')throw Error('Missing place picker contract');
  document.querySelectorAll('[data-quick-itinerary-place]').forEach(existing=>existing.remove());
@@ -12,9 +53,12 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
  section.className='itinerary-quick-place';
  section.style.cssText='margin:10px 0 0;padding:14px;border:1px solid var(--line);border-radius:14px;max-width:100%;min-width:0;overflow-wrap:anywhere;';
  section.setAttribute('aria-label','Cerca la ubicació de '+row.title);
- const heading=document.createElement('div');heading.className='topbar';
+ const heading=document.createElement('div');heading.className='itinerary-quick-place-heading';
+ heading.style.cssText='display:flex;align-items:flex-start;flex-wrap:wrap;justify-content:space-between;gap:10px;min-width:0;width:100%';
  const title=document.createElement('strong');title.textContent='📍 Ubicació: '+row.title;
- const close=document.createElement('button');close.type='button';close.className='ghost';close.textContent='Tanca';
+ title.style.cssText='min-width:0;flex:1 1 220px;overflow-wrap:anywhere';
+ const close=document.createElement('button');close.type='button';close.className='ghost';close.textContent='✕ Tanca';
+ close.style.cssText='flex:0 0 auto;min-width:84px;white-space:nowrap;align-self:flex-start';
  heading.append(title,close);
  const label=document.createElement('label');label.textContent='Nom del lloc';
  label.style.cssText='display:block;margin:8px 0;';
@@ -40,10 +84,19 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
    status.textContent='No he trobat un lloc prou concret. Prova un altre nom o edita la ubicació manualment.';
    return;
   }
-  status.textContent=exact.length===1?'He trobat una ubicació concreta. Confirma-la per vincular-la a aquesta activitat.':'Hi ha diverses ubicacions possibles. Tria la correcta.';
-  exact.forEach(place=>{
+  const {recommended,choices:ranked}=prioritizeItineraryPlaces(row,query,exact);
+  status.textContent=recommended?'He reconegut la ubicació més probable per a aquesta activitat. Confirma-la, o consulta les alternatives si no és correcta.':
+   exact.length===1?'He trobat una ubicació concreta. Confirma-la per vincular-la a aquesta activitat.':
+   'Hi ha diverses ubicacions possibles. Tria la correcta.';
+  const altBox=recommended&&ranked.length>1?document.createElement('details'):null;
+  if(altBox){
+   const summary=document.createElement('summary');summary.textContent='Mostra altres ubicacions ('+(ranked.length-1)+')';
+   summary.style.cssText='cursor:pointer;min-height:44px;padding:10px 0';
+   altBox.append(summary);
+  }
+  ranked.forEach(place=>{
    const button=document.createElement('button');button.type='button';button.className='secondary';
-   button.textContent=(exact.length===1?'✓ Confirma: ':'📍 ')+
+   button.textContent=(place===recommended||exact.length===1?'✓ Confirma: ':'📍 ')+
     [place.canonical_name,place.administrative_area,place.country_code].filter(Boolean).join(' · ');
    button.style.cssText='text-align:left;white-space:normal;overflow-wrap:anywhere;';
    button.onclick=async()=>{
@@ -64,8 +117,10 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
      }
     }
    };
-   choices.append(button);
+   if(altBox&&place!==recommended)altBox.append(button);
+   else choices.append(button);
   });
+  if(altBox)choices.append(altBox);
  }
  async function run(){
   if(!active()||busy)return;
