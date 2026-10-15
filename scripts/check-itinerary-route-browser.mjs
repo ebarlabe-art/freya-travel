@@ -54,6 +54,15 @@ try{
  await page.locator('[data-route-mode]').selectOption('drive');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('Cotxe')&&document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));
  await page.locator('[data-route-mode]').selectOption('transit');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('sense horaris en viu'));
  const before=routeCalls;await page.locator('[data-generic-itinerary-day="2030-04-01"]').click();await page.waitForFunction(()=>document.querySelectorAll('[data-agenda-route]').length===0);assert.equal(routeCalls,before,'No routes or provider calls without two locations');
+ // Regression: the itinerary action opens a narrow place finder, not the entire editing form.
+ await page.locator('[data-itinerary-find-place]').first().click();
+ await page.locator('[data-quick-itinerary-place]').waitFor();
+ assert.equal(await page.locator('#manualItineraryFormCard').isVisible(),false);
+ assert.match(await page.locator('[data-quick-itinerary-place] input[type="search"]').inputValue(),/No place/);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ await page.locator('[data-quick-itinerary-place]').getByRole('button',{name:'Tanca'}).click();
+ await page.locator('[data-quick-itinerary-place]').waitFor({state:'detached'});
+ assert.equal(await page.locator('#manualItineraryFormCard').isVisible(),false);
  await page.locator('[data-generic-itinerary-day="2030-03-31"]').click();await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));assert.equal(routeCalls,before,'same pair/mode remains cached');
  await ctx.setOffline(true);await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('Sense connexió'));assert.equal(routeCalls,before);await ctx.setOffline(false);await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));
  await ensureRouteOptionsOpen();
