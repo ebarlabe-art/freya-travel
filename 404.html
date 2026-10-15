@@ -5502,15 +5502,16 @@ function renderItineraryAutoPlacePanel(day){
  $('itineraryAutoPlaceList').innerHTML=rows.map(row=>{
   const record=state.records.get(itineraryAutoPlaceRecordKey(row));
   const options=record?.options||[];
+  const clearMatch=record?.status==='done'&&options.length===1&&record.selected===0&&options[0].coordinate_role==='exact_location';
   const label=record?.status==='failed'?(record.failure||'Servei de llocs no disponible'):record?.status==='limit'?'Límit preventiu de consultes: utilitza Cerca ubicació si cal':record?.status==='pending'?'No es pot deduir el lloc del títol':!record&&itineraryAutoPlaceContext?.blocked?'Cerca ajornada perquè el servei no respon':
-   record?.status==='done'&&!options.length?'Cap ubicació trobada':record?.status==='done'?'Tria o confirma la proposta':'Cercant suggeriments…';
+   record?.status==='done'&&!options.length?'Cap ubicació trobada':clearMatch?'Ubicació reconeguda: confirma les propostes seleccionades.':record?.status==='done'?'Tria el lloc correcte':'Cercant suggeriments…';
   return `<div style="border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0"><div><strong>${esc(row.title)}</strong></div>
    <p class="muted" style="margin:8px 0 12px">${esc(label)}</p>
-   <label style="display:block">Ubicació
+   ${clearMatch?`<p><strong>✓ ${esc(options[0].canonical_name)}</strong></p>`:`<label style="display:block">Ubicació
    <select data-itinerary-auto-place="${esc(row.id)}" ${record?.status!=='done'||state.saving?'disabled':''}>
     <option value="-1">Pendent — no assignar ubicació</option>
     ${options.map((place,index)=>`<option value="${index}" ${record?.selected===index?'selected':''}>${esc([place.canonical_name,place.administrative_area,place.country_code,place.coordinate_role==='exact_location'?'Lloc concret':'Zona aproximada'].filter(Boolean).join(' · '))}</option>`).join('')}
-   </select></label></div>`;
+   </select></label>`}</div>`;
  }).join('');
  $('itineraryAutoPlaceList').querySelectorAll('[data-itinerary-auto-place]').forEach(select=>{
   select.onchange=()=>{
