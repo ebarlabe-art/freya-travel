@@ -54,6 +54,18 @@ try{
  await page.locator('[data-route-mode]').selectOption('drive');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('Cotxe')&&document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));
  await page.locator('[data-route-mode]').selectOption('transit');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('sense horaris en viu'));
  const before=routeCalls;await page.locator('[data-generic-itinerary-day="2030-04-01"]').click();await page.waitForFunction(()=>document.querySelectorAll('[data-agenda-route]').length===0);assert.equal(routeCalls,before,'No routes or provider calls without two locations');
+ // The quick location lookup stays inside the itinerary card, not the full editing form.
+ const findPlace=page.locator('[data-itinerary-find-place]').first();
+ await findPlace.click();
+ await page.locator('[data-quick-itinerary-place]').waitFor({state:'visible'});
+ assert.equal(await page.locator('#manualItineraryFormCard').isVisible(),false,'Place button must not open the full editor');
+ await page.locator('[data-quick-itinerary-place] [role="status"]').filter({hasText:/No he trobat un lloc prou concret/}).waitFor();
+ assert.equal(await page.locator('[data-quick-itinerary-place] input[type="search"]').inputValue().then(value=>value.length>0),true);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ await page.locator('[data-quick-itinerary-place] button').filter({hasText:'Tanca'}).click();
+ assert.equal(await page.locator('[data-quick-itinerary-place]').count(),0);
+ assert.equal(await page.evaluate(()=>manualItineraryRows.find(r=>r.title==='No place')?.location_name),null,'Lookup did not alter the existing record');
+
  // Regression: the itinerary action opens a narrow place finder, not the entire editing form.
  await page.locator('[data-itinerary-find-place]').first().click();
  await page.locator('[data-quick-itinerary-place]').waitFor();
