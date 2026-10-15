@@ -1992,7 +1992,7 @@
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-routes-compact-v24';
+const FREYA_FRONTEND_RELEASE='pwa-direct-places-v25';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -6226,6 +6226,48 @@ function renderItineraryItem(item,unscheduled=false){
   const details=[item.subtitle,...item.details].filter(Boolean);
   return `<article class="generic-itinerary-entry" data-itinerary-key="${esc(item.key)}"><div class="generic-itinerary-time ${item.timingKind==='approximate'?'approximate':''}">${unscheduled?'':esc(item.timeLabel)}</div><div class="generic-itinerary-card ${item.isCancelled?'cancelled':''} ${item.isCompleted?'trip-progress-done':''}"><div class="generic-itinerary-main"><div class="generic-itinerary-icon">${item.icon}</div><div class="generic-itinerary-copy"><small>${esc(item.eyebrow)}</small><strong>${esc(item.title)}</strong>${details.map(detail=>`<p>${esc(detail)}</p>`).join('')}${tripProgressStatusHtml(item)}${(item.tags||[]).map(tag=>`<span class="generic-itinerary-tag">${esc(tag)}</span>`).join('')}</div></div><div class="generic-itinerary-actions">${tripProgressButton(item)}${item.documents.map(document=>`<button type="button" data-itinerary-document="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}" data-itinerary-document-role="${esc(document.role)}" ${document.documentId?`data-itinerary-document-id="${esc(document.documentId)}"`:''}>${esc(document.label)}</button>`).join('')}${item.mapUrl?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">📍 Maps</a>`:''}<button type="button" class="source-action" data-itinerary-source="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}">${esc(itinerarySourceLabel(item.sourceType,item.sourceId))}</button>${item.sourceType==='manual'&&!item.mapUrl?`<button type="button" data-itinerary-find-place="${esc(item.sourceId)}">📍 Cerca ubicació</button>`:''}${item.sourceType==='manual'?`<button type="button" data-delete-manual-itinerary="${esc(item.sourceId)}">Elimina</button>`:''}</div></div></article>`;
 }
+
+async function openQuickItineraryPlacePicker(button){
+ if(!trip||!session||isLondonTrip())return;
+ const id=button.dataset.itineraryFindPlace;
+ const row=manualItineraryRows.find(item=>item.id===id);
+ const host=button.closest('[data-itinerary-key]');
+ if(!row||!host||row.location_name||row.address)return;
+ if(connectionUnavailable()){msg('genericItineraryMessage','Cal connexió per cercar llocs; el planning no canviarà.',true);return}
+ const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,revision=row.updated_at;
+ const day=itineraryProjection.find(item=>item.sourceType==='manual'&&item.sourceId===id)?.localDate;
+ const current=()=>itineraryRequestIsCurrent(tripId,generation,userId)&&visibleAppView()==='itineraryView'&&
+  !!button.isConnected&&manualItineraryRows.some(value=>value.id===id&&value.updated_at===revision);
+ try{
+  const {mountQuickItineraryPlace}=await import('./domain/itinerary-quick-place.mjs');
+  if(!current())return;
+  const prior=day?itineraryAutoPlaceContextFor(day)?.records.get(itineraryAutoPlaceRecordKey(row)):null;
+  mountQuickItineraryPlace({
+   host,row,query:itineraryAutoPlaceQuery(row)||manualItineraryPlaceQuery(row),
+   initialOptions:prior?.status==='done'?prior.options:null,current,
+   search:async text=>{
+    const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text,language:'ca'}});
+    if(error||data?.error)return {error:itineraryAutoPlaceFailure(error,data)};
+    return {options:itineraryAutoPlaceOptions(data)};
+   },
+   save:async place=>{
+    if(!current()||connectionUnavailable())return false;
+    if(place.coordinate_role!=='exact_location')throw Error('Cal un lloc concret per calcular els trajectes.');
+    const {data,error}=await db.from('trip_itinerary_items').update({location_name:place.canonical_name})
+     .eq('trip_id',tripId).eq('id',id).eq('updated_at',revision).is('location_name',null)
+     .select('id').maybeSingle();
+    if(error)throw error;
+    await loadManualItineraryItems(true);
+    if(itineraryRequestIsCurrent(tripId,generation,userId)){
+     msg('genericItineraryMessage',data?'Ubicació desada. Recalculant els trajectes.':'L’activitat ha canviat. Revisa el planning.',!data);
+    }
+    return !!data;
+   }
+  });
+ }catch(error){
+  if(current())msg('genericItineraryMessage','No s’ha pogut obrir el cercador. Pots editar el lloc des de «Editar planning».',true);
+ }
+}
 function bindItineraryActions(container){
   bindTripProgress(container,itineraryProjection,'genericItineraryMessage');
   bindContextPhotoActions(container,itineraryProjection);
@@ -6234,10 +6276,7 @@ function bindItineraryActions(container){
     if(type==='flight')openFlightDocument(id,role,button.dataset.itineraryDocumentId||'');else if(type==='accommodation')openAccommodationVoucher(id);else openActivityDocument(id,role);
   });
   container.querySelectorAll('[data-itinerary-source]').forEach(button=>button.onclick=()=>button.dataset.itinerarySource==='manual'?openManualItineraryForm(button.dataset.itinerarySourceId):openItinerarySource(button.dataset.itinerarySource,button.dataset.itinerarySourceId));
-  container.querySelectorAll('[data-itinerary-find-place]').forEach(button=>button.onclick=()=>{
-    openManualItineraryForm(button.dataset.itineraryFindPlace);
-    $('manualItineraryPlaceQuery').focus();
-  });
+  container.querySelectorAll('[data-itinerary-find-place]').forEach(button=>button.onclick=()=>{void openQuickItineraryPlacePicker(button)});
   container.querySelectorAll('[data-delete-manual-itinerary]').forEach(button=>button.onclick=()=>deleteManualItineraryItem(button.dataset.deleteManualItinerary,button));
 }
 function dayMetadataForDate(localDate){return dayMetadataRows.find(row=>row.trip_id===trip?.id&&row.local_date===localDate)||null}
