@@ -5419,7 +5419,7 @@ async function searchManualItineraryPlaces(){
 function itineraryAutoPlaceRows(day){
  if(!day||day==='pending')return [];
  const ids=new Set(itineraryProjection.filter(item=>item.sourceType==='manual'&&item.localDate===day).map(item=>item.sourceId));
- return manualItineraryRows.filter(row=>ids.has(row.id)&&!row.location_name&&!row.address&&row.status!=='cancelled').slice(0,10);
+ return manualItineraryRows.filter(row=>ids.has(row.id)&&!row.location_name&&!row.address&&row.status!=='cancelled').slice(0,30);
 }
 function itineraryAutoPlaceScope(){
  return trip&&session?session.user.id+':'+trip.id+':'+tripLoadGeneration:'';
@@ -5553,7 +5553,7 @@ function proposeItineraryAutoPlaces(day){
     if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day);
     continue;
    }
-   if(context.requestCount>=20){
+   if(context.requestCount>=30){
     state.records.set(key,{status:'limit',options:[],selected:-1});
     if(genericItinerarySelectedDay===day)renderItineraryAutoPlacePanel(day);
     continue;
