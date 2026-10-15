@@ -76,7 +76,7 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
  const active=()=>section.isConnected&&(!current||current());
  const closePanel=()=>{serial++;section.remove()};
  close.onclick=closePanel;
- function display(options){
+ function display(options,searchedFor=query){
   if(!active())return;
   const exact=(Array.isArray(options)?options:[]).filter(usable).slice(0,5);
   choices.replaceChildren();
@@ -84,7 +84,7 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
    status.textContent='No he trobat un lloc prou concret. Prova un altre nom o edita la ubicació manualment.';
    return;
   }
-  const {recommended,choices:ranked}=prioritizeItineraryPlaces(row,query,exact);
+  const {recommended,choices:ranked}=prioritizeItineraryPlaces(row,searchedFor,exact);
   status.textContent=recommended?'He reconegut la ubicació més probable per a aquesta activitat. Confirma-la, o consulta les alternatives si no és correcta.':
    exact.length===1?'He trobat una ubicació concreta. Confirma-la per vincular-la a aquesta activitat.':
    'Hi ha diverses ubicacions possibles. Tria la correcta.';
@@ -130,7 +130,7 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
    const response=await search(value);
    if(!active()||request!==serial)return;
    if(response?.error){status.textContent=response.error;return}
-   display(response?.options);
+   display(response?.options,value);
   }catch(error){if(active()&&request===serial)status.textContent=error?.message||'La cerca no està disponible.'}
   finally{if(active()&&request===serial){busy=false;searchButton.disabled=false}}
  }
