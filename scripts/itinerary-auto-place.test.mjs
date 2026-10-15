@@ -215,3 +215,12 @@ test('P0 #140: itinerary agenda appears before place proposals so hours are visi
  assert.match(html,/item\.timeLabel/);
  assert.match(html,/item\.sourceType==='manual'&&\/\^\(\?:sortida\|arribada\|trasllat/);
 });
+
+test('v25: a single exact automatically recognized place needs no dropdown selection',async()=>{
+ const h=makeHarness();
+ h.fn.proposeItineraryAutoPlaces('2026-12-27');await drain();
+ assert.match(h.$('itineraryAutoPlaceList').innerHTML,/Ubicació reconeguda/);
+ assert.match(h.$('itineraryAutoPlaceList').innerHTML,/Castell de Riga/);
+ assert.doesNotMatch(h.$('itineraryAutoPlaceList').innerHTML,/data-itinerary-auto-place="activity-a"/);
+ assert.equal(h.$('itineraryAutoPlaceSave').disabled,false);
+});
