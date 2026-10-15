@@ -4448,8 +4448,8 @@ async function loadBuildView(){
 
 $('budgetSettingsForm').onsubmit=async event=>{event.preventDefault();if(!trip||isLondonTrip())return;const target=$('budgetTarget').value.trim(),maximum=$('budgetMaximum').value.trim(),currency=$('budgetCurrency').value.trim().toUpperCase();if((target||maximum)&&!/^[A-Z]{3}$/.test(currency)){msg('budgetMsg','Indica una moneda de tres lletres, per exemple EUR.',true);return}try{const api=await tbBudgetApi();await api.saveBudgetSettings(db,{tripId:trip.id,expectedRevision:Number($('budgetSettingsForm').dataset.revision||0),targetAmount:target===''?null:Number(target),maximumAmount:maximum===''?null:Number(maximum),currency:(target||maximum)?currency:null});await loadBudgetView();msg('budgetMsg','Pressupost actualitzat.')}catch(error){msg('budgetMsg',error?.message||'No s’ha pogut desar el pressupost.',true)}};
 
-const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','travelBookView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','travelBookView','itineraryView','parkingView','weatherView']);
+const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','travelBookView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','travelBookView','itineraryView','parkingView','weatherView']);
 const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
   if(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(view))return true;
@@ -4458,6 +4458,7 @@ function navigationViewIsValid(view,value=trip){
 }
 function normalizedNavigationView(view,value=trip){
   if(!value)return 'tripsHomeView';
+  if(view==='constructionView')return 'designTripView';
   if(!isLondonTrip(value)&&view==='genericModuleView')return 'genericDashboardView';
   if(navigationViewIsValid(view,value))return view;
   return isLondonTrip(value)?'dashboardView':'genericDashboardView';
