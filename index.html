@@ -6231,7 +6231,7 @@ async function openQuickItineraryPlacePicker(button){
  if(!trip||!session||isLondonTrip())return;
  const id=button.dataset.itineraryFindPlace;
  const row=manualItineraryRows.find(item=>item.id===id);
- const host=button.closest('[data-itinerary-key]');
+ const host=button.closest('.generic-itinerary-card');
  if(!row||!host||row.location_name||row.address)return;
  if(connectionUnavailable()){msg('genericItineraryMessage','Cal connexió per cercar llocs; el planning no canviarà.',true);return}
  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,revision=row.updated_at;
