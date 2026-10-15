@@ -245,8 +245,23 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
   schema_version:1,source,candidates,warnings:[...warnings]
  });
 }
+// Read a literal, named first stop only. This is NOT a verified map position;
+// the routing service must still resolve it in the destination context.
+function mentionedPlace(title){
+ if(/^(?:sortida|arribada|trasllat|transfer|vol|flight|tren|taxi|bus|metro)\b/i.test(title))return null;
+ const raw=title.match(/\b(?:Piazza|Plaça|Plaza|Square|Via|Carrer|Street|Trattoria|Ristorante|Restaurant|Caffè|Cafè|Café|Museu|Museum|Catedral|Cathedral|Castell|Castle|Basílica|Basilica|Torre|Mercat|Market|Parc|Park|Palau|Palazzo|Finestrella|Archiginnasio|Quadrilatero|Due Torri)(?=\s|$|[.,;])(?:\s+[\p{L}’'-]+){0,7}/iu)?.[0];
+ if(!raw)return null;
+ const place=raw.split(/\s+i\s+(?=(?:visita|retorn|dinar|passeig|sopar|esmorzar|zona|barri)\b|[A-ZÀ-Ü])/i)[0]
+  .split(/\s*[,.·;()]\s*/)[0].trim();
+ if(place.length<6||place.length>160)return null;
+ // Generic words alone cannot become locations.
+ if(/^(?:museu|museum|mercat|market|restaurant|parc|park|torre|via|carrer|piazza|plaça|plaza|castell)$/i.test(place))return null;
+ return place;
+}
 function makeCandidate(item,line,page,date,zone,sourceOrder){
  const fields={title:makeField(item.title,line,page,item.confidence)};
+ const place=mentionedPlace(item.title);
+ if(place)fields.location_name=makeField(place,line,page,'medium');
  if(date)fields.local_date=makeField(date.date,date.evidence,date.page,date.confidence||'high');
  if(item.start)fields.start_local_time=makeField(item.start,line,page);
  if(item.end)fields.end_local_time=makeField(item.end,line,page);
