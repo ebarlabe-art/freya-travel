@@ -491,22 +491,14 @@
       <nav class="home-doors" aria-label="Els meus viatges">
         <button type="button" data-home-view="upcomingTripsView">✈️ Propers</button>
         <button type="button" data-home-view="designTripView">✨ Dissenya un viatge</button>
-        <button type="button" data-home-view="constructionView">🧭 En construcció</button>
         <button type="button" data-home-view="joinTripView">👥 Uneix-te a un viatge</button>
         <button type="button" data-home-view="pastTripsView">📚 Passats</button>
       </nav>
       <p id="homeTripsEmpty" class="muted hidden">Encara no tens cap viatge. Dissenya’n un o uneix-te a un viatge.</p>
-      <section id="homeUndated" class="hidden"><h2>Dates pendents</h2><div id="undatedTripsList" class="trip-list"></div></section>
     </div>
-    <div id="upcomingTripsView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>✈️ Propers</h1><div id="upcomingTripsList" class="trip-list"></div></div>
+    <div id="upcomingTripsView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>✈️ Propers</h1><p class="muted">Tots els teus viatges futurs, tant si ja estan organitzats com si els continues preparant.</p><div id="upcomingTripsList" class="trip-list"></div><section id="homeUndated" class="hidden"><h2>Dates pendents</h2><div id="undatedTripsList" class="trip-list"></div></section></div>
     <div id="pastTripsView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>📚 Passats</h1><div id="pastTripsList" class="trip-list"></div></div>
     <div id="joinTripView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><section class="new-trip-card"><h2>Uneix-te a un viatge</h2><div class="join-trip"><input id="inviteInput" placeholder="Codi d’invitació" aria-label="Codi d’invitació"><button id="joinTrip" type="button">Unir-m’hi</button></div><p id="joinTripMsg" class="message hidden" role="status"></p></section></div>
-    <div id="constructionView" class="hidden trips-home"><button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>🧭 En construcció</h1>
-      <div id="constructionTripsList" class="trip-list"></div>
-      <section id="builderContinue" class="new-trip-card hidden"><h2>💭 Idees en esborrany</h2><p class="muted">Aquí hi ha idees del Builder que encara no són un viatge operatiu. Els viatges ja creats s’obren des d’Els meus viatges.</p><div id="builderBriefList"></div></section>
-      <p id="builderListMessage" role="status"></p><button id="builderListRetry" type="button">Actualitza esborranys</button>
-      <button id="builderPendingRetry" type="button" class="hidden">Verifica l’operació pendent</button>
-    </div>
     <div id="designTripView" class="hidden trips-home">
       <button type="button" data-builder-back="tripsHomeView">← Els meus viatges</button><h1>Dissenya un viatge</h1>
       <p id="builderStartMessage" role="status"></p>
@@ -527,6 +519,10 @@
           <button type="button" data-home-view="manualTripView"><strong>Crear un viatge nou</strong><span>Comença amb destinació i dates, i prepara la resta quan vulguis.</span></button>
         </div>
       </section>
+
+      <section id="builderContinue" class="new-trip-card hidden"><h2>💭 Idees desades</h2><p class="muted">Recupera una idea en esborrany o obre un viatge que ja hagis creat. Les idees no es perden encara que no tinguin dates.</p><div id="builderBriefList"></div></section>
+      <p id="builderListMessage" role="status"></p><button id="builderListRetry" type="button">Actualitza idees desades</button>
+      <button id="builderPendingRetry" type="button" class="hidden">Verifica l’operació pendent</button>
     </div>
     <div id="manualTripView" class="hidden trips-home"><button type="button" data-builder-back="designTripView">← Tornar</button><section class="new-trip-card"><h1>Crea el teu viatge</h1>
           <p class="muted">Només necessites destinació i dates. No cal tenir vols, hotel ni activitats reservats. Després podràs completar el viatge i convidar-hi les altres persones.</p>
@@ -547,7 +543,7 @@
     </section></div>
     <div id="builderView" class="hidden trips-home">
       <div id="builderEditorPanel">
-      <button type="button" data-builder-back="constructionView">← Tornar</button>
+      <button type="button" data-builder-back="designTripView">← Tornar</button>
       <h1 id="builderHeading">Continua dissenyant</h1>
       <button type="button" id="builderPlacesOpen">Verifica les ubicacions</button><div id="builderPlaces"></div>
       <p id="builderKnown" class="hidden"></p>
@@ -3858,8 +3854,8 @@ function homeTripPhase(value,now=new Date()){
   }catch{return 'undated'}
 }
 function homeTripGroups(values,now=new Date()){
-  const groups=[{key:'active',label:'En curs',rows:[]},{key:'upcoming',label:'Propers',rows:[]},{key:'past',label:'Passats',rows:[]},{key:'undated',label:'Dates pendents',rows:[]},{key:'construction',label:'En construcció',rows:[]}];
-  values.forEach(row=>{const phase=homeTripPhase(row,now);groups.find(g=>g.key===(phase==='undated'&&row.tb_handoff?'construction':phase)).rows.push(row)});
+  const groups=[{key:'active',label:'En curs',rows:[]},{key:'upcoming',label:'Propers',rows:[]},{key:'past',label:'Passats',rows:[]},{key:'undated',label:'Dates pendents',rows:[]}];
+  values.forEach(row=>{const phase=homeTripPhase(row,now);groups.find(g=>g.key===phase).rows.push(row)});
   groups.forEach(group=>group.rows.sort((a,b)=>group.key==='past'?String(b.end_date||'').localeCompare(a.end_date||''):String(a.start_date||'').localeCompare(b.start_date||'')));
   return groups.filter(group=>group.rows.length);
 }
@@ -3911,9 +3907,10 @@ async function resumeBuilderPointer(p=builderPointer()){
  if(parent&&history.state?.builderNav)history.replaceState({builderNav:{...history.state.builderNav,parent}},'');
  if(builderRow?.id===p.brief&&p.proposal)await openBuilderProposals(false,p.proposal.detail,false,p.proposal.generation,p.proposal.mode);
 }
-function builderHistory(view,depth=(history.state?.builderNav?.depth||0)+1){return {owner:session?.user?.id,view,depth,parent:view==='builderView'?(history.state?.builderNav?.parent||(['designTripView','constructionView'].includes(visibleAppView())?visibleAppView():'constructionView')):null}}
+function builderHistory(view,depth=(history.state?.builderNav?.depth||0)+1){return {owner:session?.user?.id,view,depth,parent:view==='builderView'?(history.state?.builderNav?.parent||'designTripView'):null}}
 function navigateBuilder(view,push=true,leaveChecked=false){
   if(!session||!leaveChecked&&!canLeaveBuilder())return;
+  if(view==='constructionView')view='designTripView'; // one-way legacy history alias
   if(view!=='builderView')leaveBuilderPointer();
   if(view!=='builderView'&&proposalOpen)resetProposalUi();
   if(view!=='builderView'&&builderController){try{builderController.clearRoute()}catch(error){$('builderMessage').textContent=error.message;return}}
@@ -3921,7 +3918,10 @@ function navigateBuilder(view,push=true,leaveChecked=false){
     if(!history.state?.builderNav)history.replaceState({...history.state,builderNav:builderHistory(visibleAppView(),0)},'');
     history.pushState({builderNav:builderHistory(view)},'');
   }
-  setAppView(view);if(!push&&history.state?.builderNav?.view!==view)history.replaceState({builderNav:builderHistory(view,0)},'');if(view==='constructionView')loadBuilderList();if(view==='designTripView')getBuilderController().then(()=>renderBuilderControls()).catch(error=>$('builderStartMessage').textContent=error.message);
+  setAppView(view);if(!push&&history.state?.builderNav?.view!==view)history.replaceState({builderNav:builderHistory(view,0)},'');if(view==='designTripView'){
+    void loadBuilderList();
+    getBuilderController().then(()=>renderBuilderControls()).catch(error=>$('builderStartMessage').textContent=error.message);
+  }
 }
 function builderBack(fallback){
   if(builderBusy)return;
@@ -3935,7 +3935,7 @@ function handleBuilderPopState(event){
   if(proposalOpen&&target?.view==='builderView'&&target.owner===session?.user?.id){resetProposalUi();rememberBuilder();return true}
   if(!target||target.owner!==session?.user?.id||!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(target.view))return false;
   if(!canLeaveBuilder()){history.pushState({builderNav:builderHistory(visibleAppView())},'');return true}
-  if(target.view==='builderView'){navigateBuilder('constructionView',false,true);return true} // Forward never manufactures a new brief.
+  if(target.view==='builderView'){navigateBuilder('designTripView',false,true);return true} // Forward never manufactures a new brief.
   navigateBuilder(target.view,false,true);return true;
 }
 function renderBuilderControls(){
@@ -3972,7 +3972,7 @@ async function loadBuilderList(){
     $('builderBriefList').querySelectorAll('[data-open-operational-brief]').forEach(button=>button.onclick=()=>openHomeTrip(button.dataset.openOperationalBrief));
     $('builderBriefList').querySelectorAll('[data-resume-brief]').forEach(button=>button.onclick=()=>builderPointer()?.brief===button.dataset.resumeBrief?resumeBuilderPointer():resumeBuilder(button.dataset.resumeBrief));
     $('builderBriefList').querySelectorAll('[data-delete-brief]').forEach(button=>button.onclick=()=>deleteBuilderBrief(button.dataset.deleteBrief,button.dataset.deleteLabel));
-    $('builderListMessage').textContent=controller.state.pending?'Hi ha una operació pendent de verificar. Reintenta-la abans de començar-ne una altra.':rows.length||trips.some(t=>t.tb_handoff&&homeTripPhase(t)==='undated')?'':'Encara no tens cap viatge en construcció.';
+    $('builderListMessage').textContent=controller.state.pending?'Hi ha una operació pendent de verificar. Reintenta-la abans de començar-ne una altra.':rows.length?'':'Encara no tens cap idea desada.';
     renderBuilderControls();
   }catch(error){if(builderCurrent(owner,epoch)&&sequence===builderListSequence)$('builderListMessage').textContent=error.message||'No s’han pogut carregar els esborranys.'}
 }
@@ -4075,7 +4075,7 @@ async function resumeBuilder(id,mode='resume',restore=false){
     controller.route(id,mode);builderLive?.clear();
     if(restore){history.replaceState({builderNav:builderHistory('builderView',0)},'');setAppView('builderView')}else enterBuilderView();
     showBuilderRow(api,row,mode);
-  }catch(error){if(builderCurrent(owner,epoch)){if(error.code==='BRIEF_UNAVAILABLE'){builderController?.clearRoute();if(restore)setAppView('constructionView')}$('builderListMessage').textContent=error.message;$('builderMessage').textContent=error.message;builderConflict=true}}
+  }catch(error){if(builderCurrent(owner,epoch)){if(error.code==='BRIEF_UNAVAILABLE'){builderController?.clearRoute();if(restore)setAppView('designTripView')}$('builderListMessage').textContent=error.message;$('builderMessage').textContent=error.message;builderConflict=true}}
   finally{if(builderCurrent(owner,epoch)){builderBusy=false;renderBuilderControls()}}
 }
 async function saveBuilderStructured(command){
@@ -4448,8 +4448,8 @@ async function loadBuildView(){
 
 $('budgetSettingsForm').onsubmit=async event=>{event.preventDefault();if(!trip||isLondonTrip())return;const target=$('budgetTarget').value.trim(),maximum=$('budgetMaximum').value.trim(),currency=$('budgetCurrency').value.trim().toUpperCase();if((target||maximum)&&!/^[A-Z]{3}$/.test(currency)){msg('budgetMsg','Indica una moneda de tres lletres, per exemple EUR.',true);return}try{const api=await tbBudgetApi();await api.saveBudgetSettings(db,{tripId:trip.id,expectedRevision:Number($('budgetSettingsForm').dataset.revision||0),targetAmount:target===''?null:Number(target),maximumAmount:maximum===''?null:Number(maximum),currency:(target||maximum)?currency:null});await loadBudgetView();msg('budgetMsg','Pressupost actualitzat.')}catch(error){msg('budgetMsg',error?.message||'No s’ha pogut desar el pressupost.',true)}};
 
-const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','travelBookView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','travelBookView','itineraryView','parkingView','weatherView']);
+const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','travelBookView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','travelBookView','itineraryView','parkingView','weatherView']);
 const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
   if(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(view))return true;
@@ -4458,6 +4458,7 @@ function navigationViewIsValid(view,value=trip){
 }
 function normalizedNavigationView(view,value=trip){
   if(!value)return 'tripsHomeView';
+  if(view==='constructionView')return 'designTripView';
   if(!isLondonTrip(value)&&view==='genericModuleView')return 'genericDashboardView';
   if(navigationViewIsValid(view,value))return view;
   return isLondonTrip(value)?'dashboardView':'genericDashboardView';
@@ -4470,6 +4471,7 @@ function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('
 function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent='';}
 function setAppView(id){
   if(id!=='itineraryView'&&!$('itineraryImportPanel').classList.contains('hidden'))closeItineraryImport();
+  if(id==='constructionView')id='designTripView';
   if(!trip&&!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id))id='tripsHomeView';
   if(isLondonTrip()&&['genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','carRentalView'].includes(id))id='dashboardView';
   if(!isLondonTrip()&&!GENERIC_ALLOWED_VIEWS.has(id))id='genericDashboardView';
@@ -6647,17 +6649,17 @@ function renderTripsHome(){
   $('homeActive').classList.toggle('hidden',!rows('active').length);
   $('homeUndated').classList.toggle('hidden',!rows('undated').length);
   $('homeTripsEmpty').classList.toggle('hidden',!!trips.length);
-  for(const [key,id] of [['active','activeTripsList'],['upcoming','upcomingTripsList'],['past','pastTripsList'],['undated','undatedTripsList'],['construction','constructionTripsList']]){
+  for(const [key,id] of [['active','activeTripsList'],['upcoming','upcomingTripsList'],['past','pastTripsList'],['undated','undatedTripsList']]){
     $(id).innerHTML=rows(key).length?rows(key).map(value=>{
     const duration=tripDuration(value),london=isLondonTrip(value),selected=value.id===trip?.id;
-    return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(({active:'En curs',upcoming:'En preparació',past:'Completat',undated:'Dates pendents',construction:'En construcció'})[key])}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button>${key==='construction'&&value.is_owner&&value.tb_handoff&&!london?`<button class="secondary" type="button" data-discard-trip="${esc(value.id)}" data-discard-name="${esc(value.name)}">🗑️ Eliminar viatge</button>`:''}</article>`;
+    return `<article class="trip-card${selected?' selected':''}"><div class="trip-card-top"><div style="display:flex;gap:14px;align-items:flex-start"><div class="trip-flag">${london?'🇬🇧':'🧭'}</div><div><h3>${esc(value.name)}</h3><p>${esc(tripDateRange(value))}</p></div></div><span class="trip-status">${esc(({active:'En curs',upcoming:'En preparació',past:'Completat',undated:'Dates pendents'})[key])}</span></div><div class="trip-stats"><div><strong>${duration??'—'}</strong><small>${duration===1?'dia':'dies'} de viatge</small></div><div><strong>${value.is_owner?'Creat per tu':'Compartit'}</strong><small>${value.is_owner?'Ets la persona propietària':'Hi participes'}</small></div><div><strong>${london?'Londres 2026':'Viatge'}</strong><small>${esc(value.time_zone||'Zona horària pendent')}</small></div></div><button class="trip-open" type="button" data-select-trip="${esc(value.id)}">Obrir ${esc(value.name)} →</button>${key==='undated'&&value.is_owner&&value.tb_handoff&&!london?`<button class="secondary" type="button" data-discard-trip="${esc(value.id)}" data-discard-name="${esc(value.name)}">🗑️ Eliminar viatge</button>`:''}</article>`;
 
     }).join(''):`<p class="muted">${key==='upcoming'?'Encara no tens viatges propers.':key==='past'?'Encara no tens viatges passats.':''}</p>`;
     $(id).querySelectorAll('[data-select-trip]').forEach(button=>button.onclick=()=>openHomeTrip(button.dataset.selectTrip));
-    $(id).querySelectorAll('[data-discard-trip]').forEach(button=>button.onclick=()=>discardConstructionTrip(button.dataset.discardTrip,button.dataset.discardName));
+    $(id).querySelectorAll('[data-discard-trip]').forEach(button=>button.onclick=()=>discardUndatedTrip(button.dataset.discardTrip,button.dataset.discardName));
   }
 }
-async function discardConstructionTrip(id,name){
+async function discardUndatedTrip(id,name){
   const row=trips.find(value=>value.id===id);
   if(!row||!row.is_owner||!row.tb_handoff||homeTripPhase(row)!=='undated'||isLondonTrip(row))return;
   if(!confirm('Eliminar «'+name+'» de Freya? Deixarà d’aparèixer a Els meus viatges i no es podrà obrir.'))return;
@@ -6673,7 +6675,7 @@ async function discardConstructionTrip(id,name){
 let homeTripReturn=null,homeClockTimer=null;
 function recordHomeTripEntry(id){
   const parent=visibleAppView();
-  if(!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','manualTripView','joinTripView'].includes(parent))return;
+  if(!['tripsHomeView','upcomingTripsView','pastTripsView','designTripView','manualTripView','joinTripView'].includes(parent))return;
   homeTripReturn={owner:session?.user?.id,parent,id};
   if(!history.state?.builderNav)history.replaceState({builderNav:builderHistory(parent,0)},'');
   history.pushState({homeTripDetail:homeTripReturn},'');
@@ -6691,7 +6693,7 @@ async function restoreHomeRoute(){
   if(detail?.owner===session?.user?.id&&trips.some(t=>t.id===detail.id)){
     homeTripReturn=detail;await selectTrip(detail.id,{open:true});return;
   }
-  if(nav?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView'].includes(nav.view))navigateBuilder(nav.view,false);
+  if(nav?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView'].includes(nav.view))navigateBuilder(nav.view==='constructionView'?'designTripView':nav.view,false);
 }
 function handleHomeTripPopState(event){
   const view=visibleAppView(),nav=event.state?.builderNav,detail=event.state?.homeTripDetail;
