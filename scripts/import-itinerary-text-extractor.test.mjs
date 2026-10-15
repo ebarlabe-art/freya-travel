@@ -205,3 +205,13 @@ test('P0 #140: date is never advanced for ambiguous or inconsistent midnight des
  const p=parse('23/10/2026\n00:15 Arribada a l’apartament\n00:45 Arribada de matinada del dimarts 24');
  assert.deepEqual(p.candidates.map(c=>val(c,'local_date')),['2026-10-23','2026-10-23']);
 });
+
+test('P0 #140: names of explicit POIs survive as source-backed locations for future PDFs',()=>{
+ const p=parse("24/10/2026\n10:15 Piazza Maggiore, Fontana del Nettuno i basílica de San Petronio\n11:30 Archiginnasio i Teatro Anatomico\n13:00 Dinar\n20:30 Sopar a Trattoria da Me · Via San Felice, 50");
+ assert.equal(val(p.candidates[0],'location_name'),'Piazza Maggiore');
+ assert.equal(val(p.candidates[1],'location_name'),'Archiginnasio');
+ assert.equal(val(p.candidates[2],'location_name'),undefined);
+ assert.equal(val(p.candidates[3],'location_name'),'Trattoria da Me');
+ assert.equal(p.candidates[0].fields.location_name.confidence,'medium');
+ assert.equal(p.candidates[0].fields.location_name.evidence[0].kind,'text');
+});
