@@ -30,7 +30,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    const modeIcon=route?.mode==='drive'?'🚗':route?.mode==='transit'?'🚌':'🚶';
    const summary=!result?'Calculant trajecte…':route?
      `${modeIcon} ${Math.ceil(route.duration_seconds/60)} min · ${(route.distance_m/1000).toFixed(1)} km · ${esc(routeModes[route.mode])}`:
-     'Trajecte pendent de verificar';
+     error==='offline'?'Sense connexió · trajecte pendent':error==='rate_limited'?'Trajecte temporalment no disponible':'Trajecte pendent de verificar';
    card.innerHTML=`<div class="agenda-route-compact" role="status" aria-live="polite">↳ ${summary}</div>
     <details data-route-options ${state.detailsOpen?'open':''}><summary>Opcions del trajecte</summary>
       <p>${route?esc(result.origin?.label||pair.origin.title)+' → '+esc(result.destination?.label||pair.destination.title):
