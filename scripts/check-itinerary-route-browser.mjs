@@ -46,24 +46,28 @@ try{
  }
  await boot();assert.equal(routeCalls,0,'Home must not calculate routes');
  await page.locator('#genericItineraryModuleCard').click();await page.locator('[data-agenda-route]').waitFor();await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km')).catch(async e=>{console.error(await page.locator('[data-agenda-route]').innerText(),{routeCalls,httpCalls,errors});throw e});
- assert.equal(await page.locator('[data-agenda-route]').count(),1);assert.match(await page.locator('[data-agenda-route]').innerText(),/Dades insuficients.*Indica el marge/s);
+ assert.equal(await page.locator('[data-agenda-route]').count(),1);assert.match(await page.locator('.agenda-route-compact').innerText(),/🚶.*15 min.*1.2 km.*A peu/);
+ assert.equal(await page.locator('[data-route-options]').evaluate(node=>node.open),false,'Advanced route controls stay collapsed by default');
+ await page.locator('[data-route-options] > summary').click();
  await page.locator('[data-route-buffer]').fill('5');await page.locator('[data-route-buffer]').press('Tab');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('Factible amb marge estimat'));
  await page.locator('[data-route-mode]').selectOption('drive');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('Cotxe')&&document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));
  await page.locator('[data-route-mode]').selectOption('transit');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('sense horaris en viu'));
- const before=routeCalls;await page.locator('[data-generic-itinerary-day="2030-04-01"]').click();await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('Falta un lloc'));assert.equal(routeCalls,before);
+ const before=routeCalls;await page.locator('[data-generic-itinerary-day="2030-04-01"]').click();await page.waitForFunction(()=>document.querySelectorAll('[data-agenda-route]').length===0);assert.equal(routeCalls,before,'No routes or provider calls without two locations');
  await page.locator('[data-generic-itinerary-day="2030-03-31"]').click();await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));assert.equal(routeCalls,before,'same pair/mode remains cached');
  await ctx.setOffline(true);await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('Sense connexió'));assert.equal(routeCalls,before);await ctx.setOffline(false);await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));
+ await page.locator('[data-route-options] > summary').click().catch(async()=>{if(!(await page.locator('[data-route-options]').evaluate(node=>node.open)))throw Error('route options unavailable')});
  await page.locator('[data-route-edit="origin"]').click();await page.locator('#manualItineraryFormCard').waitFor({state:'visible'});assert.equal(await page.evaluate(()=>manualItineraryRows[0].location_name),'Museum A'); // Opening correction does not mutate the source.
  await page.evaluate(()=>closeManualItineraryForm());
  // Reopen the real PWA; preferences survive, route is recalculated rather than persisted as fact.
- await boot();await page.locator('#genericItineraryModuleCard').click();await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));assert.equal(await page.locator('[data-route-mode]').inputValue(),'transit');assert.equal(await page.locator('[data-route-buffer]').inputValue(),'5');
+ await boot();await page.locator('#genericItineraryModuleCard').click();await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));await page.locator('[data-route-options] > summary').click();assert.equal(await page.locator('[data-route-mode]').inputValue(),'transit');assert.equal(await page.locator('[data-route-buffer]').inputValue(),'5');
  fail=true;await page.locator('[data-route-mode]').selectOption('walk');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('Límit de consultes'));fail=false;await page.locator('[data-route-retry]').click();await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));
  // An inexact match requires a deliberate choice; changing the fixture version invalidates the old pair.
  rows[0].location_name='Museum A alternative';rows[0].updated_at='2030-01-02T00:00:00Z';
- await boot();await page.locator('#genericItineraryModuleCard').click();await page.locator('[data-route-choice="origin"]').waitFor();
+ await boot();await page.locator('#genericItineraryModuleCard').click();await page.locator('[data-route-choice="origin"]').waitFor({state:'attached'});await page.locator('[data-route-options] > summary').click();
  await page.locator('[data-route-choice="origin"]').selectOption('Museum A');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));
  rows[0].location_name='Museum A';rows[0].updated_at='2030-01-03T00:00:00Z';
  await boot();await page.locator('#genericItineraryModuleCard').click();await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));
+ await page.locator('[data-route-options] > summary').click();
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.screenshot({path:process.env.ROUTE_SCREENSHOT||'/tmp/freya-itinerary-route-mobile.png',fullPage:true});
  // Pending response must never paint a different user's trip.
