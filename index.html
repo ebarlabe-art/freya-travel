@@ -1899,6 +1899,8 @@
         <div id="genericItineraryBrowse">
           <div id="genericItineraryDayTabs" class="generic-itinerary-day-tabs" role="tablist" aria-label="Dies del viatge"></div>
           <div id="genericItineraryEmpty" class="generic-itinerary-empty hidden"><strong>Encara no hi ha cap element programat.</strong>Afegeix un pla o configura vols, allotjaments i activitats.</div>
+          <div id="genericItineraryDays" class="generic-itinerary-days"></div>
+          <section id="genericItineraryUnscheduled" class="generic-itinerary-unscheduled hidden"><h3>Per planificar</h3><p>Plans i activitats que encara no tenen dia ni hora.</p><div id="genericItineraryUnscheduledList" class="generic-itinerary-timeline"></div></section>
           <section id="itineraryAutoPlacePanel" class="card hidden" aria-labelledby="itineraryAutoPlaceTitle">
             <h3 id="itineraryAutoPlaceTitle">📍 Ubicacions proposades</h3>
             <p class="muted">Freya cerca llocs per als elements d'aquest dia. Les propostes s'han de verificar abans de confirmar-les; si el servei de mapes falla, les activitats continuen intactes.</p>
@@ -1909,8 +1911,7 @@
               <button type="button" id="itineraryAutoPlaceRetry" class="secondary hidden">Reintenta les pendents</button>
             </div>
           </section>
-          <div id="genericItineraryDays" class="generic-itinerary-days"></div>
-          <section id="genericItineraryUnscheduled" class="generic-itinerary-unscheduled hidden"><h3>Per planificar</h3><p>Plans i activitats que encara no tenen dia ni hora.</p><div id="genericItineraryUnscheduledList" class="generic-itinerary-timeline"></div></section>
+
         </div>
       </div>
       <div class="card london-itinerary-content"><h2>Itinerari de Londres</h2><p class="muted">Toca un dia per consultar-ne els horaris, els trajectes i les reserves.</p><div class="day-tabs"><button class="day-tab active" data-day="d6">Dj 6</button><button class="day-tab" data-day="d7">Dv 7</button><button class="day-tab" data-day="d8">Ds 8</button><button class="day-tab" data-day="d9">Dg 9</button><button class="day-tab" data-day="d10">Dl 10</button><button class="day-tab" data-day="d11">Dt 11</button></div></div>
@@ -5421,18 +5422,26 @@ function itineraryAutoPlaceContextFor(day){
 function itineraryAutoPlaceText(value){
  return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('ca').replace(/[^a-z0-9]+/g,' ').trim();
 }
+function itineraryAutoPlaceFocusedName(row){
+ const raw=String(row?.title||'').trim();
+ if(!raw||/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(raw))return '';
+ const alias=raw.match(/\(([^)]{5,80})\)/)?.[1]||'';
+ if(alias&&!/\b(?:orientativa|opcional|lliure|aproximad|reserv|pendent)\b/i.test(alias)&&
+    !/^(?:entrada|hores?|visitants|opcional)\b/i.test(alias))return alias.trim();
+ // Prefer the first concrete place in a complex itinerary line, never the
+ // entire sentence ("Piazza Maggiore, Fontana ... i basílica ...").
+ const place=raw.match(/\b(?:Piazza|Plaça|Plaza|Square|Via|Carrer|Street|Trattoria|Ristorante|Restaurant|Caffè|Cafè|Café|Museu|Museum|Catedral|Cathedral|Castell|Castle|Basílica|Basilica|Torre|Mercat|Market|Parc|Park|Palau|Palazzo|Finestrella|Archiginnasio|Quadrilatero|Due Torri)\b(?:\s+(?:[\p{L}’'-]+)){0,7}/iu)?.[0]||'';
+ const focused=place.split(/\s+i\s+(?=(?:visita|retorn|dinar|passeig|sopar|esmorzar|zona|barri)\b)/i)[0]
+  .split(/\s*[,.·;()]\s*/)[0].trim();
+ if(!focused||itineraryAutoPlaceText(focused).length<5)return '';
+ return focused;
+}
 function itineraryAutoPlaceShouldSearch(row){
- const title=itineraryAutoPlaceText(row?.title);
- return title.length>=5&&!/^(?:dinar|sopar|esmorzar|temps lliure|descans|arribada|sortida|trasllat|transfer|vol|flight|check in|check out|transport|metro|tren|bus)(?: |$)/.test(title);
+ return !!itineraryAutoPlaceFocusedName(row);
 }
 function itineraryAutoPlaceQuery(row){
- const raw=String(row?.title||'').trim();
- const alias=raw.match(/\(([^)]{5,80})\)/)?.[1]||'';
- // Honor a specific local-language alias; never geocode free time or generic stops.
- const chosen=alias&&!/\b(?:orientativa|opcional|lliure|aproximad|reserv|pendent)\b/i.test(alias)?alias:raw;
- const name=chosen.replace(/^(?:visita(?:\s+exterior)?|passeig|passejada|excursió)(?:\s+(?:a|al|a la|a l[’']|de|del|de la|pel|per))?\s+/i,'')
-  .replace(/,\s*(?:plaça|plaza|square|carrer|street)\s+.*$/i,'')
-  .replace(/\s*\([^)]*\)\.?$/,'').replace(/[.,;]+$/,'').trim();
+ const name=itineraryAutoPlaceFocusedName(row);
+ if(!name)return '';
  const city=String(row?.city||tripStopRows?.[0]?.canonical_name||trip?.name||'')
   .replace(/^(?:viatge|escapada|ruta|cap de setmana)\s+(?:a|al|a la|a l[’'])\s+/i,'').trim();
  return (name+(city&&!(' '+itineraryAutoPlaceText(name)+' ').includes(' '+itineraryAutoPlaceText(city)+' ')?', '+city:'')).slice(0,500);
@@ -6285,7 +6294,7 @@ async function renderAgendaRoutes(items,day){
   const url='/freya-travel/domain/itinerary-route-ui.mjs';
   agendaRouteModule=await (agendaRouteImport??=import(/* @vite-ignore */ url).catch(error=>{agendaRouteImport=null;throw error}));
   if(!current())return;
-  const projected=items.map(item=>{const row=tripHomeSourceRow(item);return {...item,isTransport:item.sourceType==='activity'&&isLocalTransportActivity(row),hasRoutePlace:!!(row?.location_name||row?.venue_name||row?.address)}});
+  const projected=items.map(item=>{const row=tripHomeSourceRow(item);return {...item,isTransport:(item.sourceType==='activity'&&isLocalTransportActivity(row))||(item.sourceType==='manual'&&/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(String(row?.title||''))),hasRoutePlace:!!(row?.location_name||row?.venue_name||row?.address)}});
   agendaRouteModule.mountAgendaRoutes({root:$('genericItineraryDays'),items:projected,tripId,userId,generation,day,current,contextKey:JSON.stringify(tripStopRows),online:()=>!connectionUnavailable(),
    invoke:async body=>{const {data,error}=await db.functions.invoke('itinerary-route',{body});if(data)return data;if(error?.context){try{return await error.context.json()}catch(_){}}return {error:'provider_unavailable'}},
    onEdit:item=>item.sourceType==='manual'?openManualItineraryForm(item.sourceId):openItinerarySource(item.sourceType,item.sourceId)});
