@@ -68,6 +68,38 @@ try{
   fault='';await page.locator('#retryFreyaBoot').click();await page.locator('#loginCard').waitFor({state:'visible'});
   assert.equal(await page.locator('#loading').isVisible(),false);await ctx.close();console.log('PASS '+engine+' inline SDK failure/retry '+kind);
  }
+ // Browser-level regression for the actual iPhone screenshot (also runs on WebKit).
+ {
+  fault='';const ctx=await context(),page=await ctx.newPage();page.setDefaultTimeout(20000);
+  await page.goto(url);await page.locator('#loginCard').waitFor({state:'visible'});
+  await page.evaluate(async()=>{
+   const {mountQuickItineraryPlace}=await import('/freya-travel/domain/itinerary-quick-place.mjs');
+   const host=document.createElement('div');host.id='quickPlacePhoneFixture';
+   host.style.cssText='width:260px;max-width:100%;padding:8px;box-sizing:border-box';
+   document.body.append(host);
+   const place=name=>({canonical_name:name,administrative_area:'Emília-Romanya',country_code:'IT',
+    coordinate_role:'exact_location',latitude:44.493,longitude:11.344});
+   window.quickPlaceFixture=mountQuickItineraryPlace({
+    host,row:{id:'bolonya-poi',title:'Archiginnasio i Teatro Anatomico (entrada subjecta a horaris i disponibilitat).'},
+    query:'Archiginnasio, Bolonya',current:()=>true,
+    initialOptions:[place("Biblioteca Comunale dell'Archiginnasio"),place("Via dell'Archiginnasio"),
+     place("Archiginnasio Palace and Anatomical Theater"),place('Archiginnasio di Bologna')],
+    search:async()=>({options:[]}),save:async()=>true
+   });
+  });
+  const panel=page.locator('#quickPlacePhoneFixture');
+  assert.equal(await panel.locator('button:visible').count(),3,'Only close, search and recommended place are visible; alternatives remain collapsed');
+  assert.match(await panel.locator('[data-quick-place-results] > button').innerText(),/Confirma: Archiginnasio Palace and Anatomical Theater/);
+  assert.equal(await panel.locator('[data-quick-place-results] details button').count(),3);
+  assert.equal(await panel.locator('button.ghost').evaluate(button=>{
+   const rect=button.getBoundingClientRect();
+   return getComputedStyle(button).whiteSpace==='nowrap'&&rect.width>=84&&button.scrollWidth<=button.clientWidth+1;
+  }),true,'Close button must never appear vertically stacked on 260px iPhone-like card');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  await panel.locator('button.ghost').click();
+  assert.equal(await panel.locator('[data-quick-itinerary-place]').count(),0);
+  await ctx.close();console.log('PASS '+engine+' 260px compound place picker + non-vertical close button');
+ }
  for(const tablet of [false,true]){
   const ctx=await context({persisted:true,tablet}),page=await ctx.newPage();page.setDefaultTimeout(20000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(url);await page.locator('#tripsHomeView').waitFor({state:'visible'});
@@ -85,18 +117,18 @@ try{
   assert.equal(await page.locator('#updateToast').isVisible(),false,'First installation is not an app update');
   const boots=await page.evaluate(()=>sessionStorage.boots);
   oldWorker=null;await page.evaluate(async()=>{const r=await navigator.serviceWorker.getRegistration();await r.update()});
-  await page.waitForFunction(async version=>{const keys=await caches.keys(),r=await navigator.serviceWorker.getRegistration();return keys.includes('freya-travel-release-6444-v25')&&!keys.includes('freya-travel-release-6444-v'+version)&&r?.active?.state==='activated'&&!r.installing&&!r.waiting&&navigator.serviceWorker.controller?.state==='activated'},version);
+  await page.waitForFunction(async version=>{const keys=await caches.keys(),r=await navigator.serviceWorker.getRegistration();return keys.includes('freya-travel-release-6444-v26')&&!keys.includes('freya-travel-release-6444-v'+version)&&r?.active?.state==='activated'&&!r.installing&&!r.waiting&&navigator.serviceWorker.controller?.state==='activated'},version);
   assert.equal(await page.evaluate(()=>sessionStorage.boots),boots,'An activated update must not reload a usable app or lose drafts');
   await page.waitForFunction(()=>new Promise(resolve=>{
    const channel=new MessageChannel(),timer=setTimeout(()=>resolve(false),500);
-   channel.port1.onmessage=e=>{clearTimeout(timer);resolve(e.data?.cache==='freya-travel-release-6444-v25')};
+   channel.port1.onmessage=e=>{clearTimeout(timer);resolve(e.data?.cache==='freya-travel-release-6444-v26')};
    navigator.serviceWorker.controller?.postMessage({type:'FREYA_BOOT_VERSION'},[channel.port2]);
   }));
   await page.reload();await page.locator('#loginCard').waitFor({state:'visible'});
   await page.waitForFunction(()=>navigator.serviceWorker.controller?.state==='activated');
-  assert.equal(await page.evaluate(async()=>!!(await (await caches.open('freya-travel-release-6444-v25')).match(new URL('index.html',location.href).href))),true);
+  assert.equal(await page.evaluate(async()=>!!(await (await caches.open('freya-travel-release-6444-v26')).match(new URL('index.html',location.href).href))),true);
   // 503 is not an offline exception: the previous worker returned the error instead of its SDK cache.
-  fault='shell503';await page.reload().catch(async error=>{console.error('SW fallback failure',version,await page.evaluate(async()=>({keys:await caches.keys(),controller:navigator.serviceWorker.controller?.state,cache:!!(await (await caches.open('freya-travel-release-6444-v25')).match('./index.html'))})).catch(()=>null));throw error});await page.locator('#loginCard').waitFor({state:'visible'});fault='';
+  fault='shell503';await page.reload().catch(async error=>{console.error('SW fallback failure',version,await page.evaluate(async()=>({keys:await caches.keys(),controller:navigator.serviceWorker.controller?.state,cache:!!(await (await caches.open('freya-travel-release-6444-v26')).match('./index.html'))})).catch(()=>null));throw error});await page.locator('#loginCard').waitFor({state:'visible'});fault='';
   assert.equal(await page.evaluate(async()=>await (await caches.open('freya-travel-v1.5')).match('/freya-travel/local-copy').then(r=>r.text())),'keep');
   await page.goto(url+'freya-travel-v1.5/');await page.waitForURL(url);await page.locator('#loginCard').waitFor({state:'visible'});
   // WebKit's automation-level setOffline rejects navigation before dispatching to SW.
