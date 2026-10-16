@@ -11,7 +11,7 @@ export function routeBackend({url,anon,fetcher=fetch}){
   readStops:async(auth,id)=>{const rows=await get('/rest/v1/trip_stops',auth,{select:'canonical_name,country_code',trip_id:'eq.'+id,order:'position',limit:'20'});if(!Array.isArray(rows))throw Error('provider_unavailable');return rows},
   readItem:async(auth,tripId,ref)=>{
    const table=ref.type==='manual'?'trip_itinerary_items':'trip_activities';
-   const fields=ref.type==='manual'?'location_name,status':'venue_name,reservation_status,activity_type';
+   const fields=ref.type==='manual'?'location_name,status,title,resolved_location':'venue_name,reservation_status,activity_type,title,resolved_location,latitude,longitude';
    const rows=await get('/rest/v1/'+table,auth,{select:'id,trip_id,address,city,updated_at,'+fields,id:'eq.'+ref.id,trip_id:'eq.'+tripId,limit:'1'});return Array.isArray(rows)?rows[0]||null:null;
   }
  };

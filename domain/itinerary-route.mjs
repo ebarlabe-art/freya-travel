@@ -23,6 +23,16 @@ export function routeFeasibility(a,b,route,bufferMinutes){
  return {status:remaining<0?'No factible':remaining<bufferMinutes?'Molt ajustat':'Factible amb marge estimat',gapMinutes:gap,remainingMinutes:remaining,
   reason:remaining<0?'El final de la visita i el trajecte superen l’inici següent.':remaining<bufferMinutes?'Hi cap el trajecte, però no el marge que has indicat.':'Hi caben el trajecte i el marge indicat. No garanteix puntualitat ni horaris d’obertura.'};
 }
+// Open reliable endpoints in the traveller's map application. The map service
+// may propose a different route; Freya's estimate remains provider attributed.
+export function routeMapUrl(route){
+ const points=[route?.origin,route?.destination];
+ if(route?.method!=='routing'||!routeModes[route.mode]||!points.every(p=>p&&
+  Number.isFinite(p.latitude)&&Math.abs(p.latitude)<=90&&Number.isFinite(p.longitude)&&Math.abs(p.longitude)<=180))return null;
+ const params=new URLSearchParams({api:'1',origin:`${points[0].latitude},${points[0].longitude}`,
+  destination:`${points[1].latitude},${points[1].longitude}`,travelmode:{walk:'walking',drive:'driving',transit:'transit'}[route.mode]});
+ return 'https://www.google.com/maps/dir/?'+params;
+}
 export const routeReasons=Object.freeze({missing_place:'Falta un lloc o una adreça desats.',missing_context:'Falta una ciutat i un país de destinació inequívocs.',ambiguous:'Hi ha més d’un lloc possible. Tria’l per a aquest càlcul.',no_match:'No s’ha pogut verificar el lloc en aquesta ciutat i país.',no_route:'No hi ha cap ruta calculable per a aquests llocs.',mode_unavailable:'Aquest mode no està disponible per a aquest trajecte.',rate_limited:'Límit de consultes assolit. Reintenta més tard.',provider_unavailable:'El servei de rutes no respon. Reintenta més tard.',invalid_response:'La resposta del servei no permet verificar la ruta.',stale_record:'Les visites han canviat. Actualitza l’agenda.',unavailable:'No tens accés a aquest viatge o les visites ja no existeixen.',unauthorized:'Cal iniciar sessió de nou.',offline:'Sense connexió: no es pot consultar una ruta actual.',limit:'Límit preventiu de consultes del dia. Reobre el dia més tard.'});
 // Bounded parallelism, in-flight deduplication and brief memory cache. No offline truth.
 export class RouteQueue{

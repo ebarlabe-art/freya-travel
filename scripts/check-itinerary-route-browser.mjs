@@ -7,7 +7,8 @@ import {resolve,extname,sep} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {createRouteHandler} from '../supabase/functions/itinerary-route/handler.mjs';
 import {routeProvider} from '../supabase/functions/itinerary-route/provider.mjs';
-const {chromium}=await import(process.env.PLAYWRIGHT_MODULE?pathToFileURL(process.env.PLAYWRIGHT_MODULE).href:'playwright');
+const engine=process.env.ROUTE_ENGINE||'chromium';
+const pw=await import(process.env.PLAYWRIGHT_MODULE?pathToFileURL(process.env.PLAYWRIGHT_MODULE).href:'playwright');
 const dist=resolve('dist'),id=n=>'11800000-0000-4000-8000-'+String(n).padStart(12,'0'),tid=id(1);
 const tripRow={id:tid,name:'Synthetic itinerary',start_date:'2030-03-31',end_date:'2030-04-01',time_zone:'Europe/Rome',experience_key:null,owner_id:'owner',is_owner:true,invite_code:'SYNTHETIC'};
 const stops=[{trip_id:tid,canonical_name:'Bologna',country_code:'IT',position:1,time_zone:'Europe/Rome'}];
@@ -22,7 +23,7 @@ const provider=routeProvider({key:'synthetic-server-only',spacingMs:0,fetcher:as
 const handler=createRouteHandler({authenticate:async auth=>auth==='Bearer owner'?'owner':null,readTrip:async(_auth,t)=>t===tid,readItem:async(_auth,t,ref)=>rows.find(r=>r.trip_id===t&&r.id===ref.id),readStops:async()=>stops,provider});
 const server=createServer(async(req,res)=>{const path=resolve(dist,decodeURIComponent(new URL(req.url,'http://local').pathname.replace(/^\/freya-travel\//,''))||'index.html');if(!path.startsWith(dist+sep)){res.writeHead(404).end();return}try{res.setHeader('Content-Type',({'.js':'text/javascript','.mjs':'text/javascript','.html':'text/html','.css':'text/css','.webmanifest':'application/manifest+json'})[extname(path)]||'application/octet-stream');res.end(await readFile(path))}catch{res.writeHead(404).end()}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${server.address().port}/freya-travel/`;
-const browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
+const browser=await pw[engine].launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
 try{
  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'allow'});
  await ctx.route('**/*',route=>new URL(route.request().url()).origin===new URL(url).origin?route.continue():route.abort());await ctx.routeWebSocket('**/*',socket=>socket.close());
@@ -101,5 +102,5 @@ try{
  const tab=await tablet.newPage();await tab.exposeFunction('routeFixture',async body=>(await handler(new Request('https://synthetic',{method:'POST',headers:{authorization:'Bearer owner'},body:JSON.stringify(body)}))).json());
  await boot(tab,false);await tab.locator('#genericItineraryModuleCard').click();await tab.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));
  assert.equal(await tab.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);assert.deepEqual(errors,[]);
- console.log(`PASS real build mobile/PWA: automatic routes, three modes, explicit margin, missing locations/daypart, cache, offline/reconnect, correction via existing editor, reload, 429 retry, user/trip switch; ${routeCalls} synthetic handler requests, ${httpCalls} simulated provider calls. Physical iPhone pending.`);
+ console.log(`PASS ${engine} real build mobile/PWA: automatic routes, three modes, explicit margin, missing locations/daypart, cache, offline/reconnect, correction via existing editor, reload, 429 retry, user/trip switch; ${routeCalls} synthetic handler requests, ${httpCalls} simulated provider calls. Physical iPhone pending.`);
 }finally{await browser.close();await new Promise(r=>server.close(r))}

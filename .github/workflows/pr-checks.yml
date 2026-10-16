@@ -46,6 +46,18 @@ jobs:
         run: ITINERARY_TABLET=1 PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-loading-browser.mjs
       - name: Itinerary routes mobile and PWA regression
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-route-browser.mjs
+      - name: V27 location, PDF and route contracts
+        run: node --test scripts/itinerary-auto-place.test.mjs scripts/itinerary-route.test.mjs scripts/import-itinerary-pdf.test.mjs scripts/itinerary-quick-place.test.mjs
+      - name: V27 automatic locations Chromium
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-automatic-places-browser.mjs
+      - name: V27 automatic locations WebKit
+        run: ROUTE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-automatic-places-browser.mjs
+      - name: V27 routes WebKit
+        run: ROUTE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-route-browser.mjs
+      - name: Install isolated embedded Postgres test tooling
+        run: npm install --prefix "$RUNNER_TEMP/v27-db" --no-package-lock --ignore-scripts @electric-sql/pglite@0.3.14
+      - name: V27 geography migration and permissions
+        run: PGLITE_MODULE="$RUNNER_TEMP/v27-db/node_modules/@electric-sql/pglite/dist/index.js" node scripts/test-itinerary-location-db.mjs
       - name: Shared trip mobile and PWA regression
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-shared-trip-browser.mjs
       - name: Travel Book real Pages build browser regression

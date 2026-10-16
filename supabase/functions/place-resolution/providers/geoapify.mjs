@@ -2,7 +2,7 @@ import {validatePlace,validIana} from '../../../../domain/place-resolution.mjs';
 export function normalizeGeoapify(p){
  const broad=['country','state','region','county','continent','island','national_park'].includes(p.result_type)||p.category?.startsWith('natural.');
  const zone=!broad&&validIana(p.timezone?.name)?p.timezone.name:null;
- return validatePlace({canonical_name:p.name||p.city||p.formatted,administrative_area:p.state||p.county||null,kind:p.result_type||'unknown',country_code:p.country_code?.toUpperCase()||null,latitude:p.lat,longitude:p.lon,coordinate_role:['building','amenity'].includes(p.result_type)?'exact_location':'representative_point',timezone:zone,timezone_status:broad?'needs_specific_location':zone?'verified':'unavailable',provider:'geoapify',provider_place_id:p.place_id,source:p.datasource?.sourcename,attribution:p.datasource?.attribution,resolution_version:'geoapify-normalizer-v1'});
+ return validatePlace({canonical_name:p.name||p.city||p.formatted,locality:p.city||p.town||p.village||p.municipality||null,administrative_area:p.state||p.county||null,kind:p.result_type||'unknown',country_code:p.country_code?.toUpperCase()||null,latitude:p.lat,longitude:p.lon,coordinate_role:['building','amenity'].includes(p.result_type)?'exact_location':'representative_point',timezone:zone,timezone_status:broad?'needs_specific_location':zone?'verified':'unavailable',provider:'geoapify',provider_place_id:p.place_id,source:p.datasource?.sourcename,attribution:p.datasource?.attribution,resolution_version:'geoapify-normalizer-v1'});
 }
 export function geoapifyAdapter({key,config,fetcher=fetch}){
  return {async search(input){
