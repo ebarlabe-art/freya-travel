@@ -23,6 +23,10 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
   const save=()=>{try{storage?.setItem(storageKey,JSON.stringify({mode:state.mode,buffer:state.buffer}))}catch{}};
   const draw=()=>{
    if(!live())return;
+   // toggle is queued asynchronously: capture the user's current disclosure
+   // before replacing it, and ignore events from the detached previous node.
+   const previousDetails=card.querySelector('[data-route-options]');
+   if(previousDetails)state.detailsOpen=previousDetails.open;
    const result=state.result,route=result?.route,error=result?.error;
    const diagnosis=route?routeFeasibility(pair.origin,pair.destination,route,state.buffer??0):null;
    const mapUrl=routeMapUrl(route);
@@ -45,7 +49,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
       <div class="agenda-route-actions">${result&&!route?'<button type="button" data-route-retry>Reintenta</button>':''}<button type="button" data-route-edit="origin">Corregeix l’origen</button><button type="button" data-route-edit="destination">Corregeix la destinació</button></div>
     </details>`;
    const details=card.querySelector('[data-route-options]');
-   details.addEventListener('toggle',()=>{if(live())state.detailsOpen=details.open});
+   details.addEventListener('toggle',()=>{if(live()&&details.isConnected&&card.contains(details))state.detailsOpen=details.open});
    card.querySelector('[data-route-mode]').onchange=e=>{state.mode=e.target.value;state.result=null;save();draw();load()};
    card.querySelector('[data-route-buffer]').onchange=e=>{state.buffer=e.target.value===''?null:Number(e.target.value);save();draw()};
    card.querySelector('[data-route-retry]')?.addEventListener('click',()=>load(true));

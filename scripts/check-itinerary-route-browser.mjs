@@ -52,7 +52,9 @@ try{
  assert.equal(await page.locator('[data-route-options]').evaluate(node=>node.open),false,'Advanced route controls stay collapsed by default');
  await ensureRouteOptionsOpen();
  await page.locator('[data-route-buffer]').fill('5');await page.locator('[data-route-buffer]').press('Tab');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('Factible amb marge estimat'));
+  assert.equal(await page.locator('[data-route-options]').evaluate(node=>node.open),true,'Margin redraw preserves the open route controls');
  await page.locator('[data-route-mode]').selectOption('drive');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('Cotxe')&&document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));
+  assert.equal(await page.locator('[data-route-options]').evaluate(node=>node.open),true,'Async route redraw preserves the open route controls');
  await page.locator('[data-route-mode]').selectOption('transit');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('sense horaris en viu'));
  const before=routeCalls;await page.locator('[data-generic-itinerary-day="2030-04-01"]').click();await page.waitForFunction(()=>document.querySelectorAll('[data-agenda-route]').length===0);assert.equal(routeCalls,before,'No routes or provider calls without two locations');
  // The quick location lookup stays inside the itinerary card, not the full editing form.
