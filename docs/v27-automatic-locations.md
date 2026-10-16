@@ -22,12 +22,14 @@ La migració nova està escrita i provada localment, **no aplicada remotament**.
 
 Per validar amb serveis reals, cal un entorn aïllat autoritzat amb:
 
+**Revisió de validació real (16/10/2026):** vegeu [el pla i els bloquejos verificats](v27-real-validation.md). La preview Railway existent serveix encara l'endpoint de producció; no s'ha d'utilitzar per a aquestes proves. El generador `node scripts/build-v27-validation.mjs` prepara una còpia separada i falla si s'hi troben els backends protegits.
+
 1. Les taules i contractes existents de Freya, més `20261016153108_itinerary_resolved_location_v27.sql` aplicada primer. No hi ha backfill ni taules/RLS noves. La migració afegeix la mateixa columna a `trip_itinerary_items` i `trip_activities`.
 2. `place-resolution` actualitzada (ara retorna també `locality`) i `itinerary-route` actualitzada, amb `GEOAPIFY_API_KEY` només al servidor. Es reutilitzen la sessió/JWT i RLS de l'usuari.
 3. La importació existent de PDF, amb la configuració OpenAI existent (`OPENAI_API_KEY` i model d'importació), Storage i permisos de documents del viatge.
 4. El frontend de la branca connectat a aquest entorn. L'entrada actual té `SUPABASE_URL` i `SUPABASE_KEY` a `index.html`: els `VITE_SUPABASE_*` del workflow no els substitueixen. Configurar-los només en una còpia de validació; no apuntar una prova a producció. Executar `npm run entries:sync` després de configurar aquesta còpia.
 
-No cal contractar cap servei nou. Google Maps només és l'enllaç de consulta que ja utilitza l'aplicació. No hi ha geocodificació/rutes noves sense connexió ni garantia d'horaris de transport en viu.
+No cal afegir cap proveïdor funcional nou, però l'aïllament exigeix recursos propis i pot generar costos de Supabase, hosting, OpenAI i Geoapify que cal autoritzar. Google Maps només és l'enllaç de consulta que ja utilitza l'aplicació. No hi ha geocodificació/rutes noves sense connexió ni garantia d'horaris de transport en viu.
 
 ## Proves reproduïbles
 
