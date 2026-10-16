@@ -46,6 +46,22 @@ export function prioritizeItineraryPlaces(row,query,places){
   choices:ranked.map(item=>item.place)};
 }
 
+// A saved location is never inferred from a vague or approximate geocoding hit.
+// Strong compound names win only when they are distinct from competing POIs.
+export function automaticItineraryPlace(row,query,places,countryCode){
+ if(!/^[A-Z]{2}$/.test(String(countryCode||'')))return null;
+ const exact=(Array.isArray(places)?places:[]).filter(p=>usable(p)&&p.country_code===countryCode);
+ if(!exact.length)return null;
+ const {recommended}=prioritizeItineraryPlaces(row,query,exact);
+ if(recommended)return recommended;
+ const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+ const wanted=norm(String(query||'').split(',')[0]);
+ if(wanted.length<7||/^(?:via|viale|carrer|street|road)\b/.test(wanted))return null;
+ const matches=exact.filter(place=>norm(place.canonical_name)===wanted);
+ return matches.length===1?matches[0]:null;
+}
+
 export function mountQuickItineraryPlace({host,row,query,search,save,current,initialOptions=null}){
  if(!host||!row||typeof search!=='function'||typeof save!=='function')throw Error('Missing place picker contract');
  document.querySelectorAll('[data-quick-itinerary-place]').forEach(existing=>existing.remove());
