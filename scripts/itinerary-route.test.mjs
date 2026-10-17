@@ -90,3 +90,29 @@ test('P0 #140: manual imported flight and taxi legs remain routing barriers',()=
   assert.equal(visitPairs([a,barrier,b],tid,a.localDate).length,0);
  }
 });
+
+test('v27: saved coordinates are reused; a changed manual location discards the old snapshot',async()=>{
+ const {p,calls}=provider();
+ const row={title:'Visit',location_name:'Museum A',address:null,city:'Bologna'};
+ row.resolved_location={...row,place:{canonical_name:'Museum A',provider:'geoapify',provider_place_id:'saved-a',country_code:'IT',locality:'Bologna',
+  coordinate_role:'exact_location',latitude:44.49,longitude:11.34}};
+ const result=await p.resolve(row,{city:'Bologna',country:'it'});
+ assert.equal(result.point.id,'saved-a');assert.equal(calls.length,0);
+ await p.resolve({...row,location_name:'Corrected meeting point'},{city:'Bologna',country:'it'});
+ assert.equal(calls.length,1,'Corrected location must never use stale coordinates');
+ assert.equal(row.location_name,'Museum A');
+});
+
+test('v27: map links contain verified endpoints and the selected mode only',async()=>{
+ const {routeMapUrl}=await import('../domain/itinerary-route.mjs');
+ assert.equal(routeMapUrl({method:'routing',mode:'walk'}),null);
+ const r={method:'routing',mode:'walk',origin:{latitude:51.5,longitude:-0.1},destination:{latitude:51.51,longitude:-0.12}};
+ const url=new URL(routeMapUrl(r));assert.equal(url.searchParams.get('origin'),'51.5,-0.1');assert.equal(url.searchParams.get('travelmode'),'walking');
+ assert.equal(routeMapUrl({...r,destination:{latitude:999,longitude:0}}),null);
+});
+
+test('v27: user supplied activity coordinates have priority over inferred geography and need no geocoding',async()=>{
+ const {p,calls}=provider();
+ const result=await p.resolve({venue_name:'My entrance',latitude:51.51,longitude:-0.1,resolved_location:{place:{latitude:0,longitude:0}}},null);
+ assert.equal(result.point.lat,51.51);assert.equal(result.point.lon,-0.1);assert.equal(calls.length,0);
+});

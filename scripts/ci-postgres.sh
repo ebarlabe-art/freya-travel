@@ -42,11 +42,22 @@ case "$action" in
     docker rm -f "$container" >/dev/null 2>&1 || true
 
     pulled=0
+    # ECR Public can exhaust its anonymous data quota on hosted runners.
+    # The publisher also distributes this exact version on Docker Hub.
+    # An explicit caller override must never silently select another image.
+    images=("$image")
+    if [ "$image" = "public.ecr.aws/supabase/postgres:17.6.1.165" ]; then
+      images+=("docker.io/supabase/postgres:17.6.1.165")
+    fi
     for attempt in 1 2 3 4; do
-      if docker image inspect "$image" >/dev/null 2>&1 || docker pull "$image"; then
-        pulled=1
-        break
-      fi
+      for candidate in "${images[@]}"; do
+        if docker image inspect "$candidate" >/dev/null 2>&1 || docker pull "$candidate"; then
+          image="$candidate"
+          pulled=1
+          break
+        fi
+      done
+      if [ "$pulled" -eq 1 ]; then break; fi
       if [ "$attempt" -lt 4 ]; then
         delay=$((attempt * 15))
         echo "Image pull failed (attempt $attempt/4). Retrying in ${delay}s..."

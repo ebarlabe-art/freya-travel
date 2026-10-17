@@ -139,7 +139,8 @@ Deno.serve(async request=>{
   if(!proposal)throw firstError||errorCode('invalid_transcript');
   // Validate origin/destination against the authenticated place resolver.
   // The PDF is never sent to this service; only short place names.
-  const lookup=async city=>{
+  type PlaceCandidate = {place: {timezone_status?: string; timezone?: string; canonical_name?: string}};
+  const lookup=async (city: string)=>{
    const response=await fetch(SUPABASE_URL+'/functions/v1/place-resolution',{
     method:'POST',signal:AbortSignal.timeout(12000),
     headers:{Authorization:auth,apikey:ANON,'Content-Type':'application/json'},
@@ -147,11 +148,11 @@ Deno.serve(async request=>{
    });
    if(!response.ok)return null;
    const data=await response.json();
-   const candidates=(data?.candidates||[]).filter(row=>
+   const candidates=(data?.candidates||[]).filter((row: PlaceCandidate)=>
     row?.place?.timezone_status==='verified'&&typeof row.place.timezone==='string');
    if(candidates.length===1)return candidates[0].place.timezone;
-   const canonical=name=>String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-   const exact=candidates.filter(row=>canonical(row.place.canonical_name)===canonical(city));
+   const canonical=(name: unknown)=>String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+   const exact=candidates.filter((row: PlaceCandidate)=>canonical(row.place.canonical_name)===canonical(city));
    return exact.length===1?exact[0].place.timezone:null;
   };
   const enriched=await itineraryPdfEnrichTimeZones(proposal,{
