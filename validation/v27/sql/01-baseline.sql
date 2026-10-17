@@ -34,6 +34,70 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
 
 CREATE EXTENSION IF NOT EXISTS "pg_jsonschema" WITH SCHEMA extensions;
 
+-- Register empty table row types before functions with composite arguments/returns.
+CREATE TABLE "app_private"."alb03_ingestions" ();
+CREATE TABLE "app_private"."alb03_requests" ();
+CREATE TABLE "place_private"."handoff_receipts" ();
+CREATE TABLE "place_private"."operations" ();
+CREATE TABLE "place_private"."queries" ();
+CREATE TABLE "place_private"."quota" ();
+CREATE TABLE "place_private"."settings" ();
+CREATE TABLE "public"."checklist_items" ();
+CREATE TABLE "public"."itinerary_activities" ();
+CREATE TABLE "public"."notification_deliveries" ();
+CREATE TABLE "public"."place_bindings" ();
+CREATE TABLE "public"."place_versions" ();
+CREATE TABLE "public"."places" ();
+CREATE TABLE "public"."proposal_generations" ();
+CREATE TABLE "public"."proposal_operations" ();
+CREATE TABLE "public"."push_subscriptions" ();
+CREATE TABLE "public"."travel_book_asset_variants" ();
+CREATE TABLE "public"."travel_book_assets" ();
+CREATE TABLE "public"."travel_book_composition_versions" ();
+CREATE TABLE "public"."travel_book_compositions" ();
+CREATE TABLE "public"."travel_book_editions" ();
+CREATE TABLE "public"."travel_book_operations" ();
+CREATE TABLE "public"."travel_book_pages" ();
+CREATE TABLE "public"."travel_book_resource_refs" ();
+CREATE TABLE "public"."travel_book_revision_compositions" ();
+CREATE TABLE "public"."travel_book_revisions" ();
+CREATE TABLE "public"."travel_book_source_snapshots" ();
+CREATE TABLE "public"."travel_books" ();
+CREATE TABLE "public"."travel_documents" ();
+CREATE TABLE "public"."travel_expenses" ();
+CREATE TABLE "public"."travel_parking" ();
+CREATE TABLE "public"."trip_accommodation_documents" ();
+CREATE TABLE "public"."trip_accommodations" ();
+CREATE TABLE "public"."trip_activities" ();
+CREATE TABLE "public"."trip_activity_documents" ();
+CREATE TABLE "public"."trip_brief_operations" ();
+CREATE TABLE "public"."trip_briefs" ();
+CREATE TABLE "public"."trip_budget_setting_operations" ();
+CREATE TABLE "public"."trip_budget_settings" ();
+CREATE TABLE "public"."trip_car_rental_documents" ();
+CREATE TABLE "public"."trip_car_rentals" ();
+CREATE TABLE "public"."trip_component_confirmation_operations" ();
+CREATE TABLE "public"."trip_component_cost_operations" ();
+CREATE TABLE "public"."trip_component_costs" ();
+CREATE TABLE "public"."trip_day_metadata" ();
+CREATE TABLE "public"."trip_flight_documents" ();
+CREATE TABLE "public"."trip_flight_traveler_documents" ();
+CREATE TABLE "public"."trip_flight_travelers" ();
+CREATE TABLE "public"."trip_flights" ();
+CREATE TABLE "public"."trip_handoff_operations" ();
+CREATE TABLE "public"."trip_itinerary_items" ();
+CREATE TABLE "public"."trip_members" ();
+CREATE TABLE "public"."trip_photo_metadata" ();
+CREATE TABLE "public"."trip_place_snapshots" ();
+CREATE TABLE "public"."trip_proposal_component_links" ();
+CREATE TABLE "public"."trip_proposal_handoffs" ();
+CREATE TABLE "public"."trip_proposals" ();
+CREATE TABLE "public"."trip_reminders" ();
+CREATE TABLE "public"."trip_standalone_component_links" ();
+CREATE TABLE "public"."trip_stops" ();
+CREATE TABLE "public"."trip_travelers" ();
+CREATE TABLE "public"."trips" ();
+
 CREATE OR REPLACE FUNCTION app_private.alb03_can_read_object_v1(path text)
  RETURNS boolean
  LANGUAGE sql
@@ -4281,879 +4345,817 @@ end;
 $function$
 ;
 
-CREATE TABLE "app_private"."alb03_ingestions" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "book_id" uuid NOT NULL,
-  "asset_id" uuid NOT NULL,
-  "source_id" uuid NOT NULL,
-  "source_path" text NOT NULL,
-  "source_token" text NOT NULL,
-  "snapshot_id" uuid NOT NULL,
-  "lease_id" uuid,
-  "lease_until" timestamp with time zone,
-  "attempts" integer DEFAULT 0 NOT NULL,
-  "error_code" text,
-  "source_hash" text,
-  "source_orientation" smallint,
-  "created_by" uuid NOT NULL,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL
-);
+ALTER TABLE "app_private"."alb03_ingestions"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "book_id" uuid NOT NULL,
+  ADD COLUMN "asset_id" uuid NOT NULL,
+  ADD COLUMN "source_id" uuid NOT NULL,
+  ADD COLUMN "source_path" text NOT NULL,
+  ADD COLUMN "source_token" text NOT NULL,
+  ADD COLUMN "snapshot_id" uuid NOT NULL,
+  ADD COLUMN "lease_id" uuid,
+  ADD COLUMN "lease_until" timestamp with time zone,
+  ADD COLUMN "attempts" integer DEFAULT 0 NOT NULL,
+  ADD COLUMN "error_code" text,
+  ADD COLUMN "source_hash" text,
+  ADD COLUMN "source_orientation" smallint,
+  ADD COLUMN "created_by" uuid NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL;
 
-CREATE TABLE "app_private"."alb03_requests" (
-  "actor_id" uuid NOT NULL,
-  "operation_id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "book_id" uuid NOT NULL,
-  "request" jsonb NOT NULL,
-  "result" jsonb NOT NULL,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL
-);
+ALTER TABLE "app_private"."alb03_requests"
+  ADD COLUMN "actor_id" uuid NOT NULL,
+  ADD COLUMN "operation_id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "book_id" uuid NOT NULL,
+  ADD COLUMN "request" jsonb NOT NULL,
+  ADD COLUMN "result" jsonb NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL;
 
-CREATE TABLE "place_private"."handoff_receipts" (
-  "owner_id" uuid NOT NULL,
-  "operation_id" uuid NOT NULL,
-  "request" jsonb NOT NULL,
-  "result" jsonb NOT NULL
-);
+ALTER TABLE "place_private"."handoff_receipts"
+  ADD COLUMN "owner_id" uuid NOT NULL,
+  ADD COLUMN "operation_id" uuid NOT NULL,
+  ADD COLUMN "request" jsonb NOT NULL,
+  ADD COLUMN "result" jsonb NOT NULL;
 
-CREATE TABLE "place_private"."operations" (
-  "owner_id" uuid NOT NULL,
-  "operation_id" uuid NOT NULL,
-  "request" jsonb NOT NULL,
-  "binding_id" uuid NOT NULL
-);
+ALTER TABLE "place_private"."operations"
+  ADD COLUMN "owner_id" uuid NOT NULL,
+  ADD COLUMN "operation_id" uuid NOT NULL,
+  ADD COLUMN "request" jsonb NOT NULL,
+  ADD COLUMN "binding_id" uuid NOT NULL;
 
-CREATE TABLE "place_private"."queries" (
-  "owner_id" uuid NOT NULL,
-  "query_hash" text NOT NULL,
-  "query" jsonb NOT NULL,
-  "status" text NOT NULL,
-  "lease_until" timestamp with time zone,
-  "token" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "results" jsonb,
-  "expires_at" timestamp with time zone
-);
+ALTER TABLE "place_private"."queries"
+  ADD COLUMN "owner_id" uuid NOT NULL,
+  ADD COLUMN "query_hash" text NOT NULL,
+  ADD COLUMN "query" jsonb NOT NULL,
+  ADD COLUMN "status" text NOT NULL,
+  ADD COLUMN "lease_until" timestamp with time zone,
+  ADD COLUMN "token" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "results" jsonb,
+  ADD COLUMN "expires_at" timestamp with time zone;
 
-CREATE TABLE "place_private"."quota" (
-  "bucket" text NOT NULL,
-  "used" integer NOT NULL
-);
+ALTER TABLE "place_private"."quota"
+  ADD COLUMN "bucket" text NOT NULL,
+  ADD COLUMN "used" integer NOT NULL;
 
-CREATE TABLE "place_private"."settings" (
-  "singleton" boolean DEFAULT true NOT NULL,
-  "fresh_days" integer DEFAULT 90 NOT NULL
-);
+ALTER TABLE "place_private"."settings"
+  ADD COLUMN "singleton" boolean DEFAULT true NOT NULL,
+  ADD COLUMN "fresh_days" integer DEFAULT 90 NOT NULL;
 
-CREATE TABLE "public"."checklist_items" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "text" text NOT NULL,
-  "done" boolean DEFAULT false NOT NULL,
-  "created_by" uuid NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "category" text,
-  "template_key" text,
-  "dismissed" boolean DEFAULT false NOT NULL
-);
+ALTER TABLE "public"."checklist_items"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "text" text NOT NULL,
+  ADD COLUMN "done" boolean DEFAULT false NOT NULL,
+  ADD COLUMN "created_by" uuid NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "category" text,
+  ADD COLUMN "template_key" text,
+  ADD COLUMN "dismissed" boolean DEFAULT false NOT NULL;
 
-CREATE TABLE "public"."itinerary_activities" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "stable_activity_id" text NOT NULL,
-  "title" text NOT NULL,
-  "description" text,
-  "starts_at" timestamp with time zone NOT NULL,
-  "time_zone" text,
-  "booked" boolean DEFAULT false NOT NULL,
-  "notifications_enabled" boolean DEFAULT true NOT NULL,
-  "notify_before_minutes" smallint DEFAULT 60 NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."itinerary_activities"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "stable_activity_id" text NOT NULL,
+  ADD COLUMN "title" text NOT NULL,
+  ADD COLUMN "description" text,
+  ADD COLUMN "starts_at" timestamp with time zone NOT NULL,
+  ADD COLUMN "time_zone" text,
+  ADD COLUMN "booked" boolean DEFAULT false NOT NULL,
+  ADD COLUMN "notifications_enabled" boolean DEFAULT true NOT NULL,
+  ADD COLUMN "notify_before_minutes" smallint DEFAULT 60 NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."notification_deliveries" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "activity_id" uuid,
-  "subscription_id" uuid NOT NULL,
-  "notification_kind" text DEFAULT 'activity-1h'::text NOT NULL,
-  "scheduled_for" timestamp with time zone NOT NULL,
-  "status" text NOT NULL,
-  "attempt_count" integer DEFAULT 0 NOT NULL,
-  "next_attempt_at" timestamp with time zone,
-  "lease_until" timestamp with time zone,
-  "sent_at" timestamp with time zone,
-  "last_error_code" text,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "reminder_id" uuid
-);
+ALTER TABLE "public"."notification_deliveries"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "activity_id" uuid,
+  ADD COLUMN "subscription_id" uuid NOT NULL,
+  ADD COLUMN "notification_kind" text DEFAULT 'activity-1h'::text NOT NULL,
+  ADD COLUMN "scheduled_for" timestamp with time zone NOT NULL,
+  ADD COLUMN "status" text NOT NULL,
+  ADD COLUMN "attempt_count" integer DEFAULT 0 NOT NULL,
+  ADD COLUMN "next_attempt_at" timestamp with time zone,
+  ADD COLUMN "lease_until" timestamp with time zone,
+  ADD COLUMN "sent_at" timestamp with time zone,
+  ADD COLUMN "last_error_code" text,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "reminder_id" uuid;
 
-CREATE TABLE "public"."place_bindings" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "owner_id" uuid NOT NULL,
-  "brief_id" uuid NOT NULL,
-  "proposal_id" uuid,
-  "subject_key" text NOT NULL,
-  "original_text" text NOT NULL,
-  "state" text NOT NULL,
-  "place_version_id" uuid,
-  "selection_method" text,
-  "brief_revision" bigint NOT NULL,
-  "revision" bigint NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "subject_snapshot" jsonb
-);
+ALTER TABLE "public"."place_bindings"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "owner_id" uuid NOT NULL,
+  ADD COLUMN "brief_id" uuid NOT NULL,
+  ADD COLUMN "proposal_id" uuid,
+  ADD COLUMN "subject_key" text NOT NULL,
+  ADD COLUMN "original_text" text NOT NULL,
+  ADD COLUMN "state" text NOT NULL,
+  ADD COLUMN "place_version_id" uuid,
+  ADD COLUMN "selection_method" text,
+  ADD COLUMN "brief_revision" bigint NOT NULL,
+  ADD COLUMN "revision" bigint NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "subject_snapshot" jsonb;
 
-CREATE TABLE "public"."place_versions" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "place_id" uuid NOT NULL,
-  "canonical_name" text NOT NULL,
-  "kind" text NOT NULL,
-  "administrative_area" text,
-  "country_code" text,
-  "latitude" double precision NOT NULL,
-  "longitude" double precision NOT NULL,
-  "coordinate_role" text NOT NULL,
-  "timezone" text,
-  "timezone_status" text NOT NULL,
-  "provider" text NOT NULL,
-  "provider_place_id" text NOT NULL,
-  "source" text NOT NULL,
-  "attribution" text NOT NULL,
-  "resolved_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "resolution_version" text NOT NULL,
-  "content_hash" text NOT NULL
-);
+ALTER TABLE "public"."place_versions"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "place_id" uuid NOT NULL,
+  ADD COLUMN "canonical_name" text NOT NULL,
+  ADD COLUMN "kind" text NOT NULL,
+  ADD COLUMN "administrative_area" text,
+  ADD COLUMN "country_code" text,
+  ADD COLUMN "latitude" double precision NOT NULL,
+  ADD COLUMN "longitude" double precision NOT NULL,
+  ADD COLUMN "coordinate_role" text NOT NULL,
+  ADD COLUMN "timezone" text,
+  ADD COLUMN "timezone_status" text NOT NULL,
+  ADD COLUMN "provider" text NOT NULL,
+  ADD COLUMN "provider_place_id" text NOT NULL,
+  ADD COLUMN "source" text NOT NULL,
+  ADD COLUMN "attribution" text NOT NULL,
+  ADD COLUMN "resolved_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "resolution_version" text NOT NULL,
+  ADD COLUMN "content_hash" text NOT NULL;
 
-CREATE TABLE "public"."places" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "provider" text NOT NULL,
-  "provider_place_id" text NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."places"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "provider" text NOT NULL,
+  ADD COLUMN "provider_place_id" text NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."proposal_generations" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "owner_id" uuid NOT NULL,
-  "brief_id" uuid NOT NULL,
-  "brief_revision" bigint NOT NULL,
-  "brief_schema_version" integer NOT NULL,
-  "brief_snapshot" jsonb NOT NULL,
-  "snapshot_hash" text NOT NULL,
-  "engine_version" text NOT NULL,
-  "generator_version" text NOT NULL,
-  "verifier_version" text NOT NULL,
-  "policy_version" text NOT NULL,
-  "status" text DEFAULT 'pending'::text NOT NULL,
-  "result_reason" text,
-  "error_code" text,
-  "attempt_number" integer DEFAULT 0 NOT NULL,
-  "attempt_token" uuid,
-  "lease_expires_at" timestamp with time zone,
-  "result_hash" text,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "finished_at" timestamp with time zone,
-  "round_number" bigint,
-  "previous_generation_id" uuid,
-  "refinement" jsonb DEFAULT '{"text": "", "chips": []}'::jsonb NOT NULL,
-  "excluded_routes" jsonb DEFAULT '[]'::jsonb NOT NULL,
-  "material_key" text,
-  "place_snapshot" jsonb
-);
+ALTER TABLE "public"."proposal_generations"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "owner_id" uuid NOT NULL,
+  ADD COLUMN "brief_id" uuid NOT NULL,
+  ADD COLUMN "brief_revision" bigint NOT NULL,
+  ADD COLUMN "brief_schema_version" integer NOT NULL,
+  ADD COLUMN "brief_snapshot" jsonb NOT NULL,
+  ADD COLUMN "snapshot_hash" text NOT NULL,
+  ADD COLUMN "engine_version" text NOT NULL,
+  ADD COLUMN "generator_version" text NOT NULL,
+  ADD COLUMN "verifier_version" text NOT NULL,
+  ADD COLUMN "policy_version" text NOT NULL,
+  ADD COLUMN "status" text DEFAULT 'pending'::text NOT NULL,
+  ADD COLUMN "result_reason" text,
+  ADD COLUMN "error_code" text,
+  ADD COLUMN "attempt_number" integer DEFAULT 0 NOT NULL,
+  ADD COLUMN "attempt_token" uuid,
+  ADD COLUMN "lease_expires_at" timestamp with time zone,
+  ADD COLUMN "result_hash" text,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "finished_at" timestamp with time zone,
+  ADD COLUMN "round_number" bigint,
+  ADD COLUMN "previous_generation_id" uuid,
+  ADD COLUMN "refinement" jsonb DEFAULT '{"text": "", "chips": []}'::jsonb NOT NULL,
+  ADD COLUMN "excluded_routes" jsonb DEFAULT '[]'::jsonb NOT NULL,
+  ADD COLUMN "material_key" text,
+  ADD COLUMN "place_snapshot" jsonb;
 
-CREATE TABLE "public"."proposal_operations" (
-  "owner_id" uuid NOT NULL,
-  "operation_id" uuid NOT NULL,
-  "action" text NOT NULL,
-  "request" jsonb NOT NULL,
-  "generation_id" uuid NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."proposal_operations"
+  ADD COLUMN "owner_id" uuid NOT NULL,
+  ADD COLUMN "operation_id" uuid NOT NULL,
+  ADD COLUMN "action" text NOT NULL,
+  ADD COLUMN "request" jsonb NOT NULL,
+  ADD COLUMN "generation_id" uuid NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."push_subscriptions" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "user_id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "endpoint" text NOT NULL,
-  "p256dh" text NOT NULL,
-  "auth" text NOT NULL,
-  "active" boolean DEFAULT true NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."push_subscriptions"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "user_id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "endpoint" text NOT NULL,
+  ADD COLUMN "p256dh" text NOT NULL,
+  ADD COLUMN "auth" text NOT NULL,
+  ADD COLUMN "active" boolean DEFAULT true NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."travel_book_asset_variants" (
-  "trip_id" uuid NOT NULL,
-  "book_id" uuid NOT NULL,
-  "asset_id" uuid NOT NULL,
-  "kind" text NOT NULL,
-  "pipeline_version" integer NOT NULL,
-  "content_hash" text NOT NULL,
-  "width_px" integer NOT NULL,
-  "height_px" integer NOT NULL,
-  "mime_type" text NOT NULL,
-  "file_extension" text NOT NULL,
-  "byte_size" integer NOT NULL,
-  "orientation" smallint NOT NULL,
-  "storage_bucket" text NOT NULL,
-  "storage_path" text NOT NULL
-);
+ALTER TABLE "public"."travel_book_asset_variants"
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "book_id" uuid NOT NULL,
+  ADD COLUMN "asset_id" uuid NOT NULL,
+  ADD COLUMN "kind" text NOT NULL,
+  ADD COLUMN "pipeline_version" integer NOT NULL,
+  ADD COLUMN "content_hash" text NOT NULL,
+  ADD COLUMN "width_px" integer NOT NULL,
+  ADD COLUMN "height_px" integer NOT NULL,
+  ADD COLUMN "mime_type" text NOT NULL,
+  ADD COLUMN "file_extension" text NOT NULL,
+  ADD COLUMN "byte_size" integer NOT NULL,
+  ADD COLUMN "orientation" smallint NOT NULL,
+  ADD COLUMN "storage_bucket" text NOT NULL,
+  ADD COLUMN "storage_path" text NOT NULL;
 
-CREATE TABLE "public"."travel_book_assets" (
-  "id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "book_id" uuid NOT NULL,
-  "asset_key" uuid NOT NULL,
-  "version" integer NOT NULL,
-  "kind" text DEFAULT 'image'::text NOT NULL,
-  "source_document_id" uuid,
-  "source_document_id_at_capture" uuid,
-  "status" text DEFAULT 'pending'::text NOT NULL,
-  "content_hash" text,
-  "mime_type" text,
-  "width_px" integer,
-  "height_px" integer,
-  "storage_bucket" text,
-  "storage_path" text,
-  "verified_at" timestamp with time zone,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "created_by" uuid NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "updated_by" uuid NOT NULL
-);
+ALTER TABLE "public"."travel_book_assets"
+  ADD COLUMN "id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "book_id" uuid NOT NULL,
+  ADD COLUMN "asset_key" uuid NOT NULL,
+  ADD COLUMN "version" integer NOT NULL,
+  ADD COLUMN "kind" text DEFAULT 'image'::text NOT NULL,
+  ADD COLUMN "source_document_id" uuid,
+  ADD COLUMN "source_document_id_at_capture" uuid,
+  ADD COLUMN "status" text DEFAULT 'pending'::text NOT NULL,
+  ADD COLUMN "content_hash" text,
+  ADD COLUMN "mime_type" text,
+  ADD COLUMN "width_px" integer,
+  ADD COLUMN "height_px" integer,
+  ADD COLUMN "storage_bucket" text,
+  ADD COLUMN "storage_path" text,
+  ADD COLUMN "verified_at" timestamp with time zone,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "created_by" uuid NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "updated_by" uuid NOT NULL;
 
-CREATE TABLE "public"."travel_book_composition_versions" (
-  "composition_id" uuid NOT NULL,
-  "version" bigint NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "book_id" uuid NOT NULL,
-  "edition_id" uuid NOT NULL,
-  "schema_version" integer DEFAULT 1 NOT NULL,
-  "document" jsonb NOT NULL,
-  "hash_version" integer DEFAULT 1 NOT NULL,
-  "document_hash" text GENERATED ALWAYS AS (app_private.travel_book_hash_v1(document)) STORED,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "created_by" uuid NOT NULL
-);
+ALTER TABLE "public"."travel_book_composition_versions"
+  ADD COLUMN "composition_id" uuid NOT NULL,
+  ADD COLUMN "version" bigint NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "book_id" uuid NOT NULL,
+  ADD COLUMN "edition_id" uuid NOT NULL,
+  ADD COLUMN "schema_version" integer DEFAULT 1 NOT NULL,
+  ADD COLUMN "document" jsonb NOT NULL,
+  ADD COLUMN "hash_version" integer DEFAULT 1 NOT NULL,
+  ADD COLUMN "document_hash" text GENERATED ALWAYS AS (app_private.travel_book_hash_v1(document)) STORED,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "created_by" uuid NOT NULL;
 
-CREATE TABLE "public"."travel_book_compositions" (
-  "id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "book_id" uuid NOT NULL,
-  "edition_id" uuid NOT NULL,
-  "kind" text NOT NULL,
-  "current_version" bigint DEFAULT 1 NOT NULL,
-  "removed_at" timestamp with time zone,
-  "removed_by" uuid,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "created_by" uuid NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "updated_by" uuid NOT NULL
-);
+ALTER TABLE "public"."travel_book_compositions"
+  ADD COLUMN "id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "book_id" uuid NOT NULL,
+  ADD COLUMN "edition_id" uuid NOT NULL,
+  ADD COLUMN "kind" text NOT NULL,
+  ADD COLUMN "current_version" bigint DEFAULT 1 NOT NULL,
+  ADD COLUMN "removed_at" timestamp with time zone,
+  ADD COLUMN "removed_by" uuid,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "created_by" uuid NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "updated_by" uuid NOT NULL;
 
-CREATE TABLE "public"."travel_book_editions" (
-  "id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "book_id" uuid NOT NULL,
-  "title" text NOT NULL,
-  "structure_version" bigint DEFAULT 1 NOT NULL,
-  "next_revision_number" bigint DEFAULT 1 NOT NULL,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "created_by" uuid NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "updated_by" uuid NOT NULL
-);
+ALTER TABLE "public"."travel_book_editions"
+  ADD COLUMN "id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "book_id" uuid NOT NULL,
+  ADD COLUMN "title" text NOT NULL,
+  ADD COLUMN "structure_version" bigint DEFAULT 1 NOT NULL,
+  ADD COLUMN "next_revision_number" bigint DEFAULT 1 NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "created_by" uuid NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "updated_by" uuid NOT NULL;
 
-CREATE TABLE "public"."travel_book_operations" (
-  "actor_id" uuid NOT NULL,
-  "operation_id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "book_id" uuid NOT NULL,
-  "edition_id" uuid,
-  "operation_type" text NOT NULL,
-  "request" jsonb NOT NULL,
-  "result" jsonb NOT NULL,
-  "status" text DEFAULT 'applied'::text NOT NULL,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL
-);
+ALTER TABLE "public"."travel_book_operations"
+  ADD COLUMN "actor_id" uuid NOT NULL,
+  ADD COLUMN "operation_id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "book_id" uuid NOT NULL,
+  ADD COLUMN "edition_id" uuid,
+  ADD COLUMN "operation_type" text NOT NULL,
+  ADD COLUMN "request" jsonb NOT NULL,
+  ADD COLUMN "result" jsonb NOT NULL,
+  ADD COLUMN "status" text DEFAULT 'applied'::text NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL;
 
-CREATE TABLE "public"."travel_book_pages" (
-  "id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "book_id" uuid NOT NULL,
-  "edition_id" uuid NOT NULL,
-  "composition_id" uuid NOT NULL,
-  "slot" smallint NOT NULL,
-  "position" integer,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "created_by" uuid NOT NULL
-);
+ALTER TABLE "public"."travel_book_pages"
+  ADD COLUMN "id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "book_id" uuid NOT NULL,
+  ADD COLUMN "edition_id" uuid NOT NULL,
+  ADD COLUMN "composition_id" uuid NOT NULL,
+  ADD COLUMN "slot" smallint NOT NULL,
+  ADD COLUMN "position" integer,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "created_by" uuid NOT NULL;
 
-CREATE TABLE "public"."travel_book_resource_refs" (
-  "composition_id" uuid NOT NULL,
-  "composition_version" bigint NOT NULL,
-  "ref_key" text NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "book_id" uuid NOT NULL,
-  "edition_id" uuid NOT NULL,
-  "element_id" uuid NOT NULL,
-  "resource_kind" text NOT NULL,
-  "asset_id" uuid,
-  "source_snapshot_id" uuid,
-  "usage" text NOT NULL,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL
-);
+ALTER TABLE "public"."travel_book_resource_refs"
+  ADD COLUMN "composition_id" uuid NOT NULL,
+  ADD COLUMN "composition_version" bigint NOT NULL,
+  ADD COLUMN "ref_key" text NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "book_id" uuid NOT NULL,
+  ADD COLUMN "edition_id" uuid NOT NULL,
+  ADD COLUMN "element_id" uuid NOT NULL,
+  ADD COLUMN "resource_kind" text NOT NULL,
+  ADD COLUMN "asset_id" uuid,
+  ADD COLUMN "source_snapshot_id" uuid,
+  ADD COLUMN "usage" text NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL;
 
-CREATE TABLE "public"."travel_book_revision_compositions" (
-  "revision_id" uuid NOT NULL,
-  "composition_id" uuid NOT NULL,
-  "composition_version" bigint NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "book_id" uuid NOT NULL,
-  "edition_id" uuid NOT NULL
-);
+ALTER TABLE "public"."travel_book_revision_compositions"
+  ADD COLUMN "revision_id" uuid NOT NULL,
+  ADD COLUMN "composition_id" uuid NOT NULL,
+  ADD COLUMN "composition_version" bigint NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "book_id" uuid NOT NULL,
+  ADD COLUMN "edition_id" uuid NOT NULL;
 
-CREATE TABLE "public"."travel_book_revisions" (
-  "id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "book_id" uuid NOT NULL,
-  "edition_id" uuid NOT NULL,
-  "revision_number" bigint NOT NULL,
-  "structure_version" bigint NOT NULL,
-  "schema_version" integer DEFAULT 1 NOT NULL,
-  "manifest" jsonb NOT NULL,
-  "hash_version" integer DEFAULT 1 NOT NULL,
-  "manifest_hash" text GENERATED ALWAYS AS (app_private.travel_book_hash_v1(manifest)) STORED,
-  "resource_state_at_capture" text NOT NULL,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "created_by" uuid NOT NULL
-);
+ALTER TABLE "public"."travel_book_revisions"
+  ADD COLUMN "id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "book_id" uuid NOT NULL,
+  ADD COLUMN "edition_id" uuid NOT NULL,
+  ADD COLUMN "revision_number" bigint NOT NULL,
+  ADD COLUMN "structure_version" bigint NOT NULL,
+  ADD COLUMN "schema_version" integer DEFAULT 1 NOT NULL,
+  ADD COLUMN "manifest" jsonb NOT NULL,
+  ADD COLUMN "hash_version" integer DEFAULT 1 NOT NULL,
+  ADD COLUMN "manifest_hash" text GENERATED ALWAYS AS (app_private.travel_book_hash_v1(manifest)) STORED,
+  ADD COLUMN "resource_state_at_capture" text NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "created_by" uuid NOT NULL;
 
-CREATE TABLE "public"."travel_book_source_snapshots" (
-  "id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "book_id" uuid NOT NULL,
-  "source_kind" text NOT NULL,
-  "source_id" uuid,
-  "source_version" text,
-  "schema_version" integer DEFAULT 1 NOT NULL,
-  "classification" text NOT NULL,
-  "origin" text NOT NULL,
-  "availability_at_capture" text NOT NULL,
-  "payload" jsonb NOT NULL,
-  "hash_version" integer DEFAULT 1 NOT NULL,
-  "payload_hash" text GENERATED ALWAYS AS (app_private.travel_book_hash_v1(payload)) STORED,
-  "captured_at" timestamp with time zone NOT NULL,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "created_by" uuid NOT NULL
-);
+ALTER TABLE "public"."travel_book_source_snapshots"
+  ADD COLUMN "id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "book_id" uuid NOT NULL,
+  ADD COLUMN "source_kind" text NOT NULL,
+  ADD COLUMN "source_id" uuid,
+  ADD COLUMN "source_version" text,
+  ADD COLUMN "schema_version" integer DEFAULT 1 NOT NULL,
+  ADD COLUMN "classification" text NOT NULL,
+  ADD COLUMN "origin" text NOT NULL,
+  ADD COLUMN "availability_at_capture" text NOT NULL,
+  ADD COLUMN "payload" jsonb NOT NULL,
+  ADD COLUMN "hash_version" integer DEFAULT 1 NOT NULL,
+  ADD COLUMN "payload_hash" text GENERATED ALWAYS AS (app_private.travel_book_hash_v1(payload)) STORED,
+  ADD COLUMN "captured_at" timestamp with time zone NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "created_by" uuid NOT NULL;
 
-CREATE TABLE "public"."travel_books" (
-  "id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "title" text NOT NULL,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "created_by" uuid NOT NULL
-);
+ALTER TABLE "public"."travel_books"
+  ADD COLUMN "id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "title" text NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "created_by" uuid NOT NULL;
 
-CREATE TABLE "public"."travel_documents" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "title" text NOT NULL,
-  "category" text DEFAULT 'Altres'::text NOT NULL,
-  "file_name" text NOT NULL,
-  "file_path" text NOT NULL,
-  "mime_type" text,
-  "created_by" uuid NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."travel_documents"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "title" text NOT NULL,
+  ADD COLUMN "category" text DEFAULT 'Altres'::text NOT NULL,
+  ADD COLUMN "file_name" text NOT NULL,
+  ADD COLUMN "file_path" text NOT NULL,
+  ADD COLUMN "mime_type" text,
+  ADD COLUMN "created_by" uuid NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."travel_expenses" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "description" text NOT NULL,
-  "amount" numeric(12,2) NOT NULL,
-  "currency" text DEFAULT 'GBP'::text NOT NULL,
-  "paid_by" text DEFAULT 'Compte comú'::text NOT NULL,
-  "category" text DEFAULT 'Altres'::text NOT NULL,
-  "expense_date" date,
-  "place" text,
-  "created_by" uuid NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "receipt_path" text
-);
+ALTER TABLE "public"."travel_expenses"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "description" text NOT NULL,
+  ADD COLUMN "amount" numeric(12,2) NOT NULL,
+  ADD COLUMN "currency" text DEFAULT 'GBP'::text NOT NULL,
+  ADD COLUMN "paid_by" text DEFAULT 'Compte comú'::text NOT NULL,
+  ADD COLUMN "category" text DEFAULT 'Altres'::text NOT NULL,
+  ADD COLUMN "expense_date" date,
+  ADD COLUMN "place" text,
+  ADD COLUMN "created_by" uuid NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "receipt_path" text;
 
-CREATE TABLE "public"."travel_parking" (
-  "trip_id" uuid NOT NULL,
-  "parking_name" text,
-  "reservation_code" text,
-  "entry_at" timestamp with time zone,
-  "exit_at" timestamp with time zone,
-  "address" text,
-  "floor" text,
-  "zone" text,
-  "spot" text,
-  "notes" text,
-  "latitude" double precision,
-  "longitude" double precision,
-  "photo_path" text,
-  "updated_by" uuid,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."travel_parking"
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "parking_name" text,
+  ADD COLUMN "reservation_code" text,
+  ADD COLUMN "entry_at" timestamp with time zone,
+  ADD COLUMN "exit_at" timestamp with time zone,
+  ADD COLUMN "address" text,
+  ADD COLUMN "floor" text,
+  ADD COLUMN "zone" text,
+  ADD COLUMN "spot" text,
+  ADD COLUMN "notes" text,
+  ADD COLUMN "latitude" double precision,
+  ADD COLUMN "longitude" double precision,
+  ADD COLUMN "photo_path" text,
+  ADD COLUMN "updated_by" uuid,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_accommodation_documents" (
-  "trip_id" uuid NOT NULL,
-  "accommodation_id" uuid NOT NULL,
-  "document_id" uuid NOT NULL,
-  "document_role" text DEFAULT 'voucher'::text NOT NULL,
-  "created_by" uuid DEFAULT auth.uid(),
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_accommodation_documents"
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "accommodation_id" uuid NOT NULL,
+  ADD COLUMN "document_id" uuid NOT NULL,
+  ADD COLUMN "document_role" text DEFAULT 'voucher'::text NOT NULL,
+  ADD COLUMN "created_by" uuid DEFAULT auth.uid(),
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_accommodations" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "accommodation_type" text NOT NULL,
-  "name" text NOT NULL,
-  "address" text,
-  "location_text" text,
-  "latitude" double precision,
-  "longitude" double precision,
-  "check_in_at" timestamp with time zone,
-  "check_out_at" timestamp with time zone,
-  "time_zone" text NOT NULL,
-  "booking_reference" text,
-  "booking_provider" text,
-  "reservation_status" text DEFAULT 'planning'::text NOT NULL,
-  "phone" text,
-  "email" text,
-  "website_url" text,
-  "room_number" text,
-  "notes" text,
-  "created_by" uuid DEFAULT auth.uid(),
-  "updated_by" uuid,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "city" text,
-  "postal_code" text,
-  "region" text,
-  "country" text,
-  "check_in_completed_at" timestamp with time zone,
-  "check_out_completed_at" timestamp with time zone,
-  "check_in_date" date,
-  "check_out_date" date
-);
+ALTER TABLE "public"."trip_accommodations"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "accommodation_type" text NOT NULL,
+  ADD COLUMN "name" text NOT NULL,
+  ADD COLUMN "address" text,
+  ADD COLUMN "location_text" text,
+  ADD COLUMN "latitude" double precision,
+  ADD COLUMN "longitude" double precision,
+  ADD COLUMN "check_in_at" timestamp with time zone,
+  ADD COLUMN "check_out_at" timestamp with time zone,
+  ADD COLUMN "time_zone" text NOT NULL,
+  ADD COLUMN "booking_reference" text,
+  ADD COLUMN "booking_provider" text,
+  ADD COLUMN "reservation_status" text DEFAULT 'planning'::text NOT NULL,
+  ADD COLUMN "phone" text,
+  ADD COLUMN "email" text,
+  ADD COLUMN "website_url" text,
+  ADD COLUMN "room_number" text,
+  ADD COLUMN "notes" text,
+  ADD COLUMN "created_by" uuid DEFAULT auth.uid(),
+  ADD COLUMN "updated_by" uuid,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "city" text,
+  ADD COLUMN "postal_code" text,
+  ADD COLUMN "region" text,
+  ADD COLUMN "country" text,
+  ADD COLUMN "check_in_completed_at" timestamp with time zone,
+  ADD COLUMN "check_out_completed_at" timestamp with time zone,
+  ADD COLUMN "check_in_date" date,
+  ADD COLUMN "check_out_date" date;
 
-CREATE TABLE "public"."trip_activities" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "title" text NOT NULL,
-  "activity_type" text DEFAULT 'other'::text NOT NULL,
-  "start_at" timestamp with time zone,
-  "end_at" timestamp with time zone,
-  "time_zone" text,
-  "venue_name" text,
-  "address" text,
-  "city" text,
-  "latitude" double precision,
-  "longitude" double precision,
-  "reservation_status" text DEFAULT 'planning'::text NOT NULL,
-  "booking_reference" text,
-  "provider" text,
-  "contact_phone" text,
-  "contact_email" text,
-  "website_url" text,
-  "people_count" integer,
-  "amount" numeric(12,2),
-  "currency" text,
-  "notes" text,
-  "created_by" uuid DEFAULT auth.uid(),
-  "updated_by" uuid,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "completed_at" timestamp with time zone,
-  "transport_mode" text,
-  "transport_origin_name" text,
-  "transport_origin_address" text,
-  "transport_origin_city" text,
-  "transport_destination_name" text,
-  "transport_destination_address" text,
-  "transport_destination_city" text,
-  "transport_arrival_time_zone" text,
-  "transport_service_number" text,
-  "transport_seat" text,
-  "transport_platform" text
-);
+ALTER TABLE "public"."trip_activities"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "title" text NOT NULL,
+  ADD COLUMN "activity_type" text DEFAULT 'other'::text NOT NULL,
+  ADD COLUMN "start_at" timestamp with time zone,
+  ADD COLUMN "end_at" timestamp with time zone,
+  ADD COLUMN "time_zone" text,
+  ADD COLUMN "venue_name" text,
+  ADD COLUMN "address" text,
+  ADD COLUMN "city" text,
+  ADD COLUMN "latitude" double precision,
+  ADD COLUMN "longitude" double precision,
+  ADD COLUMN "reservation_status" text DEFAULT 'planning'::text NOT NULL,
+  ADD COLUMN "booking_reference" text,
+  ADD COLUMN "provider" text,
+  ADD COLUMN "contact_phone" text,
+  ADD COLUMN "contact_email" text,
+  ADD COLUMN "website_url" text,
+  ADD COLUMN "people_count" integer,
+  ADD COLUMN "amount" numeric(12,2),
+  ADD COLUMN "currency" text,
+  ADD COLUMN "notes" text,
+  ADD COLUMN "created_by" uuid DEFAULT auth.uid(),
+  ADD COLUMN "updated_by" uuid,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "completed_at" timestamp with time zone,
+  ADD COLUMN "transport_mode" text,
+  ADD COLUMN "transport_origin_name" text,
+  ADD COLUMN "transport_origin_address" text,
+  ADD COLUMN "transport_origin_city" text,
+  ADD COLUMN "transport_destination_name" text,
+  ADD COLUMN "transport_destination_address" text,
+  ADD COLUMN "transport_destination_city" text,
+  ADD COLUMN "transport_arrival_time_zone" text,
+  ADD COLUMN "transport_service_number" text,
+  ADD COLUMN "transport_seat" text,
+  ADD COLUMN "transport_platform" text;
 
-CREATE TABLE "public"."trip_activity_documents" (
-  "trip_id" uuid NOT NULL,
-  "activity_id" uuid NOT NULL,
-  "document_id" uuid NOT NULL,
-  "document_role" text NOT NULL,
-  "created_by" uuid DEFAULT auth.uid(),
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_activity_documents"
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "activity_id" uuid NOT NULL,
+  ADD COLUMN "document_id" uuid NOT NULL,
+  ADD COLUMN "document_role" text NOT NULL,
+  ADD COLUMN "created_by" uuid DEFAULT auth.uid(),
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_brief_operations" (
-  "owner_id" uuid NOT NULL,
-  "operation_id" uuid NOT NULL,
-  "brief_id" uuid NOT NULL,
-  "request" jsonb NOT NULL,
-  "applied_revision" bigint NOT NULL,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL
-);
+ALTER TABLE "public"."trip_brief_operations"
+  ADD COLUMN "owner_id" uuid NOT NULL,
+  ADD COLUMN "operation_id" uuid NOT NULL,
+  ADD COLUMN "brief_id" uuid NOT NULL,
+  ADD COLUMN "request" jsonb NOT NULL,
+  ADD COLUMN "applied_revision" bigint NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL;
 
-CREATE TABLE "public"."trip_briefs" (
-  "id" uuid NOT NULL,
-  "owner_id" uuid NOT NULL,
-  "schema_version" integer DEFAULT 1 NOT NULL,
-  "revision" bigint DEFAULT 1 NOT NULL,
-  "trip_id" uuid,
-  "document" jsonb NOT NULL,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL
-);
+ALTER TABLE "public"."trip_briefs"
+  ADD COLUMN "id" uuid NOT NULL,
+  ADD COLUMN "owner_id" uuid NOT NULL,
+  ADD COLUMN "schema_version" integer DEFAULT 1 NOT NULL,
+  ADD COLUMN "revision" bigint DEFAULT 1 NOT NULL,
+  ADD COLUMN "trip_id" uuid,
+  ADD COLUMN "document" jsonb NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL;
 
-CREATE TABLE "public"."trip_budget_setting_operations" (
-  "actor_id" uuid NOT NULL,
-  "operation_id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "request" jsonb NOT NULL,
-  "result_revision" bigint NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_budget_setting_operations"
+  ADD COLUMN "actor_id" uuid NOT NULL,
+  ADD COLUMN "operation_id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "request" jsonb NOT NULL,
+  ADD COLUMN "result_revision" bigint NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_budget_settings" (
-  "trip_id" uuid NOT NULL,
-  "target_amount" numeric(14,2),
-  "maximum_amount" numeric(14,2),
-  "currency" text,
-  "revision" bigint DEFAULT 1 NOT NULL,
-  "updated_by" uuid NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_budget_settings"
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "target_amount" numeric(14,2),
+  ADD COLUMN "maximum_amount" numeric(14,2),
+  ADD COLUMN "currency" text,
+  ADD COLUMN "revision" bigint DEFAULT 1 NOT NULL,
+  ADD COLUMN "updated_by" uuid NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_car_rental_documents" (
-  "trip_id" uuid NOT NULL,
-  "car_rental_id" uuid NOT NULL,
-  "document_id" uuid NOT NULL,
-  "document_role" text NOT NULL,
-  "created_by" uuid DEFAULT auth.uid(),
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_car_rental_documents"
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "car_rental_id" uuid NOT NULL,
+  ADD COLUMN "document_id" uuid NOT NULL,
+  ADD COLUMN "document_role" text NOT NULL,
+  ADD COLUMN "created_by" uuid DEFAULT auth.uid(),
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_car_rentals" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "provider" text,
-  "booking_reference" text,
-  "pickup_location" text,
-  "pickup_city" text,
-  "pickup_at" timestamp with time zone,
-  "pickup_time_zone" text,
-  "return_location" text,
-  "return_city" text,
-  "return_at" timestamp with time zone,
-  "return_time_zone" text,
-  "vehicle_class" text,
-  "vehicle_model" text,
-  "license_plate" text,
-  "transmission" text,
-  "fuel_policy" text,
-  "pickup_fuel_level" text,
-  "return_fuel_level" text,
-  "pickup_mileage" integer,
-  "return_mileage" integer,
-  "insurance" text,
-  "excess_amount" numeric(12,2),
-  "excess_currency" text,
-  "deposit_amount" numeric(12,2),
-  "deposit_currency" text,
-  "phone" text,
-  "email" text,
-  "website_url" text,
-  "reservation_status" text DEFAULT 'planning'::text NOT NULL,
-  "notes" text,
-  "created_by" uuid DEFAULT auth.uid(),
-  "updated_by" uuid,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_car_rentals"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "provider" text,
+  ADD COLUMN "booking_reference" text,
+  ADD COLUMN "pickup_location" text,
+  ADD COLUMN "pickup_city" text,
+  ADD COLUMN "pickup_at" timestamp with time zone,
+  ADD COLUMN "pickup_time_zone" text,
+  ADD COLUMN "return_location" text,
+  ADD COLUMN "return_city" text,
+  ADD COLUMN "return_at" timestamp with time zone,
+  ADD COLUMN "return_time_zone" text,
+  ADD COLUMN "vehicle_class" text,
+  ADD COLUMN "vehicle_model" text,
+  ADD COLUMN "license_plate" text,
+  ADD COLUMN "transmission" text,
+  ADD COLUMN "fuel_policy" text,
+  ADD COLUMN "pickup_fuel_level" text,
+  ADD COLUMN "return_fuel_level" text,
+  ADD COLUMN "pickup_mileage" integer,
+  ADD COLUMN "return_mileage" integer,
+  ADD COLUMN "insurance" text,
+  ADD COLUMN "excess_amount" numeric(12,2),
+  ADD COLUMN "excess_currency" text,
+  ADD COLUMN "deposit_amount" numeric(12,2),
+  ADD COLUMN "deposit_currency" text,
+  ADD COLUMN "phone" text,
+  ADD COLUMN "email" text,
+  ADD COLUMN "website_url" text,
+  ADD COLUMN "reservation_status" text DEFAULT 'planning'::text NOT NULL,
+  ADD COLUMN "notes" text,
+  ADD COLUMN "created_by" uuid DEFAULT auth.uid(),
+  ADD COLUMN "updated_by" uuid,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_component_confirmation_operations" (
-  "actor_id" uuid NOT NULL,
-  "operation_id" uuid NOT NULL,
-  "handoff_id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "component_id" text NOT NULL,
-  "source_kind" text NOT NULL,
-  "source_id" uuid NOT NULL,
-  "confirmation_source" text DEFAULT 'user_manual'::text NOT NULL,
-  "evidence_document_id" uuid,
-  "evidence_role" text,
-  "request" jsonb NOT NULL,
-  "confirmed_at" timestamp with time zone DEFAULT statement_timestamp() NOT NULL
-);
+ALTER TABLE "public"."trip_component_confirmation_operations"
+  ADD COLUMN "actor_id" uuid NOT NULL,
+  ADD COLUMN "operation_id" uuid NOT NULL,
+  ADD COLUMN "handoff_id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "component_id" text NOT NULL,
+  ADD COLUMN "source_kind" text NOT NULL,
+  ADD COLUMN "source_id" uuid NOT NULL,
+  ADD COLUMN "confirmation_source" text DEFAULT 'user_manual'::text NOT NULL,
+  ADD COLUMN "evidence_document_id" uuid,
+  ADD COLUMN "evidence_role" text,
+  ADD COLUMN "request" jsonb NOT NULL,
+  ADD COLUMN "confirmed_at" timestamp with time zone DEFAULT statement_timestamp() NOT NULL;
 
-CREATE TABLE "public"."trip_component_cost_operations" (
-  "actor_id" uuid NOT NULL,
-  "operation_id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "component_id" text NOT NULL,
-  "request" jsonb NOT NULL,
-  "result_revision" bigint NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_component_cost_operations"
+  ADD COLUMN "actor_id" uuid NOT NULL,
+  ADD COLUMN "operation_id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "component_id" text NOT NULL,
+  ADD COLUMN "request" jsonb NOT NULL,
+  ADD COLUMN "result_revision" bigint NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_component_costs" (
-  "trip_id" uuid NOT NULL,
-  "component_id" text NOT NULL,
-  "handoff_id" uuid,
-  "source_kind" text NOT NULL,
-  "source_id" uuid NOT NULL,
-  "expected_amount" numeric(14,2),
-  "confirmed_amount" numeric(14,2),
-  "currency" text,
-  "expected_quality" text DEFAULT 'unknown'::text NOT NULL,
-  "verified_at" timestamp with time zone,
-  "confirmed_at" timestamp with time zone,
-  "scope" jsonb DEFAULT '{}'::jsonb NOT NULL,
-  "unknown_required_costs" jsonb DEFAULT '[]'::jsonb NOT NULL,
-  "excluded_costs" jsonb DEFAULT '[]'::jsonb NOT NULL,
-  "evidence_document_id" uuid,
-  "revision" bigint DEFAULT 1 NOT NULL,
-  "updated_by" uuid NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_component_costs"
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "component_id" text NOT NULL,
+  ADD COLUMN "handoff_id" uuid,
+  ADD COLUMN "source_kind" text NOT NULL,
+  ADD COLUMN "source_id" uuid NOT NULL,
+  ADD COLUMN "expected_amount" numeric(14,2),
+  ADD COLUMN "confirmed_amount" numeric(14,2),
+  ADD COLUMN "currency" text,
+  ADD COLUMN "expected_quality" text DEFAULT 'unknown'::text NOT NULL,
+  ADD COLUMN "verified_at" timestamp with time zone,
+  ADD COLUMN "confirmed_at" timestamp with time zone,
+  ADD COLUMN "scope" jsonb DEFAULT '{}'::jsonb NOT NULL,
+  ADD COLUMN "unknown_required_costs" jsonb DEFAULT '[]'::jsonb NOT NULL,
+  ADD COLUMN "excluded_costs" jsonb DEFAULT '[]'::jsonb NOT NULL,
+  ADD COLUMN "evidence_document_id" uuid,
+  ADD COLUMN "revision" bigint DEFAULT 1 NOT NULL,
+  ADD COLUMN "updated_by" uuid NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_day_metadata" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "local_date" date NOT NULL,
-  "title" text,
-  "summary" text,
-  "created_by" uuid DEFAULT auth.uid(),
-  "updated_by" uuid,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_day_metadata"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "local_date" date NOT NULL,
+  ADD COLUMN "title" text,
+  ADD COLUMN "summary" text,
+  ADD COLUMN "created_by" uuid DEFAULT auth.uid(),
+  ADD COLUMN "updated_by" uuid,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_flight_documents" (
-  "trip_id" uuid NOT NULL,
-  "flight_id" uuid NOT NULL,
-  "document_id" uuid NOT NULL,
-  "document_role" text NOT NULL,
-  "created_by" uuid DEFAULT auth.uid(),
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_flight_documents"
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "flight_id" uuid NOT NULL,
+  ADD COLUMN "document_id" uuid NOT NULL,
+  ADD COLUMN "document_role" text NOT NULL,
+  ADD COLUMN "created_by" uuid DEFAULT auth.uid(),
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_flight_traveler_documents" (
-  "trip_id" uuid NOT NULL,
-  "flight_id" uuid NOT NULL,
-  "traveler_id" uuid NOT NULL,
-  "document_id" uuid NOT NULL,
-  "document_role" text DEFAULT 'boarding_pass'::text NOT NULL,
-  "created_by" uuid DEFAULT auth.uid(),
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_flight_traveler_documents"
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "flight_id" uuid NOT NULL,
+  ADD COLUMN "traveler_id" uuid NOT NULL,
+  ADD COLUMN "document_id" uuid NOT NULL,
+  ADD COLUMN "document_role" text DEFAULT 'boarding_pass'::text NOT NULL,
+  ADD COLUMN "created_by" uuid DEFAULT auth.uid(),
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_flight_travelers" (
-  "trip_id" uuid NOT NULL,
-  "flight_id" uuid NOT NULL,
-  "traveler_id" uuid NOT NULL,
-  "seat" text,
-  "created_by" uuid DEFAULT auth.uid(),
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_flight_travelers"
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "flight_id" uuid NOT NULL,
+  ADD COLUMN "traveler_id" uuid NOT NULL,
+  ADD COLUMN "seat" text,
+  ADD COLUMN "created_by" uuid DEFAULT auth.uid(),
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_flights" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "airline" text,
-  "flight_number" text,
-  "departure_airport_code" text,
-  "departure_airport_name" text,
-  "departure_city" text,
-  "departure_at" timestamp with time zone,
-  "departure_time_zone" text,
-  "arrival_airport_code" text,
-  "arrival_airport_name" text,
-  "arrival_city" text,
-  "arrival_at" timestamp with time zone,
-  "arrival_time_zone" text,
-  "booking_reference" text,
-  "departure_terminal" text,
-  "arrival_terminal" text,
-  "seat" text,
-  "baggage" text,
-  "flight_status" text DEFAULT 'planning'::text NOT NULL,
-  "notes" text,
-  "created_by" uuid DEFAULT auth.uid(),
-  "updated_by" uuid,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "completed_at" timestamp with time zone,
-  "passengers" text
-);
+ALTER TABLE "public"."trip_flights"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "airline" text,
+  ADD COLUMN "flight_number" text,
+  ADD COLUMN "departure_airport_code" text,
+  ADD COLUMN "departure_airport_name" text,
+  ADD COLUMN "departure_city" text,
+  ADD COLUMN "departure_at" timestamp with time zone,
+  ADD COLUMN "departure_time_zone" text,
+  ADD COLUMN "arrival_airport_code" text,
+  ADD COLUMN "arrival_airport_name" text,
+  ADD COLUMN "arrival_city" text,
+  ADD COLUMN "arrival_at" timestamp with time zone,
+  ADD COLUMN "arrival_time_zone" text,
+  ADD COLUMN "booking_reference" text,
+  ADD COLUMN "departure_terminal" text,
+  ADD COLUMN "arrival_terminal" text,
+  ADD COLUMN "seat" text,
+  ADD COLUMN "baggage" text,
+  ADD COLUMN "flight_status" text DEFAULT 'planning'::text NOT NULL,
+  ADD COLUMN "notes" text,
+  ADD COLUMN "created_by" uuid DEFAULT auth.uid(),
+  ADD COLUMN "updated_by" uuid,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "completed_at" timestamp with time zone,
+  ADD COLUMN "passengers" text;
 
-CREATE TABLE "public"."trip_handoff_operations" (
-  "owner_id" uuid NOT NULL,
-  "operation_id" uuid NOT NULL,
-  "handoff_id" uuid NOT NULL,
-  "request" jsonb NOT NULL,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL
-);
+ALTER TABLE "public"."trip_handoff_operations"
+  ADD COLUMN "owner_id" uuid NOT NULL,
+  ADD COLUMN "operation_id" uuid NOT NULL,
+  ADD COLUMN "handoff_id" uuid NOT NULL,
+  ADD COLUMN "request" jsonb NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL;
 
-CREATE TABLE "public"."trip_itinerary_items" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "title" text NOT NULL,
-  "timing_kind" text NOT NULL,
-  "local_date" date,
-  "starts_at" timestamp with time zone,
-  "ends_at" timestamp with time zone,
-  "time_zone" text,
-  "daypart" text,
-  "location_name" text,
-  "address" text,
-  "city" text,
-  "notes" text,
-  "status" text DEFAULT 'planned'::text NOT NULL,
-  "is_fixed" boolean DEFAULT false NOT NULL,
-  "is_optional" boolean DEFAULT false NOT NULL,
-  "sort_order" integer DEFAULT 0 NOT NULL,
-  "created_by" uuid DEFAULT auth.uid(),
-  "updated_by" uuid,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "approximate_start_time" time without time zone,
-  "approximate_end_time" time without time zone
-);
+ALTER TABLE "public"."trip_itinerary_items"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "title" text NOT NULL,
+  ADD COLUMN "timing_kind" text NOT NULL,
+  ADD COLUMN "local_date" date,
+  ADD COLUMN "starts_at" timestamp with time zone,
+  ADD COLUMN "ends_at" timestamp with time zone,
+  ADD COLUMN "time_zone" text,
+  ADD COLUMN "daypart" text,
+  ADD COLUMN "location_name" text,
+  ADD COLUMN "address" text,
+  ADD COLUMN "city" text,
+  ADD COLUMN "notes" text,
+  ADD COLUMN "status" text DEFAULT 'planned'::text NOT NULL,
+  ADD COLUMN "is_fixed" boolean DEFAULT false NOT NULL,
+  ADD COLUMN "is_optional" boolean DEFAULT false NOT NULL,
+  ADD COLUMN "sort_order" integer DEFAULT 0 NOT NULL,
+  ADD COLUMN "created_by" uuid DEFAULT auth.uid(),
+  ADD COLUMN "updated_by" uuid,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "approximate_start_time" time without time zone,
+  ADD COLUMN "approximate_end_time" time without time zone;
 
-CREATE TABLE "public"."trip_members" (
-  "trip_id" uuid NOT NULL,
-  "user_id" uuid NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_members"
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "user_id" uuid NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_photo_metadata" (
-  "document_id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "local_date" date,
-  "activity_id" uuid,
-  "itinerary_item_id" uuid,
-  "upload_batch_id" uuid,
-  "selection_index" integer,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
-  "updated_by" uuid
-);
+ALTER TABLE "public"."trip_photo_metadata"
+  ADD COLUMN "document_id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "local_date" date,
+  ADD COLUMN "activity_id" uuid,
+  ADD COLUMN "itinerary_item_id" uuid,
+  ADD COLUMN "upload_batch_id" uuid,
+  ADD COLUMN "selection_index" integer,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  ADD COLUMN "updated_by" uuid;
 
-CREATE TABLE "public"."trip_place_snapshots" (
-  "handoff_id" uuid NOT NULL,
-  "principal_binding_id" uuid NOT NULL,
-  "bindings" jsonb NOT NULL
-);
+ALTER TABLE "public"."trip_place_snapshots"
+  ADD COLUMN "handoff_id" uuid NOT NULL,
+  ADD COLUMN "principal_binding_id" uuid NOT NULL,
+  ADD COLUMN "bindings" jsonb NOT NULL;
 
-CREATE TABLE "public"."trip_proposal_component_links" (
-  "handoff_id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "component_id" text NOT NULL,
-  "accommodation_id" uuid,
-  "flight_id" uuid,
-  "activity_id" uuid
-);
+ALTER TABLE "public"."trip_proposal_component_links"
+  ADD COLUMN "handoff_id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "component_id" text NOT NULL,
+  ADD COLUMN "accommodation_id" uuid,
+  ADD COLUMN "flight_id" uuid,
+  ADD COLUMN "activity_id" uuid;
 
-CREATE TABLE "public"."trip_proposal_handoffs" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "owner_id" uuid NOT NULL,
-  "brief_id" uuid NOT NULL,
-  "brief_revision" bigint NOT NULL,
-  "proposal_id" uuid NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "snapshot_hash" text NOT NULL,
-  "mapping_version" integer DEFAULT 1 NOT NULL,
-  "request" jsonb NOT NULL,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL
-);
+ALTER TABLE "public"."trip_proposal_handoffs"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "owner_id" uuid NOT NULL,
+  ADD COLUMN "brief_id" uuid NOT NULL,
+  ADD COLUMN "brief_revision" bigint NOT NULL,
+  ADD COLUMN "proposal_id" uuid NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "snapshot_hash" text NOT NULL,
+  ADD COLUMN "mapping_version" integer DEFAULT 1 NOT NULL,
+  ADD COLUMN "request" jsonb NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL;
 
-CREATE TABLE "public"."trip_proposals" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "generation_id" uuid NOT NULL,
-  "position" smallint NOT NULL,
-  "schema_version" integer DEFAULT 1 NOT NULL,
-  "fingerprint" text NOT NULL,
-  "document" jsonb NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_proposals"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "generation_id" uuid NOT NULL,
+  ADD COLUMN "position" smallint NOT NULL,
+  ADD COLUMN "schema_version" integer DEFAULT 1 NOT NULL,
+  ADD COLUMN "fingerprint" text NOT NULL,
+  ADD COLUMN "document" jsonb NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_reminders" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "source_kind" text NOT NULL,
-  "source_id" uuid NOT NULL,
-  "reminder_kind" text NOT NULL,
-  "title" text NOT NULL,
-  "event_at" timestamp with time zone NOT NULL,
-  "default_notify_before_minutes" integer NOT NULL,
-  "scheduled_for" timestamp with time zone NOT NULL,
-  "enabled" boolean DEFAULT true NOT NULL,
-  "source_updated_at" timestamp with time zone NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_reminders"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "source_kind" text NOT NULL,
+  ADD COLUMN "source_id" uuid NOT NULL,
+  ADD COLUMN "reminder_kind" text NOT NULL,
+  ADD COLUMN "title" text NOT NULL,
+  ADD COLUMN "event_at" timestamp with time zone NOT NULL,
+  ADD COLUMN "default_notify_before_minutes" integer NOT NULL,
+  ADD COLUMN "scheduled_for" timestamp with time zone NOT NULL,
+  ADD COLUMN "enabled" boolean DEFAULT true NOT NULL,
+  ADD COLUMN "source_updated_at" timestamp with time zone NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_standalone_component_links" (
-  "trip_id" uuid NOT NULL,
-  "component_id" text NOT NULL,
-  "source_kind" text NOT NULL,
-  "source_id" uuid NOT NULL,
-  "created_by" uuid NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_standalone_component_links"
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "component_id" text NOT NULL,
+  ADD COLUMN "source_kind" text NOT NULL,
+  ADD COLUMN "source_id" uuid NOT NULL,
+  ADD COLUMN "created_by" uuid NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trip_stops" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "position" integer NOT NULL,
-  "label" text NOT NULL,
-  "canonical_name" text NOT NULL,
-  "administrative_area" text,
-  "country_code" text,
-  "latitude" double precision NOT NULL,
-  "longitude" double precision NOT NULL,
-  "time_zone" text NOT NULL,
-  "provider" text NOT NULL,
-  "provider_place_id" text NOT NULL,
-  "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL
-);
+ALTER TABLE "public"."trip_stops"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "position" integer NOT NULL,
+  ADD COLUMN "label" text NOT NULL,
+  ADD COLUMN "canonical_name" text NOT NULL,
+  ADD COLUMN "administrative_area" text,
+  ADD COLUMN "country_code" text,
+  ADD COLUMN "latitude" double precision NOT NULL,
+  ADD COLUMN "longitude" double precision NOT NULL,
+  ADD COLUMN "time_zone" text NOT NULL,
+  ADD COLUMN "provider" text NOT NULL,
+  ADD COLUMN "provider_place_id" text NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT clock_timestamp() NOT NULL;
 
-CREATE TABLE "public"."trip_travelers" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "trip_id" uuid NOT NULL,
-  "display_name" text NOT NULL,
-  "created_by" uuid DEFAULT auth.uid(),
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+ALTER TABLE "public"."trip_travelers"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "trip_id" uuid NOT NULL,
+  ADD COLUMN "display_name" text NOT NULL,
+  ADD COLUMN "created_by" uuid DEFAULT auth.uid(),
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 
-CREATE TABLE "public"."trips" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "name" text NOT NULL,
-  "invite_code" text DEFAULT upper(substr(encode(gen_random_bytes(8), 'hex'::text), 1, 10)) NOT NULL,
-  "owner_id" uuid NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  "time_zone" text,
-  "start_date" date,
-  "end_date" date,
-  "experience_key" text,
-  "discarded_at" timestamp with time zone,
-  "discarded_by" uuid
-);
+ALTER TABLE "public"."trips"
+  ADD COLUMN "id" uuid DEFAULT gen_random_uuid() NOT NULL,
+  ADD COLUMN "name" text NOT NULL,
+  ADD COLUMN "invite_code" text DEFAULT upper(substr(encode(gen_random_bytes(8), 'hex'::text), 1, 10)) NOT NULL,
+  ADD COLUMN "owner_id" uuid NOT NULL,
+  ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  ADD COLUMN "time_zone" text,
+  ADD COLUMN "start_date" date,
+  ADD COLUMN "end_date" date,
+  ADD COLUMN "experience_key" text,
+  ADD COLUMN "discarded_at" timestamp with time zone,
+  ADD COLUMN "discarded_by" uuid;
 
 ALTER TABLE "app_private"."alb03_ingestions" ADD CONSTRAINT "alb03_ingestions_pkey" PRIMARY KEY (id);
 
