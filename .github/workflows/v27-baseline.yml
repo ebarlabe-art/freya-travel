@@ -69,6 +69,7 @@ jobs:
         run: |
           psql 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' -Xq -v ON_ERROR_STOP=1 -f validation/v27/sql/04-v27.sql
           psql 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' -Xq -v ON_ERROR_STOP=1 -f validation/v27/sql/05-assert-empty-and-secured.sql
+          psql 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' -Xq -v ON_ERROR_STOP=1 -f validation/v27/sql/06-validation-permissions.sql
           python3 validation/v27/security.py "$RUNNER_TEMP/v27-local-keys.json"
       - name: Rebuild a second clean database in the same ephemeral stack
         run: |
