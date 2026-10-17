@@ -1,91 +1,34 @@
-# V27 — preparació de la validació real
+# V27 — estat per publicar a Freya Travel pública
 
-> **Actualització 17/10/2026: verificació tècnica completa PASS.** Baseline completa restaurada dues vegades amb Docker i Supabase CLI en runner públic gratuït; 62 taules, 116 funcions, RLS/Storage/ACL, migració v27 i build aïllat verificats. [Informe final i limitacions](../validation/v27/REPORT.md) · [CI SUCCESS](https://github.com/ebarlabe-art/freya-travel/actions/runs/39032720416). Ja podem passar a l'autorització de Supabase Pro; cap recurs contractat/desplegat ni PR #147 fusionada. El contingut següent conserva la preparació i l'estat anterior; l'informe final actualitza les verificacions pendents i substitueix el bootstrap candidat.
+Revisió: 17/10/2026. Objectiu: Bolonya, 23/10/2026.
+**Publicació bloquejada per còpia de dades i recuperació encara no acreditades.**
+Cap migració, desplegament, fusió ni canvi de dades remot executat.
 
-Estat a 16/10/2026: **pendent d'autoritzar recursos; cap URL de v27 amb backend aïllat activa**. PR #147 en esborrany, branca `fix/automatic-itinerary-places-v27`; no fusionar ni publicar a main. Cap migració, dada remota, secret ni desplegament modificats en aquesta revisió.
+| Comprovació | Resultat i límit |
+|---|---|
+| Esquema públic actual | PASS: 62 taules, 116 funcions, 55 taules públiques amb RLS; les dues columnes, funció, constraints i triggers v27 encara no existeixen. |
+| Compatibilitat additiva | PASS de revisió de catàleg i execució prèvia local. Dues taules petites (96/128 KiB, estimacions de 15/64 files); no backfill, substitució de dades ni polítiques noves. Aplicació real pendent d'autorització. |
+| Build i regressions | PASS anteriors: [PR checks 39032722155](https://github.com/ebarlabe-art/freya-travel/actions/runs/39032722155), inclou build públic, Chromium/WebKit, reserves, documents, PDF/rutes i migració. Les comprovacions addicionals d'aquesta revisió s'indicaran al final. |
+| Supabase local real | PASS anterior: [39032720416](https://github.com/ebarlabe-art/freya-travel/actions/runs/39032720416): restauració, Auth, RLS, concurrència i PDF a Storage amb usuaris sintètics. No és prova de la pública. |
+| Edge Functions actuals | PASS: quatre ACTIVE i verify_jwt=true. Comparació de fonts: import-reservation v5 és idèntica; cal actualitzar import-itinerary v6, place-resolution v1 i itinerary-route v1. |
+| Codi per recuperar Edge | PASS: quatre fonts desplegades guardades localment amb versions, verify_jwt i SHA256 per fitxer. No inclou secrets ni acredita una restauració desplegada. |
+| Frontend per recuperar | Commit publicat d7fee2f307b80bc621392465da67b6a5a6a6a182, desplegament correcte 38813083232. Artefacte ja no disponible; s'afegeix reconstrucció del commit anterior al CI existent. No s'ha publicat una reversió. |
+| Còpia de base de dades | BLOQUEJAT: no s'ha aportat una còpia recent amb recuperació acreditada; organització Free, no pressuposem backup diari. Sense connexió PostgreSQL configurada ni eina de backup al connector. |
+| Login, viatges i documents públics | PENDENT amb compte autoritzat al dispositiu; no s'han llegit files personals ni utilitzat sessions de producció. |
+| PDF real de Bolonya / iPhone físic | PENDENT: document i dispositiu no disponibles en aquesta execució. OCR/proveïdor real, geocodificació i rutes reals encara no acreditats. |
 
-## Evidència de CI i revisió
+## Què queda exactament
 
-CI inicial del head `92dc78221c59791c4f12e47ccbe7e5014d000b8f`: [run 38927497306](https://github.com/ebarlabe-art/freya-travel/actions/runs/38927497306).
+1. Obtenir i custodiar una còpia consistent recent; verificar que es pot recuperar. Vegeu [procediment](v27-production-release.md). La còpia d'esquema anterior no conté dades i no substitueix aquest requisit.
+2. Confirmar pressupost/quotes disponibles dels proveïdors existents i presència de les variables requerides, sense llegir-ne ni compartir-ne valors.
+3. Comprovar login i lectura dels viatges/documents existents des del compte de l'usuari, sense alterar-los; tancar els checks de la branca.
+4. Només llavors, autorització expressa per a UNA migració, TRES funcions i frontend públic. No fer merge abans: main publica automàticament.
+5. Després de publicar, prova curta amb reserva/PDF controlats i PDF real de Bolonya a Safari i PWA. Aturar i revertir si hi ha regressió.
 
-| Job | Resultat inicial | Abast |
-| --- | --- | --- |
-| a2-test-build | PASS | Build, PDF/llocs/rutes, Chromium, WebKit, PWA, permisos/migració Postgres embegut, viatges compartits |
-| legacy-suite | PASS | Suite completa; job informatiu amb `continue-on-error` |
-| shared-trip-contracts | PASS | Membres, invitacions, RLS i concurrència sobre Postgres local |
-| alb03-contracts | PASS | Contractes, imatges, Deno i Postgres |
-| alb02-contracts | FAIL infraestructura | 46 contractes JS PASS; descàrrega d'imatge ECR rebutjada quatre vegades per `toomanyrequests: Data limit exceeded`. DB i paritat posteriors no executades |
+## Termini, risc i decisió
 
-Correcció a la mateixa branca: `ci-postgres.sh` prova també `docker.io/supabase/postgres:17.6.1.165` quan falla el registre ECR predeterminat. Mateix editor i versió; no es substitueix per Postgres genèric ni se salten comprovacions. Una imatge explícita del caller no té fallback silenciós. Test local simula quota, selecció del mirror i fallada tancada; la nova CI ha de validar el contenidor real. La disponibilitat del tag del publisher s'ha comprovat al registre Docker Hub.
+Un cop disponible la còpia verificada i resolts els accessos: estimació de 2–4 hores de feina efectiva per tancar comprovacions, publicar amb autorització i fer la prova física. No és una data garantida; depèn de la còpia, credencials configurades de manera segura, dispositiu i disponibilitat de l'usuari. És raonable completar-ho abans del 23/10 si aquests requisits es resolen aviat; objectiu de prova el mateix dia i marge fins al 22/10 per incidències.
 
-La [nova execució 38929155923](https://github.com/ebarlabe-art/freya-travel/actions/runs/38929155923) del commit `567b9be` ja ha passat ALB-02 amb DB real, ALB-03, shared-trip i legacy-suite. Ha descobert una cursa al navegador: després d'editar el marge, un `toggle` asíncron d'un desplegable substituït podia tancar les opcions del trajecte. Correcció posterior a la mateixa branca: capturar `details.open` abans de redibuixar i ignorar esdeveniments dels nodes desconnectats. La prova de navegador exigeix explícitament que les opcions continuïn obertes després de modificar marge i mode; no s'usa `force`, reintents globals ni es relaxen les comprovacions. Cal consultar la CI del head més recent per al resultat definitiu.
+Risc de migració baix pel canvi nullable sense backfill; existeix un bloqueig breu de les dues taules, limitat per lock_timeout. Risc funcional moderat per extracció del PDF, disponibilitat/quotes externes i actualització PWA. Les coincidències dubtoses han de quedar pendents i els horaris/reserves no s'han de reescriure. Risc de recuperació inacceptable mentre no hi hagi còpia comprovada. No cal Pro, projecte nou, Cloudflare ni servei nou. Els proveïdors existents poden consumir crèdits/quotes amb les proves reals; no s'han fet peticions facturables ara.
 
-La revisió dels contractes v27 confirma migració additiva sense backfill, invalidació del snapshot en corregir el lloc, i lectures de rutes amb JWT d'usuari i filtre de viatge. Això no acredita encara compatibilitat amb la baseline remota, OCR real, resposta real de Geoapify ni iPhone físic.
-
-Verificació local d'aquesta preparació: `npm run prebuild`, `npm test` (**728 PASS**), `npm run entries:check`, `npm run build` i build de validació amb configuració fictícia correctes. Els tres contractes nous cobreixen rebuig de configuracions protegides/privilegiades, transformació i restricció de xarxa, i fallback de registre sense alterar overrides. No s'ha executat aquí un contenidor Postgres real; el resultat de la nova CI és l'evidència necessària per tancar ALB-02.
-
-## Inventari remot observat, només lectura
-
-| Recurs | Estat observat | Decisió |
-| --- | --- | --- |
-| Supabase `otueskpksylzvkhldoft` / Londres-2026 | ACTIVE_HEALTHY; endpoint fixat a l'entrada pública | Protegit; no usar ni migrar |
-| Supabase `waatqrqyddurultrazbn` / Freya Travel PROVES | ACTIVE_HEALTHY | Protegit per instrucció de l'usuari; no reutilitzar |
-| Branques Supabase dels dos projectes | Llistes buides | No s'ha descobert cap backend alternatiu |
-| Railway `freya-travel-offline-v2-preview`, entorn `preview` | Servei `freya-offline-v2-iphone-preview`, desplegament SUCCESS `afbb8636-3bbd-46ae-8acc-b37f56e99e85`, pin `fd465144f1df3406f9f8ae3cfb1a6a7ba1b12354`, altra branca | No substituir: no és un entorn completament aïllat |
-| Railway `freya-travel-derivatives` | Servei `travel-book-derivatives`, entorn production | Worker protegit; exclòs de validació |
-
-La URL existent `https://freya-offline-v2-iphone-preview-preview.up.railway.app` **no és la URL de validació v27**. Un GET de l'HTML ha confirmat `otueskpksylzvkhldoft` i el worker de producció. Les cinc variables del servei inclouen `FREYA_BACKEND_ENV` i `FREYA_STAGING_SUPABASE_*`, però el build/HTML no les aplica. Noms de variables i estat SUCCESS no demostren aïllament. No s'ha iniciat sessió ni carregat cap viatge en aquesta URL.
-
-No s'ha identificat un recurs remot separat amb nom Freya Nova ni autorització per alterar-lo. La connexió de les eines permet inventariar recursos, però això no autoritza crear-los ni reutilitzar-los contra la instrucció de l'usuari.
-
-## Pla concret després de l'autorització
-
-1. Crear **un projecte Supabase independent** `freya-v27-validation`, preferiblement a `eu-central-1`. Cal confirmar organització i cost abans de crear-lo. Organització accessible dels projectes observats: `yhzulltddpihkjyzxkcd`; pendent de selecció expressa de l'usuari. No restaurar dades, usuaris, objectes, secrets, Vault, cron ni webhooks de producció.
-2. Preparar una baseline només d'esquema revisada: taules `trips`, membres i permisos de viatge, `trip_stops`, `trip_itinerary_items`, `trip_activities`, `travel_documents`; RPCs invocats per creació/importació i resolució de llocs. Revisar funcions, triggers, grants, índexs, Realtime necessari i dependències `place_private`/`proposal_private`. L'historial del repositori **no reconstrueix tot el backend històric**; les baselines locals són contractes de test i no acrediten desplegabilitat completa. Si cal extreure DDL remot, només lectura d'esquema, amb revisió d'URLs/secrets i sense exportar files.
-3. No fer `db push` indiscriminat: `20260901144811_schedule_itinerary_notifications.sql` inclou un endpoint de producció. Excloure tots els jobs de notificació, callbacks, extensions amb automatismes i webhooks del provisionament. No activar correus/push programats. Cap credencial externa copiada de producció.
-4. Sobre la baseline buida, aplicar les dependències revisades i després `20261016153108_itinerary_resolved_location_v27.sql`. Verificar les dues columnes, triggers, RLS/grants, lectura i escriptura de propietari/membre, denegació d'un compte extern, revisions concurrents i eliminació. Comptar zero viatges abans de crear fixtures. Consultar advisors de seguretat abans d'obrir l'accés.
-5. Crear bucket privat `trip-documents` i les polítiques de pertinença al viatge; validar pujada/lectura/eliminació i denegació entre viatges. No copiar documents reals previs. Dos comptes de validació amb identitats pròpies i sense sessions de producció.
-6. Desplegar al **nou project ref explícit** `place-resolution`, `itinerary-route` i `import-itinerary`, amb imports locals i fitxers Deno de la mateixa revisió; afegir `import-reservation` si s'exercita la importació de reserves. Conservar la verificació JWT configurada i provar 401/403 sense sessió i amb un altre usuari. Comprovar compatibilitat de signing keys/JWT de l'entorn nou; no desactivar verificació per fer passar la prova.
-7. Secrets exclusius de validació: `GEOAPIFY_API_KEY` (geocodificació i Routing, quota/límit de despesa), `OPENAI_API_KEY` i `A2_IMPORT_MODEL` (o `TB04_CANDIDATE_MODEL` com a fallback existent). La funció PDF envia el document a OpenAI Responses amb `store:false`, màxim 10 MiB i 5.000 tokens de sortida per intent; pot repetir la lectura per recuperar dates. Autoritzar aquest consum i l'enviament del segon itinerari. Els secrets Supabase injectats han de pertànyer al projecte nou; `place-resolution` usa service role només al servidor per cache/quota, mentre importació i rutes consulten dades amb JWT/RLS de l'usuari. No cal worker de fotografies per provar PDF/llocs/rutes.
-8. Crear servei de hosting exclusiu `freya-v27-validation` amb HTTPS i pressupost aprovat. No tocar els dos projectes Railway existents. Desplegar només l'artefacte validat de la branca/SHA aprovada, sense seguiment de main ni auto-deploy de previews alienes. Configurar Auth Site URL i redirects exactes `https://<host-validacio>/freya-travel/`; no reutilitzar callbacks de producció. Registrar els IDs definitius al present document.
-9. Smoke test de login, Auth, Storage, PDF, Geoapify i RLS; revisar al navegador que totes les peticions de dades van al nou ref. Obrir HTTPS en Safari real, instal·lar PWA i completar els dos casos següents. Només llavors comunicar la URL com a apta per validar.
-
-## Build de validació preparat
-
-Després de `npm ci`, configurar **al build privat**:
-
-```text
-FREYA_VALIDATION_PROJECT_REF=<nou-ref-aprovat>
-FREYA_VALIDATION_SUPABASE_URL=https://<nou-ref-aprovat>.supabase.co
-FREYA_VALIDATION_PUBLISHABLE_KEY=<publishable-key-del-projecte-nou>
-```
-
-Executar `node scripts/build-v27-validation.mjs`. No posar secrets de servidor en aquestes variables. El script rebutja els dos refs protegits, URLs diferents del ref, absència de configuració, claus secretes/JWT i reutilització de la clau pública actual. Treballa en còpia temporal, genera 404 amb el mecanisme existent i executa el build normal. Escaneja tots els bytes de `dist` per detectar els refs/clau pública protegits, altres projectes Supabase i claus secretes; elimina tota la còpia si falla. No desplega ni contacta els serveis de dades.
-
-La sortida indica un directori temporal `…/site`; publicar **aquest directori** com a arrel estàtica. L'app hi queda a `/freya-travel/` i preserva registre/abast del service worker i les entrades històriques. `validation.json` identifica release i project ref, sense claus. El CSP de la còpia només permet connexions a mateix origen i al nou Supabase HTTPS/WSS. La còpia bloqueja explícitament el worker de derivats de producció; les fotos/àlbum queden fora d'aquesta prova. L'HTML públic del repositori no es modifica.
-
-La CI genera també aquest artefacte amb credencials **fictícies** per verificar el packaging i l'aïllament; no és un backend funcional ni una URL publicada. El ref i la publishable key reals s'han de comprovar contra el dashboard nou abans de desplegar: el format d'una clau opaca no acredita a quin projecte pertany.
-
-## Proves preparades per a l'iPhone
-
-### A. PDF de Londres inclòs
-
-Fitxer: [`scripts/fixtures/v27-london-itinerary.pdf`](../scripts/fixtures/v27-london-itinerary.pdf). En un viatge nou de validació, destinació London/GB, dia 27/12/2026: pujar el PDF des de Fitxers, generar proposta, comparar amb l'original i confirmar el desament. Abans de confirmar no hi ha escriptures d'itinerari. Després han d'aparèixer British Museum 09:00–10:00, Tower of London 10:05–11:00 i London Eye 12:00–13:00 amb ubicacions exactes sense tres confirmacions addicionals. Si Geoapify no aporta evidència suficient, registrar el resultat pendent; no forçar-lo per donar la prova per bona.
-
-Comprovar avís pel marge de cinc minuts entre les dues primeres activitats si el trajecte real el supera; cap canvi d'hores/dates. Provar peu/cotxe/transport públic, retorn del mapa, lloc desconegut/homònim pendent, activitat manual i reservada, correcció manual persistent després de recàrrega. Desconnectar: dades preparades accessibles segons el contracte offline i cap ruta nova inventada. Reobrir Safari i PWA instal·lada, suspensió, reconnectar i logout/canvi de compte sense barreja de dades.
-
-### B. Itinerari real de l'usuari
-
-Pendent que l'usuari seleccioni el document dins de l'app de validació. Fer servir un altre viatge buit, amb ciutats/països i dates reals, sense sincronització ni importació des de producció. Eliminar dades personals no necessàries abans de pujar-lo. Comparar nombre d'activitats per dia, noms compostos, dates, hores, trajectes i documents amb l'original; revisar la proposta i desar una sola vegada. Els casos amb diverses ciutats, noms ambigus, adreces o errors del proveïdor han de quedar revisables, sense geografia inventada ni pèrdua de planning. Verificar persistència després de tancar/reobrir i denegació amb un compte que no pertanyi al viatge.
-
-Per als dos casos, anotar: SHA del frontend, ref/backend i versions de funcions/migració, model, iPhone/iOS, Safari o standalone, data/hora, esperat/observat, resultat i captura sense tokens/codis personals. No marcar PASS amb mocks ni donar per fet que WebKit equival a un iPhone físic.
-
-## Autoritzacions i configuracions pendents
-
-- Confirmar organització Supabase i autoritzar crear projecte exclusiu, baseline només d'esquema, migració v27, bucket, comptes i Edge Functions. Aprovar el cost que es cotitzi abans de crear recursos.
-- Autoritzar hosting HTTPS separat, compte/workspace i pressupost. La preview existent queda exclosa per connexió a producció; no substituir Nova, PROVES ni l'app pública.
-- Proporcionar mitjançant secrets del nou entorn claus de Geoapify/OpenAI exclusives o autorització expressa d'un ús de validació separat, model habilitat i quotes. No enganxar secrets a GitHub, documentació ni xat.
-- Configurar URL definitiva, callbacks d'Auth, comptes de prova i nou ref/publishable key del frontend; verificar aïllament i completar CI abans de desplegar.
-- Seleccionar el segon itinerari i completar la prova física de Safari/PWA. La fixture Londres ja està al repositori.
-
-No s'ha demanat permís per modificar producció; cap d'aquests passos ho necessita. La petició de confirmació per crear recursos i desplegar deriva de la instrucció explícita de l'usuari d'aquesta fase.
+La prova a l'iPhone quedarà preparada per executar després de la còpia, els checks i l'autorització de publicació. **Encara no se sol·licita autorització per publicar.**
