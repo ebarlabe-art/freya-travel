@@ -42,5 +42,15 @@ print('PASS function grants for API roles')
 buckets=query("SELECT jsonb_agg(jsonb_build_object('id',id,'public',public,'file_size_limit',file_size_limit,'allowed_mime_types',allowed_mime_types)) FROM storage.buckets;")
 assert norm(extra['buckets'])==norm(buckets),'Storage bucket configuration differs'
 print('PASS private Storage bucket configuration')
+
+schema_rights=query("SELECT jsonb_agg(jsonb_build_object('schema',s.nspname,'role',r.role,'usage',has_schema_privilege(r.role,s.oid,'USAGE'),'create',has_schema_privilege(r.role,s.oid,'CREATE'))) FROM pg_namespace s CROSS JOIN (VALUES ('anon'),('authenticated'),('service_role')) r(role) WHERE s.nspname IN ('public','app_private','place_private','proposal_private');")
+for right in schema_rights:
+    expected_usage=right['schema']=='public' or (right['schema']=='app_private' and right['role'] in ('authenticated','service_role'))
+    assert right['usage']==expected_usage and not right['create'],right
+print('PASS schema ACLs: exact API-role usage and no client schema CREATE')
+identity=query("SELECT coalesce(jsonb_agg(c.relname ORDER BY c.relname),'[]'::jsonb) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND c.relreplident='f';")
+assert sorted(identity)==sorted(json.loads((root/'evidence/completeness.json').read_text())['replica_identity_full'])
+print('PASS replica identity FULL for all 11 source tables')
+
 assert not errors,errors
 print('PASS COMPLETE BASELINE RESTORE: 62 tables, 116 functions, 688 columns, 535 constraints, 185 indexes, 48 triggers, 103 policies, grants, buckets and publication match.')
