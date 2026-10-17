@@ -1,0 +1,9 @@
+{
+  "observed_at": "2026-10-16",
+  "views_sequences_partitions_foreign_tables": [],
+  "custom_domains_enums_ranges": [],
+  "auth_user_application_triggers": [],
+  "replica_identity_full": ["trip_day_metadata", "trip_flight_documents", "trip_flights", "travel_documents", "trip_activity_documents", "trip_itinerary_items", "trip_car_rental_documents", "trip_activities", "trip_car_rentals", "trip_accommodation_documents", "trip_accommodations"],
+  "event_triggers": "Only platform event triggers observed; do not export/recreate them. New Supabase supplies its own.",
+  "table_options": "No non-default reloptions observed."
+}
