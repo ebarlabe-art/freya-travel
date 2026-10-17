@@ -7,6 +7,7 @@ if (!/^[a-z]{20}$/.test(ref) || ['otueskpksylzvkhldoft','waatqrqyddurultrazbn'].
     url !== `https://${ref}.supabase.co` || !key || !/^https:\/\/[^/]+\.pages\.dev$/.test(origin)) {
   throw new Error('Invalid isolated validation configuration');
 }
+/** @param {(request: Request) => Response | Promise<Response>} handler */
 export function serveValidated(handler) {
   Deno.serve(async request => {
     const callerOrigin = request.headers.get('origin');
