@@ -32,3 +32,10 @@ Un cop disponible la còpia verificada i resolts els accessos: estimació de 2�
 Risc de migració baix pel canvi nullable sense backfill; existeix un bloqueig breu de les dues taules, limitat per lock_timeout. Risc funcional moderat per extracció del PDF, disponibilitat/quotes externes i actualització PWA. Les coincidències dubtoses han de quedar pendents i els horaris/reserves no s'han de reescriure. Risc de recuperació inacceptable mentre no hi hagi còpia comprovada. No cal Pro, projecte nou, Cloudflare ni servei nou. Els proveïdors existents poden consumir crèdits/quotes amb les proves reals; no s'han fet peticions facturables ara.
 
 La prova a l'iPhone quedarà preparada per executar després de la còpia, els checks i l'autorització de publicació. **Encara no se sol·licita autorització per publicar.**
+
+## Incidències resoltes en aquesta revisió
+
+- S'han retirat els 39 artefactes d'entorns independents i les referències al procés de contractació de Pro.
+- S'han corregit anotacions de tipus dels handlers reals, sense canviar JWT ni la lògica d'importació.
+- S'ha detectat i corregit la reutilització de resultats de llocs antics sense locality durant fins a 24 hores. La nova clau de consulta evita aquest problema sense esborrar dades/tokens ni alterar la base de dades. Prova local: 22/22, incloent actualització de memòria cau i reutilització sense crides duplicades al proveïdor.
+- Checks de la primera revisió de publicació: PASS [39036399861](https://github.com/ebarlabe-art/freya-travel/actions/runs/39036399861), 726 tests, build públic, reconstrucció del commit anterior, clau/destí del dist, typechecks i regressions Chromium/WebKit. Pendent de repetir les proves amb la correcció de memòria cau abans de tancar el candidat.
