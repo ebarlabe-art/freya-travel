@@ -25,6 +25,8 @@ CREATE SCHEMA IF NOT EXISTS "proposal_private";
 REVOKE ALL ON SCHEMA "proposal_private" FROM PUBLIC, anon, authenticated, service_role;
 
 CREATE SCHEMA IF NOT EXISTS "public";
+REVOKE CREATE ON SCHEMA public FROM PUBLIC, anon, authenticated, service_role;
+GRANT USAGE ON SCHEMA public TO PUBLIC;
 
 CREATE SCHEMA IF NOT EXISTS extensions;
 
