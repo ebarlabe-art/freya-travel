@@ -10,7 +10,7 @@ Frontend: index.html, 404.html generat, sw.js; domain/itinerary-quick-place.mjs,
 PDF compartit: domain/import-itinerary-text-extractor.mjs (també dependència del bundle import-itinerary).
 Única migració: supabase/migrations/20261016153108_itinerary_resolved_location_v27.sql.
 Actualitzar les funcions arrel supabase/functions/import-itinerary, place-resolution i itinerary-route amb totes les dependències imports. import-reservation v5 es conserva: el codi desplegat és idèntic. Les anotacions de tipus afegides no canvien l'autenticació ni la lògica.
-L'únic canvi del normalitzador Geoapify és retornar locality; routing reutilitza geografia desada i retorna punts per al mapa.
+El normalitzador Geoapify retorna locality; el handler versiona la clau de memòria cau per no reutilitzar resultats antics sense ciutat. Conserva consultes/tokens anteriors, autenticació i quotes. La primera cerca després de l'actualització pot consumir una consulta del pressupost existent; les repeticions tornen a usar la memòria cau. Routing reutilitza geografia desada i retorna punts per al mapa.
 
 Exclosos i retirats de la branca: validation/v27/**, workflow v27-baseline i generador/config/tests de frontend independent. Es conserven evidències a l'historial 966005d78bd5dbe581ddaab0c46a6ec97f87c4ed i al ZIP de verificació anterior. No aplicar cap baseline ni migració històrica a la pública. Els tests de regressió i el PDF sintètic no són recursos de desplegament.
 
