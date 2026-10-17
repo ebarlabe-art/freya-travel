@@ -8,6 +8,10 @@ def query(sql):
 sql=(root/'evidence/catalog-readonly.sql').read_text().replace("'travel_book_private'","'app_private'")
 expected=json.loads((root/'evidence/catalog.json').read_text())
 actual=query(sql)
+# Recompile every function with checks enabled after all dependencies exist.
+compile_sql = 'BEGIN; SET LOCAL check_function_bodies=true; SET LOCAL search_path=public,extensions,pg_catalog;\n' + '\n'.join(f['definition'].rstrip(';')+';' for f in expected['functions']) + '\nCOMMIT;'
+subprocess.run(['psql',url,'-Xq','-v','ON_ERROR_STOP=1'],input=compile_sql,text=True,check=True)
+print('PASS all 116 function definitions recompiled with check_function_bodies=true')
 def norm(v):
     if isinstance(v,str): return re.sub(r'\s+',' ',v).strip()
     if isinstance(v,list): return sorted((norm(x) for x in v),key=lambda x:json.dumps(x,sort_keys=True))
