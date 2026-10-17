@@ -60,7 +60,7 @@ async function extract(doc:any,bytes:Uint8Array,target:string,context:any={}){
       text:{format:{type:'json_schema',name:'reservation_import_v1',strict:true,schema:importResponseSchema(target)}}
     })
   });
-  if(!response.ok){const body=await response.text();console.error('OpenAI import error',response.status,body.slice(0,500));throw Error(response.status===429?'provider_rate_limited':'provider_error')}
+  if(!response.ok){throw Error(response.status===429?'provider_rate_limited':'provider_error')}
   const data=await response.json();
   if(data.status!=='completed'||!Array.isArray(data.output))throw Error('provider_invalid_response');
   const content=data.output.filter((x:any)=>x.type==='message').flatMap((x:any)=>x.content||[]);
@@ -76,7 +76,7 @@ serveValidated(async req=>{
     const auth=req.headers.get('authorization');if(!auth?.startsWith('Bearer '))return reply({error:'unauthorized'},401);
     const raw=await req.text();if(raw.length>8192)return reply({error:'invalid_request'},400);
     let input:any;try{input=JSON.parse(raw)}catch{return reply({error:'invalid_request'},400)}
-    if(typeof input.trip_id!=='string'||typeof input.document_id!=='string'||!importAiFields[input.target_type])return reply({error:'invalid_request'},400);
+    if(typeof input.trip_id!=='string'||typeof input.document_id!=='string'||(typeof input.target_type!=='string'||!Object.hasOwn(importAiFields,input.target_type)))return reply({error:'invalid_request'},400);
     const [doc,tripWindow]=await Promise.all([userDocument(auth,input.trip_id,input.document_id),userTripWindow(auth,input.trip_id)]);
     if(!allowedMime.has(doc.mime_type))return reply({error:'unsupported_file_type'},415);
     const bytes=await downloadDocument(auth,doc);
