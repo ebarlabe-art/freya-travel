@@ -33,7 +33,7 @@ Custodiar el resultat xifrat, privat i fora de GitHub, amb permisos restrictius 
 Si s'aporta una còpia existent, verificar data, projecte, cobertura i evidència de recuperació abans de considerar aquest punt PASS. No executar una restauració sobre la pública com a prova.
 Una còpia PostgreSQL inclou metadades Storage, no els bytes dels fitxers. Aquesta publicació no elimina ni reescriu objectes existents: conservar-los in situ. Si cal recuperar-los independentment, cal còpia privada dels objectes seleccionats amb checksums; no declarar un dump com a backup complet de documents.
 
-Fonts actuals de quatre Edge guardades a /workspace/v27-production/backups amb manifest i SHA256; copiar-les a la custòdia privada abans de dependre'n. No contenen secrets.
+Fonts actuals de quatre Edge guardades a /workspace/v27-production/backups amb manifest i SHA256; copiar-les a la custòdia privada abans de dependre'n. No contenen secrets. També hi ha arbres normalitzats a backups/restore/<slug>/supabase/functions/<slug> i dependències domain, amb verify_jwt=true. S'ha comprovat que tots els imports relatius de les quatre còpies existeixen. No s'ha assajat cap desplegament remot de reversió.
 Frontend anterior: d7fee2f307b80bc621392465da67b6a5a6a6a182, run Pages 38813083232. Ja no hi ha artefacte descarregable. Reconstruir amb npm ci i build, comparar index/404 i conservar dist + lockfile + versions + checksum abans de publicar. CI comprova aquesta reconstrucció sense fer desplegaments. Un build correcte no acredita una reversió publicada.
 
 ## Configuració existent, sense mostrar secrets
