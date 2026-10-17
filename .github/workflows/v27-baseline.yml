@@ -1,0 +1,80 @@
+name: V27 complete isolated baseline
+on:
+  push:
+    branches: [fix/automatic-itinerary-places-v27]
+    paths: ['validation/v27/**', '.github/workflows/v27-baseline.yml', 'scripts/build-v27-validation.mjs', 'scripts/v27-validation-config.mjs']
+permissions:
+  contents: read
+concurrency:
+  group: v27-complete-baseline
+  cancel-in-progress: false
+jobs:
+  complete-baseline:
+    if: github.repository == 'ebarlabe-art/freya-travel' && github.event.repository.private == false && github.ref == 'refs/heads/fix/automatic-itinerary-places-v27'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      SUPABASE_WORKDIR: ${{ runner.temp }}/v27-supabase
+      SUPABASE_TELEMETRY_DISABLED: 'true'
+      FREYA_VALIDATION_PROJECT_REF: abcdefghijklmnopqrst
+      FREYA_VALIDATION_SUPABASE_URL: https://abcdefghijklmnopqrst.supabase.co
+      FREYA_VALIDATION_PUBLISHABLE_KEY: sb_publishable_validation_fixture
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.6
+      - name: Local CLI capabilities and Docker
+        run: |
+          docker info --format '{{.ServerVersion}}'
+          supabase --version
+          supabase init --help
+          supabase start --help
+          supabase status --help
+          supabase stop --help
+      - name: Full isolated frontend build and suite
+        run: |
+          npm ci
+          npm run prebuild
+          npm test
+          npm run entries:check
+          node scripts/build-v27-validation.mjs > "$RUNNER_TEMP/v27-build.log" 2>&1
+          cat "$RUNNER_TEMP/v27-build.log"
+          node validation/v27/check-site.mjs "$RUNNER_TEMP/v27-build.log"
+      - name: Typecheck validation function copies
+        run: |
+          for fn in place-resolution itinerary-route import-itinerary import-reservation; do
+            deno check "validation/v27/supabase/functions/$fn/index.ts"
+          done
+      - name: Start ephemeral local Supabase stack
+        run: |
+          mkdir -p "$SUPABASE_WORKDIR"
+          supabase init --workdir "$SUPABASE_WORKDIR"
+          supabase start --workdir "$SUPABASE_WORKDIR" > "$RUNNER_TEMP/v27-start.log" 2>&1 || { sed -E 's/(eyJ[A-Za-z0-9_.-]+|sb_secret_[A-Za-z0-9_-]+)/[redacted]/g' "$RUNNER_TEMP/v27-start.log"; exit 1; }
+          supabase status --workdir "$SUPABASE_WORKDIR" --output json > "$RUNNER_TEMP/v27-local-keys.json"
+          chmod 600 "$RUNNER_TEMP/v27-local-keys.json"
+      - name: Restore complete baseline and compare catalogs
+        run: |
+          for sql in 01-baseline 02-storage 03-realtime; do
+            psql 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' -Xq -v ON_ERROR_STOP=1 -f "validation/v27/sql/$sql.sql"
+          done
+          python3 validation/v27/compare.py
+      - name: Apply v27 and initial integrity assertions
+        run: |
+          psql 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' -Xq -v ON_ERROR_STOP=1 -f validation/v27/sql/04-v27.sql
+          psql 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' -Xq -v ON_ERROR_STOP=1 -f validation/v27/sql/05-assert-empty-and-secured.sql
+          python3 validation/v27/security.py "$RUNNER_TEMP/v27-local-keys.json"
+      - name: Rebuild a second clean database in the same ephemeral stack
+        run: |
+          python3 validation/v27/replay-again.py
+      - name: Remove ephemeral local stack and volumes
+        if: always()
+        run: |
+          supabase stop --workdir "$SUPABASE_WORKDIR" --no-backup
+          rm -f "$RUNNER_TEMP/v27-local-keys.json"
