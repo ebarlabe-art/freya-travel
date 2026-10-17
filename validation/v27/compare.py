@@ -7,6 +7,7 @@ def query(sql):
     return json.loads(out)
 sql=(root/'evidence/catalog-readonly.sql').read_text().replace("'travel_book_private'","'app_private'")
 expected=json.loads((root/'evidence/catalog.json').read_text())
+sql=sql.replace('BEGIN READ ONLY;', 'BEGIN READ ONLY; SET LOCAL search_path=public,extensions,pg_catalog;')
 actual=query(sql)
 # Recompile every function with checks enabled after all dependencies exist.
 compile_sql = 'BEGIN; SET LOCAL check_function_bodies=true; SET LOCAL search_path=public,extensions,pg_catalog;\n' + '\n'.join(f['definition'].rstrip(';')+';' for f in expected['functions']) + '\nCOMMIT;'
