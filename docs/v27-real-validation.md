@@ -1,5 +1,7 @@
 # V27 — preparació de la validació real
 
+> **Actualització 17/10/2026: verificació tècnica completa PASS.** Baseline completa restaurada dues vegades amb Docker i Supabase CLI en runner públic gratuït; 62 taules, 116 funcions, RLS/Storage/ACL, migració v27 i build aïllat verificats. [Informe final i limitacions](../validation/v27/REPORT.md) · [CI SUCCESS](https://github.com/ebarlabe-art/freya-travel/actions/runs/39032720416). Ja podem passar a l'autorització de Supabase Pro; cap recurs contractat/desplegat ni PR #147 fusionada. El contingut següent conserva la preparació i l'estat anterior; l'informe final actualitza les verificacions pendents i substitueix el bootstrap candidat.
+
 Estat a 16/10/2026: **pendent d'autoritzar recursos; cap URL de v27 amb backend aïllat activa**. PR #147 en esborrany, branca `fix/automatic-itinerary-places-v27`; no fusionar ni publicar a main. Cap migració, dada remota, secret ni desplegament modificats en aquesta revisió.
 
 ## Evidència de CI i revisió
