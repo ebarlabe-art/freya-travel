@@ -8,6 +8,6 @@ url='postgresql://postgres:postgres@127.0.0.1:54322/postgres'
 for name in ('01-baseline','02-storage','03-realtime'):
  subprocess.run(['psql',url,'-Xq','-v','ON_ERROR_STOP=1','-f',str(root/'sql'/f'{name}.sql')],check=True)
 subprocess.run(['python3',str(root/'compare.py')],check=True)
-for name in ('04-v27','05-assert-empty-and-secured'):
+for name in ('04-v27','05-assert-empty-and-secured','06-validation-permissions'):
  subprocess.run(['psql',url,'-Xq','-v','ON_ERROR_STOP=1','-f',str(root/'sql'/f'{name}.sql')],check=True)
 print('PASS second clean full restore and v27 migration after deleting the first ephemeral stack and volumes.')
