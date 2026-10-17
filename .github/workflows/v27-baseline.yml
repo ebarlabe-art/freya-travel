@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      SUPABASE_WORKDIR: ${{ runner.temp }}/v27-supabase
       SUPABASE_TELEMETRY_DISABLED: 'true'
       FREYA_VALIDATION_PROJECT_REF: abcdefghijklmnopqrst
       FREYA_VALIDATION_SUPABASE_URL: https://abcdefghijklmnopqrst.supabase.co
@@ -32,6 +31,7 @@ jobs:
           deno-version: v2.9.6
       - name: Local CLI capabilities and Docker
         run: |
+          echo "SUPABASE_WORKDIR=$RUNNER_TEMP/v27-supabase" >> "$GITHUB_ENV"
           docker info --format '{{.ServerVersion}}'
           supabase --version
           supabase init --help
