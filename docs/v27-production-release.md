@@ -4,6 +4,35 @@ Destí únic: Londres-2026 / otueskpksylzvkhldoft, GitHub Pages existent.
 Branca: fix/automatic-itinerary-places-v27, PR #147. No publicar ni fusionar sense autorització expressa posterior als requisits de recuperació.
 Cap canvi a Nova, Proves, Railway, Auth, buckets, cron, proveïdors o plans.
 
+## Desbloqueig verificat — 17/10/2026, 14:13 UTC
+
+- Base pública ACTIVE_HEALTHY; Postgres 17.6, mida física aproximada 33,6 MB. Sense columnes v27; cap canvi remot executat.
+- Backup de dades/permisos i assaig: BLOQUEJAT. Aquesta sessió no té connexió PostgreSQL ni secrets configurats, no té pg_dump/Supabase CLI, Docker denega el socket i el proxy no respon. No exportar files personals a través del connector SQL.
+- Storage: 181 objectes trip-documents (334.916.675 bytes), 318 travel-book (528.578.609 bytes), expense-receipts buit. Total 499 objectes, 863.495.284 bytes segons metadades; això NO acredita bytes presents ni recuperables. Cal copiar els 499 fitxers, custodiar bucket/ruta/metadades privadament i verificar checksum, recompte i lectura des de la còpia; comprovar recuperació local amb les polítiques restaurades. No restaurar ni reescriure objectes públics.
+- Reversió Edge: PASS de custòdia local de fonts amb hashes i imports; coincideixen encara place-resolution v1, itinerary-route v1, import-itinerary v6 i import-reservation v5. JWT=true. No s'ha assajat desplegament remot.
+- Reversió frontend: reconstrucció de d7fee2f307b80bc621392465da67b6a5a6a6a182 PASS al CI anterior; el dist NO està conservat en aquesta sessió ni disponible com a artefacte. Cal reconstruir-lo/custodiar-lo al mateix ordinador privat de la còpia. No usar runners ni artefactes GitHub per a dades o credencials.
+- Accessos: connector Supabase de lectura operatiu i permisos admin/push al repositori confirmats. Això no acredita capacitat efectiva de restaurar/desplegar. Pla Free confirmat; saldo/quotes OpenAI, Geoapify i consum restant Supabase no accessibles amb aquests connectors. No cridar proveïdors per simular-ne la verificació.
+- Login/viatges/documents: BLOQUEJAT per manca de sessió de navegador o compte autoritzat configurat. No extreure sessions ni contrasenyes de la base per obtenir-hi accés.
+
+### Única intervenció manual: obrir aquesta tasca en una sessió local privada al Mac amb accés al projecte
+
+1. Al teu Mac de confiança, obre el repositori existent de Freya Travel amb Codex local, a la branca de la PR #147. Usa el dispositiu i directori privats habituals, sense carpetes sincronitzades públicament. No creïs cap projecte ni servei.
+2. En aquesta sessió local, facilita l'accés mitjançant el gestor de secrets local: connexió PostgreSQL de Londres-2026 amb permisos de lectura de dades/esquema/ACL i accés administratiu de només lectura a Storage. Mantén qualsevol valor fora del xat, del repositori, dels arguments de procés i dels logs. Cal Docker Desktop operatiu per a l'assaig Supabase local, PostgreSQL client 17, Node i eines de backup disponibles; si falta algun requisit, aturar i indicar-lo, sense iniciar cap recurs remot.
+3. Dona a la sessió local aquesta instrucció: «Executa exclusivament el backup privat i l'assaig de recuperació descrits en docs/v27-production-release.md: dades i permisos, els 499 fitxers de Storage, dist del frontend anterior i còpies Edge. Verifica-ho en Supabase local compatible, mai a producció; custodia el backup xifrat fora de Git. Comprova també el compte autoritzat i les quotes existents. No publiquis, fusionis ni pugis dades o credencials a GitHub.» Descarrega el paquet de codi de reversió anterior al mateix directori privat si la sessió local no el té.
+4. Inicia tu la sessió de navegador autoritzada per comprovar login, un viatge existent i l'obertura d'un document; revisa els saldos/quotes als comptes ja existents. La sessió local només ha de retornar estats PASS/FAIL, data i hashes de custòdia, mai fitxers privats, noms de documents, credencials o contingut personal.
+
+Aquesta és una continuació operativa local de la còpia, no una fase de desenvolupament. No cal cap alta, subscripció ni desplegament. La mida i els recomptes s'han de tornar a prendre en iniciar la còpia: poden canviar amb l'ús normal. El backup consumeix aproximadament 864 MB de descàrrega de Storage, més el dump i sobrecàrrega; verificar abans la quota d'egress disponible. Si no hi cap, aturar sense contractar ni activar despesa.
+No marcar recuperació PASS per tenir només un ZIP, pg_restore --list, metadades o una lectura en producció: cal l'assaig local de dades/ACL, fitxers i lectura autoritzada.
+
+### Ordre definitiu de publicació, preparat però NO autoritzat
+
+1. Còpies privades i recuperació PASS; login/lectures i quotes PASS. Fixar SHA final de #147 (codi validat 72beadba8265e8fcf896c147484a4ed6283200b8 més documentació) i confirmar main encara a d7fee2f307b80bc621392465da67b6a5a6a6a182; si ha canviat, revisar el delta.
+2. Demanar autorització expressa per la migració única, tres funcions i fusió/frontend; no executar cap d'aquests passos abans.
+3. Aplicar únicament 20261016153108 amb els límits de lock/statement i transacció descrits més avall; verificar RLS/permisos, triggers, constraints i visibilitat REST.
+4. Desplegar place-resolution → import-itinerary amb dependències → itinerary-route, sempre al project-ref explícit otueskpksylzvkhldoft, JWT=true. Conservar import-reservation v5. Comprovar compatibilitat amb el frontend anterior; aturar/revertir la funció si falla.
+5. Fusionar #147 a main només amb l'autorització anterior: el workflow existent publica el frontend. Confirmar SHA/versió Pages/PWA i fer la prova de Bolonya a l'iPhone.
+6. Davant regressió, recuperar dist anterior i només les funcions afectades; conservar columnes additives, horaris, reserves, documents i sessions. La restauració de dades de producció requereix una decisió específica si hi ha corrupció confirmada.
+
 ## Abast exacte
 
 Frontend: index.html, 404.html generat, sw.js; domain/itinerary-quick-place.mjs, itinerary-route.mjs, itinerary-route-ui.mjs.
