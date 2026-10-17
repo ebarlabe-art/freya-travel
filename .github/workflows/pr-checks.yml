@@ -16,7 +16,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - run: npm ci
       - run: npm run prebuild
       - name: Validation isolation and CI registry fallback contracts
@@ -27,8 +26,8 @@ jobs:
         run: node --test scripts/offline-v2-readonly.test.mjs
       - run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: https://abcdefghijklmnopqrst.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_validation_fixture
 
       - name: Install isolated browser test tooling
         run: |
@@ -79,7 +78,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - run: npm ci
       - run: npm run prebuild
       - name: Legacy regression suite (informational)
@@ -95,7 +93,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - run: npm ci
       - uses: denoland/setup-deno@v2
         with:
@@ -129,7 +126,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - run: npm ci
       - run: npm run test:alb02
       - name: Start isolated ALB-02 database just in time
