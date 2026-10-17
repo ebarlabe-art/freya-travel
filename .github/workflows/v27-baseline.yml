@@ -76,5 +76,7 @@ jobs:
       - name: Remove ephemeral local stack and volumes
         if: always()
         run: |
-          supabase stop --workdir "$SUPABASE_WORKDIR" --no-backup
+          if [ -f "$SUPABASE_WORKDIR/supabase/config.toml" ]; then
+            supabase stop --workdir "$SUPABASE_WORKDIR" --no-backup
+          fi
           rm -f "$RUNNER_TEMP/v27-local-keys.json"
