@@ -51,6 +51,23 @@ try{
  const corrected=(await db.query('select * from trip_itinerary_items')).rows[0];
  assert.equal(corrected.resolved_location,null);assert.equal(corrected.location_name,'My corrected entrance');
  assert.deepEqual(corrected.starts_at,before.starts_at);assert.deepEqual(corrected.ends_at,before.ends_at);
+ // Bolonya existing manual plan: both quick and automatic paths persist name + snapshot.
+ const bolognaId='11800000-0000-4000-8000-000000000004';
+ await db.query(`insert into trip_itinerary_items(id,trip_id,title,timing_kind,starts_at,ends_at,time_zone,notes,is_fixed)
+ values($1,$2,$3,'exact','2026-10-24T09:00Z','2026-10-24T10:00Z','Europe/Rome','Keep original document',true)`,
+ [bolognaId,trip,'Opcional: visita a la Torre dell’Orologio, amb reserva prèvia.']);
+ const bolognaBefore=(await db.query('select * from trip_itinerary_items where id=$1',[bolognaId])).rows[0];
+ const bolognaSnapshot={title:bolognaBefore.title,location_name:'Torre dell’Orologio',address:null,city:null,
+  place:{canonical_name:'Torre dell’Orologio',country_code:'IT',locality:'Bolonya',latitude:44.4937,longitude:11.3426,
+   coordinate_role:'exact_location',provider:'geoapify',provider_place_id:'synthetic-tower',attribution:'Synthetic test data'}};
+ const countBefore=(await db.query('select count(*) as n from trip_itinerary_items')).rows[0].n;
+ const write=()=>db.query('update trip_itinerary_items set location_name=$1,resolved_location=$2 where id=$3 and updated_at=$4 and location_name is null returning id',
+  [bolognaSnapshot.location_name,bolognaSnapshot,bolognaId,bolognaBefore.updated_at]);
+ assert.equal((await write()).rows.length,1);assert.equal((await write()).rows.length,0,'No duplicate or stale write');
+ const bolognaAfter=(await db.query('select * from trip_itinerary_items where id=$1',[bolognaId])).rows[0];
+ assert.deepEqual(bolognaAfter.resolved_location,bolognaSnapshot,'Real invalidation trigger retains the full snapshot');
+ for(const key of Object.keys(bolognaBefore).filter(k=>!['updated_at','updated_by','location_name','resolved_location'].includes(k)))assert.deepEqual(bolognaAfter[key],bolognaBefore[key]);
+ assert.equal((await db.query('select count(*) as n from trip_itinerary_items')).rows[0].n,countBefore);
  await db.exec('delete from trip_itinerary_items');assert.equal((await db.query('select * from trip_itinerary_items')).rows.length,0);
  console.log('PASS embedded Postgres: real baseline and additive migration, unchanged original fields, valid/invalid geography, existing RLS owner/outsider, optimistic revisions, manual correction invalidation, deletion. No remote state verified.');
 }finally{await db.close()}

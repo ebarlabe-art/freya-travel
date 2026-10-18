@@ -1,0 +1,58 @@
+V27 — correcció de resolució de llocs (18/10/2026)
+
+Causa acreditada en lectura, sense modificar producció
+- place-resolution v3 retorna 503 a les 19:20:19.626, 19:20:38.794,
+  19:20:57.990 i 19:21:05.606 UTC. Cada fallada va immediatament després
+  de finish_place_query_v1 HTTP 204. claim_place_query_v1 retorna 200.
+- El proveïdor i la normalització havien acabat: l'RPC finish es crida després
+  i la memòria cau conserva els resultats. index.ts intentava r.json() sobre
+  el 204 buit; el catch convertia aquest error en provider_unavailable/503.
+  Les consultes en memòria cau no executaven finish i retornaven 200.
+- selectTrip demanava id,position,label,canonical_name,time_zone, però ometia
+  country_code. El criteri automàtic exigeix país: no s'activava encara que
+  trip_stops el tingués. Les cerques observades incloïen el nom del viatge
+  com a ciutat i no contenien country_code.
+- El cercador ràpid manual no filtrava país ni desava resolved_location;
+  el flux agrupat sí que tenia el contracte de geografia verificable.
+
+Canvi proposat
+- Adaptador RPC separat, provat amb Response real: acceptar 204 només per
+  finish_place_query_v1. Errors SQL i JSON invàlid continuen sent errors.
+- Carregar country_code de les parades; reutilitzar ciutat/país del viatge.
+- Cercador ràpid amb el mateix criteri estricte de ciutat, país, nom exacte
+  i candidat únic de l'enriquiment automàtic. Desar nom + snapshot de
+  coordenades amb trip_id, id i updated_at; no dates, hores o documents.
+- L'autodesament espera que finalitzi la cerca; selecciona l'objecte exacte
+  verificat, no el primer resultat que comparteixi el nom.
+- Dos llocs diferents amb el mateix nom, llocs d'una altra ciutat i punts
+  representatius no s'autoconfirmen. La selecció humana es conserva.
+- Marcador candidat: pwa-automatic-places-v27-rpc-fix; cache v28.
+  La pública continua amb pwa-automatic-places-v27: aquesta PR no desplega.
+
+Proves
+- Regressió completa handler + normalitzador + transport RPC: miss, resposta
+  finish 204, signatura del candidat i hit posterior; un únic ús del proveïdor.
+- Planning manual existent de Bolonya: consulta ciutat/IT, geografia desada,
+  resta de camps intactes, no duplicació ni nova cerca després de recàrrega;
+  dos candidats diferents de Piazza Maggiore continuen pendents de revisió.
+- Cercador ràpid: mateix guard, resultat nou, preservació del candidat correcte
+  quan dos resultats comparteixen nom.
+- Test de navegador existent corregit: el mock retorna només les columnes
+  sol·licitades. Abans ocultava l'omissió de country_code.
+- PostgreSQL incorporat en memòria: migració real i RLS, snapshot persistent,
+  trigger d'invalidació, actualització optimista, preservació dels horaris.
+- Els resultats de proveïdor dels tests són SINTÈTICS. No acrediten que Geoapify
+  trobi ara tots els monuments reals ni que l'iPhone tingui la cache actual.
+
+Límits i acceptació posterior
+No s'ha fet cap crida de cerca a producció ni modificat cap activitat. Els
+logs no identifiquen el marcador carregat a l'iPhone: cal llegir “Versió de
+la pàgina” a “Estat de l'app i actualitzacions” del dispositiu. Els resultats
+antics observats incloïen homònims i no justifiquen forçar cap coordenada.
+
+Després d'autorització: desplegar només place-resolution amb backend.mjs
+inclòs i verify_jwt=true; verificar una cerca sense cache i una amb cache;
+publicar el frontend d'aquesta PR al Pages existent. No necessita migració,
+ni noves credencials, ni nou servei. Provar a l'iPhone el PDF de Bolonya,
+recàrrega, Maps i casos ambigus; revisar les activitats ja existents abans
+de confirmar una altra importació per evitar duplicats. No fusionar ara.

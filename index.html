@@ -1994,7 +1994,7 @@
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-automatic-places-v27';
+const FREYA_FRONTEND_RELEASE='pwa-automatic-places-v27-rpc-fix';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -6302,15 +6302,17 @@ async function openQuickItineraryPlacePicker(button){
   mountQuickItineraryPlace({
    host,row,query:itineraryAutoPlaceQuery(row)||manualItineraryPlaceQuery(row),
    initialOptions:prior?.status==='done'?prior.options:null,current,
+   autoSave:true,automaticMatch:options=>itineraryAutoPlaceVerified(row,options),
    search:async text=>{
-    const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text,language:'ca'}});
+    const destination=itineraryAutoPlaceDestination(row);
+    const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text,language:'ca',...(destination?{country_code:destination.country_code}:{})}});
     if(error||data?.error)return {error:itineraryAutoPlaceFailure(error,data)};
     return {options:itineraryAutoPlaceOptions(data)};
    },
    save:async place=>{
     if(!current()||connectionUnavailable())return false;
     if(place.coordinate_role!=='exact_location')throw Error('Cal un lloc concret per calcular els trajectes.');
-    const {data,error}=await db.from('trip_itinerary_items').update({location_name:place.canonical_name})
+    const {data,error}=await db.from('trip_itinerary_items').update(Object.hasOwn(row,'resolved_location')?{location_name:place.canonical_name,resolved_location:itineraryAutoPlaceSnapshot(row,place)}:{location_name:place.canonical_name})
      .eq('trip_id',tripId).eq('id',id).eq('updated_at',revision).is('location_name',null)
      .select('id').maybeSingle();
     if(error)throw error;
@@ -6895,7 +6897,7 @@ async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
     let stops=null;
     if(!connectionUnavailable()){
       try{
-        const result=await db.from('trip_stops').select('id,position,label,canonical_name,time_zone').eq('trip_id',selected.id).order('position',{ascending:true});
+        const result=await db.from('trip_stops').select('id,position,label,canonical_name,country_code,time_zone').eq('trip_id',selected.id).order('position',{ascending:true});
         if(!result.error)stops=result.data||[];
       }catch(_){ /* An unstable connection must not block cached trip entry. */ }
     }

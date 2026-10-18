@@ -70,10 +70,11 @@ try{
  await page.evaluate(async({tripRow,stops,userId})=>{
   db.rpc=async name=>({data:name==='get_my_trips'?[tripRow]:[],error:null});
   db.from=table=>{
-   let patch=null,filters=[];
-   const execute=async()=>patch?window.fixtureUpdate({patch,filters}):{data:['trip_itinerary_items','trip_activities'].includes(table)?await window.fixtureRead(table):table==='trip_stops'?stops:[],error:null};
+   let patch=null,filters=[],columns=null;
+   const execute=async()=>patch?window.fixtureUpdate({patch,filters}):{data:['trip_itinerary_items','trip_activities'].includes(table)?await window.fixtureRead(table):table==='trip_stops'?stops.map(stop=>columns&&columns!=='*'?Object.fromEntries(columns.split(',').map(key=>[key,stop[key]])):stop):[],error:null};
    const q=new Proxy({}, {get:(_,key)=>{
     if(key==='then')return (success,failure)=>execute().then(success,failure);
+    if(key==='select')return value=>{columns=value;return q};
     if(key==='update')return value=>{patch=value;return q};
     if(key==='eq'||key==='is')return (field,value)=>{filters.push([field,value]);return q};
     if(key==='maybeSingle')return execute;

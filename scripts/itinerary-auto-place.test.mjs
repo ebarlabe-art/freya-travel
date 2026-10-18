@@ -325,3 +325,29 @@ test('v27: same-day adjacent explicit cities disambiguate a multi-stop trip; mix
  rows[2].title='After';h.scope.itineraryProjection[2].localDate='2026-12-28';
  assert.equal(h.fn.itineraryAutoPlaceVerified(rows[1],[londonPlace('British Museum')]),null);
 });
+
+test('Bolonya: existing manual plans resolve, persist and are not written twice; ambiguous square stays pending',async()=>{
+ const titles=['Opcional: visita a la Torre dell’Orologio, amb reserva prèvia.','Piazza Maggiore, Fontana del Nettuno i basílica de San Petronio.'];
+ const rows=titles.map(title=>locatedRow(title)),before=structuredClone(rows);
+ const makePlace=(name,id=name)=>({...place(name),locality:'Bolonya',country_code:'IT',latitude:44.4937,longitude:11.3426,provider_place_id:id});
+ const h=makeHarness({rows,stops:[{canonical_name:'Bolonya',country_code:'IT'}],answers:[
+  {data:{candidates:[{place:makePlace('Torre dell’Orologio')}]}},
+  {data:{candidates:[{place:makePlace('Piazza Maggiore','one')},{place:makePlace('Piazza Maggiore','two')}]}}
+ ]});
+ h.scope.trip.name='Bolonya amb amigues';
+ h.fn.proposeItineraryAutoPlaces('2026-12-27');await drain();await drain();
+ assert.deepEqual(h.queries.map(q=>q.payload.body.text),['Torre dell’Orologio, Bolonya','Piazza Maggiore, Bolonya']);
+ assert.ok(h.queries.every(q=>q.payload.body.country_code==='IT'));
+ assert.equal(h.updates.length,1);assert.equal(rows[0].resolved_location.place.canonical_name,'Torre dell’Orologio');
+ assert.equal(rows[1].resolved_location,null,'Two distinct POIs remain for human review');
+ for(let i=0;i<rows.length;i++)for(const k of Object.keys(before[i]).filter(k=>!['location_name','resolved_location'].includes(k)))assert.deepEqual(rows[i][k],before[i][k]);
+ h.fn.proposeItineraryAutoPlaces('2026-12-27');await drain();assert.equal(h.updates.length,1);
+ const reloaded=makeHarness({rows:structuredClone(rows),stops:[{canonical_name:'Bolonya',country_code:'IT'}]});
+ assert.equal(reloaded.fn.itineraryAutoPlaceRows('2026-12-27').length,1,'Saved tower is not geocoded again after reload');
+});
+
+test('trip entry loads the country required by both automatic and manual resolution',()=>{
+ const entry=html.slice(html.indexOf('async function selectTrip('),html.indexOf('async function initializeGenericChecklistDefaults('));
+ const selected=entry.match(/from\('trip_stops'\)\.select\('([^']+)'\)/)?.[1].split(',');
+ assert.ok(selected?.includes('country_code'),'PostgREST only returns explicitly selected columns');
+});

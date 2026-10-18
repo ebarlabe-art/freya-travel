@@ -62,7 +62,7 @@ export function automaticItineraryPlace(row,query,places,countryCode){
  return matches.length===1?matches[0]:null;
 }
 
-export function mountQuickItineraryPlace({host,row,query,search,save,current,initialOptions=null,autoSave=false,countryCode=''}){
+export function mountQuickItineraryPlace({host,row,query,search,save,current,initialOptions=null,autoSave=false,countryCode='',automaticMatch=null}){
  if(!host||!row||typeof search!=='function'||typeof save!=='function')throw Error('Missing place picker contract');
  document.querySelectorAll('[data-quick-itinerary-place]').forEach(existing=>existing.remove());
  const section=document.createElement('section');section.dataset.quickItineraryPlace=row.id;
@@ -103,7 +103,7 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
   const {recommended,choices:ranked}=prioritizeItineraryPlaces(row,searchedFor,exact);
   // Zero taps when a known, same-country POI is distinctive enough.
   // The same guarded save path is used as for a manual choice.
-  const confident=autoSave?automaticItineraryPlace(row,searchedFor,exact,countryCode):null;
+  const confident=autoSave?(automaticMatch?automaticMatch(exact):automaticItineraryPlace(row,searchedFor,exact,countryCode)):null;
   status.textContent=recommended?'He reconegut la ubicació més probable per a aquesta activitat. Confirma-la, o consulta les alternatives si no és correcta.':
    exact.length===1?'He trobat una ubicació concreta. Confirma-la per vincular-la a aquesta activitat.':
    'Hi ha diverses ubicacions possibles. Tria la correcta.';
@@ -113,6 +113,7 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
    summary.style.cssText='cursor:pointer;min-height:44px;padding:10px 0';
    altBox.append(summary);
   }
+  let automaticAction=null;
   ranked.forEach(place=>{
    const button=document.createElement('button');button.type='button';button.className='secondary';
    button.dataset.placeCanonical=place.canonical_name;
@@ -137,11 +138,12 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
      }
     }
    };
+   if(place===confident)automaticAction=button;
    if(altBox&&place!==recommended)altBox.append(button);
    else choices.append(button);
   });
   if(altBox)choices.append(altBox);
-  if(confident){const action=[...choices.querySelectorAll('button')].find(b=>b.dataset.placeCanonical===confident.canonical_name);if(action)void action.onclick()}
+  if(automaticAction)queueMicrotask(()=>{if(active())void automaticAction.onclick()});
  }
  async function run(){
   if(!active()||busy)return;

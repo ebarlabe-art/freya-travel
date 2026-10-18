@@ -62,7 +62,7 @@ jobs:
       - name: Itinerary routes mobile and PWA regression
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-route-browser.mjs
       - name: V27 location, PDF and route contracts
-        run: node --test scripts/place-resolution.test.mjs scripts/itinerary-auto-place.test.mjs scripts/itinerary-route.test.mjs scripts/import-itinerary-pdf.test.mjs scripts/itinerary-quick-place.test.mjs
+        run: node --test scripts/place-resolution.test.mjs scripts/place-resolution-rpc.test.mjs scripts/itinerary-auto-place.test.mjs scripts/itinerary-route.test.mjs scripts/import-itinerary-pdf.test.mjs scripts/itinerary-quick-place.test.mjs
       - name: V27 automatic locations Chromium
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-automatic-places-browser.mjs
       - name: V27 automatic locations WebKit
