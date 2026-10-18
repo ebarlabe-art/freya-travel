@@ -38,6 +38,7 @@ export function itineraryPdfTextInstructions(){
   'Si el títol diu l’any i les capçaleres diàries no el repeteixen, conserva tant el títol amb l’any com les capçaleres sense afegir-hi cap any inventat.',
   'Conserva els fusos horaris que apareixen explícitament a les capçaleres, per exemple Hora local: Europe/Riga.',
   'No ometis cap activitat sense hora exacta: inclou-la sota el dia corresponent. Si és una fila de dues columnes amb Tarda, sense hora exacta i un títol al costat, escriu Tarda: seguit del títol en una sola línia; no inventis cap hora.',
+  'En taules, associa cada hora o franja amb el text de la mateixa fila. Si una cel·la horària es parteix en dues línies, conserva tots els dígits visibles i reuneix-los només si pertanyen inequívocament a la mateixa cel·la; no converteixis el fragment horari en el títol. Si és ambigu, conserva els fragments i afegeix un avís.',
   'Per a cada pàgina del PDF retorna el número de pàgina real i el text amb salts de línia. Per a una foto utilitza només la pàgina 1.',
   'No combinis pàgines, no inventis dates, anys, llocs, hores, reserves ni línies absents.',
   'No incorporis noms de passatgers, dades bancàries, localitzadors, emails, adreces de contacte ni altres dades personals alienes a l’itinerari.',
