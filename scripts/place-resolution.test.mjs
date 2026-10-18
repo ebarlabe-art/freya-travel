@@ -17,3 +17,26 @@ test('handler cache hit/miss and no-match cache; normalized input only',async()=
 test('unauthenticated caller never consumes provider quota',async()=>{const handler=createPlaceHandler({authenticate:async()=>null,rpc:()=>{throw Error('should not call')}});assert.equal((await handler(new Request('https://test',{method:'POST'}))).status,401)});
 
 test('client transport error carries normalized code for offline UX',async()=>{const client=new PlaceClient({functions:{invoke:async()=>({error:{message:'offline'}})}});await assert.rejects(client.searchPlaces({text:'test'}),error=>error.code==='provider_unavailable'&&error.message==='provider_unavailable')});
+
+test('v27 cache upgrade keeps legacy candidates intact and fetches locality once',async()=>{
+ const query={text:'Synthetic place',language:'ca'},old=normalizeGeoapify(raw);
+ delete old.locality;
+ const oldKey=JSON.stringify(query),cache=new Map([[oldKey,[old]]]);let provider=0,claims=0;
+ const resolved=normalizeGeoapify({...raw,result_type:'amenity',city:'Bologna',country_code:'it'});
+ const handler=createPlaceHandler({tokenSecret:'synthetic',authenticate:async()=> 'owner',
+  adapter:{search:async input=>{provider++;assert.deepEqual(input,query);return [resolved]}},
+  rpc:async(name,args)=>{
+   if(name==='claim_place_query_v1'){
+    claims++;const key=JSON.stringify(args.p_query);
+    return cache.has(key)?{cached:true,results:cache.get(key),token:'t',query_hash:key}:{token:'t',query_hash:key};
+   }
+   if(name==='finish_place_query_v1'){cache.set(args.p_hash,args.p_results);return {}}
+   throw Error('unexpected RPC');
+  }});
+ for(let i=0;i<2;i++){
+  const response=await handler(new Request('https://test',{method:'POST',body:JSON.stringify({action:'search',...query})}));
+  assert.equal(response.status,200);assert.equal((await response.json()).candidates[0].place.locality,'Bologna');
+ }
+ assert.equal(provider,1);assert.equal(claims,2);assert.equal(cache.size,2);
+ assert.deepEqual(cache.get(oldKey),[old]);assert.equal(Object.hasOwn(old,'locality'),false);
+});

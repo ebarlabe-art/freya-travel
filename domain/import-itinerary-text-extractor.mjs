@@ -249,9 +249,12 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
 // the routing service must still resolve it in the destination context.
 function mentionedPlace(title){
  if(/^(?:sortida|arribada|trasllat|transfer|vol|flight|tren|taxi|bus|metro)\b/i.test(title))return null;
- const raw=title.match(/\b(?:Piazza|Plaça|Plaza|Square|Via|Carrer|Street|Trattoria|Ristorante|Restaurant|Caffè|Cafè|Café|Museu|Museum|Catedral|Cathedral|Castell|Castle|Basílica|Basilica|Torre|Mercat|Market|Parc|Park|Palau|Palazzo|Finestrella|Archiginnasio|Quadrilatero|Due Torri)(?=\s|$|[.,;])(?:\s+[\p{L}’'-]+){0,7}/iu)?.[0];
+ const raw=title.match(/\b(?:Piazza|Plaça|Plaza|Square|Tower|Eye|Gallery|Abbey|Bridge|Theatre|Via|Carrer|Street|Trattoria|Ristorante|Restaurant|Caffè|Cafè|Café|Museu|Museum|Catedral|Cathedral|Castell|Castle|Basílica|Basilica|Torre|Mercat|Market|Parc|Park|Palau|Palazzo|Finestrella|Archiginnasio|Quadrilatero|Due Torri)(?=\s|$|[.,;])(?:\s+[\p{L}’'-]+){0,7}/iu)?.[0];
  if(!raw)return null;
- const place=raw.split(/\s+i\s+(?=(?:visita|retorn|dinar|passeig|sopar|esmorzar|zona|barri)\b|[A-ZÀ-Ü])/i)[0]
+ const leading=title.replace(/^(?:(?:visita|visit)(?:\s+(?:a|al|el|la|to|the))?\s+|opcional:\s*)/i,'').trim().replace(/[.,;]+$/,'');
+ const named=raw&&leading.endsWith(raw)&&!/^(?:passeig|aperitiu|sopar|esmorzar|dinar|opcional)\b/i.test(leading)?leading:raw||leading;
+ if(/^(?:dinar|sopar|esmorzar|passeig|lunch|dinner|breakfast|free time)\b/i.test(named))return null;
+ const place=named.split(/\s+i\s+(?=(?:visita|retorn|dinar|passeig|sopar|esmorzar|zona|barri)\b|[A-ZÀ-Ü])/i)[0]
   .split(/\s*[,.·;()]\s*/)[0].trim();
  if(place.length<6||place.length>160)return null;
  // Generic words alone cannot become locations.

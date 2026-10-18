@@ -211,3 +211,22 @@ test('P0 #135: non-verifiable city without IATA remains unresolved, never use ph
  assert.equal(enriched.candidates[0].fields.time_zone,undefined);
  assert.ok(enriched.candidates[0].review_flags.includes('timezone_needs_confirmation'));
 });
+
+test('v27: PDF retains complete London POI names, dates, hours and source evidence',()=>{
+ const names=['British Museum','Tower of London','London Eye'];
+ const transcript={complete:true,warnings:[],pages:[{page:1,text:'27/12/2026 · Zona horària: Europe/London\n09:00–10:00 British Museum\n10:30–11:30 Tower of London\n12:00–13:00 London Eye'}]};
+ const original=structuredClone(transcript);
+ const p=itineraryPdfTranscriptToProposal(transcript,source);
+ assert.deepEqual(p.candidates.map(c=>c.fields.location_name.value),names);
+ assert.deepEqual(p.candidates.map(c=>c.fields.title.value),names);
+ assert.deepEqual(p.candidates.map(c=>c.fields.start_local_time.value),['09:00','10:30','12:00']);
+ assert.deepEqual(p.candidates.map(c=>c.fields.end_local_time.value),['10:00','11:30','13:00']);
+ assert.ok(p.candidates.every(c=>c.fields.local_date.value==='2026-12-27'&&c.fields.title.evidence[0].page===1));
+ assert.equal(p.source.document_id,source.document_id);assert.deepEqual(transcript,original);
+});
+
+test('v27: ordinary PDF descriptions are not promoted to place names; trailing punctuation keeps full POIs',()=>{
+ const p=itineraryPdfTranscriptToProposal({complete:true,warnings:[],pages:[{page:1,text:'27/12/2026\n09:00 British Museum.\n10:00 Temps lliure\n11:00 Preparar les maletes'}]},source);
+ assert.equal(p.candidates[0].fields.location_name.value,'British Museum');
+ assert.equal(p.candidates[1].fields.location_name,undefined);assert.equal(p.candidates[2].fields.location_name,undefined);
+});

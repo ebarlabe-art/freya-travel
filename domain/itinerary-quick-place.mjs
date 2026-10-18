@@ -46,7 +46,23 @@ export function prioritizeItineraryPlaces(row,query,places){
   choices:ranked.map(item=>item.place)};
 }
 
-export function mountQuickItineraryPlace({host,row,query,search,save,current,initialOptions=null}){
+// A saved location is never inferred from a vague or approximate geocoding hit.
+// Strong compound names win only when they are distinct from competing POIs.
+export function automaticItineraryPlace(row,query,places,countryCode){
+ if(!/^[A-Z]{2}$/.test(String(countryCode||'')))return null;
+ const exact=(Array.isArray(places)?places:[]).filter(p=>usable(p)&&p.country_code===countryCode);
+ if(!exact.length)return null;
+ const {recommended}=prioritizeItineraryPlaces(row,query,exact);
+ if(recommended)return recommended;
+ const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+ const wanted=norm(String(query||'').split(',')[0]);
+ if(wanted.length<7||/^(?:via|viale|carrer|street|road)\b/.test(wanted))return null;
+ const matches=exact.filter(place=>norm(place.canonical_name)===wanted);
+ return matches.length===1?matches[0]:null;
+}
+
+export function mountQuickItineraryPlace({host,row,query,search,save,current,initialOptions=null,autoSave=false,countryCode=''}){
  if(!host||!row||typeof search!=='function'||typeof save!=='function')throw Error('Missing place picker contract');
  document.querySelectorAll('[data-quick-itinerary-place]').forEach(existing=>existing.remove());
  const section=document.createElement('section');section.dataset.quickItineraryPlace=row.id;
@@ -85,6 +101,9 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
    return;
   }
   const {recommended,choices:ranked}=prioritizeItineraryPlaces(row,searchedFor,exact);
+  // Zero taps when a known, same-country POI is distinctive enough.
+  // The same guarded save path is used as for a manual choice.
+  const confident=autoSave?automaticItineraryPlace(row,searchedFor,exact,countryCode):null;
   status.textContent=recommended?'He reconegut la ubicació més probable per a aquesta activitat. Confirma-la, o consulta les alternatives si no és correcta.':
    exact.length===1?'He trobat una ubicació concreta. Confirma-la per vincular-la a aquesta activitat.':
    'Hi ha diverses ubicacions possibles. Tria la correcta.';
@@ -96,6 +115,7 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
   }
   ranked.forEach(place=>{
    const button=document.createElement('button');button.type='button';button.className='secondary';
+   button.dataset.placeCanonical=place.canonical_name;
    button.textContent=(place===recommended||exact.length===1?'✓ Confirma: ':'📍 ')+
     [place.canonical_name,place.administrative_area,place.country_code].filter(Boolean).join(' · ');
    button.style.cssText='text-align:left;white-space:normal;overflow-wrap:anywhere;';
@@ -121,6 +141,7 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
    else choices.append(button);
   });
   if(altBox)choices.append(altBox);
+  if(confident){const action=[...choices.querySelectorAll('button')].find(b=>b.dataset.placeCanonical===confident.canonical_name);if(action)void action.onclick()}
  }
  async function run(){
   if(!active()||busy)return;

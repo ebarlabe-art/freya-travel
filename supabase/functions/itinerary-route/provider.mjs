@@ -1,9 +1,10 @@
 const clean=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 export function destinationContext(row,stops){
- const relevant=row.city?stops.filter(s=>clean(s.canonical_name)===clean(row.city)):stops;
+ const city=row.city||row.resolved_location?.place?.locality;
+ const relevant=city?stops.filter(s=>clean(s.canonical_name)===clean(city)):stops;
  const contexts=[...new Map(relevant.map(s=>[clean(s.canonical_name)+':'+s.country_code,s])).values()];
  if(contexts.length!==1||!contexts[0].country_code)return null;
- return {city:row.city||contexts[0].canonical_name,country:contexts[0].country_code.toLowerCase()};
+ return {city:city||contexts[0].canonical_name,country:contexts[0].country_code.toLowerCase()};
 }
 export function routeProvider({key,fetcher=fetch,timeoutMs=8000,now=Date.now,spacingMs=300,maxCalls=2000}){
  let next=0,day='',count=0;const cache=new Map();
@@ -27,9 +28,20 @@ export function routeProvider({key,fetcher=fetch,timeoutMs=8000,now=Date.now,spa
  }
  return {
   async resolve(row,context,choice){
+   if(!choice&&Number.isFinite(row.latitude)&&Math.abs(row.latitude)<=90&&Number.isFinite(row.longitude)&&Math.abs(row.longitude)<=180){
+    return {point:{id:'coordinates:'+row.latitude+':'+row.longitude,label:row.venue_name||row.location_name||row.title||row.address,lat:row.latitude,lon:row.longitude}};
+   }
    const name=row.location_name||row.venue_name||row.address;
    if(!name)return {error:'missing_place'};
    if(!context)return {error:'missing_context'};
+   const saved=row.resolved_location,p=saved?.place;
+   if(!choice&&p?.provider==='geoapify'&&typeof p.provider_place_id==='string'&&p.provider_place_id&&
+    p.coordinate_role==='exact_location'&&p.country_code?.toLowerCase()===context.country&&
+    clean(p.locality)===clean(context.city)&&
+    ['location_name','address','city','title'].every(field=>(saved[field]||null)===((field==='location_name'?row.location_name||row.venue_name:row[field])||null))&&
+    Number.isFinite(p.latitude)&&Math.abs(p.latitude)<=90&&Number.isFinite(p.longitude)&&Math.abs(p.longitude)<=180){
+    return {point:{id:p.provider_place_id,label:p.canonical_name,lat:p.latitude,lon:p.longitude}};
+   }
    const data=await memo(JSON.stringify(['place',name,row.address,context]),async()=>{
     const url=new URL('https://api.geoapify.com/v1/geocode/search');url.search=new URLSearchParams({text:[name,row.address!==name?row.address:'',context.city,context.country].filter(Boolean).join(', '),filter:'countrycode:'+context.country,lang:'ca',limit:'5',format:'json'}).toString();return query(url);
    });
@@ -51,7 +63,7 @@ export function routeProvider({key,fetcher=fetch,timeoutMs=8000,now=Date.now,spa
     if(Array.isArray(data.features)&&!data.features.length)throw Error('no_route');
     const lines=feature?.geometry?.coordinates;
     if(!p||p.mode!==mode||String(p.distance_units).toLowerCase()!=='meters'||!Number.isFinite(p.distance)||p.distance<0||!Number.isFinite(p.time)||p.time<0||feature.geometry.type!=='MultiLineString'||!Array.isArray(lines)||!lines.length||!lines.every(line=>Array.isArray(line)&&line.length>=2&&line.every(pt=>Array.isArray(pt)&&pt.length>=2&&Number.isFinite(pt[0])&&Math.abs(pt[0])<=180&&Number.isFinite(pt[1])&&Math.abs(pt[1])<=90)))throw Error('invalid_response');
-    return {method:'routing',mode,distance_m:p.distance,duration_seconds:p.time,source:'Geoapify Routing / OpenStreetMap',quality:mode==='transit'?'Aproximació de transport públic; sense horaris en viu ni garantia de servei.':'Ruta calculada; temps aproximat, sense trànsit en viu.',calculated_at:new Date(now()).toISOString()};
+    return {method:'routing',mode,origin:{latitude:a.lat,longitude:a.lon},destination:{latitude:b.lat,longitude:b.lon},distance_m:p.distance,duration_seconds:p.time,source:'Geoapify Routing / OpenStreetMap',quality:mode==='transit'?'Aproximació de transport públic; sense horaris en viu ni garantia de servei.':'Ruta calculada; temps aproximat, sense trànsit en viu.',calculated_at:new Date(now()).toISOString()};
    });
   }
  };

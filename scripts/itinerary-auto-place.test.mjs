@@ -10,11 +10,11 @@ const end=html.indexOf('async function fetchAgendaManualItems(',start);
 assert.ok(start>=0&&end>start,'A2.12 grouped place code must be present');
 const source=html.slice(start,end);
 const place=(name,coordinate_role='exact_location')=>({
- canonical_name:name,administrative_area:'Rīga',country_code:'LV',
+ canonical_name:name,administrative_area:'Rīga',country_code:'LV',locality:'Riga',provider:'geoapify',provider_place_id:name,attribution:'Synthetic',
  latitude:56.95,longitude:24.10,coordinate_role
 });
 
-function makeHarness({rows,answers=[{data:{candidates:[{place:place('Castell de Riga')} ]}}]}={}){
+function makeHarness({rows,stops=[{canonical_name:'Riga'}],answers=[{data:{candidates:[{place:place('Castell de Riga')} ]}}]}={}){
  rows??=[{id:'activity-a',title:'Visita al Castell de Riga',location_name:null,address:null,city:null,
   status:'planned',updated_at:'rev-1',local_date:'2026-12-27',trip_id:'trip-a'}];
  const els=new Map(),queries=[],updates=[],messages=[];
@@ -34,7 +34,7 @@ function makeHarness({rows,answers=[{data:{candidates:[{place:place('Castell de 
   const result=answers[Math.min(lookup++,answers.length-1)];
   return result;
  }},from(table){
-  assert.equal(table,'trip_itinerary_items');
+  assert.ok(['trip_itinerary_items','trip_activities'].includes(table));
   return {update(patch){
    const filters=[];
    return {eq(field,value){filters.push({kind:'eq',field,value});return this},
@@ -44,18 +44,18 @@ function makeHarness({rows,answers=[{data:{candidates:[{place:place('Castell de 
      updates.push({patch,filters});
      const id=filters.find(f=>f.field==='id')?.value;
      const row=rows.find(r=>r.id===id);
-     if(!row||row.location_name||!filters.some(f=>f.field==='updated_at'&&f.value===row.updated_at))
+     if(!row||!filters.every(f=>f.field==='trip_id'||(f.kind==='is'?(row[f.field]??null)===f.value:row[f.field]===f.value)))
       return {data:null,error:null};
-     row.location_name=patch.location_name;
+     Object.assign(row,patch);
      return {data:{id},error:null};
     }};
   }};
  }};
  const scope={
-  $,$noop:()=>{},trip:{id:'trip-a',name:'Riga'},tripStopRows:[{canonical_name:'Riga'}],session:{user:{id:'user-a'}},
+  $,$noop:()=>{},trip:{id:'trip-a',name:'Riga'},tripStopRows:stops,session:{user:{id:'user-a'}},
   tripLoadGeneration:3,genericItinerarySelectedDay:'2026-12-27',
   itineraryProjection:rows.map(row=>({sourceType:'manual',sourceId:row.id,localDate:row.local_date})),
-  manualItineraryRows:rows,connectionUnavailable:()=>false,isLondonTrip:()=>false,
+  manualItineraryRows:rows,isLocalTransportActivity:row=>row.activity_type==='transport',loadActivities:async()=>{},connectionUnavailable:()=>false,isLondonTrip:()=>false,
   itineraryRequestIsCurrent:()=>true,
   manualItineraryPlaceQuery:row=>(row.title.replace(/^Visita al /,'')+', Riga'),db,
   loadManualItineraryItems:async()=>rows,msg:(_target,message)=>messages.push(message),
@@ -63,7 +63,7 @@ function makeHarness({rows,answers=[{data:{candidates:[{place:place('Castell de 
  };
  const context=vm.createContext(scope);
  const fn=vm.runInContext('let itineraryAutoPlaceContext=null;'+source+
-  ';({itineraryAutoPlaceRows,itineraryAutoPlaceFocusedName,itineraryAutoPlaceShouldSearch,itineraryAutoPlaceDefault,itineraryAutoPlaceOptions,'+
+  ';({itineraryAutoPlaceVerified,itineraryAutoPlaceSnapshot,itineraryAutoPlaceRows,itineraryAutoPlaceFocusedName,itineraryAutoPlaceShouldSearch,itineraryAutoPlaceDefault,itineraryAutoPlaceOptions,'+
   'itineraryAutoPlaceContextFor,itineraryAutoPlaceQuery,proposeItineraryAutoPlaces,saveItineraryAutoPlaces,renderItineraryAutoPlacePanel})',context);
  return {fn,scope,$,queries,updates,messages,rows,context};
 }
@@ -223,4 +223,105 @@ test('v25: a single exact automatically recognized place needs no dropdown selec
  assert.match(h.$('itineraryAutoPlaceList').innerHTML,/Castell de Riga/);
  assert.doesNotMatch(h.$('itineraryAutoPlaceList').innerHTML,/data-itinerary-auto-place="activity-a"/);
  assert.equal(h.$('itineraryAutoPlaceSave').disabled,false);
+});
+
+const locatedRow=(title,extra={})=>({id:title,title,trip_id:'trip-a',location_name:null,address:null,city:null,resolved_location:null,
+ status:'planned',updated_at:'rev-'+title,local_date:'2026-12-27',starts_at:'2026-12-27T09:00:00Z',ends_at:'2026-12-27T10:00:00Z',
+ notes:'Reserva i document originals',is_fixed:true,...extra});
+const london=[{canonical_name:'London',country_code:'GB'}];
+const londonPlace=name=>({...place(name),locality:'London',country_code:'GB',latitude:51.5,longitude:-0.12});
+
+test('v27: British Museum, Tower of London and London Eye save verified geography without confirmation',async()=>{
+ const names=['British Museum','Tower of London','London Eye'],rows=names.map(n=>locatedRow(n));
+ const original=structuredClone(rows);
+ const h=makeHarness({rows,stops:london,answers:names.map(n=>({data:{candidates:[{place:londonPlace(n)}]}}))});
+ h.fn.proposeItineraryAutoPlaces('2026-12-27');await drain();await drain();
+ assert.equal(h.updates.length,3);
+ for(let i=0;i<3;i++){
+  assert.equal(h.rows[i].location_name,names[i]);
+  assert.equal(h.rows[i].resolved_location.place.latitude,51.5);
+  const {location_name,resolved_location,...preserved}=h.rows[i];
+  const {location_name:old,resolved_location:geo,...expected}=original[i];
+  assert.deepEqual(preserved,expected,'All original dates, times, descriptions and reservations survive');
+ }
+ assert.equal(h.queries[0].payload.body.country_code,'GB');
+ assert.match(h.queries[0].payload.body.text,/British Museum, London/);
+});
+
+test('v27: repeated name in another city or country never becomes an automatic location',()=>{
+ const h=makeHarness({stops:london}),row=locatedRow('British Museum');
+ assert.equal(h.fn.itineraryAutoPlaceVerified(row,[{...londonPlace('British Museum'),locality:'Oxford'}]),null);
+ assert.equal(h.fn.itineraryAutoPlaceVerified(row,[{...londonPlace('British Museum'),country_code:'US'}]),null);
+ assert.equal(h.fn.itineraryAutoPlaceVerified(row,[londonPlace('British Museum'),londonPlace('British Museum')]),null);
+ assert.equal(h.fn.itineraryAutoPlaceVerified(row,[{...londonPlace('British Museum'),coordinate_role:'representative_point'}]),null);
+});
+
+test('v27: multiple stops require an explicit matching activity city; never assume first city',()=>{
+ const stops=[...london,{canonical_name:'Oxford',country_code:'GB'}],h=makeHarness({stops}),row=locatedRow('British Museum');
+ assert.equal(h.fn.itineraryAutoPlaceVerified(row,[londonPlace('British Museum')]),null);
+ assert.doesNotMatch(h.fn.itineraryAutoPlaceQuery(row),/London|Oxford/);
+ assert.equal(h.fn.itineraryAutoPlaceVerified({...row,city:'London'},[londonPlace('British Museum')]).canonical_name,'British Museum');
+});
+
+test('v27: supplied/imported location text is preserved while reliable geography is added',async()=>{
+ const row=locatedRow('Visita al British Museum',{location_name:'British Museum'}),h=makeHarness({rows:[row],stops:london,
+  answers:[{data:{candidates:[{place:londonPlace('British Museum')}]}}]});
+ h.fn.proposeItineraryAutoPlaces('2026-12-27');await drain();await drain();
+ assert.equal(h.updates.length,1);
+ assert.deepEqual(Object.keys(h.updates[0].patch),['resolved_location']);
+ assert.equal(row.location_name,'British Museum');
+});
+
+test('v27: unknown places and unavailable providers never invent coordinates or retry writes on render',async()=>{
+ for(const answer of [{data:{candidates:[]}},{data:{error:'provider_unavailable'}}]){
+  const h=makeHarness({rows:[locatedRow('Unknown Museum')],stops:london,answers:[answer]});
+  h.fn.proposeItineraryAutoPlaces('2026-12-27');await drain();
+  h.fn.proposeItineraryAutoPlaces('2026-12-27');await drain();
+  assert.equal(h.updates.length,0);assert.equal(h.rows[0].resolved_location,null);
+ }
+});
+
+test('v27: pending geocoder response cannot replace a concurrent manual correction',async()=>{
+ let finish;
+ const row=locatedRow('British Museum'),h=makeHarness({rows:[row],stops:london});
+ h.scope.db.functions.invoke=()=>new Promise(resolve=>finish=resolve);
+ h.fn.proposeItineraryAutoPlaces('2026-12-27');
+ row.location_name='My meeting point';row.updated_at='manual-correction';
+ finish({data:{candidates:[{place:londonPlace('British Museum')}]}});await drain();
+ assert.equal(row.location_name,'My meeting point');assert.equal(row.resolved_location,null);assert.equal(h.updates.length,0);
+});
+
+test('v27: a saved geographic correction is never searched again',async()=>{
+ const row=locatedRow('British Museum',{resolved_location:{place:londonPlace('My entrance')}});
+ const h=makeHarness({rows:[row],stops:london});h.fn.proposeItineraryAutoPlaces('2026-12-27');await drain();
+ assert.equal(h.queries.length,0);assert.equal(h.updates.length,0);
+});
+
+test('v27: reserved activities use the same confidence guard and keep reservation data',async()=>{
+ const row={...locatedRow('British Museum'),venue_name:null,activity_type:'museum',reservation_status:'confirmed',
+  latitude:null,longitude:null,booking_reference:'KEEP',start_at:'2026-12-27T10:00:00Z'};
+ delete row.location_name;
+ const h=makeHarness({rows:[row],stops:london,answers:[{data:{candidates:[{place:londonPlace('British Museum')}]}}]});
+ h.scope.activityRows=[row];h.scope.manualItineraryRows=[];h.scope.itineraryProjection=[{sourceType:'activity',sourceId:row.id,localDate:row.local_date}];
+ h.fn.proposeItineraryAutoPlaces('2026-12-27');await drain();await drain();
+ assert.equal(h.updates.length,1);assert.equal(row.venue_name,'British Museum');assert.equal(row.resolved_location.place.latitude,51.5);
+ assert.equal(row.booking_reference,'KEEP');assert.equal(row.start_at,'2026-12-27T10:00:00Z');assert.equal(row.reservation_status,'confirmed');
+});
+
+test('v27: existing activity coordinates and local transport are excluded from automatic enrichment',()=>{
+ const h=makeHarness({stops:london});h.scope.manualItineraryRows=[];
+ h.scope.activityRows=[{...locatedRow('British Museum'),latitude:51.5,longitude:-0.12},
+  {...locatedRow('London Eye'),activity_type:'transport'}];
+ h.scope.itineraryProjection=h.scope.activityRows.map(row=>({sourceType:'activity',sourceId:row.id,localDate:row.local_date}));
+ assert.equal(h.fn.itineraryAutoPlaceRows('2026-12-27').length,0);
+});
+
+test('v27: same-day adjacent explicit cities disambiguate a multi-stop trip; mixed days/cities/transfers do not',()=>{
+ const rows=[locatedRow('Before',{city:'London'}),locatedRow('British Museum'),locatedRow('After',{city:'London'})];
+ const h=makeHarness({rows,stops:[...london,{canonical_name:'Oxford',country_code:'GB'}]});
+ assert.equal(h.fn.itineraryAutoPlaceVerified(rows[1],[londonPlace('British Museum')]).canonical_name,'British Museum');
+ rows[2].city='Oxford';assert.equal(h.fn.itineraryAutoPlaceVerified(rows[1],[londonPlace('British Museum')]),null);
+ rows[2].city='London';rows[2].title='Trasllat a London';assert.equal(h.fn.itineraryAutoPlaceVerified(rows[1],[londonPlace('British Museum')]),null);
+ rows[2].title='After';h.scope.itineraryProjection[2].localDate='2026-12-28';
+ assert.equal(h.fn.itineraryAutoPlaceVerified(rows[1],[londonPlace('British Museum')]),null);
 });
