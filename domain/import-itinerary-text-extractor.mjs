@@ -104,20 +104,20 @@ function readItem(line,hasDay){
  const clock=normalized.match(CLOCK);
  if(clock){
   const title=cleanTitle(clock[3]);
-  if(!title)return null;
+  if(!title||!/[\p{L}]/u.test(title))return null;
   return {title,start:canonicalTime(clock[1]),end:clock[2]?canonicalTime(clock[2]):null,confidence:'high'};
  }
  const daypart=normalized.match(DAYPART)||normalized.match(UNTYPED_DAYPART);
  if(daypart&&daypart[2]){
   const title=cleanTitle(daypart[2]);
-  if(!title)return null;
+  if(!title||!/[\p{L}]/u.test(title))return null;
   return {title,daypart:daypartValue(daypart[1]),confidence:'high'};
  }
  if(hasDay){
   const bullet=normalized.match(BULLET);
   if(bullet){
    const title=cleanTitle(bullet[1]);
-   if(title&&!ADMIN.test(title)&&!HEADER.test(title))return {title,confidence:'medium'};
+   if(title&&/\p{L}/u.test(title)&&!ADMIN.test(title)&&!HEADER.test(title))return {title,confidence:'medium'};
   }
  }
  return null;
@@ -223,7 +223,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     if(!item&&!ADMIN.test(line)&&!HEADER.test(line)&&!tz&&
        !/^(?:observaci[oó]|nota\s+de|important|hora\s*\/\s*franja|activitat\s+i\s+lloc)\b/i.test(line)){
       const title=cleanTitle(line);
-      if(title&&title.length<=200)item={title,daypart:pendingDaypart.value,confidence:'medium'};
+      if(title&&/\p{L}/u.test(title)&&title.length<=200)item={title,daypart:pendingDaypart.value,confidence:'medium'};
     }
     pendingDaypart=null;
    }

@@ -215,3 +215,9 @@ test('P0 #140: names of explicit POIs survive as source-backed locations for fut
  assert.equal(p.candidates[0].fields.location_name.confidence,'medium');
  assert.equal(p.candidates[0].fields.location_name.evidence[0].kind,'text');
 });
+
+test('numeric fragments and detached clock ranges never become activities',()=>{
+ const p=parse('25/10/2026\n16.15 16.3\n16:15 – 16:30\n- 123.45\nTarda: 16.3\n16:30 Visita al museu 123\n18:00 Passeig');
+ assert.deepEqual(p.candidates.map(x=>val(x,'title')),['Visita al museu 123','Passeig']);
+ assert.ok(p.warnings.some(x=>/no s’han pogut convertir/.test(x)));
+});

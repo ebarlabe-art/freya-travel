@@ -57,18 +57,36 @@ export function changeItineraryReviewItem(review,index,key,value){
 function effective(item){
  return Object.fromEntries([...EDITABLE].map(key=>[key,reviewItemValue(item,key)]));
 }
-function existingMatch(candidate,existing){
- const date=String(existing?.localDate||'');
- if(!date||date!==candidate.local_date)return null;
- const title=text(existing?.title),wanted=text(candidate.title);
- if(!wanted||!title)return null;
- const time=String(existing?.timeLabel||'').trim();
- if(title===wanted&&(time===candidate.start_local_time||!time||!candidate.start_local_time))return 'possible_existing_duplicate';
- return null;
+// Conservative matches are review suggestions, never permission to update an existing row.
+export function matchingExistingImportItems(candidate,existing=[]){
+ const normalize=value=>text(value).replace(/[’']/g,"'").replace(/[.,;:!?]+$/g,'');
+ const wanted=normalize(candidate.title),date=candidate.local_date,time=candidate.start_local_time;
+ if(!wanted||!date)return [];
+ return existing.flatMap(row=>{
+  const title=normalize(row.title),day=String(row.localDate||row.local_date||'');
+  const at=String(row.timeLabel||'').match(/^(\d{2}:\d{2})/)?.[1]||'';
+  const exact=title===wanted;
+  const truncated=title.split(' ').length>=6&&wanted.split(' ').length>=6&&
+   (wanted.startsWith(title+' ')||title.startsWith(wanted+' '));
+  if(!exact&&!truncated)return [];
+  if(day===date&&(!at||!time||at===time))return [{title:row.title,localDate:day,timeLabel:at,reason:'possible_existing_duplicate'}];
+  const delta=Math.abs(Date.parse(date+'T12:00:00Z')-Date.parse(day+'T12:00:00Z'));
+  if(at===time&&/^0[0-5]:[0-5]\d$/.test(time)&&delta===86400000)
+   return [{title:row.title,localDate:day,timeLabel:at,reason:'existing_date_conflict'}];
+  return [];
+ });
+}
+export function excludeExistingImportItems(review,existing=[]){
+ const snapshot=summarizeItineraryReview(review,existing);let removed=0;
+ for(const item of snapshot.items)if(item.included&&item.existing_matches.length){
+  review.items[item.index].included=false;removed++;
+ }
+ return removed;
 }
 function candidateFlags(item,existing){
  const c=effective(item),issues=[];
  if(!c.title)issues.push('missing_title');
+ else if(!/\p{L}/u.test(c.title))issues.push('invalid_title');
  if(c.local_date&&!validDate(c.local_date))issues.push('invalid_date');
  if(c.start_local_time&&!TIME.test(c.start_local_time))issues.push('invalid_start_time');
  if(c.end_local_time&&!TIME.test(c.end_local_time))issues.push('invalid_end_time');
@@ -78,10 +96,7 @@ function candidateFlags(item,existing){
  if(c.start_local_time&&!c.time_zone)issues.push('timezone_needs_confirmation');
  if(c.start_local_time&&c.end_local_time&&TIME.test(c.start_local_time)&&TIME.test(c.end_local_time)&&c.end_local_time<=c.start_local_time)issues.push('time_order_needs_review');
  if(Object.entries(item.confidence).some(([key,v])=>v!=='high'&&!Object.hasOwn(item.edits,key)))issues.push('uncertain_extraction');
- for(const row of (Array.isArray(existing)?existing:[])){
-  const found=existingMatch(c,row);
-  if(found&&!issues.includes(found))issues.push(found);
- }
+ for(const match of matchingExistingImportItems(c,existing))if(!issues.includes(match.reason))issues.push(match.reason);
  return issues;
 }
 export function summarizeItineraryReview(review,existing=[]){
@@ -91,6 +106,7 @@ export function summarizeItineraryReview(review,existing=[]){
   included:item.included,values:effective(item),confidence:{...item.confidence},
   evidence:item.evidence,source_warnings:item.source_warnings.slice(),
   source_flags:item.source_flags.slice(),edited_fields:Object.keys(item.edits),
+  existing_matches:matchingExistingImportItems(effective(item),existing),
   review_flags:candidateFlags(item,existing)
  }));
  // Flag exact duplicates across selected candidates without discarding them.
@@ -117,7 +133,19 @@ export function summarizeItineraryReview(review,existing=[]){
    if(!b.review_flags.includes('possible_overlap_in_review'))b.review_flags.push('possible_overlap_in_review');
   }
  }
+ for(const item of snapshot){
+  const informationalWarning=w=>/^Any agafat del títol general|^Element sense hora explícita/.test(w);
+  item.important_flags=item.review_flags.filter(flag=>flag!=='uncertain_extraction');
+  // Low-confidence factual extraction is important; medium confidence stays visible separately.
+  if(Object.entries(item.confidence).some(([key,v])=>v==='low'&&!item.edited_fields.includes(key)))item.important_flags.push('uncertain_extraction');
+  item.important_warnings=item.source_warnings.filter(w=>!informationalWarning(w));
+  item.information=item.source_warnings.filter(informationalWarning);
+  if(item.review_flags.includes('uncertain_extraction')&&!item.important_flags.includes('uncertain_extraction'))
+   item.information.push('Hi ha camps extrets amb confiança mitjana: contrasta’ls amb el document.');
+ }
  const included=snapshot.filter(x=>x.included),needsReview=included.filter(x=>x.review_flags.length||x.source_warnings.length);
  return {items:snapshot,total:snapshot.length,selected:included.length,needsReview:needsReview.length,
+  important:included.filter(x=>x.important_flags.length||x.important_warnings.length).length,
+  informational:included.filter(x=>x.information.length).length,
   read_only:true,can_write:false,warnings:review.warnings.slice()};
 }

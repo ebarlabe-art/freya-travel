@@ -1,3 +1,4 @@
+import {matchingExistingImportItems} from './import-itinerary-review.mjs';
 // A2.8 — user-confirmed, idempotent itinerary draft materialization.
 // Pure conversion: this module performs no network or database writes.
 const DATE=/^(\d{4})-(\d{2})-(\d{2})$/;
@@ -62,7 +63,7 @@ export async function prepareItineraryImportRows(snapshot,{tripId,userId,documen
  for(const item of selected){
   const v=item.values||{},title=trim(v.title),date=trim(v.local_date),start=trim(v.start_local_time),
    end=trim(v.end_local_time),zone=trim(v.time_zone),part=trim(v.daypart);
-  if(!title||[...title].length>200)abort('Revisa el títol de totes les activitats.');
+  if(!title||! /\p{L}/u.test(title)||[...title].length>200)abort('Revisa el títol de totes les activitats.');
   if(date&&!isoDay(date))abort('Data no vàlida a «'+title+'».');
   if((tripStartDate&&date&&date<tripStartDate)||(tripEndDate&&date&&date>tripEndDate))
    abort('La data de «'+title+'» no és dins de les dates del viatge.');
@@ -77,6 +78,9 @@ export async function prepareItineraryImportRows(snapshot,{tripId,userId,documen
   if(seen.has(key))abort('Hi ha un duplicat seleccionat: «'+title+'». Desmarca’l abans de desar.');
   const id=await stableItineraryImportId(tripId,documentId,item.source_order);
   const matched=already.get(key);
+  const potential=matchingExistingImportItems(v,existing);
+  if(potential.some(x=>x.reason==='existing_date_conflict'))abort('Possible duplicat amb un altre dia: «'+title+'». Revisa la data i desmarca’l; no es modificarà l’activitat existent.');
+  if(!matched&&potential.length)abort('Possible activitat ja existent: «'+title+'». Revisa-la i desmarca-la abans de desar.');
   if(matched&&matched.id!==id)abort('«'+title+'» ja consta al planning. Obre l’itinerari per consultar les activitats desades.');
   if(existingIds.has(id)&&existingIds.get(id).title!==title)
    abort('«'+title+'» ja s’havia importat. Per modificar-la, edita-la directament al planning.');

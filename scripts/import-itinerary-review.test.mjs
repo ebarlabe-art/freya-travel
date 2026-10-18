@@ -92,3 +92,35 @@ test('A2.7: consumes already normalized endpoint proposals with read-only metada
  assert.equal(r.items.length,2);
  assert.equal(summarizeItineraryReview(r).can_write,false);
 });
+
+test('existing midnight match exposes the conflicting day without mutating either record',async()=>{
+ const {matchingExistingImportItems,excludeExistingImportItems}=await import('../domain/import-itinerary-review.mjs');
+ const p=proposal();p.candidates[0].fields.title=field('Arribada al nostre allotjament després del trajecte nocturn');
+ p.candidates[0].fields.local_date=field('2026-12-28');p.candidates[0].fields.start_local_time=field('00:15');delete p.candidates[0].fields.end_local_time;
+ const r=createItineraryReview(p,scope),existing=[{title:'Arribada al nostre allotjament després del trajecte',localDate:'2026-12-27',timeLabel:'00:15'}],before=structuredClone(existing);
+ const s=summarizeItineraryReview(r,existing);
+ assert.equal(s.items[0].existing_matches[0].localDate,'2026-12-27');
+ assert.ok(s.items[0].review_flags.includes('existing_date_conflict'));
+ assert.equal(excludeExistingImportItems(r,existing),1);
+ assert.equal(r.items[0].included,false);assert.equal(r.items[1].included,true);
+ assert.equal(r.items[0].original.local_date,'2026-12-28');assert.deepEqual(existing,before);
+ assert.deepEqual(matchingExistingImportItems({title:'Museu',local_date:'2026-12-28',start_local_time:'09:00'},[{title:'Museu',localDate:'2026-12-27',timeLabel:'09:00'}]),[],'daily visits must not match across dates');
+});
+test('duplicate exclusion respects manual deselection and keeps new items',async()=>{
+ const {excludeExistingImportItems}=await import('../domain/import-itinerary-review.mjs');
+ const r=createItineraryReview(proposal(),scope);r.items[1].included=false;
+ assert.equal(excludeExistingImportItems(r,[{title:'Museu.',localDate:'2026-12-27',timeLabel:'09:00'}]),1);
+ assert.deepEqual(r.items.map(x=>x.included),[false,false]);
+});
+test('numeric fragments in an old or edited proposal require correction',()=>{
+ const r=createItineraryReview(proposal(),scope);changeItineraryReviewItem(r,0,'title','16.3');
+ assert.ok(summarizeItineraryReview(r).items[0].review_flags.includes('invalid_title'));
+});
+
+test('confidence information is separated from actionable date/duplicate warnings',()=>{
+ const p=proposal();p.candidates[0].fields.local_date.confidence='medium';p.candidates[0].warnings=['Any agafat del títol general del document: comprova la data.'];
+ const r=createItineraryReview(p,scope),s=summarizeItineraryReview(r);
+ assert.equal(s.important,0);assert.equal(s.informational,1);assert.equal(s.needsReview,1);
+ changeItineraryReviewItem(r,0,'local_date','2026-02-30');
+ assert.equal(summarizeItineraryReview(r).important,1);
+});

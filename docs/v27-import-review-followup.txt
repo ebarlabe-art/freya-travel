@@ -1,0 +1,55 @@
+V27 — import review follow-up (19 October 2026)
+
+Status: local correction; not deployed. Extends public PR #148 without
+changing its place-resolution fix. Physical iPhone location acceptance
+remains open. Do not merge or deploy until the real import is reviewed.
+
+Evidence
+- User reports a 21-item PDF proposal, 20 items with warnings, not saved.
+- Read-only production inspection confirms the existing overnight arrival
+  is stored on the previous local day even though its title explicitly
+  names the following day. This is not just UTC display grouping.
+- Existing extraction already shifts a pre-06:00 event only when its text
+  explicitly names the following weekday AND matching calendar date.
+  No existing row is corrected automatically.
+- Review matched exact title/date/time; that missed adjacent-day conflicts
+  and long titles truncated at a word boundary.
+- CLOCK accepts any nonempty trailing text, including a numeric fragment.
+  Synthetic input reproduces this class of error. The exact original PDF
+  line/transcript producing the reported numeric title is NOT available.
+- Medium confidence in a year taken from the document heading or a proposed
+  location counted as an item with warnings alongside blocking errors.
+  The exact distribution of the reported 20 warnings remains unverified.
+
+Correction
+- Show the matching existing title, date and time alongside each proposal.
+- Explicit button deselects possible matches in memory. New and previously
+  deselected items are preserved; no existing rows are updated/deleted.
+- Conservative word-boundary prefix matching requires at least six words.
+  Adjacent-day conflicts require the same time before 06:00. Ordinary
+  recurring daytime visits on different dates do not match.
+- Write guard independently rejects remaining conflicts and numeric titles.
+- Numeric-only fragments are not activities; unparsed-line warning remains.
+- Separate actionable flags/low confidence from medium-confidence context.
+  Evidence and all source warning text remain visible. Derived flags are
+  recalculated from edited fields instead of displaying stale flags.
+- Candidate marker pwa-automatic-places-v27-import-review; worker v29.
+- No schema, RPC, authentication, provider or production data changes.
+
+Validation
+- 741 unit/regression tests pass, including actual preview render/click,
+  conservative match boundaries, manual exclusions, date conflict and
+  selection-to-write preservation. Test fixtures are synthetic.
+- Build and generated index/404 parity pass.
+- Local WebKit run blocked: previously installed executable is absent.
+  No physical-device or real-PDF success is claimed.
+
+Pending evidence / acceptance
+- Locate the original PDF locally and inspect its rendered time/title row.
+- Read the unsaved proposal's evidence and warnings; don't regenerate/send
+  the private PDF to an external provider without an explicit action.
+- Compare real proposal vs existing agenda without saving; enumerate exact
+  matches, possible matches and genuinely new items. Verify the 20 warnings.
+- Test mobile review and new-item-only persistence with synthetic fixtures.
+- Still test real Torre dell'Orologio / Piazza Maggiore location resolution
+  and the final iPhone workflow. No more production changes are authorized.

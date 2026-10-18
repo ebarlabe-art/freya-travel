@@ -77,3 +77,12 @@ test('P0: existing import detection is exact, read-only, and independent of sour
  assert.deepEqual(findExistingItineraryImportItems(input,existing),[existing[0]]);
  assert.equal(JSON.stringify([input,existing]),before);
 });
+
+test('write guard blocks numeric fragments and midnight day conflicts, but writes only selected new rows',async()=>{
+ await assert.rejects(()=>prepareItineraryImportRows(snapshot(item(0,'16.3')),base),/títol/);
+ const old={title:'Arribada al nostre allotjament després del trajecte',localDate:'2026-12-27',timeLabel:'00:15'},before=structuredClone(old);
+ const arrival=item(0,old.title+' nocturn','2026-12-28','00:15','');
+ await assert.rejects(()=>prepareItineraryImportRows(snapshot(arrival),{...base,existing:[old]}),/altre dia/);
+ const rows=await prepareItineraryImportRows(snapshot({...arrival,included:false},item(1,'Visita nova')),{...base,existing:[old]});
+ assert.deepEqual(rows.map(x=>x.title),['Visita nova']);assert.deepEqual(old,before);
+});
