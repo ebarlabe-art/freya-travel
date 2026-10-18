@@ -55,12 +55,12 @@ test('v25: find-place opens direct picker, never the full editor; existing rows 
  assert.match(html,/data-itinerary-find-place/);
  assert.match(html,/void openQuickItineraryPlacePicker\(button\)/);
  assert.doesNotMatch(html,/openManualItineraryForm\(button\.dataset\.itineraryFindPlace\)/);
- assert.match(html,/\.update\(\{location_name:place\.canonical_name\}\)/);
+ assert.match(html,/resolved_location:itineraryAutoPlaceSnapshot\(row,place\)/);
  assert.match(html,/\.eq\('trip_id',tripId\)\.eq\('id',id\)\.eq\('updated_at',revision\)\.is\('location_name',null\)/);
  assert.match(html,/data\?'Ubicació desada/);
  assert.match(packageScript,/'itinerary-quick-place\.mjs'/);
  assert.match(worker,/'\.\/domain\/itinerary-quick-place\.mjs'/);
- assert.match(worker,/freya-travel-release-6444-v27/);
+ assert.match(worker,/freya-travel-release-6444-v28/);
  assert.match(html,/pwa-automatic-places-v27/);
 });
 
@@ -196,5 +196,31 @@ test('v26: compound landmark is promoted; other search results remain accessible
   assert.match(heading.children[1].style.cssText,/white-space:nowrap/);
   assert.match(heading.children[1].textContent,/Tanca/);
   assert.match(heading.style.cssText,/flex-wrap:wrap/);
+ });
+});
+
+test('quick search uses the shared city/name confidence guard instead of country-only auto selection',async()=>{
+ await harness(async({add})=>{
+  const chosen=place('Archiginnasio');let saves=0,checks=0;
+  add({autoSave:true,countryCode:'IT',initialOptions:[chosen],automaticMatch:options=>{checks++;assert.equal(options[0],chosen);return null},search:async()=>({options:[chosen]}),save:async()=>{saves++;return true}});
+  await settle();assert.equal(checks,1);assert.equal(saves,0,'Ambiguous or wrong-city candidate cannot be saved automatically');
+  add({autoSave:true,initialOptions:[chosen],automaticMatch:options=>options[0],search:async()=>({options:[chosen]}),save:async p=>{assert.equal(p,chosen);saves++;return true}});
+  await settle();assert.equal(saves,1);
+ });
+});
+
+test('a fresh quick-search result can save after the search busy flag clears',async()=>{
+ await harness(async({add})=>{
+  const chosen=place('Archiginnasio');let saves=0;
+  add({autoSave:true,automaticMatch:options=>options[0],search:async()=>({options:[chosen]}),save:async()=>{saves++;return true}});
+  await settle();assert.equal(saves,1);
+ });
+});
+
+test('same-name candidates save the exact verified object, never the first name match',async()=>{
+ await harness(async({add})=>{
+  const other={...place('Archiginnasio'),locality:'Other city'},verified={...place('Archiginnasio'),locality:'Bolonya'};let saved;
+  add({autoSave:true,initialOptions:[other,verified],automaticMatch:()=>verified,search:async()=>({options:[]}),save:async p=>{saved=p;return true}});
+  await settle();assert.equal(saved,verified);
  });
 });
