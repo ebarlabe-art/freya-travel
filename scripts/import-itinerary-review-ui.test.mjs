@@ -88,7 +88,7 @@ test('A2.7: Pages includes the same module graph as PWA cache',()=>{
  assert.match(worker,/\.\/domain\/import-itinerary-proposal\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-review\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-write\.mjs/);
- assert.match(worker,/freya-travel-release-6444-v29/);
+ assert.match(worker,/freya-travel-release-6444-v30/);
 });
 
 test('A2.9: real async completion re-enables the imported itinerary save button',async()=>{
@@ -167,7 +167,7 @@ test('import review renders existing evidence and excludes matches only on expli
  const state={api,review:api.createItineraryReview(proposal,{tripId:'trip',userId:'user',documentId:'doc'})};
  const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,{children:[],querySelectorAll:()=>[],textContent:'',innerHTML:''});return elements.get(id)};
  const start=script.indexOf('const itineraryImportReviewLabels='),end=script.indexOf("$('openItineraryImport').onclick",start);
- vm.runInNewContext(script.slice(start,end)+';renderItineraryImportPreview();',{$,itineraryImportState:state,itineraryImportStillCurrent:()=>true,itinerarySourcesAreReady:()=>true,itineraryProjection:[{title:'Museu',localDate:'2026-12-28',timeLabel:'09:00'}],esc:value=>String(value).replaceAll('<','&lt;')});
+ vm.runInNewContext(script.slice(start,end)+';renderItineraryImportPreview();',{$,itineraryImportState:state,itineraryImportContextIsCurrent:()=>true,connectionUnavailable:()=>false,offlineReadOnlySession:false,itinerarySourcesAreReady:()=>true,itineraryProjection:[{title:'Museu',localDate:'2026-12-28',timeLabel:'09:00'}],esc:value=>String(value).replaceAll('<','&lt;')});
  assert.match($('itineraryImportCandidates').innerHTML,/Activitat existent/);
  assert.equal(state.review.items[0].included,true,'render must not change selection');
  $('itineraryImportExcludeExisting').onclick();

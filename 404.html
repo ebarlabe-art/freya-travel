@@ -1995,7 +1995,7 @@
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-automatic-places-v27-import-review';
+const FREYA_FRONTEND_RELEASE='pwa-automatic-places-v27-import-selection';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -8811,11 +8811,14 @@ $('reservationImportClose').onclick=closeReservationImport;$('reservationImportC
 // A2.7: in-memory-only itinerary review. No writes of itinerary items.
 let itineraryImportState=null;
 let itineraryImportEpoch=0;
-function itineraryImportStillCurrent(state){
+function itineraryImportContextIsCurrent(state){
  return state&&itineraryImportState===state&&trip?.id===state.tripId&&
   session?.user?.id===state.userId&&tripLoadGeneration===state.generation&&
-  !isLondonTrip()&&!offlineReadOnlySession&&!connectionUnavailable()&&
+  !isLondonTrip()&&
   !$('itineraryImportPanel').classList.contains('hidden');
+}
+function itineraryImportStillCurrent(state){
+ return itineraryImportContextIsCurrent(state)&&!offlineReadOnlySession&&!connectionUnavailable();
 }
 function closeItineraryImport(){
  $('itineraryImportViewExisting').classList.add('hidden');
@@ -8958,17 +8961,19 @@ const itineraryImportReviewLabels={
  start_required_for_end:'Falta l’hora d’inici'
 };
 function renderItineraryImportPreview(){
- const state=itineraryImportState;if(!itineraryImportStillCurrent(state)||!state.review||!state.api)return;
- const existing=itinerarySourcesAreReady(state.tripId,state.generation,state.userId)?itineraryProjection:[];
+ const state=itineraryImportState;if(!itineraryImportContextIsCurrent(state)||!state.review||!state.api)return;
+ const sourcesReady=itinerarySourcesAreReady(state.tripId,state.generation,state.userId);
+ if(sourcesReady)state.previewExisting=itineraryProjection.map(row=>({title:row.title,localDate:row.localDate,timeLabel:row.timeLabel}));
+ const existing=state.previewExisting||[];
  const result=state.api.summarizeItineraryReview(state.review,existing);
  const expanded=new Set([...$('itineraryImportCandidates').querySelectorAll('details[open]')].map(node=>Number(node.dataset.importCandidate)));
  const keepFirstOpen=!$('itineraryImportCandidates').children.length;
  $('itineraryImportSummary').textContent=result.selected+' de '+result.total+' elements seleccionats · '+result.important+' per revisar · '+result.informational+' amb informació de confiança. '+(state.saveCompleted?'Desat.':'Encara no desat.');
- $('itineraryImportWrite').disabled=!!state.busy||!!state.saveCompleted||result.selected===0;
- $('itineraryImportExcludeExisting').disabled=!!state.busy||!!state.saveCompleted||!itinerarySourcesAreReady(state.tripId,state.generation,state.userId)||!result.items.some(x=>x.included&&x.existing_matches.length);
+ $('itineraryImportWrite').disabled=!!state.busy||!!state.saveCompleted||connectionUnavailable()||!!offlineReadOnlySession||result.selected===0;
+ $('itineraryImportExcludeExisting').disabled=!!state.busy||!!state.saveCompleted||!state.previewExisting||!result.items.some(x=>x.included&&x.existing_matches.length);
  const allWarnings=result.warnings.slice();
  if(!itinerarySourcesAreReady(state.tripId,state.generation,state.userId))
-  allWarnings.push('No s’han pogut contrastar els possibles duplicats amb tot el planning existent.');
+  allWarnings.push(state.previewExisting?'El planning s’està actualitzant. Pots desmarcar les coincidències de l’última lectura; abans de desar es tornarà a comprovar el viatge.':'No s’han pogut contrastar els possibles duplicats amb tot el planning existent.');
  $('itineraryImportWarnings').innerHTML=allWarnings.map(w=>'<p class="itinerary-import-warning">'+esc(w)+'</p>').join('');
  const fields=[
   ['title','Títol','text',200],['local_date','Dia','date',10],
@@ -8998,10 +9003,13 @@ function renderItineraryImportPreview(){
 }
 $('itineraryImportExcludeExisting').onclick=()=>{
  const state=itineraryImportState;
- if(!itineraryImportStillCurrent(state)||state.busy||state.saveCompleted||!state.review||!itinerarySourcesAreReady(state.tripId,state.generation,state.userId))return;
- const removed=state.api.excludeExistingImportItems(state.review,itineraryProjection);
- $('itineraryImportSaveStatus').textContent=removed+' coincidències desmarcades. Revisa les altres activitats abans de desar. El viatge no s’ha modificat.';
- renderItineraryImportPreview();
+ if(!itineraryImportContextIsCurrent(state)||state.busy||state.saveCompleted||!state.review)return;
+ try{
+  if(!state.previewExisting)throw Error('Encara no hi ha coincidències carregades. Espera que acabi la lectura del planning.');
+  const removed=state.api.excludeExistingImportItems(state.review,state.previewExisting);
+  renderItineraryImportPreview();
+  $('itineraryImportSaveStatus').textContent=removed+' coincidències desmarcades. Revisa les altres activitats abans de desar. El viatge no s’ha modificat.';
+ }catch(error){$('itineraryImportSaveStatus').textContent=error?.message||'No s’han pogut desmarcar les coincidències. Torna-ho a provar.';}
 };
 $('openItineraryImport').onclick=openItineraryImport;
 $('itineraryImportClose').onclick=closeItineraryImport;
@@ -9220,7 +9228,7 @@ async function writeConfirmedItineraryImport(){
 $('itineraryImportWrite').onclick=()=>{void writeConfirmedItineraryImport()};
 $('itineraryImportCandidates').addEventListener('change',event=>{
  const target=event.target,state=itineraryImportState;
- if(!itineraryImportStillCurrent(state)||state.busy||state.saveCompleted||!state.review||!state.api)return;
+ if(!itineraryImportContextIsCurrent(state)||state.busy||state.saveCompleted||!state.review||!state.api)return;
  const key=target.dataset.importField,index=Number(key!==undefined?target.dataset.importEdit:target.dataset.importInclude);
  if(!Number.isInteger(index)||index<0||index>=state.review.items.length)return;
  try{
