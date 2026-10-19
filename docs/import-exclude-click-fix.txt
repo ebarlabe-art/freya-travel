@@ -1,0 +1,45 @@
+Import exclusion touch regression — follow-up to PR #149
+
+Reproduced on the actual published build with mobile WebKit (390 x 844):
+21 proposed activities, 20 same-day matches and one overnight date conflict.
+Stable state: tap changes 21 -> 0 (about 219 ms).
+Marking the manual source pending, as loadAgendaSource does before each read:
+tap leaves 21 -> 21, no error, assertion times out after 2 seconds.
+No device logs are available; this proves a concrete cause of the reported
+symptom, not the precise connection/source state of the user's iPhone.
+
+Cause
+The click used itineraryImportStillCurrent (which requires connectivity)
+and itinerarySourcesAreReady before making a local-only selection change.
+Sources can become pending after the preview has displayed matches. The
+handler then silently returns before excludeExistingImportItems or render.
+The pure selection function was not hanging in the stable-state baseline.
+
+Fix
+- Separate review context validity (same user/trip/generation/open panel)
+  from the online guard retained for analyzing and writing.
+- Retain only title/date/time from the last complete projection in the
+  current review state; exclude the matches already presented to the user.
+- Recompute the summary/render immediately, even during refresh/offline.
+- Make local checkbox edits work too; writing remains disabled offline and
+  still queries current records and validates duplicates before saving.
+- Avoid building a full validation/overlap summary inside the selection loop.
+- Surface unexpected selection/render errors instead of leaving a silent tap.
+- Never mutate existing records, documents, geography, dates, or times.
+
+Regression
+scripts/check-import-exclude-browser.mjs serves the actual built application,
+loads its actual modules and real DOM, and uses a touchscreen tap. All external
+requests/WebSockets are blocked. It verifies exactly 20 matches + one date
+conflict, immediate 21 -> 0, unchecked boxes, disabled save/exclude buttons,
+21 retained review rows, unchanged original projection, zero external requests
+from the click, successful manual re-selection, and disabled offline saving.
+Stable, refreshing and offline cases pass locally in WebKit. CI includes both
+Chromium and WebKit. The earlier DOM-stub test could not expose the state change.
+743 unit tests and build pass. index/404 parity and public artifact checks pass.
+
+Scope / release
+Frontend only, candidate pwa-automatic-places-v27-import-selection, cache v30.
+No Edge Function or migration changes; #148 geography logic is unchanged.
+Separate PR only. Do not merge or publish without a new express authorization.
+Physical iPhone confirmation remains necessary after an authorized release.

@@ -77,9 +77,10 @@ export function matchingExistingImportItems(candidate,existing=[]){
  });
 }
 export function excludeExistingImportItems(review,existing=[]){
- const snapshot=summarizeItineraryReview(review,existing);let removed=0;
- for(const item of snapshot.items)if(item.included&&item.existing_matches.length){
-  review.items[item.index].included=false;removed++;
+ if(!review?.read_only||!Array.isArray(review.items))throw Error('Revisió no disponible.');
+ let removed=0;
+ for(const item of review.items)if(item.included&&matchingExistingImportItems(effective(item),existing).length){
+  item.included=false;removed++;
  }
  return removed;
 }

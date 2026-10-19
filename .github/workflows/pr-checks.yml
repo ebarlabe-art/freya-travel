@@ -67,6 +67,10 @@ jobs:
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-automatic-places-browser.mjs
       - name: V27 automatic locations WebKit
         run: ROUTE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-automatic-places-browser.mjs
+      - name: Import exclusion real mobile click Chromium
+        run: IMPORT_ENGINE=chromium PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-import-exclude-browser.mjs
+      - name: Import exclusion real mobile click WebKit
+        run: IMPORT_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-import-exclude-browser.mjs
       - name: V27 routes WebKit
         run: ROUTE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-route-browser.mjs
       - name: Install isolated embedded Postgres test tooling
