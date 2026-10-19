@@ -104,20 +104,20 @@ function readItem(line,hasDay){
  const clock=normalized.match(CLOCK);
  if(clock){
   const title=cleanTitle(clock[3]);
-  if(!title)return null;
+  if(!title||!/[\p{L}]/u.test(title))return null;
   return {title,start:canonicalTime(clock[1]),end:clock[2]?canonicalTime(clock[2]):null,confidence:'high'};
  }
  const daypart=normalized.match(DAYPART)||normalized.match(UNTYPED_DAYPART);
  if(daypart&&daypart[2]){
   const title=cleanTitle(daypart[2]);
-  if(!title)return null;
+  if(!title||!/[\p{L}]/u.test(title))return null;
   return {title,daypart:daypartValue(daypart[1]),confidence:'high'};
  }
  if(hasDay){
   const bullet=normalized.match(BULLET);
   if(bullet){
    const title=cleanTitle(bullet[1]);
-   if(title&&!ADMIN.test(title)&&!HEADER.test(title))return {title,confidence:'medium'};
+   if(title&&/\p{L}/u.test(title)&&!ADMIN.test(title)&&!HEADER.test(title))return {title,confidence:'medium'};
   }
  }
  return null;
@@ -158,11 +158,35 @@ function explicitNextMorningDate(line,start,current){
  return {date:next.toISOString().slice(0,10),page:current.page,
   evidence:line+' | Dia següent explícit: '+match[1]+' '+match[2],confidence:'high'};
 }
+// Reassemble only an explicitly present final minute digit on the next line.
+// Keep the source lines as evidence and require review of the repaired range.
+function clockRows(text){
+ const lines=text.split('\n'),rows=[];
+ for(let i=0;i<lines.length;i++){
+  const raw=lines[i],broken=raw.trim().match(/^((?:[01]?\d|2[0-3])[:.h][0-5]\d)\s*[–—-]\s*((?:[01]?\d|2[0-3])[:.h][0-5])(?:\s+(.*))?$/);
+  const tail=lines[i+1]?.trim().match(/^(\d)\s*h$/i);
+  if(broken&&tail){
+   let title=broken[3]||'',evidence=raw+'\n'+lines[++i];
+   if(!title&&lines[i+1]&&/^[\p{L}]/u.test(lines[i+1].trim())&&
+      !HEADER.test(lines[i+1])&&!WEEKDAY.test(lines[i+1])&&!TZ_RE.test(lines[i+1])&&!ADMIN.test(lines[i+1])&&!readDatePrefix(lines[i+1])){
+    title=lines[++i].trim();evidence+='\n'+lines[i];
+   }
+   if(title&&/\p{L}/u.test(title)){
+    rows.push({raw:broken[1]+'–'+broken[2]+tail[1]+' h '+title,evidence,repaired:true});continue;
+   }
+   // A time range without an activity is not an activity itself.
+   rows.push({raw:evidence,evidence});continue;
+  }
+  rows.push({raw,evidence:raw});
+ }
+ return rows;
+}
 export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'}){
  const pages=normalizePages(rawPages),candidates=[],warnings=new Set(),yearHint=documentYearHint(pages);
  let current=null,documentZone=null,pendingDaypart=null,unparsed=0,invalidDate=false;
  for(const {page,text} of pages){
-  for(const raw of text.split('\n')){
+  for(const record of clockRows(text)){
+   const raw=record.raw;
    const line=raw.trim().replace(/\s+/g,' ');
    if(!line||line.length>1000){if(line.length>1000)warnings.add('Línia massa llarga: cal revisar el document.');continue;}
    let work=line.replace(WEEKDAY,'');
@@ -223,7 +247,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     if(!item&&!ADMIN.test(line)&&!HEADER.test(line)&&!tz&&
        !/^(?:observaci[oó]|nota\s+de|important|hora\s*\/\s*franja|activitat\s+i\s+lloc)\b/i.test(line)){
       const title=cleanTitle(line);
-      if(title&&title.length<=200)item={title,daypart:pendingDaypart.value,confidence:'medium'};
+      if(title&&/\p{L}/u.test(title)&&title.length<=200)item={title,daypart:pendingDaypart.value,confidence:'medium'};
     }
     pendingDaypart=null;
    }
@@ -231,8 +255,10 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     const dateContext=current?{date:current.date,evidence:current.evidence,page:current.page,confidence:current.confidence}:null;
     const dateForItem=explicitNextMorningDate(line,item.start,dateContext)||dateContext;
     if(dateForItem!==dateContext)warnings.add('Una activitat de matinada indica explícitament el dia següent: comprova-la.');
-    candidates.push(makeCandidate(item,line,page,dateForItem,
-      tz&&!tz.invalid?tz:current?.zone,candidates.length));
+    const candidate=makeCandidate(item,record.evidence,page,dateForItem,
+      tz&&!tz.invalid?tz:current?.zone,candidates.length);
+    if(record.repaired)candidate.warnings.push('Franja horària partida entre línies: comprova les hores amb el PDF.');
+    candidates.push(candidate);
    }else if(current&&!ADMIN.test(line)&&!tz)unparsed++;
    if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
   }

@@ -215,3 +215,24 @@ test('P0 #140: names of explicit POIs survive as source-backed locations for fut
  assert.equal(p.candidates[0].fields.location_name.confidence,'medium');
  assert.equal(p.candidates[0].fields.location_name.evidence[0].kind,'text');
 });
+
+test('numeric fragments and detached clock ranges never become activities',()=>{
+ const p=parse('25/10/2026\n16.15 16.3\n16:15 – 16:30\n- 123.45\nTarda: 16.3\n16:30 Visita al museu 123\n18:00 Passeig');
+ assert.deepEqual(p.candidates.map(x=>val(x,'title')),['Visita al museu 123','Passeig']);
+ assert.ok(p.warnings.some(x=>/no s’han pogut convertir/.test(x)));
+});
+
+test('wrapped table minute digit rejoins only literal adjacent evidence and keeps the real activity',()=>{
+ for(const line of ['16.15–16.3 Arribada al museu.\n0 h','16.15–16.3\n0 h\nArribada al museu.']){
+  const p=parse('25/10/2026\n'+line+'\n18.30 h Tornada');
+  assert.equal(p.candidates.length,2);
+  const c=p.candidates[0];assert.equal(val(c,'title'),'Arribada al museu.');
+  assert.equal(val(c,'start_local_time'),'16:15');assert.equal(val(c,'end_local_time'),'16:30');
+  assert.match(c.fields.title.evidence[0].excerpt,/16\.3[\s\S]*0 h/);
+  assert.ok(c.warnings.some(w=>/partida entre línies/.test(w)));
+ }
+});
+test('missing digit never gets invented from a later unrelated line',()=>{
+ const p=parse('25/10/2026\n16.15–16.3\n18.30 h Tornada');
+ assert.equal(p.candidates.length,1);assert.equal(val(p.candidates[0],'title'),'Tornada');
+});
