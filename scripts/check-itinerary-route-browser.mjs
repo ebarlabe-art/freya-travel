@@ -82,8 +82,10 @@ try{
   plan.plans.set(first.key,{minutes:120,reason:'Temps massa llarg'});
   renderGenericItinerary();
  });
- await page.waitForFunction(()=>document.querySelector('[data-visit-advice].agenda-visit-conflict')?.textContent.includes('no encaixa'));
- assert.doesNotMatch(await page.locator('[data-visit-advice].agenda-visit-conflict').first().innerText(),/Final orientatiu/,'Never show an impossible proposed end');
+ await page.waitForFunction(()=>document.querySelector('[data-visit-advice].agenda-visit-conflict')?.textContent.includes('Freya ajusta la visita a'));
+ const fit=await page.locator('[data-visit-advice].agenda-visit-conflict').first().innerText();
+ assert.match(fit,/Freya ajusta la visita a [0-9]+ min com a màxim/);
+ assert.doesNotMatch(fit,/Final orientatiu: 10:00/,'Never show the impossible 120-minute finish');
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  const before=routeCalls;await page.locator('[data-generic-itinerary-day="2030-04-01"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-agenda-route]')].some(card=>card.textContent.includes('Falta un lloc')&&card.querySelector('[data-route-review]')));
