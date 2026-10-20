@@ -14,6 +14,11 @@ export function recommendedVisitAdvice(item,suggestion,next=null,routeResult=nul
  const latestLeave=nextStart!==null&&route?nextStart-route.duration_seconds*1000-buffer*60000:null;
  const available=latestLeave!==null&&start!==null?Math.floor((latestLeave-start)/60000):null;
  const shortage=latestLeave!==null&&end!==null?Math.max(0,Math.ceil((end-latestLeave)/60000)):null;
+ // Even with no verified route, an earlier next start is a hard planning bound.
+ // Never present a suggested finish after the next scheduled activity as viable.
+ const untilNext=nextStart!==null&&start!==null?Math.floor((nextStart-start)/60000):null;
+ const conflictsNext=untilNext!==null&&suggestion.minutes>untilNext;
+ const conflictsDeparture=shortage!==null&&shortage>0;
  return {
   minutes:suggestion.minutes,
   reason:typeof suggestion.reason==='string'?suggestion.reason.slice(0,160):'',
@@ -23,6 +28,9 @@ export function recommendedVisitAdvice(item,suggestion,next=null,routeResult=nul
   travelMinutes:route?Math.ceil(route.duration_seconds/60):null,
   availableMinutes:available,
   shortageMinutes:shortage,
+  minutesUntilNext:untilNext,
+  conflictsNext,
+  conflictsDeparture,
   // When a route is missing, there is NO verified departure or travel ETA.
   routePending:!!next&&!route,
   nextFixed:!!next?.tags?.includes('Fix')||next?.sourceType==='activity'&&['confirmed','reserved'].includes(next?.status)
