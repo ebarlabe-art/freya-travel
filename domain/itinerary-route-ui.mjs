@@ -74,5 +74,45 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh()},{signal:listeners.signal});
   draw();load();
  }
+ // Real walking legs INSIDE a compound activity (one item, several ordered visits).
+ // Never draw a straight-line duration and never infer a stop from a vague area.
+ for(const item of items){
+  if(item.tripId!==tripId||item.localDate!==day||item.isCancelled||item.isTransport||!['manual','activity'].includes(item.sourceType))continue;
+  const points=item.locationPoints;
+  if(!Array.isArray(points)||points.length<2)continue;
+  const anchor=[...root.querySelectorAll('[data-itinerary-key]')].find(node=>node.dataset.itineraryKey===item.key);
+  if(!anchor)continue;
+  const card=document.createElement('section');card.className='agenda-route-card agenda-route-internal';card.dataset.internalRoutes=item.key;
+  const heading=document.createElement('strong');heading.textContent='🚶 Trajectes dins de l’activitat';
+  const legs=document.createElement('div');legs.className='agenda-route-internal-legs';
+  card.append(heading,legs);anchor.after(card);
+  const alive=()=>current()&&scope===nextScope&&card.isConnected;
+  for(let i=0;i<points.length-1;i++){
+   const a=points[i],b=points[i+1],line=document.createElement('p'),label=(i+1)+' → '+(i+2)+' · ';
+   line.className='agenda-route-compact';line.setAttribute('role','status');
+   legs.append(line);
+   const exact=p=>p?.place?.coordinate_role==='exact_location'&&Number.isFinite(p.place.latitude)&&Number.isFinite(p.place.longitude);
+   if(!exact(a)||!exact(b)){
+    line.textContent=label+'Pendent de verificar els punts o concretar la zona.';
+    continue;
+   }
+   line.textContent=label+'Calculant el trajecte a peu…';
+   const body={trip_id:tripId,kind:'internal',mode:'walk',item:{type:item.sourceType,id:item.sourceId,updated_at:item.sourceUpdatedAt},from_index:i,to_index:i+1};
+   const key=JSON.stringify([nextScope,item.key,item.sourceUpdatedAt,'internal',i,contextKey]);
+   void queue.request(key,body,{online:online()}).then(result=>{
+    if(!alive())return;
+    const route=result?.route;
+    if(route?.method==='routing'&&Number.isFinite(route.duration_seconds)&&Number.isFinite(route.distance_m)){
+     const minutes=Math.ceil(route.duration_seconds/60),distance=(route.distance_m/1000).toFixed(2);
+     line.textContent=label+minutes+' min · '+distance+' km a peu';
+     const mapUrl=routeMapUrl(route);
+     if(mapUrl){const link=document.createElement('a');link.href=mapUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent=' · Mapa';line.append(link)}
+    }else{
+     const code=result?.error||result?.origin?.error||result?.destination?.error||'unavailable';
+     line.textContent=label+(code==='offline'?'Sense connexió.':routeReasons[code]||'Trajecte pendent de verificar.');
+    }
+   }).catch(()=>{if(alive())line.textContent=label+'Trajecte temporalment no disponible.'});
+  }
+ }
  restoreViewport();
 }
