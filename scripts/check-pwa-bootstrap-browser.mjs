@@ -103,6 +103,9 @@ try{
  for(const tablet of [false,true]){
   const ctx=await context({persisted:true,tablet}),page=await ctx.newPage();page.setDefaultTimeout(20000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(url);await page.locator('#tripsHomeView').waitFor({state:'visible'});
+  // The cold-start shell is visible before authenticated trip loading finishes.
+  // Wait for that real initialization, otherwise its final render races the first navigation click.
+  await page.waitForFunction(uid=>authInitializationResolved&&!coldStartNavigationPending&&session?.user?.id===uid&&trips.length>0,uid);
   await page.locator('[data-home-view="upcomingTripsView"]').click();await page.locator('[data-select-trip]').click();await page.locator('#genericItineraryModuleCard').click();
   for(const [day,count] of [['27',7],['28',6]]){await page.locator(`[data-generic-itinerary-day="2026-12-${day}"]`).click();await page.waitForFunction(count=>document.querySelectorAll('#genericItineraryDays [data-itinerary-key]').length===count,count)}
   await page.waitForFunction(()=>!itineraryAutoPlaceContext||[...itineraryAutoPlaceContext.days.values()].every(day=>!day.running));

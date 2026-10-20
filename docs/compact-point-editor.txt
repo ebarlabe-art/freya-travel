@@ -51,3 +51,9 @@ Do not merge or deploy without authorization. After authorized publication,
 check the compact editor physically on iPhone with Bologna, including local
 names and a nonexistent name; initially cancel without saving. Synthetic tests
 are not a claim of physical-device or real-provider validation.
+
+CI harness note: the first run exposed a cold-start race in the existing PWA
+bootstrap test. The home shell becomes visible before session/trip initialization
+finishes, so its final render could replace the navigation target during the
+first click. The test now waits for the real initialization state before using
+the same navigation clicks and assertions. No production bootstrap code changes.
