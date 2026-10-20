@@ -64,10 +64,15 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    const mapUrl=routeMapUrl(route);
    const needs=result&&!route?[error,...['origin','destination'].map(side=>result[side]?.error)].filter(Boolean):[];
    const modeIcon=route?.mode==='drive'?'🚗':route?.mode==='transit'?'🚌':'🚶';
+   // Do not hide an actionable location error behind a generic "pending" label.
+   // The router must have two exact, independently verified endpoints; never invent coordinates.
+   const reasonCode=needs.find(code=>routeReasons[code]);
+   const unresolvedSide=result?.origin?.error?'origin':result?.destination?.error?'destination':'';
    const summary=!result?'Calculant trajecte…':route?
      `${modeIcon} ${Math.ceil(route.duration_seconds/60)} min · ${(route.distance_m/1000).toFixed(1)} km · ${esc(routeModes[route.mode])}`:
-     needs.includes('approximate_place')?'Zona identificada · trajecte pendent de concretar':error==='offline'?'Sense connexió · trajecte pendent':error==='rate_limited'?'Trajecte temporalment no disponible':'Trajecte pendent de verificar';
-   card.innerHTML=`<div class="agenda-route-compact" role="status" aria-live="polite">↳ ${summary}</div>${state.autoNote?`<p class="agenda-route-diagnosis">${esc(state.autoNote)}</p>`:""}${route?.mode==='transit'?'<p class="agenda-route-diagnosis">Temps estimat de transport públic; no incorpora horaris ni esperes en directe.</p>':''}
+     reasonCode?routeReasons[reasonCode]:error==='offline'?'Sense connexió · reintentarem el trajecte': 'Ruta no disponible. Consulta el motiu i reintenta.';
+   const reviewControl=unresolvedSide?'<button type="button" data-route-review="'+unresolvedSide+'">📍 Revisa '+(unresolvedSide==='origin'?'la sortida':'l’arribada')+'</button>':'';
+   card.innerHTML=`<div class="agenda-route-compact" role="status" aria-live="polite">↳ ${esc(summary)} ${reviewControl}</div>${state.autoNote?`<p class="agenda-route-diagnosis">${esc(state.autoNote)}</p>`:""}${route?.mode==='transit'?'<p class="agenda-route-diagnosis">Temps estimat de transport públic; no incorpora horaris ni esperes en directe.</p>':''}
     ${budget?`<p class="agenda-route-diagnosis" role="status">${budget.hasConflict?"⚠ Horaris incompatibles:": "Temps màxim orientatiu per a la visita:"} ${esc(String(budget.availableMinutes))} min, descomptant trajectes i marge.${leaveTime?" Sortida recomanada abans de les "+esc(leaveTime)+".":""} No modifica les reserves.</p>`:internal?.incomplete||internal?.waiting?"<p class=\"agenda-route-diagnosis\">Cal verificar els trams interns per calcular el temps disponible.</p>":""}
     ${diagnosis?.status==='No factible'||diagnosis?.status==='Molt ajustat'?`<p role="status" class="agenda-route-diagnosis">⚠ ${esc(diagnosis.reason)} Els horaris es mantenen.</p>`:''}
     <details data-route-options ${state.detailsOpen?'open':''}><summary>Opcions del trajecte</summary>
@@ -85,6 +90,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    details.addEventListener('toggle',()=>{if(live()&&details.isConnected&&card.contains(details))state.detailsOpen=details.open});
    card.querySelector('[data-route-mode]').onchange=e=>{state.mode=e.target.value;state.result=null;save();draw();load()};
    card.querySelector('[data-route-buffer]').onchange=e=>{state.buffer=e.target.value===''?5:Number(e.target.value);save();draw()};
+   card.querySelector('[data-route-review]')?.addEventListener('click',event=>onEdit(pair[event.currentTarget.dataset.routeReview]));
    card.querySelector('[data-route-retry]')?.addEventListener('click',()=>load(true));
    card.querySelectorAll('[data-route-choice]').forEach(select=>select.onchange=()=>{state.choices[select.dataset.routeChoice]=select.value;load()});
    card.querySelectorAll('[data-route-edit]').forEach(button=>button.onclick=()=>onEdit(pair[button.dataset.routeEdit]));
