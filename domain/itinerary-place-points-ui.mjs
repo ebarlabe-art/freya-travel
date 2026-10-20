@@ -95,7 +95,7 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
    const state=stateFor(point),box=el('fieldset'),legend=el('legend');
    const toggle=el('button');toggle.type='button';toggle.className='point-toggle';toggle.dataset.pointToggle='';toggle.setAttribute('aria-label','Edita el punt '+(i+1));toggle.setAttribute('aria-expanded',String(selectedId===point.id));toggle.disabled=saving;
    const title=el('strong'),badge=el('small');
-   const updateSummary=()=>{title.textContent=(i+1)+'. '+(point.place?.canonical_name||point.query||'Punt nou');badge.textContent=state.loading?'Cercant…':point.place?(point.status==='approximate'?'Zona aproximada':'Ubicació verificada'):'Pendent de verificar'};
+   const updateSummary=()=>{title.textContent=(i+1)+'. '+(point.place?.canonical_name||point.query||'Punt nou');badge.textContent=state.loading?'Cercant…':state.error?'Cerca no disponible':state.empty?'Sense coincidències':state.candidates.length?'Tria una coincidència':point.place?(point.status==='approximate'?'Zona aproximada':'Ubicació verificada'):'Pendent de verificar'};
    updateSummary();toggle.append(title,badge);legend.append(toggle);box.append(legend);
    toggle.onclick=()=>{if(!active()||saving)return;selectedId=selectedId===point.id?null:point.id;render()};
    const body=el('div');body.dataset.pointBody='';body.hidden=selectedId!==point.id;box.append(body);
@@ -103,15 +103,15 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
    const hint=el('small','Pots provar el nom local o una variant en una altra llengua. Revisa sempre el lloc retornat.');
    const feedback=el('p');feedback.dataset.pointFeedback='';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');feedback.textContent=state.message;feedback.dataset.error=String(state.error);
    const results=el('div');results.dataset.pointResults='';
-   input.oninput=()=>{point.query=input.value;point.place=null;point.status='pending';state.candidates=[];state.error=false;state.message='Nom modificat. Cerca i confirma el lloc abans de desar-lo com a verificat.';results.replaceChildren();body.querySelector('[data-point-place-info]')?.remove();feedback.textContent=state.message;feedback.dataset.error='false';updateSummary()};
+   input.oninput=()=>{point.query=input.value;point.place=null;point.status='pending';state.candidates=[];state.empty=false;state.error=false;state.message='Nom modificat. Cerca i confirma el lloc abans de desar-lo com a verificat.';results.replaceChildren();body.querySelector('[data-point-place-info]')?.remove();feedback.textContent=state.message;feedback.dataset.error='false';updateSummary()};
    const find=action('Cerca aquest punt',async()=>{
     if(!active()||busy)return;
     const query=point.query.trim();
     if(!query){state.message='Escriu un nom de lloc.';state.error=true;render();return}
-    const request=++serial;busy=true;state.loading=true;state.error=false;state.candidates=[];state.message='Cercant el punt…';render();
+    const request=++serial;busy=true;state.loading=true;state.error=false;state.empty=false;state.candidates=[];state.message='Cercant el punt…';render();
     try{
      const options=await search(query);if(!active()||request!==serial)return;
-     state.candidates=visiblePointCandidates(options).map(pointPlace);
+     state.candidates=visiblePointCandidates(options).map(pointPlace);state.empty=state.candidates.length===0;
      state.message=state.candidates.length?'Tria el lloc correcte. Encara no s’ha desat.'+(options.length>state.candidates.length?' Coincidències repetides agrupades.':''):'Cap coincidència verificable. Prova el nom local o una altra variant; el punt continua pendent.';
     }catch(e){if(active()&&request===serial){state.error=true;state.message=e.message||'La cerca no està disponible. Torna-ho a provar.'}}
     finally{if(active()&&request===serial){busy=false;state.loading=false;render()}}

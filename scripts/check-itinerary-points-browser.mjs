@@ -116,7 +116,7 @@ try{
   await box.locator('[data-point-results] button').first().waitFor();
   assert.match(await box.locator('[data-point-feedback]').innerText(),/Tria el lloc/);
   assert.equal(writes.length,8,'Searching variants never saves or auto-confirms');
-  assert.match(await box.locator('[data-point-toggle]').innerText(),/Pendent de verificar/,'Candidate requires explicit selection');
+  assert.match(await box.locator('[data-point-toggle]').innerText(),/Tria una coincidència/,'Candidate requires explicit selection');
   await box.locator('[data-point-results] button').first().tap();
   assert.match(await box.locator('[data-point-toggle]').innerText(),/Ubicació verificada/);
   assert.equal(writes.length,8,'Selecting each of the three monuments keeps an unsaved draft');
@@ -132,7 +132,9 @@ try{
  await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
  await editor.locator('fieldset').first().locator('[data-point-feedback][data-error="true"]').waitFor();
  assert.ok((await editor.locator('fieldset').first().locator('[data-point-feedback]').innerText()).length>0,'Provider error shown next to search');
- await selectPoint(2);await selectPoint(1);
+ await selectPoint(2);
+ assert.match(await editor.locator('fieldset').first().locator('[data-point-toggle]').innerText(),/Cerca no disponible/,'Collapsed point makes its error visible');
+ await selectPoint(1);
  assert.equal(await editor.locator('fieldset').first().locator('[data-point-feedback][data-error="true"]').isVisible(),true,'Error survives point switching');
  await editor.getByRole('button',{name:'Cancel·la',exact:true}).tap();await first.tap();await editor.waitFor({state:'visible'});
 
