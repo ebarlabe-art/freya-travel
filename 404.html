@@ -6533,10 +6533,10 @@ async function generateItineraryDayContext(localDate,auto=true){
  if(!trip||!session||isLondonTrip()||!genericItineraryTripDates().includes(localDate)||!itinerarySourcesAreReady())return;
  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,key=JSON.stringify([userId,tripId,localDate]);
  if(dayContextPending.has(key))return;
- const dayItems=itineraryProjection.filter(x=>x.tripId===tripId&&x.localDate===localDate&&!x.isCancelled&&['manual','activity'].includes(x.sourceType));
+ const dayItems=itineraryProjection.filter(x=>x.tripId===tripId&&x.localDate===localDate&&!x.isCancelled&&['manual','activity','flight','accommodation'].includes(x.sourceType));
  // An arrival-only day still deserves context; transport entries are input
  // for its narrative, but must NOT receive AI sightseeing-duration cards.
- const visitItems=dayItems.filter(x=>!x.isTransport&&
+ const visitItems=dayItems.filter(x=>['manual','activity'].includes(x.sourceType)&&!x.isTransport&&
   !(x.sourceType==='activity'&&isLocalTransportActivity(tripHomeSourceRow(x)))&&
   !(x.sourceType==='manual'&&/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(String(x.title||''))));
  const sourceItems=visitItems.length?visitItems:dayItems;
