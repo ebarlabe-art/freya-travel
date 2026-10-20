@@ -34,8 +34,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
  for(const item of items)if(Array.isArray(item.locationPoints)&&item.locationPoints.length>1)internalTravel.set(item.key,{waiting:item.locationPoints.length-1,seconds:0,incomplete:false});
  const pairs=visitPairs(items,tripId,day);
  for(const [index,pair]of pairs.entries()){
-  // The activity itself already shows that its location is pending.
-  if(!pair.origin.hasRoutePlace||!pair.destination.hasRoutePlace)continue;
+  // Even incomplete place pairs need a clear, actionable connector; do not hide them.
   const anchor=[...root.querySelectorAll('[data-itinerary-key]')].find(node=>node.dataset.itineraryKey===pair.origin.key);if(!anchor)continue;
   const storageKey='freya-route-options-v1:'+JSON.stringify([userId,tripId,day,pair.origin.key,pair.destination.key]);
   if(states.size>=200)states.delete(states.keys().next().value);
@@ -101,7 +100,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    const requestVersion=++version;
    const payload={trip_id:tripId,mode:state.mode==='auto'?'walk':state.mode,origin:{type:pair.origin.sourceType,id:pair.origin.sourceId,updated_at:pair.origin.sourceUpdatedAt},destination:{type:pair.destination.sourceType,id:pair.destination.sourceId,updated_at:pair.destination.sourceUpdatedAt},choices:{...state.choices}};
    if(!online()){state.result={error:'offline'};draw();return}
-   if(!pair.origin.hasRoutePlace||!pair.destination.hasRoutePlace){state.result={error:'missing_place'};draw();return}
+   if(!pair.origin.hasRoutePlace||!pair.destination.hasRoutePlace){state.result={error:'missing_place',origin:!pair.origin.hasRoutePlace?{error:'missing_place'}:{},destination:!pair.destination.hasRoutePlace?{error:'missing_place'}:{}};draw();return}
    state.result=null;state.autoNote='';draw();
    const result=await queue.request(JSON.stringify([pair.key,contextKey,payload]),payload,{online:online(),retry});
    if(!live()||requestVersion!==version)return;
