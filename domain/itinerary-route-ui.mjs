@@ -1,4 +1,4 @@
-import {visitPairs,routeFeasibility,routeModes,routeReasons,routeMapUrl,RouteQueue,transportPreferences,rentalAvailableForDay,preferredRoute,routeIsVerified,visitTimeBudget} from './itinerary-route.mjs';
+import {visitPairs,routeFeasibility,routeModes,routeReasons,routeMapUrl,RouteQueue,transportPreferences,rentalAvailableForDay,preferredRoute,routeIsVerified,automaticAlternativeMode,visitTimeBudget} from './itinerary-route.mjs';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let queue,scope='',states=new Map(),listeners;
 export function resetAgendaRoutes(){listeners?.abort();queue?.reset('');scope='';states=new Map()}
@@ -23,7 +23,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
  }
  picker.value=preference;preferenceLabel.append(picker);
  const help=document.createElement('small');
- help.textContent=carAllowed?'Freya compara rutes reals quan caminar és lent. Pots corregir qualsevol trajecte.':'Freya prioritza caminar i compara el transport públic en distàncies llargues. Cotxe: només amb lloguer reservat o confirmat per al dia.';
+ help.textContent=carAllowed?'Freya prioritza caminades curtes, transport públic a ciutat i cotxe de lloguer només per a distàncies llargues. Pots canviar cada trajecte.':'Freya prioritza caminar i compara el transport públic en distàncies llargues. Cotxe: només amb lloguer reservat o confirmat per al dia.';
  preferencePanel.append(preferenceLabel,help);
  picker.onchange=()=>{
   try{storage?.setItem(preferenceKey,picker.value)}catch{}
@@ -101,7 +101,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    if(!live()||requestVersion!==version)return;
    let chosen=result;
    if(state.mode==='auto'&&routeIsVerified(result)&&result.route.duration_seconds>900){
-    const otherMode=preference==='walk_car'&&carAllowed?'drive':'transit';
+    const otherMode=automaticAlternativeMode(result,preference,carAllowed);
     const alt={...payload,mode:otherMode};
     const alternative=await queue.request(JSON.stringify([pair.key,contextKey,alt]),alt,{online:online(),retry});
     if(!live()||requestVersion!==version)return;
