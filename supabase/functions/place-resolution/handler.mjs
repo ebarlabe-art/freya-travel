@@ -22,7 +22,7 @@ export function createPlaceHandler({authenticate,rpc,adapter,tokenSecret,config=
  if(!['search','revalidate'].includes(input.action)||typeof input.text!=='string'||!input.text.trim()||input.text.length>500||!/^([a-z]{2})$/.test(input.language||'ca')||(input.country_code&&!/^[A-Z]{2}$/.test(input.country_code)))throw Error('invalid_request');
  const query={text:input.text.trim(),language:input.language||'ca',...(input.country_code?{country_code:input.country_code}:{})};
  // A locality-aware result must not reuse a pre-v27 cached candidate.
- const claim=await rpc('claim_place_query_v1',{p_owner:owner,p_query:{...query,resolution_version:'geoapify-locality-v27'},p_config:config});if(claim.pending)return reply({error:'resolution_pending'},409);
+ const claim=await rpc('claim_place_query_v1',{p_owner:owner,p_query:{...query,resolution_version:'geoapify-ordered-points-v1'},p_config:config});if(claim.pending)return reply({error:'resolution_pending'},409);
  let results=claim.results;
  if(!claim.cached){results=await adapter.search(query);await rpc('finish_place_query_v1',{p_owner:owner,p_hash:claim.query_hash,p_token:claim.token,p_results:results,p_seconds:results.length?config.cacheSeconds:config.emptySeconds});}
  const candidates=await Promise.all(results.map(async(place,index)=>({place,candidate_token:await signCandidate({owner,query_hash:claim.query_hash,token:claim.token,index,expires:now()+config.tokenSeconds*1000},tokenSecret)})));

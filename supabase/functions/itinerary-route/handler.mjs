@@ -22,8 +22,8 @@ export function createRouteHandler({authenticate,readTrip,readItem,readStops,pro
    if(budgets.size>1000)for(const [id,budget]of budgets)if(budget.minute!==minute)budgets.delete(id);
    if(!budgets.has(user)&&budgets.size>=1000)return reply({error:'rate_limited'},429);
    budgets.set(user,{minute,used:used+1});
-   const origin=await provider.resolve(a,destinationContext(a,stops),input.choices?.origin);
-   const destination=await provider.resolve(b,destinationContext(b,stops),input.choices?.destination);
+   const origin=await provider.resolve(a,destinationContext(a,stops),input.choices?.origin,'last');
+   const destination=await provider.resolve(b,destinationContext(b,stops),input.choices?.destination,'first');
    const safe=result=>result.point?{label:result.point.label}:result;
    if(!origin.point||!destination.point)return reply({status:'insufficient',origin:safe(origin),destination:safe(destination)});
    const route=await provider.route(origin.point,destination.point,input.mode);

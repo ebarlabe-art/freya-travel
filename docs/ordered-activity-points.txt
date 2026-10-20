@@ -1,0 +1,91 @@
+Punts geogràfics ordenats — primera prioritat
+
+Base: main 451d605, PR #151 fusionada. Tot el treball és local o a la PR.
+No s’ha consultat ni modificat cap dada personal de producció. No s’han
+executat migracions remotes ni desplegat funcions/frontend. Londres-2026
+(experience_key london-2026) continua fora de l’enriquiment genèric.
+
+Arquitectura auditada
+- resolved_location només admet un punt exacte; el trigger l’invalida quan
+  canvia el títol/lloc. L’extractor actual conserva només el primer lloc.
+- Geoapify distingeix exact_location i representative_point, però els selectors
+  ràpids i el desament antic no resolen el cas de diverses zones/visites.
+- itinerary-route ja calcula trajectes entre activitats, però no els interns.
+- Les taules existents tenen RLS de membres, updated_at, triggers i Realtime.
+
+Canvi
+- Columna nullable location_points JSONB a trip_itinerary_items i trip_activities.
+  Conté version, snapshot d’entrada i fins a 12 punts ordenats amb id, query,
+  status pending/resolved/approximate i geografia atribuïda a Geoapify.
+- No hi ha taules/activitats paral·leles ni backfill. La migració només afegeix
+  columnes, validació i invalidació del snapshot; conserva RLS i permisos.
+  Falla si manca la RLS de les taules existents.
+- En obrir el dia, es processen noms explícits separats, sense crear restaurants
+  a partir de dinar/esmorzar/aperitiu. Els noms simples existents es conserven.
+  Un nom antic assignat automàticament no amaga els altres punts del títol.
+- Nom complet, país i localitat han de coincidir inequívocament. Els connectors
+  de/di i centre històric/centro storico es normalitzen; no s’inventen noms,
+  coordenades, accessos, restaurants ni adreces. Dos candidats igualment vàlids
+  es mantenen pendents. Un centroid de ciutat sencera no confirma un barri.
+- Carrers/barris identificats es desen com a aproximats. Es mostren nom,
+  precisió, adreça retornada pel proveïdor, coordenades, mapa i atribució.
+- Editor per activitat: corregir, cercar/confirmar, afegir, eliminar, pujar/baixar,
+  cancel·lar i desar. Es manté una activitat i el seu horari. Un llistat buit
+  desat expressament no es torna a generar automàticament.
+- L’únic patch és location_points, amb trip_id + id + updated_at. Una edició
+  simultània no es sobreescriu. Canviar títol/lloc/ciutat/adreça invalida el
+  snapshot, inclòs quan ho fa el frontend anterior.
+- Coordenades explícites anteriors es conserven i no s’enriqueixen automàticament;
+  l’usuari pot afegir punts verificats des de l’editor.
+- Cerca compartida amb cache de promeses i límit de 30 consultes per sessió de
+  viatge. Una cerca té un termini de 20 segons. Un error atura l’automatisme; un reintent explícit conserva el límit.
+  Es mantenen els límits de place-resolution (100/dia usuari, 2500 global,
+  4/s per defecte) i la cache servidor. No s’afegeix cap servei ni crida d’IA.
+- Normalitzador Geoapify conserva street/suburb i formatted_address. La clau
+  de cache de cerca canvia per evitar resultats antics sense aquestes dades.
+
+Compatibilitat amb trajectes
+itinerary-route llegeix location_points: últim punt com a origen i primer com
+ a destinació. Reutilitza coordenades exactes desades, sense geocodificar-les.
+Un extrem aproximat, pendent o eliminat no recupera silenciosament la ubicació
+antiga. El client anterior continua sent compatible després de la migració.
+Els trams interns no es calculen en aquesta PR i s’indica a la targeta.
+
+Límits reals / següents PRs
+- L’extracció és conservadora, basada en noms explícits i patrons de llenguatge;
+  no és un reconeixedor universal d’entitats. Àlies desconeguts, noms compostos
+  no reconeguts o localitats no acreditades poden necessitar correcció manual.
+- Una resposta simulada no acredita què retorna avui Geoapify per Bolonya.
+  La prova del proveïdor real i la validació física de l’iPhone queden pendents
+  de l’autorització de publicació. No s’ha utilitzat el PDF privat als tests.
+- Prioritat 2: trams interns, durades de visita, marge disponible i propostes
+  revisables d’ajust; mai afirmar viabilitat amb durades desconegudes.
+- Prioritat 3: context de dia generat per IA, control de repeticions, text manual
+  protegit i actualització revisable amb concurrència.
+- Diagnòstic a Configuració i missatge senzill d’actualitzacions: PR separada.
+
+Publicació futura, només amb autorització
+1. Verificar backup/custòdia i CI del commit aprovat.
+2. Aplicar exclusivament 20261020100255_itinerary_ordered_place_points.sql.
+3. Desplegar place-resolution i itinerary-route mantenint JWT/configuració.
+4. Frontend amb marcador pwa-automatic-places-v27-ordered-points i cache v32.
+   Sense la columna nova, el frontend manté el flux anterior.
+5. Validar a l’iPhone sobre el viatge existent, sense reimportar el PDF:
+   3 punts Piazza/Fontana/Basílica; 2 Due Torri/Santo Stefano; Quadrilatero,
+   centre històric i Pratello aproximats, cap establiment inventat; revisió dels
+   candidats ambigus; addició/correcció/reordenament i recàrrega; confirmar
+   mateix recompte d’activitats, dates, hores, documents i reserves.
+Reversió: recuperar frontend/funcions anteriors; conservar columnes i dades.
+Mai drop, backfill invers ni restauració destructiva.
+
+Proves
+- scripts/itinerary-place-points.test.mjs: els cinc patrons, noms simples antics,
+  adreces, precisió, ambigüitat, altres països/ciutats, snapshot, quota/cache,
+  extrems de ruta exactes i absència de fallback per a zones/eliminacions.
+- scripts/test-itinerary-points-db.mjs: baselines reals + migració additiva en
+  Postgres en memòria, RLS owner/member/outsider/anon, preservació de camps,
+  reordenament/buit, revisió concurrent, invalidació pel frontend antic.
+- scripts/check-itinerary-points-browser.mjs: build real i clics tàctils en
+  Chromium/WebKit 390×844, dades sintètiques, transport extern bloquejat;
+  enriquiment, editor complet, recàrrega sense repetir cerques i conflicte CAS.
+- Regressions existents de llocs, trajectes, importació #151 i PWA a CI.
