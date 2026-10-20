@@ -5494,6 +5494,7 @@ async function proposeActivityPoints(day){
    if(activity)await loadActivities(true);if(manual)await loadManualItineraryItems(true);
   }
   context.running=false;
+  if(context.scope===itineraryAutoPlaceScope()&&genericItinerarySelectedDay&&genericItinerarySelectedDay!==day)void proposeActivityPoints(genericItinerarySelectedDay).catch(()=>{});
  }
 }
 async function openActivityPointEditor(button){
@@ -6502,7 +6503,7 @@ async function renderAgendaRoutes(items,day){
   const projected=items.map(item=>{const row=tripHomeSourceRow(item);return {...item,isTransport:(item.sourceType==='activity'&&isLocalTransportActivity(row))||(item.sourceType==='manual'&&/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(String(row?.title||''))),hasRoutePlace:!!(row?.location_points||row?.location_name||row?.venue_name||row?.address||(Number.isFinite(row?.latitude)&&Number.isFinite(row?.longitude)))}});
   agendaRouteModule.mountAgendaRoutes({root:$('genericItineraryDays'),items:projected,tripId,userId,generation,day,current,contextKey:JSON.stringify(tripStopRows),online:()=>!connectionUnavailable(),
    invoke:async body=>{const {data,error}=await db.functions.invoke('itinerary-route',{body});if(data)return data;if(error?.context){try{return await error.context.json()}catch(_){}}return {error:'provider_unavailable'}},
-   onEdit:item=>item.sourceType==='manual'?openManualItineraryForm(item.sourceId):openItinerarySource(item.sourceType,item.sourceId)});
+   onEdit:item=>{const button=itineraryPointRow(item)&&document.querySelector('[data-activity-points="'+CSS.escape(item.key)+'"]');if(button)void openActivityPointEditor(button);else if(item.sourceType==='manual')openManualItineraryForm(item.sourceId);else openItinerarySource(item.sourceType,item.sourceId)}});
  }catch(_){if(current())msg('genericItineraryMessage','No s’han pogut carregar els trajectes. Torna a obrir el dia per reintentar.',true)}
 }
 // Visible, read-only diagnostics. Never expose tokens, user IDs or cached document contents.

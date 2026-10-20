@@ -32,7 +32,8 @@ export function routeProvider({key,fetcher=fetch,timeoutMs=8000,now=Date.now,spa
    if(row.location_points!==null&&row.location_points!==undefined){
     const points=savedActivityPoints(row),p=(endpoint==='last'?points?.at(-1):points?.[0])?.place;
     // Never fall back to a superseded single location or turn an area centroid into an exact entrance.
-    if(!validPointPlace(p)||p.coordinate_role!=='exact_location')return {error:'missing_place'};
+    if(!validPointPlace(p))return {error:'missing_place'};
+    if(p.coordinate_role!=='exact_location')return {error:'approximate_place'};
     return {point:{id:p.provider_place_id,label:p.canonical_name,lat:p.latitude,lon:p.longitude}};
    }
    if(!choice&&Number.isFinite(row.latitude)&&Math.abs(row.latitude)<=90&&Number.isFinite(row.longitude)&&Math.abs(row.longitude)<=180){

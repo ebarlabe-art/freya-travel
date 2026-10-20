@@ -38,7 +38,7 @@ Canvi
 - Coordenades explícites anteriors es conserven i no s’enriqueixen automàticament;
   l’usuari pot afegir punts verificats des de l’editor.
 - Cerca compartida amb cache de promeses i límit de 30 consultes per sessió de
-  viatge. Un error atura l’automatisme; un reintent explícit conserva el límit.
+  viatge. Una cerca té un termini de 20 segons. Un error atura l’automatisme; un reintent explícit conserva el límit.
   Es mantenen els límits de place-resolution (100/dia usuari, 2500 global,
   4/s per defecte) i la cache servidor. No s’afegeix cap servei ni crida d’IA.
 - Normalitzador Geoapify conserva street/suburb i formatted_address. La clau

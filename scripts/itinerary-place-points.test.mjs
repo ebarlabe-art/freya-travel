@@ -59,7 +59,12 @@ test('routing reuses last/first exact ordered endpoints; approximate, pending an
  const provider=routeProvider({key:'synthetic',fetcher:()=>{throw Error('No provider query expected')}});
  assert.equal((await provider.resolve(row,null,null,'first')).point.label,'First');assert.equal((await provider.resolve(row,null,null,'last')).point.label,'Last');
  for(const points of [[],[{id:'a',query:'Unknown',place:null}],[{id:'a',query:'Street',place:place('Street','street')}]] ){
-  const next={...row,location_points:pointSnapshot(row,points)};assert.equal((await provider.resolve(next,null)).error,'missing_place');
+  const next={...row,location_points:pointSnapshot(row,points)};assert.equal((await provider.resolve(next,null)).error,points[0]?.place?'approximate_place':'missing_place');
  }
  assert.equal((await provider.resolve({...row,title:'Changed'},null)).error,'missing_place');
+});
+
+test('a stalled point query releases the UI and opens the circuit without retrying',async()=>{
+ let calls=0;const q=new ActivityPointQueue(()=>{calls++;return new Promise(()=>{})},{timeoutMs:5});
+ await assert.rejects(q.find('Stalled',context),/no respon/);await assert.rejects(q.find('Other',context));assert.equal(calls,1);
 });

@@ -57,7 +57,7 @@ export function savedActivityPoints(row){
 }
 export function pointMapUrl(place){return validPointPlace(place)?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place.latitude+','+place.longitude):null}
 export class ActivityPointQueue{
- constructor(search){this.search=search;this.cache=new Map();this.count=0;this.blocked=false}
+ constructor(search,{timeoutMs=20000}={}){this.search=search;this.timeoutMs=timeoutMs;this.cache=new Map();this.count=0;this.blocked=false}
  async find(query,context){
   const text=query+(context?.canonical_name?', '+context.canonical_name:'');
   const key=JSON.stringify([normalizePointName(text),context?.country_code]);
@@ -65,7 +65,8 @@ export class ActivityPointQueue{
   if(this.blocked)throw Error('La cerca està aturada perquè el servei no respon. Torna-ho a provar més tard.');
   if(this.count>=30)throw Error('Límit preventiu de 30 consultes assolit.');
   this.count++;
-  const promise=Promise.resolve().then(()=>this.search(text,context?.country_code)).then(options=>options.filter(validPointPlace));
+  let timer;
+  const promise=Promise.race([Promise.resolve().then(()=>this.search(text,context?.country_code)),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('El servei de llocs no respon. Torna-ho a provar més tard.')),this.timeoutMs)})]).then(options=>options.filter(validPointPlace)).finally(()=>clearTimeout(timer));
   this.cache.set(key,promise);
   try{return await promise}catch(e){this.blocked=true;this.cache.delete(key);throw e}
  }
