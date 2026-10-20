@@ -68,7 +68,7 @@ try{
     normalizeGeoapify({...raw(title),place_id:'domenico-2',lat:44.49012,lon:11.34009,formatted:'Basilica di San Domenico, 40125 Bologna BO, Italia'}),
     normalizeGeoapify({...raw('Basilica di Santo Stefano'),place_id:'stefano',formatted:'Basilica di Santo Stefano, Piazza Santo Stefano, Bologna'})]:
    title==='Unknown Museum'?[]:title==='Central Museum'?
-   [normalizeGeoapify({...raw(title),place_id:'one'}),normalizeGeoapify({...raw(title),place_id:'two'})]:[normalizeGeoapify({...raw(title==='centre històric'?'Centro Storico':title==='Basilica de San Petronio'?'Basilica di San Petronio':title),result_type:['Quadrilatero','centre històric'].includes(title)?'suburb':title==='Via del Pratello'?'street':'amenity'})];
+   [normalizeGeoapify({...raw(title),place_id:'one'}),normalizeGeoapify({...raw(title),place_id:'two',lat:44.53})]:[normalizeGeoapify({...raw(title==='centre històric'?'Centro Storico':title==='Basilica de San Petronio'?'Basilica di San Petronio':title),result_type:['Quadrilatero','centre històric'].includes(title)?'suburb':title==='Via del Pratello'?'street':'amenity'})];
   return {data:{candidates:places.map(place=>({place}))},error:null};
  });
  await page.goto(url);await page.waitForFunction(()=>typeof renderSession==='function');await page.locator('#loginCard').waitFor({state:'visible'});
@@ -144,12 +144,12 @@ try{
  await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
  await editor.locator('[data-point-results] button').first().waitFor();
  const basilicaButtons=editor.locator('fieldset').first().locator('[data-point-results] button');
- assert.equal(await basilicaButtons.count(),2,'nearby San Domenico records collapsed, Santo Stefano kept');
+ assert.equal(await basilicaButtons.count(),1,'nearby San Domenico records collapsed and Santo Stefano excluded');
  assert.equal(await basilicaButtons.first().locator('strong').innerText(),'Basilica di San Domenico');
  assert.match(await basilicaButtons.first().locator('small').innerText(),/Piazza San Domenico · Lloc exacte/);
- assert.match(await basilicaButtons.nth(1).innerText(),/Basilica di Santo Stefano/);
+ assert.equal(await basilicaButtons.filter({hasText:'Santo Stefano'}).count(),0,'Wrong saint must never appear');
  const queriesBeforeToggle=searches.length;await selectPoint(2);await selectPoint(1);
- assert.equal(await basilicaButtons.count(),2);assert.equal(searches.length,queriesBeforeToggle);
+ assert.equal(await basilicaButtons.count(),1);assert.equal(searches.length,queriesBeforeToggle);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no sideways mobile scrolling');
  assert.equal(writes.length,8,'searching and grouping candidates never writes');
  await firstInput.fill('Piazza Maggiore provisional');
