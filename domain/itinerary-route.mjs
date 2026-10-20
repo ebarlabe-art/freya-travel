@@ -27,7 +27,7 @@ export function routeFeasibility(a,b,route,bufferMinutes){
 export const transportPreferences=Object.freeze({walk_transit:'A peu + transport públic',walk_car:'A peu + cotxe de lloguer'});
 // Car mode is opt-in, and the rental must actually cover this local travel day.
 export function rentalAvailableForDay(rentals,day,timeZone='UTC'){
- if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(day)||!Array.isArray(rentals))return false;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!Array.isArray(rentals))return false;
  const localDate=stamp=>{
   if(typeof stamp!=='string'||!Number.isFinite(Date.parse(stamp)))return null;
   try{const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(stamp)).map(x=>[x.type,x.value]));return parts.year+'-'+parts.month+'-'+parts.day}catch{return null}
@@ -56,7 +56,7 @@ export function preferredRoute(walking,alternative,{walkingThresholdSeconds=900,
 export function visitTimeBudget(origin,destination,route,internalSeconds=0,bufferMinutes=5){
  const start=origin?.startsAt,next=destination?.startsAt;
  if(origin?.timingKind!=='exact'||destination?.timingKind!=='exact')return null;
- if(typeof start!=='string'||typeof next!=='string'||!/(Z|[+-]\\d{2}:\\d{2})$/.test(start)||!/(Z|[+-]\\d{2}:\\d{2})$/.test(next))return null;
+ if(typeof start!=='string'||typeof next!=='string'||!/(Z|[+-]\d{2}:\d{2})$/.test(start)||!/(Z|[+-]\d{2}:\d{2})$/.test(next))return null;
  const first=Date.parse(start),second=Date.parse(next);
  if(!Number.isFinite(first)||!Number.isFinite(second)||second<first||!routeIsVerified(route)||!Number.isFinite(internalSeconds)||internalSeconds<0||!Number.isFinite(bufferMinutes)||bufferMinutes<0)return null;
  const travelSeconds=route.route.duration_seconds+internalSeconds+bufferMinutes*60;
