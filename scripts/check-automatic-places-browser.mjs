@@ -98,7 +98,9 @@ try{
  }
  assert.equal(rows[4].resolved_location,null);assert.equal(rows[5].resolved_location,null);
  assert.ok(searches.every(s=>s.country_code==='GB'));
- await page.locator('.agenda-route-diagnosis').filter({hasText:/horaris es mantenen/}).waitFor();
+ const conflicts=page.locator('.agenda-route-diagnosis').filter({hasText:/horaris es mantenen/});
+ await conflicts.first().waitFor();
+ assert.ok(await conflicts.count()>=1,'At least one independently diagnosed scheduling conflict appears');
  const details=page.locator('[data-route-options]').first();await details.locator('summary').click();
  const map=page.locator('[data-route-map]').first();assert.match(await map.getAttribute('href'),/origin=51.5%2C-0.12/);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(n=>{const r=n.getBoundingClientRect();return r.width&&r.right>innerWidth}).map(n=>({tag:n.tagName,cls:n.className,width:n.getBoundingClientRect().width,text:n.textContent.slice(0,90)})).slice(0,16))));
