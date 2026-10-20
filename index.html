@@ -5433,6 +5433,13 @@ async function searchManualItineraryPlaces(){
 }
 let itineraryPointScope=null,activityPointEditor=null;
 function closeActivityPointEditor(){activityPointEditor?.root.dispose();activityPointEditor=null}
+function preserveActivityPointViewport(){
+ const state=activityPointEditor;
+ if(!state?.root.isConnected||state.scope!==itineraryAutoPlaceScope())return ()=>{};
+ const anchor=state.root.contains(document.activeElement)?document.activeElement:state.root;
+ const top=anchor.getBoundingClientRect().top,x=scrollX;
+ return ()=>{if(activityPointEditor===state&&anchor.isConnected&&state.scope===itineraryAutoPlaceScope())scrollTo(x,scrollY+anchor.getBoundingClientRect().top-top)};
+}
 // Keep the actual editor subtree: closures, pending searches, candidates and input selection survive.
 function preserveActivityPointEditor(){
  const state=activityPointEditor;if(!state)return ()=>{};
@@ -6524,7 +6531,7 @@ async function renderAgendaRoutes(items,day){
   agendaRouteModule=await (agendaRouteImport??=import(/* @vite-ignore */ url).catch(error=>{agendaRouteImport=null;throw error}));
   if(!current())return;
   const projected=items.map(item=>{const row=tripHomeSourceRow(item);return {...item,isTransport:(item.sourceType==='activity'&&isLocalTransportActivity(row))||(item.sourceType==='manual'&&/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(String(row?.title||''))),hasRoutePlace:!!(row?.location_points||row?.location_name||row?.venue_name||row?.address||(Number.isFinite(row?.latitude)&&Number.isFinite(row?.longitude)))}});
-  agendaRouteModule.mountAgendaRoutes({root:$('genericItineraryDays'),items:projected,tripId,userId,generation,day,current,contextKey:JSON.stringify(tripStopRows),online:()=>!connectionUnavailable(),
+  agendaRouteModule.mountAgendaRoutes({root:$('genericItineraryDays'),items:projected,tripId,userId,generation,day,current,contextKey:JSON.stringify(tripStopRows),online:()=>!connectionUnavailable(),preserveViewport:preserveActivityPointViewport,
    invoke:async body=>{const {data,error}=await db.functions.invoke('itinerary-route',{body});if(data)return data;if(error?.context){try{return await error.context.json()}catch(_){}}return {error:'provider_unavailable'}},
    onEdit:item=>{const button=itineraryPointRow(item)&&document.querySelector('[data-activity-points="'+CSS.escape(item.key)+'"]');if(button)void openActivityPointEditor(button);else if(item.sourceType==='manual')openManualItineraryForm(item.sourceId);else openItinerarySource(item.sourceType,item.sourceId)}});
  }catch(_){if(current())msg('genericItineraryMessage','No s’han pogut carregar els trajectes. Torna a obrir el dia per reintentar.',true)}

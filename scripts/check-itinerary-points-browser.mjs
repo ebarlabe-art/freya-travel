@@ -23,7 +23,7 @@ const imported=await prepareItineraryImportRows(snapshot,{userId,tripId,document
 const titles=['Piazza Maggiore, Fontana del Nettuno i basílica de San Petronio','Passeig per l’entorn de les Due Torri i visita a Piazza Santo Stefano','Quadrilatero i dinar','Esmorzar i passeig pel centre històric','Aperitiu a Via del Pratello','Unknown Museum','Central Museum'];
 const rows=titles.map((title,i)=>({...imported[0],id:id(20+i),title,city:'Bologna',location_name:null,address:null,resolved_location:null,location_points:null,updated_at:'2030-01-01T00:00:00Z',created_at:'2030-01-01T00:00:00Z',sort_order:i,starts_at:'2026-12-27T'+String(9+i).padStart(2,'0')+':00:00Z',ends_at:'2026-12-27T'+String(10+i).padStart(2,'0')+':00:00Z'}));
 const activity={id:id(7),trip_id:tripId,title:'Museo Sintetico',venue_name:null,address:null,city:'Bologna',
- activity_type:'museum',reservation_status:'confirmed',start_at:'2026-12-27T13:15:00Z',end_at:'2026-12-27T13:45:00Z',
+ activity_type:'museum',reservation_status:'confirmed',start_at:'2026-12-27T08:15:00Z',end_at:'2026-12-27T08:45:00Z',
  time_zone:'Europe/London',booking_reference:'KEEP-RESERVATION',notes:'Original ticket',latitude:null,longitude:null,
  resolved_location:null,location_points:null,created_at:'2030-01-01T00:00:00Z',updated_at:'2030-01-01T00:00:00Z'};
 const activityOriginal=structuredClone(activity),allRows=[...rows,activity];

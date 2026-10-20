@@ -12,7 +12,9 @@ containing innerHTML; the search callback also depended on the detached opener.
 Fix:
 Retain the existing editor DOM subtree around synchronous agenda reconstruction
 and reattach it inside the same activity card. Preserve focus, text selection,
-viewport anchor, candidate DOM, point ordering and asynchronous search closures.
+viewport anchor, candidate DOM, point ordering and asynchronous search closures. Route-card mount/redraw also
+preserves the active editor viewport, including asynchronous results above the
+activity. The optional UI callback does not change route calculation or data.
 The editor's lifetime depends on the trip/user generation, not the original
 button. Trip reset/logout and explicit cancellation dispose it; cancellation
 also invalidates late search responses. Cancel remains available during search.
@@ -33,7 +35,8 @@ touch clicks in Chromium and WebKit (390 x 844). Synthetic transport, auth and
 rows only; all external requests and WebSockets blocked. Tests exercise another
 activity's background enrichment, registered Realtime reconciliation callbacks,
 manual refresh, delayed provider results, candidate display and selection,
-point ordering, viewport position, same-activity conflict review, CAS rejection,
+point ordering, viewport position (including an earlier activity/route),
+same-activity conflict review, CAS rejection,
 cancellation and trip exit. Assert that refresh/review/selection do not write.
 Existing add/search/select/reorder/remove/save and geography contract coverage
 remains in the same CI jobs. Unit suite remains 750 tests.
