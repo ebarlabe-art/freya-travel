@@ -116,3 +116,23 @@ test('v27: user supplied activity coordinates have priority over inferred geogra
  const result=await p.resolve({venue_name:'My entrance',latitude:51.51,longitude:-0.1,resolved_location:{place:{latitude:0,longitude:0}}},null);
  assert.equal(result.point.lat,51.51);assert.equal(result.point.lon,-0.1);assert.equal(calls.length,0);
 });
+
+test('authenticated intra-activity legs route actual verified consecutive points; never route ambiguous/approximate data',async()=>{
+ const row={id:aId,trip_id:tid,updated_at:'v1',title:'Two visits',city:'Bologna',location_name:null,address:null};
+ const verified=(name,lat,lon,role='exact_location')=>({provider:'geoapify',provider_place_id:name,canonical_name:name,locality:'Bologna',country_code:'IT',attribution:'Synthetic',coordinate_role:role,latitude:lat,longitude:lon});
+ const add=(p,i)=>({id:'point-'+i,query:p.canonical_name,status:p.coordinate_role==='exact_location'?'resolved':'approximate',place:p});
+ row.location_points={version:1,input:{title:row.title,location_name:null,address:null,city:row.city},points:[add(verified('Museum A',44.49,11.34),0),add(verified('Museum B',44.5,11.35),1)]};
+ const {p,calls}=provider();
+ const h=handler({readItem:async()=>row,provider:p});
+ const base={kind:'internal',item:{type:'manual',id:aId,updated_at:'v1'},from_index:0,to_index:1};
+ const response=await h.invoke(base);assert.equal(response.status,200);const body=await response.json();
+ assert.equal(body.status,'ready');assert.equal(body.route.distance_m,1200);assert.equal(body.route.duration_seconds,900);
+ assert.equal(calls.length,1,'Only route provider used; no second geocoding lookup');
+ row.location_points.points[1]=add(verified('Broad area',44.5,11.35,'representative_point'),1);
+ const approximate=await(await h.invoke(base)).json();assert.equal(approximate.status,'insufficient');assert.equal(approximate.destination.error,'approximate_place');
+ row.location_points.points[1]={id:'point-1',query:'Pending',status:'pending',place:null};
+ const pending=await(await h.invoke(base)).json();assert.equal(pending.status,'insufficient');assert.equal(pending.destination.error,'missing_place');
+ assert.equal((await h.invoke({...base,to_index:8})).status,400);
+ assert.equal((await h.invoke({...base,item:{...base.item,updated_at:'older'}})).status,409);
+ const denied=handler({readTrip:async()=>false,readItem:async()=>row,provider:p});assert.equal((await denied.invoke(base)).status,403);
+});
