@@ -59,3 +59,20 @@ test('day plan automatically maps model outputs to immutable visit keys and does
  assert.match(handler,/visit\.minutes>360/);
  assert.doesNotMatch(handler,/\.update\(|\.insert\(/);
 });
+
+test('overlapping next activity is flagged even without a verified route',()=>{
+ const x=recommendedVisitAdvice({timingKind:'exact',startsAt:'2030-10-20T09:30:00+02:00',endsAt:null}, {minutes:60,reason:'Esmorzar'}, {timingKind:'exact',startsAt:'2030-10-20T10:15:00+02:00'}, {error:'missing_place'},5);
+ assert.equal(x.minutesUntilNext,45);
+ assert.equal(x.conflictsNext,true);
+ assert.equal(x.latestLeaveBy,null);
+ const frontend=readFileSync(new URL('../domain/itinerary-route-ui.mjs',import.meta.url),'utf8');
+ assert.match(frontend,/note.classList.add\('agenda-visit-conflict'\)/);
+ assert.match(frontend,/card.append\(note\)/);
+ assert.doesNotMatch(frontend,/anchor.append\(note\)/);
+});
+test('arrival-only days are used for context, but journeys receive no visit duration card',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(html,/dayContextSourceItems\(tripId,localDate\)/);
+ assert.match(html,/if\(!dayContextJourneyOnly\(sourceItems\[v.index\]\)\)proposals.set/);
+ assert.match(html,/\.agenda-visit-guidance\{display:grid/);
+});
