@@ -69,7 +69,10 @@ try{
  await page.waitForFunction(()=>document.querySelector('[data-visit-advice]')?.textContent.includes('60 min'));
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-agenda-route]')].some(x=>x.textContent.includes('marxeu com a màxim')));
  assert.equal(await page.evaluate(()=>window.testRows.find(x=>x.title==='Museum A').ends_at),'2030-03-31T09:00:00Z','The synthetic booking end is unchanged by AI advice');
- const before=routeCalls;await page.locator('[data-generic-itinerary-day="2030-04-01"]').click();await page.waitForFunction(()=>document.querySelectorAll('[data-agenda-route]').length===0);assert.equal(routeCalls,before,'No routes or provider calls without two locations');
+ const before=routeCalls;await page.locator('[data-generic-itinerary-day="2030-04-01"]').click();
+ await page.waitForFunction(()=>[...document.querySelectorAll('[data-agenda-route]')].some(card=>card.textContent.includes('Falta un lloc')&&card.querySelector('[data-route-review]')));
+ assert.equal(routeCalls,before,'Never call the routing provider without two verified locations');
+ assert.ok(await page.locator('[data-route-review]').count()>=1,'Missing locations offer a direct correction action');
  // The quick location lookup stays inside the itinerary card, not the full editing form.
  const findPlace=page.locator('[data-itinerary-find-place]').first();
  await findPlace.click();
