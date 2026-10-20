@@ -3,7 +3,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 let queue,scope='',states=new Map(),listeners;
 export function resetAgendaRoutes(){listeners?.abort();queue?.reset('');scope='';states=new Map()}
 export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invoke,online,current,onEdit,storage=globalThis.localStorage,contextKey='',preserveViewport=()=>()=>{},rentals=[],timeZone='UTC'}){
- const nextScope=JSON.stringify([userId,tripId,generation]);
+ const nextScope=JSON.stringify([userId,tripId,generation,day]);
  if(scope!==nextScope){resetAgendaRoutes();scope=nextScope;queue=new RouteQueue({invoke});queue.reset(scope)}
  listeners?.abort();listeners=new AbortController();
  const restoreViewport=preserveViewport();
