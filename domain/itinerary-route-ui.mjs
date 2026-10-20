@@ -7,7 +7,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
  if(scope!==nextScope){resetAgendaRoutes();scope=nextScope;queue=new RouteQueue({invoke});queue.reset(scope)}
  listeners?.abort();listeners=new AbortController();
  const restoreViewport=preserveViewport();
- root.querySelectorAll('[data-agenda-route]').forEach(node=>node.remove());
+ root.querySelectorAll('[data-agenda-route],[data-internal-routes]').forEach(node=>node.remove());
  const pairs=visitPairs(items,tripId,day);
  for(const [index,pair]of pairs.entries()){
   // The activity itself already shows that its location is pending.
