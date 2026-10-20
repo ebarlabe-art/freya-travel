@@ -2007,7 +2007,7 @@
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-automatic-places-v27-geography-routes';
+const FREYA_FRONTEND_RELEASE='pwa-smart-itinerary-transport-v28';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -5507,7 +5507,7 @@ async function proposeActivityPoints(day){
    const destination=itineraryAutoPlaceDestination(row);if(!destination)continue;
    const points=structuredClone(row.location_points===null?context.api.extractActivityPoints(row):context.api.autoPendingPoints(row));
    if(!points?.length)continue;
-   let changed=row.location_points===null;
+   let changed=row.location_points===null||(Array.isArray(row.location_points?.points)&&row.location_points.points.length!==points.length);
    for(const point of points){
     if(point.place)continue;
     const options=await context.queue.find(point.query,destination);
@@ -6536,9 +6536,16 @@ async function renderAgendaRoutes(items,day){
   const url='/freya-travel/domain/itinerary-route-ui.mjs';
   agendaRouteModule=await (agendaRouteImport??=import(/* @vite-ignore */ url).catch(error=>{agendaRouteImport=null;throw error}));
   if(!current())return;
+  // Only an actual reserved/confirmed rental for the day permits car suggestions.
+  let rentals=[];try{
+   const result=await db.from('trip_car_rentals').select('reservation_status,pickup_at,return_at').eq('trip_id',tripId);
+   if(!result.error)rentals=result.data||[];
+  }catch(_){}
+  if(!current())return;
   const projected=items.map(item=>{const row=tripHomeSourceRow(item);return {...item,isTransport:(item.sourceType==='activity'&&isLocalTransportActivity(row))||(item.sourceType==='manual'&&/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(String(row?.title||''))),hasRoutePlace:!!(row?.location_points||row?.location_name||row?.venue_name||row?.address||(Number.isFinite(row?.latitude)&&Number.isFinite(row?.longitude))),locationPoints:Array.isArray(row?.location_points?.points)?row.location_points.points:null}});
   agendaRouteModule.mountAgendaRoutes({root:$('genericItineraryDays'),items:projected,tripId,userId,generation,day,current,contextKey:JSON.stringify(tripStopRows),online:()=>!connectionUnavailable(),preserveViewport:preserveActivityPointViewport,
    invoke:async body=>{const {data,error}=await db.functions.invoke('itinerary-route',{body});if(data)return data;if(error?.context){try{return await error.context.json()}catch(_){}}return {error:'provider_unavailable'}},
+   rentals,timeZone:trip.time_zone||'UTC',
    onEdit:item=>{const button=itineraryPointRow(item)&&document.querySelector('[data-activity-points="'+CSS.escape(item.key)+'"]');if(button)void openActivityPointEditor(button);else if(item.sourceType==='manual')openManualItineraryForm(item.sourceId);else openItinerarySource(item.sourceType,item.sourceId)}});
  }catch(_){if(current())msg('genericItineraryMessage','No s’han pogut carregar els trajectes. Torna a obrir el dia per reintentar.',true)}
 }

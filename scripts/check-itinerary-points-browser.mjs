@@ -99,6 +99,12 @@ try{
  for(const i of [5,6])assert.equal(rows[i].location_points.points[0].status,'pending');
  assert.ok(searches.every(s=>s.country_code==='IT'));
  for(const row of allRows){const original=row===activity?activityOriginal:originals.find(r=>r.id===row.id);for(const key of Object.keys(original).filter(k=>!['location_points','updated_at'].includes(k)))assert.deepEqual(row[key],original[key],key+' unchanged')}
+ const preference=page.locator('[data-route-preferences] select');
+ await preference.waitFor({state:'visible'});
+ assert.equal(await preference.inputValue(),'walk_transit','Walking plus public transport must be the default');
+ assert.equal(await preference.locator('option[value="walk_car"]').count(),0,'No rental means no car-based itinerary');
+ const choices=page.locator('[data-agenda-route] select[data-route-mode]');
+ if(await choices.count())assert.equal(await choices.first().locator('option[value="drive"]').count(),0,'Car option must be absent without an active rental');
  const first=page.locator('[data-activity-points="manual:'+rows[0].id+'"]');
  await first.tap();
  let editor=page.locator('[data-activity-point-editor]');await editor.waitFor({state:'visible'}).catch(async e=>{console.error('Editor diagnostics',await page.locator('#genericItineraryMessage').textContent(),errors);throw e});

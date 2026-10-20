@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {visitPairs,routeFeasibility,RouteQueue} from '../domain/itinerary-route.mjs';
+import {visitPairs,routeFeasibility,RouteQueue,rentalAvailableForDay,preferredRoute,routeIsVerified,automaticAlternativeMode,visitTimeBudget} from '../domain/itinerary-route.mjs';
 import {routeProvider,destinationContext} from '../supabase/functions/itinerary-route/provider.mjs';
 import {createRouteHandler} from '../supabase/functions/itinerary-route/handler.mjs';
 import {routeBackend} from '../supabase/functions/itinerary-route/backend.mjs';
@@ -135,4 +135,44 @@ test('authenticated intra-activity legs route actual verified consecutive points
  assert.equal((await h.invoke({...base,to_index:8})).status,400);
  assert.equal((await h.invoke({...base,item:{...base.item,updated_at:'older'}})).status,409);
  const denied=handler({readTrip:async()=>false,readItem:async()=>row,provider:p});assert.equal((await denied.invoke(base)).status,403);
+});
+
+test('smart transport: short walk wins, slow walking compared with actual modes, unknown never called fastest',()=>{
+ const verified=(mode,seconds)=>({route:{method:'routing',mode,duration_seconds:seconds,distance_m:seconds}});
+ const short=verified('walk',600),long=verified('walk',3600),transit=verified('transit',1200),car=verified('drive',900);
+ assert.equal(preferredRoute(short,car),short,'Short urban walk is preferred even if driving appears faster');
+ assert.equal(preferredRoute(long,transit),transit,'Long walk switches to verified faster public transport');
+ assert.equal(preferredRoute(long,car),car,'With a valid rental, a faster drive can win');
+ assert.equal(preferredRoute(long,verified('transit',3520)),long,'Avoid negligible changes');
+ assert.equal(preferredRoute(long,{error:'mode_unavailable'}),long,'No fake transit time');
+ assert.equal(routeIsVerified({route:{method:'routing',mode:'walk',duration_seconds:12,distance_m:null}}),false);
+});
+test('rented car is never offered without a confirmed/reserved rental covering the actual local day',()=>{
+ const rental={reservation_status:'confirmed',pickup_at:'2026-10-23T22:00:00Z',return_at:'2026-10-26T09:00:00Z'};
+ assert.equal(rentalAvailableForDay([rental],'2026-10-24','Europe/Rome'),true);
+ assert.equal(rentalAvailableForDay([rental],'2026-10-23','Europe/Rome'),false,'Timezone-aware car pickup');
+ assert.equal(rentalAvailableForDay([rental],'2026-10-27','Europe/Rome'),false);
+ assert.equal(rentalAvailableForDay([{...rental,reservation_status:'planning'}],'2026-10-24','Europe/Rome'),false);
+ assert.equal(rentalAvailableForDay([{...rental,reservation_status:'cancelled'}],'2026-10-24','Europe/Rome'),false);
+ assert.equal(rentalAvailableForDay([{...rental,pickup_at:null}],'2026-10-24','Europe/Rome'),false);
+ assert.equal(rentalAvailableForDay([],'2026-10-24','Europe/Rome'),false);
+});
+test('visit budget subtracts provider-calculated internal plus outward walk and buffer from next exact start',()=>{
+ const origin=visit(aId,{startsAt:'2030-03-31T08:00:00Z',endsAt:null});
+ const destination=visit(bId,{startsAt:'2030-03-31T09:20:00Z'});
+ const r={route:{method:'routing',mode:'walk',duration_seconds:900,distance_m:1200}};
+ const v=visitTimeBudget(origin,destination,r,300,5);
+ assert.equal(v.availableMinutes,55);assert.equal(v.leaveBy,'2030-03-31T09:00:00.000Z');assert.equal(v.totalTravelMinutes,20);assert.equal(v.hasConflict,false);
+ assert.equal(visitTimeBudget({...origin,timingKind:'approximate'},destination,r,300,5),null);
+ assert.equal(visitTimeBudget(origin,destination,{error:'unavailable'},0,5),null);
+ assert.equal(visitTimeBudget(origin,destination,r,NaN,5),null);
+ assert.equal(visitTimeBudget(origin,{...destination,startsAt:'2030-03-31T08:09:00Z'},r,0,5).hasConflict,true);
+});
+
+test('a rented car is suggested for long actual route distance, never a routine urban hop',()=>{
+ const route=meters=>({route:{method:'routing',mode:'walk',distance_m:meters,duration_seconds:meters}});
+ assert.equal(automaticAlternativeMode(route(2000),'walk_car',true),'transit');
+ assert.equal(automaticAlternativeMode(route(10000),'walk_car',true),'drive');
+ assert.equal(automaticAlternativeMode(route(10000),'walk_car',false),'transit');
+ assert.equal(automaticAlternativeMode(route(10000),'walk_transit',true),'transit');
 });

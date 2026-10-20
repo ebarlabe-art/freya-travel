@@ -1,13 +1,37 @@
-import {visitPairs,routeFeasibility,routeModes,routeReasons,routeMapUrl,RouteQueue} from './itinerary-route.mjs';
+import {visitPairs,routeFeasibility,routeModes,routeReasons,routeMapUrl,RouteQueue,transportPreferences,rentalAvailableForDay,preferredRoute,routeIsVerified,automaticAlternativeMode,visitTimeBudget} from './itinerary-route.mjs';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let queue,scope='',states=new Map(),listeners;
 export function resetAgendaRoutes(){listeners?.abort();queue?.reset('');scope='';states=new Map()}
-export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invoke,online,current,onEdit,storage=globalThis.localStorage,contextKey='',preserveViewport=()=>()=>{}}){
+export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invoke,online,current,onEdit,storage=globalThis.localStorage,contextKey='',preserveViewport=()=>()=>{},rentals=[],timeZone='UTC'}){
  const nextScope=JSON.stringify([userId,tripId,generation]);
  if(scope!==nextScope){resetAgendaRoutes();scope=nextScope;queue=new RouteQueue({invoke});queue.reset(scope)}
  listeners?.abort();listeners=new AbortController();
  const restoreViewport=preserveViewport();
- root.querySelectorAll('[data-agenda-route],[data-internal-routes]').forEach(node=>node.remove());
+ root.querySelectorAll('[data-agenda-route],[data-internal-routes],[data-route-preferences]').forEach(node=>node.remove());
+ const carAllowed=rentalAvailableForDay(rentals,day,timeZone);
+ const preferenceKey='freya-route-preference-v1:'+JSON.stringify([userId,tripId]);
+ let remembered;try{remembered=storage?.getItem(preferenceKey)}catch{}
+ const preference=remembered==='walk_car'&&carAllowed?'walk_car':'walk_transit';
+ const preferencePanel=document.createElement('div');
+ preferencePanel.dataset.routePreferences='';preferencePanel.className='agenda-route-card';
+ const preferenceLabel=document.createElement('label');
+ preferenceLabel.textContent='🚶 Com prefereixes desplaçar-te durant el viatge? ';
+ const picker=document.createElement('select');picker.setAttribute('aria-label','Preferència de transport de l’itinerari');
+ for(const [value,name] of Object.entries(transportPreferences)){
+  if(value==='walk_car'&&!carAllowed)continue;
+  const option=document.createElement('option');option.value=value;option.textContent=name;picker.append(option);
+ }
+ picker.value=preference;preferenceLabel.append(picker);
+ const help=document.createElement('small');
+ help.textContent=carAllowed?'Freya prioritza caminades curtes, transport públic a ciutat i cotxe de lloguer només per a distàncies llargues. Pots canviar cada trajecte.':'Freya prioritza caminar i compara el transport públic en distàncies llargues. Cotxe: només amb lloguer reservat o confirmat per al dia.';
+ preferencePanel.append(preferenceLabel,help);
+ picker.onchange=()=>{
+  try{storage?.setItem(preferenceKey,picker.value)}catch{}
+  mountAgendaRoutes({root,items,tripId,userId,generation,day,invoke,online,current,onEdit,storage,contextKey,preserveViewport,rentals,timeZone});
+ };
+ root.prepend(preferencePanel);
+ const internalTravel=new Map(),redrawCross=new Map();
+ for(const item of items)if(Array.isArray(item.locationPoints)&&item.locationPoints.length>1)internalTravel.set(item.key,{waiting:item.locationPoints.length-1,seconds:0,incomplete:false});
  const pairs=visitPairs(items,tripId,day);
  for(const [index,pair]of pairs.entries()){
   // The activity itself already shows that its location is pending.
@@ -17,9 +41,11 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
   if(states.size>=200)states.delete(states.keys().next().value);
   if(!states.has(pair.key)){
    let saved;try{saved=JSON.parse(storage?.getItem(storageKey)||'null')}catch{}
-   states.set(pair.key,{mode:routeModes[saved?.mode]?saved.mode:'walk',buffer:typeof saved?.buffer==='number'&&saved.buffer>=0&&saved.buffer<=180?saved.buffer:null,choices:{},result:null,detailsOpen:false});
+   states.set(pair.key,{mode:saved?.mode==='auto'||routeModes[saved?.mode]?saved.mode:'auto',buffer:typeof saved?.buffer==='number'&&saved.buffer>=0&&saved.buffer<=180?saved.buffer:null,choices:{},result:null,detailsOpen:false});
   }
-  const state=states.get(pair.key),card=document.createElement('section');card.className='agenda-route-card agenda-route-compact-card';card.dataset.agendaRoute=String(index);anchor.after(card);
+  const state=states.get(pair.key);
+  if(state.mode==='drive'&&!carAllowed){state.mode='auto';state.result=null}
+  const card=document.createElement('section');card.className='agenda-route-card agenda-route-compact-card';card.dataset.agendaRoute=String(index);anchor.after(card);
   let version=0;const live=()=>current()&&scope===nextScope&&card.isConnected;
   const save=()=>{try{storage?.setItem(storageKey,JSON.stringify({mode:state.mode,buffer:state.buffer}))}catch{}};
   const draw=()=>{
@@ -30,20 +56,25 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    const previousDetails=card.querySelector('[data-route-options]');
    if(previousDetails)state.detailsOpen=previousDetails.open;
    const result=state.result,route=result?.route,error=result?.error;
-   const diagnosis=route?routeFeasibility(pair.origin,pair.destination,route,state.buffer??0):null;
+   const diagnosis=route?routeFeasibility(pair.origin,pair.destination,route,state.buffer??5):null;
+   const internal=internalTravel.get(pair.origin.key);
+   const budget=route&&(!internal||internal.waiting===0&&!internal.incomplete)?visitTimeBudget(pair.origin,pair.destination,result,internal?.seconds||0,state.buffer??5):null;
+   let leaveTime='';
+   if(budget)try{leaveTime=new Intl.DateTimeFormat('ca-ES',{timeZone,hour:'2-digit',minute:'2-digit'}).format(new Date(budget.leaveBy))}catch(_){leaveTime=''};
    const mapUrl=routeMapUrl(route);
    const needs=result&&!route?[error,...['origin','destination'].map(side=>result[side]?.error)].filter(Boolean):[];
    const modeIcon=route?.mode==='drive'?'🚗':route?.mode==='transit'?'🚌':'🚶';
    const summary=!result?'Calculant trajecte…':route?
      `${modeIcon} ${Math.ceil(route.duration_seconds/60)} min · ${(route.distance_m/1000).toFixed(1)} km · ${esc(routeModes[route.mode])}`:
      needs.includes('approximate_place')?'Zona identificada · trajecte pendent de concretar':error==='offline'?'Sense connexió · trajecte pendent':error==='rate_limited'?'Trajecte temporalment no disponible':'Trajecte pendent de verificar';
-   card.innerHTML=`<div class="agenda-route-compact" role="status" aria-live="polite">↳ ${summary}</div>
+   card.innerHTML=`<div class="agenda-route-compact" role="status" aria-live="polite">↳ ${summary}</div>${state.autoNote?`<p class="agenda-route-diagnosis">${esc(state.autoNote)}</p>`:""}${route?.mode==='transit'?'<p class="agenda-route-diagnosis">Temps estimat de transport públic; no incorpora horaris ni esperes en directe.</p>':''}
+    ${budget?`<p class="agenda-route-diagnosis" role="status">${budget.hasConflict?"⚠ Horaris incompatibles:": "Temps màxim orientatiu per a la visita:"} ${esc(String(budget.availableMinutes))} min, descomptant trajectes i marge.${leaveTime?" Sortida recomanada abans de les "+esc(leaveTime)+".":""} No modifica les reserves.</p>`:internal?.incomplete||internal?.waiting?"<p class=\"agenda-route-diagnosis\">Cal verificar els trams interns per calcular el temps disponible.</p>":""}
     ${diagnosis?.status==='No factible'||diagnosis?.status==='Molt ajustat'?`<p role="status" class="agenda-route-diagnosis">⚠ ${esc(diagnosis.reason)} Els horaris es mantenen.</p>`:''}
     <details data-route-options ${state.detailsOpen?'open':''}><summary>Opcions del trajecte</summary>
       <p>${route?esc(result.origin?.label||pair.origin.title)+' → '+esc(result.destination?.label||pair.destination.title):
         (needs.map(code=>esc(routeReasons[code]||'No s’ha pogut consultar la ruta.')).join(' ')||'Encara no hi ha cap trajecte verificat.')}</p>
-      <div class="agenda-route-controls"><label>Com vols anar-hi?<select data-route-mode>${Object.entries(routeModes).map(([value,label])=>`<option value="${value}" ${state.mode===value?'selected':''}>${label}</option>`).join('')}</select></label>
-      <label>Marge addicional (min)<input data-route-buffer type="number" inputmode="numeric" min="0" max="180" step="1" placeholder="Opcional" value="${state.buffer??''}"></label></div>
+      <div class="agenda-route-controls"><label>Com vols anar-hi?<select data-route-mode>${[['auto','Automàtic (menys temps estimat)'],...Object.entries(routeModes).filter(([value])=>value!=='drive'||carAllowed)].map(([value,label])=>`<option value="${value}" ${state.mode===value?'selected':''}>${label}</option>`).join('')}</select></label>
+      <label>Marge de seguretat (min)<input data-route-buffer type="number" inputmode="numeric" min="0" max="180" step="1" placeholder="Opcional" value="${state.buffer??5}"></label></div>
       ${route&&diagnosis?`<p class="agenda-route-diagnosis">${esc(diagnosis.status)} · ${esc(diagnosis.reason)}</p>`:''}
       ${mapUrl?`<p><a data-route-map href="${esc(mapUrl)}" target="_blank" rel="noopener noreferrer">🗺 Consulta el trajecte al mapa</a></p>`:''}
       ${route?`<small><a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · ${esc(route.quality)}</small>`:''}
@@ -53,7 +84,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    const details=card.querySelector('[data-route-options]');
    details.addEventListener('toggle',()=>{if(live()&&details.isConnected&&card.contains(details))state.detailsOpen=details.open});
    card.querySelector('[data-route-mode]').onchange=e=>{state.mode=e.target.value;state.result=null;save();draw();load()};
-   card.querySelector('[data-route-buffer]').onchange=e=>{state.buffer=e.target.value===''?null:Number(e.target.value);save();draw()};
+   card.querySelector('[data-route-buffer]').onchange=e=>{state.buffer=e.target.value===''?5:Number(e.target.value);save();draw()};
    card.querySelector('[data-route-retry]')?.addEventListener('click',()=>load(true));
    card.querySelectorAll('[data-route-choice]').forEach(select=>select.onchange=()=>{state.choices[select.dataset.routeChoice]=select.value;load()});
    card.querySelectorAll('[data-route-edit]').forEach(button=>button.onclick=()=>onEdit(pair[button.dataset.routeEdit]));
@@ -62,16 +93,27 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
   async function load(retry=false){
    if(!live())return;
    const requestVersion=++version;
-   const payload={trip_id:tripId,mode:state.mode,origin:{type:pair.origin.sourceType,id:pair.origin.sourceId,updated_at:pair.origin.sourceUpdatedAt},destination:{type:pair.destination.sourceType,id:pair.destination.sourceId,updated_at:pair.destination.sourceUpdatedAt},choices:{...state.choices}};
+   const payload={trip_id:tripId,mode:state.mode==='auto'?'walk':state.mode,origin:{type:pair.origin.sourceType,id:pair.origin.sourceId,updated_at:pair.origin.sourceUpdatedAt},destination:{type:pair.destination.sourceType,id:pair.destination.sourceId,updated_at:pair.destination.sourceUpdatedAt},choices:{...state.choices}};
    if(!online()){state.result={error:'offline'};draw();return}
-   state.result=null;draw();
+   if(!pair.origin.hasRoutePlace||!pair.destination.hasRoutePlace){state.result={error:'missing_place'};draw();return}
+   state.result=null;state.autoNote='';draw();
    const result=await queue.request(JSON.stringify([pair.key,contextKey,payload]),payload,{online:online(),retry});
    if(!live()||requestVersion!==version)return;
-   state.result=online()?result:{error:'offline'};draw();
+   let chosen=result;
+   if(state.mode==='auto'&&routeIsVerified(result)&&result.route.duration_seconds>900){
+    const otherMode=automaticAlternativeMode(result,preference,carAllowed);
+    const alt={...payload,mode:otherMode};
+    const alternative=await queue.request(JSON.stringify([pair.key,contextKey,alt]),alt,{online:online(),retry});
+    if(!live()||requestVersion!==version)return;
+    chosen=preferredRoute(result,alternative);
+    if(!routeIsVerified(alternative))state.autoNote='No s’ha pogut verificar la ruta amb '+(otherMode==='drive'?'cotxe':'transport públic')+'. Es mostra el trajecte a peu, no una comparativa definitiva.';
+   }
+   state.result=online()?chosen:{error:'offline'};draw();
   }
   const refresh=()=>{if(live())load()};
   window.addEventListener('online',refresh,{signal:listeners.signal});window.addEventListener('offline',refresh,{signal:listeners.signal});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh()},{signal:listeners.signal});
+  redrawCross.set(pair.origin.key,draw);
   draw();load();
  }
  // Real walking legs INSIDE a compound activity (one item, several ordered visits).
@@ -88,12 +130,13 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
   card.append(heading,legs);anchor.after(card);
   const alive=()=>current()&&scope===nextScope&&card.isConnected;
   for(let i=0;i<points.length-1;i++){
-   const a=points[i],b=points[i+1],line=document.createElement('p'),label=(i+1)+' → '+(i+2)+' · ';
+   const a=points[i],b=points[i+1],line=document.createElement('p'),label=(i+1)+' → '+(i+2)+' · ',summary=internalTravel.get(item.key);
    line.className='agenda-route-compact';line.setAttribute('role','status');
    legs.append(line);
    const exact=p=>p?.place?.coordinate_role==='exact_location'&&Number.isFinite(p.place.latitude)&&Number.isFinite(p.place.longitude);
    if(!exact(a)||!exact(b)){
     line.textContent=label+'Pendent de verificar els punts o concretar la zona.';
+    if(summary){summary.waiting--;summary.incomplete=true;redrawCross.get(item.key)?.()}
     continue;
    }
    line.textContent=label+'Calculant el trajecte a peu…';
@@ -103,6 +146,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
     if(!alive())return;
     const route=result?.route;
     if(route?.method==='routing'&&Number.isFinite(route.duration_seconds)&&Number.isFinite(route.distance_m)){
+     if(summary)summary.seconds+=route.duration_seconds;
      const minutes=Math.ceil(route.duration_seconds/60),distance=(route.distance_m/1000).toFixed(2);
      line.textContent=label+minutes+' min · '+distance+' km a peu';
      const mapUrl=routeMapUrl(route);
@@ -110,8 +154,10 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
     }else{
      const code=result?.error||result?.origin?.error||result?.destination?.error||'unavailable';
      line.textContent=label+(code==='offline'?'Sense connexió.':routeReasons[code]||'Trajecte pendent de verificar.');
+     if(summary)summary.incomplete=true;
     }
-   }).catch(()=>{if(alive())line.textContent=label+'Trajecte temporalment no disponible.'});
+    if(summary){summary.waiting--;redrawCross.get(item.key)?.()}
+   }).catch(()=>{if(alive()){line.textContent=label+'Trajecte temporalment no disponible.';if(summary){summary.waiting--;summary.incomplete=true;redrawCross.get(item.key)?.()}}});
   }
  }
  restoreViewport();
