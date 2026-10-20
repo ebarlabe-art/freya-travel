@@ -2007,7 +2007,7 @@
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-auto-day-context-v29';
+const FREYA_FRONTEND_RELEASE='pwa-ai-visit-guidance-v30';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -6504,8 +6504,7 @@ async function generateItineraryDayContext(localDate,auto=true){
  if(!sourceItems.length)return;
  // Only visible, non-sensitive titles/times: never notes, bookings, documents or private details.
  const signature=dayPlanSignature(sourceItems.slice(0,20)),attemptKey=key+':'+signature;
- if(auto&&(dayContextAttempted.has(attemptKey)&&!dayVisitPlans.has(key)||
-      dayVisitPlans.get(key)?.signature===signature&&dayMetadataForDate(localDate)))return;
+ if(auto&&dayContextAttempted.has(attemptKey))return;
  const items=sourceItems.slice(0,20).map(x=>({title:String(x.title||'').slice(0,220),when:x.startsAt||null,
   fixed:x.tags?.includes('Fix')||x.sourceType==='activity'&&['confirmed','reserved'].includes(x.status)}));
  if(!items.some(x=>x.title.trim()))return;
