@@ -13,15 +13,23 @@ export function recommendedVisitAdvice(item,suggestion,next=null,routeResult=nul
  const end=fixedEndIso?fixedEnd: start===null?null:start+suggestion.minutes*60000;
  const latestLeave=nextStart!==null&&route?nextStart-route.duration_seconds*1000-buffer*60000:null;
  const available=latestLeave!==null&&start!==null?Math.floor((latestLeave-start)/60000):null;
- const shortage=latestLeave!==null&&end!==null?Math.max(0,Math.ceil((end-latestLeave)/60000)):null;
+ // Even without a verified route, a suggested duration must never run past
+ // the next stated start. We only know an upper bound, not a real ETA.
+ const upperLeave=nextStart!==null?nextStart-buffer*60000:null;
+ const deadline=latestLeave??upperLeave;
+ const shortage=deadline!==null&&end!==null?Math.max(0,Math.ceil((end-deadline)/60000)):null;
+ const displayableEnd=end===null||deadline!==null&&end>deadline?null:new Date(end).toISOString();
  return {
   minutes:suggestion.minutes,
   reason:typeof suggestion.reason==='string'?suggestion.reason.slice(0,160):'',
   proposedEnd:suggestedEnd,
+  displayableEnd,
   confirmedEnd:fixedEndIso,
   latestLeaveBy:latestLeave===null?null:new Date(latestLeave).toISOString(),
   travelMinutes:route?Math.ceil(route.duration_seconds/60):null,
   availableMinutes:available,
+  maxMinutesWithoutTravel:upperLeave!==null&&start!==null?Math.max(0,Math.floor((upperLeave-start)/60000)):null,
+  nextStart:nextStart!==null?new Date(nextStart).toISOString():null,
   shortageMinutes:shortage,
   // When a route is missing, there is NO verified departure or travel ETA.
   routePending:!!next&&!route,
