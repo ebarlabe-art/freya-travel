@@ -67,7 +67,8 @@ try{
  assert.equal(await page.locator('#itineraryImportExcluded [data-import-candidate][open]').count(),0);
  assert.match(await page.locator('#itineraryImportExcluded>summary').innerText(),/21.*1 conflicte de data/s);
  assert.equal(await page.locator('#itineraryImportRemaining').innerText(),remaining?'1 activitat seleccionada per afegir':'No hi ha activitats noves per importar');
- assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'No horizontal overflow on iPhone');
+ const layout=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,overflow:[...document.querySelectorAll('body *')].filter(n=>{const r=n.getBoundingClientRect();return r.width&&r.right>innerWidth+1}).slice(0,15).map(n=>({tag:n.tagName,id:n.id,cls:n.className,width:n.getBoundingClientRect().width,right:n.getBoundingClientRect().right}))}));
+ assert.ok(layout.scroll<=layout.width,'No horizontal overflow on iPhone: '+JSON.stringify(layout));
  if(mode==='stable')await page.locator('#itineraryImportPanel').screenshot({path:resolve(tmpdir(),'freya-import-summary-mobile-'+engine+'.png')});
  await page.locator('#itineraryImportExcluded>summary').tap();
  await page.locator('[data-import-candidate="20"]>summary').tap();
