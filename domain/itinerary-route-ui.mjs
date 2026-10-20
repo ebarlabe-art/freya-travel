@@ -35,7 +35,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
  const pairs=visitPairs(items,tripId,day);
  for(const [index,pair]of pairs.entries()){
   // The activity itself already shows that its location is pending.
-  // Even unverified activities need a visible pending leg.
+  if(!pair.origin.hasRoutePlace||!pair.destination.hasRoutePlace)continue;
   const anchor=[...root.querySelectorAll('[data-itinerary-key]')].find(node=>node.dataset.itineraryKey===pair.origin.key);if(!anchor)continue;
   const storageKey='freya-route-options-v1:'+JSON.stringify([userId,tripId,day,pair.origin.key,pair.destination.key]);
   if(states.size>=200)states.delete(states.keys().next().value);
