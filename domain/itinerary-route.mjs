@@ -51,6 +51,10 @@ export function preferredRoute(walking,alternative,{walkingThresholdSeconds=900,
  if(!walkOk)return alternative;
  return alternative.route.duration_seconds+minimumSavingSeconds<walking.route.duration_seconds?alternative:walking;
 }
+// A rental car is useful for long hops, not ordinary 20-minute urban walks.
+export function automaticAlternativeMode(walking,preference='walk_transit',carAllowed=false){
+ return preference==='walk_car'&&carAllowed&&routeIsVerified(walking)&&walking.route.distance_m>=6000?'drive':'transit';
+}
 // Calculate a *planning budget*, not a guaranteed visit length or a change to booked times.
 // If an activity has multiple internal legs, subtract their real durations separately.
 export function visitTimeBudget(origin,destination,route,internalSeconds=0,bufferMinutes=5){
