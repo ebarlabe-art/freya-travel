@@ -6526,6 +6526,12 @@ async function generateItineraryDayContext(localDate,auto=true){
    dayMetadataRows.push(inserted.data);
   }else{
    if(genericItinerarySelectedDay!==localDate)return;
+   // Do not replace a user's unsaved manual draft if they opened the editor
+   // while the network/model request was in flight.
+   if(dayMetadataEditor?.tripId===tripId&&dayMetadataEditor.localDate===localDate){
+    msg('genericItineraryMessage','Ja estàs editant aquest context. Hem preservat el teu text; desa o cancel·la abans de generar una nova proposta.');
+    return;
+   }
    openDayMetadataEditor(localDate);
    if(!dayMetadataEditor||dayMetadataEditor.tripId!==tripId||dayMetadataEditor.localDate!==localDate)return;
    dayMetadataEditor.title=title;dayMetadataEditor.summary=summary;
