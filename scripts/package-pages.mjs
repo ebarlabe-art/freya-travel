@@ -7,6 +7,7 @@ const dist=new URL('../dist/',import.meta.url);
 const runtimeDomain=[
   'itinerary-route.mjs',
   'itinerary-route-ui.mjs',
+  'itinerary-visit-advice.mjs',
   'itinerary-quick-place.mjs',
   'itinerary-place-points.mjs',
   'itinerary-place-points-ui.mjs',
