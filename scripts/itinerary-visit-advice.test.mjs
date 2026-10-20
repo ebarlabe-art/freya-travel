@@ -42,7 +42,7 @@ test('only bounded suggestions and verified routes can guide schedules',()=>{
 test('new route UI renders per-visit suggestions even without a calculated connection',()=>{
  const s=readFileSync(new URL('../domain/itinerary-route-ui.mjs',import.meta.url),'utf8');
  assert.match(s,/visitPlans=new Map\(\)/);
- assert.match(s,/data\.visitAdvice=item\.key/);
+ assert.match(s,/note\.dataset\.visitAdvice=item\.key/);
  assert.match(s,/recommendedVisitAdvice\(pair\.origin,proposal,pair\.destination,result/);
  assert.match(s,/hora límit de sortida fins que el trajecte estigui verificat/);
  const sw=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
