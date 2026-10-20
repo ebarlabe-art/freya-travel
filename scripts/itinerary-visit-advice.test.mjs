@@ -76,3 +76,12 @@ test('arrival-only days are used for context, but journeys receive no visit dura
  assert.match(html,/if\(!dayContextJourneyOnly\(sourceItems\[v.index\]\)\)proposals.set/);
  assert.match(html,/\.agenda-visit-guidance\{display:grid/);
 });
+
+test('overnight error offers an authenticated confirmed date correction, not a silent rewrite',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(html,/function overnightItineraryCorrection\(item\)/);
+ assert.match(html,/dayHint=\/\\b\(\?:dilluns/);
+ assert.match(html,/if\(!confirm\('Aquesta arribada sembla correspondre/);
+ assert.match(html,/data-correct-overnight/);
+ assert.match(html,/\.eq\('updated_at',row\.updated_at\)\.eq\('is_fixed',false\)/);
+});
