@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {extractActivityPoints,chooseAutomaticPoint,pointSnapshot,savedActivityPoints,ActivityPointQueue} from '../domain/itinerary-place-points.mjs';
+import {extractActivityPoints,chooseAutomaticPoint,autoPendingPoints,samePointName,pointSnapshot,savedActivityPoints,ActivityPointQueue} from '../domain/itinerary-place-points.mjs';
 import {normalizeGeoapify} from '../supabase/functions/place-resolution/providers/geoapify.mjs';
 import {routeProvider} from '../supabase/functions/itinerary-route/provider.mjs';
 const context={canonical_name:'Bologna',country_code:'IT'};
@@ -27,7 +27,7 @@ test('provider keeps street and district names and only provider supplied addres
 test('automatic identification requires a unique whole name, locality, country and supported precision',()=>{
  for(const [query,name,kind]of [['Piazza Maggiore','Piazza Maggiore','amenity'],['centre històric','Centro Storico','suburb'],['Via del Pratello','Via del Pratello','street'],['Quadrilatero','Quadrilatero','district']]){
   assert.ok(chooseAutomaticPoint(query,[place(name,kind)],context));
-  assert.equal(chooseAutomaticPoint(query,[place(name,kind),place(name,kind,{place_id:'other'})],context),null);
+  assert.ok(chooseAutomaticPoint(query,[place(name,kind),place(name,kind,{place_id:'other'})],context),'nearby repeated records are one landmark');
   assert.equal(chooseAutomaticPoint(query,[place(name,kind,{country_code:'fr'})],context),null);
   assert.equal(chooseAutomaticPoint(query,[place(name,kind,{city:'Roma'})],context),null);
  }
@@ -75,5 +75,20 @@ test('linguistic query variants do not reuse an empty result from another spelli
  assert.deepEqual(await q.find('Basilica de San Petronio',context),[]);
  assert.equal((await q.find('Basilica di San Petronio',context)).length,1);
  await q.find('BASILICA  DI San Petronio',context);assert.equal(calls.length,2,'Case and repeated spaces remain deduplicated');
- assert.equal(chooseAutomaticPoint('Basilica de San Petronio',[place('Basilica di San Petronio'),place('Basilica di San Petronio','amenity',{place_id:'other'})],context),null,'Variants do not relax ambiguous auto-confirmation');
+ assert.ok(chooseAutomaticPoint('Basilica de San Petronio',[place('Basilica di San Petronio'),place('Basilica di San Petronio','amenity',{place_id:'other'})],context));
+});
+
+test('no unrelated saints or distant homonyms; only unchanged automatic pending locations can retry',()=>{
+ assert.equal(samePointName('basílica de San Petronio','Basilica di San Domenico'),false);
+ assert.equal(samePointName('basílica de San Petronio','Basilica di San Petronio'),true);
+ const options=[place('Basilica di San Domenico'),place('Basilica di Santo Stefano'),place('Basilica di San Petronio')];
+ assert.equal(chooseAutomaticPoint('basílica de San Petronio',options,context).canonical_name,'Basilica di San Petronio');
+ assert.equal(chooseAutomaticPoint('Piazza Maggiore',[place('Piazza Maggiore'),place('Piazza Maggiore','amenity',{place_id:'far',lat:44.51})],context),null);
+ const row={title:'Piazza Maggiore, Fontana del Nettuno i basílica de San Petronio',city:'Bologna'};
+ const original=extractActivityPoints(row);original[1].place=place('Fontana del Nettuno');original[1].status='resolved';
+ row.location_points=pointSnapshot(row,original);
+ assert.equal(autoPendingPoints(row).length,3);
+ const changed=structuredClone(row);changed.location_points.points[0].query='Manual change';assert.equal(autoPendingPoints(changed),null);
+ const reordered=structuredClone(row);reordered.location_points.points.reverse();assert.equal(autoPendingPoints(reordered),null);
+ assert.equal(autoPendingPoints({...row,location_points:pointSnapshot(row,[])}),null);
 });
