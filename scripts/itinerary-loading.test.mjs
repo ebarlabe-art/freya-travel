@@ -11,6 +11,7 @@ function harness(){
   normalizedTripProgress:item=>item,tripHomeSourceRow:()=>({})});
  c.tripRequestIsCurrent=(id,generation)=>c.trip?.id===id&&c.tripLoadGeneration===generation;
  vm.runInContext(html.slice(html.indexOf('function itineraryTimeZone('),html.indexOf('function flightItineraryMapUrl(')),c);
+ vm.runInContext(html.slice(html.indexOf('function suggestedOvernightImportCorrection('),html.indexOf('function normalizedItineraryProjection(')),c);
  vm.runInContext(html.slice(html.indexOf('function normalizedItineraryProjection('),html.indexOf('function tripReviewSuggestionId(')),c);
  return c;
 }

@@ -59,3 +59,73 @@ test('day plan automatically maps model outputs to immutable visit keys and does
  assert.match(handler,/visit\.minutes>360/);
  assert.doesNotMatch(handler,/\.update\(|\.insert\(/);
 });
+
+test('arrival-day screenshots: a 09:30 60-minute breakfast cannot end at 10:30 if next start is 10:15',()=>{
+ const breakfast={timingKind:'exact',startsAt:'2026-10-24T09:30:00+02:00',endsAt:null};
+ const next={timingKind:'exact',startsAt:'2026-10-24T10:15:00+02:00'};
+ const result=recommendedVisitAdvice(breakfast,{minutes:60,reason:'Esmorzar tranquil'},next,{error:'missing_place'},5);
+ assert.equal(result.proposedEnd,'2026-10-24T08:30:00.000Z');
+ assert.equal(result.displayableEnd,'2026-10-24T08:10:00.000Z','Auto-adjust to 10:10, not the impossible 10:30');
+ assert.equal(result.plannedMinutes,40,'Automatically cap the visit before the next start');
+ assert.equal(result.reducedMinutes,20,'Expose the 20-minute shortening as an explicit proposal');
+ assert.equal(result.maxMinutesWithoutTravel,40,'Even without routing there are only 40 minutes before the safety margin');
+ assert.equal(result.shortageMinutes,20);
+ assert.equal(result.latestLeaveBy,null,'Do not fabricate an ETA');
+ assert.equal(result.routePending,true);
+});
+test('visit guidance stays inside the main card, not the narrow timetable column',()=>{
+ const ui=readFileSync(new URL('../domain/itinerary-route-ui.mjs',import.meta.url),'utf8');
+ assert.match(ui,/querySelector\('\.generic-itinerary-card'\)/);
+ assert.match(ui,/agenda-visit-conflict/);
+ assert.match(ui,/advice\.displayableEnd/);
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(html,/\.agenda-visit-guidance\{box-sizing:border-box;max-width:100%;min-width:0/);
+});
+test('Friday arrival-day context includes transportation as fallback without bogus visit-duration cards',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(html,/const sourceItems=visitItems\.length\?visitItems:dayItems/);
+ assert.match(html,/\['manual','activity','flight','accommodation'\]\.includes\(x\.sourceType\)/);
+ assert.match(html,/const visitKeys=new Set\(visitItems\.map\(x=>x\.key\)\)/);
+ assert.match(html,/if\(visitKeys\.has\(sourceItems\[v\.index\]\.key\)\)proposals\.set/);
+});
+test('explicit after-midnight Saturday 24 arrival has a protected authenticated repair action',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(html,/function suggestedOvernightImportCorrection\(row,timing\)/);
+ assert.match(html,/overnightCorrectionDate:overnight\?\.date\|\|null/);
+ assert.match(html,/data-confirm-overnight-date/);
+ assert.match(html,/async function confirmOvernightItineraryDate\(button\)/);
+ assert.match(html,/\.eq\('updated_at',row\.updated_at\)\.select\('id'\)/);
+});
+
+test('a verified 5-minute walk + 5-minute buffer further shortens flexible breakfast',()=>{
+ const breakfast={timingKind:'exact',startsAt:'2026-10-24T09:30:00+02:00',endsAt:null};
+ const next={timingKind:'exact',startsAt:'2026-10-24T10:15:00+02:00'};
+ const route={route:{method:'routing',mode:'walk',duration_seconds:300,distance_m:200}};
+ const r=recommendedVisitAdvice(breakfast,{minutes:60,reason:'Esmorzar'},next,route,5);
+ assert.equal(r.plannedMinutes,35);
+ assert.equal(r.displayableEnd,'2026-10-24T08:05:00.000Z');
+ assert.equal(r.latestLeaveBy,'2026-10-24T08:05:00.000Z');
+ assert.equal(r.routePending,false);
+});
+test('if no time remains, show conflict instead of proposing negative or zero visit',()=>{
+ const r=recommendedVisitAdvice(
+  {timingKind:'exact',startsAt:'2026-10-24T10:14:00+02:00'},
+  {minutes:30,reason:'Visita'},
+  {timingKind:'exact',startsAt:'2026-10-24T10:15:00+02:00'},null,5);
+ assert.equal(r.plannedMinutes,0);
+ assert.equal(r.cannotFit,true);
+ assert.equal(r.displayableEnd,null);
+});
+test('mobile note reports automatically fitted maximum rather than impossible finish',()=>{
+ const ui=readFileSync(new URL('../domain/itinerary-route-ui.mjs',import.meta.url),'utf8');
+ assert.match(ui,/Freya ajusta la visita a /);
+ assert.match(ui,/Encara cal descomptar el trajecte quan es verifiqui/);
+ assert.doesNotMatch(ui,/Cal escurçar-la almenys /);
+});
+
+test('a verified journey refreshes the guidance with the actual departure allowance',()=>{
+ const ui=readFileSync(new URL('../domain/itinerary-route-ui.mjs',import.meta.url),'utf8');
+ assert.match(ui,/const writeVisitGuidance=\(note,advice\)=>/);
+ assert.match(ui,/if\(visibleAdvice&&proposed\)writeVisitGuidance\(visibleAdvice,proposed\)/);
+ assert.match(ui,/writeVisitGuidance\(note,advice\)/);
+});

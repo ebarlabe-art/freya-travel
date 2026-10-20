@@ -33,6 +33,31 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
  root.prepend(preferencePanel);
  const internalTravel=new Map(),redrawCross=new Map();
  for(const item of items)if(Array.isArray(item.locationPoints)&&item.locationPoints.length>1)internalTravel.set(item.key,{waiting:item.locationPoints.length-1,seconds:0,incomplete:false});
+ const writeVisitGuidance=(note,advice)=>{
+  const format=stamp=>{if(!stamp)return '';try{return new Intl.DateTimeFormat('ca-ES',{timeZone,hour:'2-digit',minute:'2-digit'}).format(new Date(stamp))}catch{return ''}};
+  const end=format(advice.confirmedEnd||advice.displayableEnd),nextAt=format(advice.nextStart);
+  note.replaceChildren();
+  note.className='agenda-visit-guidance'+(advice.reducedMinutes>0||advice.cannotFit?' agenda-visit-conflict':'');
+  const heading=document.createElement('strong');
+  const status=document.createElement('p');
+  if(advice.cannotFit){
+   heading.textContent='⚠ No hi ha prou temps per a aquesta visita';
+   status.textContent=advice.confirmedEnd?'La seva hora de finalització confirmada se solapa amb el següent compromís. Cal revisar el planning.':
+    'La visita següent comença'+(nextAt?' a les '+nextAt:'')+'; Freya no pot proposar ni 10 min amb el marge necessari.';
+  }else if(advice.reducedMinutes>0){
+   heading.textContent='⏱ Freya ajusta la visita a '+advice.plannedMinutes+' min com a màxim';
+   status.textContent='Proposta inicial: '+advice.minutes+' min'+(end?' · Final orientatiu: '+end:'')+
+    (advice.routePending?' · Encara cal descomptar el trajecte quan es verifiqui.':' · Inclou el marge de desplaçament verificat.');
+  }else{
+   heading.textContent='💡 Durada orientativa: '+advice.minutes+' min';
+   status.textContent=advice.confirmedEnd?'Final confirmat: '+end+'.':
+    end?'Final orientatiu: '+end+'.'+(advice.routePending?' Pendent de comprovar el trajecte següent.':''):
+    'Hora de finalització encara no concretada.';
+  }
+  note.append(heading,status);
+  if(advice.reason){const reason=document.createElement('small');reason.textContent=advice.reason;note.append(reason)}
+
+ };
  const pairs=visitPairs(items,tripId,day);
  for(const [index,pair]of pairs.entries()){
   // Even incomplete place pairs need a clear, actionable connector; do not hide them.
@@ -64,6 +89,8 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    const mapUrl=routeMapUrl(route);
    const proposal=visitPlans.get(pair.origin.key);
    const proposed=proposal?recommendedVisitAdvice(pair.origin,proposal,pair.destination,result,state.buffer??5):null;
+   const visibleAdvice=anchor.querySelector('[data-visit-advice]');
+   if(visibleAdvice&&proposed)writeVisitGuidance(visibleAdvice,proposed);
    let proposedDeparture='';
    if(proposed?.latestLeaveBy)try{proposedDeparture=new Intl.DateTimeFormat('ca-ES',{timeZone,hour:'2-digit',minute:'2-digit'}).format(new Date(proposed.latestLeaveBy))}catch(_){};
    const needs=result&&!route?[error,...['origin','destination'].map(side=>result[side]?.error)].filter(Boolean):[];
@@ -78,7 +105,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    const reviewControl=unresolvedSide?'<button type="button" data-route-review="'+unresolvedSide+'">📍 Revisa '+(unresolvedSide==='origin'?'la sortida':'l’arribada')+'</button>':'';
    card.innerHTML=`<div class="agenda-route-compact" role="status" aria-live="polite">↳ ${esc(summary)} ${reviewControl}</div>${state.autoNote?`<p class="agenda-route-diagnosis">${esc(state.autoNote)}</p>`:""}${route?.mode==='transit'?'<p class="agenda-route-diagnosis">Temps estimat de transport públic; no incorpora horaris ni esperes en directe.</p>':''}
     ${budget?`<p class="agenda-route-diagnosis" role="status">${budget.hasConflict?"⚠ Horaris incompatibles:": "Temps màxim orientatiu per a la visita:"} ${esc(String(budget.availableMinutes))} min, descomptant trajectes i marge.${leaveTime?" Sortida recomanada abans de les "+esc(leaveTime)+".":""} No modifica les reserves.</p>`:internal?.incomplete||internal?.waiting?"<p class=\"agenda-route-diagnosis\">Cal verificar els trams interns per calcular el temps disponible.</p>":""}
-    ${proposed?.latestLeaveBy?`<p class="agenda-route-diagnosis" role="status">${proposed.shortageMinutes>0?'⚠ La visita proposada no hi cap: cal avançar la sortida almenys '+esc(String(proposed.shortageMinutes))+' min.':'⏰ Per arribar a la visita següent,'} marxeu com a màxim a les ${esc(proposedDeparture)} (${esc(String(proposed.travelMinutes))} min de trajecte + ${esc(String(state.buffer??5))} min de marge). Hora orientativa basada en una ruta verificada; no canvia reserves.</p>`:proposal&&pair.destination?`<p class="agenda-route-diagnosis">Encara no podem fixar l'hora límit de sortida fins que el trajecte estigui verificat.</p>`:''}
+    ${proposed?.latestLeaveBy?`<p class="agenda-route-diagnosis" role="status">${proposed.cannotFit?'⚠ Horaris incompatibles: revisa la visita i la reserva.':proposed.reducedMinutes>0?'⏱ Durada ajustada a '+esc(String(proposed.plannedMinutes))+' min.':'⏰ Per arribar a la visita següent,'} marxeu com a màxim a les ${esc(proposedDeparture)} (${esc(String(proposed.travelMinutes))} min de trajecte + ${esc(String(state.buffer??5))} min de marge). Hora orientativa basada en una ruta verificada; no canvia reserves.</p>`:proposal&&pair.destination?`<p class="agenda-route-diagnosis">Encara no podem fixar l'hora límit de sortida fins que el trajecte estigui verificat.</p>`:''}
     ${diagnosis?.status==='No factible'||diagnosis?.status==='Molt ajustat'?`<p role="status" class="agenda-route-diagnosis">⚠ ${esc(diagnosis.reason)} Els horaris es mantenen.</p>`:''}
     <details data-route-options ${state.detailsOpen?'open':''}><summary>Opcions del trajecte</summary>
       <p>${route?esc(result.origin?.label||pair.origin.title)+' → '+esc(result.destination?.label||pair.destination.title):
@@ -135,17 +162,12 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
   if(!suggestion)continue;
   const anchor=[...root.querySelectorAll('[data-itinerary-key]')].find(node=>node.dataset.itineraryKey===item.key);
   if(!anchor)continue;
-  const advice=recommendedVisitAdvice(item,suggestion);
+  const next=pairs.find(pair=>pair.origin.key===item.key)?.destination||null;
+  const advice=recommendedVisitAdvice(item,suggestion,next);
   if(!advice)continue;
-  let end='';
-  const time=advice.confirmedEnd||advice.proposedEnd;
-  if(time)try{end=new Intl.DateTimeFormat('ca-ES',{timeZone,hour:'2-digit',minute:'2-digit'}).format(new Date(time))}catch(_){}
-  const note=document.createElement('section');note.dataset.visitAdvice=item.key;note.className='agenda-route-diagnosis agenda-visit-guidance';
-  // An actual booked end always wins over the AI proposal.
-  note.textContent='💡 Freya proposa '+advice.minutes+' min per a aquesta visita'+(advice.reason?' · '+advice.reason:'')+
-   (end?advice.confirmedEnd?' · Final fix: '+end:' · Final orientatiu: '+end:'')+
-   '. Durada estimada; no modifica cap horari ni reserva.';
-  anchor.append(note);
+  const note=document.createElement('section');note.dataset.visitAdvice=item.key;
+  writeVisitGuidance(note,advice);
+  (anchor.querySelector('.generic-itinerary-card')||anchor).append(note);
  }
  // Real walking legs INSIDE a compound activity (one item, several ordered visits).
  // Never draw a straight-line duration and never infer a stop from a vague area.
