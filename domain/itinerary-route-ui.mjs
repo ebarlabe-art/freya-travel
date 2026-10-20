@@ -67,7 +67,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    const summary=!result?'Calculant trajecte…':route?
      `${modeIcon} ${Math.ceil(route.duration_seconds/60)} min · ${(route.distance_m/1000).toFixed(1)} km · ${esc(routeModes[route.mode])}`:
      needs.includes('approximate_place')?'Zona identificada · trajecte pendent de concretar':error==='offline'?'Sense connexió · trajecte pendent':error==='rate_limited'?'Trajecte temporalment no disponible':'Trajecte pendent de verificar';
-   card.innerHTML=`<div class="agenda-route-compact" role="status" aria-live="polite">↳ ${summary}</div>
+   card.innerHTML=`<div class="agenda-route-compact" role="status" aria-live="polite">↳ ${summary}</div>${state.autoNote?`<p class="agenda-route-diagnosis">${esc(state.autoNote)}</p>`:""}
     ${budget?`<p class="agenda-route-diagnosis" role="status">${budget.hasConflict?"⚠ Horaris incompatibles:": "Temps màxim orientatiu per a la visita:"} ${esc(String(budget.availableMinutes))} min, descomptant trajectes i marge.${leaveTime?" Sortida recomanada abans de les "+esc(leaveTime)+".":""} No modifica les reserves.</p>`:internal?.incomplete||internal?.waiting?"<p class=\"agenda-route-diagnosis\">Cal verificar els trams interns per calcular el temps disponible.</p>":""}
     ${diagnosis?.status==='No factible'||diagnosis?.status==='Molt ajustat'?`<p role="status" class="agenda-route-diagnosis">⚠ ${esc(diagnosis.reason)} Els horaris es mantenen.</p>`:''}
     <details data-route-options ${state.detailsOpen?'open':''}><summary>Opcions del trajecte</summary>
@@ -96,7 +96,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    const payload={trip_id:tripId,mode:state.mode==='auto'?'walk':state.mode,origin:{type:pair.origin.sourceType,id:pair.origin.sourceId,updated_at:pair.origin.sourceUpdatedAt},destination:{type:pair.destination.sourceType,id:pair.destination.sourceId,updated_at:pair.destination.sourceUpdatedAt},choices:{...state.choices}};
    if(!online()){state.result={error:'offline'};draw();return}
    if(!pair.origin.hasRoutePlace||!pair.destination.hasRoutePlace){state.result={error:'missing_place'};draw();return}
-   state.result=null;draw();
+   state.result=null;state.autoNote='';draw();
    const result=await queue.request(JSON.stringify([pair.key,contextKey,payload]),payload,{online:online(),retry});
    if(!live()||requestVersion!==version)return;
    let chosen=result;
@@ -106,6 +106,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
     const alternative=await queue.request(JSON.stringify([pair.key,contextKey,alt]),alt,{online:online(),retry});
     if(!live()||requestVersion!==version)return;
     chosen=preferredRoute(result,alternative);
+    if(!routeIsVerified(alternative))state.autoNote='No s’ha pogut verificar la ruta amb '+(otherMode==='drive'?'cotxe':'transport públic')+'. Es mostra el trajecte a peu, no una comparativa definitiva.';
    }
    state.result=online()?chosen:{error:'offline'};draw();
   }
