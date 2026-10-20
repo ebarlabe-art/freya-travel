@@ -28,6 +28,7 @@ const activity={id:id(7),trip_id:tripId,title:'Museo Sintetico',venue_name:null,
  resolved_location:null,location_points:null,created_at:'2030-01-01T00:00:00Z',updated_at:'2030-01-01T00:00:00Z'};
 const activityOriginal=structuredClone(activity),allRows=[...rows,activity];
 const originals=structuredClone(rows),writes=[],searches=[];
+let releaseSearch=null;
 const stops=[{trip_id:tripId,canonical_name:'Bologna',country_code:'IT',position:1,time_zone:'Europe/London'}];
 const tripRow={id:tripId,name:'Synthetic points trip',start_date:'2026-12-27',end_date:'2026-12-27',time_zone:'Europe/London',owner_id:userId,is_owner:true,experience_key:null};
 const raw=name=>({name,formatted:name+', Bologna',city:'Bologna',country_code:'it',result_type:'amenity',place_id:name,
@@ -60,6 +61,7 @@ try{
   if(name==='itinerary-route')return {data:await(await handler(new Request('https://synthetic',{method:'POST',headers:{authorization:'Bearer synthetic'},body:JSON.stringify(body)}))).json(),error:null};
   if(name!=='place-resolution')return {data:{},error:null};
   searches.push(body);
+  if(body.text.startsWith('Delayed'))await new Promise(resolve=>{releaseSearch=resolve});
   const title=body.text.split(',')[0],places=title==='Unknown Museum'?[]:title==='Central Museum'?
    [normalizeGeoapify({...raw(title),place_id:'one'}),normalizeGeoapify({...raw(title),place_id:'two'})]:[normalizeGeoapify({...raw(title==='centre històric'?'Centro Storico':title),result_type:['Quadrilatero','centre històric'].includes(title)?'suburb':title==='Via del Pratello'?'street':'amenity'})];
   return {data:{candidates:places.map(place=>({place}))},error:null};
@@ -79,7 +81,8 @@ try{
     return ()=>q;
    }});return q;
   };
-  db.channel=()=>{const c={on:()=>c,subscribe:()=>c,unsubscribe:async()=>{}};return c};db.removeChannel=async()=>{};
+  window.fixtureRealtime=[];
+  db.channel=()=>{const c={on:(_event,filter,callback)=>{window.fixtureRealtime.push({table:filter.table,callback});return c},subscribe:()=>c,unsubscribe:async()=>{}};return c};db.removeChannel=async()=>{};
   Object.defineProperty(db,'functions',{configurable:true,value:{invoke:(name,{body})=>window.fixtureInvoke(name,body)}});
   await renderSession({user:{id:userId,email:'v27@example.invalid'}});await selectTrip(tripRow.id,{open:true});
  },{tripRow,stops,userId});
@@ -95,6 +98,67 @@ try{
  await first.tap();
  let editor=page.locator('[data-activity-point-editor]');await editor.waitFor({state:'visible'}).catch(async e=>{console.error('Editor diagnostics',await page.locator('#genericItineraryMessage').textContent(),errors);throw e});
  assert.equal(await editor.locator('fieldset').count(),3);
+ await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Piazza Maggiore provisional');
+ await page.evaluate(async()=>{await loadManualItineraryItems(true);renderGenericItinerary()});
+ assert.equal(await editor.isVisible(),true,'Open editor survives planning refresh');
+ assert.equal(await editor.getByLabel('Nom del punt 1',{exact:true}).evaluate(node=>document.activeElement===node),true,'Focused name survives reconciliation');
+ await page.locator('#refreshGenericItinerary').tap();
+ await page.waitForFunction(()=>itineraryLoadBatch===0);
+ assert.equal(await editor.isVisible(),true,'Editor survives actual refresh button');
+ assert.equal(await editor.getByLabel('Nom del punt 1',{exact:true}).inputValue(),'Piazza Maggiore provisional');
+ // Real background enrichment of another activity must not close or save this editor.
+ rows[1].location_points=null;rows[1].updated_at='2032-01-01T00:00:00Z';
+ const beforeBackground=writes.length;
+ await page.evaluate(async()=>{await loadManualItineraryItems(true);renderGenericItinerary()});
+ await page.waitForFunction(()=>manualItineraryRows[1].location_points!==null);
+ assert.equal(writes.length,beforeBackground+1);assert.equal(writes.at(-1).id,rows[1].id);
+ assert.equal(await editor.getByLabel('Nom del punt 1',{exact:true}).inputValue(),'Piazza Maggiore provisional');
+ await editor.getByRole('button',{name:'Puja el punt 2',exact:true}).tap();
+ await editor.getByLabel('Nom del punt 2',{exact:true}).fill('Delayed Piazza');
+ await editor.locator('fieldset').nth(1).getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+ await editor.getByRole('status').filter({hasText:'Cercant'}).waitFor();
+ const beforeReview=writes.length;
+ await page.evaluate(async()=>{
+  const callbacks=window.fixtureRealtime.filter(c=>c.table==='trip_itinerary_items');
+  if(!callbacks.length)throw Error('No real Realtime subscription registered');
+  await Promise.all(callbacks.map(c=>c.callback()));renderGenericItinerary();
+ });
+ assert.equal(await editor.isVisible(),true,'In-flight search survives Realtime reconciliation');
+ for(let i=0;!releaseSearch&&i<100;i++)await new Promise(r=>setTimeout(r,10));
+ assert.ok(releaseSearch);releaseSearch();releaseSearch=null;
+ const candidate=editor.locator('[data-point-results] button').filter({hasText:'Delayed Piazza'});
+ await candidate.waitFor();
+ await candidate.evaluate(node=>{node.focus();node.scrollIntoView({block:'center'})});
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ const position=await candidate.evaluate(node=>node.getBoundingClientRect().top);
+ await page.evaluate(()=>renderGenericItinerary());
+ const afterPosition=await candidate.evaluate(node=>node.getBoundingClientRect().top);
+ assert.ok(Math.abs(afterPosition-position)<3,`Viewport anchor survives rerender: ${position} → ${afterPosition}`);
+ await candidate.tap();
+ await page.evaluate(()=>renderGenericItinerary());
+ assert.match(await editor.locator('fieldset').nth(1).innerText(),/Delayed Piazza/);
+ assert.match(await editor.locator('fieldset').first().innerText(),/Fontana/);
+ // Remote same-activity revision: retain selected candidate, order and typed text, block save until review.
+ rows[0].updated_at='2033-01-01T00:00:00Z';
+ rows[0].location_points.points[0].query='Remote Piazza';
+ await page.evaluate(async()=>{await loadManualItineraryItems(true);renderGenericItinerary()});
+ await editor.getByRole('alert').filter({hasText:'activitat ha canviat'}).waitFor();
+ assert.equal(await editor.getByRole('button',{name:'Desa els punts',exact:true}).isDisabled(),true);
+ await editor.getByText('Revisa els canvis de l’activitat',{exact:true}).tap();
+ await editor.getByRole('alert').getByText(/Remote Piazza/).waitFor();
+ await editor.getByRole('alert').screenshot({path:resolve(tmpdir(),'freya-point-conflict-'+engine+'.png')});
+ await page.evaluate(()=>renderGenericItinerary());
+ assert.equal(await editor.locator('details').getAttribute('open'),'','Open conflict review survives refresh');
+ await editor.getByRole('button',{name:'Conserva el meu esborrany sobre aquesta versió',exact:true}).tap();
+ assert.equal(await editor.getByRole('button',{name:'Desa els punts',exact:true}).isEnabled(),true);
+ assert.equal(writes.length,beforeReview,'Refresh, candidate selection and conflict review never save');
+ assert.equal(await editor.getByLabel('Nom del punt 2',{exact:true}).inputValue(),'Delayed Piazza');
+ await editor.getByRole('button',{name:'Cancel·la',exact:true}).tap();
+ rows[0].location_points.points[0].query='Piazza Maggiore';
+ await page.evaluate(async()=>{await loadManualItineraryItems(true);renderGenericItinerary()});
+ await first.tap();await editor.waitFor({state:'visible'});
+
+
  await editor.locator('fieldset').first().screenshot({path:resolve(tmpdir(),'freya-point-editor-'+engine+'.png')});
  await editor.getByRole('button',{name:'Puja el punt 2',exact:true}).tap();
  await editor.getByRole('button',{name:'Elimina el punt 3',exact:true}).tap();
@@ -127,7 +191,22 @@ try{
  assert.equal(writes.length,writesBefore,'Stale editor must not overwrite');
  await editor.getByRole('button',{name:'Cancel·la',exact:true}).tap();
  assert.equal(await page.locator('[data-activity-point-editor]').count(),0);
+ await first.tap();await editor.waitFor({state:'visible'});
+ await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Delayed cancel');
+ await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+ for(let i=0;!releaseSearch&&i<100;i++)await new Promise(r=>setTimeout(r,10));assert.ok(releaseSearch);
+ await editor.getByRole('button',{name:'Cancel·la',exact:true}).tap();releaseSearch();releaseSearch=null;
+ await page.evaluate(()=>renderGenericItinerary());
+ assert.equal(await editor.count(),0,'Cancelled search never resurrects editor');
+ await first.tap();await editor.waitFor({state:'visible'});
+ await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Delayed trip change');
+ await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+ for(let i=0;!releaseSearch&&i<100;i++)await new Promise(r=>setTimeout(r,10));assert.ok(releaseSearch);
+ await page.evaluate(()=>selectTrip('missing-trip',{open:true}));
+ releaseSearch();releaseSearch=null;
+ assert.equal(await editor.count(),0,'Leaving the trip cancels editor');
+ assert.equal(writes.length,writesBefore,'Cancellation and trip change never save');
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'Mobile layout');
  assert.deepEqual(errors,[]);
- console.log(`PASS ${engine}: ordered multi-point enrichment, approximate zones, ambiguous pending, actual mobile add/search/select/reorder/remove/save clicks, geography-only CAS writes, reload reuse, stale editor rejection.`);
+ console.log(`PASS ${engine}: ordered multi-point enrichment, approximate zones, ambiguous pending, actual mobile add/search/select/reorder/remove/save clicks, geography-only CAS writes, reload reuse; editor preservation through enrichment, Realtime, refresh and pending search; scroll, candidates, conflict review and cancellation; no accidental writes.`);
 }finally{await browser.close();await new Promise(r=>server.close(r))}

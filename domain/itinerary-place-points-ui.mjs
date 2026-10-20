@@ -1,18 +1,38 @@
 import {MAX_POINTS,extractActivityPoints,savedActivityPoints,pointSnapshot,pointPlace,pointMapUrl} from './itinerary-place-points.mjs';
 const el=(tag,text)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node};
-export function mountActivityPointEditor({host,row,search,save,current=()=>true}){
- document.querySelectorAll('[data-activity-point-editor]').forEach(node=>node.remove());
+export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,current=()=>true}){
+ document.querySelectorAll('[data-activity-point-editor]').forEach(node=>node.dispose?.());
  const root=el('section');root.dataset.activityPointEditor='';root.className='activity-point-editor';root.setAttribute('aria-label','Punts de '+row.title);
  const points=structuredClone(savedActivityPoints(row)||extractActivityPoints(row));
  const heading=el('h4','Punts de l’activitat'),help=el('p','Ordena fins a 12 llocs de la visita. Les zones són aproximades; no impliquen cap reserva. Els canvis només es desen quan ho confirmes.');
  const list=el('div'),status=el('p');status.setAttribute('role','status');
  const add=el('button','Afegeix un punt'),submit=el('button','Desa els punts'),close=el('button','Cancel·la');
  for(const b of [add,submit,close])b.type='button';
- root.append(heading,help,list,status,add,submit,close);host.append(root);let busy=false,serial=0;
+ const conflict=el('div');conflict.setAttribute('role','alert');conflict.hidden=true;
+ root.append(heading,help,conflict,list,status,add,submit,close);host.append(root);let busy=false,saving=false,serial=0,latest=row,conflictVersion=null;
+ root.dispose=()=>{serial++;root.remove()};
+ root.syncRow=value=>{
+  latest=value;
+  const version=JSON.stringify([row.updated_at,latest?.updated_at??null]);
+  if(conflictVersion===version)return;conflictVersion=version;conflict.replaceChildren();
+  const changed=!latest||latest.updated_at!==row.updated_at;
+  conflict.hidden=!changed;submit.disabled=busy||changed;
+  if(!changed)return;
+  conflict.append(el('p',latest?'L’activitat ha canviat mentre editaves. El teu esborrany es conserva. Revisa la versió actual abans de desar.':'L’activitat ja no està disponible. Conservem l’esborrany, però no es pot desar.'));
+  if(!latest)return;
+  const details=el('details'),summary=el('summary','Revisa els canvis de l’activitat');details.append(summary);
+  details.append(el('p',latest.title),el('p','Versió actual: '+latest.updated_at));
+  const remote=el('ol');for(const p of savedActivityPoints(latest)||extractActivityPoints(latest))remote.append(el('li',[p.query,p.place?.canonical_name,p.place?.formatted_address].filter(Boolean).join(' · ')));
+  details.append(remote,el('p','Conservar l’esborrany substituirà només els punts de la versió revisada quan premis «Desa els punts». No canviarà els altres camps.'));
+  const accept=el('button','Conserva el meu esborrany sobre aquesta versió');accept.type='button';accept.disabled=saving;
+  const reviewed=latest;
+  accept.onclick=()=>{if(!active()||saving)return;const now=readRow();if(!now||now.updated_at!==reviewed.updated_at){root.syncRow(now);return}row=now;root.syncRow(now);status.textContent='Versió revisada. El teu esborrany encara no s’ha desat.'};
+  details.append(accept);conflict.append(details);
+ };
  const active=()=>root.isConnected&&current();
  const action=(text,run)=>{const b=el('button',text);b.type='button';b.disabled=busy;b.onclick=run;return b};
  function render(){
-  list.replaceChildren();add.disabled=busy||points.length>=MAX_POINTS;submit.disabled=busy;close.disabled=busy;
+  list.replaceChildren();add.disabled=busy||points.length>=MAX_POINTS;submit.disabled=busy||!latest||latest.updated_at!==row.updated_at;close.disabled=saving;
   points.forEach((point,i)=>{
    const box=el('fieldset'),legend=el('legend',(i+1)+'. '+(point.place?.canonical_name||point.query||'Punt nou'));box.append(legend);
    const input=el('input');input.value=point.query;input.maxLength=500;input.setAttribute('aria-label','Nom del punt '+(i+1));input.disabled=busy;box.append(input);
@@ -31,7 +51,7 @@ export function mountActivityPointEditor({host,row,search,save,current=()=>true}
       });target.append(button);
      }
     }catch(e){if(active())status.textContent=e.message||'La cerca no està disponible.'}
-    finally{if(active()){busy=false;add.disabled=points.length>=MAX_POINTS;submit.disabled=false;close.disabled=false;if(!list.querySelector('[data-point-results] button'))render()}}
+    finally{if(active()){busy=false;add.disabled=points.length>=MAX_POINTS;submit.disabled=!latest||latest.updated_at!==row.updated_at;close.disabled=false;if(!list.querySelector('[data-point-results] button'))render()}}
    });box.append(find);
    if(point.place){
     box.append(el('p',point.place.coordinate_role==='representative_point'?'Zona aproximada identificada':'Ubicació exacta identificada'));
@@ -44,12 +64,13 @@ export function mountActivityPointEditor({host,row,search,save,current=()=>true}
   });
  }
  add.onclick=()=>{if(busy||!active()||points.length>=MAX_POINTS)return;points.push({id:crypto.randomUUID(),query:'',status:'pending',place:null});render();list.lastElementChild.querySelector('input').focus()};
- close.onclick=()=>{if(!busy){serial++;root.remove()}};
+ close.onclick=()=>{if(!saving)root.dispose()};
  submit.onclick=async()=>{
   if(busy||!active())return;
-  try{const snapshot=pointSnapshot(row,points);busy=true;render();status.textContent='Desant els punts…';await save(snapshot);if(active())root.remove()}
+  root.syncRow(readRow());if(!latest||latest.updated_at!==row.updated_at)return;
+  try{const snapshot=pointSnapshot(row,points);saving=true;busy=true;render();status.textContent='Desant els punts…';await save(snapshot,row);if(active())root.dispose()}
   catch(e){if(active())status.textContent=e.message||'No s’han pogut desar. Revisa el planning abans de repetir.'}
-  finally{if(active()){busy=false;render()}}
+  finally{saving=false;if(active()){busy=false;root.syncRow(readRow());render()}}
  };
  render();heading.tabIndex=-1;heading.focus({preventScroll:true});root.scrollIntoView({block:'nearest'});
  return root;
