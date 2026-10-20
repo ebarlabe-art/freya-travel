@@ -88,7 +88,7 @@ test('A2.7: Pages includes the same module graph as PWA cache',()=>{
  assert.match(worker,/\.\/domain\/import-itinerary-proposal\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-review\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-write\.mjs/);
- assert.match(worker,/freya-travel-release-6444-v31/);
+ assert.match(worker,/freya-travel-release-6444-v32/);
 });
 
 test('A2.9: real async completion re-enables the imported itinerary save button',async()=>{

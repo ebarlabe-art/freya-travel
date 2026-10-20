@@ -8,6 +8,8 @@ const runtimeDomain=[
   'itinerary-route.mjs',
   'itinerary-route-ui.mjs',
   'itinerary-quick-place.mjs',
+  'itinerary-place-points.mjs',
+  'itinerary-place-points-ui.mjs',
   'place-resolution.mjs',
   'place-resolution-ui.mjs',
   'proposal-handoff.mjs',

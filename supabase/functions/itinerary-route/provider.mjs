@@ -1,3 +1,4 @@
+import {savedActivityPoints,validPointPlace} from '../../../domain/itinerary-place-points.mjs';
 const clean=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 export function destinationContext(row,stops){
  const city=row.city||row.resolved_location?.place?.locality;
@@ -27,7 +28,13 @@ export function routeProvider({key,fetcher=fetch,timeoutMs=8000,now=Date.now,spa
   catch(error){if(cache.get(id)?.pending===pending)cache.delete(id);throw error}
  }
  return {
-  async resolve(row,context,choice){
+  async resolve(row,context,choice,endpoint='first'){
+   if(row.location_points!==null&&row.location_points!==undefined){
+    const points=savedActivityPoints(row),p=(endpoint==='last'?points?.at(-1):points?.[0])?.place;
+    // Never fall back to a superseded single location or turn an area centroid into an exact entrance.
+    if(!validPointPlace(p)||p.coordinate_role!=='exact_location')return {error:'missing_place'};
+    return {point:{id:p.provider_place_id,label:p.canonical_name,lat:p.latitude,lon:p.longitude}};
+   }
    if(!choice&&Number.isFinite(row.latitude)&&Math.abs(row.latitude)<=90&&Number.isFinite(row.longitude)&&Math.abs(row.longitude)<=180){
     return {point:{id:'coordinates:'+row.latitude+':'+row.longitude,label:row.venue_name||row.location_name||row.title||row.address,lat:row.latitude,lon:row.longitude}};
    }
