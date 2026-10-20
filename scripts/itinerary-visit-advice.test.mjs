@@ -65,7 +65,9 @@ test('arrival-day screenshots: a 09:30 60-minute breakfast cannot end at 10:30 i
  const next={timingKind:'exact',startsAt:'2026-10-24T10:15:00+02:00'};
  const result=recommendedVisitAdvice(breakfast,{minutes:60,reason:'Esmorzar tranquil'},next,{error:'missing_place'},5);
  assert.equal(result.proposedEnd,'2026-10-24T08:30:00.000Z');
- assert.equal(result.displayableEnd,null,'Never advertise a visibly impossible finish');
+ assert.equal(result.displayableEnd,'2026-10-24T08:10:00.000Z','Auto-adjust to 10:10, not the impossible 10:30');
+ assert.equal(result.plannedMinutes,40,'Automatically cap the visit before the next start');
+ assert.equal(result.reducedMinutes,20,'Expose the 20-minute shortening as an explicit proposal');
  assert.equal(result.maxMinutesWithoutTravel,40,'Even without routing there are only 40 minutes before the safety margin');
  assert.equal(result.shortageMinutes,20);
  assert.equal(result.latestLeaveBy,null,'Do not fabricate an ETA');
@@ -92,4 +94,30 @@ test('explicit after-midnight Saturday 24 arrival has a protected authenticated 
  assert.match(html,/data-confirm-overnight-date/);
  assert.match(html,/async function confirmOvernightItineraryDate\(button\)/);
  assert.match(html,/\.eq\('updated_at',row\.updated_at\)\.select\('id'\)/);
+});
+
+test('a verified 5-minute walk + 5-minute buffer further shortens flexible breakfast',()=>{
+ const breakfast={timingKind:'exact',startsAt:'2026-10-24T09:30:00+02:00',endsAt:null};
+ const next={timingKind:'exact',startsAt:'2026-10-24T10:15:00+02:00'};
+ const route={route:{method:'routing',mode:'walk',duration_seconds:300,distance_m:200}};
+ const r=recommendedVisitAdvice(breakfast,{minutes:60,reason:'Esmorzar'},next,route,5);
+ assert.equal(r.plannedMinutes,35);
+ assert.equal(r.displayableEnd,'2026-10-24T08:05:00.000Z');
+ assert.equal(r.latestLeaveBy,'2026-10-24T08:05:00.000Z');
+ assert.equal(r.routePending,false);
+});
+test('if no time remains, show conflict instead of proposing negative or zero visit',()=>{
+ const r=recommendedVisitAdvice(
+  {timingKind:'exact',startsAt:'2026-10-24T10:14:00+02:00'},
+  {minutes:30,reason:'Visita'},
+  {timingKind:'exact',startsAt:'2026-10-24T10:15:00+02:00'},null,5);
+ assert.equal(r.plannedMinutes,0);
+ assert.equal(r.cannotFit,true);
+ assert.equal(r.displayableEnd,null);
+});
+test('mobile note reports automatically fitted maximum rather than impossible finish',()=>{
+ const ui=readFileSync(new URL('../domain/itinerary-route-ui.mjs',import.meta.url),'utf8');
+ assert.match(ui,/Freya ajusta la visita a /);
+ assert.match(ui,/Encara cal descomptar el trajecte quan es verifiqui/);
+ assert.doesNotMatch(ui,/Cal escurçar-la almenys /);
 });
