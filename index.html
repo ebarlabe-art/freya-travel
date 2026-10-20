@@ -6415,9 +6415,47 @@ async function loadTripReview(force=false){
 }
 function itineraryStatusLabel(status){return {planning:'En planificació',planned:'Planificat',reserved:'Reservat',confirmed:'Confirmat',completed:'Completat',cancelled:'Cancel·lat'}[status]||status||''}
 function itinerarySourceLabel(type,id=''){if(type==='activity'&&isLocalTransportActivity(activityRows.find(row=>row.id===id)))return 'Obrir transport';return {flight:'Obrir vol',accommodation:'Obrir allotjament',activity:'Obrir activitat',manual:'Editar planning'}[type]||'Obrir font'}
+function overnightItineraryCorrection(item){
+ if(item?.sourceType!=='manual'||item.timingKind!=='exact'||item.isCancelled)return null;
+ const row=manualItineraryRows.find(value=>value.id===item.sourceId&&value.trip_id===item.tripId);
+ if(!row||row.is_fixed||row.status!=='planned'||!row.starts_at||!row.time_zone)return null;
+ const local=itineraryDateTime(row.starts_at,row.time_zone);
+ if(!local||Number(local.time.slice(0,2))>5)return null;
+ const title=String(row.title||'').toLocaleLowerCase('ca');
+ const dayHint=/\b(?:dilluns|dimarts|dimecres|dijous|divendres|dissabte|diumenge)\s+(\d{1,2})\b/.exec(title);
+ if(!title.includes('matinada')||!dayHint)return null;
+ const nextDay=new Date(local.date+'T12:00:00Z');
+ nextDay.setUTCDate(nextDay.getUTCDate()+1);
+ const targetDate=nextDay.toISOString().slice(0,10);
+ if(Number(dayHint[1])!==Number(targetDate.slice(-2))||!genericItineraryTripDates().includes(targetDate))return null;
+ const patch=tripReviewMoveManualToDatePatch(row,targetDate);
+ return patch?{row,patch,targetDate}:null;
+}
+async function applyOvernightItineraryCorrection(button){
+ if(!trip||!session||isLondonTrip()||connectionUnavailable())return;
+ const item=itineraryProjection.find(x=>x.key===button.dataset.correctOvernight);
+ const candidate=overnightItineraryCorrection(item);
+ if(!candidate)return;
+ const {row,patch,targetDate}=candidate;
+ if(!confirm('Aquesta arribada sembla correspondre a '+itineraryDayHeading(targetDate)+'. Vols corregir-ne la data mantenint les 00:15?'))return;
+ const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
+ button.disabled=true;
+ try{
+  const {data,error}=await db.from('trip_itinerary_items').update(patch).eq('trip_id',tripId).eq('id',row.id).eq('updated_at',row.updated_at).eq('is_fixed',false).select('id').maybeSingle();
+  if(error)throw error;
+  if(!data)throw new Error('Aquest registre ja ha canviat. Cal tornar-lo a revisar.');
+  await loadManualItineraryItems(true);
+  if(!itineraryRequestIsCurrent(tripId,generation,userId))return;
+  genericItinerarySelectedTripId=tripId;genericItinerarySelectedDay=targetDate;
+  msg('genericItineraryMessage','Data corregida. Arribada situada a la matinada del dia següent.');
+  renderGenericItinerary();
+ }catch(error){
+  if(itineraryRequestIsCurrent(tripId,generation,userId))msg('genericItineraryMessage',error?.message||'No s’ha pogut actualitzar el dia.',true);
+ }finally{button.disabled=false}
+}
 function renderItineraryItem(item,unscheduled=false){
-  const details=[item.subtitle,...item.details].filter(Boolean);
-  return `<article class="generic-itinerary-entry" data-itinerary-key="${esc(item.key)}"><div class="generic-itinerary-time ${item.timingKind==='approximate'?'approximate':''}">${unscheduled?'':esc(item.timeLabel)}</div><div class="generic-itinerary-card ${item.isCancelled?'cancelled':''} ${item.isCompleted?'trip-progress-done':''}"><div class="generic-itinerary-main"><div class="generic-itinerary-icon">${item.icon}</div><div class="generic-itinerary-copy"><small>${esc(item.eyebrow)}</small><strong>${esc(item.title)}</strong>${details.map(detail=>`<p>${esc(detail)}</p>`).join('')}${itineraryPointHtml(item)}${tripProgressStatusHtml(item)}${(item.tags||[]).map(tag=>`<span class="generic-itinerary-tag">${esc(tag)}</span>`).join('')}</div></div><div class="generic-itinerary-actions">${tripProgressButton(item)}${item.documents.map(document=>`<button type="button" data-itinerary-document="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}" data-itinerary-document-role="${esc(document.role)}" ${document.documentId?`data-itinerary-document-id="${esc(document.documentId)}"`:''}>${esc(document.label)}</button>`).join('')}${item.mapUrl&&!itineraryPointRow(item)?.location_points?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">📍 Maps</a>`:''}<button type="button" class="source-action" data-itinerary-source="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}">${esc(itinerarySourceLabel(item.sourceType,item.sourceId))}</button>${itineraryPointRow(item)?`<button type="button" data-activity-points="${esc(item.key)}">📍 Edita els punts</button>`:''}${item.sourceType==='manual'&&!itineraryPointRow(item)&&!item.mapUrl?`<button type="button" data-itinerary-find-place="${esc(item.sourceId)}">📍 Cerca ubicació</button>`:''}${item.sourceType==='manual'?`<button type="button" data-delete-manual-itinerary="${esc(item.sourceId)}">Elimina</button>`:''}</div></div></article>`;
+  const details=[item.subtitle,...item.details].filter(Boolean),overnight=overnightItineraryCorrection(item);
+  return `<article class="generic-itinerary-entry" data-itinerary-key="${esc(item.key)}"><div class="generic-itinerary-time ${item.timingKind==='approximate'?'approximate':''}">${unscheduled?'':esc(item.timeLabel)}</div><div class="generic-itinerary-card ${item.isCancelled?'cancelled':''} ${item.isCompleted?'trip-progress-done':''}"><div class="generic-itinerary-main"><div class="generic-itinerary-icon">${item.icon}</div><div class="generic-itinerary-copy"><small>${esc(item.eyebrow)}</small><strong>${esc(item.title)}</strong>${details.map(detail=>`<p>${esc(detail)}</p>`).join('')}${itineraryPointHtml(item)}${tripProgressStatusHtml(item)}${(item.tags||[]).map(tag=>`<span class="generic-itinerary-tag">${esc(tag)}</span>`).join('')}</div></div><div class="generic-itinerary-actions">${tripProgressButton(item)}${overnight?`<button type="button" data-correct-overnight="${esc(item.key)}">🌙 Corregeix al dia ${esc(overnight.targetDate.slice(-2))} a les 00:15</button>`:''}${item.documents.map(document=>`<button type="button" data-itinerary-document="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}" data-itinerary-document-role="${esc(document.role)}" ${document.documentId?`data-itinerary-document-id="${esc(document.documentId)}"`:''}>${esc(document.label)}</button>`).join('')}${item.mapUrl&&!itineraryPointRow(item)?.location_points?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">📍 Maps</a>`:''}<button type="button" class="source-action" data-itinerary-source="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}">${esc(itinerarySourceLabel(item.sourceType,item.sourceId))}</button>${itineraryPointRow(item)?`<button type="button" data-activity-points="${esc(item.key)}">📍 Edita els punts</button>`:''}${item.sourceType==='manual'&&!itineraryPointRow(item)&&!item.mapUrl?`<button type="button" data-itinerary-find-place="${esc(item.sourceId)}">📍 Cerca ubicació</button>`:''}${item.sourceType==='manual'?`<button type="button" data-delete-manual-itinerary="${esc(item.sourceId)}">Elimina</button>`:''}</div></div></article>`;
 }
 
 async function openQuickItineraryPlacePicker(button){
@@ -6474,6 +6512,7 @@ function bindItineraryActions(container){
   container.querySelectorAll('[data-itinerary-source]').forEach(button=>button.onclick=()=>button.dataset.itinerarySource==='manual'?openManualItineraryForm(button.dataset.itinerarySourceId):openItinerarySource(button.dataset.itinerarySource,button.dataset.itinerarySourceId));
   container.querySelectorAll('[data-itinerary-find-place]').forEach(button=>button.onclick=()=>{void openQuickItineraryPlacePicker(button)});
   container.querySelectorAll('[data-delete-manual-itinerary]').forEach(button=>button.onclick=()=>deleteManualItineraryItem(button.dataset.deleteManualItinerary,button));
+  container.querySelectorAll('[data-correct-overnight]').forEach(button=>button.onclick=()=>{void applyOvernightItineraryCorrection(button)});
 }
 // Scoped ephemeral flags: failed suggestions never loop, edited rows always win.
 const dayContextAttempted=new Set(),dayContextPending=new Set(),dayVisitPlans=new Map();
