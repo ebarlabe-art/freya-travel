@@ -62,7 +62,11 @@ try{
   if(name!=='place-resolution')return {data:{},error:null};
   searches.push(body);
   if(body.text.startsWith('Delayed'))await new Promise(resolve=>{releaseSearch=resolve});
-  const title=body.text.split(',')[0],places=title==='Unknown Museum'?[]:title==='Central Museum'?
+  const title=body.text.split(',')[0],places=title==='Basilica di San Domenico'?
+   [normalizeGeoapify({...raw(title),place_id:'domenico-1',formatted:'Basilica di San Domenico, Piazza San Domenico, 40124 Bologna BO, Italia'}),
+    normalizeGeoapify({...raw(title),place_id:'domenico-2',lat:44.49012,lon:11.34009,formatted:'Basilica di San Domenico, 40125 Bologna BO, Italia'}),
+    normalizeGeoapify({...raw('Basilica di Santo Stefano'),place_id:'stefano',formatted:'Basilica di Santo Stefano, Piazza Santo Stefano, Bologna'})]:
+   title==='Unknown Museum'?[]:title==='Central Museum'?
    [normalizeGeoapify({...raw(title),place_id:'one'}),normalizeGeoapify({...raw(title),place_id:'two'})]:[normalizeGeoapify({...raw(title==='centre històric'?'Centro Storico':title),result_type:['Quadrilatero','centre històric'].includes(title)?'suburb':title==='Via del Pratello'?'street':'amenity'})];
   return {data:{candidates:places.map(place=>({place}))},error:null};
  });
@@ -98,7 +102,19 @@ try{
  await first.tap();
  let editor=page.locator('[data-activity-point-editor]');await editor.waitFor({state:'visible'}).catch(async e=>{console.error('Editor diagnostics',await page.locator('#genericItineraryMessage').textContent(),errors);throw e});
  assert.equal(await editor.locator('fieldset').count(),3);
- await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Piazza Maggiore provisional');
+ // Real touch-sized UI: same-name nearby provider records collapse; different basilicas stay.
+ const firstInput=editor.getByLabel('Nom del punt 1',{exact:true});
+ await firstInput.fill('Basilica di San Domenico');
+ await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+ await editor.locator('[data-point-results] button').first().waitFor();
+ const basilicaButtons=editor.locator('fieldset').first().locator('[data-point-results] button');
+ assert.equal(await basilicaButtons.count(),2,'nearby San Domenico records collapsed, Santo Stefano kept');
+ assert.equal(await basilicaButtons.first().locator('strong').innerText(),'Basilica di San Domenico');
+ assert.match(await basilicaButtons.first().locator('small').innerText(),/Piazza San Domenico · Lloc exacte/);
+ assert.match(await basilicaButtons.nth(1).innerText(),/Basilica di Santo Stefano/);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no sideways mobile scrolling');
+ assert.equal(writes.length,8,'searching and grouping candidates never writes');
+ await firstInput.fill('Piazza Maggiore provisional');
  await page.evaluate(async()=>{await loadManualItineraryItems(true);renderGenericItinerary()});
  assert.equal(await editor.isVisible(),true,'Open editor survives planning refresh');
  assert.equal(await editor.getByLabel('Nom del punt 1',{exact:true}).evaluate(node=>document.activeElement===node),true,'Focused name survives reconciliation');
