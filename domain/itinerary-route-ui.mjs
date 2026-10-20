@@ -69,12 +69,12 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
      needs.includes('approximate_place')?'Zona identificada · trajecte pendent de concretar':error==='offline'?'Sense connexió · trajecte pendent':error==='rate_limited'?'Trajecte temporalment no disponible':'Trajecte pendent de verificar';
    card.innerHTML=`<div class="agenda-route-compact" role="status" aria-live="polite">↳ ${summary}</div>
     ${budget?`<p class="agenda-route-diagnosis" role="status">${budget.hasConflict?"⚠ Horaris incompatibles:": "Temps màxim orientatiu per a la visita:"} ${esc(String(budget.availableMinutes))} min, descomptant trajectes i marge.${leaveTime?" Sortida recomanada abans de les "+esc(leaveTime)+".":""} No modifica les reserves.</p>`:internal?.incomplete||internal?.waiting?"<p class=\"agenda-route-diagnosis\">Cal verificar els trams interns per calcular el temps disponible.</p>":""}
-    ${diagnosis?.status==='No factible'||diagnosis?.status==='Molt ajustat'?`<p role="status" class="agenda-route-diagnosis">⚠ ${esc(diagnosis.reason)} Els horaris es mantenen.</p>`:''}`}
+    ${diagnosis?.status==='No factible'||diagnosis?.status==='Molt ajustat'?`<p role="status" class="agenda-route-diagnosis">⚠ ${esc(diagnosis.reason)} Els horaris es mantenen.</p>`:''}
     <details data-route-options ${state.detailsOpen?'open':''}><summary>Opcions del trajecte</summary>
       <p>${route?esc(result.origin?.label||pair.origin.title)+' → '+esc(result.destination?.label||pair.destination.title):
         (needs.map(code=>esc(routeReasons[code]||'No s’ha pogut consultar la ruta.')).join(' ')||'Encara no hi ha cap trajecte verificat.')}</p>
       <div class="agenda-route-controls"><label>Com vols anar-hi?<select data-route-mode>${[['auto','Automàtic (més eficient)'],...Object.entries(routeModes).filter(([value])=>value!=='drive'||carAllowed)].map(([value,label])=>`<option value="${value}" ${state.mode===value?'selected':''}>${label}</option>`).join('')}</select></label>
-      <label>Marge addicional (min)<input data-route-buffer type="number" inputmode="numeric" min="0" max="180" step="1" placeholder="Opcional" value="${state.buffer??''}"></label></div>
+      <label>Marge de seguretat (min)<input data-route-buffer type="number" inputmode="numeric" min="0" max="180" step="1" placeholder="Opcional" value="${state.buffer??5}"></label></div>
       ${route&&diagnosis?`<p class="agenda-route-diagnosis">${esc(diagnosis.status)} · ${esc(diagnosis.reason)}</p>`:''}
       ${mapUrl?`<p><a data-route-map href="${esc(mapUrl)}" target="_blank" rel="noopener noreferrer">🗺 Consulta el trajecte al mapa</a></p>`:''}
       ${route?`<small><a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · ${esc(route.quality)}</small>`:''}
@@ -84,7 +84,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    const details=card.querySelector('[data-route-options]');
    details.addEventListener('toggle',()=>{if(live()&&details.isConnected&&card.contains(details))state.detailsOpen=details.open});
    card.querySelector('[data-route-mode]').onchange=e=>{state.mode=e.target.value;state.result=null;save();draw();load()};
-   card.querySelector('[data-route-buffer]').onchange=e=>{state.buffer=e.target.value===''?null:Number(e.target.value);save();draw()};
+   card.querySelector('[data-route-buffer]').onchange=e=>{state.buffer=e.target.value===''?5:Number(e.target.value);save();draw()};
    card.querySelector('[data-route-retry]')?.addEventListener('click',()=>load(true));
    card.querySelectorAll('[data-route-choice]').forEach(select=>select.onchange=()=>{state.choices[select.dataset.routeChoice]=select.value;load()});
    card.querySelectorAll('[data-route-edit]').forEach(button=>button.onclick=()=>onEdit(pair[button.dataset.routeEdit]));
@@ -129,12 +129,13 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
   card.append(heading,legs);anchor.after(card);
   const alive=()=>current()&&scope===nextScope&&card.isConnected;
   for(let i=0;i<points.length-1;i++){
-   const a=points[i],b=points[i+1],line=document.createElement('p'),label=(i+1)+' → '+(i+2)+' · ';
+   const a=points[i],b=points[i+1],line=document.createElement('p'),label=(i+1)+' → '+(i+2)+' · ',summary=internalTravel.get(item.key);
    line.className='agenda-route-compact';line.setAttribute('role','status');
    legs.append(line);
    const exact=p=>p?.place?.coordinate_role==='exact_location'&&Number.isFinite(p.place.latitude)&&Number.isFinite(p.place.longitude);
    if(!exact(a)||!exact(b)){
     line.textContent=label+'Pendent de verificar els punts o concretar la zona.';
+    if(summary){summary.waiting--;summary.incomplete=true;redrawCross.get(item.key)?.()}
     continue;
    }
    line.textContent=label+'Calculant el trajecte a peu…';
@@ -144,6 +145,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
     if(!alive())return;
     const route=result?.route;
     if(route?.method==='routing'&&Number.isFinite(route.duration_seconds)&&Number.isFinite(route.distance_m)){
+     if(summary)summary.seconds+=route.duration_seconds;
      const minutes=Math.ceil(route.duration_seconds/60),distance=(route.distance_m/1000).toFixed(2);
      line.textContent=label+minutes+' min · '+distance+' km a peu';
      const mapUrl=routeMapUrl(route);
@@ -151,8 +153,10 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
     }else{
      const code=result?.error||result?.origin?.error||result?.destination?.error||'unavailable';
      line.textContent=label+(code==='offline'?'Sense connexió.':routeReasons[code]||'Trajecte pendent de verificar.');
+     if(summary)summary.incomplete=true;
     }
-   }).catch(()=>{if(alive())line.textContent=label+'Trajecte temporalment no disponible.'});
+    if(summary){summary.waiting--;redrawCross.get(item.key)?.()}
+   }).catch(()=>{if(alive()){line.textContent=label+'Trajecte temporalment no disponible.';if(summary){summary.waiting--;summary.incomplete=true;redrawCross.get(item.key)?.()}}});
   }
  }
  restoreViewport();
