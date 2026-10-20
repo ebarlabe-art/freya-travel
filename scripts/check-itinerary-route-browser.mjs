@@ -12,6 +12,7 @@ const pw=await import(process.env.PLAYWRIGHT_MODULE?pathToFileURL(process.env.PL
 const dist=resolve('dist'),id=n=>'11800000-0000-4000-8000-'+String(n).padStart(12,'0'),tid=id(1);
 const tripRow={id:tid,name:'Synthetic itinerary',start_date:'2030-03-31',end_date:'2030-04-01',time_zone:'Europe/Rome',experience_key:null,owner_id:'owner',is_owner:true,invite_code:'SYNTHETIC'};
 const stops=[{trip_id:tid,canonical_name:'Bologna',country_code:'IT',position:1,time_zone:'Europe/Rome'}];
+const rentals=[{id:id(97),trip_id:tid,provider:'Synthetic Rental',reservation_status:'confirmed',pickup_at:'2030-03-30T08:00:00Z',return_at:'2030-04-01T10:00:00Z',pickup_city:'Bologna',return_city:'Bologna',vehicle_class:'compact'}];
 const item=(n,name,start,end,extra={})=>({id:id(n),trip_id:tid,title:name,location_name:name,city:'Bologna',time_zone:'Europe/Rome',timing_kind:'exact',starts_at:start,ends_at:end,status:'planned',is_fixed:true,is_optional:false,updated_at:'2030-01-01T00:00:00Z',created_by:'owner',sort_order:n,...extra});
 const rows=[item(2,'Museum A','2030-03-31T08:00:00Z','2030-03-31T09:00:00Z'),item(3,'Cancelled','2030-03-31T09:05:00Z',null,{status:'cancelled'}),item(4,'Museum B','2030-03-31T09:30:00Z','2030-03-31T10:30:00Z',{is_optional:true}),item(5,'No place',null,null,{timing_kind:'daypart',local_date:'2030-04-01',daypart:'morning',location_name:null}),item(6,'Museum B',null,null,{timing_kind:'approximate',local_date:'2030-04-01',approximate_start_time:'12:00'})];
 let httpCalls=0,routeCalls=0,fail=false,release;
@@ -36,18 +37,20 @@ try{
  });
  async function boot(target=page,pwa=true){
   await target.goto(url);await target.waitForFunction(pwa=>typeof renderSession==='function'&&(!pwa||(navigator.serviceWorker.controller)),pwa);await target.locator('#loginCard').waitFor({state:'visible'});
-  await target.evaluate(async({tripRow,rows,stops})=>{
+  await target.evaluate(async({tripRow,rows,stops,rentals})=>{
    window.testRows=rows;
    db.rpc=async name=>({data:name==='get_my_trips'?[tripRow]:[],error:null});
-   db.from=table=>{const q=new Proxy({}, {get:(_,key)=>key==='then'?resolve=>Promise.resolve({data:table==='trip_itinerary_items'?window.testRows:table==='trip_stops'?stops:[],error:null}).then(resolve):()=>q});return q};
+   db.from=table=>{const q=new Proxy({}, {get:(_,key)=>key==='then'?resolve=>Promise.resolve({data:table==='trip_itinerary_items'?window.testRows:table==='trip_stops'?stops:table==='trip_car_rentals'?rentals:[],error:null}).then(resolve):()=>q});return q};
    db.channel=()=>{const c={on:()=>c,subscribe:()=>c,unsubscribe:async()=>{}};return c};db.removeChannel=async()=>{};
    Object.defineProperty(db,'functions',{configurable:true,value:{invoke:async(name,{body})=>({data:name==='itinerary-route'?await window.routeFixture(body,session.user.id):{candidates:[]},error:null})}});
    await renderSession({user:{id:'owner',email:'owner@example.invalid'}});await selectTrip(tripRow.id,{open:true});
-  },{tripRow,rows,stops});
+  },{tripRow,rows,stops,rentals});
  }
  const ensureRouteOptionsOpen=async()=>{if(!(await page.locator('[data-route-options]').evaluate(node=>node.open)))await page.locator('[data-route-options] > summary').click()};
  await boot();assert.equal(routeCalls,0,'Home must not calculate routes');
  await page.locator('#genericItineraryModuleCard').click();await page.locator('[data-agenda-route]').waitFor();await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km')).catch(async e=>{console.error(await page.locator('[data-agenda-route]').innerText(),{routeCalls,httpCalls,errors});throw e});
+ assert.equal(await page.locator('[data-route-preferences] select').inputValue(),'walk_transit','Auto walking+public transport is default even with rental');
+ assert.equal(await page.locator('[data-route-preferences] select option[value="walk_car"]').count(),1,'The actual confirmed rental enables the car alternative');
  assert.equal(await page.locator('[data-agenda-route]').count(),1);assert.match(await page.locator('.agenda-route-compact').innerText(),/🚶.*15 min.*1.2 km.*A peu/);
  assert.equal(await page.locator('[data-route-options]').evaluate(node=>node.open),false,'Advanced route controls stay collapsed by default');
  await ensureRouteOptionsOpen();
