@@ -2007,7 +2007,7 @@
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-smart-itinerary-transport-v28';
+const FREYA_FRONTEND_RELEASE='pwa-auto-day-context-v29';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -6470,11 +6470,13 @@ function bindItineraryActions(container){
   container.querySelectorAll('[data-itinerary-find-place]').forEach(button=>button.onclick=()=>{void openQuickItineraryPlacePicker(button)});
   container.querySelectorAll('[data-delete-manual-itinerary]').forEach(button=>button.onclick=()=>deleteManualItineraryItem(button.dataset.deleteManualItinerary,button));
 }
+// Scoped ephemeral flags: failed suggestions never loop, edited rows always win.
+const dayContextAttempted=new Set(),dayContextPending=new Set();
 function dayMetadataForDate(localDate){return dayMetadataRows.find(row=>row.trip_id===trip?.id&&row.local_date===localDate)||null}
 function dayMetadataEditorialHtml(localDate){
-  const row=dayMetadataForDate(localDate),editor=dayMetadataEditor?.tripId===trip?.id&&dayMetadataEditor.localDate===localDate?dayMetadataEditor:null,title=row?.title||'',summary=row?.summary||'',hasContent=!!(title||summary),dateLabel=itineraryDayHeading(localDate);
+  const row=dayMetadataForDate(localDate),editor=dayMetadataEditor?.tripId===trip?.id&&dayMetadataEditor.localDate===localDate?dayMetadataEditor:null,title=row?.title||'',summary=row?.summary||'',hasContent=!!(title||summary),dateLabel=itineraryDayHeading(localDate),loading=dayContextPending.has(JSON.stringify([session?.user?.id,trip?.id,localDate]));
   if(editor)return `<header class="generic-day-editorial" data-day-metadata-date="${esc(localDate)}"><p class="generic-day-editorial-date">${esc(dateLabel)}</p><form id="dayMetadataForm" class="generic-day-editorial-form"><label>Títol del dia<input id="dayMetadataTitle" maxlength="160" value="${esc(editor.title||'')}" placeholder="El caràcter d’aquest dia"></label><label>Comentari de Freya<textarea id="dayMetadataSummary" maxlength="1000" rows="3" placeholder="Ritme, experiència principal i context útil">${esc(editor.summary||'')}</textarea></label><div class="generic-day-editorial-form-actions"><button id="cancelDayMetadata" type="button" class="ghost">Cancel·la</button><button id="saveDayMetadata" type="submit">Desa</button></div></form><div class="generic-day-weather-hook hidden" data-day-weather-date="${esc(localDate)}" aria-live="polite"></div></header>`;
-  return `<header class="generic-day-editorial" data-day-metadata-date="${esc(localDate)}"><div class="generic-day-editorial-head"><div><p class="generic-day-editorial-date">${esc(dateLabel)}</p>${title?`<h2>${esc(title)}</h2>`:''}</div><button type="button" class="generic-day-editorial-action" data-edit-day-metadata="${esc(localDate)}">${hasContent?'Edita':'Afegeix context'}</button></div>${summary?`<p class="generic-day-editorial-summary">${esc(summary)}</p>`:''}<div class="generic-day-weather-hook hidden" data-day-weather-date="${esc(localDate)}" aria-live="polite"></div></header>`;
+  return `<header class="generic-day-editorial" data-day-metadata-date="${esc(localDate)}"><div class="generic-day-editorial-head"><div><p class="generic-day-editorial-date">${esc(dateLabel)}</p>${title?`<h2>${esc(title)}</h2>`:''}</div><button type="button" class="generic-day-editorial-action" data-edit-day-metadata="${esc(localDate)}">${hasContent?'Edita':'Edita manualment'}</button>${!loading?`<button type="button" class="generic-day-editorial-action" data-generate-day-context="${esc(localDate)}">${hasContent?'Actualitza el context':'Genera el context'}</button>`:''}</div>${summary?`<p class="generic-day-editorial-summary">${esc(summary)}</p>`:loading?'<p class="generic-day-editorial-summary" role="status">Freya està preparant el context del dia…</p>':''}<div class="generic-day-weather-hook hidden" data-day-weather-date="${esc(localDate)}" aria-live="polite"></div></header>`;
 }
 function openDayMetadataEditor(localDate){
   if(!trip||!session||isLondonTrip()||!genericItineraryTripDates().includes(localDate))return;const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,row=dayMetadataForDate(localDate);dayMetadataEditor={tripId,localDate,id:row?.id||'',originalUpdatedAt:row?.updated_at||'',title:row?.title||'',summary:row?.summary||'',remoteConflict:false};msg('genericItineraryMessage','');renderGenericItinerary();setTimeout(()=>{if(itineraryRequestIsCurrent(tripId,generation,userId)&&dayMetadataEditor?.tripId===tripId&&dayMetadataEditor.localDate===localDate)$('dayMetadataTitle')?.focus()},0);
@@ -6482,9 +6484,58 @@ function openDayMetadataEditor(localDate){
 function cancelDayMetadataEditor(){dayMetadataEditor=null;dayMetadataSubmitting=false;msg('genericItineraryMessage','');renderGenericItinerary()}
 function bindDayMetadataEditor(){
   const editButton=$('genericItineraryDays').querySelector('[data-edit-day-metadata]');if(editButton)editButton.onclick=()=>openDayMetadataEditor(editButton.dataset.editDayMetadata);
+  const generateButton=$('genericItineraryDays').querySelector('[data-generate-day-context]');
+  if(generateButton)generateButton.onclick=()=>{void generateItineraryDayContext(generateButton.dataset.generateDayContext,false)};
   const form=$('dayMetadataForm');if(!form)return;
   const syncEditor=()=>{if(!dayMetadataEditor)return;dayMetadataEditor.title=$('dayMetadataTitle').value;dayMetadataEditor.summary=$('dayMetadataSummary').value};
   form.addEventListener('input',syncEditor);$('cancelDayMetadata').onclick=cancelDayMetadataEditor;form.onsubmit=saveDayMetadata;
+}
+// Generate a suggested title + contextual introduction, once per day on first opening.
+// Automatic suggestions are persisted only if NO editorial row exists remotely.
+// User-edited text and concurrent changes must never be overwritten.
+async function generateItineraryDayContext(localDate,auto=true){
+ if(!trip||!session||isLondonTrip()||!genericItineraryTripDates().includes(localDate)||!itinerarySourcesAreReady())return;
+ const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,key=JSON.stringify([userId,tripId,localDate]);
+ if(dayContextPending.has(key)||auto&&(dayContextAttempted.has(key)||dayMetadataForDate(localDate)||dayMetadataEditor?.localDate===localDate))return;
+ const sourceItems=itineraryProjection.filter(x=>x.tripId===tripId&&x.localDate===localDate&&!x.isCancelled&&!x.isTransport&&['manual','activity'].includes(x.sourceType));
+ if(!sourceItems.length)return;
+ // Only visible, non-sensitive titles/times: never notes, bookings, documents or private details.
+ const items=sourceItems.slice(0,20).map(x=>({title:String(x.title||'').slice(0,220),when:x.startsAt||null}));
+ if(!items.some(x=>x.title.trim()))return;
+ if(auto)dayContextAttempted.add(key);
+ dayContextPending.add(key);
+ try{
+  const destination=[...new Set(tripStopRows.map(row=>row.canonical_name).filter(Boolean))].join(', ').slice(0,160)||String(trip.name||'').slice(0,160);
+  const {data,error}=await db.functions.invoke('itinerary-day-context',{body:{trip_id:tripId,local_date:localDate,destination,items}});
+  if(error||!data?.title||!data?.summary)throw new Error('context_unavailable');
+  if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return;
+  const title=String(data.title).trim(),summary=String(data.summary).trim();
+  if(!title||title.length>160||!summary||summary.length>1000)throw new Error('context_invalid');
+  if(auto){
+   if(dayMetadataForDate(localDate)||dayMetadataEditor?.tripId===tripId&&dayMetadataEditor.localDate===localDate)return;
+   // Recheck the shared row after the model call. Unique(trip_id,local_date)
+   // is the last guard if a collaborator saves simultaneously.
+   const check=await db.from('trip_day_metadata').select('id').eq('trip_id',tripId).eq('local_date',localDate).maybeSingle();
+   if(!itineraryRequestIsCurrent(tripId,generation,userId))return;
+   if(check.error)throw check.error;
+   if(check.data){await loadTripDayMetadata(true);return}
+   const inserted=await db.from('trip_day_metadata').insert({trip_id:tripId,local_date:localDate,title,summary,created_by:userId}).select('*').single();
+   if(!itineraryRequestIsCurrent(tripId,generation,userId))return;
+   if(inserted.error){if(inserted.error.code==='23505'){await loadTripDayMetadata(true);return}throw inserted.error}
+   dayMetadataRows=dayMetadataRows.filter(row=>row.local_date!==localDate);
+   dayMetadataRows.push(inserted.data);
+  }else{
+   if(genericItinerarySelectedDay!==localDate)return;
+   openDayMetadataEditor(localDate);
+   if(!dayMetadataEditor||dayMetadataEditor.tripId!==tripId||dayMetadataEditor.localDate!==localDate)return;
+   dayMetadataEditor.title=title;dayMetadataEditor.summary=summary;
+   msg('genericItineraryMessage','Freya ha proposat un nou context. Revisa’l i prem Desa si el vols conservar.');
+  }
+  renderGenericItinerary();
+ }catch(_){
+  if(itineraryRequestIsCurrent(tripId,generation,userId)&&genericItinerarySelectedDay===localDate)
+   msg('genericItineraryMessage','No s’ha pogut preparar el context automàticament. Pots reintentar-ho o escriure’l manualment.',true);
+ }finally{dayContextPending.delete(key);if(itineraryRequestIsCurrent(tripId,generation,userId)&&genericItinerarySelectedDay===localDate)renderGenericItinerary()}
 }
 async function recoverDayMetadataConflict(localDate,tripId,generation,userId){
   const {data,error}=await db.from('trip_day_metadata').select('*').eq('trip_id',tripId).eq('local_date',localDate).maybeSingle();if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return;if(error){msg('genericItineraryMessage',error.message||'No s’ha pogut recuperar la capçalera del dia.',true);return}
@@ -6649,6 +6700,8 @@ function renderGenericItinerary(){
   proposeItineraryAutoPlaces(selected);
   void proposeActivityPoints(selected).catch(()=>{});
   if(typeof renderAgendaRoutes==='function'&&itinerarySourcesAreReady())renderAgendaRoutes(activeItems,selected);
+  if(selected&&selected!=='pending'&&activeItems.length&&itinerarySourcesAreReady()&&!dayMetadataForDate(selected)&&!dayMetadataEditor)
+   void generateItineraryDayContext(selected,true);
 }
 function rebuildGenericItinerary(tripId=trip?.id,generation=tripLoadGeneration,userId=session?.user?.id){
   if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return false;
