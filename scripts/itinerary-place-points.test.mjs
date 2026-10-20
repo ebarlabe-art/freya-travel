@@ -92,3 +92,14 @@ test('no unrelated saints or distant homonyms; only unchanged automatic pending 
  const reordered=structuredClone(row);reordered.location_points.points.reverse();assert.equal(autoPendingPoints(reordered),null);
  assert.equal(autoPendingPoints({...row,location_points:pointSnapshot(row,[])}),null);
 });
+
+test('compound Teatro Anatomico becomes a second point and safely upgrades an unedited legacy pending snapshot',()=>{
+ const row={title:'Archiginnasio i Teatro Anatomico (entrada subjecta a horaris i disponibilitat)',city:'Bologna'};
+ assert.deepEqual(extractActivityPoints(row).map(p=>p.query),['Archiginnasio','Teatro Anatomico']);
+ const old={version:1,input:{title:row.title,city:row.city,address:null,location_name:null},points:[{id:'point-0',query:'Archiginnasio i Teatro Anatomico',status:'pending',place:null}]};
+ assert.deepEqual(autoPendingPoints({...row,location_points:old}).map(p=>p.query),['Archiginnasio','Teatro Anatomico']);
+ const manuallyNamed=structuredClone(old);manuallyNamed.points[0].query='Custom entry';
+ assert.equal(autoPendingPoints({...row,location_points:manuallyNamed}),null,'Do not rewrite a manually renamed point');
+ const clock=extractActivityPoints({title:'Opcional: visita a la Torre dell’Orologio, amb reserva prèvia'});
+ assert.equal(clock.some(p=>p.query==='via'),false,'Never extract Via from inside the word prèvia');
+});
