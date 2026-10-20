@@ -5507,7 +5507,7 @@ async function proposeActivityPoints(day){
    const destination=itineraryAutoPlaceDestination(row);if(!destination)continue;
    const points=structuredClone(row.location_points===null?context.api.extractActivityPoints(row):context.api.autoPendingPoints(row));
    if(!points?.length)continue;
-   let changed=row.location_points===null;
+   let changed=row.location_points===null||(Array.isArray(row.location_points?.points)&&row.location_points.points.length!==points.length);
    for(const point of points){
     if(point.place)continue;
     const options=await context.queue.find(point.query,destination);
