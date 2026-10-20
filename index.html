@@ -2007,7 +2007,7 @@
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-auto-day-context-v29';
+const FREYA_FRONTEND_RELEASE='pwa-ai-visit-guidance-v30';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -6471,7 +6471,8 @@ function bindItineraryActions(container){
   container.querySelectorAll('[data-delete-manual-itinerary]').forEach(button=>button.onclick=()=>deleteManualItineraryItem(button.dataset.deleteManualItinerary,button));
 }
 // Scoped ephemeral flags: failed suggestions never loop, edited rows always win.
-const dayContextAttempted=new Set(),dayContextPending=new Set();
+const dayContextAttempted=new Set(),dayContextPending=new Set(),dayVisitPlans=new Map();
+const dayPlanSignature=items=>JSON.stringify(items.map(x=>[x.key,x.sourceUpdatedAt,x.startsAt,x.endsAt]));
 function dayMetadataForDate(localDate){return dayMetadataRows.find(row=>row.trip_id===trip?.id&&row.local_date===localDate)||null}
 function dayMetadataEditorialHtml(localDate){
   const row=dayMetadataForDate(localDate),editor=dayMetadataEditor?.tripId===trip?.id&&dayMetadataEditor.localDate===localDate?dayMetadataEditor:null,title=row?.title||'',summary=row?.summary||'',hasContent=!!(title||summary),dateLabel=itineraryDayHeading(localDate),loading=dayContextPending.has(JSON.stringify([session?.user?.id,trip?.id,localDate]));
@@ -6496,21 +6497,34 @@ function bindDayMetadataEditor(){
 async function generateItineraryDayContext(localDate,auto=true){
  if(!trip||!session||isLondonTrip()||!genericItineraryTripDates().includes(localDate)||!itinerarySourcesAreReady())return;
  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,key=JSON.stringify([userId,tripId,localDate]);
- if(dayContextPending.has(key)||auto&&(dayContextAttempted.has(key)||dayMetadataForDate(localDate)||dayMetadataEditor?.localDate===localDate))return;
- const sourceItems=itineraryProjection.filter(x=>x.tripId===tripId&&x.localDate===localDate&&!x.isCancelled&&!x.isTransport&&['manual','activity'].includes(x.sourceType));
+ if(dayContextPending.has(key))return;
+ const sourceItems=itineraryProjection.filter(x=>x.tripId===tripId&&x.localDate===localDate&&!x.isCancelled&&['manual','activity'].includes(x.sourceType)&&
+  !(x.sourceType==='activity'&&isLocalTransportActivity(tripHomeSourceRow(x)))&&
+  !(x.sourceType==='manual'&&/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(String(x.title||''))));
  if(!sourceItems.length)return;
  // Only visible, non-sensitive titles/times: never notes, bookings, documents or private details.
- const items=sourceItems.slice(0,20).map(x=>({title:String(x.title||'').slice(0,220),when:x.startsAt||null}));
+ const signature=dayPlanSignature(sourceItems.slice(0,20)),attemptKey=key+':'+signature;
+ if(auto&&dayContextAttempted.has(attemptKey))return;
+ const items=sourceItems.slice(0,20).map(x=>({title:String(x.title||'').slice(0,220),when:x.startsAt||null,
+  fixed:x.tags?.includes('Fix')||x.sourceType==='activity'&&['confirmed','reserved'].includes(x.status)}));
  if(!items.some(x=>x.title.trim()))return;
- if(auto)dayContextAttempted.add(key);
+ if(auto)dayContextAttempted.add(attemptKey);
  dayContextPending.add(key);
  try{
   const destination=[...new Set(tripStopRows.map(row=>row.canonical_name).filter(Boolean))].join(', ').slice(0,160)||String(trip.name||'').slice(0,160);
   const {data,error}=await db.functions.invoke('itinerary-day-context',{body:{trip_id:tripId,local_date:localDate,destination,items}});
-  if(error||!data?.title||!data?.summary)throw new Error('context_unavailable');
+  if(error||!data?.title||!data?.summary||!Array.isArray(data.visits)||data.visits.length!==items.length)throw new Error('context_unavailable');
   if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return;
   const title=String(data.title).trim(),summary=String(data.summary).trim();
   if(!title||title.length>160||!summary||summary.length>1000)throw new Error('context_invalid');
+  const proposals=new Map();
+  for(const v of data.visits){
+   if(!Number.isInteger(v.index)||v.index<0||v.index>=items.length||proposals.has(sourceItems[v.index].key)||
+     !Number.isInteger(v.minutes)||v.minutes<10||v.minutes>360||typeof v.reason!=='string')throw new Error('plan_invalid');
+   proposals.set(sourceItems[v.index].key,{minutes:v.minutes,reason:v.reason.slice(0,160)});
+  }
+  // These are local recommendations, never a patch to starts_at, ends_at or booked entries.
+  dayVisitPlans.set(key,{signature,plans:proposals});
   if(auto){
    if(dayMetadataForDate(localDate)||dayMetadataEditor?.tripId===tripId&&dayMetadataEditor.localDate===localDate)return;
    // Recheck the shared row after the model call. Unique(trip_id,local_date)
@@ -6603,6 +6617,7 @@ async function renderAgendaRoutes(items,day){
   agendaRouteModule.mountAgendaRoutes({root:$('genericItineraryDays'),items:projected,tripId,userId,generation,day,current,contextKey:JSON.stringify(tripStopRows),online:()=>!connectionUnavailable(),preserveViewport:preserveActivityPointViewport,
    invoke:async body=>{const {data,error}=await db.functions.invoke('itinerary-route',{body});if(data)return data;if(error?.context){try{return await error.context.json()}catch(_){}}return {error:'provider_unavailable'}},
    rentals,timeZone:trip.time_zone||'UTC',
+   visitPlans:(dayVisitPlans.get(JSON.stringify([userId,tripId,day]))?.signature===dayPlanSignature(items.filter(x=>x.tripId===tripId&&x.localDate===day&&!x.isCancelled&&['manual','activity'].includes(x.sourceType)&&!(x.sourceType==='activity'&&isLocalTransportActivity(tripHomeSourceRow(x)))&&!(x.sourceType==='manual'&&/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(String(x.title||'')))).slice(0,20))?dayVisitPlans.get(JSON.stringify([userId,tripId,day])).plans:new Map()),
    onEdit:item=>{const button=itineraryPointRow(item)&&document.querySelector('[data-activity-points="'+CSS.escape(item.key)+'"]');if(button)void openActivityPointEditor(button);else if(item.sourceType==='manual')openManualItineraryForm(item.sourceId);else openItinerarySource(item.sourceType,item.sourceId)}});
  }catch(_){if(current())msg('genericItineraryMessage','No s’han pogut carregar els trajectes. Torna a obrir el dia per reintentar.',true)}
 }
@@ -6706,7 +6721,7 @@ function renderGenericItinerary(){
   proposeItineraryAutoPlaces(selected);
   void proposeActivityPoints(selected).catch(()=>{});
   if(typeof renderAgendaRoutes==='function'&&itinerarySourcesAreReady())renderAgendaRoutes(activeItems,selected);
-  if(selected&&selected!=='pending'&&activeItems.length&&itinerarySourcesAreReady()&&!dayMetadataForDate(selected)&&!dayMetadataEditor)
+  if(selected&&selected!=='pending'&&activeItems.length&&itinerarySourcesAreReady()&&!dayMetadataEditor)
    void generateItineraryDayContext(selected,true);
 }
 function rebuildGenericItinerary(tripId=trip?.id,generation=tripLoadGeneration,userId=session?.user?.id){

@@ -60,8 +60,8 @@ test('v25: find-place opens direct picker, never the full editor; existing rows 
  assert.match(html,/data\?'Ubicació desada/);
  assert.match(packageScript,/'itinerary-quick-place\.mjs'/);
  assert.match(worker,/'\.\/domain\/itinerary-quick-place\.mjs'/);
- assert.match(worker,/freya-travel-release-6444-v37/);
- assert.match(html,/pwa-auto-day-context-v29/);
+ assert.match(worker,/freya-travel-release-6444-v38/);
+ assert.match(html,/pwa-ai-visit-guidance-v30/);
 });
 
 test('v25: recognisable landmark is suggested and a single confirmation saves the existing row',async()=>{
