@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {visitPairs,routeFeasibility,RouteQueue,rentalAvailableForDay,preferredRoute,routeIsVerified,visitTimeBudget} from '../domain/itinerary-route.mjs';
+import {visitPairs,routeFeasibility,RouteQueue,rentalAvailableForDay,preferredRoute,routeIsVerified,automaticAlternativeMode,visitTimeBudget} from '../domain/itinerary-route.mjs';
 import {routeProvider,destinationContext} from '../supabase/functions/itinerary-route/provider.mjs';
 import {createRouteHandler} from '../supabase/functions/itinerary-route/handler.mjs';
 import {routeBackend} from '../supabase/functions/itinerary-route/backend.mjs';
@@ -167,4 +167,12 @@ test('visit budget subtracts provider-calculated internal plus outward walk and 
  assert.equal(visitTimeBudget(origin,destination,{error:'unavailable'},0,5),null);
  assert.equal(visitTimeBudget(origin,destination,r,NaN,5),null);
  assert.equal(visitTimeBudget(origin,{...destination,startsAt:'2030-03-31T08:09:00Z'},r,0,5).hasConflict,true);
+});
+
+test('a rented car is suggested for long actual route distance, never a routine urban hop',()=>{
+ const route=meters=>({route:{method:'routing',mode:'walk',distance_m:meters,duration_seconds:meters}});
+ assert.equal(automaticAlternativeMode(route(2000),'walk_car',true),'transit');
+ assert.equal(automaticAlternativeMode(route(10000),'walk_car',true),'drive');
+ assert.equal(automaticAlternativeMode(route(10000),'walk_car',false),'transit');
+ assert.equal(automaticAlternativeMode(route(10000),'walk_transit',true),'transit');
 });
