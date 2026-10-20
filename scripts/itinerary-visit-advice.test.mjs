@@ -84,6 +84,7 @@ test('visit guidance stays inside the main card, not the narrow timetable column
 test('Friday arrival-day context includes transportation as fallback without bogus visit-duration cards',()=>{
  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
  assert.match(html,/const sourceItems=visitItems\.length\?visitItems:dayItems/);
+ assert.match(html,/\['manual','activity','flight','accommodation'\]\.includes\(x\.sourceType\)/);
  assert.match(html,/const visitKeys=new Set\(visitItems\.map\(x=>x\.key\)\)/);
  assert.match(html,/if\(visitKeys\.has\(sourceItems\[v\.index\]\.key\)\)proposals\.set/);
 });
@@ -120,4 +121,11 @@ test('mobile note reports automatically fitted maximum rather than impossible fi
  assert.match(ui,/Freya ajusta la visita a /);
  assert.match(ui,/Encara cal descomptar el trajecte quan es verifiqui/);
  assert.doesNotMatch(ui,/Cal escurçar-la almenys /);
+});
+
+test('a verified journey refreshes the guidance with the actual departure allowance',()=>{
+ const ui=readFileSync(new URL('../domain/itinerary-route-ui.mjs',import.meta.url),'utf8');
+ assert.match(ui,/const writeVisitGuidance=\(note,advice\)=>/);
+ assert.match(ui,/if\(visibleAdvice&&proposed\)writeVisitGuidance\(visibleAdvice,proposed\)/);
+ assert.match(ui,/writeVisitGuidance\(note,advice\)/);
 });
