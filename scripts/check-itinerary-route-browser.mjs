@@ -59,6 +59,16 @@ try{
  await page.locator('[data-route-mode]').selectOption('drive');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('Cotxe')&&document.querySelector('[data-agenda-route]')?.textContent.includes('1.2 km'));
   assert.equal(await page.locator('[data-route-options]').evaluate(node=>node.open),true,'Async route redraw preserves the open route controls');
  await page.locator('[data-route-mode]').selectOption('transit');await page.waitForFunction(()=>document.querySelector('[data-agenda-route]')?.textContent.includes('sense horaris en viu'));
+ // Integration: AI suggestions can supply the missing visit END without changing the saved row.
+ await page.evaluate(()=>{
+  const active=itineraryProjection.filter(x=>x.localDate==='2030-03-31'&&x.sourceType==='manual'&&!x.isCancelled);
+  const key=JSON.stringify([session.user.id,trip.id,'2030-03-31']);
+  dayVisitPlans.set(key,{signature:dayPlanSignature(active),plans:new Map(active.map((x,i)=>[x.key,{minutes:i===0?60:40,reason:'Visita orientativa'}]))});
+  renderGenericItinerary();
+ });
+ await page.waitForFunction(()=>document.querySelector('[data-visit-advice]')?.textContent.includes('60 min'));
+ await page.waitForFunction(()=>[...document.querySelectorAll('[data-agenda-route]')].some(x=>x.textContent.includes('marxeu com a màxim')));
+ assert.equal(await page.evaluate(()=>window.testRows.find(x=>x.title==='Museum A').ends_at),'2030-03-31T09:00:00Z','The synthetic booking end is unchanged by AI advice');
  const before=routeCalls;await page.locator('[data-generic-itinerary-day="2030-04-01"]').click();await page.waitForFunction(()=>document.querySelectorAll('[data-agenda-route]').length===0);assert.equal(routeCalls,before,'No routes or provider calls without two locations');
  // The quick location lookup stays inside the itinerary card, not the full editing form.
  const findPlace=page.locator('[data-itinerary-find-place]').first();
