@@ -129,23 +129,33 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
  }
  // Informal, editable-in-session itinerary suggestions are shown for EVERY visit,
  // including the last activity and visits whose precise location is not verified.
+ const nextByKey=new Map(pairs.map(pair=>[pair.origin.key,pair.destination]));
  for(const item of items){
   if(item.tripId!==tripId||item.localDate!==day||item.isCancelled||item.isTransport||!['manual','activity'].includes(item.sourceType))continue;
   const suggestion=visitPlans.get(item.key);
   if(!suggestion)continue;
   const anchor=[...root.querySelectorAll('[data-itinerary-key]')].find(node=>node.dataset.itineraryKey===item.key);
-  if(!anchor)continue;
-  const advice=recommendedVisitAdvice(item,suggestion);
+  const card=anchor?.querySelector('.generic-itinerary-card');
+  if(!card)continue;
+  const next=nextByKey.get(item.key)||null,advice=recommendedVisitAdvice(item,suggestion,next);
   if(!advice)continue;
-  let end='';
-  const time=advice.confirmedEnd||advice.proposedEnd;
-  if(time)try{end=new Intl.DateTimeFormat('ca-ES',{timeZone,hour:'2-digit',minute:'2-digit'}).format(new Date(time))}catch(_){}
-  const note=document.createElement('section');note.dataset.visitAdvice=item.key;note.className='agenda-route-diagnosis agenda-visit-guidance';
-  // An actual booked end always wins over the AI proposal.
-  note.textContent='💡 Freya proposa '+advice.minutes+' min per a aquesta visita'+(advice.reason?' · '+advice.reason:'')+
-   (end?advice.confirmedEnd?' · Final fix: '+end:' · Final orientatiu: '+end:'')+
-   '. Durada estimada; no modifica cap horari ni reserva.';
-  anchor.append(note);
+  const clock=value=>{if(!value)return '';try{return new Intl.DateTimeFormat('ca-ES',{timeZone,hour:'2-digit',minute:'2-digit'}).format(new Date(value))}catch(_){return ''}};
+  const note=document.createElement('section');note.dataset.visitAdvice=item.key;
+  note.className='agenda-visit-guidance';
+  const headline=document.createElement('strong'),detail=document.createElement('small');
+  if(advice.conflictsNext){
+   note.classList.add('agenda-visit-conflict');
+   const nextAt=clock(next?.startsAt);
+   headline.textContent='⚠ La durada proposada no encaixa';
+   detail.textContent='Freya suggereix '+advice.minutes+' min, però només hi ha '+Math.max(0,advice.minutesUntilNext)+' min fins a la següent activitat'+(nextAt?' ('+nextAt+')':'')+'. Falta descomptar el desplaçament: cal ajustar la visita.';
+  }else{
+   const end=clock(advice.confirmedEnd||advice.proposedEnd);
+   headline.textContent='💡 '+advice.minutes+' min recomanats'+(end?' · '+(advice.confirmedEnd?'Final fix ':'Fins a les ')+end:'');
+   detail.textContent=advice.reason+(next&&advice.routePending?' · Trajecte pendent de verificar.':'');
+  }
+  note.append(headline,detail);
+  // The guidance belongs INSIDE the visit card, not as an extra narrow grid column.
+  card.append(note);
  }
  // Real walking legs INSIDE a compound activity (one item, several ordered visits).
  // Never draw a straight-line duration and never infer a stop from a vague area.
