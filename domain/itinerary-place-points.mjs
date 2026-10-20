@@ -34,15 +34,32 @@ export function pointPlace(p){
  if(!validPointPlace(p))throw Error('La resposta no conté una ubicació verificable.');
  return Object.fromEntries(['canonical_name','provider','provider_place_id','country_code','locality','kind','latitude','longitude','coordinate_role','attribution','formatted_address'].map(k=>[k,p[k]??null]));
 }
+// Exact semantic identity matters: San Domenico and Santo Stefano are NOT San Petronio.
+// Normalize articles/accents but never erase the named person or monument.
+export const samePointName=(wanted,found)=>!!normalizePointName(wanted)&&normalizePointName(wanted)===normalizePointName(found);
+const nearSamePoint=(a,b)=>{
+ const north=(a.latitude-b.latitude)*111195;
+ const east=(a.longitude-b.longitude)*111195*Math.cos((a.latitude+b.latitude)*Math.PI/360);
+ return Number.isFinite(north)&&Number.isFinite(east)&&Math.hypot(north,east)<=120;
+};
+export function autoPendingPoints(row){
+ const saved=savedActivityPoints(row),original=extractActivityPoints(row);
+ // Only retry unchanged automatically extracted points, never a user-customized set.
+ if(!saved?.length||saved.length!==original.length||!saved.some(p=>p.status==='pending'&&!p.place))return null;
+ return saved.every((p,i)=>p.id===original[i].id&&p.query===original[i].query)?saved:null;
+}
 export function chooseAutomaticPoint(query,options,context){
  if(!context?.canonical_name||!/^[A-Z]{2}$/.test(context.country_code||''))return null;
- const candidates=options.filter(validPointPlace).filter(p=>p.country_code===context.country_code&&normalizePointName(p.locality)===normalizePointName(context.canonical_name)&&normalizePointName(p.canonical_name)===normalizePointName(query));
- // Same-name alternatives are ambiguous, even when one is more precise.
+ const candidates=options.filter(validPointPlace).filter(p=>p.country_code===context.country_code&&
+   normalizePointName(p.locality)===normalizePointName(context.canonical_name)&&samePointName(query,p.canonical_name));
+ if(!candidates.length)return null;
  const unique=[...new Map(candidates.map(p=>[p.provider_place_id,p])).values()];
- if(unique.length!==1)return null;
- const p=unique[0];
- if(p.coordinate_role!=='exact_location'&&!['street','suburb','district','neighbourhood','quarter','city_block','square'].includes(p.kind))return null;
- return pointPlace(p);
+ // Genuine distant homonyms remain ambiguous; multiple records of the same nearby landmark do not.
+ if(!unique.every(p=>nearSamePoint(p,unique[0])))return null;
+ const exact=unique.filter(p=>p.coordinate_role==='exact_location');
+ const allowed=exact.length?exact:unique.filter(p=>['street','suburb','district','neighbourhood','quarter','city_block','square'].includes(p.kind));
+ if(!allowed.length)return null;
+ return pointPlace(allowed[0]);
 }
 export function pointSnapshot(row,points){
  if(!Array.isArray(points)||points.length>MAX_POINTS||new Set(points.map(p=>p.id)).size!==points.length)throw Error('Llista de punts no vàlida.');
