@@ -30,7 +30,7 @@ export function rentalAvailableForDay(rentals,day,timeZone='UTC'){
  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(day)||!Array.isArray(rentals))return false;
  const localDate=stamp=>{
   if(typeof stamp!=='string'||!Number.isFinite(Date.parse(stamp)))return null;
-  try{return new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(stamp))}catch{return null}
+  try{const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(stamp)).map(x=>[x.type,x.value]));return parts.year+'-'+parts.month+'-'+parts.day}catch{return null}
  };
  return rentals.some(row=>{
   if(!['reserved','confirmed'].includes(row.reservation_status)||!row.pickup_at||!row.return_at)return false;
