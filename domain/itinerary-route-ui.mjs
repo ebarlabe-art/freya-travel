@@ -1,23 +1,47 @@
-import {visitPairs,routeFeasibility,routeModes,routeReasons,routeMapUrl,RouteQueue} from './itinerary-route.mjs';
+import {visitPairs,routeFeasibility,routeModes,routeReasons,routeMapUrl,RouteQueue,transportPreferences,rentalAvailableForDay,preferredRoute,routeIsVerified,visitTimeBudget} from './itinerary-route.mjs';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let queue,scope='',states=new Map(),listeners;
 export function resetAgendaRoutes(){listeners?.abort();queue?.reset('');scope='';states=new Map()}
-export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invoke,online,current,onEdit,storage=globalThis.localStorage,contextKey='',preserveViewport=()=>()=>{}}){
+export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invoke,online,current,onEdit,storage=globalThis.localStorage,contextKey='',preserveViewport=()=>()=>{},rentals=[],timeZone='UTC'}){
  const nextScope=JSON.stringify([userId,tripId,generation]);
  if(scope!==nextScope){resetAgendaRoutes();scope=nextScope;queue=new RouteQueue({invoke});queue.reset(scope)}
  listeners?.abort();listeners=new AbortController();
  const restoreViewport=preserveViewport();
- root.querySelectorAll('[data-agenda-route],[data-internal-routes]').forEach(node=>node.remove());
+ root.querySelectorAll('[data-agenda-route],[data-internal-routes],[data-route-preferences]').forEach(node=>node.remove());
+ const carAllowed=rentalAvailableForDay(rentals,day,timeZone);
+ const preferenceKey='freya-route-preference-v1:'+JSON.stringify([userId,tripId]);
+ let remembered;try{remembered=storage?.getItem(preferenceKey)}catch{}
+ const preference=remembered==='walk_car'&&carAllowed?'walk_car':'walk_transit';
+ const preferencePanel=document.createElement('div');
+ preferencePanel.dataset.routePreferences='';preferencePanel.className='agenda-route-card';
+ const preferenceLabel=document.createElement('label');
+ preferenceLabel.textContent='🚶 Com prefereixes desplaçar-te durant el viatge? ';
+ const picker=document.createElement('select');picker.setAttribute('aria-label','Preferència de transport de l’itinerari');
+ for(const [value,name] of Object.entries(transportPreferences)){
+  if(value==='walk_car'&&!carAllowed)continue;
+  const option=document.createElement('option');option.value=value;option.textContent=name;picker.append(option);
+ }
+ picker.value=preference;preferenceLabel.append(picker);
+ const help=document.createElement('small');
+ help.textContent=carAllowed?'Freya compara rutes reals quan caminar és lent. Pots corregir qualsevol trajecte.':'Freya prioritza caminar i compara el transport públic en distàncies llargues. Cotxe: només amb lloguer reservat o confirmat per al dia.';
+ preferencePanel.append(preferenceLabel,help);
+ picker.onchange=()=>{
+  try{storage?.setItem(preferenceKey,picker.value)}catch{}
+  mountAgendaRoutes({root,items,tripId,userId,generation,day,invoke,online,current,onEdit,storage,contextKey,preserveViewport,rentals,timeZone});
+ };
+ root.prepend(preferencePanel);
+ const internalTravel=new Map(),redrawCross=new Map();
+ for(const item of items)if(Array.isArray(item.locationPoints)&&item.locationPoints.length>1)internalTravel.set(item.key,{waiting:item.locationPoints.length-1,seconds:0,incomplete:false});
  const pairs=visitPairs(items,tripId,day);
  for(const [index,pair]of pairs.entries()){
   // The activity itself already shows that its location is pending.
-  if(!pair.origin.hasRoutePlace||!pair.destination.hasRoutePlace)continue;
+  // Even unverified activities need a visible pending leg.
   const anchor=[...root.querySelectorAll('[data-itinerary-key]')].find(node=>node.dataset.itineraryKey===pair.origin.key);if(!anchor)continue;
   const storageKey='freya-route-options-v1:'+JSON.stringify([userId,tripId,day,pair.origin.key,pair.destination.key]);
   if(states.size>=200)states.delete(states.keys().next().value);
   if(!states.has(pair.key)){
    let saved;try{saved=JSON.parse(storage?.getItem(storageKey)||'null')}catch{}
-   states.set(pair.key,{mode:routeModes[saved?.mode]?saved.mode:'walk',buffer:typeof saved?.buffer==='number'&&saved.buffer>=0&&saved.buffer<=180?saved.buffer:null,choices:{},result:null,detailsOpen:false});
+   states.set(pair.key,{mode:saved?.mode==='auto'||routeModes[saved?.mode]?saved.mode:'auto',buffer:typeof saved?.buffer==='number'&&saved.buffer>=0&&saved.buffer<=180?saved.buffer:null,choices:{},result:null,detailsOpen:false});
   }
   const state=states.get(pair.key),card=document.createElement('section');card.className='agenda-route-card agenda-route-compact-card';card.dataset.agendaRoute=String(index);anchor.after(card);
   let version=0;const live=()=>current()&&scope===nextScope&&card.isConnected;
