@@ -5502,7 +5502,7 @@ async function proposeActivityPoints(day){
  try{
   for(const row of rows){
    if(context.scope!==itineraryAutoPlaceScope()||connectionUnavailable())break;
-   const key=(row._placeSource||'manual')+':'+row.id+':'+row.title;
+   const key=itineraryAutoPlaceRecordKey(row);
    if(context.seen.has(key))continue;context.seen.add(key);
    const destination=itineraryAutoPlaceDestination(row);if(!destination)continue;
    const points=structuredClone(row.location_points===null?context.api.extractActivityPoints(row):context.api.autoPendingPoints(row));
