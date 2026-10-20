@@ -60,7 +60,7 @@ test('v25: find-place opens direct picker, never the full editor; existing rows 
  assert.match(html,/data\?'Ubicació desada/);
  assert.match(packageScript,/'itinerary-quick-place\.mjs'/);
  assert.match(worker,/'\.\/domain\/itinerary-quick-place\.mjs'/);
- assert.match(worker,/freya-travel-release-6444-v35/);
+ assert.match(worker,/freya-travel-release-6444-v36/);
  assert.match(html,/pwa-automatic-places-v27/);
 });
 
