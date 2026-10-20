@@ -117,18 +117,18 @@ try{
   assert.equal(await page.locator('#updateToast').isVisible(),false,'First installation is not an app update');
   const boots=await page.evaluate(()=>sessionStorage.boots);
   oldWorker=null;await page.evaluate(async()=>{const r=await navigator.serviceWorker.getRegistration();await r.update()});
-  await page.waitForFunction(async version=>{const keys=await caches.keys(),r=await navigator.serviceWorker.getRegistration();return keys.includes('freya-travel-release-6444-v33')&&!keys.includes('freya-travel-release-6444-v'+version)&&r?.active?.state==='activated'&&!r.installing&&!r.waiting&&navigator.serviceWorker.controller?.state==='activated'},version);
+  await page.waitForFunction(async version=>{const keys=await caches.keys(),r=await navigator.serviceWorker.getRegistration();return keys.includes('freya-travel-release-6444-v34')&&!keys.includes('freya-travel-release-6444-v'+version)&&r?.active?.state==='activated'&&!r.installing&&!r.waiting&&navigator.serviceWorker.controller?.state==='activated'},version);
   assert.equal(await page.evaluate(()=>sessionStorage.boots),boots,'An activated update must not reload a usable app or lose drafts');
   await page.waitForFunction(()=>new Promise(resolve=>{
    const channel=new MessageChannel(),timer=setTimeout(()=>resolve(false),500);
-   channel.port1.onmessage=e=>{clearTimeout(timer);resolve(e.data?.cache==='freya-travel-release-6444-v33')};
+   channel.port1.onmessage=e=>{clearTimeout(timer);resolve(e.data?.cache==='freya-travel-release-6444-v34')};
    navigator.serviceWorker.controller?.postMessage({type:'FREYA_BOOT_VERSION'},[channel.port2]);
   }));
   await page.reload();await page.locator('#loginCard').waitFor({state:'visible'});
   await page.waitForFunction(()=>navigator.serviceWorker.controller?.state==='activated');
-  assert.equal(await page.evaluate(async()=>!!(await (await caches.open('freya-travel-release-6444-v33')).match(new URL('index.html',location.href).href))),true);
+  assert.equal(await page.evaluate(async()=>!!(await (await caches.open('freya-travel-release-6444-v34')).match(new URL('index.html',location.href).href))),true);
   // 503 is not an offline exception: the previous worker returned the error instead of its SDK cache.
-  fault='shell503';await page.reload().catch(async error=>{console.error('SW fallback failure',version,await page.evaluate(async()=>({keys:await caches.keys(),controller:navigator.serviceWorker.controller?.state,cache:!!(await (await caches.open('freya-travel-release-6444-v33')).match('./index.html'))})).catch(()=>null));throw error});await page.locator('#loginCard').waitFor({state:'visible'});fault='';
+  fault='shell503';await page.reload().catch(async error=>{console.error('SW fallback failure',version,await page.evaluate(async()=>({keys:await caches.keys(),controller:navigator.serviceWorker.controller?.state,cache:!!(await (await caches.open('freya-travel-release-6444-v34')).match('./index.html'))})).catch(()=>null));throw error});await page.locator('#loginCard').waitFor({state:'visible'});fault='';
   assert.equal(await page.evaluate(async()=>await (await caches.open('freya-travel-v1.5')).match('/freya-travel/local-copy').then(r=>r.text())),'keep');
   await page.goto(url+'freya-travel-v1.5/');await page.waitForURL(url);await page.locator('#loginCard').waitFor({state:'visible'});
   // WebKit's automation-level setOffline rejects navigation before dispatching to SW.

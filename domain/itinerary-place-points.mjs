@@ -60,7 +60,7 @@ export class ActivityPointQueue{
  constructor(search,{timeoutMs=20000}={}){this.search=search;this.timeoutMs=timeoutMs;this.cache=new Map();this.count=0;this.blocked=false}
  async find(query,context){
   const text=query+(context?.canonical_name?', '+context.canonical_name:'');
-  const key=JSON.stringify([normalizePointName(text),context?.country_code]);
+  const key=JSON.stringify([text.normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase(),context?.country_code]);
   if(this.cache.has(key))return this.cache.get(key);
   if(this.blocked)throw Error('La cerca està aturada perquè el servei no respon. Torna-ho a provar més tard.');
   if(this.count>=30)throw Error('Límit preventiu de 30 consultes assolit.');

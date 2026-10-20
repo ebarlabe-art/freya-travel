@@ -68,3 +68,12 @@ test('a stalled point query releases the UI and opens the circuit without retryi
  let calls=0;const q=new ActivityPointQueue(()=>{calls++;return new Promise(()=>{})},{timeoutMs:5});
  await assert.rejects(q.find('Stalled',context),/no respon/);await assert.rejects(q.find('Other',context));assert.equal(calls,1);
 });
+
+
+test('linguistic query variants do not reuse an empty result from another spelling',async()=>{
+ const calls=[];const q=new ActivityPointQueue(async text=>{calls.push(text);return text.startsWith('Basilica di')?[place('Basilica di San Petronio')]:[]});
+ assert.deepEqual(await q.find('Basilica de San Petronio',context),[]);
+ assert.equal((await q.find('Basilica di San Petronio',context)).length,1);
+ await q.find('BASILICA  DI San Petronio',context);assert.equal(calls.length,2,'Case and repeated spaces remain deduplicated');
+ assert.equal(chooseAutomaticPoint('Basilica de San Petronio',[place('Basilica di San Petronio'),place('Basilica di San Petronio','amenity',{place_id:'other'})],context),null,'Variants do not relax ambiguous auto-confirmation');
+});
