@@ -135,17 +135,26 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
   if(!suggestion)continue;
   const anchor=[...root.querySelectorAll('[data-itinerary-key]')].find(node=>node.dataset.itineraryKey===item.key);
   if(!anchor)continue;
-  const advice=recommendedVisitAdvice(item,suggestion);
+  const next=pairs.find(pair=>pair.origin.key===item.key)?.destination||null;
+  const advice=recommendedVisitAdvice(item,suggestion,next);
   if(!advice)continue;
-  let end='';
-  const time=advice.confirmedEnd||advice.proposedEnd;
-  if(time)try{end=new Intl.DateTimeFormat('ca-ES',{timeZone,hour:'2-digit',minute:'2-digit'}).format(new Date(time))}catch(_){}
-  const note=document.createElement('section');note.dataset.visitAdvice=item.key;note.className='agenda-route-diagnosis agenda-visit-guidance';
-  // An actual booked end always wins over the AI proposal.
-  note.textContent='💡 Freya proposa '+advice.minutes+' min per a aquesta visita'+(advice.reason?' · '+advice.reason:'')+
-   (end?advice.confirmedEnd?' · Final fix: '+end:' · Final orientatiu: '+end:'')+
-   '. Durada estimada; no modifica cap horari ni reserva.';
-  anchor.append(note);
+  const format=stamp=>{if(!stamp)return '';try{return new Intl.DateTimeFormat('ca-ES',{timeZone,hour:'2-digit',minute:'2-digit'}).format(new Date(stamp))}catch{return ''}};
+  const end=format(advice.confirmedEnd||advice.displayableEnd),nextAt=format(advice.nextStart);
+  const note=document.createElement('section');note.dataset.visitAdvice=item.key;
+  note.className='agenda-visit-guidance'+(advice.shortageMinutes>0?' agenda-visit-conflict':'');
+  const heading=document.createElement('strong');heading.textContent='💡 Durada proposada: '+advice.minutes+' min';
+  note.append(heading);
+  if(advice.reason){const reason=document.createElement('p');reason.textContent=advice.reason;note.append(reason)}
+  const status=document.createElement('p');
+  if(advice.shortageMinutes>0){
+   status.textContent='⚠ Aquesta durada no encaixa abans de la següent activitat'+(nextAt?' de les '+nextAt:'')+
+    '. Cal escurçar-la almenys '+advice.shortageMinutes+' min'+(advice.routePending?', més el temps de desplaçament pendent de verificar.':'.');
+  }else if(end){
+   status.textContent=advice.confirmedEnd?'Final de la visita fixat: '+end+'.':'Final orientatiu: '+end+'.';
+   if(advice.routePending)status.textContent+=' Encara cal comprovar el temps fins a la visita següent.';
+  }else status.textContent='Hora de finalització pendent de concretar.';
+  note.append(status);
+  (anchor.querySelector('.generic-itinerary-card')||anchor).append(note);
  }
  // Real walking legs INSIDE a compound activity (one item, several ordered visits).
  // Never draw a straight-line duration and never infer a stop from a vague area.
