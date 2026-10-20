@@ -75,6 +75,10 @@ try{
   const key=JSON.stringify([session.user.id,trip.id,'2030-03-31']);
   const plan=dayVisitPlans.get(key);
   const first=itineraryProjection.find(x=>x.localDate==='2030-03-31'&&x.sourceType==='manual'&&!x.isCancelled);
+  // The imported 09:30 breakfast has no fixed end; the stored synthetic
+  // Museum A end remains intact to assert that guidance never changes bookings.
+  first.endsAt=null;
+  plan.signature=dayPlanSignature(itineraryProjection.filter(x=>x.localDate==='2030-03-31'&&x.sourceType==='manual'&&!x.isCancelled));
   plan.plans.set(first.key,{minutes:120,reason:'Temps massa llarg'});
   renderGenericItinerary();
  });
