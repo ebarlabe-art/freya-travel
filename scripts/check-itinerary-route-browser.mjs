@@ -67,8 +67,20 @@ try{
   renderGenericItinerary();
  });
  await page.waitForFunction(()=>document.querySelector('[data-visit-advice]')?.textContent.includes('60 min'));
+ assert.equal(await page.locator('[data-visit-advice]').first().evaluate(node=>!!node.closest('.generic-itinerary-card')),true,'AI guidance belongs inside the wide visit card');
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'Visit guidance must not overflow the mobile viewport');
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-agenda-route]')].some(x=>x.textContent.includes('marxeu com a màxim')));
  assert.equal(await page.evaluate(()=>window.testRows.find(x=>x.title==='Museum A').ends_at),'2030-03-31T09:00:00Z','The synthetic booking end is unchanged by AI advice');
+ await page.evaluate(()=>{
+  const key=JSON.stringify([session.user.id,trip.id,'2030-03-31']);
+  const plan=dayVisitPlans.get(key);
+  const first=itineraryProjection.find(x=>x.localDate==='2030-03-31'&&x.sourceType==='manual'&&!x.isCancelled);
+  plan.plans.set(first.key,{minutes:120,reason:'Temps massa llarg'});
+  renderGenericItinerary();
+ });
+ await page.waitForFunction(()=>document.querySelector('[data-visit-advice].agenda-visit-conflict')?.textContent.includes('no encaixa'));
+ assert.doesNotMatch(await page.locator('[data-visit-advice].agenda-visit-conflict').first().innerText(),/Final orientatiu/,'Never show an impossible proposed end');
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  const before=routeCalls;await page.locator('[data-generic-itinerary-day="2030-04-01"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-agenda-route]')].some(card=>card.textContent.includes('Falta un lloc')&&card.querySelector('[data-route-review]')));
  assert.equal(routeCalls,before,'Never call the routing provider without two verified locations');
