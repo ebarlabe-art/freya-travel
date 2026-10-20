@@ -1,4 +1,4 @@
-import {MAX_POINTS,extractActivityPoints,savedActivityPoints,pointSnapshot,pointPlace,pointMapUrl,normalizePointName} from './itinerary-place-points.mjs';
+import {MAX_POINTS,extractActivityPoints,savedActivityPoints,pointSnapshot,pointPlace,pointMapUrl,normalizePointName,samePointName} from './itinerary-place-points.mjs';
 const el=(tag,text)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node};
 // This is display-only: never change provider matches, the selected snapshot or auto-resolution.
 // Only collapse equal names in the same city/country at almost the same coordinates.
@@ -111,8 +111,10 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
     const request=++serial;busy=true;state.loading=true;state.error=false;state.empty=false;state.candidates=[];state.message='Cercant el punt…';render();
     try{
      const options=await search(query);if(!active()||request!==serial)return;
-     state.candidates=visiblePointCandidates(options).map(pointPlace);state.empty=state.candidates.length===0;
-     state.message=state.candidates.length?'Tria el lloc correcte. Encara no s’ha desat.'+(options.length>state.candidates.length?' Coincidències repetides agrupades.':''):'Cap coincidència verificable. Prova el nom local o una altra variant; el punt continua pendent.';
+     // Never display other saints/landmarks as matches to this requested name.
+     const exactMatches=options.filter(p=>samePointName(query,p.canonical_name));
+     state.candidates=visiblePointCandidates(exactMatches).map(pointPlace);state.empty=state.candidates.length===0;
+     state.message=state.candidates.length?'Tria el lloc correcte. Encara no s’ha desat.'+(exactMatches.length>state.candidates.length?' Coincidències repetides agrupades.':''):'Cap coincidència verificable. Prova el nom local o una altra variant; el punt continua pendent.';
     }catch(e){if(active()&&request===serial){state.error=true;state.message=e.message||'La cerca no està disponible. Torna-ho a provar.'}}
     finally{if(active()&&request===serial){busy=false;state.loading=false;render()}}
    });
