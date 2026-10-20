@@ -33,6 +33,9 @@ try{
   itineraryProjection=candidates.slice(0,mode==='new'?0:21).map((c,i)=>({title:c.fields.title.value,localDate:i===20?'2026-10-23':'2026-10-24',timeLabel:c.fields.start_local_time.value}));
   for(const type of ['flight','accommodation','activity','manual'])itinerarySourceReady[type]=itinerarySourceMarker(type,trip.id,tripLoadGeneration,session.user.id);
   itineraryImportState={tripId:trip.id,userId:session.user.id,generation:tripLoadGeneration,api,review:api.createItineraryReview({schema_version:1,source,candidates},{tripId:trip.id,userId:session.user.id,documentId:source.document_id}),busy:false,saveCompleted:false};
+  // Mirror the view visibility in setAppView without starting remote agenda loaders.
+  APP_VIEWS.forEach(id=>document.getElementById(id)?.classList.toggle('hidden',id!=='itineraryView'));
+  configureItineraryContent();
   for(const id of ['itineraryView','itineraryImportPanel','itineraryImportPreview']){let n=document.getElementById(id);while(n){n.classList.remove('hidden');n=n.parentElement}}
   document.getElementById('loginCard').classList.add('hidden');document.getElementById('itineraryImportSource').classList.add('hidden');
   window.beforeExisting=JSON.stringify(itineraryProjection);

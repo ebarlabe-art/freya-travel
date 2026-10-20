@@ -29,3 +29,10 @@ ni peticions externes. També recàrrega pendent de la font manual, desconnexió
 22 → 1 → 2 amb una activitat nova, i proposta només amb activitats noves.
 La CI ja executa aquesta regressió en tots dos motors.
 La prova física a l’iPhone correspon a una publicació posterior autoritzada.
+
+La regressió configura la visibilitat de les vistes igual que setAppView i
+utilitza configureItineraryContent, sense iniciar càrregues remotes. A Linux
+WebKit, la fixture anterior deixava visible també el tauler històric: el seu
+botó enablePush desbordava fins a 404 px sobre un viewport de 390 px. S’ha
+corregit la preparació de la fixture, mantenint l’assert d’amplada de pàgina
+i el diagnòstic dels elements que desborden. No es modifica el tauler.
