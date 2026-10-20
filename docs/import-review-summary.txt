@@ -1,0 +1,38 @@
+Revisió visual de la importació després de #150
+
+Base: main 447ea56 (PR #150). Canvi només del frontend; no cal cap migració
+ni desplegament d’Edge Functions. No canvia la detecció de coincidències,
+la selecció de domini, les ubicacions ni el contracte de desament.
+
+Després del clic d’exclusió, la revisió mostra confirmació, compta per separat
+coincidències i conflictes de data (cada activitat compta una sola vegada;
+el conflicte de data té prioritat), i destaca la selecció restant.
+Les activitats excloses es pleguen en un grup natiu details/summary.
+La capçalera manté visible el nombre de conflictes, amb les dues dates i
+els avisos accessibles dins de l’activitat. Es poden tornar a seleccionar
+individualment; passen de nou al grup principal. Cap data es corregeix.
+Amb selecció zero es mostra «No hi ha activitats noves per importar», es
+manté desactivat el desament i s’ofereix «Tancar la revisió».
+Una proposta nova reinicia l’estat visual de revisió completada.
+
+Es conserva el snapshot del planning i la separació de #150 entre revisió
+local i operacions que necessiten connexió. El desament conserva totes les
+comprovacions existents. Marcador preparat: pwa-automatic-places-v27-import-summary;
+cache preparada: freya-travel-release-6444-v31. No implica publicació.
+
+Regressió: scripts/check-import-exclude-browser.mjs, sobre el build real,
+viewport mòbil 390×844 amb touch, Chromium i WebKit. Dades completament
+sintètiques; transport extern bloquejat. Clic real d’exclusió, 20 coincidències
+més 1 conflicte de matinada: 21 → 0 → 1; grup plegat, avisos no visibles,
+conflicte accessible, recuperació individual, sortida, sense canvis al planning
+ni peticions externes. També recàrrega pendent de la font manual, desconnexió,
+22 → 1 → 2 amb una activitat nova, i proposta només amb activitats noves.
+La CI ja executa aquesta regressió en tots dos motors.
+La prova física a l’iPhone correspon a una publicació posterior autoritzada.
+
+La regressió configura la visibilitat de les vistes igual que setAppView i
+utilitza configureItineraryContent, sense iniciar càrregues remotes. A Linux
+WebKit, la fixture anterior deixava visible també el tauler històric: el seu
+botó enablePush desbordava fins a 404 px sobre un viewport de 390 px. S’ha
+corregit la preparació de la fixture, mantenint l’assert d’amplada de pàgina
+i el diagnòstic dels elements que desborden. No es modifica el tauler.

@@ -88,7 +88,7 @@ test('A2.7: Pages includes the same module graph as PWA cache',()=>{
  assert.match(worker,/\.\/domain\/import-itinerary-proposal\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-review\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-write\.mjs/);
- assert.match(worker,/freya-travel-release-6444-v30/);
+ assert.match(worker,/freya-travel-release-6444-v31/);
 });
 
 test('A2.9: real async completion re-enables the imported itinerary save button',async()=>{
@@ -173,4 +173,8 @@ test('import review renders existing evidence and excludes matches only on expli
  $('itineraryImportExcludeExisting').onclick();
  assert.deepEqual(state.review.items.map(x=>x.included),[false,true]);
  assert.match($('itineraryImportSaveStatus').textContent,/viatge no s’ha modificat/);
+ assert.match($('itineraryImportReviewResult').innerHTML,/Revisió completada/);
+ assert.match($('itineraryImportCandidates').innerHTML,/<details id="itineraryImportExcluded"><summary>Veure les activitats excloses \(1\)/);
+ assert.equal($('itineraryImportRemaining').textContent,'1 activitat seleccionada per afegir');
+ assert.equal($('itineraryImportWrite').disabled,false,'new item remains saveable');
 });
