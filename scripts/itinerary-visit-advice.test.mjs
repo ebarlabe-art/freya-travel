@@ -48,3 +48,14 @@ test('new route UI renders per-visit suggestions even without a calculated conne
  const sw=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
  assert.match(sw,/domain\/itinerary-visit-advice\.mjs/);
 });
+
+test('day plan automatically maps model outputs to immutable visit keys and does not write times',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(html,/dayVisitPlans\.set\(key,\{signature,plans:proposals\}\)/);
+ assert.match(html,/generateItineraryDayContext\(selected,true\)/);
+ assert.match(html,/visitPlans:\(dayVisitPlans\.get\(/);
+ const handler=readFileSync(new URL('../supabase/functions/itinerary-day-context/handler.mjs',import.meta.url),'utf8');
+ assert.match(handler,/visits\.length!==items\.length/);
+ assert.match(handler,/visit\.minutes>360/);
+ assert.doesNotMatch(handler,/\.update\(|\.insert\(/);
+});
