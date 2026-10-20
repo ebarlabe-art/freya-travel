@@ -2007,7 +2007,7 @@
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-automatic-places-v27-ordered-points';
+const FREYA_FRONTEND_RELEASE='pwa-automatic-places-v27-editor-stable';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -5431,7 +5431,32 @@ async function searchManualItineraryPlaces(){
  }catch(_){if(current())status.textContent='No s’ha pogut buscar. Pots omplir el lloc manualment.'}
  finally{if(current())search.disabled=false}
 }
-let itineraryPointScope=null;
+let itineraryPointScope=null,activityPointEditor=null;
+function closeActivityPointEditor(){activityPointEditor?.root.dispose();activityPointEditor=null}
+function preserveActivityPointViewport(){
+ const state=activityPointEditor;
+ if(!state?.root.isConnected||state.scope!==itineraryAutoPlaceScope())return ()=>{};
+ const anchor=state.root.contains(document.activeElement)?document.activeElement:state.root;
+ const top=anchor.getBoundingClientRect().top,x=scrollX;
+ return ()=>{if(activityPointEditor===state&&anchor.isConnected&&state.scope===itineraryAutoPlaceScope())scrollTo(x,scrollY+anchor.getBoundingClientRect().top-top)};
+}
+// Keep the actual editor subtree: closures, pending searches, candidates and input selection survive.
+function preserveActivityPointEditor(){
+ const state=activityPointEditor;if(!state)return ()=>{};
+ if(!state.root.isConnected||state.scope!==itineraryAutoPlaceScope()){closeActivityPointEditor();return ()=>{}}
+ const root=state.root,focus=root.contains(document.activeElement)?document.activeElement:null;
+ const selection=focus?.selectionStart==null?null:[focus.selectionStart,focus.selectionEnd];
+ const top=root.getBoundingClientRect().top,x=scrollX;
+ const parking=document.createDocumentFragment();parking.append(root);
+ return ()=>{
+  const card=[...$('genericItineraryContent').querySelectorAll('[data-itinerary-key]')].find(card=>card.dataset.itineraryKey===state.key);
+  // A removed/moved activity still needs a visible conflict review, never a discarded draft.
+  (card?.querySelector('.generic-itinerary-card')||$('genericItineraryContent')).append(root);
+  root.syncRow(state.readRow());
+  if(focus?.isConnected){focus.focus({preventScroll:true});if(selection)focus.setSelectionRange(...selection)}
+  scrollTo(x,scrollY+root.getBoundingClientRect().top-top);
+ };
+}
 function itineraryPointRow(item){
  if(!trip||isLondonTrip()||!['manual','activity'].includes(item.sourceType)||item.isTransport)return null;
  const rows=item.sourceType==='manual'?manualItineraryRows:activityRows;
@@ -5500,16 +5525,21 @@ async function proposeActivityPoints(day){
 async function openActivityPointEditor(button){
  const item=itineraryProjection.find(item=>item.key===button.dataset.activityPoints),row=item&&itineraryPointRow(item);
  if(!row||connectionUnavailable()){msg('genericItineraryMessage','Cal connexió per editar els punts.',true);return}
- const scope=itineraryAutoPlaceScope(),revision=row.updated_at;
- const current=()=>scope===itineraryAutoPlaceScope()&&button.isConnected&&itineraryPointRow(item)?.updated_at===revision;
+ const scope=itineraryAutoPlaceScope();
+ const current=()=>scope===itineraryAutoPlaceScope();
+ const readRow=()=>itineraryPointRow(item);
  try{
   const context=await itineraryPointContext(),{mountActivityPointEditor}=await loadTravelBookModule('itinerary-place-points-ui.mjs');if(!context||!current())return;
-  mountActivityPointEditor({host:button.closest('.generic-itinerary-card'),row,current,
+  if(!button.isConnected)return;
+  closeActivityPointEditor();
+  const root=mountActivityPointEditor({host:button.closest('.generic-itinerary-card'),row,current,readRow,
    search:query=>{context.queue.blocked=false;return context.queue.find(query,itineraryAutoPlaceDestination(row))},
-   save:async snapshot=>{if(!current())throw Error('L’activitat ha canviat. Torna a obrir els punts.');await saveActivityPoints(row,snapshot,scope);
+   save:async(snapshot,baseline)=>{if(!current())throw Error('El viatge ha canviat.');
+    try{await saveActivityPoints(baseline,snapshot,scope)}catch(error){if(current()){if(row._placeSource==='activity')await loadActivities(true);else await loadManualItineraryItems(true)}throw error}
     if(scope!==itineraryAutoPlaceScope())return;if(row._placeSource==='activity')await loadActivities(true);else await loadManualItineraryItems(true);
     msg('genericItineraryMessage','Punts desats. Els horaris i les dades originals es conserven.');}
   });
+  activityPointEditor={root,scope,key:item.key,readRow};
  }catch(error){if(current())msg('genericItineraryMessage',error.message,true)}
 }
 
@@ -6501,7 +6531,7 @@ async function renderAgendaRoutes(items,day){
   agendaRouteModule=await (agendaRouteImport??=import(/* @vite-ignore */ url).catch(error=>{agendaRouteImport=null;throw error}));
   if(!current())return;
   const projected=items.map(item=>{const row=tripHomeSourceRow(item);return {...item,isTransport:(item.sourceType==='activity'&&isLocalTransportActivity(row))||(item.sourceType==='manual'&&/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(String(row?.title||''))),hasRoutePlace:!!(row?.location_points||row?.location_name||row?.venue_name||row?.address||(Number.isFinite(row?.latitude)&&Number.isFinite(row?.longitude)))}});
-  agendaRouteModule.mountAgendaRoutes({root:$('genericItineraryDays'),items:projected,tripId,userId,generation,day,current,contextKey:JSON.stringify(tripStopRows),online:()=>!connectionUnavailable(),
+  agendaRouteModule.mountAgendaRoutes({root:$('genericItineraryDays'),items:projected,tripId,userId,generation,day,current,contextKey:JSON.stringify(tripStopRows),online:()=>!connectionUnavailable(),preserveViewport:preserveActivityPointViewport,
    invoke:async body=>{const {data,error}=await db.functions.invoke('itinerary-route',{body});if(data)return data;if(error?.context){try{return await error.context.json()}catch(_){}}return {error:'provider_unavailable'}},
    onEdit:item=>{const button=itineraryPointRow(item)&&document.querySelector('[data-activity-points="'+CSS.escape(item.key)+'"]');if(button)void openActivityPointEditor(button);else if(item.sourceType==='manual')openManualItineraryForm(item.sourceId);else openItinerarySource(item.sourceType,item.sourceId)}});
  }catch(_){if(current())msg('genericItineraryMessage','No s’han pogut carregar els trajectes. Torna a obrir el dia per reintentar.',true)}
@@ -6575,6 +6605,7 @@ function renderItinerarySourceStatus(){
 }
 function renderGenericItinerary(){
   if(!trip||isLondonTrip())return;
+  const restorePointEditor=preserveActivityPointEditor();
   renderItinerarySourceStatus();
   if($('pwaDiagnostic').open)void refreshPwaDiagnostics();
   const scheduled=itineraryProjection.filter(item=>item.localDate),unscheduled=itineraryProjection.filter(item=>!item.localDate);
@@ -6601,6 +6632,7 @@ function renderGenericItinerary(){
     });
   }
   renderItineraryDayWeather();
+  restorePointEditor();
   proposeItineraryAutoPlaces(selected);
   void proposeActivityPoints(selected).catch(()=>{});
   if(typeof renderAgendaRoutes==='function'&&itinerarySourcesAreReady())renderAgendaRoutes(activeItems,selected);
@@ -6769,6 +6801,7 @@ async function disconnectTripRealtime(){
   await Promise.allSettled(active.map(item=>db.removeChannel(item)));
 }
 function clearGenericItineraryState(){
+  closeActivityPointEditor();
   if(typeof agendaRouteModule!=='undefined')agendaRouteModule?.resetAgendaRoutes();
   clearTripHomeState();
   clearItinerarySourceContext();

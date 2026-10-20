@@ -2,10 +2,11 @@ import {visitPairs,routeFeasibility,routeModes,routeReasons,routeMapUrl,RouteQue
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let queue,scope='',states=new Map(),listeners;
 export function resetAgendaRoutes(){listeners?.abort();queue?.reset('');scope='';states=new Map()}
-export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invoke,online,current,onEdit,storage=globalThis.localStorage,contextKey=''}){
+export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invoke,online,current,onEdit,storage=globalThis.localStorage,contextKey='',preserveViewport=()=>()=>{}}){
  const nextScope=JSON.stringify([userId,tripId,generation]);
  if(scope!==nextScope){resetAgendaRoutes();scope=nextScope;queue=new RouteQueue({invoke});queue.reset(scope)}
  listeners?.abort();listeners=new AbortController();
+ const restoreViewport=preserveViewport();
  root.querySelectorAll('[data-agenda-route]').forEach(node=>node.remove());
  const pairs=visitPairs(items,tripId,day);
  for(const [index,pair]of pairs.entries()){
@@ -23,6 +24,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
   const save=()=>{try{storage?.setItem(storageKey,JSON.stringify({mode:state.mode,buffer:state.buffer}))}catch{}};
   const draw=()=>{
    if(!live())return;
+   const restoreDrawViewport=preserveViewport();
    // toggle is queued asynchronously: capture the user's current disclosure
    // before replacing it, and ignore events from the detached previous node.
    const previousDetails=card.querySelector('[data-route-options]');
@@ -55,6 +57,7 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    card.querySelector('[data-route-retry]')?.addEventListener('click',()=>load(true));
    card.querySelectorAll('[data-route-choice]').forEach(select=>select.onchange=()=>{state.choices[select.dataset.routeChoice]=select.value;load()});
    card.querySelectorAll('[data-route-edit]').forEach(button=>button.onclick=()=>onEdit(pair[button.dataset.routeEdit]));
+   restoreDrawViewport();
   };
   async function load(retry=false){
    if(!live())return;
@@ -71,4 +74,5 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh()},{signal:listeners.signal});
   draw();load();
  }
+ restoreViewport();
 }
