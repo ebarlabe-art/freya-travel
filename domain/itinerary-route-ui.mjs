@@ -33,6 +33,31 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
  root.prepend(preferencePanel);
  const internalTravel=new Map(),redrawCross=new Map();
  for(const item of items)if(Array.isArray(item.locationPoints)&&item.locationPoints.length>1)internalTravel.set(item.key,{waiting:item.locationPoints.length-1,seconds:0,incomplete:false});
+ const writeVisitGuidance=(note,advice)=>{
+  const format=stamp=>{if(!stamp)return '';try{return new Intl.DateTimeFormat('ca-ES',{timeZone,hour:'2-digit',minute:'2-digit'}).format(new Date(stamp))}catch{return ''}};
+  const end=format(advice.confirmedEnd||advice.displayableEnd),nextAt=format(advice.nextStart);
+  note.replaceChildren();
+  note.className='agenda-visit-guidance'+(advice.reducedMinutes>0||advice.cannotFit?' agenda-visit-conflict':'');
+  const heading=document.createElement('strong');
+  const status=document.createElement('p');
+  if(advice.cannotFit){
+   heading.textContent='⚠ No hi ha prou temps per a aquesta visita';
+   status.textContent=advice.confirmedEnd?'La seva hora de finalització confirmada se solapa amb el següent compromís. Cal revisar el planning.':
+    'La visita següent comença'+(nextAt?' a les '+nextAt:'')+'; Freya no pot proposar ni 10 min amb el marge necessari.';
+  }else if(advice.reducedMinutes>0){
+   heading.textContent='⏱ Freya ajusta la visita a '+advice.plannedMinutes+' min com a màxim';
+   status.textContent='Proposta inicial: '+advice.minutes+' min'+(end?' · Final orientatiu: '+end:'')+
+    (advice.routePending?' · Encara cal descomptar el trajecte quan es verifiqui.':' · Inclou el marge de desplaçament verificat.');
+  }else{
+   heading.textContent='💡 Durada orientativa: '+advice.minutes+' min';
+   status.textContent=advice.confirmedEnd?'Final confirmat: '+end+'.':
+    end?'Final orientatiu: '+end+'.'+(advice.routePending?' Pendent de comprovar el trajecte següent.':''):
+    'Hora de finalització encara no concretada.';
+  }
+  note.append(heading,status);
+  if(advice.reason){const reason=document.createElement('small');reason.textContent=advice.reason;note.append(reason)}
+
+ };
  const pairs=visitPairs(items,tripId,day);
  for(const [index,pair]of pairs.entries()){
   // Even incomplete place pairs need a clear, actionable connector; do not hide them.
@@ -64,6 +89,8 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
    const mapUrl=routeMapUrl(route);
    const proposal=visitPlans.get(pair.origin.key);
    const proposed=proposal?recommendedVisitAdvice(pair.origin,proposal,pair.destination,result,state.buffer??5):null;
+   const visibleAdvice=anchor.querySelector('[data-visit-advice]');
+   if(visibleAdvice&&proposed)writeVisitGuidance(visibleAdvice,proposed);
    let proposedDeparture='';
    if(proposed?.latestLeaveBy)try{proposedDeparture=new Intl.DateTimeFormat('ca-ES',{timeZone,hour:'2-digit',minute:'2-digit'}).format(new Date(proposed.latestLeaveBy))}catch(_){};
    const needs=result&&!route?[error,...['origin','destination'].map(side=>result[side]?.error)].filter(Boolean):[];
@@ -138,28 +165,8 @@ export function mountAgendaRoutes({root,items,tripId,userId,generation,day,invok
   const next=pairs.find(pair=>pair.origin.key===item.key)?.destination||null;
   const advice=recommendedVisitAdvice(item,suggestion,next);
   if(!advice)continue;
-  const format=stamp=>{if(!stamp)return '';try{return new Intl.DateTimeFormat('ca-ES',{timeZone,hour:'2-digit',minute:'2-digit'}).format(new Date(stamp))}catch{return ''}};
-  const end=format(advice.confirmedEnd||advice.displayableEnd),nextAt=format(advice.nextStart);
   const note=document.createElement('section');note.dataset.visitAdvice=item.key;
-  note.className='agenda-visit-guidance'+(advice.reducedMinutes>0||advice.cannotFit?' agenda-visit-conflict':'');
-  const heading=document.createElement('strong');
-  const status=document.createElement('p');
-  if(advice.cannotFit){
-   heading.textContent='⚠ No hi ha prou temps per a aquesta visita';
-   status.textContent=advice.confirmedEnd?'La seva hora de finalització confirmada se solapa amb el següent compromís. Cal revisar el planning.':
-    'La visita següent comença'+(nextAt?' a les '+nextAt:'')+'; Freya no pot proposar ni 10 min amb el marge necessari.';
-  }else if(advice.reducedMinutes>0){
-   heading.textContent='⏱ Freya ajusta la visita a '+advice.plannedMinutes+' min com a màxim';
-   status.textContent='Proposta inicial: '+advice.minutes+' min'+(end?' · Final orientatiu: '+end:'')+
-    (advice.routePending?' · Encara cal descomptar el trajecte quan es verifiqui.':' · Inclou el marge de desplaçament verificat.');
-  }else{
-   heading.textContent='💡 Durada orientativa: '+advice.minutes+' min';
-   status.textContent=advice.confirmedEnd?'Final confirmat: '+end+'.':
-    end?'Final orientatiu: '+end+'.'+(advice.routePending?' Pendent de comprovar el trajecte següent.':''):
-    'Hora de finalització encara no concretada.';
-  }
-  note.append(heading,status);
-  if(advice.reason){const reason=document.createElement('small');reason.textContent=advice.reason;note.append(reason)}
+  writeVisitGuidance(note,advice);
   (anchor.querySelector('.generic-itinerary-card')||anchor).append(note);
  }
  // Real walking legs INSIDE a compound activity (one item, several ordered visits).
