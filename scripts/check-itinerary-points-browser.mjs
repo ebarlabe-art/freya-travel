@@ -61,13 +61,14 @@ try{
   if(name==='itinerary-route')return {data:await(await handler(new Request('https://synthetic',{method:'POST',headers:{authorization:'Bearer synthetic'},body:JSON.stringify(body)}))).json(),error:null};
   if(name!=='place-resolution')return {data:{},error:null};
   searches.push(body);
+  if(body.text.startsWith('Service failure'))return {data:{error:'provider_unavailable'},error:null};
   if(body.text.startsWith('Delayed'))await new Promise(resolve=>{releaseSearch=resolve});
   const title=body.text.split(',')[0],places=title==='Basilica di San Domenico'?
    [normalizeGeoapify({...raw(title),place_id:'domenico-1',formatted:'Basilica di San Domenico, Piazza San Domenico, 40124 Bologna BO, Italia'}),
     normalizeGeoapify({...raw(title),place_id:'domenico-2',lat:44.49012,lon:11.34009,formatted:'Basilica di San Domenico, 40125 Bologna BO, Italia'}),
     normalizeGeoapify({...raw('Basilica di Santo Stefano'),place_id:'stefano',formatted:'Basilica di Santo Stefano, Piazza Santo Stefano, Bologna'})]:
    title==='Unknown Museum'?[]:title==='Central Museum'?
-   [normalizeGeoapify({...raw(title),place_id:'one'}),normalizeGeoapify({...raw(title),place_id:'two'})]:[normalizeGeoapify({...raw(title==='centre històric'?'Centro Storico':title),result_type:['Quadrilatero','centre històric'].includes(title)?'suburb':title==='Via del Pratello'?'street':'amenity'})];
+   [normalizeGeoapify({...raw(title),place_id:'one'}),normalizeGeoapify({...raw(title),place_id:'two'})]:[normalizeGeoapify({...raw(title==='centre històric'?'Centro Storico':title==='Basilica de San Petronio'?'Basilica di San Petronio':title),result_type:['Quadrilatero','centre històric'].includes(title)?'suburb':title==='Via del Pratello'?'street':'amenity'})];
   return {data:{candidates:places.map(place=>({place}))},error:null};
  });
  await page.goto(url);await page.waitForFunction(()=>typeof renderSession==='function');await page.locator('#loginCard').waitFor({state:'visible'});
@@ -101,7 +102,42 @@ try{
  const first=page.locator('[data-activity-points="manual:'+rows[0].id+'"]');
  await first.tap();
  let editor=page.locator('[data-activity-point-editor]');await editor.waitFor({state:'visible'}).catch(async e=>{console.error('Editor diagnostics',await page.locator('#genericItineraryMessage').textContent(),errors);throw e});
+ const selectPoint=async n=>{const toggle=editor.getByRole('button',{name:'Edita el punt '+n,exact:true});if(await toggle.getAttribute('aria-expanded')!=='true')await toggle.tap()};
+ const pointOptions=async n=>{await selectPoint(n);const options=editor.locator('fieldset').nth(n-1).locator('[data-point-actions]');if(await options.getAttribute('open')===null)await options.locator('summary').tap()};
  assert.equal(await editor.locator('fieldset').count(),3);
+ assert.equal(await editor.locator('[data-point-body]:visible').count(),1,'Only selected point expanded');
+ assert.equal(await editor.getByRole('button',{name:'Puja el punt 2',exact:true}).isVisible(),false,'Secondary controls tucked away');
+ await editor.screenshot({path:resolve(tmpdir(),'freya-compact-editor-'+engine+'.png')});
+ // Native names and linguistic variants are user queries, never invented coordinates or automatic choices.
+ for(const [n,query]of [[1,'Piazza Maggiore'],[2,'Fontana del Nettuno'],[3,'Basilica di San Petronio'],[3,'Basilica de San Petronio']]){
+  await selectPoint(n);await editor.getByLabel('Nom del punt '+n,{exact:true}).fill(query);
+  const box=editor.locator('fieldset').nth(n-1);
+  await box.getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+  await box.locator('[data-point-results] button').first().waitFor();
+  assert.match(await box.locator('[data-point-feedback]').innerText(),/Tria el lloc/);
+  assert.equal(writes.length,8,'Searching variants never saves or auto-confirms');
+  assert.match(await box.locator('[data-point-toggle]').innerText(),/Tria una coincidència/,'Candidate requires explicit selection');
+  await box.locator('[data-point-results] button').first().tap();
+  assert.match(await box.locator('[data-point-toggle]').innerText(),/Ubicació verificada/);
+  assert.equal(writes.length,8,'Selecting each of the three monuments keeps an unsaved draft');
+ }
+ assert.ok(searches.some(s=>s.text.startsWith('Basilica di San Petronio,')));
+ assert.ok(searches.some(s=>s.text.startsWith('Basilica de San Petronio,')),'Distinct language variants reach provider');
+ await selectPoint(1);await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Unknown Museum');
+ await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+ await editor.locator('fieldset').first().locator('[data-point-feedback]').filter({hasText:'Cap coincidència verificable'}).waitFor();
+ assert.equal(await editor.locator('fieldset').first().locator('[data-point-results] button').count(),0);
+ await selectPoint(1);
+ await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Service failure');
+ await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+ await editor.locator('fieldset').first().locator('[data-point-feedback][data-error="true"]').waitFor();
+ assert.ok((await editor.locator('fieldset').first().locator('[data-point-feedback]').innerText()).length>0,'Provider error shown next to search');
+ await selectPoint(2);
+ assert.match(await editor.locator('fieldset').first().locator('[data-point-toggle]').innerText(),/Cerca no disponible/,'Collapsed point makes its error visible');
+ await selectPoint(1);
+ assert.equal(await editor.locator('fieldset').first().locator('[data-point-feedback][data-error="true"]').isVisible(),true,'Error survives point switching');
+ await editor.getByRole('button',{name:'Cancel·la',exact:true}).tap();await first.tap();await editor.waitFor({state:'visible'});
+
  // Real touch-sized UI: same-name nearby provider records collapse; different basilicas stay.
  const firstInput=editor.getByLabel('Nom del punt 1',{exact:true});
  await firstInput.fill('Basilica di San Domenico');
@@ -112,6 +148,8 @@ try{
  assert.equal(await basilicaButtons.first().locator('strong').innerText(),'Basilica di San Domenico');
  assert.match(await basilicaButtons.first().locator('small').innerText(),/Piazza San Domenico · Lloc exacte/);
  assert.match(await basilicaButtons.nth(1).innerText(),/Basilica di Santo Stefano/);
+ const queriesBeforeToggle=searches.length;await selectPoint(2);await selectPoint(1);
+ assert.equal(await basilicaButtons.count(),2);assert.equal(searches.length,queriesBeforeToggle);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no sideways mobile scrolling');
  assert.equal(writes.length,8,'searching and grouping candidates never writes');
  await firstInput.fill('Piazza Maggiore provisional');
@@ -129,10 +167,13 @@ try{
  await page.waitForFunction(()=>manualItineraryRows[1].location_points!==null);
  assert.equal(writes.length,beforeBackground+1);assert.equal(writes.at(-1).id,rows[1].id);
  assert.equal(await editor.getByLabel('Nom del punt 1',{exact:true}).inputValue(),'Piazza Maggiore provisional');
+ await pointOptions(2);
  await editor.getByRole('button',{name:'Puja el punt 2',exact:true}).tap();
+ await selectPoint(2);
  await editor.getByLabel('Nom del punt 2',{exact:true}).fill('Delayed Piazza');
  await editor.locator('fieldset').nth(1).getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
- await editor.getByRole('status').filter({hasText:'Cercant'}).waitFor();
+ await editor.locator('fieldset').nth(1).locator('[data-point-feedback]').filter({hasText:'Cercant'}).waitFor();
+ await selectPoint(1);
  const beforeReview=writes.length;
  await page.evaluate(async()=>{
   const callbacks=window.fixtureRealtime.filter(c=>c.table==='trip_itinerary_items');
@@ -142,6 +183,7 @@ try{
  assert.equal(await editor.isVisible(),true,'In-flight search survives Realtime reconciliation');
  for(let i=0;!releaseSearch&&i<100;i++)await new Promise(r=>setTimeout(r,10));
  assert.ok(releaseSearch);releaseSearch();releaseSearch=null;
+ await selectPoint(2);
  const candidate=editor.locator('[data-point-results] button').filter({hasText:'Delayed Piazza'});
  await candidate.waitFor();
  await candidate.evaluate(node=>{node.focus();node.scrollIntoView({block:'center'})});
@@ -164,7 +206,7 @@ try{
  await editor.getByRole('alert').getByText(/Remote Piazza/).waitFor();
  await editor.getByRole('alert').screenshot({path:resolve(tmpdir(),'freya-point-conflict-'+engine+'.png')});
  await page.evaluate(()=>renderGenericItinerary());
- assert.equal(await editor.locator('details').getAttribute('open'),'','Open conflict review survives refresh');
+ assert.equal(await editor.getByRole('alert').locator('details').getAttribute('open'),'','Open conflict review survives refresh');
  await editor.getByRole('button',{name:'Conserva el meu esborrany sobre aquesta versió',exact:true}).tap();
  assert.equal(await editor.getByRole('button',{name:'Desa els punts',exact:true}).isEnabled(),true);
  assert.equal(writes.length,beforeReview,'Refresh, candidate selection and conflict review never save');
@@ -176,9 +218,12 @@ try{
 
 
  await editor.locator('fieldset').first().screenshot({path:resolve(tmpdir(),'freya-point-editor-'+engine+'.png')});
+ await pointOptions(2);
  await editor.getByRole('button',{name:'Puja el punt 2',exact:true}).tap();
+ await pointOptions(3);
  await editor.getByRole('button',{name:'Elimina el punt 3',exact:true}).tap();
  await editor.getByRole('button',{name:'Afegeix un punt',exact:true}).tap();
+ await selectPoint(3);
  await editor.getByLabel('Nom del punt 3',{exact:true}).fill('Via del Pratello');
  await editor.locator('fieldset').nth(2).getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
  await editor.locator('[data-point-results] button').filter({hasText:'Via del Pratello'}).tap();
@@ -193,6 +238,7 @@ try{
  editor=page.locator('[data-activity-point-editor]');await editor.waitFor({state:'visible'}).catch(async e=>{console.error('Editor diagnostics',await page.locator('#genericItineraryMessage').textContent(),errors);throw e});
  assert.match(await editor.locator('fieldset').first().innerText(),/Fontana del Nettuno/);
  assert.equal(searches.length,before,'Saved ordered locations reused on reload');
+ await selectPoint(1);
  await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Fontana corretta');
  await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
  await editor.locator('[data-point-results] button').filter({hasText:'Fontana corretta'}).tap();
@@ -208,6 +254,7 @@ try{
  await editor.getByRole('button',{name:'Cancel·la',exact:true}).tap();
  assert.equal(await page.locator('[data-activity-point-editor]').count(),0);
  await first.tap();await editor.waitFor({state:'visible'});
+ await selectPoint(1);
  await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Delayed cancel');
  await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
  for(let i=0;!releaseSearch&&i<100;i++)await new Promise(r=>setTimeout(r,10));assert.ok(releaseSearch);
@@ -215,6 +262,7 @@ try{
  await page.evaluate(()=>renderGenericItinerary());
  assert.equal(await editor.count(),0,'Cancelled search never resurrects editor');
  await first.tap();await editor.waitFor({state:'visible'});
+ await selectPoint(1);
  await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Delayed trip change');
  await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
  for(let i=0;!releaseSearch&&i<100;i++)await new Promise(r=>setTimeout(r,10));assert.ok(releaseSearch);
@@ -224,5 +272,5 @@ try{
  assert.equal(writes.length,writesBefore,'Cancellation and trip change never save');
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'Mobile layout');
  assert.deepEqual(errors,[]);
- console.log(`PASS ${engine}: ordered multi-point enrichment, approximate zones, ambiguous pending, actual mobile add/search/select/reorder/remove/save clicks, geography-only CAS writes, reload reuse; editor preservation through enrichment, Realtime, refresh and pending search; scroll, candidates, conflict review and cancellation; no accidental writes.`);
+ console.log(`PASS ${engine}: compact single-point controls, native/variant names, local errors/no-match, candidate state on fold/reopen; ordered multi-point enrichment, approximate zones, ambiguous pending, actual mobile add/search/select/reorder/remove/save clicks, geography-only CAS writes, reload reuse; editor preservation through enrichment, Realtime, refresh and pending search; scroll, candidates, conflict review and cancellation; no accidental writes.`);
 }finally{await browser.close();await new Promise(r=>server.close(r))}

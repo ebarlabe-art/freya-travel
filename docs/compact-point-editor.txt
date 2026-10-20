@@ -1,0 +1,59 @@
+Compact point editor after #153 and #154
+
+Base: main a3ead0f (published changes #153 and #154). Frontend-only change;
+no migration, Edge Function, production data, external provider query or backup
+modification during development. No new application, environment or dependency.
+
+Interaction:
+Each point shows its name and precision/status. Only the selected point exposes
+its input, search and feedback. Clicking its heading collapses it; another
+heading opens that point. The first point starts open. Position and delete
+controls are under “Més opcions del punt”; coordinates, attribution, address
+and map remain accessible under “Detalls de la ubicació”. Touch targets are at
+least 44px, inputs 16px, with compact text and wrapped buttons on narrow screens.
+
+Loading, no-match, provider errors and candidates belong to each point, directly
+below its search button. They survive switching between points and reconciliation.
+A search can complete while its point is folded; reopening it exposes the result.
+One search runs at a time, as before, while switching points/cancelling remains
+available. All choices remain an unsaved draft until explicit Save.
+
+Names and language variants:
+The user's Unicode query is sent through the existing destination/country-aware
+Geoapify integration. No local translation dictionary or fabricated coordinate
+is introduced. Cache keys no longer remove accents/articles from the query:
+“Basilica de San Petronio” and “Basilica di San Petronio” are distinct searches.
+Case, Unicode normalization and repeated spaces still deduplicate equivalent
+queries. Existing 30-query limit, timeout and circuit breaker remain. Automatic
+matching and ambiguity rules are unchanged. Real-provider recognition of every
+language/alias is not guaranteed by synthetic tests; users can try another name.
+
+Preservation:
+Retains #153 stable editor, agenda/Realtime/route viewport preservation, scoped
+cancellation, explicit conflict review and updated_at compare-and-swap. Per-point
+messages/candidates are keyed by point ID and follow reordering. Retains #154
+candidate grouping and compact labels without changing stored provider data.
+Activity titles, dates, times, documents and reservations are not patched.
+
+Validation:
+755 unit tests pass, including a new cache regression proving an empty response
+for one variant does not suppress another variant and ambiguity remains unconfirmed.
+Build, index/404 parity and public-artifact check pass. Actual touch tests against
+the built app pass in Chromium and WebKit at 390 x 844, using synthetic auth,
+rows and provider responses with external network/WebSockets blocked. Covers
+three Bologna monuments, native/variant names, explicit candidate selection,
+no matches, provider errors beside the search, fold/reopen, background search,
+reordering, refresh, Realtime, conflicts, cancellation and no accidental writes.
+Existing candidate grouping tests and editor stability scenarios are retained.
+
+Prepared release: pwa-automatic-places-v27-editor-compact / cache v34.
+Do not merge or deploy without authorization. After authorized publication,
+check the compact editor physically on iPhone with Bologna, including local
+names and a nonexistent name; initially cancel without saving. Synthetic tests
+are not a claim of physical-device or real-provider validation.
+
+CI harness note: the first run exposed a cold-start race in the existing PWA
+bootstrap test. The home shell becomes visible before session/trip initialization
+finishes, so its final render could replace the navigation target during the
+first click. The test now waits for the real initialization state before using
+the same navigation clicks and assertions. No production bootstrap code changes.
