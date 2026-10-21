@@ -79,7 +79,7 @@ test('any destination with saved day context gets controls, an empty day does no
 
 test('narration stops on trip, day and view changes, not tied to London',()=>{
  assert.match(html,/function setAppView\(id\)\{\s*if\(id!=='itineraryView'\)stopDayNarration\(\)/);
- assert.match(html,/async function selectTrip\(tripId,\{open=false,applyDeepLink=false\}=\{\}\)\{\s*stopDayNarration\(\)/);
+ assert.match(html,/async function selectTrip\(tripId,\{open=false,applyDeepLink=false\}=\{\}\)\{\s*closeItineraryImport\(\);\s*stopDayNarration\(\)/);
  assert.match(html,/currentDayNarration\.tripId!==trip\.id\|\|currentDayNarration\.date!==selected/);
  assert.doesNotMatch(block('function playDayNarration(','function bindDayMetadataEditor('),/isLondonTrip\(/);
  assert.match(html,/if\(listen\)listen\.onclick=\(\)=>playDayNarration/);
