@@ -118,7 +118,7 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
     }catch(e){if(active()&&request===serial){state.error=true;state.message=e.message||'La cerca no està disponible. Torna-ho a provar.'}}
     finally{if(active()&&request===serial){busy=false;state.loading=false;render()}}
    });
-   body.append(input,hint,find,feedback,results);
+   const edit=el('details');edit.append(el('summary','Canviar el nom de la cerca'),input,hint);body.append(edit,find,feedback,results);
    for(const p of state.candidates){
     const button=action('',()=>{if(!active()||busy)return;point.place=p;point.status=p.coordinate_role==='exact_location'?'resolved':'approximate';state.candidates=[];state.message='Ubicació seleccionada. Prem «Confirmar ubicacions» per desar-la.';state.error=false;render()});
     button.className='point-place-option';button.append(el('strong',p.canonical_name),el('small',pointCandidateDescription(p)));results.append(button);
