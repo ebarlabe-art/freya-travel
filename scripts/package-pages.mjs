@@ -84,6 +84,11 @@ const finalIndex=builtIndex.replace(sdkTag,inlineSdk);
 if(finalIndex.includes('src="'+cdnSupabase+'"'))throw new Error('Unexpected external critical SDK');
 await writeFile(builtIndexUrl,finalIndex);
 
+// Temporary, opt-in maintenance page: no automatic execution or production data writes.
+await mkdir(new URL('scripts/',dist),{recursive:true});
+await copyFile(new URL('maintenance-bologna.html',root),new URL('maintenance-bologna.html',dist));
+await copyFile(new URL('scripts/repair-bologna-location-points.mjs',root),new URL('scripts/repair-bologna-location-points.mjs',dist));
+
 for(const file of ['sw.js','manifest.webmanifest','itinerary.html']){
   await copyFile(new URL(file,root),new URL(file,dist));
 }
