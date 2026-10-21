@@ -4,6 +4,7 @@
 <body><main><h1>Freya Travel · Bolonya</h1><p>Reparació puntual de dues ubicacions falses. No canvia visites, horaris ni reserves.</p>
 <p class="warn">Pàgina de manteniment: només funciona en una versió de proves del mateix origen i amb la sessió de Freya Travel iniciada.</p>
 <button id="preview">1. Simular</button><button id="apply" disabled>2. Confirmar correcció</button><pre id="result" role="status">Pendent de simulació.</pre></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script type="module">
 import {repairBolognaPoints} from './scripts/repair-bologna-location-points.mjs';
 const result=document.querySelector('#result'),preview=document.querySelector('#preview'),apply=document.querySelector('#apply');
