@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ca"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Freya Travel · Reparació de Bolonya</title>
+<style>body{font:16px system-ui;background:#f7f5fb;color:#272132;max-width:620px;margin:35px auto;padding:16px}main{background:white;border-radius:20px;padding:25px}button{padding:13px;border:0;border-radius:10px;background:#6750a4;color:white;font-weight:bold;margin:8px 8px 8px 0}button:disabled{opacity:.4}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#eee8f4;padding:15px;border-radius:12px}.warn{color:#9d321c}</style></head>
+<body><main><h1>Freya Travel · Bolonya</h1><p>Reparació puntual de dues ubicacions falses. No canvia visites, horaris ni reserves.</p>
+<p class="warn">Pàgina de manteniment: només funciona en una versió de proves del mateix origen i amb la sessió de Freya Travel iniciada.</p>
+<button id="preview">1. Simular</button><button id="apply" disabled>2. Confirmar correcció</button><pre id="result" role="status">Pendent de simulació.</pre></main>
+<script type="module">
+import {repairBolognaPoints} from './scripts/repair-bologna-location-points.mjs';
+const result=document.querySelector('#result'),preview=document.querySelector('#preview'),apply=document.querySelector('#apply');
+let client=null;
+function output(message){result.textContent=message}
+async function authenticatedClient(){
+  // Supabase client lives in the main app. This page deliberately does not access localStorage
+  // or expose tokens; it requires an explicitly injected, authenticated client from the app.
+  if(!window.freyaMaintenanceSupabase)throw Error('Falta connectar aquesta pantalla a la sessió de Freya Travel. No s\'ha modificat res.');
+  return window.freyaMaintenanceSupabase;
+}
+preview.addEventListener('click',async()=>{
+  apply.disabled=true;preview.disabled=true;
+  try{client=await authenticatedClient();const response=await repairBolognaPoints(client,{dryRun:true});
+    output(JSON.stringify(response,null,2));apply.disabled=false;
+  }catch(e){output('Error: '+e.message)}finally{preview.disabled=false}
+});
+apply.addEventListener('click',async()=>{
+  if(!client||!confirm('Confirma eliminar exclusivament els dos punts falsos de Bolonya?'))return;
+  apply.disabled=true;preview.disabled=true;
+  try{output(JSON.stringify(await repairBolognaPoints(client,{dryRun:false}),null,2))}
+  catch(e){output('Error: '+e.message)}finally{preview.disabled=false}
+});
+</script></body></html>
