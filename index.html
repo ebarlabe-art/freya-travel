@@ -7181,8 +7181,8 @@ function updateTripPresentation(){
 }
 let tripStopRows=[];
 async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
-  stopDayNarration();
   closeItineraryImport();
+  stopDayNarration();
   const selected=trips.find(value=>value.id===tripId)||null;if(!selected){trip=null;tripStopRows=[];clearGenericItineraryState();updateTripPresentation();setAppView('tripsHomeView');return false}
   tripLoadGeneration+=1;const generation=tripLoadGeneration;clearGenericItineraryState();await disconnectTripRealtime();if(generation!==tripLoadGeneration)return false;
   clearTripScopedState();trip=selected;tripStopRows=[];rememberSelectedTrip();
