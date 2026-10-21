@@ -116,7 +116,7 @@ try{
  await editor.screenshot({path:resolve(tmpdir(),'freya-compact-editor-'+engine+'.png')});
  // Native names and linguistic variants are user queries, never invented coordinates or automatic choices.
  for(const [n,query]of [[1,'Piazza Maggiore'],[2,'Fontana del Nettuno'],[3,'Basilica di San Petronio'],[3,'Basilica de San Petronio']]){
-  await selectPoint(n);const box=editor.locator('fieldset').nth(n-1);await box.getByText('Canviar el nom de la cerca',{exact:true}).click();await editor.getByLabel('Nom del punt '+n,{exact:true}).fill(query);
+  await selectPoint(n);const box=editor.locator('fieldset').nth(n-1);await editor.getByLabel('Nom del punt '+n,{exact:true}).fill(query);
   await box.getByRole('button',{name:'Buscar ubicació',exact:true}).tap();
   await box.locator('[data-point-results] button').first().waitFor();
   assert.match(await box.locator('[data-point-feedback]').innerText(),/Quin d’aquests llocs/);
@@ -128,7 +128,7 @@ try{
  }
  assert.ok(searches.some(s=>s.text.startsWith('Basilica di San Petronio,')));
  assert.ok(searches.some(s=>s.text.startsWith('Basilica de San Petronio,')),'Distinct language variants reach provider');
- await selectPoint(1);await editor.locator('fieldset').first().getByText('Canviar el nom de la cerca',{exact:true}).click();await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Unknown Museum');
+ await selectPoint(1);await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Unknown Museum');
  await editor.locator('fieldset').first().getByRole('button',{name:'Buscar ubicació',exact:true}).tap();
  await editor.locator('fieldset').first().locator('[data-point-feedback]').filter({hasText:'No hem trobat el lloc'}).waitFor();
  assert.equal(await editor.locator('fieldset').first().locator('[data-point-results] button').count(),0);
