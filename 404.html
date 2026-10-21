@@ -410,6 +410,7 @@
     #itineraryAutoPlacePanel,#itineraryAutoPlaceList,#itineraryAutoPlaceList>div{min-width:0;max-width:100%;overflow-wrap:anywhere}
     #itineraryAutoPlaceList select{min-width:0;width:100%;max-width:100%;font-size:16px;min-height:44px}
     .generic-day-narration{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 0;padding:10px 0;border-top:1px solid #eadff1;min-width:0}.generic-day-narration button{min-height:44px;padding:10px 12px}.generic-day-narration small{display:block;flex-basis:100%;overflow-wrap:anywhere;color:#61556e;line-height:1.4}
+    .itinerary-verified-voice{display:flex;flex-wrap:wrap;gap:8px;min-width:0;max-width:100%;padding:8px 0}.itinerary-verified-voice button{min-height:44px;white-space:normal;max-width:100%;overflow-wrap:anywhere}.itinerary-verified-voice small{display:block;flex-basis:100%;color:#625b71;line-height:1.4;font-size:.82rem;overflow-wrap:anywhere}
     .agenda-visit-guidance{box-sizing:border-box;max-width:100%;min-width:0;overflow-wrap:anywhere;margin-top:12px;padding:11px 12px;border-radius:13px;background:#f7f2fc;border:1px solid #e7dbf4;color:#493561;font-size:.87rem;line-height:1.45}.agenda-visit-guidance strong{display:block;font-size:.9rem;line-height:1.35}.agenda-visit-guidance p{margin:5px 0 0}.agenda-visit-guidance.agenda-visit-conflict{background:#fff7ed;border-color:#f7cba7;color:#744316}
     .agenda-route-card{margin:8px 0 16px;padding:14px;border:1px dashed #94a3b8;border-radius:14px;background:#f8fafc;overflow-wrap:anywhere}
     .agenda-route-compact-card{margin:4px 0 10px;padding:8px 12px;border:1px solid #e7ddf1;border-radius:12px;background:#faf8fd;color:#59428a;font-size:.88rem}
@@ -6436,9 +6437,73 @@ async function loadTripReview(force=false){
 }
 function itineraryStatusLabel(status){return {planning:'En planificació',planned:'Planificat',reserved:'Reservat',confirmed:'Confirmat',completed:'Completat',cancelled:'Cancel·lat'}[status]||status||''}
 function itinerarySourceLabel(type,id=''){if(type==='activity'&&isLocalTransportActivity(activityRows.find(row=>row.id===id)))return 'Obrir transport';return {flight:'Obrir vol',accommodation:'Obrir allotjament',activity:'Obrir activitat',manual:'Editar planning'}[type]||'Obrir font'}
+// The same Catalan TTS engine serves all trips; never treat geocoding as a cultural history source.
+function verifiedItineraryPlace(place){
+ return !!place&&place.provider==='geoapify'&&typeof place.provider_place_id==='string'&&place.provider_place_id.length>0&&
+  typeof place.canonical_name==='string'&&!!place.canonical_name.trim()&&place.coordinate_role==='exact_location'&&
+  /^[A-Z]{2}$/.test(place.country_code||'')&&Number.isFinite(place.latitude)&&Math.abs(place.latitude)<=90&&
+  Number.isFinite(place.longitude)&&Math.abs(place.longitude)<=180;
+}
+function itineraryVerifiedVoicePlaces(item){
+ if(!trip||item?.tripId!==trip.id||!['manual','activity'].includes(item.sourceType)||item.isTransport||item.isCancelled)return [];
+ const row=itineraryPointRow(item);if(!row||row.trip_id!==trip.id)return [];
+ const saved=row.location_points;
+ const input={title:row.title||'',location_name:row.location_name||row.venue_name||null,address:row.address||null,city:row.city||null};
+ if(saved?.version===1&&Array.isArray(saved.points)&&Object.entries(input).every(([field,value])=>saved.input?.[field]===value)){
+  return saved.points.filter(point=>verifiedItineraryPlace(point?.place)).slice(0,12).map(point=>point.place);
+ }
+ // A single manually resolved place is also usable if its original field snapshot remains current.
+ const snapshot=row.resolved_location,place=snapshot?.place;
+ if(snapshot&&snapshot.title===row.title&&snapshot.address===(row.address||null)&&snapshot.city===(row.city||null)&&
+  snapshot.location_name===(row.location_name||(!row.address?place?.canonical_name:null))&&verifiedItineraryPlace(place))return [place];
+ return [];
+}
+function itineraryVoicePlaceText(place){
+ if(!verifiedItineraryPlace(place))return '';
+ const name=place.canonical_name.trim();
+ const city=typeof place.locality==='string'?place.locality.trim():'';
+ const address=typeof place.formatted_address==='string'?place.formatted_address.trim():'';
+ return [`Lloc verificat: ${name}`,city&&city!==name?`Localitat: ${city}`:'',
+  address&&address!==name?`Adreça: ${address}`:''].filter(Boolean).join('. ').slice(0,650);
+}
+function itineraryVoiceHtml(item){
+ const places=itineraryVerifiedVoicePlaces(item);if(!places.length)return '';
+ const buttons=places.map((place,index)=>`<button type='button' class='secondary' data-itinerary-voice='${esc(item.key)}' data-itinerary-voice-index='${index}'>🎧 ${places.length>1?esc(place.canonical_name):'Escolta el lloc'}</button>`).join('');
+ return `<div class='itinerary-verified-voice' aria-label='Narració de llocs verificats'>${buttons}<button type='button' class='secondary' data-itinerary-voice-pause='${esc(item.key)}'>Pausa / continua</button><button type='button' class='secondary' data-itinerary-voice-stop='${esc(item.key)}'>Atura</button><small data-itinerary-voice-status role='status' aria-live='polite'>Ubicació contrastada: no és encara una guia cultural o històrica.</small></div>`;
+}
+function itineraryVoiceStatus(container,value){const label=container?.querySelector('[data-itinerary-voice-status]');if(label)label.textContent=value}
+function playVerifiedItineraryPlace(button){
+ if(!trip||!session||visibleAppView()!=='itineraryView')return;
+ const item=itineraryProjection.find(value=>value.tripId===trip.id&&value.key===button.dataset.itineraryVoice);
+ const index=Number(button.dataset.itineraryVoiceIndex),places=item?itineraryVerifiedVoicePlaces(item):[];
+ if(!Number.isInteger(index)||index<0||index>=places.length)return;
+ const speech=itineraryVoicePlaceText(places[index]);if(!speech)return;
+ const scope={tripId:trip.id,generation:tripLoadGeneration,userId:session.user.id};
+ const group=button.closest('.itinerary-verified-voice');
+ const token={tripId:trip.id,date:item.localDate||'pending',source:item.key,placeIndex:index};
+ stopDayNarration();currentDayNarration=token;
+ const current=()=>currentDayNarration===token&&itineraryRequestIsCurrent(scope.tripId,scope.generation,scope.userId)&&visibleAppView()==='itineraryView';
+ const started=narrateCatalan(speech,{
+  onStart:()=>{if(current())itineraryVoiceStatus(group,'Escoltant la ubicació verificada…')},
+  onEnd:()=>{if(current()){currentDayNarration=null;itineraryVoiceStatus(group,'Narració finalitzada. La guia cultural està pendent.')}}
+ });
+ if(!started){currentDayNarration=null;itineraryVoiceStatus(group,'Aquest dispositiu no permet reproduir la narració.')}
+}
+function bindItineraryVoice(container){
+ container.querySelectorAll('[data-itinerary-voice]').forEach(button=>button.onclick=()=>playVerifiedItineraryPlace(button));
+ container.querySelectorAll('[data-itinerary-voice-pause]').forEach(button=>button.onclick=()=>{
+  if(!currentDayNarration||currentDayNarration.tripId!==trip?.id||currentDayNarration.source!==button.dataset.itineraryVoicePause||!('speechSynthesis' in window))return;
+  const group=button.closest('.itinerary-verified-voice');
+  if(speechSynthesis.paused){speechSynthesis.resume();itineraryVoiceStatus(group,'Narració represa.')}else if(speechSynthesis.speaking){speechSynthesis.pause();itineraryVoiceStatus(group,'Narració en pausa.')}
+ });
+ container.querySelectorAll('[data-itinerary-voice-stop]').forEach(button=>button.onclick=()=>{
+  if(currentDayNarration?.tripId!==trip?.id||currentDayNarration?.source!==button.dataset.itineraryVoiceStop)return;
+  stopDayNarration();itineraryVoiceStatus(button.closest('.itinerary-verified-voice'),'Narració aturada.');
+ });
+}
 function renderItineraryItem(item,unscheduled=false){
   const details=[item.subtitle,...item.details].filter(Boolean);
-  return `<article class="generic-itinerary-entry" data-itinerary-key="${esc(item.key)}"><div class="generic-itinerary-time ${item.timingKind==='approximate'?'approximate':''}">${unscheduled?'':esc(item.timeLabel)}</div><div class="generic-itinerary-card ${item.isCancelled?'cancelled':''} ${item.isCompleted?'trip-progress-done':''}"><div class="generic-itinerary-main"><div class="generic-itinerary-icon">${item.icon}</div><div class="generic-itinerary-copy"><small>${esc(item.eyebrow)}</small><strong>${esc(item.title)}</strong>${details.map(detail=>`<p>${esc(detail)}</p>`).join('')}${itineraryPointHtml(item)}${tripProgressStatusHtml(item)}${(item.tags||[]).map(tag=>`<span class="generic-itinerary-tag">${esc(tag)}</span>`).join('')}</div></div><div class="generic-itinerary-actions">${tripProgressButton(item)}${item.documents.map(document=>`<button type="button" data-itinerary-document="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}" data-itinerary-document-role="${esc(document.role)}" ${document.documentId?`data-itinerary-document-id="${esc(document.documentId)}"`:''}>${esc(document.label)}</button>`).join('')}${item.mapUrl&&!itineraryPointRow(item)?.location_points?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">📍 Maps</a>`:''}<button type="button" class="source-action" data-itinerary-source="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}">${esc(itinerarySourceLabel(item.sourceType,item.sourceId))}</button>${itineraryPointRow(item)?`<button type="button" data-activity-points="${esc(item.key)}">📍 Edita els punts</button>`:''}${item.sourceType==='manual'&&!itineraryPointRow(item)&&!item.mapUrl?`<button type="button" data-itinerary-find-place="${esc(item.sourceId)}">📍 Cerca ubicació</button>`:''}${item.overnightCorrectionDate?`<button type="button" data-confirm-overnight-date="${esc(item.sourceId)}" data-overnight-target="${esc(item.overnightCorrectionDate)}">✓ Confirma la data del ${esc(item.overnightCorrectionDate.slice(-2))}, a les ${esc(item.timeLabel)}</button>`:''}${item.sourceType==='manual'?`<button type="button" data-delete-manual-itinerary="${esc(item.sourceId)}">Elimina</button>`:''}</div></div></article>`;
+  return `<article class="generic-itinerary-entry" data-itinerary-key="${esc(item.key)}"><div class="generic-itinerary-time ${item.timingKind==='approximate'?'approximate':''}">${unscheduled?'':esc(item.timeLabel)}</div><div class="generic-itinerary-card ${item.isCancelled?'cancelled':''} ${item.isCompleted?'trip-progress-done':''}"><div class="generic-itinerary-main"><div class="generic-itinerary-icon">${item.icon}</div><div class="generic-itinerary-copy"><small>${esc(item.eyebrow)}</small><strong>${esc(item.title)}</strong>${details.map(detail=>`<p>${esc(detail)}</p>`).join('')}${itineraryPointHtml(item)}${tripProgressStatusHtml(item)}${(item.tags||[]).map(tag=>`<span class="generic-itinerary-tag">${esc(tag)}</span>`).join('')}</div></div><div class="generic-itinerary-actions">${tripProgressButton(item)}${itineraryVoiceHtml(item)}${item.documents.map(document=>`<button type="button" data-itinerary-document="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}" data-itinerary-document-role="${esc(document.role)}" ${document.documentId?`data-itinerary-document-id="${esc(document.documentId)}"`:''}>${esc(document.label)}</button>`).join('')}${item.mapUrl&&!itineraryPointRow(item)?.location_points?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">📍 Maps</a>`:''}<button type="button" class="source-action" data-itinerary-source="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}">${esc(itinerarySourceLabel(item.sourceType,item.sourceId))}</button>${itineraryPointRow(item)?`<button type="button" data-activity-points="${esc(item.key)}">📍 Edita els punts</button>`:''}${item.sourceType==='manual'&&!itineraryPointRow(item)&&!item.mapUrl?`<button type="button" data-itinerary-find-place="${esc(item.sourceId)}">📍 Cerca ubicació</button>`:''}${item.overnightCorrectionDate?`<button type="button" data-confirm-overnight-date="${esc(item.sourceId)}" data-overnight-target="${esc(item.overnightCorrectionDate)}">✓ Confirma la data del ${esc(item.overnightCorrectionDate.slice(-2))}, a les ${esc(item.timeLabel)}</button>`:''}${item.sourceType==='manual'?`<button type="button" data-delete-manual-itinerary="${esc(item.sourceId)}">Elimina</button>`:''}</div></div></article>`;
 }
 
 async function confirmOvernightItineraryDate(button){
@@ -6503,6 +6568,7 @@ async function openQuickItineraryPlacePicker(button){
  }
 }
 function bindItineraryActions(container){
+  bindItineraryVoice(container);
   container.querySelectorAll('[data-activity-points]').forEach(button=>button.onclick=()=>{void openActivityPointEditor(button)});
   bindTripProgress(container,itineraryProjection,'genericItineraryMessage');
   bindContextPhotoActions(container,itineraryProjection);
