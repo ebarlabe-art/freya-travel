@@ -69,7 +69,7 @@ test('A2.8: write requires a real click, authenticated scope, confirmation and c
 });
 test('A2.7: account, trip and view changes clear preview and block stale requests',()=>{
  assert.match(html,/if\(next\?\.user\?\.id!==session\?\.user\?\.id\)closeItineraryImport\(\)/);
- assert.match(html,/async function selectTrip\(tripId,[^\n]*\{\n  closeItineraryImport\(\)/);
+ assert.match(html,/async function selectTrip\(tripId,[^\n]*\{\n  stopDayNarration\(\);\n  closeItineraryImport\(\)/);
  assert.match(html,/if\(id!=='itineraryView'[^\n]*closeItineraryImport\(\)/);
  assert.match(script,/session\?\.user\?\.id===state\.userId/);
  assert.match(script,/tripLoadGeneration===state\.generation/);
