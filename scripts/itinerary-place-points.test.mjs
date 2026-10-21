@@ -108,7 +108,7 @@ test('candidate display matches named landmark aliases without mixing saints or 
  assert.equal(matchingPointCandidate('Archiginnasio',place('Palazzo dell Archiginnasio'),{country_code:'IT',city:'Bologna'}),true);
  assert.equal(matchingPointCandidate('Basilica di San Petronio',place('Basilica di San Domenico')),false);
  assert.equal(matchingPointCandidate('Torre dell Orologio',place('Torre degli Asinelli')),false);
- assert.equal(matchingPointCandidate('Archiginnasio',place('Palazzo dell Archiginnasio','amenity',{city:'Roma'})),false);
+ assert.equal(matchingPointCandidate('Archiginnasio',place('Palazzo dell Archiginnasio','amenity',{city:'Roma'}),{city:'Bologna'}),false);
  assert.equal(matchingPointCandidate('Via',place('Via del Pratello')),false);
  assert.equal(matchingPointCandidate('Archiginnasio',place('Palazzo dell Archiginnasio','amenity',{country_code:'fr'}),{country_code:'IT'}),false);
 });
