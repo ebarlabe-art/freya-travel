@@ -34,6 +34,22 @@ export function pointPlace(p){
  if(!validPointPlace(p))throw Error('La resposta no conté una ubicació verificable.');
  return Object.fromEntries(['canonical_name','provider','provider_place_id','country_code','locality','kind','latitude','longitude','coordinate_role','attribution','formatted_address'].map(k=>[k,p[k]??null]));
 }
+// Accept descriptive prefixes (Palazzo, Museum, etc.) without losing the unique
+// identity. A query's distinctive name tokens must ALL occur in the provider name;
+// "San Petronio" must never match "San Domenico" or "Santo Stefano".
+const genericPointWords=new Set(['palazzo','palace','museo','museum','museu','teatro','theatre','theater','basilica','chiesa','church','cattedrale','cathedral','torre','tower','piazza','square','via','street','viale','carrer','fontana','fountain','the','of','and']);
+export function matchingPointCandidate(query,place,context={}){
+ if(!validPointPlace(place))return false;
+ if(context.country_code&&place.country_code!==context.country_code)return false;
+ if(context.city&&normalizePointName(place.locality)!==normalizePointName(context.city))return false;
+ const wanted=normalizePointName(query),found=normalizePointName(place.canonical_name);
+ if(!wanted||!found)return false;
+ if(wanted===found)return true;
+ const distinctive=wanted.split(' ').filter(token=>!genericPointWords.has(token)&&token.length>2);
+ if(!distinctive.length)return false;
+ const foundTokens=new Set(found.split(' '));
+ return distinctive.every(token=>foundTokens.has(token));
+}
 // Exact semantic identity matters: San Domenico and Santo Stefano are NOT San Petronio.
 // Normalize articles/accents but never erase the named person or monument.
 export const samePointName=(wanted,found)=>!!normalizePointName(wanted)&&normalizePointName(wanted)===normalizePointName(found);

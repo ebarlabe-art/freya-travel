@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {extractActivityPoints,chooseAutomaticPoint,autoPendingPoints,samePointName,pointSnapshot,savedActivityPoints,ActivityPointQueue} from '../domain/itinerary-place-points.mjs';
+import {extractActivityPoints,chooseAutomaticPoint,autoPendingPoints,samePointName,matchingPointCandidate,pointSnapshot,savedActivityPoints,ActivityPointQueue} from '../domain/itinerary-place-points.mjs';
 import {normalizeGeoapify} from '../supabase/functions/place-resolution/providers/geoapify.mjs';
 import {routeProvider} from '../supabase/functions/itinerary-route/provider.mjs';
 const context={canonical_name:'Bologna',country_code:'IT'};
@@ -102,4 +102,13 @@ test('compound Teatro Anatomico becomes a second point and safely upgrades an un
  assert.equal(autoPendingPoints({...row,location_points:manuallyNamed}),null,'Do not rewrite a manually renamed point');
  const clock=extractActivityPoints({title:'Opcional: visita a la Torre dell’Orologio, amb reserva prèvia'});
  assert.equal(clock.some(p=>p.query==='via'),false,'Never extract Via from inside the word prèvia');
+});
+
+test('candidate display matches named landmark aliases without mixing saints or cities',()=>{
+ assert.equal(matchingPointCandidate('Archiginnasio',place('Palazzo dell Archiginnasio'),{country_code:'IT',city:'Bologna'}),true);
+ assert.equal(matchingPointCandidate('Basilica di San Petronio',place('Basilica di San Domenico')),false);
+ assert.equal(matchingPointCandidate('Torre dell Orologio',place('Torre degli Asinelli')),false);
+ assert.equal(matchingPointCandidate('Archiginnasio',place('Palazzo dell Archiginnasio','amenity',{city:'Roma'}),{city:'Bologna'}),false);
+ assert.equal(matchingPointCandidate('Via',place('Via del Pratello')),false);
+ assert.equal(matchingPointCandidate('Archiginnasio',place('Palazzo dell Archiginnasio','amenity',{country_code:'fr'}),{country_code:'IT'}),false);
 });
