@@ -6534,7 +6534,7 @@ let currentDayNarration=null;
 function dayNarrationStatus(value){const el=$('genericItineraryDays')?.querySelector('[data-day-narration-status]');if(el)el.textContent=value}
 function stopDayNarration(){if(!currentDayNarration)return;currentDayNarration=null;if('speechSynthesis' in window)speechSynthesis.cancel()}
 function playDayNarration(localDate){
- if(!trip||!session||isLondonTrip()||genericItinerarySelectedDay!==localDate)return;
+ if(!trip||!session||genericItinerarySelectedDay!==localDate)return;
  const text=dayNarrationText(dayMetadataForDate(localDate));if(!text)return;
  const token={tripId:trip.id,date:localDate};currentDayNarration=token;
  const started=narrateCatalan(text,{
