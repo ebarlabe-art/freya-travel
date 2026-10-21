@@ -112,7 +112,7 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
     try{
      const options=await search(query);if(!active()||request!==serial)return;
      // Never display other saints/landmarks as matches to this requested name.
-     const exactMatches=options.filter(p=>matchingPointCandidate(query,p));
+     const exactMatches=options.filter(p=>matchingPointCandidate(query,p,{city:row.city||undefined}));
      state.candidates=visiblePointCandidates(exactMatches).map(pointPlace);state.empty=state.candidates.length===0;
      state.message=state.candidates.length?'Tria el lloc correcte. Encara no s’ha desat.'+(exactMatches.length>state.candidates.length?' Coincidències repetides agrupades.':''):'Cap coincidència verificable. Prova el nom local o una altra variant; el punt continua pendent.';
     }catch(e){if(active()&&request===serial){state.error=true;state.message=e.message||'La cerca no està disponible. Torna-ho a provar.'}}
