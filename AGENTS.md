@@ -337,3 +337,15 @@ codi + dades + navegació + seguretat + tests + documentació + comportament mò
 són coherents amb el contracte acordat.
 “Compila” no significa “acabat”.
 “Passa els tests” tampoc significa necessàriament “acabat” si no s’ha provat el comportament real que motivava la tasca.
+
+
+## 21. Continuïtat obligatòria entre sessions i Codex
+Abans de començar qualsevol tasca de Freya Travel:
+1. Llegeix `docs/PROJECT-INVENTORY.md` i `docs/ROADMAP-CANONIC.md`, a més d'aquest AGENTS.md.
+2. Consulta l'estat actual de main, les PR obertes, els tests i el desplegament quan afectin la tasca. No confonguis el document amb l'estat real.
+3. Identifica el punt exacte de relleu i els acords previs; revisa Londres i Eivissa abans de crear funcionalitats equivalents.
+4. Si hi ha contradicció entre documents, codi i estat remot, deixa-la documentada i no inventis una resolució.
+5. Abans d'acabar el bloc de treball, actualitza `docs/PROJECT-INVENTORY.md` amb funcionalitats noves, estat verificat, decisions, idees, PR, proves, bloquejos i següent acció concreta. No deixis l'actualització per a un altre xat.
+6. Si el canvi encara és a una PR, diferencia clarament documentació en branca de documentació fusionada a main. No afirmis que un canvi està publicat sense evidència.
+7. En el resum final indica sempre: què està fet, què falta, on ha quedat desat i com reprendre'l al següent xat.
+No s'ha d'utilitzar FREYA PROVES com a destí de desplegament o prova: acord de producte vigent. Cap tasca de documentació autoritza canvis en dades reals.
