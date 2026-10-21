@@ -11,10 +11,13 @@ const result=document.querySelector('#result'),preview=document.querySelector('#
 let client=null;
 function output(message){result.textContent=message}
 async function authenticatedClient(){
-  // Supabase client lives in the main app. This page deliberately does not access localStorage
-  // or expose tokens; it requires an explicitly injected, authenticated client from the app.
-  if(!window.freyaMaintenanceSupabase)throw Error('Falta connectar aquesta pantalla a la sessió de Freya Travel. No s\'ha modificat res.');
-  return window.freyaMaintenanceSupabase;
+  if(!window.supabase?.createClient)throw Error('No s’ha carregat Supabase.');
+  // Uses the same public configuration and default auth storage key as Freya Travel.
+  // Requires SAME ORIGIN, not merely a branch preview on another domain.
+  const db=window.supabase.createClient('https://otueskpksylzvkhldoft.supabase.co','sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF');
+  const {data,error}=await db.auth.getUser();
+  if(error||!data?.user)throw Error('Inicia sessió a Freya Travel en aquest mateix domini.');
+  return db;
 }
 preview.addEventListener('click',async()=>{
   apply.disabled=true;preview.disabled=true;
