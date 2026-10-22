@@ -87,7 +87,7 @@ test('Wikimedia requests identify Freya Travel and preserve upstream HTTP status
  await assert.rejects(searchCulturalArticles(place,'it',fetcher),error=>{
   assert.equal(error.message,'source_unavailable');
   assert.equal(error.providerStatus,403);
-  assert.doesNotMatch(JSON.stringify(error),'PRIVATE');
+  assert.doesNotMatch(JSON.stringify(error),/PRIVATE/);
   return true;
  });
  assert.equal(calls.length,1);
