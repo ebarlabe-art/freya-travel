@@ -1,72 +1,169 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
-Data de revisió: 2026-10-22. Estat: AUDITORIA EN CURS, no equival a validació funcional.
-Font canònica de prioritats: docs/ROADMAP-CANONIC.md (v1.2, 2026-10-08). NO crear roadmaps paral·lels.
 
-## Regla de lectura
-- IMPLEMENTAT DOCUMENTAT: consta al roadmap o al codi; no equival a prova real.
-- PARCIAL: existeix base però manca el flux complet.
-- PENDENT: no consta el flux complet.
-- VERIFICAR: no afirmar completat sense comprovar codi + CI + desplegament + dispositiu quan pertoqui.
-- Cada sessió actualitza aquest inventari i l'estat de les PR; cap decisió antiga es descarta per absència del roadmap recent.
-- NO utilitzar FREYA PROVES: acord explícit de producte del 22/10. No fer canvis a dades de producció per auditar.
+Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233e0c5f8903f69ae0d9`**, després de la PR #174. Auditoria completada sobre les fonts accessibles; la recuperació d'arxius externs i la validació funcional remota continuen limitades tal com s'explica aquí.
 
-## Fonts històriques recuperades
-1. Bíblia original: Somiar > Preparar > Viure > Recordar; 8 fases; mode EN VIATGE en dos clics, diari multimèdia, Travel Book, IA personalitzada (fitxers de projecte 'Problema d’accés a l’app.txt').
-2. Roadmaps inicials MVP/V2/V3/V4, auditoria de Londres/Eivissa i plans tècnics (fitxers històrics de projecte).
-3. Roadmap canònic v1.2 docs/ROADMAP-CANONIC.md, que ja demana una sola font de veritat.
-4. Experiències reals Londres, Eivissa i importació Bolonya (codi, documentació i PR).
-5. docs/ordered-activity-points.txt, docs/v27-import-review-followup.txt i PR #169, #172, #173.
-Cal seguir contrastant altres versions i converses, sense suposar que s'han recuperat totes.
+**Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
-## Inventari funcional — estat provisional
-| Bloc | Estat | Evidència / feina pendent |
+## 1. Com interpretar l'estat
+
+- **IMPLEMENTADA:** hi ha codi del comportament indicat a la base auditada. No significa que tot el bloc estigui FET segons el roadmap.
+- **PARCIAL:** existeix base/flux, però manca part del contracte o de la validació necessària per tancar-lo.
+- **PENDENT:** requisit identificat sense flux complet localitzat a `main`. No pressuposa impossibilitat ni cancel·lació.
+- **NO VERIFICADA:** manca la font o l'evidència per decidir. Una idea citada en una memòria anterior es conserva amb aquesta etiqueta.
+- **Futur** és horitzó/prioritat, no una cinquena prova d'implementació.
+
+Separem sempre **codi**, **proves executades**, **migració escrita**, **migració aplicada**, **Edge desplegada**, **frontend publicat** i **ús físic**. Els tests amb fixtures no acrediten ni el proveïdor real ni un iPhone. Una PR oberta tampoc acredita incorporació a `main`.
+
+## 2. Fonts consultades i límits de recuperació
+
+| Font accessible | Abast i traçabilitat |
+| --- | --- |
+| [AGENTS.md](../AGENTS.md), [inventari anterior](https://github.com/ebarlabe-art/freya-travel/blob/4846b3e4cdbdf1a65bb1233e0c5f8903f69ae0d9/docs/PROJECT-INVENTORY.md) | Contracte i decisions preservades per #174. L'inventari anterior és una font secundària, no prova d'accés a les converses que esmenta. |
+| Roadmap v1.0, v1.1 i v1.2 a Git | `37fc806` (1/10), `44cf68c` (7/10), `e7d8b38` (8/10); comparació del mateix fitxer. TB-09 es tanca entre versions; s'afegeixen Records, importació/coherència PDF i gates offline. |
+| Historial complet de Git disponible des de `da0b119` (29/7) | Revisats historial de documentació, commits de Londres, universalització, notificacions, Builder, Fotos i ALB; cerca de noms de roadmaps/auditories a totes les refs locals. Només es localitza el roadmap canònic com a document de roadmap versionat; no els presumptes MVP/V2/V3/V4 externs. |
+| [README](../README.md), [PROJECT_STATUS](../PROJECT_STATUS.md), [HOME-01](home-01.md) | Història de Londres i beta Bolonya. Contenen fotografies antigues de l'estat; les instruccions de publicació i les PR pendents no són totes vigents. |
+| [Baselines de dades](database/travel-data-production-baseline.md) i [push](database/push-subscriptions-production-baseline.md) | Contractes històrics anteriors a les migracions; no reaplicar-los ni suposar que totes les migracions locals estan aplicades. |
+| [Fotos contextuals](contextual-photos-v1.md), docs TB-01/02/03/04/04.4/04.4.2/07, [vols](tb08-flight-offers.md), [A2](import-intelligent-a2.md) | Contractes i límits de persistència, navegació, pressupost, cerca i imports. Contrastats amb `index.html`, `domain/`, migracions i tests relacionats. |
+| [ALB-01](travel-book-alb01.md), [ALB-02](travel-book-alb02.md), [ALB-03](travel-book-alb03.md), [ALB-04](travel-book-alb04.md), [runtime](travel-book-runtime-loading.md) | Preservació, model editorial, ingestió i editor. Les PR posteriors i el codi completen/superen alguns textos d'estat d'aquests documents. |
+| [Rutes](P0B_ITINERARY_ROUTES.md), [punts ordenats](ordered-activity-points.txt), [revisió import](v27-import-review-followup.txt), docs v27, [bootstrap](PWA_BOOTSTRAP.md) | Distinció entre ubicació suggerida/confirmada, ruta real, estimació, compatibilitat i preparació/publicació. |
+| GitHub: PR obertes i històriques fins a #174 | Consultes de totes les PR per franges de data (primeres anteriors al 2/10, 2/10 i les 100 més recents), més consulta independent `is:open`: **11 obertes abans d'aquesta auditoria**. Revisats títols/cossos i contrast de les famílies funcionals amb Git; discussions de #87/#89/#98/#169/#173/#174 retornades buides. No s'infereixen acords orals. |
+| Issues [#116](https://github.com/ebarlabe-art/freya-travel/issues/116), [#118](https://github.com/ebarlabe-art/freya-travel/issues/118), [#125](https://github.com/ebarlabe-art/freya-travel/issues/125), #128/#132/#135/#140, [#166](https://github.com/ebarlabe-art/freya-travel/issues/166), [#167](https://github.com/ebarlabe-art/freya-travel/issues/167), [#168](https://github.com/ebarlabe-art/freya-travel/issues/168) | Evidència secundària d'ús i demandes de producte. Dates i recomptes són els reportats a cada tall, no lectures noves de viatges. |
+
+**Fonts NO accessibles en aquesta sessió:** converses anteriors, fitxers de projecte «Problema d’accés a l’app.txt», «Bíblia original», roadmaps externs MVP/V2/V3/V4 i auditoria externa Londres/Eivissa. L'anterior inventari els donava per recuperats: es rectifica aquesta atribució. Es mantenen les idees citades com a memòria secundària, sense afirmar haver llegit aquells originals. Tampoc existeixen aquí les còpies privades a `/workspace/v27-production/backups` que esmenten els docs v27; la seva custòdia/recuperació no queda acreditada ara.
+
+## 3. Verificacions d'aquesta auditoria
+
+| Capa | Resultat verificat i límit |
+| --- | --- |
+| Codi | Base exacta indicada a dalt, checkout inicial net. Entrada real `index.html`; `404.html` generat. React històric no és prova del comportament actual. |
+| Tests locals | **786/786 PASS** amb `node scripts/browser-runtime.mjs` i `npm test`. Un primer `npm test` sobre checkout sense preparar fallava per manca de `domain/import-proposal.js`; després de generar el runtime, cap fallada. És un requisit de preparació, no s'ha corregit codi ni afeblit tests. |
+| Build local | **PASS** `npm ci --ignore-scripts --cache /tmp/freya-npm-cache` + `npm run build`; paritat `node scripts/app-entries.mjs` PASS. Primer intent d'instal·lació sense cache explícita fallava per permisos del directori npm de l'entorn; resolt usant `/tmp`. Artefactes i dependències versionades restaurats al seu estat inicial; exclosos de la PR. |
+| CI base | [PR #174, run 39690376978](https://github.com/ebarlabe-art/freya-travel/actions/runs/39690376978): cinc jobs success (`a2-test-build`, `legacy-suite`, `alb02-contracts`, `alb03-contracts`, `shared-trip-contracts`). `legacy-suite` és informativa (`continue-on-error`): un workflow verd sol no bastaria; en aquest run el job també és success. |
+| Frontend real | [Pages 39690391163](https://github.com/ebarlabe-art/freya-travel/actions/runs/39690391163) success per `4846b3e…`; deployment GitHub `7239326808`, estat success el 21/10 a les 23:00:35 UTC. GET públic a `https://ebarlabe-art.github.io/freya-travel/` retorna HTTP 200. Acredita publicació de frontend, no una sessió funcional autenticada. |
+| Migracions/Edge/worker | S'ha revisat codi i declaracions històriques, **no** s'ha consultat catàleg remot ni inventari actual de funcions/worker. No es declara cap versió/aplicació actual verificada. No s'ha executat SQL remot, cap desplegament ni crida a IA/geocodificació/routing. |
+| Navegador/SQL físics | No s'han repetit localment Playwright, SQL/concurrència, Deno/imatges ni proves a dispositiu. La CI i els informes històrics són evidència separada. Cap prova física nova d'iPhone/iPad, notificacions, offline, PDFs o col·laboració real. |
+
+## 4. Inventari contrastat amb `main`
+
+A la columna de proves, els fitxers `.test.mjs` formen part de les 786 proves locals; scripts de navegador/DB es citen com a cobertura existent o CI, no com a execució local nova. Per a totes les files, el frontend té l'evidència de §3; el backend i l'ús físic actuals queden sense reverificar llevat de la declaració històrica explícita.
+
+| Funcionalitat / estat | Codi i fonts | Proves, límit i pendent | Ubicació / prioritat existent |
+| --- | --- | --- | --- |
+| Login/recuperació **IMPLEMENTADA**; continuïtat de sessió **PARCIAL** | `index.html`, commit `3d7988f`; roadmap B3 | `offline-v2-readonly.test.mjs`, `pwa-bootstrap.test.mjs`; falta tancar gate físic de token caducat, logout/reentrada i canvi de compte. | B3/E, P0 publicació |
+| PWA, múltiples viatges, crear/compartir/unir-se **IMPLEMENTADA** | `create_trip_with_stops_v1`, `join_trip_v2`, `shareGenericTrip`; #124/#126/#133/#134 | `shared-trip.test.mjs`, `home-entry.test.mjs`; CI compartició/DB. No acreditar dos telèfons reals per això. | A3/B2/E |
+| Home temporal, Ara/Següent i retorn **IMPLEMENTADA** | `index.html` (`renderTripsHome`, projecció Home i History API); #70/#103–105/#141 | `trip-home`, `home-entry`, `past-records-navigation`, `proposal-navigation`; cronologia local del viatge, viatges sense dates i origen de navegació. | B/E |
+| Checklist universal **IMPLEMENTADA** | Migració `20260904151039_generic_trip_universal_checklist.sql`, `index.html` | `trip-home`/`offline-v2-readonly`; seccions i lectura offline existents. No equival a equipatge operatiu per segment. | ABANS/B3 |
+| Documents privats i visor intern **IMPLEMENTADA**; PDF multipàgina iOS **PARCIAL** | `index.html` `showDocumentViewer`/iframe, #71; #109–112 encara obertes | Lectura local xifrada coberta per offline; no hi ha PDF.js multipàgina incorporat a `main`. No confondre importació de PDF multipàgina amb visor. | B3/E, risc d'ús real |
+| Vols/allotjaments **IMPLEMENTADA** | `trip_flights`, `trip_accommodations`, documents, passatgers, zones horàries; #69 | `import-reservation`, `piece-status-ui`; contractes SQL a `supabase/tests/flight_travel_pack_rollback.sql` (no executats localment ara); boarding passes i etiquetes d'equipatge reutilitzables. Migració escrita ≠ aplicada. | ABANS/B |
+| Activitats i transport local **IMPLEMENTADA** | `trip_activities`; transport conserva aquest registre canònic; #28–34 | `tb-build`, `import-proposal`, `piece-status-ui`; transport té origen/destí, hores i zones pròpies. Reserva/entrada opcionals, no defineixen què és visita. | A/B |
+| Cotxe i aparcament **IMPLEMENTADA** | `trip_car_rentals`, contracte, fotos entrega/devolució; `travel_parking`, GPS/foto/reserva; #25/#26 i `a681a1d` | Cobertura pressupost/import/offline; aparcament té model històric d'un registre per viatge. RLS/estat actual i Realtime d'aparcament no acreditats aquí. | A/B |
+| Estat comercial + Fet/Desfer compartit **IMPLEMENTADA** | #42, `index.html` (`normalizedTripProgress`), migració shared progress | `piece-status-ui`, `trip-progress`; no barrejar planning/reserved/confirmed/cancelled amb realitzat. | A/B |
+| Itinerari agregat/manual **IMPLEMENTADA**; coherència completa entre mòduls **PARCIAL** | Projecció de fonts operatives + `trip_itinerary_items`; `domain/tb-build.mjs` consulta `trip_activities` | `trip-home`, `import-itinerary-write`, `tb-build`; import manual no passa automàticament a Activitats. Decisió concreta a §8. | A2, pendent prioritari |
+| Importar reserves PDF/imatge i reutilitzar document **IMPLEMENTADA** | `domain/import-proposal.mjs`, `import-text-extractor.mjs`, Edge `import-reservation`, UI A2.3/4; #53/#67/#69 | `import-proposal`, `import-text-extractor`, `import-reservation(-ui)`; proposta → revisar camps → formulari → desar. Servei real actual sense provar. | A2 P0/P1 |
+| Importar itinerari PDF/foto **PARCIAL** | Proposta/revisió/write, Edge `import-itinerary`; #113–117/#129/#136–139/#149–151/#162 | `import-itinerary-*`; consentiment, evidències, selecció, dates/IANA, idempotència i conflictes existents. Issue #140 reporta 21/21 activitats desades però llocs buits; no s'ha repetit ni llegit el PDF privat. Falta acceptació completa lloc→ruta→Activitats. | A2 P0/P1 |
+| Correu/reserva, Word/Excel **PENDENT** | Ampliacions explícites del roadmap A2 | No s'ha localitzat flux d'import equivalent als PDF/imatges. No marcar suport a correu pel simple fet d'extreure un camp email. | A2, quan aporti valor |
+| Geografia/punts ordenats **PARCIAL** | `domain/itinerary-place-points*.mjs`, `index.html` (`itineraryAutoPlaceRows`), `itinerary-quick-place.mjs`; migració `20261020100255…`; #122/#145–148/#152–156/#171/#172 | Tests de punts, enrichment, candidats, lookup/RPC; primer/últim punt i trams interns reutilitzen coordenades exactes. Context ciutat/país, ambigüitat i falsos positius continuen essent criteris d'acceptació real; #172 no prova que tot quedi resolt. | A2/B, P0 reportat |
+| Confirmar ubicació amb pocs clics **PARCIAL** | UI actual + PR #173 oberta (fase 1) | #173 té CI success; no és a `main`, no afegeix tot el rànquing contextual ni agrupament automàtic. Prova física pendent; menció a PROVES del cos antic queda superada per la restricció vigent. | A2/B |
+| Rutes, modes, durades i sortida recomanada **PARCIAL** | `domain/itinerary-route*.mjs`, `itinerary-visit-advice.mjs`, Edge `itinerary-route`; #127/#156–158/#161/#162 | Tests route/visit-advice/UI; rutes amb font/qualitat, cotxe condicionat al lloguer, màxim de visita i leave-by. No és navegació live, ni transport públic amb horaris/esperes reals, ni garantia «surts en X» completa. | B1/B2, P1/P0 gate |
+| Context de dia assistit **IMPLEMENTADA** | `trip_day_metadata`, Edge `itinerary-day-context`; #159/#161/#162 | `itinerary-day-context.test.mjs`; text manual protegit, proposta revisable, concurrència i dies només amb trajectes. #161 declara desplegament Edge v2, no reverificat ara. | A2/B; afegit posterior al roadmap |
+| Notificacions universals **IMPLEMENTADA** segons codi i historial | `trip_reminders`, cues/worker push, `supabase/functions/send-itinerary-notifications`; commits `9339678`/`1df0e3c`/`0eee154`/`6216c22` | Roadmap i issues #116/#118/#132 indiquen reparació/desplegament i proves després d'Eivissa. Conservar-les: no reobrir tota la bateria; regressió dirigida si canvia aquest circuit. Lliurament actual no provat en aquesta sessió. | B2/E, no nou desenvolupament |
+| Offline V1/V2 lectura i documents preparats **PARCIAL** | #46/#106/#108, snapshot per compte/viatge, vault xifrat, revocació UI i reentrada mateix compte | `offline-v1`, `offline-v2-readonly`; checklist/aparcament inclosos. Pendent gate físic B3; cal preparar docs abans de perdre cobertura. Fotos/àudios i escriptures no queden garantits. | B3 P0 |
+| Face ID/desbloqueig criptogràfic **PENDENT** | Estudi WebAuthn demanat a B3 | No hi ha implementació acreditada. Logout no equival a bloqueig criptogràfic: còpia i clau conservades per reentrada del mateix compte; hi ha control d'esborrament local de documents. | B3 P1 estudi |
+| Participants **PARCIAL** | Membres, codi/share/join i RLS existents; #124/#126 | Tests shared-trip; manca experiència completa de retirar/gestionar accés i final de viatge. No inventar rols nous ni duplicar invitacions. | A3 P1 |
+| Builder TB-01 a TB-05 **IMPLEMENTADA** | Brief estructurat, entrades, esborrany viu, propostes/rondes, handoff, llocs/fus i confirmació; docs TB i #54–68 | `trip-brief(-contract)`, `travel-builder`, `live-trip-brief`, `proposal-*`, `place-resolution`, `tb-confirmation`; Builder no és el viatge operatiu. | A, preservar |
+| TB-06 pressupost viu i costos **IMPLEMENTADA** | `domain/tb-budget.mjs`, components autònoms/proposta, CAS/evidències; #20 | `tb-budget(-e2e)`, `tb-confirmation`; previst/confirmat/exclusions/moneda. No confondre pressupost amb despeses històriques o conversor de divises. | A, preservar |
+| TB-07/08 cerca/build **IMPLEMENTADA**; hotels/cotxes live **PENDENT** | `domain/travel-search.mjs`, `tb-build.mjs`, Edge/providers; #24/#27 | Tests travel-search/tb-build/skyscanner; Skyscanner té adaptador real i antecedent d'integració, no petició real avui. Booking/Expedia/Kayak no acrediten cerca live; no fabricar resultats. | D després del nucli |
+| TB-09 ajustos assistits **IMPLEMENTADA** (CLOSED al roadmap) | `index.html` (`tripReviewSuggestions`, `tripReviewAdjustmentFor`, porta d’aplicació); #48–51 | `tb09-*`; consentiment, whitelist temporal, versió/CAS, peces manuals flexibles, no reescriure reserves fixes. No reobrir el bloc perquè §7 encara el llisti primer. | A1 CLOSED |
+| Fotos compartides/contextuals **IMPLEMENTADA** | `travel_documents`, context dia/activitat, editor i retorn; `030ab4e`/`273c52b`/`08f270a`, #81 | `photos-v2`, context/navigation; Londres té camí històric separat. Cua en memòria no és represa durable; galeria amb originals té límits de volum. | C/B/E |
+| Records com a entrada dels passats **IMPLEMENTADA**; contingut complet **PARCIAL** | #103–105, `index.html`, galeria reutilitzada | `past-records-navigation`; diari/mapes futurs no esdevenen funcionals perquè hi hagi una entrada Records. | C |
+| Travel Book / Crear àlbum **PARCIAL**, amb editor real | `domain/travel-book-*`, migracions ALB, Edge ingest, worker derivats, UI; #73–102 | Tests ALB/batch/editor/proposta; CI ALB02/03. Portada/proposta per dies, microtext, text sobre foto, estils, stickers i persistència/CAS existents; no és editor buit. #87 reporta HEIC físic ready. PDF, print-ready, impressió, compartir/publicar, mapes i cobertura narrativa completa encara no acreditats. | C1 P0 dins DESPRÉS |
+| Diari veu/text/transcripció **PENDENT** | C2 i issue #166 | No s'ha localitzat flux de diari/gravació persistent ni `MediaRecorder` a l'app. TTS llegeix text, no grava. Pilot demanat per Bolonya no habilitat; transcripció condicionada a servei/cost/consentiment. | C2 P1 canònic; #166 sol·licita P0 pilot |
+| Mapes del record **PENDENT** | C3; rutes operatives i links Maps ja existeixen | No es localitza mapa editorial diari/global de vivències reutilitzat per Records/Àlbum. No equival a obrir Maps. Sense rastreig GPS continu per defecte. | C3 P1 |
+| Guia cultural/audioguia universal **PARCIAL** | Guia i TTS de Londres existents; issue #167 i PR #169 oberta | #169 té CI success, només narra títol/resum del dia; no crea fitxes culturals per lloc. A `main` continua `speakGuide()` específic. Sense prova física nova. | B/C, P1 segons #167 |
+| Restaurants, favorits, pubs i records gastronòmics **PARCIAL** | `RESTAURANTS`, `foodState`, `saveRestaurantMemory`, Londres; issue #168 | Llista estàtica, filtres zona, Maps, favorit/nota local i foto a Documents existents. No recomanació universal per àpat/dia/pressupost. Clau local `freya-restaurants-v6.1` sense compte/viatge: revisar aïllament abans de generalitzar. | A/B/C, P1 segons #168 |
+| Meteo del viatge/dia **IMPLEMENTADA**; meteo als records **NO VERIFICADA** | `weatherLocation`, `loadWeather`, `renderItineraryDayWeather`, Open-Meteo; commit `6defa88` | Ubicació derivada d'allotjament/vol/activitat/manual, dates i cache per viatge. No consulta real avui ni prova focal de proveïdor. No s'ha acreditat snapshot meteorològic editorial/històric. | B existent; C idea a contrastar |
+| Despeses, tiquets i CSV **PARCIAL** | `travel_expenses`, `loadExpenses`, gràfic/sumaris, `exportExpenses`; baseline i README | UI llegat amb pagadors fixos i GBP/EUR; `GENERIC_ALLOWED_VIEWS` exclou `expensesView`. No és mòdul universal de repartiment/liquidació entre amigues. | A/B, generalització per definir |
+| Monedes/divises **PARCIAL** | `tripDefaultCurrency`, select ISO i costos per moneda; sumaris GBP/EUR de despeses | Ja suporta moltes monedes en pressupost/cerca; no es localitza conversor/tipus de canvi live ni consolidació convertida. No reduir tot el suport monetari a Londres. | A/B, abast addicional per definir |
+| Equipatge **PARCIAL** | Brief `baggage.per_traveler/shared` amb tipus, quantitat/pes/nota; flight travel pack i `baggage_tag` | `trip-brief-contract` i contracte SQL `flight_travel_pack_rollback.sql` (no executat localment ara); model per viatger ja existeix. No s'acredita seguiment operatiu/franquícia per segment ni checklist individual completa. | A, preservar; ampliació per definir |
+| Roaming/eSIM **NO VERIFICADA** | Només idea a l'inventari anterior i paraula roaming a classificació checklist | No s'ha localitzat mòdul/servei ni font original accessible. No eliminar la idea ni declarar-la recuperada directament. | Sense prioritat acordada; encaix ABANS/B |
+| IA de preferències, marketplace, pagaments/reserva automàtica, xarxa social **PENDENT (Futur)** | §6 del roadmap | No convertir adaptadors ni Brief en aprenentatge entre viatges. Automatització sense consentiment queda exclosa del nucli; escriptures offline amb cua també diferides. | Futur deliberat |
+| Prepublicació completa **PARCIAL** | Fase E, CI i tests disponibles | No s'acrediten tots els fluxos CRUD/errors/accessibilitat/legal/monitoratge, ni dispositius i release candidate. «Build/CI verd» no tanca producte ni gates físics. | E P0 abans publicació |
+
+## 5. Londres i Eivissa: què reutilitzar i què no equiparar
+
+**Londres:** `experience_key='london-2026'` diferencia explícitament l'experiència. `freya-travel-v1.5/itinerary.html` conserva programa estàtic 6–11/8, identitats estables d'activitats, enllaços a entrades/Maps, progrés local i següent activitat. `index.html` conserva tauler, transport/vols històrics, guia amb fitxes culturals i veu catalana, restaurants amb favorits/records, despeses GBP/EUR/tiquets/CSV, checklist, documents, fotos, aparcament i meteo. [README](../README.md) documenta les versions 6.3–6.4.7; no és una llista completa del producte actual.
+
+La ruta genèrica usa altres fonts i permisos: `GENERIC_ALLOWED_VIEWS` exclou restaurants/guia/despeses històrics; Travel Book, snapshots offline genèrics, Builder i peces operatives tenen exclusions explícites de Londres. No migrar-la ni donar per universal una funcionalitat només perquè hi funciona. La compatibilitat/importació de Londres al Travel Book és un pendent separat.
+
+**Eivissa:** no s'ha localitzat un segon motor estàtic equivalent al de Londres. HOME-01 en registra dates 9–13/9 i ús del contracte genèric; aquestes dades són documentals, no una lectura de producció ara. L'historial 9–16/9 afegeix meteo/aparcament universals i completa reminders, delivery sync, múltiples subscripcions i deep links per viatge. Les issues indiquen proves de notificacions completades després d'Eivissa. No atribuir cada commit a una petició d'Eivissa sense font.
+
+Eivissa també apareix a la prova física ALB-04 de lots de fotos: [#89](https://github.com/ebarlabe-art/freya-travel/pull/89) proposa acceptar la finalització tardana mentre el token segueixi vigent; continua oberta. [#98](https://github.com/ebarlabe-art/freya-travel/pull/98), ja fusionada, evita tempestes de reintents amb `PT409`, però **manté el rebuig d'un lease caducat**. Són correccions diferents. [#99](https://github.com/ebarlabe-art/freya-travel/pull/99) registra el hotfix CAS aplicat aleshores a producció. No eliminar aquests antecedents ni declarar vigent el runtime remot sense nova evidència.
+
+## 6. PR obertes: estat al tall i tractament documental
+
+Enllaços: `https://github.com/ebarlabe-art/freya-travel/pull/<número>`. No s'ha fusionat, tancat ni canviat cap d'aquestes PR.
+
+| PR | Què existeix / límit | Acció següent, sense autorització implícita de merge |
 | --- | --- | --- |
-| Comptes, sessions, recuperació | IMPLEMENTAT DOCUMENTAT | Roadmap v1.2; revisar logout i caducitat offline |
-| PWA i múltiples viatges | IMPLEMENTAT DOCUMENTAT | Roadmap v1.2; verificar continuïtat en dispositiu |
-| Checklist, documents, fotos | IMPLEMENTAT DOCUMENTAT | Roadmap v1.2; prova regressió |
-| Vols, allotjaments, transport, activitats operatives | IMPLEMENTAT DOCUMENTAT | trip_flights, trip_accommodations, trip_activities |
-| Cotxe de lloguer (contracte/fotos) i aparcament | IMPLEMENTAT DOCUMENTAT | Roadmap v1.2; revisar ús real |
-| Itinerari consolidat i Home Ara/Següent | IMPLEMENTAT DOCUMENTAT | fonts operatives + trip_itinerary_items |
-| Notificacions | IMPLEMENTAT DOCUMENTAT | Reparació posterior a Eivissa; prova E2E real encara important |
-| Travel Builder TB-01 a TB-09 | IMPLEMENTAT DOCUMENTAT | Roadmap v1.2; TB-08.5 hotels live parcial |
-| Participants i permisos | PARCIAL | Gestió completa de membres pendent |
-| Importació de reserves PDF/imatge | IMPLEMENTAT DOCUMENTAT | Roadmap v1.2 |
-| Importació d'itineraris PDF | PARCIAL | Revisió, conflictes, ubicacions i validació real; docs/v27-import-review-followup.txt |
-| Punts geogràfics ordenats | PARCIAL | docs/ordered-activity-points.txt; falsos positius en llocs de fora de ciutat |
-| Confirmació d'ubicació senzilla | PARCIAL | PR #173; no considerar completada ni publicada sense proves |
-| Narració catalana universal | PARCIAL | PR #169: lectura del context de dia; NO guia cultural universal completa |
-| Guia de destinació / audioguies culturals | PARCIAL | Base específica Londres; reutilització general pendent |
-| Restaurants recomanats, favorits, pubs | VERIFICAR | Base Londres; comprovar model universal |
-| Moneda/divises i tipus de canvi | PARCIAL | Despeses amb GBP/EUR històric; mòdul universal no acreditat |
-| Roaming/eSIM | VERIFICAR | Idea recuperada; no s'acredita implementació |
-| Meteo contextual i meteo als records | VERIFICAR | Idea recuperada; no s'acredita implementació |
-| Equipatge estructurat per viatger/segment | PENDENT/VERIFICAR | Checklist existent no és el mateix |
-| Temps per arribar / sortir en X minuts | PARCIAL | Rutes entre punts documentades; avisos operatius complets no acreditats |
-| Offline V2 lectura essencial | PARCIAL/VERIFICAR | Roadmap v1.2 i feina posterior; gate iPhone/token/logout pendent de contrast |
-| Records / àlbum / Travel Book | PARCIAL | Treball ALB posterior al roadmap; exportació, impressió i flux final per verificar |
-| Diari de veu, transcripció i multimèdia | PENDENT/VERIFICAR | Visió original; comprovar codi |
-| Mapes del record | PENDENT/VERIFICAR | Roadmap v1.2 |
-| Hotels i cotxes live | PENDENT | Adapters no són cerca comercial real |
-| IA que aprèn preferències | FUTUR | Fora del nucli de publicació |
+| [#173](https://github.com/ebarlabe-art/freya-travel/pull/173) | `5ca4716…`, confirmació d'ubicació fase 1; [CI 39687061283](https://github.com/ebarlabe-art/freya-travel/actions/runs/39687061283) success | Revisar diff contra main, gate iPhone i context real. Corregir la instrucció antiga de PROVES en un treball autoritzat; no seguir-la. |
+| [#169](https://github.com/ebarlabe-art/freya-travel/pull/169) | `15682ca…`, narració de context; [CI 39578072673](https://github.com/ebarlabe-art/freya-travel/actions/runs/39578072673) success, cinc jobs success | Validar físicament i mantenir #167 pendent per fitxa cultural universal. La regla universal d'AGENTS d'aquesta branca no es dona per fusionada. |
+| [#131](https://github.com/ebarlabe-art/freya-travel/pull/131) | Diagnòstic bootstrap v21 anterior a #133/#134, encara oberta | Comparar el delta residual; no portar un watchdog antic per defecte. |
+| [#123](https://github.com/ebarlabe-art/freya-travel/pull/123) | Etiquetes explícites Lloc/Adreça/Ciutat després d'activitat, amb evidència | `main` ara extreu mencions de títol però no el mateix parser `EXPLICIT_PLACE` de la branca. Recuperar només el delta útil amb tests; Edge requereix desplegament separat. |
+| [#107](https://github.com/ebarlabe-art/freya-travel/pull/107) | Draft A2.5–7 anterior al flux públic #113–117 | Comparació selectiva; no fusionar configuració/entorn antic ni tornar a considerar tot A2 pendent. |
+| [#109](https://github.com/ebarlabe-art/freya-travel/pull/109) | Visor PDF.js multipàgina privat/offline, no incorporat a main | Recuperar requisit i revisar delta segur quan pertoqui; cap validació a PROVES. |
+| [#110](https://github.com/ebarlabe-art/freya-travel/pull/110), [#111](https://github.com/ebarlabe-art/freya-travel/pull/111), [#112](https://github.com/ebarlabe-art/freya-travel/pull/112) | Branques històriques CI/staging, marcades DO NOT MERGE | Fonts històriques de PDF/consentiment; no destins ni instruccions operatives vigents. |
+| [#101](https://github.com/ebarlabe-art/freya-travel/pull/101) | Test de drag de sticker encara obert; #100/#102 ja fusionades | Contrastar cobertura residual abans de duplicar el test. |
+| [#89](https://github.com/ebarlabe-art/freya-travel/pull/89) | Fencing/finalització de lease tardà, semàntica diferent de #98 | Decisió pendent sobre semàntica i qualificació, no declarar substituïda automàticament. |
 
-## DECISIÓ DE PRODUCTE: Activitats de l'itinerari han d'aparèixer a «Activitats»
-Data: 2026-10-22. Petició de l'Eva en observar Bolonya.
-Fet tècnic verificat: la importació de l'itinerari fa upsert a trip_itinerary_items (scripts/import-itinerary-review-ui.test.mjs); el Build/Activitats consulta trip_activities (domain/tb-build.mjs). Per tant, no és una regla 'només activitats amb entrada': són fonts diferents.
-Objectiu: una visita, passejada o monument sense entrada també és una activitat. Mostrar-la a «Activitats» sense crear registres duplicats; entrada, reserva, cost i documents opcionals. Mantenir una font canònica i la sincronització bidireccional amb Itinerari. Diferenciar visites de trasllats i menjars segons tipologia, no segons si són de pagament.
-Estat: PENDENT D'IMPLEMENTAR. No afirmar que ja apareixen a Bolonya. Dissenyar projecció de lectura o vinculació estable, revisar RLS, edició, eliminació, estats i proves E2E.
+Altres famílies fusionades revisades: #1–24 cerca/build/vols/pressupost, #25–34 cotxe/transport/activitats, #35–46 arrencada/paquet/estats/offline, #47–53 roadmap/TB09/A2, #54–71 Builder/import/fiabilitat, #72–102 contracte/ALB, #103–108 Records/offline, #113–117 import públic, #121–126 llocs/compartició, #127–139 rutes/arrencada/dates, #141–162 agenda/import/punts/context, #170–174 manteniment i geografia/inventari. **#119/#120/#160/#163–165 i #84 estan tancades sense merge**; #162/#161 incorporen part del treball d'algunes candidates. No equiparar «closed» a «merged». #170 conté antecedent de manteniment Bolonya: no autoritza executar cap neteja real ara.
 
-## Decisions no negociables
-- No refer el que ja existeix a Londres/Eivissa; auditar i generalitzar.
-- No duplicar dades ni crear activitats paral·leles.
-- No mostrar falsos 'desat', ni mutar dades sense confirmació.
-- No prioritzar integracions comercials davant el nucli ABANS/DURANT/DESPRÉS.
-- Sense FREYA PROVES. Destí de publicació: Freya Travel pública, després de proves automàtiques i validacions necessàries.
-- Cap PR amb proves fallides es considera tancada.
+## 7. Discrepàncies i funcionalitats que no s'han de perdre
 
-## Punt de relleu
-Tasques immediates:
-1. Acabar auditoria històrica i verificar cada estat contra main/PR i desplegament; actualitzar inventari.
-2. Resoldre PR #173 (interfície de confirmació), contextualització de ciutat i falsos positius; tancar importació PDF com a flux complet.
-3. Dissenyar i implementar la unificació Itinerari -> Activitats, amb prova de Bolonya i regressions Londres/Eivissa.
-4. Revisar gates offline/notificacions, i després completar Records/Travel Book i guia universal.
-No s'ha modificat cap dada de viatge en aquesta auditoria.
+1. **Fonts sobreafirmades:** l'inventari #174 deia «fonts recuperades» per documents/converses no accessibles. Ara separades de les fonts llegides (§2); es preserva el seu contingut secundari, no una falsa recuperació.
+2. **Roadmap endarrerit respecte del codi:** Travel Book/Crear àlbum encara figuren pendents, però ja tenen ALB02–05.5 i correccions. B1 ja té rutes/durades/sortida; A2 ja desa itineraris; A3 ja crea/comparteix/unió. Això no tanca les experiències completes.
+3. **Ordre contradictori dins del mateix roadmap:** §7 encara inicia amb TB-09 mentre A1 i «Pròxim pas» el donen CLOSED i avancen A2. Aplicar el tancament explícit; no reiniciar TB-09.
+4. **Decisió ALB recuperada:** AGENTS §15 diu que el motor inicial encara no està definit; ALB-04 el fixa **híbrid aprovat el 5/10**, i el codi declara base determinista + `alb05-warm-editorial-v1`. No és prova d'IA generativa remota: la capa creativa existent és codi editorial. Formats físics, permisos finals i print-ready segueixen pendents. Registrar la discrepància abans d'una futura revisió documental del contracte.
+5. **Meteo i equipatge infravalorats:** hi ha meteo universal/dia des del 9/9 i model d'equipatge compartit/per viatger al Brief. Queden diferents de meteo als records i equipatge operatiu per segment. Roaming/eSIM només té rastre secundari.
+6. **Restaurants/despeses oblidats en la generalització:** Londres ja té favorits, nota/foto gastronòmica, pubs, tiquets/gràfic/CSV; encara condicionats al llegat. #168 demana 2–4 recomanacions per àpat segons dia/zona/ritme/preferències/pressupost, noms/adreces verificables, motiu i enllaç; no inventar horaris/disponibilitat ni marcar reserva. TheFork/Tripadvisor són recerca d'integració, no adapters funcionals ni prioritat sobre el nucli.
+7. **Guia cultural no equival a lectura del dia:** #167 demana fitxa escrita catalana per lloc verificat, fets vs suggeriments, text editable/reutilitzable a Travel Book i TTS amb controls. #169 només recupera el motor de veu per context ja desat; no tanca #167.
+8. **Diari i mapes són contractes concrets:** #166 exigeix gravar/desar/reproduir després de reobrir, privacitat, autor/dia, errors, eliminació i transcripció editable condicionada. C3 exigeix mapa de vivències, sense tracking per defecte. No confondre amb TTS, galeria, context generat o Maps extern.
+9. **Inspiració → agenda i activitats importades:** PROJECT_STATUS conserva la necessitat de portar visites desitjades/Builder cap a la mateixa agenda amb acceptació parcial. No crear segon planificador; el pendent d'Itinerari→Activitats és específic i segueix vigent (§8).
+10. **Estats remots contradictoris per tall:** v27-real-validation diu publicació bloquejada; v27-production-release afegeix PASS amb bloquejos; després hi ha merges i frontend Pages success. PROJECT_STATUS encara diu #133 pendent, però ja és fusionada. README descriu publicació des de branca, mentre `.github/workflows/deploy.yml` desplega via Actions en push a main. Conservar els informes datats com a història; no copiar-ne l'estat com si fos d'avui ni afirmar resolt el backup/backend per un merge.
+11. **Dates de fonts no coherents:** cos #162 descriu observacions del 23/24 d'octubre en un historial disponible al tall del 22. Es registra com a relat de la PR/cas de regressió, no prova que aquella sortida física ja s'hagi produït. #125 parla inicialment de viatge encara no creat; #140 reporta 21 activitats més endavant. No reintroduir dates ni recomptes a partir d'aquests informes.
+
+## 8. Decisió preservada: Itinerari → Activitats
+
+Data/font: inventari #174, 22/10; petició d'Eva registrada en observar Bolonya. **PENDENT D'IMPLEMENTAR.** Una visita, passejada o monument sense entrada també és una activitat. L'entrada, reserva, cost i documents són opcionals. Diferenciar visites, trasllats i menjars per tipologia, no pel fet de pagar.
+
+Fet verificat: `domain/import-itinerary-write.mjs` i la UI de revisió desen a `trip_itinerary_items`; `domain/tb-build.mjs` i la llista d'activitats llegeixen `trip_activities`. Són fonts diferents; no és una regla «només activitats amb entrada». No afirmar que les visites importades ja apareguin a Activitats.
+
+Abans d'implementar: decidir projecció de lectura o vinculació estable, una font canònica, sincronització bidireccional sense duplicats, edició/eliminació/estats, RLS i identitat de font. Prova sintètica d'import→Activitats→edició/retorn i regressions Londres/genèrics; validació focal a l'app pública només en un treball posterior autoritzat, sense reimportar ni tocar Bolonya per fer aquesta auditoria.
+
+## 9. Decisions i límits que segueixen vigents
+
+- Una sola app pública. **No utilitzar FREYA PROVES**, ni com a destí de build desplegat ni per executar proves; les instruccions històriques de PR no ho reautoritzen.
+- No tocar dades productives, reimportar viatges, aplicar migracions, desplegar funcions o fusionar per completar documentació.
+- Reutilitzar Londres/Eivissa abans de crear equivalents; respectar contractes diferents fins a una migració validada.
+- Consentiment abans d'escriptures operatives; no falsos «desat», no inferir confirmació de reserva d'una oferta/suggeriment.
+- Una dada una sola vegada, fonts vinculades, cap sistema paral·lel; separar pressupost, despesa i exportació editorial.
+- Veu de guia, àudio de diari i narrativa editorial són fluxos diferents, amb privacitat explícita.
+- Àlbum editable després del PDF; múltiples edicions possibles; actius preservats, URLs signades temporals, derivats per volum; no incorporar reserves/notes privades automàticament.
+- No reobrir notificacions d'Eivissa ni imports de Riga sense regressió concreta. No esborrar icones/cache/dades locals com a solució rutinària.
+- Cap bloc es declara tancat amb proves fallides; informar els gates pendents. La CI legacy informativa exigeix mirar el resultat real del job.
+
+## 10. Punt exacte de relleu i següents accions
+
+**Fet ara:** contrast documental/històric de les fonts accessibles amb `main`, registre de les 11 PR obertes, evidència de frontend publicat, 786 tests locals i build/paritat correctes. Només es modifica aquest fitxer. Roadmap canònic, AGENTS, aplicació, dades i entorns queden sense canvis. Cap merge automàtic.
+
+**On queda:** branca `docs/historical-audit-20261022`, PR documental contra `main` amb títol «docs: auditoria històrica i memòria permanent de Freya Travel». La revisió encara no és memòria fusionada fins que s'aprovi el merge. L'URL i el resultat de checks de la nova PR es poden recuperar pel nom de branca; no s'assumeix que la CI d'aquesta PR sigui la mateixa que la de #174.
+
+**Com reprendre des de qualsevol conversa:** llegir AGENTS + aquest inventari + ROADMAP-CANONIC; actualitzar SHA de main, PR obertes i checks. Partir del delta des de `4846b3e…`, sense repetir tota l'auditoria ni donar validesa actual a estats remots antics.
+
+1. Revisar la PR documental i els seus checks. Si apareixen els originals externs, reconciliar-los aquí amb font exacta i data; l'absència actual no cancel·la cap idea. Per completar recuperació externa cal accés real als originals, no reconstruir converses.
+2. Seguir A2: revisar #173 i el delta de #123, ubicació contextual/falsos positius i flux PDF→llocs→rutes. Criteris: no duplicats, ambigüitat visible, hores/dates conservades i correcció simple. CI i validació focal iPhone pendents del treball funcional corresponent; cap PROVES.
+3. Dissenyar el contracte Itinerari→Activitats (§8) abans de codi, en una PR independent quan s'autoritzi desenvolupar-lo. No copiar les files a una altra taula com a solució automàtica.
+4. Continuar A3/B/C segons el roadmap: gestió completa de participants, gates DURANT/offline, Records/Travel Book, diari i mapes. #166 sol·licita un pilot P0 i #167/#168 ampliacions P1: conservar demandes i resoldre explícitament la prioritat amb Product Owner si desplacen l'ordre canònic; no donar per aprovat un canvi només pel títol d'una issue.
+5. Revisar #169 com a tall de narració, sense confondre'l amb #167; recuperar restaurants segons #168 i qualificar el pendent ALB de #89 sense repetir correccions #98/#99. No prioritzar proveïdors comercials davant el nucli.
+6. En una futura revisió del mateix roadmap/contractes, reconciliar els estats obsolets de §7 (ALB híbrid, Records, offline, PDF, TB09, participants i logística), conservant historial/versionat. No crear un altre roadmap ni usar PROJECT_STATUS com una segona llista de prioritats.
+
+**Bloquejos que romanen:** fonts externes no disponibles; backend/migracions/worker actuals sense reverificació; custòdia/restauració de backup no acreditada aquí; dispositiu físic i circuits autenticats no executats; contracte d'unificació i decisions finals de publicació/impressió encara pendents. Són límits d'evidència/decisió, no permís per intervenir producció.
