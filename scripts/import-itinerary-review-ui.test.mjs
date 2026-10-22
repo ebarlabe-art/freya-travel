@@ -69,7 +69,7 @@ test('A2.8: write requires a real click, authenticated scope, confirmation and c
 });
 test('A2.7: account, trip and view changes clear preview and block stale requests',()=>{
  assert.match(html,/if\(next\?\.user\?\.id!==session\?\.user\?\.id\)closeItineraryImport\(\)/);
- assert.match(html,/async function selectTrip\(tripId,[^\n]*\{\n  closeItineraryImport\(\)/);
+ assert.match(html,/async function selectTrip\(tripId,[^\n]*\{\n  closeItineraryImport\(\);\n  stopDayNarration\(\)/);
  assert.match(html,/if\(id!=='itineraryView'[^\n]*closeItineraryImport\(\)/);
  assert.match(script,/session\?\.user\?\.id===state\.userId/);
  assert.match(script,/tripLoadGeneration===state\.generation/);
@@ -88,7 +88,7 @@ test('A2.7: Pages includes the same module graph as PWA cache',()=>{
  assert.match(worker,/\.\/domain\/import-itinerary-proposal\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-review\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-write\.mjs/);
- assert.match(worker,/freya-travel-release-6444-v39/);
+ assert.match(worker,/freya-travel-release-6444-v40/);
 });
 
 test('A2.9: real async completion re-enables the imported itinerary save button',async()=>{

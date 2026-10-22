@@ -23,6 +23,8 @@ Tota implementació ha de respectar aquests principis:
 - Les funcionalitats s’han de pensar primer per a ús real durant un viatge, no només per funcionar en una demo.
 - Cal prioritzar iPhone/PWA i experiència mòbil sense impedir una bona experiència en iPad i escriptori.
 - No s’ha de duplicar funcionalitat ni crear sistemes paral·lels quan ja existeix un contracte reutilitzable.
+- **Universalitat obligatòria:** tota funcionalitat nova o recuperada ha de ser reutilitzable en qualsevol viatge, destí i conjunt de participants. El codi i el comportament són comuns; només varien les dades, continguts i preferències de cada viatge.
+- **Reutilitzar abans de programar:** auditar el codi de Londres/Eivissa i integrar les parts útils amb el contracte universal en lloc de crear noves implementacions paral·leles. La compatibilitat amb Londres no autoritza excepcions noves.
 
 ## 3. Regla principal abans de modificar codi
 

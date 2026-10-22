@@ -409,6 +409,7 @@
     .builder-doors{display:grid;gap:12px}.builder-doors button,#builderBriefList button{display:block;width:100%;text-align:left;padding:18px;min-height:64px;white-space:normal;overflow-wrap:anywhere;background:#f0e9f7;color:#452c5c}.builder-doors span,#builderBriefList small{display:block;margin-top:6px;font-weight:400}#builderBriefList{display:grid;gap:10px}
     #itineraryAutoPlacePanel,#itineraryAutoPlaceList,#itineraryAutoPlaceList>div{min-width:0;max-width:100%;overflow-wrap:anywhere}
     #itineraryAutoPlaceList select{min-width:0;width:100%;max-width:100%;font-size:16px;min-height:44px}
+    .generic-day-narration{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 0;padding:10px 0;border-top:1px solid #eadff1;min-width:0}.generic-day-narration button{min-height:44px;padding:10px 12px}.generic-day-narration small{display:block;flex-basis:100%;overflow-wrap:anywhere;color:#61556e;line-height:1.4}
     .agenda-visit-guidance{box-sizing:border-box;max-width:100%;min-width:0;overflow-wrap:anywhere;margin-top:12px;padding:11px 12px;border-radius:13px;background:#f7f2fc;border:1px solid #e7dbf4;color:#493561;font-size:.87rem;line-height:1.45}.agenda-visit-guidance strong{display:block;font-size:.9rem;line-height:1.35}.agenda-visit-guidance p{margin:5px 0 0}.agenda-visit-guidance.agenda-visit-conflict{background:#fff7ed;border-color:#f7cba7;color:#744316}
     .agenda-route-card{margin:8px 0 16px;padding:14px;border:1px dashed #94a3b8;border-radius:14px;background:#f8fafc;overflow-wrap:anywhere}
     .agenda-route-compact-card{margin:4px 0 10px;padding:8px 12px;border:1px solid #e7ddf1;border-radius:12px;background:#faf8fd;color:#59428a;font-size:.88rem}
@@ -3073,15 +3074,23 @@ function renderLondonGuides(){
  document.querySelectorAll('[data-listen-guide]').forEach(b=>b.onclick=()=>speakGuide(b.dataset.listenGuide));
 }
 function catalanVoice(){const voices=speechSynthesis.getVoices();return voices.find(v=>/^ca/i.test(v.lang))||voices.find(v=>/^es/i.test(v.lang))||voices[0]||null}
+function narrateCatalan(text,{onStart=()=>{},onEnd=()=>{},rate=1}={}){
+ if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance!=='function'||!String(text||'').trim())return false;
+ const utterance=new SpeechSynthesisUtterance(String(text).slice(0,1800));
+ utterance.lang='ca-ES';utterance.rate=Number.isFinite(rate)?Math.max(.75,Math.min(1.25,rate)):1;
+ const voice=catalanVoice();if(voice)utterance.voice=voice;
+ utterance.onstart=onStart;utterance.onend=utterance.onerror=onEnd;
+ speechSynthesis.cancel();speechSynthesis.speak(utterance);return true;
+}
 function speakGuide(id){
- if(!('speechSynthesis' in window)){alert('Aquest navegador no admet l’audioguia de veu.');return}
  const g=londonGuides.find(x=>x.id===id);if(!g)return;
- speechSynthesis.cancel();activeGuideId=id;renderLondonGuides();
- const intro=`${g.name}. `,text=`${intro}${g.history} Consell de Freya: ${g.highlight}`;
- const u=new SpeechSynthesisUtterance(text);u.lang='ca-ES';u.rate=Number($('audioRate')?.value||1);const voice=catalanVoice();if(voice)u.voice=voice;
- u.onstart=()=>{$('audioStatus').textContent=`Escoltant: ${g.name}`};
- u.onend=u.onerror=()=>{activeGuideId=null;$('audioStatus').textContent='Audioguia finalitzada.';renderLondonGuides()};
- speechSynthesis.speak(u);
+ activeGuideId=id;renderLondonGuides();
+ const started=narrateCatalan(`${g.name}. ${g.history} Consell de Freya: ${g.highlight}`,{
+  rate:Number($('audioRate')?.value||1),
+  onStart:()=>{$('audioStatus').textContent=`Escoltant: ${g.name}`},
+  onEnd:()=>{activeGuideId=null;$('audioStatus').textContent='Audioguia finalitzada.';renderLondonGuides()}
+ });
+ if(!started){activeGuideId=null;$('audioStatus').textContent='Aquest dispositiu no admet la narració.';renderLondonGuides()}
 }
 function initGuide(){
   if(!isLondonTrip())return;
@@ -4497,6 +4506,7 @@ function persistNavigationState(view){
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
 function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent='';}
 function setAppView(id){
+  if(id!=='itineraryView')stopDayNarration();
   if(id!=='itineraryView'&&!$('itineraryImportPanel').classList.contains('hidden'))closeItineraryImport();
   if(id==='constructionView')id='designTripView';
   if(!trip&&!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id))id='tripsHomeView';
@@ -6512,16 +6522,41 @@ function dayMetadataForDate(localDate){return dayMetadataRows.find(row=>row.trip
 function dayMetadataEditorialHtml(localDate){
   const row=dayMetadataForDate(localDate),editor=dayMetadataEditor?.tripId===trip?.id&&dayMetadataEditor.localDate===localDate?dayMetadataEditor:null,title=row?.title||'',summary=row?.summary||'',hasContent=!!(title||summary),dateLabel=itineraryDayHeading(localDate),loading=dayContextPending.has(JSON.stringify([session?.user?.id,trip?.id,localDate]));
   if(editor)return `<header class="generic-day-editorial" data-day-metadata-date="${esc(localDate)}"><p class="generic-day-editorial-date">${esc(dateLabel)}</p><form id="dayMetadataForm" class="generic-day-editorial-form"><label>Títol del dia<input id="dayMetadataTitle" maxlength="160" value="${esc(editor.title||'')}" placeholder="El caràcter d’aquest dia"></label><label>Comentari de Freya<textarea id="dayMetadataSummary" maxlength="1000" rows="3" placeholder="Ritme, experiència principal i context útil">${esc(editor.summary||'')}</textarea></label><div class="generic-day-editorial-form-actions"><button id="cancelDayMetadata" type="button" class="ghost">Cancel·la</button><button id="saveDayMetadata" type="submit">Desa</button></div></form><div class="generic-day-weather-hook hidden" data-day-weather-date="${esc(localDate)}" aria-live="polite"></div></header>`;
-  return `<header class="generic-day-editorial" data-day-metadata-date="${esc(localDate)}"><div class="generic-day-editorial-head"><div><p class="generic-day-editorial-date">${esc(dateLabel)}</p>${title?`<h2>${esc(title)}</h2>`:''}</div><div class="generic-day-editorial-actions"><button type="button" class="generic-day-editorial-action" data-edit-day-metadata="${esc(localDate)}">${hasContent?'Edita':'Edita manualment'}</button>${!loading?`<button type="button" class="generic-day-editorial-action" data-generate-day-context="${esc(localDate)}">${hasContent?'Actualitza el context':'Genera el context'}</button>`:''}</div></div>${summary?`<p class="generic-day-editorial-summary">${esc(summary)}</p>`:loading?'<p class="generic-day-editorial-summary" role="status">Freya està preparant el context del dia…</p>':''}<div class="generic-day-weather-hook hidden" data-day-weather-date="${esc(localDate)}" aria-live="polite"></div></header>`;
+  return `<header class="generic-day-editorial" data-day-metadata-date="${esc(localDate)}"><div class="generic-day-editorial-head"><div><p class="generic-day-editorial-date">${esc(dateLabel)}</p>${title?`<h2>${esc(title)}</h2>`:''}</div><div class="generic-day-editorial-actions"><button type="button" class="generic-day-editorial-action" data-edit-day-metadata="${esc(localDate)}">${hasContent?'Edita':'Edita manualment'}</button>${!loading?`<button type="button" class="generic-day-editorial-action" data-generate-day-context="${esc(localDate)}">${hasContent?'Actualitza el context':'Genera el context'}</button>`:''}</div></div>${summary?`<p class="generic-day-editorial-summary">${esc(summary)}</p>`:loading?'<p class="generic-day-editorial-summary" role="status">Freya està preparant el context del dia…</p>':''}${hasContent?`<div class='generic-day-narration' aria-label='Narració del dia'><button type='button' data-narrate-day='${esc(localDate)}'>🎧 Escolta el dia</button><button type='button' class='secondary' data-pause-day-narration='${esc(localDate)}'>Pausa / continua</button><button type='button' class='secondary' data-stop-day-narration='${esc(localDate)}'>Atura</button><small data-day-narration-status role='status' aria-live='polite'>Llegeix el context desat amb la veu del dispositiu; no genera una guia cultural nova.</small></div>`:''}<div class="generic-day-weather-hook hidden" data-day-weather-date="${esc(localDate)}" aria-live="polite"></div></header>`;
 }
 function openDayMetadataEditor(localDate){
   if(!trip||!session||isLondonTrip()||!genericItineraryTripDates().includes(localDate))return;const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,row=dayMetadataForDate(localDate);dayMetadataEditor={tripId,localDate,id:row?.id||'',originalUpdatedAt:row?.updated_at||'',title:row?.title||'',summary:row?.summary||'',remoteConflict:false};msg('genericItineraryMessage','');renderGenericItinerary();setTimeout(()=>{if(itineraryRequestIsCurrent(tripId,generation,userId)&&dayMetadataEditor?.tripId===tripId&&dayMetadataEditor.localDate===localDate)$('dayMetadataTitle')?.focus()},0);
 }
 function cancelDayMetadataEditor(){dayMetadataEditor=null;dayMetadataSubmitting=false;msg('genericItineraryMessage','');renderGenericItinerary()}
+// Reuse the London device narration for the saved editorial context of any trip day.
+function dayNarrationText(row){return [String(row?.title||'').trim(),String(row?.summary||'').trim()].filter(Boolean).join('. ').slice(0,1200)}
+let currentDayNarration=null;
+function dayNarrationStatus(value){const el=$('genericItineraryDays')?.querySelector('[data-day-narration-status]');if(el)el.textContent=value}
+function stopDayNarration(){if(!currentDayNarration)return;currentDayNarration=null;if('speechSynthesis' in window)speechSynthesis.cancel()}
+function playDayNarration(localDate){
+ if(!trip||!session||genericItinerarySelectedDay!==localDate)return;
+ const text=dayNarrationText(dayMetadataForDate(localDate));if(!text)return;
+ const token={tripId:trip.id,date:localDate};currentDayNarration=token;
+ const started=narrateCatalan(text,{
+  onStart:()=>{if(currentDayNarration===token)dayNarrationStatus('Escoltant el context del dia…')},
+  onEnd:()=>{if(currentDayNarration===token){currentDayNarration=null;dayNarrationStatus('Narració finalitzada.')}}
+ });
+ if(!started){currentDayNarration=null;dayNarrationStatus('Aquest dispositiu no permet reproduir la narració.')}
+}
 function bindDayMetadataEditor(){
   const editButton=$('genericItineraryDays').querySelector('[data-edit-day-metadata]');if(editButton)editButton.onclick=()=>openDayMetadataEditor(editButton.dataset.editDayMetadata);
   const generateButton=$('genericItineraryDays').querySelector('[data-generate-day-context]');
   if(generateButton)generateButton.onclick=()=>{void generateItineraryDayContext(generateButton.dataset.generateDayContext,false)};
+  const listen=$('genericItineraryDays').querySelector('[data-narrate-day]');
+  if(listen)listen.onclick=()=>playDayNarration(listen.dataset.narrateDay);
+  const pause=$('genericItineraryDays').querySelector('[data-pause-day-narration]');
+  if(pause)pause.onclick=()=>{
+   if(!currentDayNarration||currentDayNarration.tripId!==trip?.id||currentDayNarration.date!==pause.dataset.pauseDayNarration||!('speechSynthesis' in window))return;
+   if(speechSynthesis.paused){speechSynthesis.resume();dayNarrationStatus('Narració represa.')}
+   else if(speechSynthesis.speaking){speechSynthesis.pause();dayNarrationStatus('Narració en pausa.')}
+  };
+  const stop=$('genericItineraryDays').querySelector('[data-stop-day-narration]');
+  if(stop)stop.onclick=()=>{if(currentDayNarration?.tripId!==trip?.id||currentDayNarration?.date!==stop.dataset.stopDayNarration)return;stopDayNarration();dayNarrationStatus('Narració aturada.')};
   const form=$('dayMetadataForm');if(!form)return;
   const syncEditor=()=>{if(!dayMetadataEditor)return;dayMetadataEditor.title=$('dayMetadataTitle').value;dayMetadataEditor.summary=$('dayMetadataSummary').value};
   form.addEventListener('input',syncEditor);$('cancelDayMetadata').onclick=cancelDayMetadataEditor;form.onsubmit=saveDayMetadata;
@@ -6736,6 +6771,7 @@ function renderGenericItinerary(){
   const scheduled=itineraryProjection.filter(item=>item.localDate),unscheduled=itineraryProjection.filter(item=>!item.localDate);
   const groups=new Map();scheduled.forEach(item=>{if(!groups.has(item.localDate))groups.set(item.localDate,[]);groups.get(item.localDate).push(item)});
   const dates=[...new Set([...genericItineraryTripDates(),...scheduled.map(item=>item.localDate)])].sort(),today=genericItineraryToday(),selected=resolveGenericItineraryDay(dates,unscheduled.length>0),tabs=$('genericItineraryDayTabs');
+  if(currentDayNarration&&(currentDayNarration.tripId!==trip.id||currentDayNarration.date!==selected))stopDayNarration();
   $('genericItineraryTitle').textContent=trip.name;
   tabs.innerHTML=dates.map(date=>`<button type="button" role="tab" class="generic-itinerary-day-tab ${date===selected?'active':''} ${date===today?'is-today':''}" data-generic-itinerary-day="${esc(date)}" aria-selected="${date===selected}"${date===today?' aria-current="date"':''}>${esc(genericItineraryDayTabLabel(date))}</button>`).join('')+(unscheduled.length?`<button type="button" role="tab" class="generic-itinerary-day-tab ${selected==='pending'?'active':''}" data-generic-itinerary-day="pending" aria-selected="${selected==='pending'}">Pendents</button>`:'');
   const activeItems=groups.get(selected)||[];
@@ -7146,6 +7182,7 @@ function updateTripPresentation(){
 let tripStopRows=[];
 async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
   closeItineraryImport();
+  stopDayNarration();
   const selected=trips.find(value=>value.id===tripId)||null;if(!selected){trip=null;tripStopRows=[];clearGenericItineraryState();updateTripPresentation();setAppView('tripsHomeView');return false}
   tripLoadGeneration+=1;const generation=tripLoadGeneration;clearGenericItineraryState();await disconnectTripRealtime();if(generation!==tripLoadGeneration)return false;
   clearTripScopedState();trip=selected;tripStopRows=[];rememberSelectedTrip();
