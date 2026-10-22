@@ -51,3 +51,28 @@ test('public adapter fixes hosts, respects aliases and pins revisions without fo
   row.location_points.points.push({id:'point-1',query:bolognaPlaces[4].canonical_name,status:'resolved',place:bolognaPlaces[4]});
   assert.deepEqual(culturalPlaces(row).map(guidePlaceKey),[guidePlaceKey(bolognaPlaces[3]),guidePlaceKey(bolognaPlaces[4])]);
  });
+
+test('automatic preparation chooses the only exact public identity, ignoring nearby search results',async()=>{
+ const {handler,data,calls}=setup({search:async()=>[culturalArticle(bolognaPlaces[0],0),culturalArticle(bolognaPlaces[4],4)],readArticle:async(_,id)=>culturalArticle(bolognaPlaces[id===104?4:0],id===104?4:0)});
+ const response=await handler(request({...data,action:'prepare'}));assert.equal(response.status,200);assert.equal((await response.json()).document.place_key,data.place_key);assert.equal(calls.length,1);
+});
+test('automatic ambiguity requires confirmation before the model; wrong identity never generates',async()=>{
+ for(const ambiguous of [true,false]){
+  const article=culturalArticle(bolognaPlaces[4]);
+  const {handler,data,calls}=setup({search:async()=>ambiguous?[article,{...article,pageid:101}]:[culturalArticle(bolognaPlaces[3])],readArticle:async(_,id)=>ambiguous?{...article,pageid:id}:culturalArticle(bolognaPlaces[3])});
+  const response=await handler(request({...data,action:'prepare'})),body=await response.json();assert.equal(calls.length,0);
+  if(ambiguous){assert.equal(response.status,200);assert.equal(body.confirmation_required,true);assert.equal(body.candidates.length,2)}else{assert.equal(response.status,422);assert.equal(body.error,'source_not_found')}
+ }
+});
+test('automatic preparation falls back to Italian and never falls back after a source timeout',async()=>{
+ const article=culturalArticle(bolognaPlaces[4]),languages=[];
+ const {handler,data}=setup({search:async(_,lang)=>{languages.push(lang);return lang==='ca'?[]:[article]}});
+ assert.equal((await handler(request({...data,action:'prepare',language:'ca'}))).status,200);assert.deepEqual(languages,['ca','it']);
+ const events=[];const timed=setup({readArticle:async()=>{throw new DOMException('private upstream contents','TimeoutError')},diagnose:e=>events.push(e)});
+ const response=await timed.handler(request({...timed.data,action:'prepare'})),body=await response.json();assert.equal(response.status,503);assert.equal(body.error,'source_timeout');assert.equal(body.stage,'read_source');assert.match(body.request_id,/^[a-f0-9-]{36}$/);assert.doesNotMatch(JSON.stringify(events),/private|Bearer|place_key|trip_id/);
+});
+test('generation and citation failures return safe stage and correlation instead of a blank guide',async()=>{
+ for(const options of [{generate:async()=>{throw Error('invalid_response')}},{generate:async()=>({})}]){
+  const {handler,data}=setup(options);const response=await handler(request(data)),body=await response.json();assert.equal(response.status,503);assert.equal(body.error,'invalid_response');assert.ok(['generate','validate'].includes(body.stage));
+ }
+});

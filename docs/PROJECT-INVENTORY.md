@@ -4,6 +4,12 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## Seguiment públic de guia cultural a iPhone (després de #178)
+
+La PR #178 està **fusionada** a `main` `3068a21`; el seu text anterior en aquest inventari es conserva com a tall històric i ja no indica l’estat vigent. S’han verificat en lectura el mòdul públic i l’Edge v1. L’incident de Safari mostra cerca 200 i generació 503 (22/10, 16:43:50 UTC); el servidor antic no permet recuperar la fase ni el cos exacte. La UI perdia el JSON de `FunctionsHttpError` i deixava l’estat fora de la zona visible.
+
+PR específica en esborrany [#179](https://github.com/ebarlabe-art/freya-travel/pull/179), branca `fix/cultural-guide-automatic-iphone`: preparació automàtica per identitat inequívoca, confirmació en ambigüitats, lectura abans de veu, estat/error sempre visibles, peticions limitades i diagnòstic per fase. Preserva revisió humana, cache/RLS/CAS i dades existents; no requereix migració. Proves sintètiques de l’activitat composta, HTTP 503 i xarxa amb client Functions real, més regressions, a Chromium i WebKit. [Diagnòstic, límits, proves i relleu](cultural-guide-iphone-followup.md). **Canvi només en branca/PR; no desplegat ni fusionat.** Sense FREYA PROVES ni escriptures remotes. Següent acció: revisar PR i validar físicament a iPhone abans d’autoritzar desplegament Edge → frontend.
+
 ## Relleu de la tasca #167 (22/10/2026)
 
 Base actual d’implementació: `main` `aa30462`, que incorpora la projecció compartida Itinerari/Activitats de la **PR #177 fusionada**. El tall d’auditoria anterior que segueix es conserva com a evidència històrica; les seves referències a branques/PR pendents no descriuen aquest nou tall.
