@@ -95,3 +95,18 @@ test('Wikimedia requests identify Freya Travel and preserve upstream HTTP status
  assert.ok(calls[0].agent.includes('https://github.com/ebarlabe-art/freya-travel'));
  await assert.rejects(searchCulturalArticles(place,'it',async()=>({ok:false,status:429})),error=>error.message==='rate_limited'&&error.providerStatus===429);
 });
+
+test('validation diagnostics identify the failed check without exposing private text',async()=>{
+ const article=culturalArticle(bolognaPlaces[4]),events=[];
+ const {handler,data}=setup({diagnose:e=>events.push(e),generate:async()=>{
+  const sections=proposedSections(article);
+  sections.history.quote='a made-up citation PRIVATE_DO_NOT_LOG';
+  return sections;
+ }});
+ const response=await handler(request(data)),body=await response.json();
+ assert.equal(response.status,503);
+ assert.equal(body.error,'invalid_response');
+ assert.equal(body.stage,'validate');
+ assert.equal(events[0].validation_reason,'quote_not_in_source');
+ assert.doesNotMatch(JSON.stringify(events),/PRIVATE_DO_NOT_LOG|source_text|trip_id|Bearer/);
+});
