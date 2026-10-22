@@ -1,6 +1,7 @@
 // Synthetic transport only; never packaged into the public application.
 export async function installCulturalGuideFixture({trips,manuals,documents}){
-  const nativeFunctions=db.functions;
+  // Real SDK with a strictly local endpoint; never inherit production auth/URL.
+  const nativeFunctions=window.supabase.createClient(location.origin+'/freya-travel/fixture-api','sb_publishable_synthetic_fixture',{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},global:{fetch:(input,init)=>{const url=new URL(typeof input==='string'?input:input.url);if(url.origin!==location.origin)throw Error('External fixture request blocked');return fetch(input,init)}}}).functions;
   window.fixture={manuals,documents,guides:trips.flatMap(t=>readOfflineTripSnapshot(t.id,t.owner_id)?.culturalGuides||[]),writes:[],calls:[],mismatch:false};
   db.rpc=async name=>({data:name==='get_my_trips'?trips:[],error:null});
   db.from=table=>{const filters={},state={};const q=new Proxy({}, {get:(_,key)=>key==='then'?async resolve=>{

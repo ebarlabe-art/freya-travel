@@ -8,7 +8,15 @@ const trips=[{id:cultureId(1),name:'Bolonya sintètica',time_zone:'Europe/Rome'}
 const eivissa={...bolognaPlaces[0],canonical_name:'Dalt Vila',provider_place_id:'synthetic-eivissa',country_code:'ES',locality:'Eivissa',latitude:38.906,longitude:1.436};
 const manuals=[...bolognaPlaces.map((p,i)=>cultureRow(p,i)),cultureRow(eivissa,10,cultureId(2))],documents=[...bolognaPlaces,eivissa].map((p,i)=>guideProposal(p,culturalArticle(p,i),proposedSections(culturalArticle(p,i))));
 const compound=cultureRow(bolognaPlaces[0],30);compound.title='Piazza Maggiore, Fontana del Nettuno i basílica de San Petronio';compound.location_points=pointSnapshot(compound,bolognaPlaces.slice(0,3).map((p,i)=>({id:'point-'+i,query:p.canonical_name,place:p})));manuals.push(compound);
-const server=createServer(async(req,res)=>{const path=resolve(dist,decodeURIComponent(new URL(req.url,'http://local').pathname.replace(/^\/freya-travel\//,''))||'index.html');if(!path.startsWith(dist+sep)){res.writeHead(404).end();return}try{res.setHeader('Content-Type',({'.js':'text/javascript','.mjs':'text/javascript','.html':'text/html','.css':'text/css','.webmanifest':'application/manifest+json'})[extname(path)]||'application/octet-stream');res.end(await readFile(path))}catch{res.writeHead(404).end()}});
+let httpMode='server';const httpCalls=[];
+const server=createServer(async(req,res)=>{
+ res.setHeader('Content-Security-Policy',"connect-src 'self'");
+ if(new URL(req.url,'http://local').pathname==='/freya-travel/fixture-api/functions/v1/cultural-guide'){
+  let raw='';for await(const chunk of req)raw+=chunk;const body=JSON.parse(raw);httpCalls.push(body);assert.equal(body.action,'prepare');
+  if(httpMode==='network'){req.socket.destroy();return}
+  await new Promise(r=>setTimeout(r,150));res.statusCode=httpMode==='server'?503:200;res.setHeader('Content-Type','application/json');res.end(JSON.stringify(httpMode==='server'?{error:'invalid_response',stage:'generate',request_id:cultureId(99)}:{document:documents.find(d=>d.place_key===body.place_key)}));return;
+ }
+ const path=resolve(dist,decodeURIComponent(new URL(req.url,'http://local').pathname.replace(/^\/freya-travel\//,''))||'index.html');if(!path.startsWith(dist+sep)){res.writeHead(404).end();return}try{res.setHeader('Content-Type',({'.js':'text/javascript','.mjs':'text/javascript','.html':'text/html','.css':'text/css','.webmanifest':'application/manifest+json'})[extname(path)]||'application/octet-stream');res.end(await readFile(path))}catch{res.writeHead(404).end()}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${server.address().port}/freya-travel/`;
 const browser=await pw[engine].launch({headless:true,...(engine==='chromium'&&process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
 try{
@@ -27,18 +35,11 @@ try{
  async function openGuide(i=0){await page.locator(`#activityList [data-cultural-guide="manual:${cultureId(20+i)}"]`).click();await dialog.waitFor({state:'visible'});await choosePlace();await page.waitForFunction(()=>document.querySelector('[data-guide-status]')?.textContent==='Cap fitxa desada per a aquest lloc.'||document.querySelector('[data-guide-status]')?.textContent?.startsWith('Proposta no desada.')||document.querySelector('[data-guide-status]')?.textContent?.startsWith('Confirma quina font')||document.querySelector('[data-guide-status]')?.textContent?.startsWith('Fitxa desada.')||document.querySelector('[data-guide-status]')?.textContent?.includes('Consulta offline'))}
  async function closeGuide(){await root.locator('[data-guide-close]').click();await dialog.waitFor({state:'hidden'});await page.waitForFunction(()=>!history.state?.culturalGuide)}
  // Reproduce iPhone compound visit with the real Supabase Functions client and HTTP errors.
- let httpMode='server';
- await ctx.route('**/functions/v1/cultural-guide',async route=>{
-  const body=route.request().postDataJSON();assert.equal(body.action,'prepare');
-  if(httpMode==='network')return route.abort('failed');
-  await new Promise(r=>setTimeout(r,150));
-  return route.fulfill({status:httpMode==='server'?503:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(httpMode==='server'?{error:'invalid_response',stage:'generate',request_id:cultureId(99)}:{document:documents.find(d=>d.place_key===body.place_key)})});
- });
  await page.evaluate(()=>fixture.http=true);
  await page.locator(`#activityList [data-cultural-guide="manual:${cultureId(50)}"]`).click();await dialog.waitFor({state:'visible'});
  assert.equal(await page.evaluate(()=>fixture.writes.length),0);assert.equal(await root.locator('.cultural-guide-section').count(),0);
  await root.locator('[data-guide-place="2"]').click();await root.locator('[aria-busy="true"]').waitFor();
- await root.locator('[data-guide-status][role="alert"]').waitFor();assert.match(await root.locator('[data-guide-status]').innerText(),/incompleta.*Referència:/);
+ await root.locator('[data-guide-status][role="alert"]').waitFor();assert.equal(httpCalls.length,1);assert.match(await root.locator('[data-guide-status]').innerText(),/incompleta.*Referència:/);
  assert.equal(await root.locator('.cultural-guide-section').count(),0);await root.locator('[data-guide-status]').isVisible();
  const visibleStatus=()=>root.locator('[data-guide-status]').evaluate(el=>{const r=el.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight});assert.equal(await visibleStatus(),true);
  httpMode='network';await root.locator('[data-guide-retry]').click();await root.locator('[data-guide-status][role="alert"]').waitFor();assert.match(await root.locator('[data-guide-status]').innerText(),/connectar/);
@@ -46,7 +47,7 @@ try{
  assert.equal(await root.evaluate(el=>!!(el.querySelector('.cultural-guide-sources').compareDocumentPosition(el.querySelector('[data-guide-listen]'))&Node.DOCUMENT_POSITION_FOLLOWING)),true);
  await root.locator('[data-guide-save]').click();assert.equal(await page.evaluate(()=>fixture.writes.length),0);assert.match(await root.locator('[data-guide-status]').innerText(),/confirma la revisió/);assert.equal(await visibleStatus(),true);
  await root.locator('[data-guide-body]').evaluate(el=>el.scrollTop=el.scrollHeight);assert.equal(await visibleStatus(),true);
- await closeGuide();await page.evaluate(()=>{fixture.http=false;mergeOfflineTripSnapshot({culturalGuideDrafts:[]})});
+ assert.ok(httpCalls.every(call=>call.place_key===guidePlaceKey(bolognaPlaces[2])));await closeGuide();await page.evaluate(()=>{fixture.http=false;mergeOfflineTripSnapshot({culturalGuideDrafts:[]})});
  for(let i=0;i<5;i++){
   await openGuide(i);assert.equal(await root.locator('h2').innerText(),bolognaPlaces[i].canonical_name);
   await root.locator('[data-guide-save]').waitFor({state:'visible'});assert.equal(await root.locator('[data-guide-text="history"]').innerText(),documents[i].sections.history.text);
