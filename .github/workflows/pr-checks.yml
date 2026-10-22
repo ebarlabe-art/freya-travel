@@ -47,7 +47,7 @@ jobs:
       - name: PWA bootstrap recovery contracts
         run: node --test scripts/pwa-bootstrap.test.mjs scripts/offline-v2-readonly.test.mjs
       - name: Cultural guide and shared Catalan narration contracts
-        run: node --test scripts/cultural-guide.test.mjs scripts/catalan-narration.test.mjs
+        run: node --test scripts/cultural-guide.test.mjs scripts/cultural-guide-errors.test.mjs scripts/catalan-narration.test.mjs
       - name: Unified activities contracts
         run: node --test scripts/activities-projection.test.mjs
       - name: Itinerary partial loading and duplicate contracts

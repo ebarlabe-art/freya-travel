@@ -1,5 +1,6 @@
 // Synthetic transport only; never packaged into the public application.
 export async function installCulturalGuideFixture({trips,manuals,documents}){
+  const nativeFunctions=db.functions;
   window.fixture={manuals,documents,guides:trips.flatMap(t=>readOfflineTripSnapshot(t.id,t.owner_id)?.culturalGuides||[]),writes:[],calls:[],mismatch:false};
   db.rpc=async name=>({data:name==='get_my_trips'?trips:[],error:null});
   db.from=table=>{const filters={},state={};const q=new Proxy({}, {get:(_,key)=>key==='then'?async resolve=>{
@@ -11,8 +12,10 @@ export async function installCulturalGuideFixture({trips,manuals,documents}){
   }:(...args)=>{if(key==='eq')filters[args[0]]=args[1];if(key==='update')state.patch=args[0];if(key==='insert')state.insert=args[0];if(key==='maybeSingle'||key==='single')state.single=true;if(['upsert','delete'].includes(key))throw Error('Unexpected '+key);return q}});return q};
   db.channel=()=>{const c={on:()=>c,subscribe:()=>c,unsubscribe:async()=>{}};return c};db.removeChannel=async()=>{};
   Object.defineProperty(db,'functions',{configurable:true,value:{invoke:async(name,{body})=>{
+   if(fixture.http)return nativeFunctions.invoke(name,{body});
    if(name!=='cultural-guide')return {data:{candidates:[]},error:null};fixture.calls.push(body);if(fixture.delay)await fixture.delay;
    if(fixture.mismatch)return {data:{error:'identity_mismatch'},error:null};
+   if(body.action==='prepare'&&body.place_key.includes('eivissa'))return {data:{confirmation_required:true,candidates:[{pageid:100,title:'Font sintètica Eivissa',language:'it'}]},error:null};
    return {data:body.action==='search'?{candidates:[{pageid:100,title:'Font sintètica '+body.place_key,language:body.language}]}:{document:fixture.documents.find(d=>d.place_key===body.place_key)},error:null};
   }}});
   await renderSession({access_token:'synthetic-offline-grant-token',user:{id:trips[0].owner_id,email:'synthetic@example.invalid'}});await selectTrip(trips[0].id,{open:true});
