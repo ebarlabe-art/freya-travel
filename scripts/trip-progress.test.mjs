@@ -135,7 +135,7 @@ test('detached button from trip A cannot act for trip B',()=>{
   h.sandbox.bindTripProgress({querySelectorAll:()=>[button]},[base],'message');h.sandbox.trip={id:'b'};button.onclick();assert.equal(h.requests.length,0);
 });
 test('Itinerary renders completion separately without removing reservation, optional or undo',()=>{
-  const h=harness();h.sandbox.itinerarySourceLabel=String;h.sandbox.itineraryPointHtml=()=>'';h.sandbox.itineraryPointRow=()=>null;
+  const h=harness();h.sandbox.culturalGuideButton=()=>'';h.sandbox.itinerarySourceLabel=String;h.sandbox.itineraryPointHtml=()=>'';h.sandbox.itineraryPointRow=()=>null;
   vm.runInContext(html.slice(html.indexOf('function renderItineraryItem'),html.indexOf('function bindItineraryActions')),h.sandbox);
   const markup=h.sandbox.renderItineraryItem({...base,isCompleted:true,details:[],documents:[],icon:'📝',tags:['Opcional','Flexible']});
   for(const text of ['trip-progress-done','confirmed','trip-progress-badge','✓ Fet','Desfer','Opcional','Flexible'])assert.ok(markup.includes(text),text);

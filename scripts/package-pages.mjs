@@ -5,6 +5,8 @@ import { build } from 'vite';
 const root=new URL('../',import.meta.url);
 const dist=new URL('../dist/',import.meta.url);
 const runtimeDomain=[
+  'cultural-guide.mjs',
+  'cultural-guide-ui.mjs',
   'itinerary-route.mjs',
   'itinerary-route-ui.mjs',
   'itinerary-visit-advice.mjs',
@@ -53,6 +55,9 @@ await build({
     },
   },
 });
+
+// The cultural reader uses the same retryable, single-file module contract as the album editor.
+await build({configFile:false,publicDir:false,build:{outDir:fileURLToPath(new URL('domain/',dist)),emptyOutDir:false,minify:false,lib:{entry:fileURLToPath(new URL('domain/cultural-guide-ui.mjs',root)),formats:['es'],fileName:()=> 'cultural-guide-ui.mjs'}}});
 
 for(const file of ['trip-brief.mjs','live-trip-brief.mjs','travel-builder.mjs','import-proposal.mjs','proposal-refinement.mjs','proposal-builder.mjs']){
   const source=await import('node:fs/promises').then(fs=>fs.readFile(new URL('domain/'+file,root),'utf8'));

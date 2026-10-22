@@ -11,6 +11,7 @@ permissions:
 jobs:
   a2-test-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,7 +20,7 @@ jobs:
       - run: npm ci
       - run: npm run prebuild
       - name: CI registry fallback contracts
-        run: node --test scripts/ci-postgres.test.mjs
+        run: node --test scripts/ci-postgres.test.mjs scripts/ci-browser-install.test.mjs
       - name: A2 focused tests
         run: node --test scripts/import-proposal.test.mjs scripts/import-text-extractor.test.mjs scripts/import-reservation.test.mjs scripts/import-reservation-ui.test.mjs scripts/import-itinerary-review-ui.test.mjs scripts/home-entry.test.mjs scripts/travel-builder.test.mjs scripts/itinerary-place-enrichment.test.mjs scripts/itinerary-auto-place.test.mjs
       - name: Offline V2 focused tests
@@ -43,60 +44,151 @@ jobs:
 
       - name: Verify public release targets and packaged files
         run: node scripts/check-v27-production.mjs
-      - name: Install isolated browser test tooling
-        run: |
-          npm install --prefix "$RUNNER_TEMP/travel-book-browser" --no-package-lock --ignore-scripts playwright-core@1.63.0
-          node "$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/cli.js" install --with-deps chromium webkit
       - name: PWA bootstrap recovery contracts
         run: node --test scripts/pwa-bootstrap.test.mjs scripts/offline-v2-readonly.test.mjs
-      - name: PWA bootstrap Chromium real build
-        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-pwa-bootstrap-browser.mjs
-      - name: PWA bootstrap WebKit real build
-        run: PWA_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-pwa-bootstrap-browser.mjs
+      - name: Cultural guide and shared Catalan narration contracts
+        run: node --test scripts/cultural-guide.test.mjs scripts/catalan-narration.test.mjs
       - name: Unified activities contracts
         run: node --test scripts/activities-projection.test.mjs
-      - name: Unified activities Chromium mobile
-        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-activities-projection-browser.mjs
-      - name: Unified activities tablet with desktop identification
-        run: ACTIVITIES_TABLET=1 PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-activities-projection-browser.mjs
-      - name: Unified activities WebKit mobile
-        run: ACTIVITIES_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-activities-projection-browser.mjs
       - name: Itinerary partial loading and duplicate contracts
         run: node --test scripts/itinerary-loading.test.mjs scripts/trip-home.test.mjs scripts/import-itinerary-write.test.mjs
-      - name: Itinerary partial loading mobile and PWA regression
-        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-loading-browser.mjs
-      - name: Itinerary partial loading tablet with desktop identification
-        run: ITINERARY_TABLET=1 PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-loading-browser.mjs
-      - name: Itinerary routes mobile and PWA regression
-        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-route-browser.mjs
       - name: V27 location, PDF and route contracts
         run: node --test scripts/place-resolution.test.mjs scripts/place-resolution-rpc.test.mjs scripts/itinerary-auto-place.test.mjs scripts/itinerary-route.test.mjs scripts/import-itinerary-pdf.test.mjs scripts/itinerary-quick-place.test.mjs
-      - name: V27 automatic locations Chromium
-        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-automatic-places-browser.mjs
-      - name: V27 automatic locations WebKit
-        run: ROUTE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-automatic-places-browser.mjs
       - name: Ordered activity point contracts
         run: node --test scripts/itinerary-place-points.test.mjs
-      - name: Ordered activity points Chromium mobile
-        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-points-browser.mjs
-      - name: Ordered activity points WebKit mobile
-        run: ROUTE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-points-browser.mjs
-      - name: Import exclusion real mobile click Chromium
-        run: IMPORT_ENGINE=chromium PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-import-exclude-browser.mjs
-      - name: Import exclusion real mobile click WebKit
-        run: IMPORT_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-import-exclude-browser.mjs
-      - name: V27 routes WebKit
-        run: ROUTE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-route-browser.mjs
       - name: Install isolated embedded Postgres test tooling
         run: npm install --prefix "$RUNNER_TEMP/v27-db" --no-package-lock --ignore-scripts @electric-sql/pglite@0.3.14
       - name: V27 geography migration and permissions
         run: PGLITE_MODULE="$RUNNER_TEMP/v27-db/node_modules/@electric-sql/pglite/dist/index.js" node scripts/test-itinerary-location-db.mjs
       - name: Ordered points migration RLS and concurrency
         run: PGLITE_MODULE="$RUNNER_TEMP/v27-db/node_modules/@electric-sql/pglite/dist/index.js" node scripts/test-itinerary-points-db.mjs
+      - name: Cultural guide RLS identity and concurrency
+        run: PGLITE_MODULE="$RUNNER_TEMP/v27-db/node_modules/@electric-sql/pglite/dist/index.js" node scripts/test-cultural-guide-db.mjs
+
+  browser-tests:
+    name: browser-${{ matrix.engine }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    env:
+      PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: 30000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund --fetch-retries=1 --fetch-timeout=30000
+        timeout-minutes: 5
+      - run: npm run build
+        timeout-minutes: 5
+        env:
+          VITE_SUPABASE_URL: https://abcdefghijklmnopqrst.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_validation_fixture
+      - name: Configure isolated browser paths
+        run: |
+          echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" >> "$GITHUB_ENV"
+          echo "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/playwright-browsers" >> "$GITHUB_ENV"
+          echo "CI_BROWSER_LOG_DIR=$RUNNER_TEMP/browser-install-logs" >> "$GITHUB_ENV"
+      - name: Install pinned browser tooling
+        timeout-minutes: 4
+        run: bash scripts/ci-browser-install.sh tooling "${{ matrix.engine }}"
+      - name: Install browser system dependencies
+        timeout-minutes: 7
+        run: bash scripts/ci-browser-install.sh dependencies "${{ matrix.engine }}"
+      - name: Download and verify browser
+        timeout-minutes: 5
+        run: bash scripts/ci-browser-install.sh browser "${{ matrix.engine }}"
+      - name: PWA bootstrap Chromium real build
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-pwa-bootstrap-browser.mjs
+      - name: PWA bootstrap WebKit real build
+        if: matrix.engine == 'webkit'
+        timeout-minutes: 5
+        run: PWA_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-pwa-bootstrap-browser.mjs
+      - name: Cultural guide Chromium mobile
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-cultural-guide-browser.mjs
+      - name: Cultural guide tablet with desktop identification
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
+        run: CULTURE_TABLET=1 PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-cultural-guide-browser.mjs
+      - name: Cultural guide WebKit mobile
+        if: matrix.engine == 'webkit'
+        timeout-minutes: 5
+        run: CULTURE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-cultural-guide-browser.mjs
+      - name: Unified activities Chromium mobile
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-activities-projection-browser.mjs
+      - name: Unified activities tablet with desktop identification
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
+        run: ACTIVITIES_TABLET=1 PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-activities-projection-browser.mjs
+      - name: Unified activities WebKit mobile
+        if: matrix.engine == 'webkit'
+        timeout-minutes: 5
+        run: ACTIVITIES_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-activities-projection-browser.mjs
+      - name: Itinerary partial loading mobile and PWA regression
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-loading-browser.mjs
+      - name: Itinerary partial loading tablet with desktop identification
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
+        run: ITINERARY_TABLET=1 PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-loading-browser.mjs
+      - name: Itinerary routes mobile and PWA regression
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-route-browser.mjs
+      - name: V27 automatic locations Chromium
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-automatic-places-browser.mjs
+      - name: V27 automatic locations WebKit
+        if: matrix.engine == 'webkit'
+        timeout-minutes: 5
+        run: ROUTE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-automatic-places-browser.mjs
+      - name: Ordered activity points Chromium mobile
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-points-browser.mjs
+      - name: Ordered activity points WebKit mobile
+        if: matrix.engine == 'webkit'
+        timeout-minutes: 5
+        run: ROUTE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-points-browser.mjs
+      - name: Import exclusion real mobile click Chromium
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
+        run: IMPORT_ENGINE=chromium PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-import-exclude-browser.mjs
+      - name: Import exclusion real mobile click WebKit
+        if: matrix.engine == 'webkit'
+        timeout-minutes: 5
+        run: IMPORT_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-import-exclude-browser.mjs
+      - name: V27 routes WebKit
+        if: matrix.engine == 'webkit'
+        timeout-minutes: 5
+        run: ROUTE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-route-browser.mjs
       - name: Shared trip mobile and PWA regression
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-shared-trip-browser.mjs
       - name: Travel Book real Pages build browser regression
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-travel-book-runtime-browser.mjs
+      - name: Preserve browser installation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-install-${{ matrix.engine }}
+          path: ${{ runner.temp }}/browser-install-logs
+          if-no-files-found: warn
+          retention-days: 7
 
   legacy-suite:
     runs-on: ubuntu-latest
@@ -127,6 +219,7 @@ jobs:
           deno-version: v2.9.6
       - name: Production PDF import and place resolver typechecks
         run: |
+          deno check supabase/functions/cultural-guide/index.ts
           deno check supabase/functions/import-itinerary/index.ts
           deno check --config supabase/functions/place-resolution/deno.json supabase/functions/place-resolution/index.ts
       - name: Itinerary routing domain and HTTP contracts

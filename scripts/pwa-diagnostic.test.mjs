@@ -21,7 +21,7 @@ test('PWA diagnostic is read only, scoped and has an explicit version marker',()
   assert.doesNotMatch(diagnostic,/access_token|refresh_token|session\.user\.email|\.invite_code/);
 });
 test('The new SW cache version is unique and the existing network-first navigation remains',()=>{
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v40'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v41'/);
   assert.match(worker,/if\(isNavigation \|\| isIndexRequest\)/);
   assert.match(worker,/fetch\(request\)\.then\(response/);
   assert.match(worker,/keys\(\)\.then\(keys=>Promise\.all\(keys\.filter/);
