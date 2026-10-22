@@ -76,3 +76,22 @@ test('generation and citation failures return safe stage and correlation instead
   const {handler,data}=setup(options);const response=await handler(request(data)),body=await response.json();assert.equal(response.status,503);assert.equal(body.error,'invalid_response');assert.ok(['generate','validate'].includes(body.stage));
  }
 });
+
+test('Wikimedia requests identify Freya Travel and preserve upstream HTTP status without leaking response bodies',async()=>{
+ const place=bolognaPlaces[4];
+ const calls=[];
+ const fetcher=async (url,options)=>{
+  calls.push({host:url.hostname,agent:options.headers['User-Agent']});
+  return {ok:false,status:403};
+ };
+ await assert.rejects(searchCulturalArticles(place,'it',fetcher),error=>{
+  assert.equal(error.message,'source_unavailable');
+  assert.equal(error.providerStatus,403);
+  assert.doesNotMatch(JSON.stringify(error),'PRIVATE');
+  return true;
+ });
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].host,'it.wikipedia.org');
+ assert.match(calls[0].agent,/github.com\\/ebarlabe-art\\/freya-travel/);
+ await assert.rejects(searchCulturalArticles(place,'it',async()=>({ok:false,status:429})),error=>error.message==='rate_limited'&&error.providerStatus===429);
+});
