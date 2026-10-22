@@ -53,6 +53,14 @@ jobs:
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-pwa-bootstrap-browser.mjs
       - name: PWA bootstrap WebKit real build
         run: PWA_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-pwa-bootstrap-browser.mjs
+      - name: Cultural guide and shared Catalan narration contracts
+        run: node --test scripts/cultural-guide.test.mjs scripts/catalan-narration.test.mjs
+      - name: Cultural guide Chromium mobile
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-cultural-guide-browser.mjs
+      - name: Cultural guide tablet with desktop identification
+        run: CULTURE_TABLET=1 PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-cultural-guide-browser.mjs
+      - name: Cultural guide WebKit mobile
+        run: CULTURE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-cultural-guide-browser.mjs
       - name: Unified activities contracts
         run: node --test scripts/activities-projection.test.mjs
       - name: Unified activities Chromium mobile
@@ -93,6 +101,8 @@ jobs:
         run: PGLITE_MODULE="$RUNNER_TEMP/v27-db/node_modules/@electric-sql/pglite/dist/index.js" node scripts/test-itinerary-location-db.mjs
       - name: Ordered points migration RLS and concurrency
         run: PGLITE_MODULE="$RUNNER_TEMP/v27-db/node_modules/@electric-sql/pglite/dist/index.js" node scripts/test-itinerary-points-db.mjs
+      - name: Cultural guide RLS identity and concurrency
+        run: PGLITE_MODULE="$RUNNER_TEMP/v27-db/node_modules/@electric-sql/pglite/dist/index.js" node scripts/test-cultural-guide-db.mjs
       - name: Shared trip mobile and PWA regression
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-shared-trip-browser.mjs
       - name: Travel Book real Pages build browser regression
@@ -127,6 +137,7 @@ jobs:
           deno-version: v2.9.6
       - name: Production PDF import and place resolver typechecks
         run: |
+          deno check supabase/functions/cultural-guide/index.ts
           deno check supabase/functions/import-itinerary/index.ts
           deno check --config supabase/functions/place-resolution/deno.json supabase/functions/place-resolution/index.ts
       - name: Itinerary routing domain and HTTP contracts

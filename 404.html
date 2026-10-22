@@ -480,6 +480,7 @@
     .itinerary-import-evidence{font-size:.8rem;line-height:1.5;color:var(--muted);border-top:1px solid var(--line);margin-top:10px;padding-top:10px;overflow-wrap:anywhere}
     #itineraryImportPanel .import-reservation-actions{flex-wrap:wrap}
 
+.cultural-guide-dialog{width:min(740px,calc(100% - 20px));max-height:calc(100dvh - 30px);padding:20px 20px max(20px,env(safe-area-inset-bottom));border:1px solid #d9cde6;border-radius:22px;color:#302339;overflow:auto}.cultural-guide-dialog::backdrop{background:rgba(30,20,40,.55)}.cultural-guide-dialog h2{margin:8px 0}.cultural-guide-dialog textarea{width:100%;min-height:120px;font:inherit;line-height:1.5;padding:12px;border:1px solid #cabbd6;border-radius:12px}.cultural-guide-dialog label{display:block;margin:12px 0}.cultural-guide-dialog label input[type=checkbox]{width:auto}.cultural-guide-dialog button,.cultural-guide-dialog select{min-height:44px}.cultural-guide-dialog .guide-actions{background:#fff;padding:10px 0}.cultural-guide-section{border-top:1px solid #e9e0ef;padding:12px 0}.cultural-guide-section p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}.cultural-guide-section small{display:block;color:#66556f}.cultural-guide-sources{overflow-wrap:anywhere}.cultural-guide-sources blockquote{margin:8px 0;padding:8px 12px;border-left:3px solid #cdb8df;white-space:pre-wrap}.cultural-guide-status{padding:10px;background:#f4eef9;border-radius:12px}.cultural-guide-top{position:sticky;top:-20px;background:white;z-index:2;padding:8px 0;display:flex;justify-content:space-between;align-items:start;gap:12px}
 </style>
 </head>
 <body>
@@ -1955,6 +1956,7 @@
     <p class="footer">Creat amb ❤️ per Eva i Freya · Versió 6.4.30</p>
   </section>
 </main>
+<dialog id="culturalGuideDialog" aria-labelledby="culturalGuideHeading" class="cultural-guide-dialog"><div id="culturalGuideRoot"></div></dialog>
 <script>
 // Runs before SDK/application parsing. No session, URL, token or error payload is logged.
 (function(){
@@ -3073,16 +3075,37 @@ function renderLondonGuides(){
  $('guideGrid').innerHTML=rows.map(g=>`<article class="place-guide"><div class="place-guide-head"><div class="place-guide-icon">${g.icon}</div><div><h3>${esc(g.name)}</h3><div class="zone">📍 ${esc(g.zone)}</div></div></div><p>${esc(g.history)}</p><div class="guide-highlight">💡 <strong>No us perdeu:</strong> ${esc(g.highlight)}</div><div class="guide-actions"><button type="button" class="listen ${activeGuideId===g.id?'playing':''}" data-listen-guide="${g.id}">${activeGuideId===g.id?'🔊 Escoltant…':'🎧 Escolta l’audioguia'}</button><a href="${g.maps}" target="_blank" rel="noopener">📍 Maps</a></div></article>`).join('')||'<div class="card"><p>No hem trobat cap lloc amb aquests filtres.</p></div>';
  document.querySelectorAll('[data-listen-guide]').forEach(b=>b.onclick=()=>speakGuide(b.dataset.listenGuide));
 }
-function catalanVoice(){const voices=speechSynthesis.getVoices();return voices.find(v=>/^ca/i.test(v.lang))||voices.find(v=>/^es/i.test(v.lang))||voices[0]||null}
+// Shared device TTS extracted from the #169 proposal; London and all place guides use it.
+let catalanNarration=null;
+function catalanVoice(){const voices=window.speechSynthesis?.getVoices()||[];return voices.find(v=>/^ca(?:-|$)/i.test(v.lang))||null}
+function stopCatalanNarration(){const previous=catalanNarration;catalanNarration=null;if('speechSynthesis' in window)speechSynthesis.cancel();if(previous)previous.onStop()}
+function narrationChunks(text){const chunks=[];let rest=String(text||'').trim();while(rest){let end=Math.min(500,rest.length);if(end<rest.length){const boundary=Math.max(rest.lastIndexOf('. ',end),rest.lastIndexOf(' ',end));if(boundary>200)end=boundary+1}chunks.push(rest.slice(0,end));rest=rest.slice(end)}return chunks}
+function narrateCatalan(text,{onStart=()=>{},onEnd=()=>{},onError=()=>{},onStop=()=>{},rate=1,allowFallback=false}={}){
+ if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance!=='function'||!String(text||'').trim())return false;
+ const voice=catalanVoice(),voices=speechSynthesis.getVoices();if(!voice&&!allowFallback)return false;
+ stopCatalanNarration();
+ const state={chunks:narrationChunks(text),index:0,serial:0,rate:Math.max(.75,Math.min(1.25,Number(rate)||1)),voice:voice||(voices.find(v=>/^es(?:-|$)/i.test(v.lang))||voices[0]||null),onStart,onEnd,onError,onStop};catalanNarration=state;
+ state.play=()=>{
+  if(catalanNarration!==state)return;const serial=++state.serial,u=new SpeechSynthesisUtterance(state.chunks[state.index]);state.utterance=u;u.lang='ca-ES';u.rate=state.rate;if(state.voice)u.voice=state.voice;
+  u.onstart=()=>{if(catalanNarration===state&&state.serial===serial)state.onStart({fallback:!voice})};
+  u.onend=()=>{if(catalanNarration!==state||state.serial!==serial)return;if(++state.index<state.chunks.length)state.play();else{catalanNarration=null;state.onEnd()}};
+  u.onerror=()=>{if(catalanNarration!==state||state.serial!==serial)return;catalanNarration=null;state.onError()};
+  speechSynthesis.speak(u);
+ };state.play();return true;
+}
+function pauseCatalanNarration(){if(catalanNarration)speechSynthesis.pause()}
+function resumeCatalanNarration(){if(catalanNarration)speechSynthesis.resume()}
+function rateCatalanNarration(rate){const state=catalanNarration;if(!state)return;state.serial++;speechSynthesis.cancel();state.rate=Math.max(.75,Math.min(1.25,Number(rate)||1));state.play()}
 function speakGuide(id){
- if(!('speechSynthesis' in window)){alert('Aquest navegador no admet l’audioguia de veu.');return}
  const g=londonGuides.find(x=>x.id===id);if(!g)return;
- speechSynthesis.cancel();activeGuideId=id;renderLondonGuides();
- const intro=`${g.name}. `,text=`${intro}${g.history} Consell de Freya: ${g.highlight}`;
- const u=new SpeechSynthesisUtterance(text);u.lang='ca-ES';u.rate=Number($('audioRate')?.value||1);const voice=catalanVoice();if(voice)u.voice=voice;
- u.onstart=()=>{$('audioStatus').textContent=`Escoltant: ${g.name}`};
- u.onend=u.onerror=()=>{activeGuideId=null;$('audioStatus').textContent='Audioguia finalitzada.';renderLondonGuides()};
- speechSynthesis.speak(u);
+ const started=narrateCatalan(`${g.name}. ${g.history} Consell de Freya: ${g.highlight}`,{
+  rate:Number($('audioRate')?.value||1),allowFallback:true,
+  onStart:({fallback})=>{$('audioStatus').textContent=`Escoltant: ${g.name}${fallback?' · veu catalana no disponible; veu alternativa del dispositiu.':''}`},
+  onEnd:()=>{activeGuideId=null;$('audioStatus').textContent='Audioguia finalitzada.';renderLondonGuides()},
+  onError:()=>{activeGuideId=null;$('audioStatus').textContent='La veu no està disponible. Pots continuar llegint la fitxa.';renderLondonGuides()},
+  onStop:()=>{activeGuideId=null;renderLondonGuides()}
+ });
+ activeGuideId=started?id:null;renderLondonGuides();if(!started)$('audioStatus').textContent='Aquest dispositiu no admet la narració. La guia escrita continua disponible.';
 }
 function initGuide(){
   if(!isLondonTrip())return;
@@ -3090,9 +3113,12 @@ function initGuide(){
   if($('guideSearch'))$('guideSearch').oninput=renderLondonGuides;
   if($('guideZone'))$('guideZone').onchange=renderLondonGuides;
 }
-if($('audioPause'))$('audioPause').onclick=()=>{if(!('speechSynthesis' in window))return;if(speechSynthesis.paused){speechSynthesis.resume();$('audioStatus').textContent='Audioguia represa.'}else if(speechSynthesis.speaking){speechSynthesis.pause();$('audioStatus').textContent='Audioguia en pausa.'}};
-if($('audioStop'))$('audioStop').onclick=()=>{if('speechSynthesis' in window)speechSynthesis.cancel();activeGuideId=null;$('audioStatus').textContent='Audioguia aturada.';renderLondonGuides()};
+if($('audioPause'))$('audioPause').onclick=()=>{if(!('speechSynthesis' in window))return;if(speechSynthesis.paused){resumeCatalanNarration();$('audioStatus').textContent='Audioguia represa.'}else if(speechSynthesis.speaking){pauseCatalanNarration();$('audioStatus').textContent='Audioguia en pausa.'}};
+if($('audioStop'))$('audioStop').onclick=()=>{stopCatalanNarration();activeGuideId=null;$('audioStatus').textContent='Audioguia aturada.';renderLondonGuides()};
 
+if($('audioRate'))$('audioRate').onchange=()=>rateCatalanNarration($('audioRate').value);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseCatalanNarration()});
+window.addEventListener('pagehide',stopCatalanNarration);
 
 function normalizeSearchText(value){
   return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('ca').trim();
@@ -4498,6 +4524,7 @@ function persistNavigationState(view){
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
 function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent='';}
 function setAppView(id){
+  if(id!==visibleAppView()){stopCatalanNarration();resetCulturalGuide()}
   if(id!=='itineraryView'&&!$('itineraryImportPanel').classList.contains('hidden'))closeItineraryImport();
   if(id==='constructionView')id='designTripView';
   if(!trip&&!['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id))id='tripsHomeView';
@@ -5101,7 +5128,7 @@ function unifiedActivityItems(){
 }
 function planningActivityCard(item){
   const kind=planningActivityKind(item.title),row=tripHomeSourceRow(item);
-  return `<article class="accommodation-card" data-activity-key="${esc(item.key)}"><div class="accommodation-card-head"><div class="accommodation-identity"><div class="accommodation-icon">${kind.icon}</div><div><small class="muted">${esc(kind.label)}</small><h3>${esc(item.title)}</h3></div></div>${tripProgressStatusHtml(item)}</div><div class="activity-quick"><div class="activity-quick-section"><small>🗓️ Quan</small><strong>${esc(item.localDate?itineraryDayHeading(item.localDate):'Pendent de concretar')}</strong><span>${esc(item.timeLabel)}</span></div><div class="activity-quick-section"><small>📍 On</small><strong>${esc([row.location_name,row.address,row.city].filter(Boolean).join(' · ')||'Pendent de concretar')}</strong></div></div>${row.notes?`<p class="accommodation-notes">${esc(row.notes)}</p>`:''}<div class="accommodation-actions">${item.mapUrl?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">🧭 Com arribar</a>`:''}<button type="button" data-activity-planning="${esc(item.key)}">Veure / editar al planning</button></div></article>`;
+  return `<article class="accommodation-card" data-activity-key="${esc(item.key)}"><div class="accommodation-card-head"><div class="accommodation-identity"><div class="accommodation-icon">${kind.icon}</div><div><small class="muted">${esc(kind.label)}</small><h3>${esc(item.title)}</h3></div></div>${tripProgressStatusHtml(item)}</div><div class="activity-quick"><div class="activity-quick-section"><small>🗓️ Quan</small><strong>${esc(item.localDate?itineraryDayHeading(item.localDate):'Pendent de concretar')}</strong><span>${esc(item.timeLabel)}</span></div><div class="activity-quick-section"><small>📍 On</small><strong>${esc([row.location_name,row.address,row.city].filter(Boolean).join(' · ')||'Pendent de concretar')}</strong></div></div>${row.notes?`<p class="accommodation-notes">${esc(row.notes)}</p>`:''}<div class="accommodation-actions">${item.mapUrl?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">🧭 Com arribar</a>`:''}${culturalGuideButton(item)}<button type="button" data-activity-planning="${esc(item.key)}">Veure / editar al planning</button></div></article>`;
 }
 // ACTIVITIES_PROJECTION_END
 function activitySummary(rows=unifiedActivityItems()){const count=rows.length;return !count?'Cap activitat':count===1?'1 activitat':`${count} activitats`}
@@ -5262,6 +5289,33 @@ function activityMapUrl(row){
   if(row.latitude!=null&&row.longitude!=null)return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${row.latitude},${row.longitude}`)}`;
   const query=[row.venue_name,row.address,row.city].filter(Boolean).join(', ');return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:'';
 }
+// Universal cultural guide: same agenda identities as Itinerary / Activities (#177).
+let culturalGuideController=null,culturalGuideModule=null,culturalGuideOpenSequence=0;
+function culturalGuideButton(item){return item&&['manual','activity'].includes(item.sourceType)?`<button type="button" data-cultural-guide="${esc(item.key)}">📖 Guia cultural</button>`:''}
+function culturalScope(){return {tripId:trip?.id,userId:session?.user?.id,generation:tripLoadGeneration}}
+function culturalScopeCurrent(scope){return itineraryRequestIsCurrent(scope.tripId,scope.generation,scope.userId)&&!isLondonTrip()}
+function culturalSource(key){return normalizedItineraryProjection(trip?.id,tripLoadGeneration,session?.user?.id).find(item=>item.key===key)||null}
+function resetCulturalGuide(){culturalGuideOpenSequence++;culturalGuideController?.reset()}
+function bindCulturalGuideButtons(root){root.querySelectorAll('[data-cultural-guide]').forEach(button=>button.onclick=()=>{void openCulturalGuide(button.dataset.culturalGuide)})}
+async function openCulturalGuide(key,fromHistory=false){
+ const scope=culturalScope(),sequence=++culturalGuideOpenSequence,item=culturalSource(key);if(!item||!culturalScopeCurrent(scope))return;
+ try{
+  culturalGuideModule=culturalGuideModule||await loadTravelBookModule('cultural-guide-ui.mjs');
+  if(sequence!==culturalGuideOpenSequence||!culturalScopeCurrent(scope))return;
+  if(!culturalGuideController)culturalGuideController=culturalGuideModule.createCulturalGuideController({dialog:$('culturalGuideDialog'),root:$('culturalGuideRoot'),db,scope:culturalScope,current:culturalScopeCurrent,source:key=>{const item=culturalSource(key);return item?{item,row:tripHomeSourceRow(item)}:null},offline:connectionUnavailable,cacheRead:()=>readOfflineTripSnapshot(),cacheWrite:patch=>mergeOfflineTripSnapshot(patch),narration:{speak:narrateCatalan,stop:stopCatalanNarration,pause:pauseCatalanNarration,resume:resumeCatalanNarration,rate:rateCatalanNarration,hasCatalan:()=>!!catalanVoice()},onClose:()=>{if(history.state?.culturalGuide&&culturalScopeCurrent(history.state.culturalGuide))history.back()}});
+  if(!fromHistory){const origin={...history.state};delete origin.culturalGuide;delete origin.culturalGuideOrigin;history.replaceState({...origin,culturalGuideOrigin:scope},'');history.pushState({...origin,culturalGuide:{...scope,key}},'')}
+  await culturalGuideController.open(key);
+ }catch(_){if(culturalScopeCurrent(scope))msg(visibleAppView()==='activitiesView'?'activityMsg':'genericItineraryMessage','No s’ha pogut obrir la guia cultural. Torna-ho a provar amb connexió.',true)}
+}
+function handleCulturalGuideHistory(event){
+ const route=event.state?.culturalGuide;
+ if(route&&culturalScopeCurrent(route)){void openCulturalGuide(route.key,true);return true}
+ if(culturalGuideController?.isOpen()){
+  if(!culturalGuideController.requestClose(false)){history.pushState({...history.state,culturalGuide:{...culturalScope(),key:culturalGuideController.key()}},'');return true}
+  return true;
+ }
+ return false;
+}
 function activityPlanningRouteCurrent(route){return route&&itineraryRequestIsCurrent(route.tripId,route.generation,route.userId)&&!isLondonTrip()}
 function showActivityPlanning(route){
   if(!activityPlanningRouteCurrent(route))return false;
@@ -5287,6 +5341,7 @@ function handleActivityPlanningHistory(event){
 function renderActivities(){
   const list=$('activityList'),empty=$('activityEmpty'),collection=$('activityCollection'),count=$('activityCount');if(!list||!empty)return;
   if(!trip||!session||isLondonTrip()){list.innerHTML='';empty.classList.add('hidden');collection?.classList.add('hidden');$('activitySourceStatus')?.classList.add('hidden');return}
+  culturalGuideController?.reconcile();
   syncGenericConfirmedModules();
   const projected=unifiedActivityItems(),byKey=new Map(projected.map(item=>[item.key,item]));
   const allRows=activityRowsForMode().filter(row=>byKey.has(`activity:${row.id}:start`)),pendingRows=allRows.filter(isProposalPlaceholderActivity),visibleRows=allRows.filter(row=>!isProposalPlaceholderActivity(row));
@@ -5309,11 +5364,12 @@ function renderActivities(){
     const phone=safePhone(row.contact_phone),website=safeWebsiteUrl(row.website_url);
     const when=schedule?'<div class="activity-quick-section"><small>🗓️ Quan</small><strong>'+esc(schedule.date)+'</strong><span>'+esc(schedule.time)+'</span></div>':'<div class="activity-quick-section"><small>🗓️ Quan</small><span>Pendent de concretar</span></div>';
     const where=location?'<div class="activity-quick-section"><small>📍 On</small><strong>'+esc(row.venue_name||row.city||'Lloc')+'</strong><span>'+esc([row.address,row.city].filter(Boolean).join(' · ')||location)+'</span></div>':'<div class="activity-quick-section"><small>📍 On</small><span>Pendent de concretar</span></div>';
-    return `<article class="accommodation-card" data-activity-id="${esc(row.id)}" data-activity-key="${esc(`activity:${row.id}:start`)}"><div class="accommodation-card-head"><div class="accommodation-identity"><div class="accommodation-icon">${type.icon}</div><div><small class="muted">${esc(type.label)}</small><h3>${esc(row.title)}</h3></div></div><span class="accommodation-status ${esc(row.reservation_status)}">${esc(status)}</span></div><div class="activity-quick">${when}${where}</div>${facts.length?`<div class="accommodation-facts">${facts.map(([label,value])=>`<div class="accommodation-fact"><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`).join('')}</div>`:''}${row.notes?`<p class="accommodation-notes"><span class="activity-notes-label">📝 Notes</span>${esc(row.notes)}</p>`:''}<div class="accommodation-actions">${bookingId?`<button type="button" class="primary-action" data-activity-document="${esc(row.id)}" data-activity-document-role="booking">📄 Reserva</button>`:''}${ticketId?`<button type="button" class="primary-action" data-activity-document="${esc(row.id)}" data-activity-document-role="ticket">🎟️ Entrada</button>`:''}${mapUrl?`<a href="${esc(mapUrl)}" target="_blank" rel="noopener">🧭 Com arribar</a>`:''}${phone?`<a href="tel:${esc(phone)}">📞 Trucar</a>`:''}${row.contact_email?`<a href="mailto:${esc(row.contact_email)}">✉️ Correu</a>`:''}${website?`<a href="${esc(website)}" target="_blank" rel="noopener">🌐 Web</a>`:''}<button type="button" data-edit-activity="${esc(row.id)}">Editar</button><button type="button" class="danger-action" data-delete-activity="${esc(row.id)}">Eliminar</button></div></article>`;
+    return `<article class="accommodation-card" data-activity-id="${esc(row.id)}" data-activity-key="${esc(`activity:${row.id}:start`)}"><div class="accommodation-card-head"><div class="accommodation-identity"><div class="accommodation-icon">${type.icon}</div><div><small class="muted">${esc(type.label)}</small><h3>${esc(row.title)}</h3></div></div><span class="accommodation-status ${esc(row.reservation_status)}">${esc(status)}</span></div><div class="activity-quick">${when}${where}</div>${facts.length?`<div class="accommodation-facts">${facts.map(([label,value])=>`<div class="accommodation-fact"><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`).join('')}</div>`:''}${row.notes?`<p class="accommodation-notes"><span class="activity-notes-label">📝 Notes</span>${esc(row.notes)}</p>`:''}<div class="accommodation-actions">${bookingId?`<button type="button" class="primary-action" data-activity-document="${esc(row.id)}" data-activity-document-role="booking">📄 Reserva</button>`:''}${ticketId?`<button type="button" class="primary-action" data-activity-document="${esc(row.id)}" data-activity-document-role="ticket">🎟️ Entrada</button>`:''}${mapUrl?`<a href="${esc(mapUrl)}" target="_blank" rel="noopener">🧭 Com arribar</a>`:''}${phone?`<a href="tel:${esc(phone)}">📞 Trucar</a>`:''}${row.contact_email?`<a href="mailto:${esc(row.contact_email)}">✉️ Correu</a>`:''}${website?`<a href="${esc(website)}" target="_blank" rel="noopener">🌐 Web</a>`:''}${culturalGuideButton(byKey.get(`activity:${row.id}:start`))}<button type="button" data-edit-activity="${esc(row.id)}">Editar</button><button type="button" class="danger-action" data-delete-activity="${esc(row.id)}">Eliminar</button></div></article>`;
   });
   const cards=new Map(visibleRows.map((row,index)=>[row.id,index]));
   // Render both sources in agenda order, keeping the reservation card contract intact.
   list.innerHTML=pendingHtml+projected.map(item=>item.sourceType==='manual'?planningActivityCard(item):rowsHtml[cards.get(item.sourceId)]||'').join('');
+  bindCulturalGuideButtons(list);
   list.querySelectorAll('[data-activity-planning]').forEach(button=>button.onclick=()=>openActivityPlanning(button.dataset.activityPlanning));
   list.querySelectorAll('[data-activity-document]').forEach(button=>button.onclick=()=>openActivityDocument(button.dataset.activityDocument,button.dataset.activityDocumentRole));
   list.querySelectorAll('[data-edit-activity]').forEach(button=>button.onclick=()=>openActivityForm(button.dataset.editActivity));
@@ -6480,7 +6536,7 @@ function itineraryStatusLabel(status){return {planning:'En planificació',planne
 function itinerarySourceLabel(type,id=''){if(type==='activity'&&isLocalTransportActivity(activityRows.find(row=>row.id===id)))return 'Obrir transport';return {flight:'Obrir vol',accommodation:'Obrir allotjament',activity:'Obrir activitat',manual:'Editar planning'}[type]||'Obrir font'}
 function renderItineraryItem(item,unscheduled=false){
   const details=[item.subtitle,...item.details].filter(Boolean);
-  return `<article class="generic-itinerary-entry" data-itinerary-key="${esc(item.key)}"><div class="generic-itinerary-time ${item.timingKind==='approximate'?'approximate':''}">${unscheduled?'':esc(item.timeLabel)}</div><div class="generic-itinerary-card ${item.isCancelled?'cancelled':''} ${item.isCompleted?'trip-progress-done':''}"><div class="generic-itinerary-main"><div class="generic-itinerary-icon">${item.icon}</div><div class="generic-itinerary-copy"><small>${esc(item.eyebrow)}</small><strong>${esc(item.title)}</strong>${details.map(detail=>`<p>${esc(detail)}</p>`).join('')}${itineraryPointHtml(item)}${tripProgressStatusHtml(item)}${(item.tags||[]).map(tag=>`<span class="generic-itinerary-tag">${esc(tag)}</span>`).join('')}</div></div><div class="generic-itinerary-actions">${tripProgressButton(item)}${item.documents.map(document=>`<button type="button" data-itinerary-document="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}" data-itinerary-document-role="${esc(document.role)}" ${document.documentId?`data-itinerary-document-id="${esc(document.documentId)}"`:''}>${esc(document.label)}</button>`).join('')}${item.mapUrl&&!itineraryPointRow(item)?.location_points?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">📍 Maps</a>`:''}<button type="button" class="source-action" data-itinerary-source="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}">${esc(itinerarySourceLabel(item.sourceType,item.sourceId))}</button>${itineraryPointRow(item)?`<button type="button" data-activity-points="${esc(item.key)}">📍 Edita els punts</button>`:''}${item.sourceType==='manual'&&!itineraryPointRow(item)&&!item.mapUrl?`<button type="button" data-itinerary-find-place="${esc(item.sourceId)}">📍 Cerca ubicació</button>`:''}${item.overnightCorrectionDate?`<button type="button" data-confirm-overnight-date="${esc(item.sourceId)}" data-overnight-target="${esc(item.overnightCorrectionDate)}">✓ Confirma la data del ${esc(item.overnightCorrectionDate.slice(-2))}, a les ${esc(item.timeLabel)}</button>`:''}${item.sourceType==='manual'?`<button type="button" data-delete-manual-itinerary="${esc(item.sourceId)}">Elimina</button>`:''}</div></div></article>`;
+  return `<article class="generic-itinerary-entry" data-itinerary-key="${esc(item.key)}"><div class="generic-itinerary-time ${item.timingKind==='approximate'?'approximate':''}">${unscheduled?'':esc(item.timeLabel)}</div><div class="generic-itinerary-card ${item.isCancelled?'cancelled':''} ${item.isCompleted?'trip-progress-done':''}"><div class="generic-itinerary-main"><div class="generic-itinerary-icon">${item.icon}</div><div class="generic-itinerary-copy"><small>${esc(item.eyebrow)}</small><strong>${esc(item.title)}</strong>${details.map(detail=>`<p>${esc(detail)}</p>`).join('')}${itineraryPointHtml(item)}${tripProgressStatusHtml(item)}${(item.tags||[]).map(tag=>`<span class="generic-itinerary-tag">${esc(tag)}</span>`).join('')}</div></div><div class="generic-itinerary-actions">${culturalGuideButton(item)}${tripProgressButton(item)}${item.documents.map(document=>`<button type="button" data-itinerary-document="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}" data-itinerary-document-role="${esc(document.role)}" ${document.documentId?`data-itinerary-document-id="${esc(document.documentId)}"`:''}>${esc(document.label)}</button>`).join('')}${item.mapUrl&&!itineraryPointRow(item)?.location_points?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">📍 Maps</a>`:''}<button type="button" class="source-action" data-itinerary-source="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}">${esc(itinerarySourceLabel(item.sourceType,item.sourceId))}</button>${itineraryPointRow(item)?`<button type="button" data-activity-points="${esc(item.key)}">📍 Edita els punts</button>`:''}${item.sourceType==='manual'&&!itineraryPointRow(item)&&!item.mapUrl?`<button type="button" data-itinerary-find-place="${esc(item.sourceId)}">📍 Cerca ubicació</button>`:''}${item.overnightCorrectionDate?`<button type="button" data-confirm-overnight-date="${esc(item.sourceId)}" data-overnight-target="${esc(item.overnightCorrectionDate)}">✓ Confirma la data del ${esc(item.overnightCorrectionDate.slice(-2))}, a les ${esc(item.timeLabel)}</button>`:''}${item.sourceType==='manual'?`<button type="button" data-delete-manual-itinerary="${esc(item.sourceId)}">Elimina</button>`:''}</div></div></article>`;
 }
 
 async function confirmOvernightItineraryDate(button){
@@ -6545,6 +6601,7 @@ async function openQuickItineraryPlacePicker(button){
  }
 }
 function bindItineraryActions(container){
+  bindCulturalGuideButtons(container);
   container.querySelectorAll('[data-activity-points]').forEach(button=>button.onclick=()=>{void openActivityPointEditor(button)});
   bindTripProgress(container,itineraryProjection,'genericItineraryMessage');
   bindContextPhotoActions(container,itineraryProjection);
@@ -6980,6 +7037,7 @@ async function disconnectTripRealtime(){
   await Promise.allSettled(active.map(item=>db.removeChannel(item)));
 }
 function clearGenericItineraryState(){
+  stopCatalanNarration();resetCulturalGuide();
   closeActivityPointEditor();
   if(typeof agendaRouteModule!=='undefined')agendaRouteModule?.resetAgendaRoutes();
   clearTripHomeState();
@@ -7122,6 +7180,7 @@ async function restoreHomeRoute(){
   if(nav?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView'].includes(nav.view))navigateBuilder(nav.view==='constructionView'?'designTripView':nav.view,false);
 }
 function handleHomeTripPopState(event){
+  if(handleCulturalGuideHistory(event))return true;
   if(handleActivityPlanningHistory(event))return true;
   const view=visibleAppView(),nav=event.state?.builderNav,detail=event.state?.homeTripDetail;
   const operational=['dashboardView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView'].includes(view);
