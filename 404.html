@@ -1161,6 +1161,7 @@
       </section>
       <p id="activityMsg" class="message accommodation-message hidden" role="status" aria-live="polite"></p>
       <div id="activityBrowse">
+        <p id="activitySourceStatus" class="message hidden" role="status" aria-live="polite"></p>
         <div id="activityLoading" class="accommodation-loading hidden">Carregant activitats…</div>
         <div id="activityEmpty" class="accommodation-empty hidden"><strong>Encara no hi ha cap reserva ni activitat</strong>Pots afegir plans amb data o deixar l’horari pendent.<br><button id="addFirstActivity" type="button">Afegir activitat</button></div>
         <section id="activityCollection" class="activity-collection hidden" aria-label="Activitats del viatge">
@@ -4508,6 +4509,7 @@ function setAppView(id){
   document.querySelectorAll('[data-home-view]').forEach(button=>button.setAttribute('aria-current',button.dataset.homeView===id?'page':'false'));
   if(['dashboardView','genericDashboardView'].includes(id)){const label=homeTripReturn?.owner===session?.user?.id?({upcomingTripsView:'Propers',pastTripsView:'Passats',manualTripView:'Afegeix el viatge manualment',joinTripView:'Uneix-te a un viatge'})[homeTripReturn.parent]:null;[$('backToTrips'),...document.querySelectorAll('[data-trips-home]')].forEach(button=>{if(button)button.textContent='← '+(label||'Els meus viatges')})}
   renderContextHeader(id);
+  const planningBack=document.querySelector('#itineraryView [data-back]');if(planningBack)planningBack.textContent=validOperationalReturnRoute('itineraryView')?.parentView==='activitiesView'?'← Tornar a Activitats':'← Torna al tauler';
   if(id!=='builderView'&&typeof coldStartNavigationPending!=='undefined'&&!coldStartNavigationPending)leaveBuilderPointer();
   persistNavigationState(id);
   updateTripHomeClock();updateHomeClock();
@@ -5081,13 +5083,34 @@ function proposalPendingHtml(row,kind){
   return `<div class="proposal-pending-row"><div><small>Proposta del viatge · ${esc(label)}</small><strong>Pendent de definir</strong>${row?.notes?`<p>${esc(row.notes)}</p>`:''}</div><button type="button" class="secondary" ${editAttr}="${esc(row.id)}">Concretar</button></div>`;
 }
 function activityRowsForMode(mode=activityViewMode){return activityRows.filter(row=>mode==='local_transport'?isLocalTransportActivity(row):!isLocalTransportActivity(row))}
-function activitySummary(rows=activityRowsForMode('activity')){const count=rows.length;return !count?'Cap activitat':count===1?'1 activitat':`${count} activitats`}
+// ACTIVITIES_PROJECTION_START — read-only view over the existing agenda identities.
+function planningActivityKind(title){
+  const text=String(title||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  if(/^(?:opcional:\s*)?(?:esmorzar|dinar|sopar|aperitiu|breakfast|lunch|dinner)\b/i.test(text))return {label:'Àpat del planning',icon:'🍽️'};
+  if(/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(text))return {label:'Trasllat del planning',icon:'🚇'};
+  // No persistent taxonomy exists on trip_itinerary_items. Do not guess a booking/type.
+  return {label:'Visita o pla de l’itinerari',icon:'📍'};
+}
+function unifiedActivityItems(){
+  if(!trip||!session||isLondonTrip())return [];
+  const seen=new Set();
+  return normalizedItineraryProjection(trip.id,tripLoadGeneration,session.user.id).filter(item=>{
+    if(!['activity','manual'].includes(item.sourceType)||item.sourceType==='activity'&&isLocalTransportActivity(tripHomeSourceRow(item))||seen.has(item.key))return false;
+    seen.add(item.key);return true;
+  });
+}
+function planningActivityCard(item){
+  const kind=planningActivityKind(item.title),row=tripHomeSourceRow(item);
+  return `<article class="accommodation-card" data-activity-key="${esc(item.key)}"><div class="accommodation-card-head"><div class="accommodation-identity"><div class="accommodation-icon">${kind.icon}</div><div><small class="muted">${esc(kind.label)}</small><h3>${esc(item.title)}</h3></div></div>${tripProgressStatusHtml(item)}</div><div class="activity-quick"><div class="activity-quick-section"><small>🗓️ Quan</small><strong>${esc(item.localDate?itineraryDayHeading(item.localDate):'Pendent de concretar')}</strong><span>${esc(item.timeLabel)}</span></div><div class="activity-quick-section"><small>📍 On</small><strong>${esc([row.location_name,row.address,row.city].filter(Boolean).join(' · ')||'Pendent de concretar')}</strong></div></div>${row.notes?`<p class="accommodation-notes">${esc(row.notes)}</p>`:''}<div class="accommodation-actions">${item.mapUrl?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">🧭 Com arribar</a>`:''}<button type="button" data-activity-planning="${esc(item.key)}">Veure / editar al planning</button></div></article>`;
+}
+// ACTIVITIES_PROJECTION_END
+function activitySummary(rows=unifiedActivityItems()){const count=rows.length;return !count?'Cap activitat':count===1?'1 activitat':`${count} activitats`}
 function localTransportSummary(rows=activityRowsForMode('local_transport')){const count=rows.length;return !count?'Cap transport local':count===1?'1 transport local':`${count} transports locals`}
 function syncGenericConfirmedModules(){
   if(!trip||isLondonTrip())return;
   const flights=flightRows;
   const accommodations=accommodationRows;
-  const activities=activityRowsForMode('activity');
+  const activities=unifiedActivityItems();
   const localTransport=activityRowsForMode('local_transport');
   const carRentals=carRentalRows;
   const itineraryAny=flights.length||accommodations.length||activities.length||localTransport.length;
@@ -5239,15 +5262,41 @@ function activityMapUrl(row){
   if(row.latitude!=null&&row.longitude!=null)return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${row.latitude},${row.longitude}`)}`;
   const query=[row.venue_name,row.address,row.city].filter(Boolean).join(', ');return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:'';
 }
+function activityPlanningRouteCurrent(route){return route&&itineraryRequestIsCurrent(route.tripId,route.generation,route.userId)&&!isLondonTrip()}
+function showActivityPlanning(route){
+  if(!activityPlanningRouteCurrent(route))return false;
+  const item=unifiedActivityItems().find(item=>item.key===route.key&&item.sourceType==='manual');
+  if(!item)return false;
+  genericItinerarySelectedTripId=trip.id;genericItinerarySelectedDay=item.localDate||'pending';
+  tripHomeItineraryFocus={key:item.key,tripId:trip.id,generation:tripLoadGeneration,userId:session.user.id};
+  setOperationalReturnRoute('itineraryView','activitiesView');setAppView('itineraryView');return true;
+}
+function openActivityPlanning(key){
+  const route={key,tripId:trip?.id,generation:tripLoadGeneration,userId:session?.user?.id};
+  if(!activityPlanningRouteCurrent(route)||!unifiedActivityItems().some(item=>item.key===key&&item.sourceType==='manual'))return;
+  history.replaceState({...history.state,activityPlanning:{...route,view:'activitiesView'}},'');
+  history.pushState({...history.state,activityPlanning:{...route,view:'itineraryView'}},'');
+  showActivityPlanning(route);
+}
+function handleActivityPlanningHistory(event){
+  const route=event.state?.activityPlanning;if(!activityPlanningRouteCurrent(route))return false;
+  if(route.view==='itineraryView')return showActivityPlanning(route);
+  if(route.view==='activitiesView'){clearOperationalReturnRoute('itineraryView');setAppView('activitiesView');return true}
+  return false;
+}
 function renderActivities(){
   const list=$('activityList'),empty=$('activityEmpty'),collection=$('activityCollection'),count=$('activityCount');if(!list||!empty)return;
-  if(isLondonTrip()){list.innerHTML='';empty.classList.add('hidden');collection?.classList.add('hidden');return}
+  if(!trip||!session||isLondonTrip()){list.innerHTML='';empty.classList.add('hidden');collection?.classList.add('hidden');$('activitySourceStatus')?.classList.add('hidden');return}
   syncGenericConfirmedModules();
-  const allRows=activityRowsForMode(),pendingRows=allRows.filter(isProposalPlaceholderActivity),visibleRows=allRows.filter(row=>!isProposalPlaceholderActivity(row));
-  if($('genericActivitiesModuleStatus'))$('genericActivitiesModuleStatus').textContent=activitySummary(visibleRows);
+  const projected=unifiedActivityItems(),byKey=new Map(projected.map(item=>[item.key,item]));
+  const allRows=activityRowsForMode().filter(row=>byKey.has(`activity:${row.id}:start`)),pendingRows=allRows.filter(isProposalPlaceholderActivity),visibleRows=allRows.filter(row=>!isProposalPlaceholderActivity(row));
   if($('genericLocalTransportModuleStatus'))$('genericLocalTransportModuleStatus').textContent=localTransportSummary(localTransportRows().filter(row=>!isProposalPlaceholderActivity(row)));
-  empty.classList.toggle('hidden',allRows.length>0);collection?.classList.toggle('hidden',!allRows.length);
-  if(count)count.textContent=visibleRows.length?visibleRows.length===1?'1 activitat':visibleRows.length+' activitats':'Cap activitat afegida';
+  const manualItems=projected.filter(item=>item.sourceType==='manual'),total=visibleRows.length+manualItems.length;
+  empty.classList.toggle('hidden',projected.length>0);collection?.classList.toggle('hidden',!projected.length);
+  const missing=['activity','manual'].filter(type=>itinerarySourceReady[type]!==itinerarySourceMarker(type,trip.id,tripLoadGeneration,session?.user?.id));
+  const sourceStatus=$('activitySourceStatus');if(sourceStatus){sourceStatus.classList.toggle('hidden',!missing.length&&!connectionUnavailable());sourceStatus.textContent=connectionUnavailable()?'📵 Activitats desades per consultar. Per editar cal connexió.':missing.length?'Llista parcial: falten activitats o plans per actualitzar. Torna a obrir Activitats per reintentar.':''}
+  if(count)count.textContent=total?total===1?'1 activitat':total+' activitats':'Cap activitat afegida';
+  if($('genericActivitiesModuleStatus'))$('genericActivitiesModuleStatus').textContent=activitySummary(projected.filter(item=>!isProposalPlaceholderActivity(tripHomeSourceRow(item))));
   const pendingHtml=pendingRows.map(row=>proposalPendingHtml(row,'activity')).join('');
   const rowsHtml=visibleRows.map(row=>{
     const type=ACTIVITY_TYPES[row.activity_type]||ACTIVITY_TYPES.other,status=ACTIVITY_STATUSES[row.reservation_status]||row.reservation_status,schedule=activitySchedule(row),location=activityLocation(row),mapUrl=activityMapUrl(row);
@@ -5260,9 +5309,12 @@ function renderActivities(){
     const phone=safePhone(row.contact_phone),website=safeWebsiteUrl(row.website_url);
     const when=schedule?'<div class="activity-quick-section"><small>🗓️ Quan</small><strong>'+esc(schedule.date)+'</strong><span>'+esc(schedule.time)+'</span></div>':'<div class="activity-quick-section"><small>🗓️ Quan</small><span>Pendent de concretar</span></div>';
     const where=location?'<div class="activity-quick-section"><small>📍 On</small><strong>'+esc(row.venue_name||row.city||'Lloc')+'</strong><span>'+esc([row.address,row.city].filter(Boolean).join(' · ')||location)+'</span></div>':'<div class="activity-quick-section"><small>📍 On</small><span>Pendent de concretar</span></div>';
-    return `<article class="accommodation-card" data-activity-id="${esc(row.id)}"><div class="accommodation-card-head"><div class="accommodation-identity"><div class="accommodation-icon">${type.icon}</div><div><small class="muted">${esc(type.label)}</small><h3>${esc(row.title)}</h3></div></div><span class="accommodation-status ${esc(row.reservation_status)}">${esc(status)}</span></div><div class="activity-quick">${when}${where}</div>${facts.length?`<div class="accommodation-facts">${facts.map(([label,value])=>`<div class="accommodation-fact"><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`).join('')}</div>`:''}${row.notes?`<p class="accommodation-notes"><span class="activity-notes-label">📝 Notes</span>${esc(row.notes)}</p>`:''}<div class="accommodation-actions">${bookingId?`<button type="button" class="primary-action" data-activity-document="${esc(row.id)}" data-activity-document-role="booking">📄 Reserva</button>`:''}${ticketId?`<button type="button" class="primary-action" data-activity-document="${esc(row.id)}" data-activity-document-role="ticket">🎟️ Entrada</button>`:''}${mapUrl?`<a href="${esc(mapUrl)}" target="_blank" rel="noopener">🧭 Com arribar</a>`:''}${phone?`<a href="tel:${esc(phone)}">📞 Trucar</a>`:''}${row.contact_email?`<a href="mailto:${esc(row.contact_email)}">✉️ Correu</a>`:''}${website?`<a href="${esc(website)}" target="_blank" rel="noopener">🌐 Web</a>`:''}<button type="button" data-edit-activity="${esc(row.id)}">Editar</button><button type="button" class="danger-action" data-delete-activity="${esc(row.id)}">Eliminar</button></div></article>`;
-  }).join('');
-  list.innerHTML=pendingHtml+rowsHtml;
+    return `<article class="accommodation-card" data-activity-id="${esc(row.id)}" data-activity-key="${esc(`activity:${row.id}:start`)}"><div class="accommodation-card-head"><div class="accommodation-identity"><div class="accommodation-icon">${type.icon}</div><div><small class="muted">${esc(type.label)}</small><h3>${esc(row.title)}</h3></div></div><span class="accommodation-status ${esc(row.reservation_status)}">${esc(status)}</span></div><div class="activity-quick">${when}${where}</div>${facts.length?`<div class="accommodation-facts">${facts.map(([label,value])=>`<div class="accommodation-fact"><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`).join('')}</div>`:''}${row.notes?`<p class="accommodation-notes"><span class="activity-notes-label">📝 Notes</span>${esc(row.notes)}</p>`:''}<div class="accommodation-actions">${bookingId?`<button type="button" class="primary-action" data-activity-document="${esc(row.id)}" data-activity-document-role="booking">📄 Reserva</button>`:''}${ticketId?`<button type="button" class="primary-action" data-activity-document="${esc(row.id)}" data-activity-document-role="ticket">🎟️ Entrada</button>`:''}${mapUrl?`<a href="${esc(mapUrl)}" target="_blank" rel="noopener">🧭 Com arribar</a>`:''}${phone?`<a href="tel:${esc(phone)}">📞 Trucar</a>`:''}${row.contact_email?`<a href="mailto:${esc(row.contact_email)}">✉️ Correu</a>`:''}${website?`<a href="${esc(website)}" target="_blank" rel="noopener">🌐 Web</a>`:''}<button type="button" data-edit-activity="${esc(row.id)}">Editar</button><button type="button" class="danger-action" data-delete-activity="${esc(row.id)}">Eliminar</button></div></article>`;
+  });
+  const cards=new Map(visibleRows.map((row,index)=>[row.id,index]));
+  // Render both sources in agenda order, keeping the reservation card contract intact.
+  list.innerHTML=pendingHtml+projected.map(item=>item.sourceType==='manual'?planningActivityCard(item):rowsHtml[cards.get(item.sourceId)]||'').join('');
+  list.querySelectorAll('[data-activity-planning]').forEach(button=>button.onclick=()=>openActivityPlanning(button.dataset.activityPlanning));
   list.querySelectorAll('[data-activity-document]').forEach(button=>button.onclick=()=>openActivityDocument(button.dataset.activityDocument,button.dataset.activityDocumentRole));
   list.querySelectorAll('[data-edit-activity]').forEach(button=>button.onclick=()=>openActivityForm(button.dataset.editActivity));
   list.querySelectorAll('[data-delete-activity]').forEach(button=>button.onclick=()=>deleteActivity(button.dataset.deleteActivity,button));
@@ -5300,9 +5352,9 @@ function openActivityForm(id=''){
 async function loadActivityViewData(){
   if(!trip||!session||isLondonTrip())return;
   const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
-  await loadDocuments(true);
-  if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId||isLondonTrip())return;
-  await loadActivities();
+  $('activityLoading').classList.remove('hidden');
+  try{await Promise.all([loadDocuments(true),ensureTripAgenda()])}
+  finally{if(itineraryRequestIsCurrent(tripId,generation,userId)){$('activityLoading').classList.add('hidden');renderActivities()}}
 }
 async function fetchAgendaActivities(silent=false){
   if(!trip||isLondonTrip())return [];const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id,sequence=++activityLoadSequence;
@@ -5310,7 +5362,7 @@ async function fetchAgendaActivities(silent=false){
   try{
     const [rowsResult,linksResult]=await Promise.all([db.from('trip_activities').select('*').eq('trip_id',tripId).order('start_at',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true}).order('id',{ascending:true}),db.from('trip_activity_documents').select('trip_id,activity_id,document_id,document_role').eq('trip_id',tripId)]);
     if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId||sequence!==activityLoadSequence||isLondonTrip())return activityRows;if(rowsResult.error)throw rowsResult.error;if(linksResult.error)throw linksResult.error;
-    activityRows=rowsResult.data||[];activityDocumentLinks=linksResult.data||[];renderActivities();renderLocalTransports();markItinerarySourceReady('activity',tripId,generation,userId);if(!$('activitiesView').classList.contains('hidden'))restoreActivityDraft();openPendingItinerarySource('activity');
+    activityRows=rowsResult.data||[];activityDocumentLinks=linksResult.data||[];markItinerarySourceReady('activity',tripId,generation,userId);renderActivities();renderLocalTransports();if(!$('activitiesView').classList.contains('hidden'))restoreActivityDraft();openPendingItinerarySource('activity');
     const form=$('activityForm'),editingId=form.dataset.tripId===tripId?form.dataset.editId||'':'';
     if(editingId){const current=activityRows.find(item=>item.id===editingId),originalUpdatedAt=form.dataset.originalUpdatedAt||'',originalBooking=form.dataset.originalBookingDocumentId||'',originalTicket=form.dataset.originalTicketDocumentId||'';if(!current){clearActivityDraft(tripId);resetActivityFormUi();msg('activityMsg','Aquesta activitat s’ha eliminat mentre l’editaves. Hem actualitzat la llista.',true)}else if(current.updated_at!==originalUpdatedAt||activityDocumentId(editingId,'booking')!==originalBooking||activityDocumentId(editingId,'ticket')!==originalTicket){form.dataset.remoteConflict='true';msg('activityMsg','Aquesta activitat ha canviat mentre l’editaves. Els teus camps no s’han sobreescrit; torna a desar per revisar el conflicte.',true)}}
     return activityRows;
@@ -6797,7 +6849,7 @@ function rebuildGenericItinerary(tripId=trip?.id,generation=tripLoadGeneration,u
 }
 function scheduleItineraryRebuild(){
   if(!trip||isLondonTrip())return;
-  renderTripHome();
+  renderTripHome();renderActivities();
   if($('itineraryView').classList.contains('hidden')||$('genericItineraryContent').classList.contains('hidden'))return;
   const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id;
   if(itineraryRenderTimer)clearTimeout(itineraryRenderTimer);
@@ -7070,6 +7122,7 @@ async function restoreHomeRoute(){
   if(nav?.owner===session?.user?.id&&['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView'].includes(nav.view))navigateBuilder(nav.view==='constructionView'?'designTripView':nav.view,false);
 }
 function handleHomeTripPopState(event){
+  if(handleActivityPlanningHistory(event))return true;
   const view=visibleAppView(),nav=event.state?.builderNav,detail=event.state?.homeTripDetail;
   const operational=['dashboardView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView'].includes(view);
   if(operational&&nav?.view==='builderView')return true; // Stale Builder history can never resurrect over an operational trip.
@@ -7378,7 +7431,7 @@ document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
   updateItinerarySourceBack();setAppView(b.dataset.open)
 });
 $('travelBookBack').onclick=()=>setAppView(travelBookReturnView||tripDashboardId());
-$('tripReviewBack').onclick=()=>setAppView('buildView');$('backToTrips').onclick=returnFromHomeTrip;document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=returnFromHomeTrip);document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-generic-module]').forEach(b=>b.onclick=()=>openGenericModule(b.dataset.genericModule));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>setAppView(tripDashboardId()));document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
+$('tripReviewBack').onclick=()=>setAppView('buildView');$('backToTrips').onclick=returnFromHomeTrip;document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=returnFromHomeTrip);document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-generic-module]').forEach(b=>b.onclick=()=>openGenericModule(b.dataset.genericModule));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(visibleAppView()==='itineraryView'&&validOperationalReturnRoute('itineraryView')?.parentView==='activitiesView'){if(history.state?.activityPlanning?.view==='itineraryView'){history.back();return}clearOperationalReturnRoute('itineraryView');setAppView('activitiesView');return}setAppView(tripDashboardId())});document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
 document.querySelectorAll('[data-source-back]').forEach(button=>button.onclick=handleItinerarySourceBack);
 $('refreshGenericItinerary').onclick=()=>loadGenericItinerary(true);
 $('addManualItineraryItem').onclick=()=>openManualItineraryForm();
