@@ -1,3 +1,19 @@
+// Map only known validator errors to safe diagnostics. Never log model output or source text.
+function validationReason(error){
+ const reasons=new Map([
+  ['La cita no correspon a la font.','quote_not_in_source'],
+  ['Falten les fonts de la secció.','missing_evidence'],
+  ['Proposta cultural incompleta.','incomplete_sections'],
+  ['Secció cultural no vàlida.','invalid_section'],
+  ['Font cultural no vàlida.','invalid_source'],
+  ['Cita no vàlida.','invalid_citation'],
+  ['Fitxa cultural no vàlida.','invalid_document'],
+  ['Camps culturals no vàlids.','invalid_fields'],
+  ['La font no correspon exactament al lloc.','identity_mismatch'],
+  ['El text no és una transcripció de la font.','source_text_mismatch']
+ ]);
+ return reasons.get(error?.message)||'other';
+}
 import {culturalPlaces,guidePlaceKey,guideProposal,sourceMatchesPlace,culturalName} from '../../../domain/cultural-guide.mjs';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function createCulturalGuideHandler({authenticate,readItem,search,readArticle,generate,now=Date.now,diagnose=(_event)=>{}}){
@@ -39,7 +55,7 @@ export function createCulturalGuideHandler({authenticate,readItem,search,readArt
    const timeout=['TimeoutError','AbortError'].includes(error?.name);
    const code=timeout?(stage==='generate'?'generation_timeout':'source_timeout'):stage==='validate'?'invalid_response':['not_configured','rate_limited','invalid_response','source_unavailable','source_unsuitable','provider_error'].includes(error?.message)?error.message:'provider_error';
    // No raw provider message, source text, JWT, user or visit identifiers in logs.
-   diagnose({event:'cultural_guide_failure',request_id:requestId,stage,code,...(Number.isInteger(error?.providerStatus)?{provider_status:error.providerStatus}:{})});
+   diagnose({event:'cultural_guide_failure',request_id:requestId,stage,code,...(stage==='validate'?{validation_reason:validationReason(error)}:{}),...(Number.isInteger(error?.providerStatus)?{provider_status:error.providerStatus}:{})});
    return reply({error:code,stage,request_id:requestId},code==='rate_limited'?429:503);
   }
  };
