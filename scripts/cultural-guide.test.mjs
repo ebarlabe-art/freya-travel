@@ -92,6 +92,6 @@ test('Wikimedia requests identify Freya Travel and preserve upstream HTTP status
  });
  assert.equal(calls.length,1);
  assert.equal(calls[0].host,'it.wikipedia.org');
- assert.match(calls[0].agent,/github.com\\/ebarlabe-art\\/freya-travel/);
+ assert.ok(calls[0].agent.includes('https://github.com/ebarlabe-art/freya-travel'));
  await assert.rejects(searchCulturalArticles(place,'it',async()=>({ok:false,status:429})),error=>error.message==='rate_limited'&&error.providerStatus===429);
 });
