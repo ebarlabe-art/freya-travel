@@ -90,3 +90,13 @@ Reversió conservadora: tornar al frontend anterior i retirar l'ús de l'Edge no
 - WebKit local **no executable**: falten GTK4, Graphene, Harfbuzz ICU, Manette, Hyphen i GLES. El mateix recorregut queda afegit a CI amb instal·lació de dependències. Això no substitueix la prova física de Safari/iPhone.
 
 Els resultats validen contractes i comportament amb dades sintètiques; no acrediten la qualitat factual de textos generats amb fonts reals. La revisió humana de cada font i la validació al teu iPhone continuen pendents abans de publicar.
+
+## Incidència CI 39805961858 i correcció
+
+El job `a2-test-build` quedà al pas 12. Després de cancel·lar-lo per alliberar el runner i obtenir els logs, es confirma que **npm instal·là Playwright en 1 segon** (15:33:55 UTC). `install --with-deps` havia passat a APT: descàrregues extremament lentes i reintents des de `http://azure.archive.ubuntu.com/ubuntu` fins a les 15:51:21, amb `Ign` per `fonts-ipafont-gothic` i `libcodec2-1.2`. Els navegadors encara no s’estaven descarregant. Els logs acrediten el coll d’ampolla del mirall APT; no determinen la causa de xarxa subjacent.
+
+El workflow ara separa `browser-chromium` i `browser-webkit` en runners Ubuntu 24.04 independents, matriu amb `fail-fast: false`, sense dependència de l’altre motor ni `continue-on-error`. Cada job reconstrueix l’artefacte sintètic. Es conserven totes les invocacions de navegador anteriors, incloses guia/audioguia WebKit i regressions mòbil/tauleta. Els contractes i la base embeguda continuen a `a2-test-build`.
+
+La instal·lació es divideix en tres passos amb límits interns i de GitHub: npm 180 s, dependències 360 s i descàrrega 240 s. APT usa l’arxiu oficial d’Ubuntu via HTTPS en lloc del mirall Azure identificat als logs (inclosa la mirrorlist del runner), amb timeout de connexió/lectura de 20 s, dos reintents i espera de lock de 60 s. npm i Playwright també tenen timeouts de xarxa. No es reutilitzen binaris d’una versió diferent ni s’ometen biblioteques. Un smoke test obre i tanca cada navegador després d’instal·lar-lo. Qualsevol error/timeout falla el job; es conserva el codi de sortida.
+
+Logs separats per fase amb timestamps, versió, diagnòstic de disc/processos/APT i artefacte `browser-install-<motor>` carregat amb `always()`. Cada prova té un màxim de 5 minuts i cada job de navegador 30. Proves locals de la infraestructura simulen èxit, error i timeout en les tres fases, i comproven que no desapareix cap invocació de navegador. Workflow validat amb actionlint; sintaxi shell validada amb `bash -n`. La nova execució remota és la prova efectiva dels dos instal·ladors sobre runners GitHub.

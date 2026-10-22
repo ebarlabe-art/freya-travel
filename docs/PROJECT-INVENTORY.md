@@ -8,6 +8,8 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 Base actual d’implementació: `main` `aa30462`, que incorpora la projecció compartida Itinerari/Activitats de la **PR #177 fusionada**. El tall d’auditoria anterior que segueix es conserva com a evidència històrica; les seves referències a branques/PR pendents no descriuen aquest nou tall.
 
+La PR independent [#178](https://github.com/ebarlabe-art/freya-travel/pull/178) continua en esborrany. La incidència CI `39805961858` s’ha identificat als logs com a descàrregues APT lentes del mirall Azure; correcció amb jobs Chromium/WebKit obligatoris independents, timeouts i diagnòstic documentada a `cultural-guide-167.md`.
+
 La branca `feat/167-universal-cultural-guide` implementa la guia cultural per lloc identificat, edició i desament amb concurrència, consulta offline i audioguia amb el motor de Londres. Reutilitza la projecció #177, el carregador de mòduls, el cache per usuari/viatge i la navegació existent. La PR #169 s’ha revisat: se’n reutilitza l’enfocament TTS; no s’incorpora la narració de dies ni es fusiona la PR. El codi base conté **13** fitxes de Londres, tot i que la issue esmentava 12.
 
 **Estat: codi i migració escrits en branca; desplegament i validació física pendents.** Cap migració aplicada, Edge desplegada, frontend publicat ni dada de producció modificada per aquesta tasca. Sense FREYA PROVES. La generació amb fonts reals i l’ús físic a iPhone encara no queden acreditats per les proves sintètiques. Detalls, resultats, límits, reconciliació amb #169 i instruccions de prova local a [cultural-guide-167.md](cultural-guide-167.md). La prioritat #167 prové de la petició explícita de l’usuari; no reordena el roadmap.
