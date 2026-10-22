@@ -1,6 +1,6 @@
 # #176 · Itinerari i Activitats
 
-Estat: implementació en branca `fix/176-unified-itinerary-activities`, basada en `main` `678d8d007eed89448b6201173ac797b53cd7e360`. No acredita desplegament ni canvis a dades reals.
+Estat: [PR #177](https://github.com/ebarlabe-art/freya-travel/pull/177) en esborrany; implementació en branca `fix/176-unified-itinerary-activities`, basada en `main` `678d8d007eed89448b6201173ac797b53cd7e360`. No acredita desplegament ni canvis a dades reals.
 
 ## Contracte
 
@@ -29,6 +29,7 @@ Executat localment amb transport sintètic i trànsit remot del navegador bloque
 - `npm run build`, `npm run entries:check` i `node scripts/check-v27-production.mjs`: correctes.
 - `check-activities-projection-browser.mjs` en Chromium: mòbil 390×844 i tauleta 1024×768 amb identificació d'escriptori. Bolonya/Eivissa/Londres sintètics, sis horaris, documents opcionals de reserva, edició explícita amb versió/ID originals, Back/Forward, retorn, reload, consulta offline/pageshow, canvi de viatge, font fallida/reintent i cap insert/upsert/delete.
 - `check-itinerary-loading-browser.mjs`: correcte; inclou reobertura offline, sessió caducada, canvi d'usuari/viatge, logout, imports ja existents i dades parcials.
+- `check-pwa-bootstrap-browser.mjs` en Chromium: correcte; arrencada, actualització del service worker, recuperació de shell 503, entrada històrica i reobertura offline.
 - `check-shared-trip-browser.mjs`: correcte; dos membres sintètics, retorn, reload, reobertura offline i layout tauleta.
 
 La CI incorpora el nou contracte i el navegador en Chromium mòbil/tauleta i WebKit mòbil. **WebKit local pendent:** el navegador es descarrega però falten biblioteques del sistema (GTK4, Graphene, HarfBuzz ICU, Manette, Hyphen i GLES). Això no acredita Safari físic. Validació iPhone/PWA física i dos usuaris reals pendent d'autorització posterior. No s'ha usat FREYA PROVES, no s'han llegit/modificat dades productives, ni aplicat migracions, desplegat, publicat o fusionat.
