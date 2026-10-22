@@ -155,7 +155,7 @@ Abans d'implementar: decidir projecció de lectura o vinculació estable, una fo
 
 **Fet ara:** contrast documental/històric de les fonts accessibles amb `main`, registre de les 11 PR obertes, evidència de frontend publicat, 786 tests locals i build/paritat correctes. Només es modifica aquest fitxer. Roadmap canònic, AGENTS, aplicació, dades i entorns queden sense canvis. Cap merge automàtic.
 
-**On queda:** branca `docs/historical-audit-20261022`, PR documental contra `main` amb títol «docs: auditoria històrica i memòria permanent de Freya Travel». La revisió encara no és memòria fusionada fins que s'aprovi el merge. L'URL i el resultat de checks de la nova PR es poden recuperar pel nom de branca; no s'assumeix que la CI d'aquesta PR sigui la mateixa que la de #174.
+**On queda:** branca `docs/historical-audit-20261022`, [PR documental #175](https://github.com/ebarlabe-art/freya-travel/pull/175) contra `main`, amb títol «docs: auditoria històrica i memòria permanent de Freya Travel». La revisió encara no és memòria fusionada fins que s'aprovi el merge. L'URL i el resultat de checks de la nova PR es poden recuperar pel nom de branca; no s'assumeix que la CI d'aquesta PR sigui la mateixa que la de #174.
 
 **Com reprendre des de qualsevol conversa:** llegir AGENTS + aquest inventari + ROADMAP-CANONIC; actualitzar SHA de main, PR obertes i checks. Partir del delta des de `4846b3e…`, sense repetir tota l'auditoria ni donar validesa actual a estats remots antics.
 
