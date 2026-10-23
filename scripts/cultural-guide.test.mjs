@@ -126,3 +126,5 @@ test('all inaccurate model quotes fail closed instead of creating an ungrounded 
  for(const section of Object.values(sections))section.quote='invented quote';
  assert.throws(()=>guideProposal(place,article,sections),/sense cites verificables/);
 });
+
+// Regression: keep citation checks strict while allowing supported sections.
