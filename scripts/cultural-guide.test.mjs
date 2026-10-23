@@ -96,7 +96,7 @@ test('Wikimedia requests identify Freya Travel and preserve upstream HTTP status
  await assert.rejects(searchCulturalArticles(place,'it',async()=>({ok:false,status:429})),error=>error.message==='rate_limited'&&error.providerStatus===429);
 });
 
-test('validation diagnostics identify the failed check without exposing private text',async()=>{
+test('a rejected quotation does not leak content or invalidate independently supported sections',async()=>{
  const article=culturalArticle(bolognaPlaces[4]),events=[];
  const {handler,data}=setup({diagnose:e=>events.push(e),generate:async()=>{
   const sections=proposedSections(article);
@@ -104,9 +104,27 @@ test('validation diagnostics identify the failed check without exposing private 
   return sections;
  }});
  const response=await handler(request(data)),body=await response.json();
- assert.equal(response.status,503);
- assert.equal(body.error,'invalid_response');
- assert.equal(body.stage,'validate');
- assert.equal(events[0].validation_reason,'quote_not_in_source');
- assert.doesNotMatch(JSON.stringify(events),/PRIVATE_DO_NOT_LOG|source_text|trip_id|Bearer/);
+ assert.equal(response.status,200);
+ assert.equal(body.document.sections.history.text,'');
+ assert.ok(body.document.sections.context.text);
+ assert.deepEqual(events,[]);
+ assert.doesNotMatch(JSON.stringify(body),/PRIVATE_DO_NOT_LOG|trip_id|Bearer/);
 });
+
+test('one inaccurate model quote drops only its section, preserving verified evidence',()=>{
+ const place=bolognaPlaces[4],article=culturalArticle(place),sections=proposedSections(article);
+ sections.history.quote='not a literal source quote';
+ const doc=guideProposal(place,article,sections);
+ assert.equal(doc.sections.history.text,'');
+ assert.deepEqual(doc.sections.history.evidence,[]);
+ assert.ok(doc.sections.context.text);
+ assert.ok(doc.sections.context.evidence[0].quote);
+ assert.doesNotThrow(()=>validateCulturalGuide(doc,guidePlaceKey(place)));
+});
+test('all inaccurate model quotes fail closed instead of creating an ungrounded guide',()=>{
+ const place=bolognaPlaces[4],article=culturalArticle(place),sections=proposedSections(article);
+ for(const section of Object.values(sections))section.quote='invented quote';
+ assert.throws(()=>guideProposal(place,article,sections),/sense cites verificables/);
+});
+
+// Regression: keep citation checks strict while allowing supported sections.
