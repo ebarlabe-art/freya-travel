@@ -110,3 +110,19 @@ test('validation diagnostics identify the failed check without exposing private 
  assert.equal(events[0].validation_reason,'quote_not_in_source');
  assert.doesNotMatch(JSON.stringify(events),/PRIVATE_DO_NOT_LOG|source_text|trip_id|Bearer/);
 });
+
+test('one inaccurate model quote drops only its section, preserving verified evidence',()=>{
+ const place=bolognaPlaces[4],article=culturalArticle(place),sections=proposedSections(article);
+ sections.history.quote='not a literal source quote';
+ const doc=guideProposal(place,article,sections);
+ assert.equal(doc.sections.history.text,'');
+ assert.deepEqual(doc.sections.history.evidence,[]);
+ assert.ok(doc.sections.context.text);
+ assert.ok(doc.sections.context.evidence[0].quote);
+ assert.doesNotThrow(()=>validateCulturalGuide(doc,guidePlaceKey(place)));
+});
+test('all inaccurate model quotes fail closed instead of creating an ungrounded guide',()=>{
+ const place=bolognaPlaces[4],article=culturalArticle(place),sections=proposedSections(article);
+ for(const section of Object.values(sections))section.quote='invented quote';
+ assert.throws(()=>guideProposal(place,article,sections),/sense cites verificables/);
+});
