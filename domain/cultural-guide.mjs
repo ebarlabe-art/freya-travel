@@ -38,7 +38,8 @@ export function guideProposal(place,article,sections){
  doc.sources=[source];for(const key of Object.keys(GUIDE_SECTIONS)){
   const section=sections[key];if(!section||typeof section.text!=='string'||typeof section.quote!=='string')throw Error('Proposta cultural incompleta.');
   const supported=section.text.trim()&&section.quote.trim()&&source.excerpt.includes(section.quote);
-  // Discard unsupported sections, never retain prose with an invented or altered quote.\n  doc.sections[key]=supported?{text:section.text,origin:'proposal',evidence:[{source_id:source.id,quote:section.quote}]}:{text:'',origin:'proposal',evidence:[]};
+  // Discard unsupported sections, never retain prose with an invented or altered quote.
+  doc.sections[key]=supported?{text:section.text,origin:'proposal',evidence:[{source_id:source.id,quote:section.quote}]}:{text:'',origin:'proposal',evidence:[]};
  }
  if(!Object.values(doc.sections).some(section=>section.text.trim()))throw Error('Proposta cultural sense cites verificables.');
  return validateCulturalGuide(doc,doc.place_key);
