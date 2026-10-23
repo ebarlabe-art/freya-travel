@@ -9941,7 +9941,7 @@ $('authForm').onsubmit=async e=>{
     if(error)msg('authMsg',offlineAuthNetworkError(error)?'No es pot connectar. Comprova Internet i torna-ho a provar.':error.message,true);
   }catch(error){msg('authMsg',offlineAuthNetworkError(error)?'No es pot connectar. Comprova Internet i torna-ho a provar.':error?.message||'No s’ha pogut iniciar sessió.',true)}
 };
-$('signup').onclick=async()=>{msg('authMsg','');const {data,error}=await db.auth.signUp({email:$('email').value.trim(),password:$('password').value});if(error)msg('authMsg',error.message,true);else msg('authMsg',data.session?'Compte creat i sessió iniciada.':'Compte creat. Revisa el correu per confirmar-lo i després inicia sessió.')};
+$('signup').onclick=async()=>{const form=$('authForm'),button=$('signup');msg('authMsg','');if(!form.reportValidity())return;const email=$('email').value.trim(),password=$('password').value;if(!email||!password){msg('authMsg','Introdueix el correu i la contrasenya per crear el compte.',true);return}button.disabled=true;try{const {data,error}=await db.auth.signUp({email,password});if(error)msg('authMsg',error.message,true);else msg('authMsg',data.session?'Compte creat i sessió iniciada.':'Compte creat. Revisa el correu per confirmar-lo i després inicia sessió.')}catch(error){msg('authMsg',offlineAuthNetworkError(error)?'No es pot connectar. Comprova Internet i torna-ho a provar.':error?.message||'No s’ha pogut crear el compte.',true)}finally{button.disabled=false}};
 $('forgotPassword').onclick=async()=>{
   const email=$('email');msg('authMsg','');if(!email.checkValidity()){email.reportValidity();return}
   $('forgotPassword').disabled=true;
