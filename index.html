@@ -492,7 +492,7 @@
 
   <section id="auth" class="hidden">
     <div class="hero"><div class="logo">✈️</div><h1>Freya Travel</h1><p>El vostre viatge, compartit de veritat.</p></div>
-    <div id="loginCard" class="card"><h2>Entrar o crear un compte</h2><form id="authForm" class="stack"><input id="email" type="email" placeholder="Correu electrònic" required><input id="password" type="password" placeholder="Contrasenya (mínim 6 caràcters)" minlength="6" required><button type="submit">Iniciar sessió</button><button id="signup" type="button" class="secondary">Crear compte</button><button id="forgotPassword" type="button" class="ghost">He oblidat la contrasenya</button></form><p id="authMsg" class="message hidden"></p></div>
+    <div id="loginCard" class="card"><h2>Entrar o crear un compte</h2><form id="authForm" class="stack"><input id="email" type="email" placeholder="Correu electrònic" required><input id="password" type="password" placeholder="Contrasenya (mínim 6 caràcters)" minlength="6" required><button type="submit">Iniciar sessió</button><button id="signup" type="button" class="secondary">Crear compte</button><button id="resendConfirmation" type="button" class="ghost">Reenviar correu de confirmació</button><button id="forgotPassword" type="button" class="ghost">He oblidat la contrasenya</button></form><p id="authMsg" class="message hidden"></p></div>
     <div id="passwordRecoveryCard" class="card hidden"><h2>Canvia la contrasenya</h2><form id="passwordRecoveryForm" class="stack"><input id="newPassword" type="password" placeholder="Nova contrasenya (mínim 6 caràcters)" minlength="6" autocomplete="new-password" required><input id="confirmNewPassword" type="password" placeholder="Repeteix la contrasenya" minlength="6" autocomplete="new-password" required><button id="updatePassword" type="submit">Actualitza la contrasenya</button><button id="requestAnotherRecovery" type="button" class="secondary">Sol·licita un altre enllaç</button></form><p id="passwordRecoveryMsg" class="message hidden"></p></div>
   </section>
 
@@ -9941,7 +9941,31 @@ $('authForm').onsubmit=async e=>{
     if(error)msg('authMsg',offlineAuthNetworkError(error)?'No es pot connectar. Comprova Internet i torna-ho a provar.':error.message,true);
   }catch(error){msg('authMsg',offlineAuthNetworkError(error)?'No es pot connectar. Comprova Internet i torna-ho a provar.':error?.message||'No s’ha pogut iniciar sessió.',true)}
 };
-$('signup').onclick=async()=>{msg('authMsg','');const {data,error}=await db.auth.signUp({email:$('email').value.trim(),password:$('password').value});if(error)msg('authMsg',error.message,true);else msg('authMsg',data.session?'Compte creat i sessió iniciada.':'Compte creat. Revisa el correu per confirmar-lo i després inicia sessió.')};
+$('signup').onclick=async()=>{
+  msg('authMsg','');
+  const emailInput=$('email'),passwordInput=$('password'),button=$('signup');
+  if(!emailInput.checkValidity()){emailInput.reportValidity();return}
+  if(!passwordInput.checkValidity()){passwordInput.reportValidity();return}
+  if(navigator.onLine===false){msg('authMsg','Per crear un compte cal connexió a Internet.',true);return}
+  button.disabled=true;
+  try{
+    const {data,error}=await db.auth.signUp({email:emailInput.value.trim(),password:passwordInput.value,options:{emailRedirectTo:'https://ebarlabe-art.github.io/freya-travel/'}});
+    if(error)msg('authMsg',error.message,true);
+    else msg('authMsg',data.session?'Compte creat i sessió iniciada.':'Revisa el correu (també el correu brossa) i obre l’enllaç de confirmació. Després podràs iniciar sessió.');
+  }catch(error){msg('authMsg',error?.message||'No s’ha pogut crear el compte.',true)}
+  finally{button.disabled=false}
+};
+$('resendConfirmation').onclick=async()=>{
+  msg('authMsg','');
+  const emailInput=$('email'),button=$('resendConfirmation');
+  if(!emailInput.checkValidity()){emailInput.reportValidity();return}
+  button.disabled=true;
+  try{
+    const {error}=await db.auth.resend({type:'signup',email:emailInput.value.trim(),options:{emailRedirectTo:'https://ebarlabe-art.github.io/freya-travel/'}});
+    msg('authMsg',error?error.message:'Si el compte està pendent de confirmació, rebràs un correu nou. Revisa també el correu brossa.',!!error);
+  }catch(error){msg('authMsg',error?.message||'No s’ha pogut reenviar el correu.',true)}
+  finally{button.disabled=false}
+};
 $('forgotPassword').onclick=async()=>{
   const email=$('email');msg('authMsg','');if(!email.checkValidity()){email.reportValidity();return}
   $('forgotPassword').disabled=true;
