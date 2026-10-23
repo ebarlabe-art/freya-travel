@@ -58,9 +58,9 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
  document.querySelectorAll('[data-activity-point-editor]').forEach(node=>node.dispose?.());
  const root=el('section');root.dataset.activityPointEditor='';root.className='activity-point-editor';root.setAttribute('aria-label','Punts de '+row.title);
  const points=structuredClone(savedActivityPoints(row)||extractActivityPoints(row));
- const heading=el('h4','Punts de l’activitat'),help=el('p','Tria un punt per revisar-lo. Els canvis només es desen quan ho confirmes.');
+ const heading=el('h4','Confirma les ubicacions'),help=el('p','Selecciona el lloc correcte. Només cal revisar els punts amb dubtes.');
  const list=el('div'),status=el('p');status.setAttribute('role','status');
- const add=el('button','Afegeix un punt'),submit=el('button','Desa els punts'),close=el('button','Cancel·la');
+ const add=el('button','Afegir un altre lloc'),submit=el('button','Confirmar ubicacions'),close=el('button','Cancel·la');
  for(const b of [add,submit,close])b.type='button';
  const conflict=el('div');conflict.setAttribute('role','alert');conflict.hidden=true;
  const footer=el('div');footer.className='point-footer';footer.append(add,submit,close);
@@ -100,11 +100,11 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
    toggle.onclick=()=>{if(!active()||saving)return;selectedId=selectedId===point.id?null:point.id;render()};
    const body=el('div');body.dataset.pointBody='';body.hidden=selectedId!==point.id;box.append(body);
    const input=el('input');input.value=point.query;input.maxLength=500;input.setAttribute('aria-label','Nom del punt '+(i+1));input.disabled=busy;
-   const hint=el('small','Pots provar el nom local o una variant en una altra llengua. Revisa sempre el lloc retornat.');
+   const hint=el('small','Si no trobes el lloc correcte, pots modificar el nom.');
    const feedback=el('p');feedback.dataset.pointFeedback='';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');feedback.textContent=state.message;feedback.dataset.error=String(state.error);
    const results=el('div');results.dataset.pointResults='';
    input.oninput=()=>{point.query=input.value;point.place=null;point.status='pending';state.candidates=[];state.empty=false;state.error=false;state.message='Nom modificat. Cerca i confirma el lloc abans de desar-lo com a verificat.';results.replaceChildren();body.querySelector('[data-point-place-info]')?.remove();feedback.textContent=state.message;feedback.dataset.error='false';updateSummary()};
-   const find=action('Cerca aquest punt',async()=>{
+   const find=action('Buscar ubicació',async()=>{
     if(!active()||busy)return;
     const query=point.query.trim();
     if(!query){state.message='Escriu un nom de lloc.';state.error=true;render();return}
@@ -114,21 +114,21 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
      // Never display other saints/landmarks as matches to this requested name.
      const exactMatches=options.filter(p=>matchingPointCandidate(query,p,{city:row.city||undefined}));
      state.candidates=visiblePointCandidates(exactMatches).map(pointPlace);state.empty=state.candidates.length===0;
-     state.message=state.candidates.length?'Tria el lloc correcte. Encara no s’ha desat.'+(exactMatches.length>state.candidates.length?' Coincidències repetides agrupades.':''):'Cap coincidència verificable. Prova el nom local o una altra variant; el punt continua pendent.';
+     state.message=state.candidates.length?'Quin d’aquests llocs vols visitar?':'No hem trobat el lloc. Prova un altre nom.';
     }catch(e){if(active()&&request===serial){state.error=true;state.message=e.message||'La cerca no està disponible. Torna-ho a provar.'}}
     finally{if(active()&&request===serial){busy=false;state.loading=false;render()}}
    });
    body.append(input,hint,find,feedback,results);
    for(const p of state.candidates){
-    const button=action('',()=>{if(!active()||busy)return;point.place=p;point.status=p.coordinate_role==='exact_location'?'resolved':'approximate';state.candidates=[];state.message='Punt seleccionat. Prem «Desa els punts» per confirmar els canvis.';state.error=false;render()});
+    const button=action('',()=>{if(!active()||busy)return;point.place=p;point.status=p.coordinate_role==='exact_location'?'resolved':'approximate';state.candidates=[];state.message='Ubicació seleccionada. Prem «Confirmar ubicacions» per desar-la.';state.error=false;render()});
     button.className='point-place-option';button.append(el('strong',p.canonical_name),el('small',pointCandidateDescription(p)));results.append(button);
    }
    if(point.place){
     const info=el('details');info.dataset.pointPlaceInfo='';info.append(el('summary','Detalls de la ubicació'));
     if(point.place.formatted_address)info.append(el('p',point.place.formatted_address));
-    const map=el('a','Veure al mapa');map.href=pointMapUrl(point.place);map.target='_blank';map.rel='noopener';info.append(map,el('small',point.place.attribution+' · Geoapify'),el('small','Coordenades: '+point.place.latitude.toFixed(5)+', '+point.place.longitude.toFixed(5)));body.append(info);
+    const map=el('a','Veure al mapa');map.href=pointMapUrl(point.place);map.target='_blank';map.rel='noopener';info.append(map);const technical=el('details');technical.append(el('summary','Informació tècnica'),el('small',point.place.attribution+' · Geoapify'),el('small','Coordenades: '+point.place.latitude.toFixed(5)+', '+point.place.longitude.toFixed(5)));info.append(technical);body.append(info);
    }
-   const secondary=el('details');secondary.dataset.pointActions='';secondary.append(el('summary','Més opcions del punt'));
+   const secondary=el('details');secondary.dataset.pointActions='';secondary.append(el('summary','Opcions avançades'));
    const actions=el('div');actions.className='point-secondary';
    const up=action('Puja el punt '+(i+1),()=>{[points[i-1],points[i]]=[points[i],points[i-1]];render()});up.disabled=busy||i===0;
    const down=action('Baixa el punt '+(i+1),()=>{[points[i+1],points[i]]=[points[i],points[i+1]];render()});down.disabled=busy||i===points.length-1;
