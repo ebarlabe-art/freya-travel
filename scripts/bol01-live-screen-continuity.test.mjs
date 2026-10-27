@@ -48,6 +48,7 @@ function harness({coldStart=false,offlineOnly=false,tripVisible=true}={}){
     resetAccommodationFormUi:mark('resetAccommodationFormUi'),
     disconnectTripRealtime:async()=>{calls.push(['disconnectTripRealtime'])},
     refreshTrips:async args=>{calls.push(['refreshTrips',args.coldStart]);return true},
+    speechSynthesis:{cancel:mark('cancel')},
     window:{freyaBoot:{ready:mark('ready')},speechSynthesis:{cancel:mark('cancel')}},
     history:{replaceState:mark('replaceState')},
     builderHistory:()=>({view:'tripsHomeView'}),
