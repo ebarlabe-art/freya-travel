@@ -7350,6 +7350,17 @@ async function refreshTrips({preferredTripId=null,open=false,coldStart=false}={}
   if(pendingInitialRoute&&!initialViewApplied)applyPendingInitialView();return true;
 }
 async function renderSession(next){
+  // Revalidating an already displayed account is not a navigation event.
+  // Keep the itinerary, open boarding pass, album editor and current scroll
+  // in memory instead of reselecting the trip and sending the user Home.
+  if(next?.user?.id&&next.user.id===session?.user?.id
+    &&!coldStartNavigationPending&&!passwordRecoveryMode
+    &&!session.offlineOnly&&!next.offlineOnly
+    &&!$('tripView').classList.contains('hidden')){
+    session=next;
+    $('userEmail1').textContent=next.user.email||'';
+    return;
+  }
   if(next?.user?.id!==session?.user?.id)closeItineraryImport();
   const renderGeneration=++sessionRenderGeneration,nextUserId=next?.user?.id||null;
   if(nextUserId!==session?.user?.id){resetBuilderUi();clearParkingReservationPreview()}

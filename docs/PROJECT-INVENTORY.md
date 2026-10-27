@@ -4,6 +4,20 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## BOL-01 · Continuïtat de pantalla a iPhone/PWA (27/10/2026) — EN BRANCA, NO PUBLICAT
+
+**Petició real (Bolonya):** anar a una altra app o bloquejar l'iPhone i tornar a Freya sense perdre el dia de l'itinerari, el document/targeta d'embarcament o l'editor d'àlbum. L'inici complet voluntari ha de continuar a Home, sense tancar sessió. Distinció important: iOS pot destruir una PWA en segon pla, i no hi ha una detecció fiable de «tancament voluntari» versus expulsió de memòria; aquest primer canvi **no** resol una arrencada nova després d'aquest cas.
+
+**Diagnòstic de codi a main `c2467469`:** `onAuthStateChange` cridava `renderSession(next)` per tots els esdeveniments d'autenticació. `renderSession` ocultava la vista, cridava `refreshTrips` i `selectTrip`; aquests fan `clearTripScopedState`, inclòs `closeDocumentViewer`, i poden tornar al Home en lloc de respectar la vista viva. Un refresc de token del mateix compte no és una navegació.
+
+**Correcció acotada:** branca `fix/bol01-live-screen-continuity-20261027`. Per un compte idèntic, sessió autenticada en viu i pantalla de viatge visible, `renderSession` actualitza només sessió/correu; no reseteja viatge, scroll, dia, visor de documents ni àlbum. Inicis en fred, logout, canvi de compte, recuperació de contrasenya i transició des de sessió offline continuen amb el camí anterior. Codi principal a `index.html` i còpia generada `404.html`; test nou `scripts/bol01-live-screen-continuity.test.mjs`.
+
+**Límits i gate:** s'han preparat tests automàtics, però CI i proves físiques a iPhone encara s'han de verificar. Provar (1) itinerari/dia després de canviar d'app i bloquejar, (2) visor d'entrada/QR o targeta d'embarcament amb URL vigent i offline preparat, (3) editor d'àlbum i procés en curs, (4) token refresh/revalidació, (5) inici nou a Home i logout, (6) autorització canviada/sessió offline, (7) suspensió llarga o expulsió de memòria — classificar aquest últim com a subcas separat si persisteix. No s'han tocat dades de producció, migracions ni Edge; no fer merge ni desplegament sense validació i autorització.
+
+**Següent acció:** revisar la PR i CI, validar amb iPhone/PWA real i decidir si cal una segona peça per a restauració després de destrucció del procés, sense confondre-la amb un tancament voluntari.
+
+---
+
 ## Seguiment públic de guia cultural a iPhone (després de #178)
 
 La PR #178 està **fusionada** a `main` `3068a21`; el seu text anterior en aquest inventari es conserva com a tall històric i ja no indica l’estat vigent. S’han verificat en lectura el mòdul públic i l’Edge v1. L’incident de Safari mostra cerca 200 i generació 503 (22/10, 16:43:50 UTC); el servidor antic no permet recuperar la fase ni el cos exacte. La UI perdia el JSON de `FunctionsHttpError` i deixava l’estat fora de la zona visible.
