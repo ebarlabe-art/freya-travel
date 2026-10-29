@@ -4,6 +4,20 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## RIGA-PDF-01 · Importació real de Riga/Tallinn (29/10/2026) — EN BRANCA, NO PUBLICAT
+
+**Evidència física:** la usuària importa el PDF «Riga_Tallinn_Itinerari_Nadal_2026_2027_Per_Importar_Freya.pdf» des de la PWA pública i obre la previsualització. Les fitxes mostren títols tallats («segons la reserva del») o la cadena literal `| Lloc: ...` dins del títol, amb avisos i línies sense convertir. A l'agenda antiga continuen els 13 plans manuals sense ubicacions (també la Catedral de Riga), i la pantalla de rutes indica que no té un lloc/adreça verificat. A 29/10 la base de producció consultada **només en lectura** continua amb 13 plans, 0 nous i 0 amb ubicació; no s'ha confirmat la importació.
+
+**Causa observada:** `clockRows` de `domain/import-itinerary-text-extractor.mjs` no recompon els continuadors de cel·la textual després d'alguns salts de línia del PDF, i `makeCandidate` considera `| Lloc:` com a part del títol. Un model/transcriptor que lliura `| Lloc` ja enganxat al títol també requereix una normalització de seguretat en `domain/import-itinerary-proposal.mjs`. La comprovació de duplicats només detecta títols iguals o truncats amb dia/hora compatible; moure la catedral del 27 al 28 pot deixar la visita duplicada.
+
+**Primera correcció acotada:** branca `fix/riga-pdf-import-structured-review-20261029`. Reuneix continuacions únicament quan hi ha una evidència local de línia/cel·la inacabada, separa `| Lloc:` del títol en extractor i normalitzador, manté evidència i avisos per revisar, i marca coincidències de monuments inequívocs reprogramats encara que canviïn de dia/horari. La revisió i el writer no fusionen ni trepitgen activitats existents: si hi ha potencial duplicat, es desmarca o es bloqueja el desament. Regressions sintètiques `scripts/riga-pdf-import-regression.test.mjs` sobre exemples textuals del PDF real. Paritat de `index.html`/`404.html`.
+
+**Límits molt importants:** aquesta primera PR no fa substitució transaccional de les 13 activitats i els 12 recordatoris existents; cal una UX explícita d'actualitzar/substituir aprovada per la usuària abans d'eliminar res. La correcció del codi compartit del parser **requereix desplegar novament l'Edge Function `import-itinerary`** perquè el backend de producció la utilitzi; fusionar frontend no és equivalent a desplegar Edge. Les ubicacions ja desades com a «pendents» continuen requerint el tractament separat de #140; no escriure coordenades inventades. No utilitzar FREYA PROVES. `main` i producció queden intactes fins revisar CI, compatibilitat i autoritzar publicació.
+
+**Propera acció:** CI de la PR i prova en un PDF sintètic i amb la PWA real; després dissenyar substitució explícita segura i desplegament Edge + frontend de forma coordinada. Incidències canòniques [#132](https://github.com/ebarlabe-art/freya-travel/issues/132) (PDF i coherència) i [#140](https://github.com/ebarlabe-art/freya-travel/issues/140) (ubicacions/rutes). No crear roadmap paral·lel.
+
+---
+
 ## BOL-01 · Continuïtat de pantalla a iPhone/PWA (27/10/2026) — EN BRANCA, NO PUBLICAT
 
 **Petició real (Bolonya):** anar a una altra app o bloquejar l'iPhone i tornar a Freya sense perdre el dia de l'itinerari, el document/targeta d'embarcament o l'editor d'àlbum. L'inici complet voluntari ha de continuar a Home, sense tancar sessió. Distinció important: iOS pot destruir una PWA en segon pla, i no hi ha una detecció fiable de «tancament voluntari» versus expulsió de memòria; aquest primer canvi **no** resol una arrencada nova després d'aquest cas.
