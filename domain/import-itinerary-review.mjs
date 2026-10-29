@@ -93,11 +93,10 @@ export function matchingExistingImportItems(candidate,existing=[]){
   const landmark=!exact&&!truncated&&sameNamedLandmark(candidate.title,row.title);
   if(!exact&&!truncated&&!landmark)return [];
   if(day===date&&(!at||!time||at===time))return [{title:row.title,localDate:day,timeLabel:at,reason:'possible_existing_duplicate'}];
-  if(landmark||day===date)return [{title:row.title,localDate:day,timeLabel:at,reason:'possible_existing_replanned'}];
   const delta=Math.abs(Date.parse(date+'T12:00:00Z')-Date.parse(day+'T12:00:00Z'));
-  if(at===time&&/^0[0-5]:[0-5]\d$/.test(time)&&delta===86400000)
+  if(day!==date&&(exact||truncated)&&at===time&&/^0[0-5]:[0-5]\d$/.test(time)&&delta===86400000)
    return [{title:row.title,localDate:day,timeLabel:at,reason:'existing_date_conflict'}];
-  return [];
+  return [{title:row.title,localDate:day,timeLabel:at,reason:'possible_existing_replanned'}];
  });
 }
 export function excludeExistingImportItems(review,existing=[]){
