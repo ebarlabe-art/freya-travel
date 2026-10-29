@@ -57,6 +57,28 @@ export function changeItineraryReviewItem(review,index,key,value){
 function effective(item){
  return Object.fromEntries([...EDITABLE].map(key=>[key,reviewItemValue(item,key)]));
 }
+// A place can move days or gain extra wording; compare only distinctive
+// landmarks. Never treat a generic meal, city centre or walk as a duplicate.
+function sameNamedLandmark(left,right){
+ const norm=value=>text(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[’']/g,"'").replace(/[^a-z0-9]+/g,' ').trim()
+  .replace(/^(?:(?:visita|visit)\s+(?:(?:exterior|guiada)\s+)?(?:a|al|de|del|la|el)\s+)+/,'');
+ const a=norm(left),b=norm(right);
+ const landmark=/\b(?:catedral|cathedral|castell|castle|casa|house|museu|museum|mercat|market|palau|palace|monument|esglesia|church|torre|tower|basilica|sant|saint)\b/;
+ if(!landmark.test(a)||!landmark.test(b))return false;
+ const stop=new Set(['de','del','dels','la','les','el','els','al','a','i','en','the','of','at','in','and','per','pel','una','un']);
+ const containsDistinctivePrefix=(from,to)=>{
+  const tokens=from.split(' '),joined=' '+to+' ';
+  for(let n=3;n<=Math.min(7,tokens.length);n++){
+   const prefix=tokens.slice(0,n);
+   if(prefix.filter(token=>!stop.has(token)).length<2)continue;
+   const phrase=prefix.join(' ');
+   if(phrase.length>=12&&joined.includes(' '+phrase+' '))return true;
+  }
+  return false;
+ };
+ return containsDistinctivePrefix(a,b)||containsDistinctivePrefix(b,a);
+}
 // Conservative matches are review suggestions, never permission to update an existing row.
 export function matchingExistingImportItems(candidate,existing=[]){
  const normalize=value=>text(value).replace(/[’']/g,"'").replace(/[.,;:!?]+$/g,'');
@@ -68,8 +90,10 @@ export function matchingExistingImportItems(candidate,existing=[]){
   const exact=title===wanted;
   const truncated=title.split(' ').length>=6&&wanted.split(' ').length>=6&&
    (wanted.startsWith(title+' ')||title.startsWith(wanted+' '));
-  if(!exact&&!truncated)return [];
+  const landmark=!exact&&!truncated&&sameNamedLandmark(candidate.title,row.title);
+  if(!exact&&!truncated&&!landmark)return [];
   if(day===date&&(!at||!time||at===time))return [{title:row.title,localDate:day,timeLabel:at,reason:'possible_existing_duplicate'}];
+  if(landmark||day===date)return [{title:row.title,localDate:day,timeLabel:at,reason:'possible_existing_replanned'}];
   const delta=Math.abs(Date.parse(date+'T12:00:00Z')-Date.parse(day+'T12:00:00Z'));
   if(at===time&&/^0[0-5]:[0-5]\d$/.test(time)&&delta===86400000)
    return [{title:row.title,localDate:day,timeLabel:at,reason:'existing_date_conflict'}];
