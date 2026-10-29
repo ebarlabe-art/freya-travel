@@ -25,6 +25,23 @@ function toBase64(bytes:Uint8Array){
  for(let i=0;i<bytes.length;i+=chunk)out+=String.fromCharCode(...bytes.subarray(i,i+chunk));
  return btoa(out);
 }
+// RLS-scoped trip stops provide verified city/timezone context for multi-city
+// itineraries, without trusting a phone setting or guessing the nearest city.
+async function verifiedTripStops(auth:string,tripId:string){
+ try{
+  const url=new URL(SUPABASE_URL+'/rest/v1/trip_stops');
+  url.searchParams.set('select','label,canonical_name,time_zone');
+  url.searchParams.set('trip_id','eq.'+tripId);
+  url.searchParams.set('order','position.asc');
+  url.searchParams.set('limit','20');
+  const response=await fetch(url,{headers:{
+   Authorization:auth,apikey:ANON,Accept:'application/json'
+  },signal:AbortSignal.timeout(10000)});
+  if(!response.ok)return [];
+  const rows=await response.json();
+  return Array.isArray(rows)?rows.slice(0,20):[];
+ }catch{return []}
+}
 async function privateDocument(auth:string,tripId:string,documentId:string){
  const url=new URL(SUPABASE_URL+'/rest/v1/travel_documents');
  url.searchParams.set('select','id,trip_id,file_path,file_name,mime_type');
@@ -155,8 +172,9 @@ Deno.serve(async request=>{
    const exact=candidates.filter((row: PlaceCandidate)=>canonical(row.place.canonical_name)===canonical(city));
    return exact.length===1?exact[0].place.timezone:null;
   };
+  const tripStops=await verifiedTripStops(auth,input.trip_id);
   const enriched=await itineraryPdfEnrichTimeZones(proposal,{
-   transcript,source,resolvePlace:lookup
+   transcript,source,resolvePlace:lookup,tripStops
   });
   return json({proposal:enriched});
  }catch(err){

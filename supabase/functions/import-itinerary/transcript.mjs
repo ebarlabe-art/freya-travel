@@ -148,10 +148,54 @@ export function itineraryPdfCityHints(transcript,source,proposal){
   hints:details.map(item=>validCity(item.city)?item.city:null),
   airportCodes:details.map(item=>item.airportCode)};
 }
-export async function itineraryPdfEnrichTimeZones(proposal,{transcript,source,resolvePlace}={}){
+// A PDF may contain several cities; use verified trip-stop zones only when
+// the named destination is unambiguous for this individual itinerary row.
+function verifiedStopZones(stops=[]){
+ const out=[];
+ for(const row of Array.isArray(stops)?stops.slice(0,20):[]){
+  const name=String(row?.canonical_name||row?.label||'').trim();
+  const zone=String(row?.time_zone||'').trim();
+  if(!validCity(name)||!zone)continue;
+  try{new Intl.DateTimeFormat('en-US',{timeZone:zone});out.push({name,zone});}
+  catch{}
+ }
+ return out;
+}
+function stopNamesInText(value,stops){
+ const normalized=' '+normalizeCity(value).replace(/[^\p{L}\p{N}]+/gu,' ')+' ';
+ return stops.filter(stop=>{
+  const name=normalizeCity(stop.name).replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+  return name.length>=3&&normalized.includes(' '+name+' ');
+ });
+}
+function itemStopContext(item,stops){
+ const fields=item?.fields||{};
+ const own=[fields.city?.value,fields.location_name?.value,fields.title?.value].filter(Boolean).join(' ');
+ const direct=stopNamesInText(own,stops);
+ if(direct.length===1)return direct[0];
+ const dateContext=(fields.local_date?.evidence||[]).map(x=>x.excerpt).join(' ');
+ const header=stopNamesInText(dateContext,stops);
+ return direct.length===0&&header.length===1?header[0]:null;
+}
+function itemExplicitCity(item){
+ const fields=item?.fields||{};
+ if(validCity(fields.city?.value))return fields.city.value.trim();
+ const location=String(fields.location_name?.value||'');
+ const last=location.match(/,\s*([\p{L}][\p{L} '’-]{2,42})\s*$/u)?.[1]?.trim();
+ return validCity(last)?last:null;
+}
+/**
+ * @param {any} proposal
+ * @param {{transcript?: any, source?: any, resolvePlace?: (city:string)=>Promise<string|null>,
+ *   tripStops?: Array<{canonical_name?:string,label?:string,time_zone?:string}>}} [options]
+ */
+export async function itineraryPdfEnrichTimeZones(proposal,{transcript,source,resolvePlace,tripStops=[]}={}){
  if(!proposal||!Array.isArray(proposal.candidates)||typeof resolvePlace!=='function')return proposal;
  const {destination,hints,airportCodes}=itineraryPdfCityHints(transcript,source,proposal);
- const keys=[...new Set([destination,...hints].filter(Boolean))].slice(0,6);
+ const stops=verifiedStopZones(tripStops);
+ const explicitCities=proposal.candidates.map(item=>itemExplicitCity(item));
+ const contexts=proposal.candidates.map(item=>itemStopContext(item,stops));
+ const keys=[...new Set([destination,...hints,...explicitCities].filter(Boolean))].slice(0,8);
  const resolved=new Map(),airportCities=new Map();
  // Learn a city zone from an explicit airport code in this same document,
  // even when the resolver does not recognize the local city spelling.
@@ -177,23 +221,25 @@ export async function itineraryPdfEnrichTimeZones(proposal,{transcript,source,re
   if(provider&&airport&&provider!==airport)return null;
   return provider||airport||null;
  };
- const fallback=cityZone(destination);
+ const fallback=cityZone(destination)||(stops.length===1?stops[0].zone:null);
  let count=0;
  const candidates=proposal.candidates.map((item,index)=>{
   if(item.fields.time_zone||!item.fields.start_local_time)return {
    source_order:item.source_order,classification_hint:item.classification_hint,
    fields:item.fields,warnings:item.warnings
   };
-  const explicit=hints[index],code=airportCodes[index];
-  // An IATA code on the item is decisive for its local clock (e.g. flight
-  // departure BCN vs arrival BLQ). Otherwise use verified city/trip context.
-  const direct=AIRPORT_ZONE[code]||null;
-  const named=cityZone(explicit);
-  const zone=direct&&(named&&named!==direct)?null:
-   direct||named||(!explicit?fallback:null);
+  const explicit=hints[index],code=airportCodes[index],place=explicitCities[index];
+  const context=contexts[index];
+  const direct=AIRPORT_ZONE[code]||null,named=cityZone(explicit)||cityZone(place)||null;
+  const stopZone=context?.zone||null;
+  const conflicting=!!((direct&&named&&direct!==named)||
+   (direct&&stopZone&&direct!==stopZone)||(named&&stopZone&&named!==stopZone));
+  // In multi-stop trips no trip-wide timezone fallback is safe.
+  const zone=conflicting?null:direct||named||stopZone||
+   (!explicit&&!place&&stops.length<=1?fallback:null);
   if(!zone)return {source_order:item.source_order,classification_hint:item.classification_hint,
    fields:item.fields,warnings:item.warnings};
-  const city=explicit||destination||code;
+  const city=explicit||place||context?.name||destination||code;
   const evidence=[{kind:'metadata',excerpt:
    'Zona IANA aplicada automàticament per ubicació verificada: '+city+
    (code?' (aeroport '+code+')':'')+'; fitxer '+String(source?.file_name||'').slice(0,200)}];
