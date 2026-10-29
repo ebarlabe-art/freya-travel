@@ -12,7 +12,9 @@ function validExisting(row){
  return row&&typeof row==='object'&&UUID.test(row.id)&&
   typeof row.title==='string'&&row.title.trim()&&
   typeof row.updated_at==='string'&&Number.isFinite(Date.parse(row.updated_at))&&
-  (row.status===undefined||['planned','completed','cancelled'].includes(row.status));
+  ['planned','completed','cancelled'].includes(row.status)&&
+  Number.isInteger(row.photo_count)&&row.photo_count>=0&&
+  Number.isInteger(row.link_count)&&row.link_count>=0;
 }
 function protectedExisting(row){
  return row.status==='completed'||row.status==='cancelled'||
