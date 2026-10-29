@@ -4,6 +4,20 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## RIG-03B · Revisió i desament atòmic (29/10/2026) — IMPLEMENTAT A BRANCA, NO APLICAT
+
+Continuació de la PR #189 (`d458c04d34fb3c93fca9fb559515ab2ac7006c8a`) segons les instruccions actualitzades de [#132](https://github.com/ebarlabe-art/freya-travel/issues/132#issuecomment-6496744730) i el [contracte de privilegis](https://github.com/ebarlabe-art/freya-travel/issues/132#issuecomment-6496780366). Branca `codex/rig03b-atomic-review`; la PR funcional inclou la base #189 perquè la CI existent s'activa sobre `main`. Cap merge, desplegament ni consulta/escriptura de dades de producció en aquesta implementació; cap ús de Freya PROVES.
+
+- **UI:** reutilitza `planItineraryReconciliation` dins la revisió real del PDF. Decisions conservar/actualitzar/afegir/ignorar per candidata, target explícit, versions completes, retirada explícita de plans antics (cancel·lació sense esborrat), resum i confirmació. Manté el writer add-only existent per al flux sense conciliació.
+- **SQL:** migració additiva `20261029141108_itinerary_reconciliation_atomic.sql`, escrita i provada localment; **NO aplicada remotament**. RPC públiques invoker amb implementació privada definer acotada, `search_path` buit, membres verificats i cap privilegi general nou sobre recordatoris. Bloqueja el viatge i totes les files manuals, valida IDs + `updated_at` del conjunt complet, comprova document/viatge, límits i fusos. Preserva identitat, autoria, progrés i notes dels plans actualitzats. Fotos, progrés o plans fixos impedeixen actualització/retirada. Sincronitza només els recordatoris manuals afectats en la mateixa transacció.
+- **Recuperació:** comprovant idempotent i snapshots privats abans del canvi; una resposta perduda reenvia exactament la mateixa operació. El comprovant confirmat pendent queda a `sessionStorage`, separat per usuari/viatge, fins confirmar el resultat. Sobreviu una recàrrega de la mateixa pestanya; no és un arxiu permanent ni garanteix recuperació si Safari elimina tota la sessió. No desa silenciosament una revisió sense confirmació.
+- **Evidència:** fixtures sintètics de 13 plans, 25 candidates i 12 avisos; proves PostgreSQL de permisos, rollback, idempotència, proteccions, dos membres simultanis i recuperació de retirada. Clics tàctils Chromium/WebKit a 390 × 844: decisions, bloqueig pendent, cancel·lació, offline, resposta incerta, recàrrega i conflicte. Inventari de proves i procediment: [RIG-03B](rig03b-reconciliation.md).
+- **Límits:** el recompte de vincles representa els contractes actuals auditats: FK de fotos i plans fixos; una nova relació futura requereix ampliar la protecció. No hi ha RPC pública de rollback. Les visites retirades es conserven com a cancel·lades i no generen avisos actius. No es resolen coordenades ni es fan reserves automàtiques. La validació física de la PWA i qualsevol prova amb el viatge real queden pendents d'autorització.
+
+**Relleu exacte:** revisar PR funcional i CI; validar la UI sintètica; només amb autorització aplicar la migració additiva abans del frontend. No cal desplegar cap Edge Function per RIG-03B. La fase següent és una revisió supervisada del PDF real, sense desament fins que la usuària confirmi el resum. La secció RIG-03A següent descriu la base històrica, no l'estat final de RIG-03B.
+
+---
+
 ## RIG-03 · Conciliació segura de l'itinerari existent (29/10/2026) — BRANCA, NO PUBLICAT
 
 **Petició després de #187/#188 (PDF 25 candidates, 13 plans provisionals, 12 avisos derivats):** des de l'app real, comparació d'una proposta PDF amb plans actuals per decidir explícitament **conservar, moure/actualitzar, afegir o retirar**. Un PDF d'un viatge existent no ha de duplicar monuments canviats de dia ni esborrar automàticament altres peces.

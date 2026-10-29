@@ -1,0 +1,77 @@
+// Isolated Postgres only. Actual itinerary/reminder/progress migrations;
+// minimal historical trip/document/photo baseline matches the production FK contract.
+import assert from 'node:assert/strict';import {readFile,writeFile} from 'node:fs/promises';import {pathToFileURL} from 'node:url';
+if(!process.env.PGLITE_MODULE)throw Error('PGLITE_MODULE required');
+const {PGlite}=await import(pathToFileURL(process.env.PGLITE_MODULE).href),db=new PGlite();
+const fixtureSql=[];
+for(const method of ['exec','query']){const original=db[method].bind(db);db[method]=async(sql,args)=>{if(process.env.RIG_SQL_FIXTURE){const literal=v=>v===null?'NULL':"'"+(typeof v==='object'?JSON.stringify(v):String(v)).replaceAll("'","''")+"'";fixtureSql.push(sql.replace(/\$(\d+)/g,(_,n)=>literal(args[Number(n)-1]))+';');}return original(sql,args)}}
+const id=n=>'13000000-0000-4000-8000-'+String(n).padStart(12,'0'),trip=id(1),other=id(2),owner=id(3),member=id(4),outsider=id(5),doc=id(6);
+const migration=n=>readFile(new URL('../supabase/migrations/'+n,import.meta.url),'utf8');
+const as=async user=>db.exec(`reset role;set "test.user"='${user}';set role authenticated;`);
+const snapshot=async()=> (await db.query('select public.read_itinerary_reconciliation($1) s',[trip])).rows[0].s;
+const expected=s=>s.map(r=>({id:r.id,updated_at:r.updated_at}));
+const fields=(title='Nova visita',zone='Europe/Tallinn')=>({title,timing_kind:'exact',local_date:null,starts_at:'2030-12-29T09:00Z',ends_at:null,time_zone:zone,daypart:null,approximate_start_time:null,approximate_end_time:null,location_name:'Centre',address:null,city:'Tallinn',notes:null,is_optional:true,sort_order:1});
+const commit=(s,changes,op=id(100),document=doc,t=trip)=>db.query('select public.commit_itinerary_reconciliation($1,$2,$3,$4,$5) r',[t,op,document,expected(s),changes]);
+try{
+ await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;
+ create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('test.user',true),'')::uuid$$;grant usage on schema auth to authenticated;
+ create table trips(id uuid primary key,start_date date,end_date date,experience_key text);
+ grant select on trips to authenticated;
+ create table test_members(trip_id uuid,user_id uuid);grant select on test_members to authenticated;
+ create function public.is_trip_member(id uuid) returns boolean language sql stable as $$select exists(select 1 from public.test_members where trip_id=id and user_id=auth.uid())$$;
+ create table travel_documents(id uuid primary key,trip_id uuid references trips(id),unique(trip_id,id));
+ insert into auth.users values('${owner}'),('${member}'),('${outsider}');insert into trips values('${trip}','2030-12-26','2031-01-02',null),('${other}','2030-12-26','2031-01-02',null);
+ insert into test_members values('${trip}','${owner}'),('${trip}','${member}'),('${other}','${outsider}');insert into travel_documents values('${doc}','${trip}'),('${id(7)}','${other}');
+ create table trip_flights(id uuid);create table trip_accommodations(id uuid);create table trip_activities(id uuid);set "test.user"='${owner}';`);
+ await db.exec(await migration('20260908173557_create_trip_itinerary_items.sql'));
+ await db.exec(await migration('20260908203753_add_approximate_itinerary_times.sql'));
+ await db.exec(await migration('20260915171038_create_trip_reminders.sql'));
+ const progress=await migration('20260918174037_shared_trip_progress.sql');await db.exec(progress.slice(0,progress.indexOf('create function public.set_trip_event_completed')));
+ await db.exec(`create table trip_photo_metadata(document_id uuid primary key references travel_documents(id),trip_id uuid not null,itinerary_item_id uuid,foreign key(trip_id,itinerary_item_id) references trip_itinerary_items(trip_id,id) on delete set null(itinerary_item_id));`);
+ await db.exec(await migration('20261029141108_itinerary_reconciliation_atomic.sql'));
+ await as(owner);
+ for(let i=0;i<13;i++)await db.query(`insert into trip_itinerary_items(id,trip_id,title,timing_kind,starts_at,time_zone,notes) values($1,$2,$3,'exact','2030-12-27T08:00Z','Europe/Riga','Original note')`,[id(20+i),trip,'Visita '+i]);
+ await db.exec('reset role');
+ for(let i=0;i<12;i++)await db.query(`insert into trip_reminders(trip_id,source_kind,source_id,reminder_kind,title,event_at,default_notify_before_minutes,scheduled_for,source_updated_at) select trip_id,'itinerary_item',id,'itinerary_exact',title,starts_at,60,starts_at-interval '60 minutes',updated_at from trip_itinerary_items where id=$1`,[id(20+i)]);
+ await db.query(`insert into trip_reminders(trip_id,source_kind,source_id,reminder_kind,title,event_at,default_notify_before_minutes,scheduled_for,source_updated_at) values($1,'flight',$2,'flight_departure','Reserved flight','2030-12-26',300,'2030-12-25',now()),($1,'accommodation',$3,'accommodation_check_in','Reserved hotel','2030-12-26',120,'2030-12-25',now())`,[trip,id(90),id(91)]);
+ const protectedReminders=(await db.query("select * from trip_reminders where source_kind<>'itinerary_item' order by id")).rows;
+ await as(owner);if(process.env.RIG_SQL_FIXTURE)await writeFile(process.env.RIG_SQL_FIXTURE,fixtureSql.join('\n').replace(/create role (anon|authenticated|service_role);/g,''));const initial=await snapshot();assert.equal(initial.length,13);assert.equal(initial[0].photo_count,0);
+ assert.equal((await db.query("select has_table_privilege('authenticated','trip_reminders','UPDATE') allowed")).rows[0].allowed,false);
+ await assert.rejects(db.query('select * from itinerary_private.reconciliations'));
+ await as(outsider);await assert.rejects(snapshot(),e=>e.code==='42501');await assert.rejects(commit(initial,[{action:'retire',id:id(20)}]),e=>e.code==='42501');
+ await db.exec('reset role;set role anon');await assert.rejects(snapshot());await as(owner);
+ await assert.rejects(commit(initial,[{action:'retire',id:id(20)}],id(101),id(7)),e=>e.code==='42501');
+ await assert.rejects(commit(initial,[{action:'retire',id:id(90)}]),e=>e.code==='PT409');
+ await assert.rejects(commit(initial,[{action:'update',id:id(20),fields:{...fields(),created_by:outsider}}]),e=>e.code==='22023');
+ // A late failure rolls back the earlier update AND all receipt/reminder changes.
+ await assert.rejects(commit(initial,[{action:'update',id:id(20),fields:fields()},{action:'add',id:id(60),fields:{...fields(),time_zone:'Mars/Invalid'}}]));
+ assert.deepEqual(await snapshot(),initial);
+ await db.exec('reset role');assert.equal((await db.query('select count(*)::int n from itinerary_private.reconciliations')).rows[0].n,0);
+ await db.query('insert into trip_photo_metadata values($1,$2,$3)',[doc,trip,id(21)]);await as(owner);
+ const withPhoto=await snapshot();assert.equal(withPhoto.find(r=>r.id===id(21)).photo_count,1);
+ await assert.rejects(commit(withPhoto,[{action:'retire',id:id(21)}]),e=>e.code==='PT409');
+ await assert.rejects(commit(withPhoto,[{action:'update',id:id(21),fields:fields()}]),e=>e.code==='PT409');
+ await db.query("update trip_itinerary_items set status='completed' where id=$1",[id(22)]);
+ await assert.rejects(commit(await snapshot(),[{action:'retire',id:id(22)}]),e=>e.code==='PT409');
+ await db.query('update trip_itinerary_items set is_fixed=true where id=$1',[id(23)]);
+ await assert.rejects(commit(await snapshot(),[{action:'update',id:id(23),fields:fields()}]),e=>e.code==='PT409');
+ const stale=await snapshot();await as(member);await db.query("update trip_itinerary_items set title='Changed by member' where id=$1",[id(24)]);await as(owner);
+ await assert.rejects(commit(stale,[{action:'retire',id:id(20)}]),e=>e.code==='PT409');
+ const base=await snapshot(),changes=[{action:'update',id:id(20),fields:fields('Reprogramada','Europe/Riga')},{action:'retire',id:id(25)},{action:'add',id:id(60),fields:fields('Huskies opcionals')}];
+ const result=(await commit(base,changes)).rows[0].r;assert.deepEqual(result,{operation_id:id(100),added:1,updated:1,retired:1});
+ assert.deepEqual((await commit(base,changes)).rows[0].r,result,'lost HTTP reply retries same operation');
+ await as(member);await assert.rejects(commit(base,changes),e=>e.code==='PT409');await as(owner);
+ await assert.rejects(commit(base,[changes[0]],id(100)),e=>e.code==='PT409');
+ const after=await snapshot(),updated=after.find(r=>r.id===id(20)),original=base.find(r=>r.id===id(20));
+ for(const k of ['id','trip_id','created_at','created_by','status','notes'])assert.deepEqual(updated[k],original[k],k);
+ assert.equal(updated.local_date,null);assert.equal(after.find(r=>r.id===id(25)).status,'cancelled');assert.equal(after.find(r=>r.id===id(60)).status,'planned');assert.equal(after.find(r=>r.id===id(60)).is_optional,true);
+ await db.exec('reset role');
+ assert.deepEqual((await db.query("select * from trip_reminders where source_kind<>'itinerary_item' order by id")).rows,protectedReminders);
+ assert.equal((await db.query('select enabled from trip_reminders where source_id=$1',[id(25)])).rows[0].enabled,false);
+ const rem=(await db.query('select * from trip_reminders where source_id=$1',[id(20)])).rows[0];assert.equal(new Date(rem.event_at).toISOString(),'2030-12-29T09:00:00.000Z');
+ const receipt=(await db.query('select * from itinerary_private.reconciliations')).rows[0];assert.equal(receipt.before_items.length,13);assert.equal(receipt.before_reminders.length,12);
+ // Recovery data contains all old fields and reminders; soft-retired identity never vanished.
+ assert.deepEqual(receipt.before_items.find(r=>r.id===id(25)).title,base.find(r=>r.id===id(25)).title);
+ assert.equal((await db.query('select count(*)::int n from travel_documents')).rows[0].n,2);
+ console.log('PASS RIG-03B SQL: 13 plans/12 reminders; RLS, protected photos/progress/fixed, immutable fields, stale whole set, atomic failure, retry/impersonation, scoped reminders, audit snapshot and soft retirement.');
+}finally{await db.close()}

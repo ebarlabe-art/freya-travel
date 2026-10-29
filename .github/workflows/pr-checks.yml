@@ -64,6 +64,15 @@ jobs:
         run: PGLITE_MODULE="$RUNNER_TEMP/v27-db/node_modules/@electric-sql/pglite/dist/index.js" node scripts/test-itinerary-points-db.mjs
       - name: Cultural guide RLS identity and concurrency
         run: PGLITE_MODULE="$RUNNER_TEMP/v27-db/node_modules/@electric-sql/pglite/dist/index.js" node scripts/test-cultural-guide-db.mjs
+      - name: Atomic itinerary reconciliation contracts
+        run: RIG_SQL_FIXTURE="$RUNNER_TEMP/rig-fixture.sql" PGLITE_MODULE="$RUNNER_TEMP/v27-db/node_modules/@electric-sql/pglite/dist/index.js" node scripts/test-itinerary-reconciliation-db.mjs
+      - name: Reconciliation simultaneous transactions
+        run: |
+          bash scripts/ci-postgres.sh start freya_rig03b_ci
+          RIG_PG_CONTAINER=freya_rig03b_ci RIG_SQL_FIXTURE="$RUNNER_TEMP/rig-fixture.sql" node scripts/check-itinerary-reconciliation-concurrency.mjs
+      - name: Stop reconciliation database
+        if: always()
+        run: bash scripts/ci-postgres.sh stop freya_rig03b_ci
 
   browser-tests:
     name: browser-${{ matrix.engine }}
@@ -121,6 +130,8 @@ jobs:
         if: matrix.engine == 'webkit'
         timeout-minutes: 5
         run: CULTURE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-cultural-guide-browser.mjs
+      - name: Reconciliation real mobile controls
+        run: RECONCILE_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-reconciliation-browser.mjs
       - name: Unified activities Chromium mobile
         if: matrix.engine == 'chromium'
         timeout-minutes: 5

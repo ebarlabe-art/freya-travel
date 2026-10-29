@@ -4,7 +4,7 @@ import {matchingExistingImportItems} from './import-itinerary-review.mjs';
 // deletes or assumes that an AI-generated itinerary is already a reservation.
 // The server must re-read and verify every base row in one transaction.
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ACTIONS=new Set(['add','update','skip']);
+const ACTIONS=new Set(['add','update','skip','keep']);
 const norm=value=>String(value||'').normalize('NFKC').trim();
 const copy=row=>({...row});
 const raise=message=>{throw new Error(message)};
@@ -17,7 +17,7 @@ function validExisting(row){
   Number.isInteger(row.link_count)&&row.link_count>=0;
 }
 function protectedExisting(row){
- return row.status==='completed'||row.status==='cancelled'||
+ return row.is_fixed===true||row.status==='completed'||row.status==='cancelled'||
   Number(row.photo_count||0)>0||Number(row.link_count||0)>0;
 }
 function fingerprint(row){
@@ -32,7 +32,7 @@ function fingerprint(row){
  * @param {Array<object>} request.existing - all manually scheduled rows for this trip,
  *    with UUID, updated_at, status and linked-photo counts read from the server.
  * @param {Array<object>} [request.decisions] - explicit per-source choices
- *    {source_order,action:'add'|'update'|'skip',target_id?}.
+ *    {source_order,action:'add'|'update'|'skip'|'keep',target_id?}.
  * @param {string[]} [request.retireExistingIds] - explicit old provisional items to
  *    retire, never inferred from their absence in the PDF.
  *
@@ -64,7 +64,7 @@ export function planItineraryReconciliation({snapshot,existing,decisions=[],reti
   if(!Number.isInteger(raw?.source_order)||!byOrder.has(raw.source_order)||
     !ACTIONS.has(raw.action)||picks.has(raw.source_order))
    raise('Hi ha una decisió d’importació invàlida o repetida.');
-  if(raw.action==='update'){
+  if(raw.action==='update'||raw.action==='keep'){
    if(!UUID.test(raw.target_id))raise('Cal triar una activitat existent per actualitzar-la.');
   }else if(raw.target_id)raise('No es pot associar una activitat a una acció que no és actualitzar.');
   picks.set(raw.source_order,{action:raw.action,target_id:raw.target_id||null});
@@ -84,16 +84,16 @@ export function planItineraryReconciliation({snapshot,existing,decisions=[],reti
    raise('No es pot modificar una activitat exclosa de la proposta.');
   if(action==='add'&&matches.length)
    raise('Hi ha una possible coincidència: revisa-la abans d’afegir una visita duplicada.');
-  if(action==='update'){
+  if(action==='update'||action==='keep'){
    target=originals.get(decision.target_id);
    if(!target)raise('L’activitat que es vol actualitzar ja no es troba al viatge.');
-   if(protectedExisting(target))raise('Aquesta activitat té progrés, fotos o vincles que cal preservar.');
+   if(action==='update'&&protectedExisting(target))raise('Aquesta activitat té progrés, fotos o vincles que cal preservar.');
    if(targets.has(target.id))raise('Dues activitats del PDF no poden substituir la mateixa visita.');
    targets.add(target.id);
   }
   if(action==='add'&&(!norm(value.title)||!norm(value.local_date)))
    raise('Cal confirmar el nom i la data de les visites noves.');
-  if(action!=='review'&&action!=='skip'&&
+  if(action!=='review'&&action!=='skip'&&action!=='keep'&&
    (item.review_flags||[]).some(flag=>[
     'invalid_title','invalid_date','invalid_start_time','invalid_end_time',
     'invalid_time_zone','timezone_needs_confirmation','date_required_for_time',
@@ -119,7 +119,7 @@ export function planItineraryReconciliation({snapshot,existing,decisions=[],reti
  const retire=[...retirement].map(id=>({id,expected_updated_at:originals.get(id).updated_at,
   title:originals.get(id).title}));
  const changed=rows.filter(row=>row.action==='add'||row.action==='update');
- const touched=new Set([...retirement,...targets]);
+ const touched=new Set([...retirement,...rows.filter(r=>r.action==='update').map(r=>r.target_id)]);
  return {
   schema_version:1,read_only:true,requires_user_confirmation:true,
   complete:conflicts.length===0,
