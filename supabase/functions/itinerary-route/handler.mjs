@@ -2,6 +2,9 @@ import {destinationContext} from './provider.mjs';
 import {savedActivityPoints,validPointPlace} from '../../../domain/itinerary-place-points.mjs';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ref=r=>r&&['manual','activity'].includes(r.type)&&uuid.test(r.id)&&typeof r.updated_at==='string';
+const draftRef=r=>r&&Object.keys(r).length===1&&r.draft&&typeof r.draft==='object'&&!Array.isArray(r.draft)&&
+ Object.keys(r.draft).every(k=>['title','location_name','address','city'].includes(k))&&
+ ['title','location_name','address','city'].every(k=>typeof r.draft[k]==='string'&&r.draft[k].length<=(k==='address'?500:200))&&r.draft.title.trim().length>0;
 export function createRouteHandler({authenticate,readTrip,readItem,readStops,provider,now=Date.now,maxPerMinute=20}){
  const budgets=new Map();
  const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info'}});
@@ -11,15 +14,17 @@ export function createRouteHandler({authenticate,readTrip,readItem,readStops,pro
    const auth=req.headers.get('authorization'),user=await authenticate(auth);if(!user)return reply({error:'unauthorized'},401);
    const text=await req.text();if(text.length>4096)return reply({error:'invalid_request'},400);
    let input;try{input=JSON.parse(text)}catch{return reply({error:'invalid_request'},400)}
-   const internal=input?.kind==='internal';
+   const internal=input?.kind==='internal',draft=input?.kind==='draft';
+   const endpoint=r=>ref(r)||(draft&&draftRef(r));
    if(!uuid.test(input?.trip_id)||!['walk','drive','transit'].includes(input.mode)||
       (internal?(!ref(input.item)||!Number.isInteger(input.from_index)||input.from_index<0||input.from_index>=11||input.to_index!==input.from_index+1):
-       (!ref(input.origin)||!ref(input.destination))))return reply({error:'invalid_request'},400);
+       (!endpoint(input.origin)||!endpoint(input.destination))))return reply({error:'invalid_request'},400);
    // Revalidate membership even on cached routes. All reads use the caller's JWT/RLS.
    if(!await readTrip(auth,input.trip_id))return reply({error:'unavailable'},403);
-   const [a,b,stops]=await Promise.all([readItem(auth,input.trip_id,internal?input.item:input.origin),internal?Promise.resolve(null):readItem(auth,input.trip_id,input.destination),internal?Promise.resolve([]):readStops(auth,input.trip_id)]);
+   const read=r=>draft&&draftRef(r)?Promise.resolve({...r.draft,trip_id:input.trip_id}):readItem(auth,input.trip_id,r);
+   const [a,b,stops]=await Promise.all([read(internal?input.item:input.origin),internal?Promise.resolve(null):read(input.destination),internal?Promise.resolve([]):readStops(auth,input.trip_id)]);
    if(!a||(!internal&&!b)||[a,b].filter(Boolean).some(r=>r.trip_id!==input.trip_id||r.status==='cancelled'||r.reservation_status==='cancelled'||['transport','transport_activity'].includes(r.activity_type)))return reply({error:'unavailable'},403);
-   if(a.updated_at!==(internal?input.item.updated_at:input.origin.updated_at)||(!internal&&b.updated_at!==input.destination.updated_at))return reply({error:'stale_record'},409);
+   if((!draftRef(internal?input.item:input.origin)&&a.updated_at!==(internal?input.item.updated_at:input.origin.updated_at))||(!internal&&!draftRef(input.destination)&&b.updated_at!==input.destination.updated_at))return reply({error:'stale_record'},409);
    for(const choice of Object.values(input.choices||{}))if(typeof choice!=='string'||choice.length>500)return reply({error:'invalid_request'},400);
    const minute=Math.floor(now()/60000),budget=budgets.get(user);const used=budget?.minute===minute?budget.used:0;
    if(used>=maxPerMinute)return reply({error:'rate_limited'},429);

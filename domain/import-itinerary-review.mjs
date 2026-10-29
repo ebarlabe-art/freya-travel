@@ -1,3 +1,4 @@
+import {normalizePointName} from './itinerary-place-points.mjs';
 import {normalizeItineraryImportProposal} from './import-itinerary-proposal.mjs';
 
 // A2.7 — pure, in-memory review. Never mutate evidence or write to a trip.
@@ -79,18 +80,37 @@ function sameNamedLandmark(left,right){
  };
  return containsDistinctivePrefix(a,b)||containsDistinctivePrefix(b,a);
 }
+// Bounded, city-scoped aliases of distinctive landmarks. Whole names only:
+// compound visits, generic museums and similarly named churches never collapse.
+const landmarkAliases=[
+ ['riga','riga-cathedral',['Catedral de Riga','Riga Cathedral','Riga Dome Cathedral','Rīgas Doms']],
+ ['riga','riga-blackheads',['Casa dels Caps Negres','House of the Blackheads','Melngalvju nams']],
+ ['riga','riga-market',['Mercat Central de Riga','Riga Central Market','Rīgas Centrāltirgus']],
+ ['bologna','san-petronio',['Basílica de San Petronio','Basilica di San Petronio','San Petronio Basilica','Basilica of San Petronio']],
+ ['bologna','neptune',['Fontana del Nettuno','Font de Neptú','Fountain of Neptune']],
+ ['bologna','piazza-maggiore',['Piazza Maggiore','Plaça Maggiore']]
+];
+const placeCity=value=>normalizePointName(value).replace(/^bolonya$/,'bologna');
+export function itineraryPlaceIdentity(value={}){
+ const city=placeCity(value.city),name=normalizePointName(value.title);
+ if(!city||!name)return null;
+ const match=landmarkAliases.find(([scope,,aliases])=>scope===city&&aliases.some(alias=>normalizePointName(alias)===name));
+ return match?city+':'+match[1]:null;
+}
+export function equivalentItineraryPlace(a,b){const key=itineraryPlaceIdentity(a);return !!key&&key===itineraryPlaceIdentity(b)}
 // Conservative matches are review suggestions, never permission to update an existing row.
 export function matchingExistingImportItems(candidate,existing=[]){
  const normalize=value=>text(value).replace(/[’']/g,"'").replace(/[.,;:!?]+$/g,'');
  const wanted=normalize(candidate.title),date=candidate.local_date,time=candidate.start_local_time;
  if(!wanted||!date)return [];
  return existing.flatMap(row=>{
+  if(candidate.city&&row.city&&placeCity(candidate.city)!==placeCity(row.city))return [];
   const title=normalize(row.title),day=String(row.localDate||row.local_date||'');
   const at=String(row.timeLabel||'').match(/^(\d{2}:\d{2})/)?.[1]||'';
   const exact=title===wanted;
   const truncated=title.split(' ').length>=6&&wanted.split(' ').length>=6&&
    (wanted.startsWith(title+' ')||title.startsWith(wanted+' '));
-  const landmark=!exact&&!truncated&&sameNamedLandmark(candidate.title,row.title);
+  const landmark=equivalentItineraryPlace(candidate,row)||(!exact&&!truncated&&sameNamedLandmark(candidate.title,row.title));
   if(!exact&&!truncated&&!landmark)return [];
   if(day===date&&(!at||!time||at===time))return [{title:row.title,localDate:day,timeLabel:at,reason:'possible_existing_duplicate'}];
   const delta=Math.abs(Date.parse(date+'T12:00:00Z')-Date.parse(day+'T12:00:00Z'));
