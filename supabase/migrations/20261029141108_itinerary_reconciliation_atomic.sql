@@ -2,7 +2,7 @@
 create schema if not exists itinerary_private;
 revoke all on schema itinerary_private from public, anon;
 grant usage on schema itinerary_private to authenticated;
-create table itinerary_private.reconciliations (
+create table if not exists itinerary_private.reconciliations (
  trip_id uuid not null references public.trips(id) on delete cascade,
  operation_id uuid not null, actor uuid not null, document_id uuid not null,
  request jsonb not null, before_items jsonb not null, before_reminders jsonb not null,
@@ -14,7 +14,7 @@ revoke all on itinerary_private.reconciliations from public,anon,authenticated;
 
 -- Counts are server-owned. Currently the only FK from another feature to a
 -- manual plan is trip_photo_metadata; fixed plans are protected separately.
-create function itinerary_private.reconciliation_snapshot(p_trip_id uuid) returns jsonb
+create or replace function itinerary_private.reconciliation_snapshot(p_trip_id uuid) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare result jsonb;
 begin
@@ -28,12 +28,12 @@ begin
 end $$;
 revoke all on function itinerary_private.reconciliation_snapshot(uuid) from public,anon;
 grant execute on function itinerary_private.reconciliation_snapshot(uuid) to authenticated;
-create function public.read_itinerary_reconciliation(p_trip_id uuid) returns jsonb
+create or replace function public.read_itinerary_reconciliation(p_trip_id uuid) returns jsonb
 language sql security invoker set search_path='' as $$select itinerary_private.reconciliation_snapshot(p_trip_id)$$;
 revoke all on function public.read_itinerary_reconciliation(uuid) from public,anon;
 grant execute on function public.read_itinerary_reconciliation(uuid) to authenticated;
 
-create function itinerary_private.commit_reconciliation(p_trip_id uuid,p_operation_id uuid,p_document_id uuid,p_expected_existing jsonb,p_changes jsonb) returns jsonb
+create or replace function itinerary_private.commit_reconciliation(p_trip_id uuid,p_operation_id uuid,p_document_id uuid,p_expected_existing jsonb,p_changes jsonb) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare
  uid uuid:=auth.uid(); t public.trips; old public.trip_itinerary_items; r public.trip_itinerary_items;
@@ -112,7 +112,7 @@ begin
 end $$;
 revoke all on function itinerary_private.commit_reconciliation(uuid,uuid,uuid,jsonb,jsonb) from public,anon;
 grant execute on function itinerary_private.commit_reconciliation(uuid,uuid,uuid,jsonb,jsonb) to authenticated;
-create function public.commit_itinerary_reconciliation(p_trip_id uuid,p_operation_id uuid,p_document_id uuid,p_expected_existing jsonb,p_changes jsonb) returns jsonb
+create or replace function public.commit_itinerary_reconciliation(p_trip_id uuid,p_operation_id uuid,p_document_id uuid,p_expected_existing jsonb,p_changes jsonb) returns jsonb
 language sql security invoker set search_path='' as $$select itinerary_private.commit_reconciliation(p_trip_id,p_operation_id,p_document_id,p_expected_existing,p_changes)$$;
 revoke all on function public.commit_itinerary_reconciliation(uuid,uuid,uuid,jsonb,jsonb) from public,anon;
 grant execute on function public.commit_itinerary_reconciliation(uuid,uuid,uuid,jsonb,jsonb) to authenticated;
