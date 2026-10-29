@@ -184,7 +184,7 @@ function itemExplicitCity(item){
  const last=location.match(/,\s*([\p{L}][\p{L} '’-]{2,42})\s*$/u)?.[1]?.trim();
  return validCity(last)?last:null;
 }
-export async function itineraryPdfEnrichTimeZones(proposal,{transcript,source,resolvePlace,tripStops=[]}={}){
+export async function itineraryPdfEnrichTimeZones(proposal,{transcript,source,resolvePlace,tripStops=/** @type {Array<{canonical_name?:string,label?:string,time_zone?:string}>} */ ([])}={}){
  if(!proposal||!Array.isArray(proposal.candidates)||typeof resolvePlace!=='function')return proposal;
  const {destination,hints,airportCodes}=itineraryPdfCityHints(transcript,source,proposal);
  const stops=verifiedStopZones(tripStops);
