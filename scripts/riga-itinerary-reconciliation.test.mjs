@@ -118,3 +118,9 @@ test('RIG-03: server must compare all id+updated_at base rows to reject concurre
  assert.equal(plan.requires_user_confirmation,true);
  assert.equal(Object.hasOwn(plan,'save'),false);
 });
+
+test('RIG-03: missing protection counts fail closed instead of assuming zero photos',()=>{
+ const incomplete=[{...old(99,'Catedral'),photo_count:undefined}];
+ assert.throws(()=>planItineraryReconciliation({snapshot:pdf(page(0,'Visita')),
+  existing:incomplete}),/versions actuals/);
+});
