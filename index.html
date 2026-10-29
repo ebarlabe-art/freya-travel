@@ -9409,7 +9409,8 @@ function renderItineraryImportPreview(){
  $('itineraryImportRemaining').textContent=result.selected===0?'No hi ha activitats noves per importar':result.selected+(result.selected===1?' activitat seleccionada per afegir':' activitats seleccionades per afegir');
  $('itineraryImportReviewHelp').textContent=result.selected===0?'Pots tancar la revisió o recuperar una activitat exclosa. El viatge no s’ha modificat.':'Revisa les activitats seleccionades abans de desar. Freya no modificarà cap element que ja tinguis al viatge.';
  $('itineraryImportSummary').textContent=state.reconciliation?'PDF analitzat: '+result.total+' propostes. Cap canvi desat fins a la confirmació final.':result.selected+' de '+result.total+' elements seleccionats · '+result.important+' per revisar · '+result.informational+' amb informació de confiança. '+(state.saveCompleted?'Desat.':'Encara no desat.');
- $('itineraryImportPdfDetails').querySelector('summary').textContent='Editar les dades del PDF ('+result.total+' propostes)';
+ const pdfHeading=$('itineraryImportPdfDetails')?.querySelector?.('summary');
+ if(pdfHeading)pdfHeading.textContent='Editar les dades del PDF ('+result.total+' propostes)';
  $('itineraryImportWrite').disabled=!!state.busy||!!state.saveCompleted||connectionUnavailable()||!!offlineReadOnlySession||result.selected===0;
  $('itineraryImportExcludeExisting').disabled=!!state.busy||!!state.saveCompleted||!state.previewExisting||!result.items.some(x=>x.included&&x.existing_matches.length);
  const allWarnings=result.warnings.slice();
@@ -9453,8 +9454,8 @@ function renderItineraryImportPreview(){
 }
 function renderItineraryReconciliation(state,snapshot){
  const r=state.reconciliation,host=$('itineraryImportReconciliation');
- $('itineraryImportExcludeExisting').classList.toggle('hidden',!!r);
- $('itineraryImportReviewResult').classList.toggle('hidden',!!r);
+ $('itineraryImportExcludeExisting').classList?.toggle?.('hidden',!!r);
+ $('itineraryImportReviewResult').classList?.toggle?.('hidden',!!r);
  $('itineraryImportCompare').textContent=r?'Recarrega la comparació':'Compara amb el planning existent';
  $('itineraryImportCompare').disabled=!!state.busy||!!state.saveCompleted||connectionUnavailable()||!!r?.pendingRequest;
  $('itineraryImportWrite').textContent=r?'Revisa el resum i confirma':'Desar activitats seleccionades';
