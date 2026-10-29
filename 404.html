@@ -9332,6 +9332,7 @@ async function processItineraryImportDocument(doc){
 }
 const itineraryImportReviewLabels={
  invalid_title:'El títol només conté números o signes: no és una activitat',existing_date_conflict:'Possible duplicat amb un dia diferent: revisa la matinada',
+ possible_existing_replanned:'Aquesta visita podria existir en un altre dia o amb un altre horari: cal revisar-la abans d’afegir-la',
  missing_title:'Falta el títol',invalid_date:'Data incorrecta',invalid_start_time:'Hora inicial incorrecta',
  invalid_end_time:'Hora final incorrecta',invalid_time_zone:'Zona horària no vàlida',
  end_without_start:'Hi ha hora final però no inicial',date_required_for_time:'Cal confirmar el dia',
@@ -9375,7 +9376,7 @@ function renderItineraryImportPreview(){
  const renderCandidate=(item,i)=>{
   const warnings=[...item.important_warnings,...item.important_flags.map(flag=>itineraryImportReviewLabels[flag]||flag)];
   const information=item.information.map(w=>'<p class="muted">Informació: '+esc(w)+'</p>').join('');
-  const matches=item.existing_matches.map(row=>'<p class="itinerary-import-warning"><strong>Activitat existent:</strong> '+esc(row.localDate)+' · '+esc(row.timeLabel)+' — '+esc(row.title)+'</p>').join('');
+  const matches=item.existing_matches.map(row=>'<p class="itinerary-import-warning"><strong>'+(row.reason==='possible_existing_replanned'?'Possible visita ja programada en un altre dia o horari:':'Activitat existent:')+'</strong> '+esc(row.localDate)+' · '+esc(row.timeLabel)+' — '+esc(row.title)+'</p>').join('');
   const day=item.values.local_date||'Dia pendent',time=item.values.start_local_time||'Sense hora';
   return '<details class="itinerary-import-candidate" data-import-candidate="'+i+'"'+((!state.collapseExcluded||item.included)&&(expanded.has(i)||(keepFirstOpen&&i===0))?' open':'')+'>'+
    '<summary>'+esc(day)+' · '+esc(time)+' — '+esc(item.values.title||'Sense títol')+
