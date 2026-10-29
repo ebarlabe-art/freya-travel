@@ -10,6 +10,14 @@ La confirmació envia una única RPC amb la versió de totes les files. El servi
 
 La retirada marca `cancelled`; no elimina identitats ni registres. Els plans amb fotos, progrés o horari fix estan protegits. Actualitzar preserva notes, autoria, timestamps de creació, estat i indicadors de reserva/opcionalitat existents. Els nous plans sempre són `planned`, no fixos; un títol condicional es manté com a opcional. No es toquen vols, hotels, reserves, documents ni ubicacions d'altres activitats.
 
+## Horaris orientatius i activitats condicionals (revisió 29/10/2026)
+
+El PDF pot incloure una hora concreta **sense tenir una reserva confirmada**. Durant la conciliació, les candidates que indiquin `orientatiu`, `aproximat`, `a confirmar`, `pendent de reserva`, `segons reserva/disponibilitat/operador`, `opcional` o condicions de neu es desen amb `timing_kind='approximate'` (dia local + hora local aproximada), **no** amb `starts_at` exacte. Això manté l'hora visible com a proposta, però evita un avís erroni d'«una hora abans». No modifica el comportament de les activitats amb horari realment confirmat, que continuen `exact`.
+
+L'opcionalitat comercial/meteorològica no és el mateix que la precisió horària: una sortida amb hora **orientativa** pot no ser opcional, mentre que els **huskies (a confirmar, segons neu)** o el **soft-luge pendent de reserva** són opcionals i aproximats fins a reserva. Una actualització pot passar un pla existent a `is_optional=true` si l'activitat s'ha condicionat, però mai no li treu l'opcionalitat prèvia sense decisió d'usuari. Les hores aproximades no generen un nou recordatori exacte; si una visita existent perd l'horari definitiu, el seu recordatori exacte s'inhabilita dins de la mateixa transacció. Quan hi hagi reserva, l'usuari pot editar el planning per fixar l'hora definitiva.
+
+La revisió mòbil informa que l'hora es conservarà com a aproximada i que no es generarà un avís exacte. Regressions: `scripts/itinerary-reconciliation-ui.test.mjs`, `scripts/test-itinerary-reconciliation-db.mjs`, `scripts/check-itinerary-reconciliation-browser.mjs`, amb sortida de Riga (08:30 orientatiu), soft-luge (12:00 pendent) i huskies (10:30 a confirmar segons neu). Cap dada de producció ni migració aplicada en aquesta validació.
+
 ## Privilegis i compatibilitat
 
 Les RPC públiques són `SECURITY INVOKER`. Les funcions privades `SECURITY DEFINER` tenen `search_path=''`, verifiquen `auth.uid()` i `is_trip_member`, exclouen Londres i només accepten camps manuals autoritzats. No es concedeix INSERT/UPDATE sobre `trip_reminders` ni EXECUTE sobre el sincronitzador global. L'auditoria privada té RLS i no es concedeix lectura als clients. El sincronitzador de notificacions existent consulta l'estat actual dels recordatoris; els retirats queden inhabilitats.
