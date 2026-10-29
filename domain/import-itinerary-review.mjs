@@ -96,7 +96,12 @@ export function matchingExistingImportItems(candidate,existing=[]){
   const delta=Math.abs(Date.parse(date+'T12:00:00Z')-Date.parse(day+'T12:00:00Z'));
   if(day!==date&&(exact||truncated)&&at===time&&/^0[0-5]:[0-5]\d$/.test(time)&&delta===86400000)
    return [{title:row.title,localDate:day,timeLabel:at,reason:'existing_date_conflict'}];
-  return [{title:row.title,localDate:day,timeLabel:at,reason:'possible_existing_replanned'}];
+  // Identical *generic* activities (e.g. "Museu" or "Esmorzar") on
+  // different days are legitimate. Only an identifiable landmark is a
+  // cross-day candidate for rescheduling.
+  if(day===date||landmark||sameNamedLandmark(candidate.title,row.title))
+   return [{title:row.title,localDate:day,timeLabel:at,reason:'possible_existing_replanned'}];
+  return [];
  });
 }
 export function excludeExistingImportItems(review,existing=[]){
