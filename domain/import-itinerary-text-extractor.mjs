@@ -181,11 +181,41 @@ function clockRows(text){
  }
  return rows;
 }
+// Only rejoin PDF cell wraps with positive evidence of an unfinished activity.
+// Never absorb the next timestamp, date, page header or a free-standing note.
+function joinWrappedActivityRows(records){
+ const result=[];
+ for(let i=0;i<records.length;i++){
+  const record={...records[i]};
+  if(CLOCK.test(record.raw.trim())){
+   for(let span=0;span<2&&i+1<records.length;span++){
+    const previous=record.raw.trim();
+    const following=records[i+1].raw.trim();
+    if(!following||following.length>300||
+      CLOCK.test(following)||DATE_PREFIX.test(following)||MONTH_DATE.test(following)||
+      WEEKDAY.test(following)||CALENDAR.test(following)||
+      /^(?:NO\s|ATENCI[OÓ]|IMPORTANT|NOTA\b|La pista\b|Els hotels\b|Planificar\b)/i.test(following)||
+      ADMIN.test(following))break;
+    const dangling=/\b(?:del|de|d['’]|segons|la|el|els|les|al|a|amb|per|cap|o|i)\s*$/i.test(previous);
+    const separateLabel=/^(?:[|｜]\s*)?(?:lloc|ubicaci[oó]|location|place|venue|adre[cç]a|address)\s*:/i.test(following);
+    const continuedPlace=/[|｜]\s*(?:lloc|ubicaci[oó]|location|place|venue)\s*:/i.test(previous)&&
+      /^(?:[a-zà-ÿ]|\d)/u.test(following);
+    if(!dangling&&!separateLabel&&!continuedPlace)break;
+    const next=records[++i];
+    record.raw=previous+' '+next.raw.trim();
+    record.evidence+=(record.evidence?'\n':'')+next.evidence;
+    record.wrapped=true;
+   }
+  }
+  result.push(record);
+ }
+ return result;
+}
 export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'}){
  const pages=normalizePages(rawPages),candidates=[],warnings=new Set(),yearHint=documentYearHint(pages);
  let current=null,documentZone=null,pendingDaypart=null,unparsed=0,invalidDate=false;
  for(const {page,text} of pages){
-  for(const record of clockRows(text)){
+  for(const record of joinWrappedActivityRows(clockRows(text))){
    const raw=record.raw;
    const line=raw.trim().replace(/\s+/g,' ');
    if(!line||line.length>1000){if(line.length>1000)warnings.add('Línia massa llarga: cal revisar el document.');continue;}
@@ -258,6 +288,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     const candidate=makeCandidate(item,record.evidence,page,dateForItem,
       tz&&!tz.invalid?tz:current?.zone,candidates.length);
     if(record.repaired)candidate.warnings.push('Franja horària partida entre línies: comprova les hores amb el PDF.');
+    if(record.wrapped)candidate.warnings.push('Línia d’activitat partida al PDF: comprova el text complet.');
     candidates.push(candidate);
    }else if(current&&!ADMIN.test(line)&&!tz)unparsed++;
    if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
@@ -288,15 +319,21 @@ function mentionedPlace(title){
  return place;
 }
 function makeCandidate(item,line,page,date,zone,sourceOrder){
- const fields={title:makeField(item.title,line,page,item.confidence)};
- const place=mentionedPlace(item.title);
- if(place)fields.location_name=makeField(place,line,page,'medium');
+ // A literal "| Lloc:" is a cell delimiter, never part of the title.
+ const inline=item.title.match(/\\s*[|｜]\\s*(?:lloc|ubicaci[oó]|location|place|venue)\\s*:\\s*/i);
+ const title=inline?item.title.slice(0,inline.index).trim():item.title;
+ const explicit=inline?item.title.slice(inline.index+inline[0].length).trim():'';
+ const fields={title:makeField(title,line,page,item.confidence)};
+ const place=explicit&&[...explicit].length<=200?explicit:mentionedPlace(title);
+ if(place)fields.location_name=makeField(place,line,page,explicit?'medium':'medium');
  if(date)fields.local_date=makeField(date.date,date.evidence,date.page,date.confidence||'high');
  if(item.start)fields.start_local_time=makeField(item.start,line,page);
  if(item.end)fields.end_local_time=makeField(item.end,line,page);
  if(item.daypart)fields.daypart=makeField(item.daypart,line,page);
  if(zone)fields.time_zone=makeField(zone.value,zone.evidence,zone.page);
  const warnings=[];
+ if(inline&&!explicit)warnings.push('Lloc explícit incomplet: revisa el PDF original.');
+ if(inline&&explicit&&[...explicit].length>200)warnings.push('Lloc massa llarg: revisa el PDF original.');
  if(item.confidence==='medium')warnings.push('Element sense hora explícita: revisa’n la classificació.');
  if(date?.confidence==='medium')warnings.push('Any agafat del títol general del document: comprova la data.');
  if(!date)warnings.push('Falta la data de l’activitat.');
