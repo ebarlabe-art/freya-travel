@@ -4,6 +4,20 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## RIG-03 · Conciliació segura de l'itinerari existent (29/10/2026) — BRANCA, NO PUBLICAT
+
+**Petició després de #187/#188 (PDF 25 candidates, 13 plans provisionals, 12 avisos derivats):** des de l'app real, comparació d'una proposta PDF amb plans actuals per decidir explícitament **conservar, moure/actualitzar, afegir o retirar**. Un PDF d'un viatge existent no ha de duplicar monuments canviats de dia ni esborrar automàticament altres peces.
+
+**Auditoria tècnica live (lectura):** `trip_itinerary_items` té identificadors UUID, `updated_at`, status i horaris amb constraints; `trip_photo_metadata` pot apuntar als plans; `trip_reminders` té 12 avisos `source_kind=itinerary_item` a Riga, sense FK a origen, i `sync_trip_reminders()` els regenera/inhabilita segons les fonts. `index.html` actual només fa `upsert` de noves files; `import-itinerary-review.mjs` dona matches orientatius, però no ofereix operació d'actualitzar/retirar. Cal operació transaccional segura per evitar dues escriptures parcials.
+
+**Base preparada a branca `feat/riga-itinerary-reconcile-review-20261029`:** `domain/import-itinerary-reconciliation.mjs` és un contracte de *previsualització pur i immutable*: cada candidata comença com a «revisar», els elements antics queden preservats per defecte, l'usuari pot triar `add/update/skip`, els `retireExistingIds` han de ser explícits; no es permet actualitzar/retirar visites completades, fotografiades o amb vincles, repetir el target o afegir un monument amb possible duplicat. El contracte conserva `expected_existing` amb ID + `updated_at` per fer comprovació de concurrència en el backend. Tests a `scripts/riga-itinerary-reconciliation.test.mjs`. **No hi ha UI de desament ni SQL ni alteració de producció en aquesta branca.**
+
+**Per completar, ideal per a Codex:** llegir `AGENTS.md`; connectar aquest planner a la previsualització mòbil existent, amb target IDs i versions reals del servidor; implementar un únic commit atòmic sota JWT/RLS (preferentment RPC SECURITY INVOKER), validar davant de canvis concurrents, protegir vols/allotjaments/activitats/fitxers i sincronitzar recordatoris del viatge sense reactivar fets; bloquejar planificacions incompletes o condicionals no reservades; provar reimport del mateix PDF, cancel·lació, doble clic, pèrdua de connexió i WebKit iPhone. Vegeu issue canònic #132 i la PR específica d'aquesta branca.
+
+**Gate:** no fer merge, publicació, migració ni executar canvis sobre les 13 files reals sense CI i proves sobre dades sintètiques. L'operació d'usuari final ha de ser explícita i reversible tant com sigui possible.
+
+---
+
 ## RIGA-PDF-01 · Importació real de Riga/Tallinn (29/10/2026) — EN BRANCA, NO PUBLICAT
 
 **Evidència física:** la usuària importa el PDF «Riga_Tallinn_Itinerari_Nadal_2026_2027_Per_Importar_Freya.pdf» des de la PWA pública i obre la previsualització. Les fitxes mostren títols tallats («segons la reserva del») o la cadena literal `| Lloc: ...` dins del títol, amb avisos i línies sense convertir. A l'agenda antiga continuen els 13 plans manuals sense ubicacions (també la Catedral de Riga), i la pantalla de rutes indica que no té un lloc/adreça verificat. A 29/10 la base de producció consultada **només en lectura** continua amb 13 plans, 0 nous i 0 amb ubicació; no s'ha confirmat la importació.
