@@ -75,6 +75,25 @@ function normalizeSource(raw){
  if(raw.kind==='document'&&!source.document_id)fail('El PDF ha de referenciar un document privat existent.');
  return source;
 }
+// A PDF table can include a literal "| Lloc:" in the activity line.
+// The text is evidence for a place name, never evidence for exact coordinates.
+function splitInlinePlace(fields,warnings){
+ const original=fields.title?.value||'';
+ const marker=/\s*[|｜]\s*(?:lloc|ubicaci[oó]|location|place|venue|adre[cç]a|address)\s*:\s*/i;
+ const match=marker.exec(original);
+ if(!match)return;
+ const title=original.slice(0,match.index).trim().replace(/[|｜]\s*$/,'');
+ const place=original.slice(match.index+match[0].length).trim();
+ if(!title||!/[\p{L}]/u.test(title))return;
+ fields.title={...fields.title,value:title};
+ // This is a human-readable site, not a verified address/geocode.
+ if(place&&[...place].length<=200){
+  if(!fields.location_name||fields.location_name.confidence!=='high')
+   fields.location_name={value:place,confidence:'medium',evidence:fields.title.evidence};
+ }else if(!warnings.includes('Lloc explícit incomplet: revisa el PDF original.')){
+  warnings.push('Lloc explícit incomplet: revisa el PDF original.');
+ }
+}
 function normalizeCandidate(raw){
  if(!isObject(raw))fail('Element d’itinerari invàlid.');
  keysOnly(raw,new Set(['source_order','classification_hint','fields','warnings']),'Element');
@@ -84,6 +103,8 @@ function normalizeCandidate(raw){
  keysOnly(raw.fields,FIELD_SET,'Camps d’itinerari');
  const fields=Object.fromEntries(Object.entries(raw.fields).map(([key,value])=>[key,normalizeField(key,value)]));
  if(!fields.title)fail('Cada element necessita un títol acreditat.');
+ const warnings=normalizeList(raw.warnings,'Avisos');
+ splitInlinePlace(fields,warnings);
  const flags=[];
  if(!fields.local_date&&(fields.start_local_time||fields.end_local_time))flags.push('date_required_for_time');
  if(fields.end_local_time&&!fields.start_local_time)flags.push('start_required_for_end');
@@ -91,7 +112,7 @@ function normalizeCandidate(raw){
  if(fields.start_local_time&&fields.end_local_time&&fields.end_local_time.value<=fields.start_local_time.value)flags.push('time_order_needs_review');
  if(Object.values(fields).some(field=>field.confidence!=='high'))flags.push('uncertain_extraction');
  return {source_order:raw.source_order,classification_hint:raw.classification_hint,
-  fields,warnings:normalizeList(raw.warnings,'Avisos'),review_flags:flags};
+  fields,warnings,review_flags:flags};
 }
 function candidateFingerprint(candidate){
  const fields=candidate.fields;
