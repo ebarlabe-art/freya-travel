@@ -474,6 +474,7 @@
     #itineraryImportExcluded>summary small{display:block;font-weight:400;color:#704900}
     #itineraryImportExit{min-height:48px;margin-top:12px}
     .itinerary-import-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+    #itineraryImportReconciliation{min-width:0;overflow-wrap:anywhere}#itineraryImportReconciliation details{min-width:0;border:1px solid var(--line);border-radius:14px;padding:12px}#itineraryImportReconciliation summary{min-height:44px;cursor:pointer}#itineraryImportReconciliation label{overflow-x:clip;display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin:10px 0;min-width:0}#itineraryImportReconciliation select{width:100%;min-width:0;max-width:100%;min-height:44px;font:inherit;padding:10px;border:1px solid #cac4d0;border-radius:12px;background:#fff;color:#1f1b24}
     .itinerary-import-grid label{display:grid;gap:6px;font-size:.9rem}
     .itinerary-import-wide{grid-column:1/-1}
     .itinerary-import-warning{padding:9px 12px;border-radius:12px;background:#fff2df;color:#704900;font-size:.86rem}
@@ -9613,6 +9614,7 @@ $('itineraryImportAnalyze').onclick=()=>{void processItineraryImportSelected()};
 function requestItineraryImportConfirmation(state,count,warnings){
  return new Promise(resolve=>{
   const panel=$('itineraryImportConfirm');
+  $('itineraryImportConfirmYes').textContent=state.reconciliation?'Confirma els canvis':'Confirmar i afegir';
   $('itineraryImportConfirmText').textContent='Vols afegir '+count+
    ' activitats seleccionades al planning compartit de «'+trip.name+'»? No es modificarà cap activitat existent.'+
    (warnings?' '+warnings+' activitats tenen avisos; revisa-les abans de confirmar.':'');

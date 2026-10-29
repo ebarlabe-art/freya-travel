@@ -32,6 +32,8 @@ try{
   await row.locator('[data-reconcile-action]').selectOption(i<3?'update':i===3?'keep':i===4?'skip':'add');
   if(i<4)await row.locator('[data-reconcile-target]').selectOption(await page.evaluate(n=>rigId(20+n),i));
  }
+ const layout=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,x:scrollX,wide:[...document.querySelectorAll('body *')].filter(n=>n.clientWidth&&n.scrollWidth>n.clientWidth+1).slice(0,15).map(n=>({tag:n.tagName,id:n.id,c:n.clientWidth,s:n.scrollWidth})),overflow:[...document.querySelectorAll('body *')].filter(n=>{const r=n.getBoundingClientRect();return r.width&&r.right+scrollX>innerWidth+1}).slice(0,12).map(n=>({tag:n.tagName,id:n.id,cls:n.className,width:n.getBoundingClientRect().width,right:n.getBoundingClientRect().right}))}));
+ assert.ok(layout.scroll<=layout.width,'no horizontal overflow with expanded targets: '+JSON.stringify(layout));
  const old=page.locator('#itineraryImportReconciliation > details').last();await old.locator('summary').tap();await old.locator('[data-reconcile-retire]').nth(4).selectOption('retire');
  assert.match(await page.locator('[data-reconcile-summary]').innerText(),/20 noves · 3 actualitzacions · 1 retirades · 9 existents conservades · 0 decisions pendents/);
  await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirmNo').tap();assert.equal(await page.evaluate(()=>fixture.writes.length),0);

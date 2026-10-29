@@ -73,5 +73,14 @@ try{
  // Recovery data contains all old fields and reminders; soft-retired identity never vanished.
  assert.deepEqual(receipt.before_items.find(r=>r.id===id(25)).title,base.find(r=>r.id===id(25)).title);
  assert.equal((await db.query('select count(*)::int n from travel_documents')).rows[0].n,2);
+ // Full 13→25 change set in a second synthetic trip: 13 updates + 12 additions.
+ await as(outsider);
+ for(let i=0;i<13;i++)await db.query(`insert into trip_itinerary_items(id,trip_id,title,timing_kind,starts_at,time_zone) values($1,$2,$3,'exact','2030-12-27T08:00Z','Europe/Riga')`,[id(200+i),other,'Pla anterior '+i]);
+ const bulkBase=(await db.query('select public.read_itinerary_reconciliation($1) s',[other])).rows[0].s;
+ const bulk=Array.from({length:25},(_,i)=>({action:i<13?'update':'add',id:id(200+i),fields:{...fields('Visita revisada '+i),sort_order:i}}));
+ const bulkResult=(await commit(bulkBase,bulk,id(301),id(7),other)).rows[0].r;
+ assert.equal(bulkResult.updated,13);assert.equal(bulkResult.added,12);
+ assert.equal((await db.query('select public.read_itinerary_reconciliation($1) s',[other])).rows[0].s.length,25);
+ await db.exec('reset role');assert.equal((await db.query("select count(*)::int n from trip_reminders where trip_id=$1 and source_kind='itinerary_item' and enabled",[other])).rows[0].n,25);
  console.log('PASS RIG-03B SQL: 13 plans/12 reminders; RLS, protected photos/progress/fixed, immutable fields, stale whole set, atomic failure, retry/impersonation, scoped reminders, audit snapshot and soft retirement.');
 }finally{await db.close()}
