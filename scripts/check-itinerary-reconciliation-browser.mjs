@@ -27,6 +27,15 @@ try{
  await page.evaluate(installFixture);
  await page.locator('#itineraryImportCompare').tap();await page.locator('[data-reconcile-summary]').waitFor();
  assert.match(await page.locator('[data-reconcile-summary]').innerText(),/13 existents conservades · 25 decisions pendents/);assert.equal(await page.locator('#itineraryImportWrite').isDisabled(),true);
+ assert.equal(await page.locator('#itineraryImportPdfDetails').evaluate(el=>el.open),false,'PDF duplicate list must collapse when comparing');
+ assert.equal(await page.locator('#itineraryImportExcludeExisting').isVisible(),false,'old deduplication shortcut hidden in comparison mode');
+ assert.equal(await page.locator('[data-reconcile-row]').count(),25,'one review row per candidate');
+ assert.match(await page.locator('#itineraryImportReconciliation').innerText(),/Possibles coincidències/);
+ await page.locator('#itineraryReconcileSuggestNew').tap();
+ assert.match(await page.locator('#itineraryImportSaveStatus').innerText(),/No s’ha desat res/);
+ assert.equal(await page.evaluate(()=>fixture.writes.length),0,'batch decision never saves');
+ assert.ok(await page.evaluate(()=>itineraryImportState.reconciliation.decisions.length)>1,'one tap proposes multiple safe new visits');
+ await page.evaluate(()=>{itineraryImportState.reconciliation.decisions=[];renderItineraryImportPreview()});
  for(let i=0;i<25;i++){
   const row=page.locator(`[data-reconcile-row="${i}"]`);await row.locator('summary').tap();
   await row.locator('[data-reconcile-action]').selectOption(i<3?'update':i===3?'keep':i===4?'skip':'add');
