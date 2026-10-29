@@ -73,6 +73,28 @@ try{
  // Recovery data contains all old fields and reminders; soft-retired identity never vanished.
  assert.deepEqual(receipt.before_items.find(r=>r.id===id(25)).title,base.find(r=>r.id===id(25)).title);
  assert.equal((await db.query('select count(*)::int n from travel_documents')).rows[0].n,2);
+ // Real PDF provisional times: preserve their local clock without exact reminders.
+ await as(owner);
+ const tentativeBase=await snapshot();
+ const tentativeFields={...fields('Huskies (a confirmar) si no hi ha neu','Europe/Tallinn'),
+  timing_kind:'approximate',local_date:'2030-12-30',starts_at:null,ends_at:null,
+  approximate_start_time:'10:30',approximate_end_time:null,is_optional:true};
+ const tentativeResult=(await commit(tentativeBase,[
+  {action:'update',id:id(20),fields:{...tentativeFields,title:'Sortida de Riga (orientatiu)',time_zone:'Europe/Riga',approximate_start_time:'08:30',is_optional:false}},
+  {action:'add',id:id(70),fields:tentativeFields}
+ ],id(102))).rows[0].r;
+ assert.equal(tentativeResult.updated,1);assert.equal(tentativeResult.added,1);
+ const tentativeAfter=await snapshot();
+ assert.equal(tentativeAfter.find(x=>x.id===id(20)).timing_kind,'approximate');
+ assert.equal(tentativeAfter.find(x=>x.id===id(20)).starts_at,null);
+ assert.equal(tentativeAfter.find(x=>x.id===id(20)).approximate_start_time,'08:30:00');
+ assert.equal(tentativeAfter.find(x=>x.id===id(70)).timing_kind,'approximate');
+ assert.equal(tentativeAfter.find(x=>x.id===id(70)).is_optional,true);
+ assert.equal(tentativeAfter.find(x=>x.id===id(70)).approximate_start_time,'10:30:00');
+ await db.exec('reset role');
+ assert.equal((await db.query('select enabled from trip_reminders where source_id=$1',[id(20)])).rows[0].enabled,false,'no more exact reminder after tentative update');
+ assert.equal((await db.query('select count(*)::int n from trip_reminders where source_id=$1',[id(70)])).rows[0].n,0,'tentative new visit never receives an exact reminder');
+ await as(owner);
  // Full 13→25 change set in a second synthetic trip: 13 updates + 12 additions.
  await as(outsider);
  for(let i=0;i<13;i++)await db.query(`insert into trip_itinerary_items(id,trip_id,title,timing_kind,starts_at,time_zone) values($1,$2,$3,'exact','2030-12-27T08:00Z','Europe/Riga')`,[id(200+i),other,'Pla anterior '+i]);
