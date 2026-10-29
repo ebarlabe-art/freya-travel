@@ -26,6 +26,7 @@ test('workflow retains every existing browser invocation on an independent requi
  const commands=text=>[...text.matchAll(/^        run: (.*node scripts\/check-.*browser\.mjs)$/gm)].map(m=>m[1]).sort();
  expected.push('RECONCILE_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-reconciliation-browser.mjs');
  expected.push('PLANNING_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-rig04-planning-browser.mjs');
+ expected.push('RECONCILE_TABLET=1 PLANNING_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-rig04-planning-browser.mjs');
  assert.deepEqual(commands(current),expected.sort());
  const browser=current.split('  browser-tests:')[1].split('  legacy-suite:')[0];
  assert.match(browser,/fail-fast: false/);assert.match(browser,/engine: \[chromium, webkit\]/);assert.doesNotMatch(browser,/continue-on-error:|needs:/);

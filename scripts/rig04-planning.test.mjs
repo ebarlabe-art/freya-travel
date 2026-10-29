@@ -76,3 +76,40 @@ test('RIG04 draft route HTTP reuses provider, validates membership, refuses forg
  assert.equal((await request({...input,origin:{draft:{...input.origin.draft,latitude:56}}})).status,400);
  allowed=false;assert.equal((await request(input)).status,403);assert.equal(routes,1);
 });
+
+test('RIG04 review: incomplete duration, approximate time, location and real transport stay pending',()=>{
+ for(const change of [{endsAt:null},{timingKind:'approximate'},{location_name:'',address:''},{title:'Bus a Sigulda'}]){
+  const a=event('A','10:00','11:00',{location_name:'A',...change});
+  const h={verified:true,source:'synthetic',date:a.localDate,timeZone:a.timeZone,place:planningSignature([a.title,a.location_name,a.address,a.city]),checkedAt:new Date(now).toISOString(),intervals:[['2030-12-27T00:00Z','2030-12-28T00:00Z']]};
+  assert.equal(assessCombinedItinerary(combined([a]),{openings:{A:h},now}).status,'pending');
+ }
+ const a=event('A','10:00','11:00'),b=event('B','13:00','14:00');
+ assert.ok(assessCombinedItinerary(combined([a,b]),{routes:{[planningRouteKey(a,b)]:{route:{...route.route,duration_seconds:3600}}},now}).issues.some(i=>i.code==='walking_assumption'));
+});
+test('RIG04 review: >20 pairs advance, failures retry, stale/invalid cache cannot certify or block refresh',async()=>{
+ const {calculatePlanningRoutes,planningHtml}=await import('../domain/import-itinerary-planning-ui.mjs');
+ const items=Array.from({length:23},(_,i)=>event('pdf:'+i,String(i).padStart(2,'0')+':00',String(i).padStart(2,'0')+':30',{values:{title:'Place '+i,location_name:'Place '+i,city:'Riga'},title:'Place '+i}));
+ const a={combined:combined(items),routes:{}},calls=[];
+ await calculatePlanningRoutes(a,{tripId:id(5),current:()=>true,online:true,invoke:async input=>{calls.push(input.origin.draft.title);return {error:'no_route'}}});
+ assert.equal(calls.length,20);
+ await calculatePlanningRoutes(a,{tripId:id(5),current:()=>true,online:true,invoke:async input=>{calls.push(input.origin.draft.title);return {route:{...route.route,calculated_at:new Date().toISOString()}}}});
+ assert.deepEqual(calls.slice(20,22),['Place 20','Place 21']);
+ const key=planningRouteKey(items[0],items[1]);a.routes[key]={route:{...route.route,calculated_at:new Date().toISOString(),method:'straight_line'}};
+ await calculatePlanningRoutes(a,{tripId:id(5),current:()=>true,online:true,invoke:async input=>{calls.push(input.origin.draft.title);return {route:{...route.route,calculated_at:new Date().toISOString()}}}});
+ assert.equal(a.routes[key].route.method,'routing');
+ const altered={...items[0],title:'Other place'};assert.notEqual(planningRouteKey(altered,items[1]),key);
+ a.routes[key].route.calculated_at='2020-01-01T00:00Z';
+ const c={...combined(items.slice(0,2)),plan:{rows:[],summary:{preserved:0,new:2}}};
+ const html=planningHtml({...a,combined:c,assessment:assessCombinedItinerary(c,{routes:a.routes}),solutions:[],options:{bufferMinutes:5}});
+ assert.doesNotMatch(html,/15 min a peu/);assert.match(html,/1 de 1 trams pendents/);
+});
+test('RIG04 review: draft Edge auth, validation, stale references and rate limits precede provider calls',async()=>{
+ let user=null,member=true,count=0;
+ const h=createRouteHandler({authenticate:async()=>user,readTrip:async()=>member,readItem:async()=>({trip_id:id(5),updated_at:'old'}),readStops:async()=>[],provider:{resolve:async()=>{count++;return {point:{lat:56,lon:24}}},route:async()=>route.route},maxPerMinute:1});
+ const d={draft:{title:'A',location_name:'A',address:'',city:'Riga'}},input={kind:'draft',trip_id:id(5),mode:'walk',origin:d,destination:d};
+ const req=body=>h(new Request('http://local',{method:'POST',body:JSON.stringify(body)}));
+ assert.equal((await req(input)).status,401);user=id(3);member=false;assert.equal((await req(input)).status,403);member=true;
+ assert.equal((await req({...input,origin:{draft:{...d.draft,title:'x'.repeat(201)}}})).status,400);
+ assert.equal((await req({...input,origin:{type:'manual',id:id(7),updated_at:'new'}})).status,409);assert.equal(count,0);
+ assert.equal((await req(input)).status,200);assert.equal((await req(input)).status,429);assert.equal(count,2);
+});

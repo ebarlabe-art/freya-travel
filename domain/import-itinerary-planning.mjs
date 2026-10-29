@@ -53,10 +53,11 @@ export function planningRouteInput(pair,tripId){
  const origin=endpoint(pair.a),destination=endpoint(pair.b);
  return origin&&destination?{kind:'draft',trip_id:tripId,mode:'walk',origin,destination}:null;
 }
-const verifiedRoute=(entry,now)=>routeIsVerified(entry)&&typeof entry.route.source==='string'&&stamp(entry.route.calculated_at)!==null&&now-stamp(entry.route.calculated_at)>=0&&now-stamp(entry.route.calculated_at)<300000;
+export const verifiedPlanningRoute=(entry,now)=>routeIsVerified(entry)&&typeof entry.route.source==='string'&&entry.route.source.trim().length>0&&stamp(entry.route.calculated_at)!==null&&now-stamp(entry.route.calculated_at)>=0&&now-stamp(entry.route.calculated_at)<300000;
 export function assessCombinedItinerary(combined,{routes={},openings={},bufferMinutes=5,now=Date.now(),sourcesReady=true}={}){
  const issues=[],items=combined.items;
  const add=(kind,code,keys,message)=>issues.push({kind,code,keys,message});
+ if(!items.length)add('pending','empty',[],'No hi ha activitats per avaluar.');
  if(!combined.complete)add('pending','decisions',[],'Queden candidates pendents de decidir.');
  if(!sourcesReady)add('pending','sources',[],'Encara falten fonts del viatge; les reserves poden estar incompletes.');
  for(const x of items){
@@ -64,6 +65,8 @@ export function assessCombinedItinerary(combined,{routes={},openings={},bufferMi
   if(!exact||start===null||end===null||end<=start)add('pending','duration',[x.key],x.title+': cal confirmar hores i durada de la visita.');
   if(x.conditional)add('pending','conditional',[x.key],x.title+': pla condicional; no és una reserva confirmada.');
   if(x.sourceType==='manual'||x.sourceType==='activity'){
+   if(!clean(x.location_name)&&!clean(x.address))add('pending','location',[x.key],x.title+': ubicació pendent de verificar.');
+   if(/\b(bus|autob[uú]s|tren|train|metro|taxi|transfer|transport|trasllat|shuttle|ferry|autocar|flight|vol)\b/i.test(x.title+' '+(x.values?.notes||'')))add('pending','mobility',[x.key],x.title+': transport real pendent de verificar; el càlcul a peu no el valida.');
    const h=openings[x.key];
    // Opening evidence is scoped to the exact place, date and timezone, with source.
    const valid=h?.verified===true&&h.source&&h.date===x.localDate&&h.timeZone===x.timeZone&&h.place===planningSignature([x.title,x.location_name,x.address,x.city])&&stamp(h.checkedAt)!==null&&now-stamp(h.checkedAt)>=0&&now-stamp(h.checkedAt)<86400000&&Array.isArray(h.intervals)&&h.intervals.every(p=>p.length===2&&stamp(p[0])!==null&&stamp(p[1])>stamp(p[0]));
@@ -78,7 +81,8 @@ export function assessCombinedItinerary(combined,{routes={},openings={},bufferMi
  }
  for(const {a,b,key} of planningPairs(items)){
   const entry=routes[key];
-  if(!verifiedRoute(entry,now)){add('pending','route',[a.key,b.key],a.title+' → '+b.title+': trajecte pendent de verificar'+(entry?.error?' ('+entry.error+')':'')+'.');continue}
+  if(!verifiedPlanningRoute(entry,now)){add('pending','route',[a.key,b.key],a.title+' → '+b.title+': trajecte pendent de verificar'+(entry?.error?' ('+entry.error+')':'')+'.');continue}
+  if(entry.route.mode==='walk'&&entry.route.duration_seconds>900)add('pending','walking_assumption',[a.key,b.key],'Trajecte a peu superior a 15 min: cal confirmar la mobilitat real o comprovar un altre transport a l’agenda.');
   const result=routeFeasibility(a,b,entry.route,bufferMinutes);
   if(result.status==='No factible')add('conflict','travel',[a.key,b.key],a.title+' → '+b.title+': no hi cap el trajecte calculat.');
   else if(result.status==='Molt ajustat')add('tight','margin',[a.key,b.key],a.title+' → '+b.title+': marge inferior a '+bufferMinutes+' min.');
@@ -98,7 +102,7 @@ export function proposeItinerarySolutions(combined,options,context){
   const candidates=new Set();
   for(const other of combined.items.filter(x=>x.key!==item.key&&x.localDate===item.localDate)){
    const os=stamp(other.startsAt),oe=stamp(other.endsAt);
-   const durationFor=(a,b)=>{const entry=options.routes?.[planningRouteKey(a,b)];return verifiedRoute(entry,options.now??Date.now())?entry.route.duration_seconds:0};
+   const durationFor=(a,b)=>{const entry=options.routes?.[planningRouteKey(a,b)];return verifiedPlanningRoute(entry,options.now??Date.now())?entry.route.duration_seconds:0};
    const margin=(options.bufferMinutes??5)*60000;
    if(oe!==null)candidates.add(oe+durationFor(other,item)*1000+margin);
    if(os!==null)candidates.add(os-duration-durationFor(item,other)*1000-margin);
@@ -115,7 +119,7 @@ export function proposeItinerarySolutions(combined,options,context){
    if(next.issues.some(x=>x.kind==='conflict'&&!oldKeys.has(x.code+':'+[...x.keys].sort().join('|'))))continue;
    if(next.issues.some(x=>x.kind==='conflict'&&x.keys.includes(item.key)))continue;
    if(next.counts.conflicts>=base.counts.conflicts&&next.counts.tight>=base.counts.tight)continue;
-   proposals.push({id:proposals.length,signature,sourceOrder:item.sourceOrder,edits:{local_date:first.local_date,start_local_time:first.time,end_local_time:last.time},label:item.title+': '+first.local_date+' '+first.time+'–'+last.time,note:next.counts.pending?'El conflicte es resol en l’esborrany; queden dades per verificar.':'Compatible amb les dades verificades; revisa el resultat.',kind:first.local_date===item.localDate?'time_order':'day'});
+   proposals.push({id:proposals.length,signature,sourceOrder:item.sourceOrder,edits:{local_date:first.local_date,start_local_time:first.time,end_local_time:last.time},label:item.title+': '+first.local_date+' '+first.time+'–'+last.time,note:next.counts.pending?'Ajust de l’esborrany: redueix el conflicte conegut. Viabilitat pendent; cal verificar les dades que falten.':'Compatible amb les dades verificades; revisa el resultat.',kind:first.local_date===item.localDate?'time_order':'day'});
    if(++count===3||proposals.length>=30)break;
   }
   if(proposals.length>=30)break;

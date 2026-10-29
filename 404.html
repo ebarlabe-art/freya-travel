@@ -1904,7 +1904,8 @@
             <p id="itineraryImportRemaining" role="status" aria-live="polite"></p>
             <button id="itineraryImportExcludeExisting" type="button">Desmarca les possibles coincidències amb el viatge</button>
             <button id="itineraryImportPlanning" type="button">Analitza i combina l’itinerari seleccionat (sense desar)</button><section id="itineraryPlanningReport" class="hidden stack" aria-label="Viabilitat de l’esborrany"></section>
-            <button id="itineraryImportCompare" type="button">Compara amb el planning existent</button><section id="itineraryImportReconciliation" class="hidden stack" aria-label="Conciliació del planning"></section>
+            <details id="itineraryImportDecisionDetails" open><summary>Revisar decisions i visites existents</summary>
+            <button id="itineraryImportCompare" type="button">Compara amb el planning existent</button><section id="itineraryImportReconciliation" class="hidden stack" aria-label="Conciliació del planning"></section></details>
             <details id="itineraryImportPdfDetails" class="itinerary-import-pdf-details" open>
               <summary>Editar les dades del PDF</summary>
               <p class="muted">Aquí pots corregir els detalls originals, després de revisar la comparació amb el planning.</p>
@@ -9260,6 +9261,7 @@ function closeItineraryImport(){
  $('itineraryImportExistingWrap').classList.add('hidden');
  $('itineraryImportConsentWrap').classList.add('hidden');
  $('itineraryImportCandidates').replaceChildren();
+ $('itineraryImportDecisionDetails').open=true;
  $('itineraryPlanningReport').replaceChildren();$('itineraryPlanningReport').classList.add('hidden');
  $('itineraryImportReconciliation').replaceChildren();$('itineraryImportReconciliation').classList.add('hidden');
  $('itineraryImportWarnings').replaceChildren();
@@ -9474,6 +9476,7 @@ $('itineraryImportPlanning').onclick=async()=>{
   const api=await loadTravelBookModule('import-itinerary-planning-ui.mjs');if(!itineraryImportStillCurrent(s))return;
   s.planningApi=api;const snapshot=s.api.summarizeItineraryReview(s.review,s.reconciliation.existing);
   s.reconciliation.decisions.push(...api.initialPlanningDecisions(snapshot,s.reconciliation));
+  $('itineraryImportDecisionDetails').open=false;$('itineraryImportPdfDetails').open=false;
   renderItineraryImportPreview();$('itineraryImportSaveStatus').textContent='Esborrany combinat. Les equivalències sense diferències es conserven i les propostes noves seleccionades s’afegeixen només a l’esborrany. Revisa els conflictes abans de confirmar.';
  }catch{if(itineraryImportContextIsCurrent(s))$('itineraryImportSaveStatus').textContent='No s’ha pogut completar l’anàlisi. No s’ha desat res.'}
 };

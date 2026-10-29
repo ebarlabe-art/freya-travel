@@ -6,11 +6,11 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 ## RIG-04 · Conciliació i viabilitat (29/10/2026) — BRANCA, NO PUBLICAT
 
-Base `main` `674fd37` (PR #191), branca `codex/rig04-intelligent-planning`. Auditoria, pla executat, contractes i límits: [RIG-04](rig04-planning.md). Es reutilitzen comparador, decisions, writer atòmic, projecció del planning i motor de rutes. Novetats: identitats multilingües conservadores, planning combinat en memòria, solapaments/marges/pendents i propostes revisables d'hora, ordre o dia. Acceptar canvia només l'esborrany; el desament continua requerint confirmació explícita.
+Base `main` `674fd37` (PR #191), branca `codex/rig04-intelligent-planning`. [PR #193](https://github.com/ebarlabe-art/freya-travel/pull/193), mantinguda en esborrany després de la revisió funcional. Auditoria, pla executat, contractes i límits: [RIG-04](rig04-planning.md). Es reutilitzen comparador, decisions, writer atòmic, projecció del planning i motor de rutes. Novetats: identitats multilingües conservadores, planning combinat en memòria, solapaments/marges/pendents i propostes revisables d'hora, ordre o dia. Acceptar canvia només l'esborrany; el desament continua requerint confirmació explícita.
 
 Edge `itinerary-route` ampliada amb entrada d'esborrany de només lectura, mateix JWT/RLS/proveïdor. **Cap migració nova, cap desplegament ni modificació de producció.** El marcador de branca és `pwa-itinerary-planning-rig04`, no una versió pública acreditada. Fonts d'obertura verificables encara no connectades; durades absents continuen pendents. Àlies acotats a sis llocs de Riga/Bolonya, no equivalència universal. Consultes de conciliació a peu; altres modes i trams interns de l'agenda es preserven.
 
-Proves sintètiques de domini/HTTP i flux tàctil Chromium/WebKit; el resultat definitiu de CI s'ha de llegir al SHA final de la PR. Següent pas: revisar codi, informe i límits; no fusionar ni desplegar sense autorització expressa. No s'ha fet servir Freya PROVES ni dades reals dels viatges.
+Revisió funcional completada: pendents explícits de durada/ubicació/transport, cache amb verificació comuna, progressió de lots de més de 20 trams i detalls avançats plegats. 866/866 proves locals; flux real de botons des de la selecció del PDF sintètic fins a confirmació cancel·lada en Chromium/WebKit/iPad, sense escriptures. Proves sintètiques de domini/HTTP i flux tàctil Chromium/WebKit; el resultat definitiu de CI s'ha de llegir al SHA final de la PR. Següent pas: revisar codi, informe i límits; no fusionar ni desplegar sense autorització expressa. No s'ha fet servir Freya PROVES ni dades reals dels viatges.
 
 ---
 
