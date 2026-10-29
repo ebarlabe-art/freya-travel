@@ -4,6 +4,18 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## RIG-03B · Precisió de l'hora i activitats condicionals (29/10/2026) — CORRECCIÓ A BRANCA
+
+Revisió posterior al QA de la [PR #190](https://github.com/ebarlabe-art/freya-travel/pull/190): s'ha detectat que el PDF real conté «(orientatiu)», «(a confirmar)», «pendent de reserva» i activitats condicionals a la neu. No s'han de convertir en instants confirmats amb un recordatori fix.
+
+A la mateixa branca `codex/rig03b-atomic-review`, sense desplegar, `domain/import-itinerary-reconciliation-ui.mjs` classifica per **evidència del títol/notes** les hores orientatives i les propostes opcionals; les que inclouen hora es converteixen a `timing_kind='approximate'`, amb dia i hora **locals** que es mostren al planning però no generen recordatoris `itinerary_exact`. Activitats opcionals com huskies o soft-luge tenen `is_optional=true`, mentre que una sortida només «orientativa» no es fa opcional per defecte. El SQL **ja no rebutja** les hores aproximades i les actualitzacions mai no fan passar `is_optional` de true a false silenciosament. La vista explica la condició d'horari aproximat. Els horaris confirmats continuen `exact`.
+
+Proves afegides a `scripts/itinerary-reconciliation-ui.test.mjs`, `scripts/test-itinerary-reconciliation-db.mjs` i `scripts/check-itinerary-reconciliation-browser.mjs`: 27/12 08:30 orientatiu, 27/12 12:00 bobsleigh pendent de reserva i 30/12 10:30 huskies segons la neu; regressió de la confirmació real, UPDATE vs INSERT, avisos precisos desactivats i WebKit/Chromium. Procediment detallat a `docs/rig03b-reconciliation.md`. En temps de redacció, les noves proves CI s'han de verificar al SHA final; no donar per fet ni fusionar si falta alguna prova.
+
+**Important:** la migració `20261029141108_itinerary_reconciliation_atomic.sql` **continua sense aplicar**, i la PR #190 continua en esborrany. La base de dades pública conserva les 13 activitats i els 12 recordatoris previs; cap canvi de producció ni Freya PROVES.
+
+---
+
 ## RIG-03B · Revisió i desament atòmic (29/10/2026) — IMPLEMENTAT A BRANCA, NO APLICAT
 
 Continuació de la PR #189 (`d458c04d34fb3c93fca9fb559515ab2ac7006c8a`) segons les instruccions actualitzades de [#132](https://github.com/ebarlabe-art/freya-travel/issues/132#issuecomment-6496744730) i el [contracte de privilegis](https://github.com/ebarlabe-art/freya-travel/issues/132#issuecomment-6496780366). Branca `codex/rig03b-atomic-review`, [PR #190](https://github.com/ebarlabe-art/freya-travel/pull/190) en esborrany; la PR funcional inclou la base #189 perquè la CI existent s'activa sobre `main`. Cap merge, desplegament ni consulta/escriptura de dades de producció en aquesta implementació; cap ús de Freya PROVES.
