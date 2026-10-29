@@ -59,7 +59,7 @@ test('Riga+Tallinn: backend reads trip_stops with scoped JWT+RLS and never acces
  assert.match(endpoint,/async function verifiedTripStops\(auth:string,tripId:string\)/);
  assert.match(endpoint,/url\.searchParams\.set\('trip_id','eq\.'\+tripId\)/);
  assert.match(endpoint,/Authorization:auth,apikey:ANON/);
- assert.match(endpoint,/const tripStops=await verifiedTripStops\(auth,tripId\)/);
+ assert.match(endpoint,/const tripStops=await verifiedTripStops\(auth,input\.trip_id\)/);
  assert.match(endpoint,/transcript,source,resolvePlace:lookup,tripStops/);
  assert.doesNotMatch(endpoint,/SERVICE_ROLE|service_role/);
 });
