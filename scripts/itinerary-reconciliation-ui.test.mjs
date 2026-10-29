@@ -51,7 +51,7 @@ test('RIG03B real Riga PDF: tentative times stay approximate, conditional advent
  assert.match(reconciliationHtml(s,state),/sense avís d’hora exacta/);
 });
 test('RIG03B confirmed time remains exact; provisional UPDATE retains approximate local clock',async()=>{
- const good=item(0,'Catedral de Riga');
+ const good=item(0,'Mirador de Sigulda amb hora confirmada');
  const tentative=item(1,'Visita a la Casa dels Caps Negres (orientatiu)');
  const s={read_only:true,items:[good,tentative]};
  const state={existing:[old],decisions:[{source_order:0,action:'add'},{source_order:1,action:'update',target_id:old.id}],retire:[]};
