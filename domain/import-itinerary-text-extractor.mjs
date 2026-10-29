@@ -320,7 +320,7 @@ function mentionedPlace(title){
 }
 function makeCandidate(item,line,page,date,zone,sourceOrder){
  // A literal "| Lloc:" is a cell delimiter, never part of the title.
- const inline=item.title.match(/\\s*[|｜]\\s*(?:lloc|ubicaci[oó]|location|place|venue)\\s*:\\s*/i);
+ const inline=item.title.match(/\s*[|｜]\s*(?:lloc|ubicaci[oó]|location|place|venue)\s*:\s*/i);
  const title=inline?item.title.slice(0,inline.index).trim():item.title;
  const explicit=inline?item.title.slice(inline.index+inline[0].length).trim():'';
  const fields={title:makeField(title,line,page,item.confidence)};
