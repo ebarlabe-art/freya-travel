@@ -172,7 +172,7 @@ Deno.serve(async request=>{
    const exact=candidates.filter((row: PlaceCandidate)=>canonical(row.place.canonical_name)===canonical(city));
    return exact.length===1?exact[0].place.timezone:null;
   };
-  const tripStops=await verifiedTripStops(auth,tripId);
+  const tripStops=await verifiedTripStops(auth,input.trip_id);
   const enriched=await itineraryPdfEnrichTimeZones(proposal,{
    transcript,source,resolvePlace:lookup,tripStops
   });
