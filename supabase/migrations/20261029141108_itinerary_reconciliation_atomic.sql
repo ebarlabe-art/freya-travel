@@ -85,8 +85,9 @@ begin
   fields:=action->'fields';
   if jsonb_typeof(fields) is distinct from 'object' or fields-array['title','timing_kind','local_date','starts_at','ends_at','time_zone','daypart','approximate_start_time','approximate_end_time','location_name','address','city','notes','is_optional','sort_order']<>'{}' then raise sqlstate '22023' using message='RIG_FIELDS'; end if;
   r:=jsonb_populate_record(null::public.trip_itinerary_items,fields);
-  if r.title is null or r.title !~ '[[:alpha:]]' or coalesce(r.timing_kind,'') not in ('exact','date','daypart') or r.sort_order is null or r.sort_order not between 0 and 199 or r.is_optional is null then raise sqlstate '22023' using message='RIG_FIELDS'; end if;
+  if r.title is null or r.title !~ '[[:alpha:]]' or coalesce(r.timing_kind,'') not in ('exact','approximate','date','daypart') or r.sort_order is null or r.sort_order not between 0 and 199 or r.is_optional is null then raise sqlstate '22023' using message='RIG_FIELDS'; end if;
   if r.time_zone is not null and not exists(select 1 from pg_catalog.pg_timezone_names where name=r.time_zone) then raise sqlstate '22023' using message='RIG_ZONE'; end if;
+  if r.timing_kind='approximate' and (r.local_date is null or r.time_zone is null or r.approximate_start_time is null or r.starts_at is not null or r.ends_at is not null or r.daypart is not null) then raise sqlstate '22023' using message='RIG_APPROXIMATE'; end if;
   day:=case when r.timing_kind='exact' then (r.starts_at at time zone r.time_zone)::date else r.local_date end;
   if day is null or (t.start_date is not null and day<t.start_date) or (t.end_date is not null and day>t.end_date) or (r.ends_at is not null and t.end_date is not null and (r.ends_at at time zone r.time_zone)::date>t.end_date) then raise sqlstate '22023' using message='RIG_DATE'; end if;
   if action->>'action'='add' then
@@ -95,7 +96,7 @@ begin
    adds:=adds+1;
   else
    -- notes, progress, creator, identity and optional/fixed flags stay canonical.
-   update public.trip_itinerary_items set title=r.title,timing_kind=r.timing_kind,local_date=r.local_date,starts_at=r.starts_at,ends_at=r.ends_at,time_zone=r.time_zone,daypart=r.daypart,approximate_start_time=r.approximate_start_time,approximate_end_time=r.approximate_end_time,location_name=r.location_name,address=r.address,city=r.city,sort_order=r.sort_order where trip_id=p_trip_id and id=target;
+   update public.trip_itinerary_items set title=r.title,timing_kind=r.timing_kind,local_date=r.local_date,starts_at=r.starts_at,ends_at=r.ends_at,time_zone=r.time_zone,daypart=r.daypart,approximate_start_time=r.approximate_start_time,approximate_end_time=r.approximate_end_time,location_name=r.location_name,address=r.address,city=r.city,sort_order=r.sort_order,is_optional=(public.trip_itinerary_items.is_optional or r.is_optional) where trip_id=p_trip_id and id=target;
    updates:=updates+1;
   end if;
  end loop;
