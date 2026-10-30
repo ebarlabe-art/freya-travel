@@ -29,6 +29,8 @@ const runtimeDomain=[
   'import-itinerary-proposal.mjs',
   'import-itinerary-review.mjs',
   'import-itinerary-write.mjs',
+  'import-itinerary-planning.mjs',
+  'import-itinerary-planning-ui.mjs',
   'import-itinerary-reconciliation.mjs',
   'import-itinerary-reconciliation-ui.mjs',
   'travel-book-proposal.mjs',

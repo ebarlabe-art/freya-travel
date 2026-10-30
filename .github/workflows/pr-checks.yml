@@ -23,6 +23,8 @@ jobs:
         run: node --test scripts/ci-postgres.test.mjs scripts/ci-browser-install.test.mjs
       - name: A2 focused tests
         run: node --test scripts/import-proposal.test.mjs scripts/import-text-extractor.test.mjs scripts/import-reservation.test.mjs scripts/import-reservation-ui.test.mjs scripts/import-itinerary-review-ui.test.mjs scripts/home-entry.test.mjs scripts/travel-builder.test.mjs scripts/itinerary-place-enrichment.test.mjs scripts/itinerary-auto-place.test.mjs
+      - name: RIG04 intelligent itinerary contracts
+        run: node --test scripts/rig04-planning.test.mjs
       - name: Offline V2 focused tests
         run: node --test scripts/offline-v2-readonly.test.mjs
       - name: Verify previous public frontend can be rebuilt for rollback
@@ -132,6 +134,11 @@ jobs:
         run: CULTURE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-cultural-guide-browser.mjs
       - name: Reconciliation real mobile controls
         run: RECONCILE_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-reconciliation-browser.mjs
+      - name: RIG04 iPad touch flow
+        if: matrix.engine == 'webkit'
+        run: RECONCILE_TABLET=1 PLANNING_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-rig04-planning-browser.mjs
+      - name: RIG04 planning touch flow
+        run: PLANNING_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-rig04-planning-browser.mjs
       - name: Unified activities Chromium mobile
         if: matrix.engine == 'chromium'
         timeout-minutes: 5

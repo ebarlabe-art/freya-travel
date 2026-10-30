@@ -4,6 +4,16 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## RIG-04 · Conciliació i viabilitat (29/10/2026) — BRANCA, NO PUBLICAT
+
+Base `main` `674fd37` (PR #191), branca `codex/rig04-intelligent-planning`. [PR #193](https://github.com/ebarlabe-art/freya-travel/pull/193), mantinguda en esborrany després de la revisió funcional. Auditoria, pla executat, contractes i límits: [RIG-04](rig04-planning.md). Es reutilitzen comparador, decisions, writer atòmic, projecció del planning i motor de rutes. Novetats: identitats multilingües conservadores, planning combinat en memòria, solapaments/marges/pendents i propostes revisables d'hora, ordre o dia. Acceptar canvia només l'esborrany; el desament continua requerint confirmació explícita.
+
+Edge `itinerary-route` ampliada amb entrada d'esborrany de només lectura, mateix JWT/RLS/proveïdor. **Cap migració nova, cap desplegament ni modificació de producció.** El marcador de branca és `pwa-itinerary-planning-rig04`, no una versió pública acreditada. Fonts d'obertura verificables encara no connectades; durades absents continuen pendents. Àlies acotats a sis llocs de Riga/Bolonya, no equivalència universal. Consultes de conciliació a peu; altres modes i trams interns de l'agenda es preserven.
+
+Revisió funcional completada: pendents explícits de durada/ubicació/transport, cache amb verificació comuna, progressió de lots de més de 20 trams i detalls avançats plegats. 866/866 proves locals; flux real de botons des de la selecció del PDF sintètic fins a confirmació cancel·lada en Chromium/WebKit/iPad, sense escriptures. Proves sintètiques de domini/HTTP i flux tàctil Chromium/WebKit; el resultat definitiu de CI s'ha de llegir al SHA final de la PR. Següent pas: revisar codi, informe i límits; no fusionar ni desplegar sense autorització expressa. No s'ha fet servir Freya PROVES ni dades reals dels viatges.
+
+---
+
 ## RIG-03B · Historial de migracions entre GitHub i Supabase (29/10/2026)
 
 La migració de RIG-03B s'ha aplicat a Supabase públic amb `apply_migration`, que ha registrat la versió **20261029172805**. El fitxer de definicions original `20261029141108_itinerary_reconciliation_atomic.sql` segueix al repositori, ara **reaplicable** (`CREATE OR REPLACE FUNCTION`, `CREATE TABLE IF NOT EXISTS`) si el gestor de migracions el troba pendent. Perquè els dos historials mantinguin la mateixa versió registrada, `20261029172805_itinerary_reconciliation_atomic.sql` és un **checkpoint de contracte** que verifica l'existència de les RPC. Així, una base nova aplica les definicions al primer fitxer i verifica al segon; la producció, que ja té la versió del segon fitxer, pot aplicar el primer sense col·lisions ni canvis de dades. No hi ha dues migracions que recreïn funcions incompatibles.
