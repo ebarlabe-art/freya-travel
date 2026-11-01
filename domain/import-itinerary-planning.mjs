@@ -86,7 +86,7 @@ export function assessCombinedItinerary(combined,{routes={},openings={},bufferMi
  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
   const a=items[i],b=items[j],as=stamp(a.startsAt),ae=stamp(a.endsAt),bs=stamp(b.startsAt),be=stamp(b.endsAt);
   if(sameConfirmedFlightLeg(a,b))continue;
-  if(a.timingKind='exact'&&b.timingKind==='exact'&&as!==null&&bs!==null&&((ae!==null&&be!==null&&as<be&&bs<ae)||(ae!==null&&be===null&&as<=bs&&bs<ae)||(be!==null&&ae===null&&bs<=as&&as<be)))add('conflict','overlap',[a.key,b.key],a.title+' i '+b.title+': les franges horàries se solapen.');
+  if(a.timingKind==='exact'&&b.timingKind==='exact'&&as!==null&&bs!==null&&((ae!==null&&be!==null&&as<be&&bs<ae)||(ae!==null&&be===null&&as<=bs&&bs<ae)||(be!==null&&ae===null&&bs<=as&&as<be)))add('conflict','overlap',[a.key,b.key],a.title+' i '+b.title+': les franges horàries se solapen.');
  }
  for(const {a,b,key} of planningPairs(items)){
   const entry=routes[key];
