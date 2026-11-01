@@ -33,3 +33,16 @@ test('#198 final write checks conflicts before and after confirmation, before up
  assert.ok(flow.lastIndexOf('guardImportConflicts(state)')<flow.indexOf('uploadTripDocument'));
  assert.match(flow,/NO resolts/);
 });
+
+
+test('#200 identical booked flight records do not invent an overlap; distinct departures still warn',()=>{
+ const base={sourceType:'flight',title:'BCN → RIX',localDate:'2030-12-28',timeZone:'Europe/Riga',
+  startsAt:'2030-12-28T08:10:00Z',endsAt:'2030-12-28T12:20:00Z',timingKind:'exact',status:'confirmed'};
+ const first={...base,key:'flight:passenger-a'},second={...base,key:'flight:passenger-b'};
+ const evaluateRows=rows=>importantConflicts(agendaConflictAnalysis(rows));
+ assert.equal(evaluateRows([first,second]).length,0,'same leg is not two incompatible flights');
+ assert.equal(evaluateRows([first,{...second,startsAt:'2030-12-28T08:15:00Z'}]).length,1,'different departure remains a warning');
+ assert.equal(evaluateRows([first,{...second,title:'BCN → HEL'}]).length,1,'different destination remains a warning');
+ assert.equal(evaluateRows([first,{...second,sourceType:'manual'}]).length,1,'different source type remains a warning');
+ assert.equal(evaluateRows([first,{...second,endsAt:null}]).length,1,'missing flight end cannot suppress a confirmed overlap');
+});
