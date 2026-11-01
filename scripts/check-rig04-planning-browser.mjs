@@ -86,7 +86,8 @@ try{
    assert.equal(await page.evaluate(()=>fixture.writes),0);await page.locator('#itineraryImportConfirmNo').tap();
    await page.waitForFunction(()=>!itineraryImportState.busy);
    assert.equal(await page.evaluate(()=>fixture.writes),0);
-   await page.locator('#itineraryImportExit').tap();continue;
+   await page.locator('#itineraryImportExit').tap();await page.waitForFunction(()=>itineraryImportState===null);
+   await page.evaluate(async()=>{const m=await loadTravelBookModule('import-itinerary-draft.mjs');await m.discardImportDraft({userId:session.user.id,tripId:trip.id})});continue;
   }
   assert.equal(await page.locator('#itineraryImportDecisionDetails').evaluate(n=>n.open),false);
   assert.equal(await page.locator('#itineraryImportPdfDetails').evaluate(n=>n.open),false);
@@ -133,7 +134,8 @@ try{
    assert.equal(await page.evaluate(()=>itineraryImportState.reconciliation.decisions.some(d=>d.source_order===0&&d.automatic)),false,'changed PDF hours invalidate automatic equivalence');
   }
   assert.notEqual(await page.locator('[data-planning-summary]').textContent(),'Compatible amb les dades verificades; els trajectes són estimacions','missing openings cannot certify the itinerary');
-  await page.locator('#itineraryImportExit').tap();assert.equal(await page.evaluate(()=>itineraryImportState),null);
+  await page.locator('#itineraryImportExit').tap();await page.waitForFunction(()=>itineraryImportState===null);
+   await page.evaluate(async()=>{const m=await loadTravelBookModule('import-itinerary-draft.mjs');await m.discardImportDraft({userId:session.user.id,tripId:trip.id})});
  }
  assert.deepEqual(errors,[]);console.log('PASS RIG04 '+engine+': existing/new draft, multilingual KEEP, distinct museums, fixed reservation, real touch acceptance, route failure/retry, cancel, zero writes.');
 }finally{await browser.close();server.close()}

@@ -106,7 +106,21 @@ try{
    assert.equal(await page.locator('#itineraryConflictFlash').isVisible(),false,'safe proposal resolves overlap in draft');
    assert.equal(await page.evaluate(()=>fixture.writes),0);
   }
-  await page.locator('#itineraryImportExit').tap();assert.equal(await page.evaluate(()=>itineraryImportState),null);
+  await page.locator('#itineraryImportExit').tap();
+  await page.waitForFunction(()=>itineraryImportState===null);
+  if(mode==='existing'){
+   await page.locator('#openItineraryImport').tap();
+   await page.waitForFunction(()=>itineraryImportState?.flashApi&&itineraryImportState?.reconciliation?.existing);
+   assert.match(await page.locator('#itineraryImportStatus').innerText(),/Revisió recuperada|El planning ha canviat/);
+   assert.equal(await page.evaluate(()=>fixture.writes),0,'pause and resume never commit');
+   await page.locator('#itineraryImportDiscardDraft').tap();
+   await page.waitForFunction(()=>itineraryImportState?.review===null);
+   await page.locator('#itineraryImportClose').tap();
+   await page.waitForFunction(()=>itineraryImportState===null);
+  }else await page.evaluate(async()=>{
+   const api=await loadTravelBookModule('import-itinerary-draft.mjs');
+   await api.discardImportDraft({userId:session.user.id,tripId:trip.id});
+  });
  }
  await page.evaluate(()=>{
   renderAgendaRoutes=()=>{};proposeItineraryAutoPlaces=()=>{};proposeActivityPoints=async()=>{};generateItineraryDayContext=async()=>{};renderItineraryDayWeather=()=>{};
