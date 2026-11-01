@@ -132,7 +132,7 @@ Deno.serve(async request=>{
      typeof input.trip_id!=='string'||!UUID.test(input.trip_id)||
      typeof input.document_id!=='string'||!UUID.test(input.document_id))
    return json({error:'invalid_request'},400);
-  let doc,bytes;
+  let doc:{id:string;trip_id:string;file_name:string;mime_type:string;file_path:string},bytes:Uint8Array;
   if(Object.hasOwn(input,'file')){
    // The temporary UUID scopes this draft only. It grants no document access.
    // Membership is checked with the caller's JWT and existing trip RLS.
