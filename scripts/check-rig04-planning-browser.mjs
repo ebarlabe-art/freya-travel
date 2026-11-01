@@ -41,7 +41,7 @@ try{
   }
   await page.locator('#itineraryImportConsent').check();await page.locator('#itineraryImportAnalyze').tap();
   await page.locator('#itineraryImportPreview').waitFor({state:'visible'});
-  await page.locator('[data-planning-summary]').waitFor();
+  await page.locator('[data-planning-summary]').waitFor({state:'attached'});
   await page.waitForFunction(()=>!itineraryImportState.preparing&&!itineraryImportState.planningBusy);
   assert.equal(await page.locator('#itineraryImportPlanning').isVisible(),false);
   assert.ok(await page.evaluate(()=>fixture.requests.length>0),'routes start automatically');
@@ -62,6 +62,8 @@ try{
    await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
    assert.equal(await page.evaluate(()=>fixture.uploads+fixture.documentWrites+fixture.commits.length),0);
    await page.locator('#itineraryImportConfirmYes').tap();await page.waitForFunction(()=>itineraryImportState?.comparisonStale&&!itineraryImportState.busy);
+   await page.locator('#itineraryImportAdvanced > summary').tap();
+   await page.locator('#itineraryImportDecisionDetails > summary').tap();
    await page.locator('#itineraryImportCompare').tap();await page.waitForFunction(()=>!itineraryImportState.preparing);
    await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirmYes').tap();await page.waitForFunction(()=>itineraryImportState===null);
    assert.deepEqual(await page.evaluate(()=>[fixture.uploads,fixture.documentWrites,fixture.commits.length]),[1,1,2]);
@@ -69,12 +71,11 @@ try{
    assert.equal(await page.evaluate(()=>fixture.commits[0].p_changes.length),3);continue;
   }
   if(mode==='compound'){
-   assert.match(await page.locator('#itineraryImportReconciliation').innerText(),/Excepcions que necessiten revisió \(2\)/);
+   assert.equal(await page.locator('[data-flash-order]').count(),1);
    assert.equal(await page.locator('#itineraryImportWrite').isDisabled(),true);
-   assert.equal(await page.locator('#itineraryReconcileSuggestNew').count(),0);
    for(const order of [0,1]){
-    const row=page.locator('[data-reconcile-row="'+order+'"]');await row.locator('summary').tap();
-    await row.locator('[data-reconcile-action]').selectOption('skip');
+    assert.equal(await page.locator('[data-flash-order]').getAttribute('data-flash-order'),String(order));
+    await page.locator('[data-flash-action="keep"]').tap();
    }
    assert.equal(await page.locator('#itineraryImportWrite').isEnabled(),true);
    await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
@@ -89,26 +90,28 @@ try{
   assert.equal(await page.evaluate(()=>fixture.writes),0);
   const counts=await page.evaluate(()=>({keep:itineraryImportState.reconciliation.decisions.filter(x=>x.action==='keep').length,add:itineraryImportState.reconciliation.decisions.filter(x=>x.action==='add').length}));
   assert.deepEqual(counts,mode==='existing'?{keep:1,add:2}:{keep:0,add:3});
-  assert.match(await page.locator('[data-planning-summary]').innerText(),/incompatibilitats/);
+  assert.match(await page.locator('[data-planning-summary]').textContent(),/incompatibilitats/);
   await page.locator('[data-planning-accept]').first().tap();
   assert.notEqual(await page.evaluate(()=>JSON.stringify(itineraryImportState.review)),before);
   assert.equal(await page.evaluate(()=>JSON.stringify(fixture.existing)===fixture.before&&JSON.stringify(itineraryProjection)===fixture.agenda),true);
   assert.equal(await page.evaluate(()=>fixture.writes),0);assert.match(await page.locator('#itineraryImportSaveStatus').innerText(),/només a l’esborrany/);
+  if(!await page.locator('#itineraryImportAdvanced').evaluate(n=>n.open))await page.locator('#itineraryImportAdvanced > summary').tap();
   await page.locator('[data-planning-routes]').tap();await page.waitForFunction(()=>!itineraryImportState.planningBusy);
   await page.locator('[data-planning-pending] summary').tap();
-  assert.match(await page.locator('#itineraryPlanningReport').innerText(),/pendent|verificar/);
+  assert.match(await page.locator('#itineraryPlanningDiagnostics').innerText(),/pendent|verificar/);
   const requests=await page.evaluate(()=>fixture.requests);assert.ok(requests.length>0,JSON.stringify(await page.evaluate(()=>({items:itineraryImportState.planning.combined.items,routes:itineraryImportState.planning.routes,status:document.getElementById("itineraryImportSaveStatus").textContent}))));assert.ok(requests.every(r=>r.kind==='draft'));
   assert.doesNotMatch(JSON.stringify(requests),/bookingCode|documents|notes/);
   await page.evaluate(()=>fixture.fail=false);await page.locator('[data-planning-routes]').tap();await page.waitForFunction(()=>!itineraryImportState.planningBusy);
   assert.equal(await page.evaluate(()=>fixture.writes),0);
   assert.ok(await page.evaluate(()=>itineraryImportState.planning.assessment.issues.some(i=>i.code==='travel')),'verified route reveals insufficient transfer time');
   await page.locator('[data-planning-calculated] summary').tap();
-  assert.match(await page.locator('#itineraryPlanningReport').innerText(),/10 min a peu/);
+  assert.match(await page.locator('#itineraryPlanningDiagnostics').innerText(),/10 min a peu/);
   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
   assert.equal(await page.evaluate(()=>fixture.writes),0);
   await page.locator('#itineraryImportConfirmNo').tap();await page.waitForFunction(()=>!itineraryImportState.busy);
   assert.equal(await page.evaluate(()=>fixture.writes),0);
   const afterRoutes=await page.evaluate(()=>fixture.requests.length);
+  if(!await page.locator('#itineraryImportAdvanced').evaluate(n=>n.open))await page.locator('#itineraryImportAdvanced > summary').tap();
   await page.locator('[data-planning-routes]').tap();await page.waitForFunction(()=>!itineraryImportState.planningBusy);
   assert.equal(await page.evaluate(()=>fixture.requests.length),afterRoutes,'fresh routes are reused');
   await page.locator('#itineraryImportPdfDetails > summary').tap();
@@ -124,7 +127,7 @@ try{
    await page.evaluate(()=>{itineraryImportState.api.changeItineraryReviewItem(itineraryImportState.review,0,'start_local_time','10:15');renderItineraryImportPreview()});
    assert.equal(await page.evaluate(()=>itineraryImportState.reconciliation.decisions.some(d=>d.source_order===0&&d.automatic)),false,'changed PDF hours invalidate automatic equivalence');
   }
-  assert.notEqual(await page.locator('[data-planning-summary]').innerText(),'Compatible amb les dades verificades; els trajectes són estimacions','missing openings cannot certify the itinerary');
+  assert.notEqual(await page.locator('[data-planning-summary]').textContent(),'Compatible amb les dades verificades; els trajectes són estimacions','missing openings cannot certify the itinerary');
   await page.locator('#itineraryImportExit').tap();assert.equal(await page.evaluate(()=>itineraryImportState),null);
  }
  assert.deepEqual(errors,[]);console.log('PASS RIG04 '+engine+': existing/new draft, multilingual KEEP, distinct museums, fixed reservation, real touch acceptance, route failure/retry, cancel, zero writes.');

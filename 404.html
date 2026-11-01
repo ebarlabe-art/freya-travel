@@ -508,6 +508,9 @@
 .cultural-guide-dialog{width:min(740px,calc(100% - 20px));height:calc(100dvh - 24px);max-height:calc(100dvh - 24px);padding:0;border:1px solid #d9cde6;border-radius:22px;color:#302339;overflow:hidden}.cultural-guide-dialog::backdrop{background:rgba(30,20,40,.55)}.cultural-guide-dialog h2{margin:8px 0}.cultural-guide-dialog textarea{width:100%;min-height:120px;font:inherit;line-height:1.5;padding:12px;border:1px solid #cabbd6;border-radius:12px}.cultural-guide-dialog label{display:block;margin:12px 0}.cultural-guide-dialog label input[type=checkbox]{width:auto}.cultural-guide-dialog button,.cultural-guide-dialog select{min-height:44px}.cultural-guide-dialog .guide-actions{background:#fff;padding:10px 0}.cultural-guide-section{border-top:1px solid #e9e0ef;padding:12px 0}.cultural-guide-section p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}.cultural-guide-section small{display:block;color:#66556f}.cultural-guide-sources{overflow-wrap:anywhere}.cultural-guide-sources blockquote{margin:8px 0;padding:8px 12px;border-left:3px solid #cdb8df;white-space:pre-wrap}.cultural-guide-status{padding:10px;background:#f4eef9;border-radius:12px}.cultural-guide-top{background:white;padding:0;display:flex;justify-content:space-between;align-items:start;gap:12px}
 #culturalGuideRoot{height:100%;display:flex;flex-direction:column;min-height:0}.cultural-guide-header{flex:none;padding:16px 18px 8px;border-bottom:1px solid #e9e0ef;background:#fff}.cultural-guide-header h2{font-size:1.25rem}.cultural-guide-header p{margin:6px 0}.cultural-guide-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:8px 18px max(20px,env(safe-area-inset-bottom))}.cultural-guide-status{font-size:.9rem;overflow-wrap:anywhere}.cultural-guide-status[role=alert]{background:#fff0ed;border-left:4px solid #ad3020}.cultural-guide-top button{flex:none}.cultural-guide-dialog textarea{font-size:16px}.cultural-guide-dialog .guide-actions{display:flex;flex-wrap:wrap;gap:8px}
 
+
+body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
+.import-flash{background:#fffdf8;border:1px solid #e0d6c6;border-radius:20px;padding:20px;box-shadow:0 12px 32px #20382c14;max-width:720px;margin:12px auto}.import-flash h3{font-size:1.35rem;margin:8px 0}.flash-progress{font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:#526958}.flash-options,.flash-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.flash-option{background:#f2f4ee;border-radius:12px;padding:12px;min-width:0;overflow-wrap:anywhere}.flash-option small,.flash-option strong,.flash-option b{display:block}.flash-option strong{font-size:1.2rem;margin:8px 0}.flash-option details{font-size:.8rem;margin-top:10px}.flash-option ul{padding-left:14px}.flash-advice{background:#e7efe5;border-left:3px solid #4b6a54;padding:12px;border-radius:8px;line-height:1.5}.flash-actions button,.flash-footer button{min-height:44px;padding:10px;font-size:.9rem;width:auto;white-space:normal}.flash-recommended{background:#365b45!important;color:white!important}.flash-footer{display:flex;justify-content:space-between;gap:8px;margin-top:12px}.flash-overview>section{border:1px solid #d8e2d4;border-radius:16px;padding:16px;margin:16px 0;background:#fcfdf9}.flash-overview>[data-flash-conflicts]{border-color:#e7c8aa;background:#fffbf6}.flash-overview h3{margin-top:0}.flash-plan-list{list-style:none;padding:0;margin:0}.flash-plan-row{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #e6e9e0}.flash-plan-row time{min-width:52px;font-variant-numeric:tabular-nums;color:#546551}.flash-plan-row small{display:block;color:#667466;margin-top:4px}.flash-solution{background:#fff;padding:12px;border-radius:10px;margin:10px 0}#itineraryImportAdvanced>summary{padding:14px 0;color:#586455}#itineraryImportAdvanced[open]{margin:16px 0}#itineraryImportFlash:focus{outline:2px solid #647d62}@media(max-width:430px){.import-flash{padding:14px}.flash-option{padding:10px}.flash-overview>section{padding:12px}}
 </style>
 </head>
 <body>
@@ -1903,7 +1906,9 @@
             <div id="itineraryImportReviewResult" class="itinerary-import-result" role="status" aria-live="polite"></div>
             <p id="itineraryImportRemaining" role="status" aria-live="polite"></p>
             <button id="itineraryImportExcludeExisting" type="button">Desmarca les possibles coincidències amb el viatge</button>
+            <section id="itineraryImportFlash" class="hidden" aria-live="polite"></section>
             <button id="itineraryImportPlanning" class="hidden" type="button">Reintenta l’anàlisi automàtica</button><section id="itineraryPlanningReport" class="hidden stack" aria-label="Viabilitat de l’esborrany"></section>
+            <details id="itineraryImportAdvanced" open><summary>Detalls avançats</summary><div id="itineraryPlanningDiagnostics"></div>
             <details id="itineraryImportDecisionDetails" open><summary>Revisar decisions i visites existents</summary>
             <button id="itineraryImportCompare" type="button">Compara amb el planning existent</button><section id="itineraryImportReconciliation" class="hidden stack" aria-label="Conciliació del planning"></section></details>
             <details id="itineraryImportPdfDetails" class="itinerary-import-pdf-details" open>
@@ -1911,6 +1916,7 @@
               <p class="muted">Aquí pots corregir els detalls originals, després de revisar la comparació amb el planning.</p>
               <div id="itineraryImportWarnings" class="stack" role="status"></div>
               <div id="itineraryImportCandidates" class="stack"></div>
+            </details>
             </details>
             <p id="itineraryImportReviewHelp" class="muted">Revisa les activitats i desmarca les que no vulguis importar. Freya no modificarà cap element que ja tinguis al viatge.</p>
             <button type="button" id="itineraryImportViewExisting" class="hidden">Veure les activitats desades</button>
@@ -2045,7 +2051,7 @@
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-unified-pdf-import-194';
+const FREYA_FRONTEND_RELEASE='pwa-import-flash-review-196';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -9292,6 +9298,7 @@ async function openItineraryImport(){
   msg('genericItineraryMessage','Per importar un document, connecta’t a Internet i inicia sessió.',true);return;
  }
  closeItineraryImport();
+ $('itineraryImportAdvanced').open=true;$('itineraryImportFlash').classList.add('hidden');$('itineraryImportFlash').innerHTML='';$('itineraryPlanningDiagnostics').innerHTML='';
  const state={tripId:trip.id,userId:session.user.id,generation:tripLoadGeneration,
   epoch:++itineraryImportEpoch,review:null,api:null,busy:false,documentId:null,file:null,uploadedDoc:null,docs:[]};
  itineraryImportState=state;
@@ -9468,7 +9475,18 @@ function renderItineraryPlanning(state,snapshot){
  $('itineraryImportPlanning').disabled=!!state.busy||!!state.reconciliation?.pendingRequest||connectionUnavailable();
  if(!state.planningApi||!state.reconciliation)return;
  const host=$('itineraryPlanningReport');host.classList.remove('hidden');
- try{state.planning=state.planningApi.analyzePlanning(snapshot,state.reconciliation,planningContext(state),state.planning||{});host.innerHTML=state.planningApi.planningHtml(state.planning,{busy:state.planningBusy||state.busy||!!state.reconciliation.pendingRequest})}
+ try{state.planning=state.planningApi.analyzePlanning(snapshot,state.reconciliation,planningContext(state),state.planning||{});if(state.flashApi){
+ const flash=$('itineraryImportFlash'),context=planningContext(state),busy=state.busy||!!state.reconciliation.pendingRequest;
+ const card=state.flashApi.flashHtml(snapshot,state.reconciliation,context,state.flash,state.planning,{busy});
+ const previous=flash.querySelector('[data-flash-order]')?.dataset.flashOrder;
+ flash.innerHTML=card;flash.classList.toggle('hidden',!card);host.classList.toggle('hidden',!!card);
+ host.innerHTML=state.flashApi.flashPlanningHtml(state.planning,snapshot,state.reconciliation,context,state.flash,{busy});
+ $('itineraryPlanningDiagnostics').innerHTML=state.planningApi.planningHtml(state.planning,{busy:state.planningBusy||busy});
+ if(card&&previous!==flash.querySelector('[data-flash-order]')?.dataset.flashOrder)flash.querySelector('article')?.focus({preventScroll:true});
+ $('itineraryImportWrite').disabled||=!!card;
+ const missing=state.reconciliation.plan?.conflicts.filter(c=>c.reason==='decision_required').length||0;
+ $('itineraryImportReviewHelp').textContent=missing?'Completa les dades necessàries del PDF a «Detalls avançats» abans de confirmar.':'Revisa el resultat i confirma. Encara no s’ha desat cap canvi.';
+ }else host.innerHTML=state.planningApi.planningHtml(state.planning,{busy:state.planningBusy||state.busy||!!state.reconciliation.pendingRequest})}
  catch(error){state.planning=null;host.textContent='Cal revisar les decisions: '+error.message}
 }
 async function prepareUnifiedItineraryImport(s){
@@ -9482,8 +9500,12 @@ async function prepareUnifiedItineraryImport(s){
   if(!s.reconciliation)throw Error('comparison_unavailable');
   const api=await loadTravelBookModule('import-itinerary-planning-ui.mjs');if(!itineraryImportStillCurrent(s))return;
   s.planningApi=api;s.reconciliation.unified=true;
+  s.flashApi=await loadTravelBookModule('import-itinerary-flash.mjs');if(!itineraryImportStillCurrent(s))return;
+  s.flash={deferred:[],history:[],targets:{}};
+  $('itineraryImportAdvanced').open=false;$('itineraryImportDecisionDetails').open=false;
   const snapshot=s.api.summarizeItineraryReview(s.review,s.reconciliation.existing);
-  s.reconciliation.decisions.push(...api.initialPlanningDecisions(snapshot,s.reconciliation));
+  s.reconciliation.decisions.push(...api.automaticEquivalentDecisions(snapshot,s.reconciliation.existing,s.reconciliation.decisions));
+  s.reconciliation.decisions.push(...s.flashApi.prepareFlashDecisions(snapshot,s.reconciliation,planningContext(s)));
   $('itineraryImportPdfDetails').open=false;
   renderItineraryImportPreview();
   await verifyItineraryDraftRoutes(s);
@@ -9504,7 +9526,7 @@ async function verifyItineraryDraftRoutes(s){
  try{await s.planningApi.calculatePlanningRoutes(current,{tripId:s.tripId,online:!connectionUnavailable(),current:()=>itineraryImportContextIsCurrent(s)&&s.planning?.signature===current.signature,invoke:async body=>{const {data,error}=await db.functions.invoke('itinerary-route',{body});return error?{error:'provider_unavailable'}:data}})}
  finally{if(itineraryImportContextIsCurrent(s)){s.planningBusy=false;renderItineraryImportPreview()}}
 }
-$('itineraryPlanningReport').addEventListener('click',async event=>{
+async function handleItineraryPlanningClick(event){
  const s=itineraryImportState;if(!itineraryImportStillCurrent(s)||s.busy||s.planningBusy||!s.planning||s.reconciliation?.pendingRequest)return;
  const button=event.target.closest('button');if(!button)return;
  const current=s.planning;
@@ -9517,6 +9539,27 @@ $('itineraryPlanningReport').addEventListener('click',async event=>{
  }else if(button.hasAttribute('data-planning-routes')){
   await verifyItineraryDraftRoutes(s);
  }
+}
+$('itineraryPlanningReport').addEventListener('click',handleItineraryPlanningClick);
+$('itineraryPlanningDiagnostics').addEventListener('click',handleItineraryPlanningClick);
+function handleItineraryFlashClick(event){
+ const s=itineraryImportState,button=event.target.closest('button');
+ if(!button||!s?.flashApi||!itineraryImportContextIsCurrent(s)||s.busy||s.reconciliation?.pendingRequest)return;
+ try{
+  if(button.hasAttribute('data-flash-undo'))s.flashApi.undoFlash(s.reconciliation,s.flash);
+  else if(button.dataset.flashResume!==undefined)s.flash.deferred=s.flash.deferred.filter(n=>n!==Number(button.dataset.flashResume));
+  else if(button.dataset.flashAction){
+   const order=Number(button.closest('[data-flash-order]').dataset.flashOrder);
+   s.flashApi.decideFlash(s.api.summarizeItineraryReview(s.review,s.reconciliation.existing),s.reconciliation,planningContext(s),s.flash,order,button.dataset.flashAction,button.dataset.flashTargetId);
+  }else return;
+  renderItineraryImportPreview();
+ }catch(error){$('itineraryImportSaveStatus').textContent=error.message}
+}
+$('itineraryImportFlash').addEventListener('click',handleItineraryFlashClick);
+$('itineraryPlanningReport').addEventListener('click',handleItineraryFlashClick);
+$('itineraryImportFlash').addEventListener('change',event=>{
+ const s=itineraryImportState;if(!s?.flash||s.busy||s.reconciliation?.pendingRequest)return;
+ if(event.target.dataset.flashTarget!==undefined){s.flash.targets[Number(event.target.dataset.flashTarget)]=event.target.value;renderItineraryImportPreview()}
 });
 function renderItineraryReconciliation(state,snapshot){
  const r=state.reconciliation,host=$('itineraryImportReconciliation');
@@ -9534,7 +9577,7 @@ function renderItineraryReconciliation(state,snapshot){
  $('itineraryImportReviewHelp').textContent=state.unified?'Revisa les excepcions i les incompatibilitats. Les decisions preparades i les dades originals continuen accessibles.':'Compara cada candidata amb el planning. Les visites existents es conserven per defecte.';
  try{r.plan=r.api.reconciliationPlan(snapshot,r)}catch{r.plan=null}
  $('itineraryImportRemaining').textContent=r.plan?r.plan.summary.new+' visites noves · '+r.plan.summary.updated+' actualitzacions · '+r.plan.summary.retired+' retirades':'Revisa les decisions de conciliació';
- if(state.unified)$('itineraryImportDecisionDetails').open=!!r.plan?.summary.pending;
+ if(state.unified&&!state.flashApi)$('itineraryImportDecisionDetails').open=!!r.plan?.summary.pending;
  $('itineraryImportWrite').disabled=state.preparing||state.planningBusy||state.busy||state.saveCompleted||connectionUnavailable()||offlineReadOnlySession||(!r.pendingRequest&&!r.plan?.can_commit);
  $('itineraryImportCandidates').querySelectorAll('input,textarea').forEach(n=>n.disabled=!!state.busy||!!r.pendingRequest);
 }
