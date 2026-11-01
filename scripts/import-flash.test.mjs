@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {prepareFlashDecisions,flashQueue,decideFlash,undoFlash,flashRecommendation,flashPlanningHtml,flashHtml} from '../domain/import-itinerary-flash.mjs';
+import {prepareFlashDecisions,flashQueue,decideFlash,undoFlash,flashRecommendation,flashPlanningHtml,flashHtml,reopenFlashMatches} from '../domain/import-itinerary-flash.mjs';
 import {analyzePlanning} from '../domain/import-itinerary-planning-ui.mjs';
 const id=n=>'14000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const old={id:id(1),title:'Catedral de Riga',city:'Riga',localDate:'2030-12-27',timeLabel:'10:00',starts_at:'2030-12-27T10:00Z',ends_at:'2030-12-27T11:00Z',time_zone:'UTC',timing_kind:'exact',status:'planned',photo_count:0,link_count:0,updated_at:'2030-12-01T00:00Z'};
@@ -49,4 +49,19 @@ test('#196 ambiguous targets require explicit selection; strings are escaped',()
  const {snapshot,state,flash}=setup();state.existing.push({...old,id:id(2)});
  assert.throws(()=>decideFlash(snapshot,state,context,flash,0,'keep',''),/Tria primer/);
  const a=analyzePlanning(snapshot,state,context);const html=flashHtml(snapshot,state,context,flash,a);assert.match(html,/data-flash-target=/);assert.match(html,/Selecciona la visita existent/);
+});
+
+test('#200 users can reopen previous PDF choices before confirmation without changing existing data',()=>{
+ const {snapshot,state,flash}=setup(),original=structuredClone(state.existing);
+ state.decisions=prepareFlashDecisions(snapshot,state,context);
+ decideFlash(snapshot,state,context,flash,0,'keep',old.id);
+ const before=analyzePlanning(snapshot,state,context);
+ assert.match(flashPlanningHtml(before,snapshot,state,context,flash),/data-flash-revisit/);
+ assert.equal(flashQueue(snapshot,state,context,flash).length,0);
+ assert.equal(reopenFlashMatches(snapshot,state,context,flash),1);
+ assert.deepEqual(state.decisions,[{source_order:1,action:'add'}]);
+ assert.deepEqual(flashQueue(snapshot,state,context,flash).map(x=>x.source_order),[0]);
+ assert.deepEqual(state.existing,original);
+ assert.equal(flash.history.length,0);
+ assert.equal(reopenFlashMatches(snapshot,state,context,flash),0);
 });

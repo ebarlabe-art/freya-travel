@@ -27,6 +27,14 @@ export function automaticEquivalentDecisions(snapshot,existing,decisions=[]){
  }
  return additions;
 }
+// Two records of the exact same flight leg can represent a shared booking or two passengers.
+// Do not classify them as incompatible commitments, but keep both records visible.
+// Distinct times, routes or transport types must still be checked normally.
+const sameConfirmedFlightLeg=(a,b)=>a.sourceType==='flight'&&b.sourceType==='flight'&&
+ clean(a.title)!==''&&clean(a.title)===clean(b.title)&&
+ stamp(a.startsAt)!==null&&stamp(a.startsAt)===stamp(b.startsAt)&&
+ stamp(a.endsAt)!==null&&stamp(a.endsAt)===stamp(b.endsAt)&&
+ a.localDate===b.localDate&&a.timeZone===b.timeZone;
 const projection=row=>({key:'manual:'+row.id,sourceId:row.id,sourceType:'manual',title:row.title,localDate:row.localDate||row.local_date||(row.starts_at&&local(row.starts_at,row.time_zone)?.local_date)||'',startsAt:row.starts_at,endsAt:row.ends_at,timeZone:row.time_zone,timingKind:row.timing_kind,status:row.status,sourceUpdatedAt:row.updated_at,location_name:row.location_name||'',address:row.address||'',city:row.city||'',fixed:!!row.is_fixed,mutable:false});
 export function combineImportItinerary(snapshot,state,{projection:agenda=[],convertLocalTime}={}){
  const plan=planItineraryReconciliation({snapshot,existing:state.existing,decisions:state.decisions,retireExistingIds:state.retire});
@@ -77,6 +85,7 @@ export function assessCombinedItinerary(combined,{routes={},openings={},bufferMi
  // UTC instants catch midnight, timezone and overlapping long reservations.
  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
   const a=items[i],b=items[j],as=stamp(a.startsAt),ae=stamp(a.endsAt),bs=stamp(b.startsAt),be=stamp(b.endsAt);
+  if(sameConfirmedFlightLeg(a,b))continue;
   if(a.timingKind==='exact'&&b.timingKind==='exact'&&as!==null&&bs!==null&&((ae!==null&&be!==null&&as<be&&bs<ae)||(ae!==null&&be===null&&as<=bs&&bs<ae)||(be!==null&&ae===null&&bs<=as&&as<be)))add('conflict','overlap',[a.key,b.key],a.title+' i '+b.title+': les franges horàries se solapen.');
  }
  for(const {a,b,key} of planningPairs(items)){

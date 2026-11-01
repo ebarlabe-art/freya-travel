@@ -4,6 +4,19 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## Seguiment P0 · Riga: duplicat aparent del vol i revisió recuperable (1/11/2026) — BRANCA, NO PUBLICAT
+
+Branca `codex/riga-conflict-review-20261101` basada en `main` després de les PR #197 i #199 fusionades. Canvi acotat, sense publicació ni modificació de dades reals.
+
+- El motor RIG-04 no marca com a solapament dues projeccions de vols amb tipus, títol/trajecte, dia, fus, inici i final exactament iguals. No les elimina ni les fusiona: qualsevol altra combinació continua sotmesa al detector. Es preserven els conflictes verificats del museu i del parc, les reserves protegides i la confirmació explícita.
+- A la vista d'importació del PDF, un botó permet tornar a les targetes flaix de coincidències ja decidides; només reinicia aquelles decisions del mateix esborrany, sense escriptures. Les decisions automàtiques exactes no es reobren. Aquest botó no permet recuperar una importació ja tancada ni substitueix la reimportació després de recarregar; la persistència temporal del PDF continuaria requerint un contracte propi de seguretat i caducitat.
+- Les recomanacions eviten concatenar missatges de diagnòstic i mostren un motiu curt basat en el mateix conflicte verificat.
+- Regressions afegides per vols idèntics/distints, reobertura sense modificar registres existents i clic tàctil dins de l'escenari Chromium/WebKit existent. Les proves i CI s'han de validar abans de fusionar.
+
+**Següent acció:** revisar la PR i la CI; després, només amb autorització, publicar i comprovar al mateix iPhone/PWA l'avís BCN–RIX, el solapament del museu i la revisió de coincidències. No canviar hores ni reserves del viatge real automàticament.
+
+---
+
 ## P0 · Conflictes horaris visibles #198 (1/11/2026) — BRANCA, NO PUBLICAT
 
 Base `main` `e0814fa` (PR #197 fusionada). La usuària confirma validació física de les pantalles de coincidències a l’iPhone; no es modifica aquesta interfície. La secció #196 següent és el relleu històric, no l’estat actual.
