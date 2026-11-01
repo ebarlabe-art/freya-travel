@@ -115,7 +115,7 @@ try{
    assert.equal(await page.evaluate(()=>fixture.writes),0,'pause and resume never commit');
    await page.locator('#itineraryImportDiscardDraft').tap();
    await page.waitForFunction(()=>itineraryImportState?.review===null);
-   await page.locator('#itineraryImportExit').tap();
+   await page.locator('#itineraryImportClose').tap();
    await page.waitForFunction(()=>itineraryImportState===null);
   }else await page.evaluate(async()=>{
    const api=await loadTravelBookModule('import-itinerary-draft.mjs');
