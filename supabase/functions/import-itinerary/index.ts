@@ -1,3 +1,4 @@
+import {readImportRequest,decodeTransientFile} from './transient.mjs';
 import {itineraryPdfTextInstructions,itineraryPdfTextSchema,itineraryPdfTranscriptToProposal,itineraryPdfNeedsDateRecovery,itineraryPdfPreferRetry,itineraryPdfEnrichTimeZones} from './transcript.mjs';
 
 const SUPABASE_URL=Deno.env.get('SUPABASE_URL')||'';
@@ -69,6 +70,10 @@ async function pdfBytes(auth:string,doc:{file_path:string;file_name:string;mime_
  if(Number.isFinite(length)&&length>MAX_PDF_BYTES)throw errorCode('invalid_file_size');
  const bytes=new Uint8Array(await r.arrayBuffer());
  if(!bytes.length||bytes.length>MAX_PDF_BYTES)throw errorCode('invalid_file_size');
+ return validateFileBytes(bytes,doc);
+}
+function validateFileBytes(bytes:Uint8Array,doc:{mime_type:string}){
+ if(!bytes.length||bytes.length>MAX_PDF_BYTES)throw errorCode('invalid_file_size');
  // Do not trust the declared MIME alone; check each supported format's signature.
  const marker=new TextDecoder('latin1').decode(bytes.subarray(0,1024));
  const isPdf=doc.mime_type==='application/pdf'&&marker.includes('%PDF-');
@@ -121,19 +126,29 @@ Deno.serve(async request=>{
   if(!SUPABASE_URL||!ANON)throw errorCode('import_not_configured');
   const auth=request.headers.get('authorization');
   if(!auth?.startsWith('Bearer '))return json({error:'unauthorized'},401);
-  const body=await request.text();
-  if(body.length>2048)return json({error:'invalid_request'},400);
-  let input;
-  try{input=JSON.parse(body);}
-  catch{return json({error:'invalid_request'},400);}
+  const input=await readImportRequest(request);
   if(!input||typeof input!=='object'||Array.isArray(input)||
-     Object.keys(input).some(k=>!['trip_id','document_id'].includes(k))||
+     Object.keys(input).some(k=>!['trip_id','document_id','file'].includes(k))||
      typeof input.trip_id!=='string'||!UUID.test(input.trip_id)||
      typeof input.document_id!=='string'||!UUID.test(input.document_id))
    return json({error:'invalid_request'},400);
-  // RLS is the authority for membership and document access; no service role.
-  const doc=await privateDocument(auth,input.trip_id,input.document_id);
-  const bytes=await pdfBytes(auth,doc);
+  let doc,bytes;
+  if(Object.hasOwn(input,'file')){
+   // The temporary UUID scopes this draft only. It grants no document access.
+   // Membership is checked with the caller's JWT and existing trip RLS.
+   const url=new URL(SUPABASE_URL+'/rest/v1/trips');
+   url.searchParams.set('select','id');url.searchParams.set('id','eq.'+input.trip_id);
+   const access=await fetch(url,{headers:{Authorization:auth,apikey:ANON},signal:AbortSignal.timeout(10000)});
+   if(!access.ok)throw errorCode('document_unavailable');
+   const rows=await access.json();if(!Array.isArray(rows)||rows.length!==1||rows[0].id!==input.trip_id)throw errorCode('document_unavailable');
+   bytes=decodeTransientFile(input.file);
+   doc={id:input.document_id,trip_id:input.trip_id,file_name:input.file.name,mime_type:input.file.mime_type,file_path:''};
+   validateFileBytes(bytes,doc);
+  }else{
+   // Existing document path remains backward compatible and RLS-scoped.
+   doc=await privateDocument(auth,input.trip_id,input.document_id);
+   bytes=await pdfBytes(auth,doc);
+  }
   const source={
    kind:'document',document_id:doc.id,file_name:doc.file_name,mime_type:doc.mime_type
   };
@@ -180,7 +195,7 @@ Deno.serve(async request=>{
  }catch(err){
   const code=err instanceof Error&&'code' in err?String(err.code):'provider_error';
   const codes:Record<string,number>={
-   document_unavailable:404,unsupported_file_type:415,invalid_file_type:415,
+   invalid_request:400,document_unavailable:404,unsupported_file_type:415,invalid_file_type:415,
    invalid_file_size:413,provider_rate_limited:429,provider_refusal:422,
    transcription_incomplete:422,invalid_transcript:422,transcript_too_long:422,
    no_itinerary_candidates:422,itinerary_import_too_many_items:422,

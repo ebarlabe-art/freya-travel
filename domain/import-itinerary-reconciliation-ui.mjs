@@ -52,7 +52,7 @@ export function reconciliationHtml(snapshot,state,disabled=false){
   '<p class="muted">Els vols, hotels, reserves i documents no es modificaran. Les visites retirades es conservaran com a cancel·lades.</p>'+
   '</div>';
  if(error)html+='<p role="alert" class="itinerary-import-warning">'+esc(error)+'. Revisa les decisions abans de desar.</p>';
- if(eligible.length)html+='<div class="itinerary-reconcile-quick"><p><strong>'+eligible.length+' visites sense coincidència aparent.</strong> Pots marcar-les com a noves d’un sol cop i revisar-les després.</p>'+
+ if(eligible.length&&!state.unified)html+='<div class="itinerary-reconcile-quick"><p><strong>'+eligible.length+' visites sense coincidència aparent.</strong> Pots marcar-les com a noves d’un sol cop i revisar-les després.</p>'+
   '<button type="button" id="itineraryReconcileSuggestNew" '+(disabled?'disabled':'')+'>Marca '+eligible.length+' com a noves (sense desar)</button></div>';
  const renderRow=item=>{
   const decision=rowDecision(item);
@@ -85,6 +85,12 @@ export function reconciliationHtml(snapshot,state,disabled=false){
   itemHtml+='<p class="muted">Si cal corregir una data, un lloc o el text, desplega «Editar les dades del PDF» al final de la comparació.</p></div></details>';
   return itemHtml;
  };
+ if(state.unified){
+ const pendingItems=snapshot.items.filter(item=>item.included!==false&&!rowDecision(item));
+ const resolved=snapshot.items.filter(item=>!pendingItems.includes(item));
+ html='<h3>Excepcions que necessiten revisió ('+pendingItems.length+')</h3><p>Les visites existents es conserven. Només has de decidir els casos ambigus; pots revisar totes les decisions abans de confirmar.</p>'+pendingItems.map(renderRow).join('')+'<details data-reconcile-resolved><summary>Veure les decisions preparades ('+resolved.length+')</summary>'+resolved.map(renderRow).join('')+'</details>';
+ return html;
+ }
  if(matched.length)html+='<h4 class="itinerary-reconcile-section">1 · Possibles coincidències ('+matched.length+')</h4>'+
   '<p class="muted">Compara el que ja tens amb la proposta nova; no cal afegir dues vegades la mateixa visita.</p>'+matched.map(renderRow).join('');
  html+='<h4 class="itinerary-reconcile-section">'+(matched.length?'2':'1')+' · Propostes sense coincidència ('+unmatched.length+')</h4>'+
