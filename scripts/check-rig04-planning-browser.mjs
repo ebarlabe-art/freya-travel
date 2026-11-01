@@ -86,7 +86,9 @@ try{
    assert.equal(await page.evaluate(()=>fixture.writes),0);await page.locator('#itineraryImportConfirmNo').tap();
    await page.waitForFunction(()=>!itineraryImportState.busy);
    assert.equal(await page.evaluate(()=>fixture.writes),0);
-   await page.locator('#itineraryImportExit').tap();continue;
+   await page.locator('#itineraryImportExit').tap();await page.waitForFunction(()=>itineraryImportState===null);
+   await page.evaluate(async()=>{const m=await loadTravelBookModule('import-itinerary-draft.mjs');await m.discardImportDraft({userId:session.user.id,tripId:trip.id})});
+   await page.evaluate(async()=>{const m=await loadTravelBookModule('import-itinerary-draft.mjs');await m.discardImportDraft({userId:session.user.id,tripId:trip.id})});continue;
   }
   assert.equal(await page.locator('#itineraryImportDecisionDetails').evaluate(n=>n.open),false);
   assert.equal(await page.locator('#itineraryImportPdfDetails').evaluate(n=>n.open),false);
