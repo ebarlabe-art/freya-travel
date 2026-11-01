@@ -1922,6 +1922,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
             </details>
             <p id="itineraryImportReviewHelp" class="muted">Revisa les activitats i desmarca les que no vulguis importar. Freya no modificarà cap element que ja tinguis al viatge.</p>
             <button type="button" id="itineraryImportViewExisting" class="hidden">Veure les activitats desades</button>
+            <button type="button" id="itineraryImportDiscardDraft" class="secondary hidden">Descarta la revisió desada i comença de nou</button>
             <p id="itineraryImportSaveStatus" class="message" role="status" aria-live="polite">Encara no s'ha desat cap activitat.</p>
             <button type="button" id="itineraryImportWrite" disabled>Desar activitats seleccionades</button>
             <button type="button" id="itineraryImportExit" class="secondary">Tancar la revisió</button>
@@ -2053,7 +2054,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-verified-conflicts-198';
+const FREYA_FRONTEND_RELEASE='pwa-import-draft-resume-201';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -2537,6 +2538,7 @@ function offlineAuthNetworkError(error){
 }
 function clearOfflineUserData(userId=session?.user?.id){
   if(!userId)return false;
+  void loadTravelBookModule('import-itinerary-draft.mjs').then(api=>api.discardUserImportDrafts(userId)).catch(()=>{});
   clearOfflineSessionGrant(userId);
   if(session?.user?.id===userId)offlineReadOnlySession=false;
   offlineDocEpoch++;
@@ -9277,6 +9279,58 @@ async function recoverItineraryReconciliation(state){
  $('itineraryImportSaveStatus').textContent='Hi ha un desament pendent de confirmar. Reintenta la mateixa operació per comprovar-ne el resultat sense duplicar-la.';
  renderItineraryImportPreview();return true;
 }
+function importDraftScope(s){return {userId:s.userId,tripId:s.tripId}}
+async function pauseItineraryImport(){
+ const s=itineraryImportState;if(!itineraryImportContextIsCurrent(s))return;
+ if(s.busy||s.preparing||s.planningBusy){$('itineraryImportSaveStatus').textContent='Acaba la comprovació abans de sortir.';return}
+ if(!s.review||!s.reconciliation||s.saveCompleted||s.reconciliation.pendingRequest){closeItineraryImport();return}
+ try{
+  s.busy=true;$('itineraryImportSaveStatus').textContent='Guardant una còpia privada xifrada en aquest dispositiu…';
+  const api=await loadTravelBookModule('import-itinerary-draft.mjs');if(!itineraryImportContextIsCurrent(s))return;
+  await api.saveImportDraft(importDraftScope(s),{
+   documentId:s.documentId,review:s.review,
+   reconciliation:{existing:s.reconciliation.existing,decisions:s.reconciliation.decisions,retire:s.reconciliation.retire},
+   flash:s.flash||{deferred:[],history:[],targets:{}},
+   fileMeta:s.file?{name:s.file.name,type:s.file.type,size:s.file.size,lastModified:s.file.lastModified}:null
+  },s.file,{current:()=>itineraryImportContextIsCurrent(s)&&session?.user?.id===s.userId});
+  if(!itineraryImportContextIsCurrent(s))return;
+  closeItineraryImport();$('openItineraryImport').textContent='↩ Reprèn la revisió del PDF';
+  msg('genericItineraryMessage','Revisió xifrada i guardada en aquest dispositiu durant 24 h. Torna a «Itinerari» per continuar. No s’ha modificat el viatge.');
+ }catch(error){
+  if(itineraryImportContextIsCurrent(s))$('itineraryImportSaveStatus').textContent='La revisió no s’ha desat. Continua oberta: '+(error?.message||'Torna-ho a provar.');
+ }finally{if(itineraryImportContextIsCurrent(s)){s.busy=false;renderItineraryImportPreview()}}
+}
+async function resumePausedItineraryImport(s){
+ const draftApi=await loadTravelBookModule('import-itinerary-draft.mjs');if(!itineraryImportStillCurrent(s))return true;
+ const saved=await draftApi.loadImportDraft(importDraftScope(s));if(!itineraryImportStillCurrent(s))return true;
+ if(!saved)return false;
+ const d=saved.data;
+ if(d.review.scope?.tripId!==s.tripId||d.review.scope?.userId!==s.userId||d.review.scope?.documentId!==d.documentId)
+  throw Error('La revisió no correspon a aquest viatge.');
+ const {data,error}=await db.rpc('read_itinerary_reconciliation',{p_trip_id:s.tripId});if(!itineraryImportStillCurrent(s))return true;
+ if(error||!Array.isArray(data))throw Error('No es poden verificar els canvis actuals del planning.');
+ const identity=rows=>JSON.stringify(rows.map(x=>[x.id,x.updated_at,x.status,x.is_fixed,x.photo_count,x.link_count]).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))));
+ const stale=identity(data)!==identity(d.reconciliation.existing);
+ const modules=await Promise.all(['import-itinerary-review.mjs','import-itinerary-write.mjs','import-itinerary-reconciliation-ui.mjs','import-itinerary-planning-ui.mjs','import-itinerary-flash.mjs'].map(loadTravelBookModule));
+ if(!itineraryImportStillCurrent(s))return true;
+ const [reviewApi,saveApi,reconcileApi,planningApi,flashApi]=modules;
+ const existing=data.map(row=>{const local=row.timing_kind==='exact'&&row.starts_at&&row.time_zone?isoToZonedLocal(row.starts_at,row.time_zone):'';return {...row,localDate:local?local.slice(0,10):row.local_date||'',timeLabel:local?local.slice(11,16):(row.approximate_start_time||'').slice(0,5)}});
+ Object.assign(s,{api:reviewApi,saveApi,documentId:d.documentId,review:d.review,file:saved.file,
+  reconciliation:{api:reconcileApi,existing,decisions:stale?[]:d.reconciliation.decisions||[],retire:stale?[]:d.reconciliation.retire||[],pendingRequest:null,unified:true},
+  planningApi,flashApi,flash:stale?{deferred:[],history:[],targets:{}}:d.flash||{deferred:[],history:[],targets:{}},
+  reviewedConflicts:[],selectedConflict:null,planning:null,unified:true});
+ if(stale){
+  const snapshot=s.api.summarizeItineraryReview(s.review,existing);
+  s.reconciliation.decisions.push(...planningApi.automaticEquivalentDecisions(snapshot,existing,[]));
+  s.reconciliation.decisions.push(...flashApi.prepareFlashDecisions(snapshot,s.reconciliation,planningContext(s)));
+ }
+ $('itineraryImportSource').classList.add('hidden');$('itineraryImportPreview').classList.remove('hidden');
+ $('itineraryImportAdvanced').open=false;$('itineraryImportDecisionDetails').open=false;$('itineraryImportPdfDetails').open=false;
+ $('itineraryImportDiscardDraft').classList.remove('hidden');
+ $('itineraryImportStatus').textContent=stale?'El planning ha canviat. Cal revisar de nou les coincidències; hem conservat la lectura del PDF.':'Revisió recuperada del dispositiu. Torna a comprovar els conflictes abans de confirmar.';
+ $('itineraryImportSaveStatus').textContent='Cap canvi al viatge desat. Aquesta còpia local caduca al cap de 24 hores.';
+ renderItineraryImportPreview();return true;
+}
 function closeItineraryImport(){
  $('itineraryImportViewExisting').classList.add('hidden');
  itineraryImportState?.confirmResolver?.(false);
@@ -9293,6 +9347,7 @@ function closeItineraryImport(){
  $('itineraryPlanningReport').replaceChildren();$('itineraryPlanningReport').classList.add('hidden');
  $('itineraryImportReconciliation').replaceChildren();$('itineraryImportReconciliation').classList.add('hidden');
  $('itineraryImportWarnings').replaceChildren();
+ $('itineraryImportDiscardDraft').classList.add('hidden');
  $('itineraryImportConsent').checked=false;
  $('itineraryImportUploadFile').value='';
  $('itineraryImportPhotoFile').value='';
@@ -9307,7 +9362,7 @@ function updateItineraryImportConsent(){
  $('itineraryImportUpload').disabled=!current||!!state.busy;
  $('itineraryImportConsentWrap').classList.toggle('hidden',!chosen);
  $('itineraryImportAnalyze').disabled=!chosen||!!state.busy||!$('itineraryImportConsent').checked;
- $('itineraryImportSelectedName').textContent=state?.file?'Document seleccionat: '+state.file.name+' · Es conservarà a Documents només quan confirmis. Si tanques o recarregues, hauràs de tornar-lo a seleccionar.':
+ $('itineraryImportSelectedName').textContent=state?.file?'Document seleccionat: '+state.file.name+' · Es conservarà a Documents només quan confirmis. Amb «Pausa i desa», Freya en conserva una còpia xifrada local durant 24 hores.':
   doc?'Document seleccionat: '+(doc.title||doc.file_name||'Document'):
   'Encara no has triat cap document.';
 }
@@ -9328,12 +9383,13 @@ async function openItineraryImport(){
  $('itineraryImportPanel').classList.remove('hidden');
  $('itineraryImportSource').classList.remove('hidden');
  $('itineraryImportPreview').classList.add('hidden');
- $('itineraryImportStatus').textContent='Tria un document per començar.';
+ $('itineraryImportStatus').textContent='Tria un document per començar. Per conservar una revisió, fes servir «Pausa i desa».';
  $('itineraryImportExisting').innerHTML='<option value="">Selecciona un document o foto…</option>';
  showItineraryImportSourceMenu(false);
  updateItineraryImportConsent();
  try{
   if(await recoverItineraryReconciliation(state))return;
+  if(await resumePausedItineraryImport(state))return;
   await loadDocuments(true);
   if(!itineraryImportStillCurrent(state))return;
   // loadDocuments omet els fitxers de categoria Foto, que cal recuperar per separat.
@@ -9349,8 +9405,10 @@ async function openItineraryImport(){
    state.docs.map(doc=>'<option value="'+esc(doc.id)+'">'+esc(doc.title||doc.file_name||'Document')+
     (doc.category==='Foto'?' · Foto':'')+'</option>').join('');
  }catch(error){
-  if(itineraryImportStillCurrent(state))
-   $('itineraryImportStatus').textContent='No s’han pogut carregar tots els documents i fotos. Torna-ho a provar.';
+  if(itineraryImportStillCurrent(state)){
+   $('itineraryImportStatus').textContent='No s’ha pogut recuperar la revisió local o carregar documents. Pots descartar la còpia i començar de nou.';
+   $('itineraryImportDiscardDraft').classList.remove('hidden');
+  }
  }
  updateItineraryImportConsent();
 }
@@ -9718,7 +9776,9 @@ async function writeItineraryReconciliation(state){
   if(error){if(error.code==='PT409'||error.code==='22023'||error.code==='42501'){sessionStorage.removeItem(itineraryReconciliationRecoveryKey(state));r.pendingRequest=null;r.decisions=[];r.retire=[];state.comparisonStale=true}throw error}
   if(!data||data.operation_id!==r.pendingRequest.p_operation_id)throw Error('Resposta no confirmada');
   sessionStorage.removeItem(itineraryReconciliationRecoveryKey(state));
-  state.saveCompleted=true;closeItineraryImport();await loadGenericItinerary(true);
+  state.saveCompleted=true;
+  try{const drafts=await loadTravelBookModule('import-itinerary-draft.mjs');await drafts.discardImportDraft(importDraftScope(state))}catch(_){}
+  closeItineraryImport();$('openItineraryImport').textContent='📄 Importa document';await loadGenericItinerary(true);
   if(trip?.id===state.tripId&&session?.user?.id===state.userId)msg('genericItineraryMessage',`✅ Planning desat: ${data.added} noves, ${data.updated} actualitzades i ${data.retired} retirades. Avisos sincronitzats.`);
  }catch(error){if(itineraryImportContextIsCurrent(state))$('itineraryImportSaveStatus').textContent=r.api.reconciliationError(error)}
  finally{if(itineraryImportContextIsCurrent(state)){state.busy=false;renderItineraryImportPreview()}}
@@ -9736,8 +9796,16 @@ $('itineraryImportExcludeExisting').onclick=()=>{
  }catch(error){$('itineraryImportSaveStatus').textContent=error?.message||'No s’han pogut desmarcar les coincidències. Torna-ho a provar.';}
 };
 $('openItineraryImport').onclick=openItineraryImport;
-$('itineraryImportClose').onclick=closeItineraryImport;
-$('itineraryImportExit').onclick=closeItineraryImport;
+$('itineraryImportClose').onclick=()=>{void pauseItineraryImport()};
+$('itineraryImportExit').onclick=()=>{void pauseItineraryImport()};
+$('itineraryImportDiscardDraft').onclick=async()=>{
+ const s=itineraryImportState;if(!itineraryImportContextIsCurrent(s)||s.busy||s.preparing||s.reconciliation?.pendingRequest)return;
+ try{
+  const api=await loadTravelBookModule('import-itinerary-draft.mjs');await api.discardImportDraft(importDraftScope(s));
+  if(!itineraryImportContextIsCurrent(s))return;
+  closeItineraryImport();$('openItineraryImport').textContent='📄 Importa document';await openItineraryImport();
+ }catch(error){if(itineraryImportContextIsCurrent(s))$('itineraryImportSaveStatus').textContent=error?.message||'No s’ha pogut descartar la còpia local.'}
+};
 $('itineraryImportConsent').onchange=updateItineraryImportConsent;
 $('itineraryImportUpload').onclick=()=>{
  const state=itineraryImportState;
