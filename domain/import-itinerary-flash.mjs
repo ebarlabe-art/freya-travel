@@ -35,6 +35,15 @@ export function decideFlash(snapshot,state,context,flash,order,action,targetId){
  if(action==='later')flash.deferred.push(order);
  state.decisions=decisions;
 }
+export function reopenFlashMatches(snapshot,state,context,flash){
+ // Revisit an existing draft, without touching protected rows or persisted data.
+ const orders=new Set(snapshot.items.filter(i=>i.included!==false&&flashMatches(i,state,context).length).map(i=>i.source_order));
+ const toReview=state.decisions.filter(d=>orders.has(d.source_order)&&!d.automatic);
+ if(!toReview.length)return 0;
+ state.decisions=state.decisions.filter(d=>!orders.has(d.source_order)||d.automatic);
+ flash.deferred=[];flash.history=[];flash.targets={};
+ return toReview.length;
+}
 export function undoFlash(state,flash){const last=flash.history.pop();if(!last)return;state.decisions=[...state.decisions.filter(d=>d.source_order!==last.order),...last.previous];flash.deferred=last.deferred;}
 export function flashRecommendation(snapshot,state,context,item,target,previous={}){
  const unknown={choice:null,text:'No tinc prou informació per recomanar una data'};
@@ -51,7 +60,10 @@ export function flashRecommendation(snapshot,state,context,item,target,previous=
    const bad=1-good,known=new Set(problems[bad].map(signature));
    if(problems[good].length<problems[bad].length&&problems[good].every(i=>known.has(signature(i)))){
     const removed=problems[bad].find(i=>!problems[good].some(j=>signature(j)===signature(i)));
-    return {choice:good===0?'keep':'update',text:(good===0?'Conservar':'Canviar')+' evita aquesta incompatibilitat detectada: '+removed.message};
+    const action=good===0?'Conservar':'Canviar';
+    const other=removed.code==='overlap'?variants[bad].combined.items.find(x=>removed.keys.includes(x.key)&&x.key!=='pdf:'+item.source_order&&x.key!=='manual:'+target.id):null;
+    const reason=removed.code==='overlap'?'un solapament horari'+(other?' amb «'+other.title+'»':' amb una altra visita'):removed.code==='travel'?'un trajecte sense prou temps':removed.code==='closed'?'una visita fora de l’horari d’obertura verificat':'un conflicte detectat al planning';
+    return {choice:good===0?'keep':'update',text:action+' evita '+reason+'.'};
    }
   }
  }catch{}
@@ -76,5 +88,6 @@ export function flashPlanningHtml(analysis,snapshot,state,context,flash,{busy=fa
  const row=x=>'<li class="flash-plan-row"><time>'+esc(time(x.startsAt,x.timeZone)||'Sense hora')+'</time><div><strong>'+esc(x.title)+'</strong>'+(verified.has(x.key)?'<strong class="itinerary-conflict-badge">⚠ Conflicte horari</strong>':'')+'<small>'+esc(x.key.startsWith('pdf:')?(state.decisions.find(d=>d.source_order===x.sourceOrder)?.action==='update'?'Canvia':'S’incorporarà'):'Es conserva')+'</small></div></li>';
  const days=items=>{const sorted=[...items].sort((a,b)=>String(a.localDate).localeCompare(String(b.localDate))||String(a.startsAt).localeCompare(String(b.startsAt)));let out='',day=null;for(const x of sorted){if(day!==x.localDate){if(day!==null)out+='</ul>';day=x.localDate;out+='<h4>'+esc(flashDay(day))+'</h4><ul class="flash-plan-list">'}out+=row(x)}return out+(day!==null?'</ul>':'');};
  const deferred=snapshot.items.filter(i=>flash.deferred.includes(i.source_order)&&!state.decisions.some(d=>d.source_order===i.source_order));
- return '<div class="flash-overview"><section data-flash-valid><h3>Itinerari vàlid, sense conflictes</h3><p class="muted">Sense conflictes detectats amb les dades disponibles. La manca de dades no garanteix la viabilitat.</p>'+days(analysis.combined.items.filter(x=>!bad.has(x.key)))+'</section><section data-flash-conflicts><h3>Conflictes per resoldre</h3>'+(!conflicts.length&&!deferred.length?'<p>No s’han detectat incompatibilitats.</p>':'')+days(analysis.combined.items.filter(x=>bad.has(x.key)))+'<ul>'+conflicts.map(i=>'<li>'+esc(i.message)+'</li>').join('')+'</ul>'+deferred.map(i=>'<p>'+esc(i.values.title)+' · Decisió posposada <button type="button" data-flash-resume="'+i.source_order+'">Revisar coincidència</button></p>').join('')+analysis.solutions.map(p=>'<article class="flash-solution"><p>'+esc(p.label)+'</p><button type="button" data-planning-accept="'+p.id+'" '+(busy?'disabled':'')+'>Acceptar el canvi proposat</button></article>').join('')+'</section></div><button type="button" class="secondary" data-flash-undo '+(busy||!flash.history.length?'disabled':'')+'>Desfer l’última decisió</button>';
+ const revisitable=snapshot.items.some(i=>i.included!==false&&flashMatches(i,state,context).length&&state.decisions.some(d=>d.source_order===i.source_order&&!d.automatic));
+ return '<div class="flash-overview"><section data-flash-valid><h3>Itinerari vàlid, sense conflictes</h3><p class="muted">Sense conflictes detectats amb les dades disponibles. La manca de dades no garanteix la viabilitat.</p>'+days(analysis.combined.items.filter(x=>!bad.has(x.key)))+'</section><section data-flash-conflicts><h3>Conflictes per resoldre</h3>'+(!conflicts.length&&!deferred.length?'<p>No s’han detectat incompatibilitats.</p>':'')+days(analysis.combined.items.filter(x=>bad.has(x.key)))+'<ul>'+conflicts.map(i=>'<li>'+esc(i.message)+'</li>').join('')+'</ul>'+deferred.map(i=>'<p>'+esc(i.values.title)+' · Decisió posposada <button type="button" data-flash-resume="'+i.source_order+'">Revisar coincidència</button></p>').join('')+analysis.solutions.map(p=>'<article class="flash-solution"><p>'+esc(p.label)+'</p><button type="button" data-planning-accept="'+p.id+'" '+(busy?'disabled':'')+'>Acceptar el canvi proposat</button></article>').join('')+'</section></div>'+(revisitable?'<button type="button" class="secondary" data-flash-revisit '+(busy?'disabled':'')+'>Tornar a revisar les coincidències del PDF</button>':'')+'<button type="button" class="secondary" data-flash-undo '+(busy||!flash.history.length?'disabled':'')+'>Desfer l’última decisió</button>';
 }
