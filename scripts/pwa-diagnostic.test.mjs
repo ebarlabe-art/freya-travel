@@ -7,7 +7,7 @@ const worker=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
 
 test('PWA diagnostic is read only, scoped and has an explicit version marker',()=>{
   assert.equal(html,fallback,'404.html must match index.html');
-  assert.match(html,/const FREYA_FRONTEND_RELEASE='pwa-verified-conflicts-198'/);
+  assert.match(html,/const FREYA_FRONTEND_RELEASE='pwa-import-draft-resume-201'/);
   assert.match(html,/id="pwaDiagnostic"/);
   assert.match(html,/id="pwaDiagnosticSummary"/);
   assert.match(html,/id="pwaDiagnosticRefresh"/);
