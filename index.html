@@ -9308,6 +9308,7 @@ function importDraftContext(){
 async function pauseItineraryImport(){
  const s=itineraryImportState;
  if(!itineraryImportContextIsCurrent(s))return;
+ if(!s.review||!s.reconciliation||s.saveCompleted||s.reconciliation.pendingRequest){closeItineraryImport();return}
  try{const api=await loadTravelBookModule('import-itinerary-draft-ui.mjs');if(itineraryImportContextIsCurrent(s))await api.pause(s,importDraftContext())}
  catch(error){if(itineraryImportContextIsCurrent(s))$('itineraryImportSaveStatus').textContent='No s’ha pogut conservar la revisió: '+error.message}
 }
