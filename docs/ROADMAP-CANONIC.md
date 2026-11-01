@@ -149,6 +149,8 @@ Ha d'arribar a poder detectar/proposar, entre altres:
 ### A2. Importació intel·ligent
 **Prioritat: P0/P1**
 
+**Tancament acotat #198 (1/11/2026).** Pantalles flaix de #197 validades físicament segons la usuària: conservar-les. Corregir només visibilitat dels conflictes horaris verificats (flaix després de coincidències i distintius al planning) i impedir confirmació sense revisió explícita. Branca `codex/verified-conflicts-198`, no publicada. Després de revisió/validació, reprendre A2/A3 sense una nova fase d’integració. Tots els pendents següents es mantenen.
+
 **Últim ajust acotat P0 · issue #196 (1/11/2026).** PR #195 fusionada, però la validació física reportada encara mostra massa diagnòstics. Preparar pantalles flaix només per coincidències, recomanacions del planning complet i resum en dues seccions; prioritat al viatge buit. Reutilitzar RIG-03B/RIG-04, sense nova fase ni motor. Branca `codex/import-flash-review-196`, PR en esborrany; no desplegada. Si la prova física posterior amb el PDF real no supera aquest últim intent, aparcar aquesta integració i reprendre A2/A3. Es preserven tots els pendents següents.
 
 **Correcció prioritària P0 · issue #194 (revisió 1/11/2026).** Després de RIG-03B/RIG-04 i la PR #193, unificar lectura del PDF, comparació, proposta d'integració i detecció de conflictes en un sol procés automàtic. L'usuari revisa les excepcions i confirma; cap coincidència parcial es considera automàticament nova. Reutilitzar els motors i el desament atòmic. Proves sintètiques Chromium/WebKit amb iPhone i viatges buits/existents; publicació i validació física encara pendents.

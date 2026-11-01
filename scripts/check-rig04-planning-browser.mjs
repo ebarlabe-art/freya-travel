@@ -48,7 +48,8 @@ try{
   if(mode==='local'){
    assert.equal(await page.evaluate(()=>fixture.transient),true);
    assert.equal(await page.evaluate(()=>fixture.writes),0);
-   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
+   for(let reviewed=0;await page.locator('[data-conflict-ack]').count();reviewed++){assert.ok(reviewed<200,'conflict review must advance');await page.locator('[data-conflict-ack]').tap();}
+  await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
    assert.equal(await page.evaluate(()=>fixture.writes),0);
    await page.locator('#itineraryImportConfirmNo').tap();await page.waitForFunction(()=>!itineraryImportState.busy);
    assert.equal(await page.evaluate(()=>fixture.writes),0);
@@ -59,13 +60,15 @@ try{
     db.rpc=async(name,request)=>{if(name==='read_itinerary_reconciliation')return {data:[],error:null};if(name!=='commit_itinerary_reconciliation')throw Error('Unexpected RPC');fixture.commits.push(request);if(fixture.commits.length===1)return {data:null,error:{code:'PT409',message:'RIG_STALE'}};return {data:{operation_id:request.p_operation_id,added:3,updated:0,retired:0},error:null}};
     loadGenericItinerary=async()=>{};
    });
-   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
+   for(let reviewed=0;await page.locator('[data-conflict-ack]').count();reviewed++){assert.ok(reviewed<200,'conflict review must advance');await page.locator('[data-conflict-ack]').tap();}
+  await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
    assert.equal(await page.evaluate(()=>fixture.uploads+fixture.documentWrites+fixture.commits.length),0);
    await page.locator('#itineraryImportConfirmYes').tap();await page.waitForFunction(()=>itineraryImportState?.comparisonStale&&!itineraryImportState.busy);
    await page.locator('#itineraryImportAdvanced > summary').tap();
    await page.locator('#itineraryImportDecisionDetails > summary').tap();
    await page.locator('#itineraryImportCompare').tap();await page.waitForFunction(()=>!itineraryImportState.preparing);
-   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirmYes').tap();await page.waitForFunction(()=>itineraryImportState===null);
+   for(let reviewed=0;await page.locator('[data-conflict-ack]').count();reviewed++){assert.ok(reviewed<200,'conflict review must advance');await page.locator('[data-conflict-ack]').tap();}
+  await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirmYes').tap();await page.waitForFunction(()=>itineraryImportState===null);
    assert.deepEqual(await page.evaluate(()=>[fixture.uploads,fixture.documentWrites,fixture.commits.length]),[1,1,2]);
    assert.equal(await page.evaluate(()=>fixture.commits[0].p_document_id),'14000000-0000-4000-8000-000000000099');
    assert.equal(await page.evaluate(()=>fixture.commits[0].p_changes.length),3);continue;
@@ -78,7 +81,8 @@ try{
     await page.locator('[data-flash-action="keep"]').tap();
    }
    assert.equal(await page.locator('#itineraryImportWrite').isEnabled(),true);
-   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
+   for(let reviewed=0;await page.locator('[data-conflict-ack]').count();reviewed++){assert.ok(reviewed<200,'conflict review must advance');await page.locator('[data-conflict-ack]').tap();}
+  await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
    assert.equal(await page.evaluate(()=>fixture.writes),0);await page.locator('#itineraryImportConfirmNo').tap();
    await page.waitForFunction(()=>!itineraryImportState.busy);
    assert.equal(await page.evaluate(()=>fixture.writes),0);
@@ -106,6 +110,7 @@ try{
   assert.ok(await page.evaluate(()=>itineraryImportState.planning.assessment.issues.some(i=>i.code==='travel')),'verified route reveals insufficient transfer time');
   await page.locator('[data-planning-calculated] summary').tap();
   assert.match(await page.locator('#itineraryPlanningDiagnostics').innerText(),/10 min a peu/);
+  for(let reviewed=0;await page.locator('[data-conflict-ack]').count();reviewed++){assert.ok(reviewed<200,'conflict review must advance');await page.locator('[data-conflict-ack]').tap();}
   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
   assert.equal(await page.evaluate(()=>fixture.writes),0);
   await page.locator('#itineraryImportConfirmNo').tap();await page.waitForFunction(()=>!itineraryImportState.busy);

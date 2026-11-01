@@ -69,10 +69,53 @@ try{
   if(capture&&mode==='new')await page.locator('#itineraryPlanningReport').screenshot({path:capture+'/'+engine+'-empty.png'});
   if(capture&&mode==='existing')await page.locator('#itineraryPlanningReport').screenshot({path:capture+'/'+engine+'-overview.png'});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  if(mode==='existing'){
+   await page.locator('#itineraryConflictFlash').waitFor({state:'visible'});
+   assert.match(await page.locator('#itineraryConflictFlash').innerText(),/Reserva confirmada/);
+   assert.equal(await page.locator('#itineraryPlanningReport .itinerary-conflict-badge').count(),2);
+   await page.locator('#itineraryImportWrite').tap();
+   assert.equal(await page.locator('#itineraryImportConfirm').isVisible(),false,'unreviewed conflict blocks confirmation');
+   assert.equal(await page.evaluate(()=>fixture.writes),0);
+   if(capture)await page.locator('#itineraryConflictFlash').screenshot({path:capture+'/'+engine+'-conflict-flash.png'});
+   await page.locator('[data-conflict-ack]').tap();
+   await page.waitForFunction(()=>itineraryImportState.reviewedConflicts?.length>0);
+   assert.match(await page.locator('.itinerary-conflict-summary').innerText(),/Revisat, no resolt/);
+   // Changed source evidence must invalidate acknowledgement, including at final confirmation.
+   await page.evaluate(()=>{itineraryImportState.reconciliation.existing[0].updated_at='2030-12-02T00:00:00Z';renderItineraryImportPreview()});
+   await page.locator('[data-conflict-ack]').waitFor({state:'visible'});
+   await page.locator('[data-conflict-ack]').tap();
+  }else assert.equal(await page.locator('#itineraryConflictFlash').isVisible(),false,'no alarm for uncertainty alone');
   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});assert.equal(await page.evaluate(()=>fixture.writes),0);
+  if(mode==='existing'){
+   assert.match(await page.locator('#itineraryImportConfirmText').innerText(),/NO resolts/);
+   await page.evaluate(()=>{itineraryImportState.reconciliation.existing[0].updated_at='2030-12-03T00:00:00Z'});
+   await page.locator('#itineraryImportConfirmYes').tap();
+   await page.waitForFunction(()=>!itineraryImportState.busy);
+   assert.equal(await page.evaluate(()=>fixture.writes),0,'changed evidence at confirmation does not write');
+   await page.locator('[data-conflict-ack]').tap();
+   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
+  }
   await page.locator('#itineraryImportConfirmNo').tap();await page.waitForFunction(()=>!itineraryImportState.busy);
   assert.equal(await page.evaluate(()=>JSON.stringify(fixture.existing)===fixture.before&&JSON.stringify(itineraryProjection)===fixture.agenda),true);
+  if(mode==='existing'){
+   await page.locator('[data-conflict-open]').tap();
+   await page.locator('#itineraryConflictFlash [data-planning-accept]').tap();
+   assert.equal(await page.locator('#itineraryConflictFlash').isVisible(),false,'safe proposal resolves overlap in draft');
+   assert.equal(await page.evaluate(()=>fixture.writes),0);
+  }
   await page.locator('#itineraryImportExit').tap();assert.equal(await page.evaluate(()=>itineraryImportState),null);
  }
- assert.deepEqual(errors,[]);console.log('PASS #196 '+engine+': sequential flash, alternatives, whole-plan advice, unknown evidence, undo, postpone, protected visit, empty-trip fast path, cancellation, zero writes.');
+ await page.evaluate(()=>{
+  renderAgendaRoutes=()=>{};proposeItineraryAutoPlaces=()=>{};proposeActivityPoints=async()=>{};generateItineraryDayContext=async()=>{};renderItineraryDayWeather=()=>{};
+  itineraryProjection=[['Museu Nacional d’Art de Letònia','10:30','12:00'],['Reserva confirmada','11:30','12:30']].map(([title,start,end],i)=>({key:'manual:synthetic'+i,tripId:trip.id,sourceId:'synthetic'+i,sourceType:'manual',title,localDate:'2030-12-28',timeZone:'UTC',startsAt:'2030-12-28T'+start+':00Z',endsAt:'2030-12-28T'+end+':00Z',timingKind:'exact',status:'planned',timeLabel:start,details:[],documents:[],tags:[],eyebrow:'Planning sintètic',icon:'📝'}));
+  genericItinerarySelectedDay='2030-12-28';genericItinerarySelectedTripId=trip.id;renderGenericItinerary();
+ });
+ await page.locator('#agendaConflictSummary [data-conflict-open]').waitFor({state:'visible'});
+ assert.equal(await page.locator('#genericItineraryDays [data-conflict-badge]').count(),2);
+ assert.match(await page.locator('#agendaConflictSummary').innerText(),/1 conflicte horari/);
+ await page.locator('#agendaConflictSummary [data-conflict-open]').tap();
+ await page.waitForFunction(()=>document.activeElement?.dataset.itineraryKey==='manual:synthetic0');
+ if(capture){await page.locator('#agendaConflictSummary').screenshot({path:capture+'/'+engine+'-agenda-conflicts.png'});await page.locator('#genericItineraryDays').screenshot({path:capture+'/'+engine+'-agenda-cards.png'});}
+ assert.equal(await page.evaluate(()=>fixture.writes),0);
+ assert.deepEqual(errors,[]);console.log('PASS #196/#198 '+engine+': sequential flash, alternatives, whole-plan advice, unknown evidence, undo, postpone, protected visit, empty-trip fast path, cancellation, conflict gate/review/invalidation/solution, agenda badges, zero writes.');
 }finally{await browser.close();server.close()}

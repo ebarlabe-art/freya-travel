@@ -510,6 +510,7 @@
 
 
 body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
+.itinerary-conflict-summary,.conflict-flash{border:2px solid #a24b22!important;background:#fff6ed!important;padding:16px;border-radius:16px;margin:12px 0}.itinerary-conflict-summary button,.conflict-flash button{min-height:44px;white-space:normal}.itinerary-conflict-badge{display:block;color:#8a3214;background:#fff0df;padding:10px;border-radius:10px}.conflict-flash .flash-option strong{font-size:1rem}.conflict-flash .flash-advice button{margin-top:10px}
 .import-flash{background:#fffdf8;border:1px solid #e0d6c6;border-radius:20px;padding:20px;box-shadow:0 12px 32px #20382c14;max-width:720px;margin:12px auto}.import-flash h3{font-size:1.35rem;margin:8px 0}.flash-progress{font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:#526958}.flash-options,.flash-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.flash-option{background:#f2f4ee;border-radius:12px;padding:12px;min-width:0;overflow-wrap:anywhere}.flash-option small,.flash-option strong,.flash-option b{display:block}.flash-option strong{font-size:1.2rem;margin:8px 0}.flash-option details{font-size:.8rem;margin-top:10px}.flash-option ul{padding-left:14px}.flash-advice{background:#e7efe5;border-left:3px solid #4b6a54;padding:12px;border-radius:8px;line-height:1.5}.flash-actions button,.flash-footer button{min-height:44px;padding:10px;font-size:.9rem;width:auto;white-space:normal}.flash-recommended{background:#365b45!important;color:white!important}.flash-footer{display:flex;justify-content:space-between;gap:8px;margin-top:12px}.flash-overview>section{border:1px solid #d8e2d4;border-radius:16px;padding:16px;margin:16px 0;background:#fcfdf9}.flash-overview>[data-flash-conflicts]{border-color:#e7c8aa;background:#fffbf6}.flash-overview h3{margin-top:0}.flash-plan-list{list-style:none;padding:0;margin:0}.flash-plan-row{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #e6e9e0}.flash-plan-row time{min-width:52px;font-variant-numeric:tabular-nums;color:#546551}.flash-plan-row small{display:block;color:#667466;margin-top:4px}.flash-solution{background:#fff;padding:12px;border-radius:10px;margin:10px 0}#itineraryImportAdvanced>summary{padding:14px 0;color:#586455}#itineraryImportAdvanced[open]{margin:16px 0}#itineraryImportFlash:focus{outline:2px solid #647d62}@media(max-width:430px){.import-flash{padding:14px}.flash-option{padding:10px}.flash-overview>section{padding:12px}}
 </style>
 </head>
@@ -1906,6 +1907,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
             <div id="itineraryImportReviewResult" class="itinerary-import-result" role="status" aria-live="polite"></div>
             <p id="itineraryImportRemaining" role="status" aria-live="polite"></p>
             <button id="itineraryImportExcludeExisting" type="button">Desmarca les possibles coincidències amb el viatge</button>
+            <section id="itineraryConflictFlash" class="hidden" aria-live="polite"></section>
             <section id="itineraryImportFlash" class="hidden" aria-live="polite"></section>
             <button id="itineraryImportPlanning" class="hidden" type="button">Reintenta l’anàlisi automàtica</button><section id="itineraryPlanningReport" class="hidden stack" aria-label="Viabilitat de l’esborrany"></section>
             <details id="itineraryImportAdvanced" open><summary>Detalls avançats</summary><div id="itineraryPlanningDiagnostics"></div>
@@ -2051,7 +2053,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-import-flash-review-196';
+const FREYA_FRONTEND_RELEASE='pwa-verified-conflicts-198';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -6877,6 +6879,25 @@ function renderItinerarySourceStatus(){
   }).join('')+'<button type="button" id="retryItinerarySources" style="min-height:44px">Reintenta les fonts pendents</button>':'';
   const retry=$('retryItinerarySources');if(retry)retry.onclick=()=>{void loadGenericItinerary()};
 }
+let agendaConflictRender=0;
+async function renderAgendaConflicts(){
+ const sequence=++agendaConflictRender,tripId=trip?.id,generation=tripLoadGeneration,userId=session?.user?.id;
+ let host=$('agendaConflictSummary');if(!host){host=document.createElement('div');host.id='agendaConflictSummary';$('genericItineraryDays').before(host)}
+ host.replaceChildren();
+ try{
+  const api=await loadTravelBookModule('itinerary-conflict-review.mjs');
+  if(sequence!==agendaConflictRender||!itineraryRequestIsCurrent(tripId,generation,userId))return;
+  const analysis=api.agendaConflictAnalysis(itineraryProjection.filter(x=>x.tripId===tripId));
+  host.innerHTML=api.conflictSummaryHtml(analysis);
+  api.markConflictCards($('genericItineraryDays'),analysis);
+  host.onclick=event=>{
+   const button=event.target.closest('[data-conflict-open]');if(!button)return;
+   const conflict=api.importantConflicts(analysis)[Number(button.dataset.conflictOpen)],item=conflict?.items[0];if(!item)return;
+   genericItinerarySelectedTripId=tripId;genericItinerarySelectedDay=item.localDate;
+   tripHomeItineraryFocus={tripId,generation,userId,key:item.key};renderGenericItinerary();
+  };
+ }catch{if(sequence===agendaConflictRender)host.textContent='No s’han pogut comprovar les conflictes horaris. Torna a obrir el planning.'}
+}
 function renderGenericItinerary(){
   if(!trip||isLondonTrip())return;
   const restorePointEditor=preserveActivityPointEditor();
@@ -6906,6 +6927,7 @@ function renderGenericItinerary(){
     });
   }
   renderItineraryDayWeather();
+  void renderAgendaConflicts();
   restorePointEditor();
   proposeItineraryAutoPlaces(selected);
   void proposeActivityPoints(selected).catch(()=>{});
@@ -9298,6 +9320,7 @@ async function openItineraryImport(){
   msg('genericItineraryMessage','Per importar un document, connecta’t a Internet i inicia sessió.',true);return;
  }
  closeItineraryImport();
+ $('itineraryConflictFlash').innerHTML='';$('itineraryConflictFlash').classList.add('hidden');
  $('itineraryImportAdvanced').open=true;$('itineraryImportFlash').classList.add('hidden');$('itineraryImportFlash').innerHTML='';$('itineraryPlanningDiagnostics').innerHTML='';
  const state={tripId:trip.id,userId:session.user.id,generation:tripLoadGeneration,
   epoch:++itineraryImportEpoch,review:null,api:null,busy:false,documentId:null,file:null,uploadedDoc:null,docs:[]};
@@ -9480,15 +9503,48 @@ function renderItineraryPlanning(state,snapshot){
  const card=state.flashApi.flashHtml(snapshot,state.reconciliation,context,state.flash,state.planning,{busy});
  const previous=flash.querySelector('[data-flash-order]')?.dataset.flashOrder;
  flash.innerHTML=card;flash.classList.toggle('hidden',!card);host.classList.toggle('hidden',!!card);
- host.innerHTML=state.flashApi.flashPlanningHtml(state.planning,snapshot,state.reconciliation,context,state.flash,{busy});
+ host.innerHTML=state.planningApi.conflictSummaryHtml(state.planning,state.reviewedConflicts)+state.flashApi.flashPlanningHtml(state.planning,snapshot,state.reconciliation,context,state.flash,{busy});
+ renderImportConflictFlash(state,!!card,busy);
  $('itineraryPlanningDiagnostics').innerHTML=state.planningApi.planningHtml(state.planning,{busy:state.planningBusy||busy});
  if(card&&previous!==flash.querySelector('[data-flash-order]')?.dataset.flashOrder)flash.querySelector('article')?.focus({preventScroll:true});
  $('itineraryImportWrite').disabled||=!!card;
+ if(!card&&state.planningApi.unreviewedConflicts(state.planning,state.reviewedConflicts).length){$('itineraryImportWrite').textContent='Revisa els conflictes abans de confirmar';}
  const missing=state.reconciliation.plan?.conflicts.filter(c=>c.reason==='decision_required').length||0;
  $('itineraryImportReviewHelp').textContent=missing?'Completa les dades necessàries del PDF a «Detalls avançats» abans de confirmar.':'Revisa el resultat i confirma. Encara no s’ha desat cap canvi.';
  }else host.innerHTML=state.planningApi.planningHtml(state.planning,{busy:state.planningBusy||state.busy||!!state.reconciliation.pendingRequest})}
  catch(error){state.planning=null;host.textContent='Cal revisar les decisions: '+error.message}
 }
+function renderImportConflictFlash(state,hasMatch=false,busy=false){
+ const host=$('itineraryConflictFlash'),previous=host.querySelector('[data-conflict-index]')?.dataset.conflictIndex;
+ const html=hasMatch?'':state.planningApi.conflictFlashHtml(state.planning,state.reviewedConflicts,{busy,selected:state.selectedConflict});
+ host.innerHTML=html;host.classList.toggle('hidden',!html);
+ if(html&&previous!==host.querySelector('[data-conflict-index]')?.dataset.conflictIndex){host.querySelector('article').focus({preventScroll:true});host.scrollIntoView({block:'nearest'})}
+}
+function guardImportConflicts(state){
+ if(!state.planningApi||!state.reconciliation)return true;
+ const snapshot=state.api.summarizeItineraryReview(state.review,state.reconciliation.existing);
+ state.planning=state.planningApi.analyzePlanning(snapshot,state.reconciliation,planningContext(state),state.planning||{});
+ if(!state.planningApi.unreviewedConflicts(state.planning,state.reviewedConflicts).length)return true;
+ state.selectedConflict=null;renderImportConflictFlash(state,false,false);
+ $('itineraryImportSaveStatus').textContent='Revisa els conflictes horaris abans de confirmar. No s’ha desat res.';
+ $('itineraryConflictFlash').scrollIntoView({block:'nearest'});return false;
+}
+function handleImportConflictClick(event){
+ const s=itineraryImportState,button=event.target.closest('button');
+ if(!button||!s?.planning||!itineraryImportContextIsCurrent(s)||s.busy||s.reconciliation?.pendingRequest)return;
+ const index=button.dataset.conflictAck??button.dataset.conflictOpen;if(index===undefined)return;
+ const conflict=s.planningApi.importantConflicts(s.planning)[Number(index)];if(!conflict)return;
+ if(button.dataset.conflictAck!==undefined){s.reviewedConflicts=[...new Set([...(s.reviewedConflicts||[]),conflict.fingerprint])];s.selectedConflict=null;}
+ else s.selectedConflict=conflict.fingerprint;
+ // Reviewing an unchanged conflict does not require recomputing every solution.
+ const host=$('itineraryPlanningReport');host.querySelector('.itinerary-conflict-summary')?.remove();
+ host.insertAdjacentHTML('afterbegin',s.planningApi.conflictSummaryHtml(s.planning,s.reviewedConflicts));
+ renderImportConflictFlash(s,!$('itineraryImportFlash').classList.contains('hidden'),false);
+ $('itineraryImportWrite').textContent=s.planningApi.unreviewedConflicts(s.planning,s.reviewedConflicts).length?'Revisa els conflictes abans de confirmar':'Revisa el resum i confirma';
+}
+$('itineraryConflictFlash').addEventListener('click',handleImportConflictClick);
+$('itineraryPlanningReport').addEventListener('click',handleImportConflictClick);
+$('itineraryConflictFlash').addEventListener('click',handleItineraryPlanningClick);
 async function prepareUnifiedItineraryImport(s){
  if(!itineraryImportStillCurrent(s)||s.busy||s.reconciliation?.pendingRequest)return;
  s.unified=true;s.preparing=true;
@@ -9629,6 +9685,7 @@ $('itineraryImportReconciliation').addEventListener('change',event=>{
 });
 async function writeItineraryReconciliation(state){
  if(!itineraryImportStillCurrent(state)||state.busy||state.preparing||state.planningBusy||state.saveCompleted)return;
+ if(!state.reconciliation.pendingRequest&&!guardImportConflicts(state))return;
  const r=state.reconciliation;state.busy=true;renderItineraryImportPreview();
  try{
   if(!r.pendingRequest){
@@ -9637,9 +9694,10 @@ async function writeItineraryReconciliation(state){
    if(!itineraryImportStillCurrent(state))return;
    const confirmation=requestItineraryImportConfirmation(state,0,0),p=r.api.reconciliationPlan(snapshot,r);
    $('itineraryImportConfirmText').textContent=`Confirma: ${p.summary.new} noves, ${p.summary.updated} actualitzades, ${p.summary.retired} retirades (cancel·lades, conservades), ${p.summary.preserved} existents sense canvis. El document original es conserva.`;
-   if(state.planning)$('itineraryImportConfirmText').textContent+=' Viabilitat: '+state.planning.assessment.label+'.';
+   if(state.planning){$('itineraryImportConfirmText').textContent+=' Viabilitat: '+state.planning.assessment.label+'.';const conflicts=state.planningApi.importantConflicts(state.planning);if(conflicts.length)$('itineraryImportConfirmText').textContent+=' ⚠ Mantens '+conflicts.length+' conflictes revisats però NO resolts: '+conflicts.map(c=>c.message).join(' ');}
    if(!await confirmation){$('itineraryImportSaveStatus').textContent='Desament cancel·lat. La revisió continua disponible.';return}
    if(!itineraryImportStillCurrent(state))return;
+   if(!guardImportConflicts(state))return;
    if(state.file&&!state.uploadedDoc){
     $('itineraryImportSaveStatus').textContent='Confirmació rebuda. Conservant el document original…';
     state.uploadedDoc=await uploadTripDocument(state.file,state.file.name.replace(/\.[^.]+$/,'')||'Itinerari','Altres');
