@@ -4,6 +4,18 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## P0 · Pantalles flaix #196 (1/11/2026) — BRANCA, NO PUBLICAT
+
+Base `main` `7dae9a552b4ffe4142985ee378c14d3625bc3d4a`: PR #195 fusionada (verificat a GitHub). La secció #194 següent conserva el relleu històric. La prova física comunicada a #196 continuava mostrant massa decisions i diagnòstics; no es dona aquella experiència per validada.
+
+[PR #197 en esborrany](https://github.com/ebarlabe-art/freya-travel/pull/197). Branca `codex/import-flash-review-196`, checkout `/private/tmp/freya-import196`. Intervenció acotada al frontend: adaptador dels comparadors i del motor RIG-04 existents, sense motor nou, migracions, Edge ni crides addicionals d’IA. Només les coincidències requereixen targeta; les noves amb dades vàlides passen al planning. Dues alternatives, context dels dies, recomanació conservadora, ajornament i desfer. Les reserves protegides no es mouen. Les equivalències amb múltiples candidats exigeixen selecció explícita. Resum final amb les dues seccions demanades; incertesa i eines tècniques als detalls avançats. El writer atòmic i la confirmació final segueixen vigents.
+
+Proves sintètiques: 879/879 tests, build i paritat correctes; set proves noves de domini; flux tàctil Chromium/WebKit 390×844 i WebKit iPad amb viatge buit, coincidències, falta d’evidència, reserva fixa, ajornament, desfer, conflicte confirmat i cancel·lació sense escriptures. Es conserven les regressions de planning, rutes i concurrència. Captures a `docs/screenshots/import-flash-196/`. Marcador de branca `pwa-import-flash-review-196`, cache v46; no acredita desplegament públic.
+
+**Límits i relleu:** no equivalències universals ni dades inventades de durada/obertura. Sense evidència suficient no es recomana una data ni es garanteix viabilitat. La prova física amb el PDF real Riga/Tallinn continua pendent després d’una futura autorització de publicació. Revisar PR en esborrany, captures i CI. Si falla aquest últim intent acotat, aparcar la integració d’itineraris existents i reprendre A2/A3; no obrir una nova fase d’aquest flux. Cap dada de producció consultada/modificada; canvis locals aliens preservats.
+
+---
+
 ## P0 · Flux únic d'importació PDF #194 (1/11/2026) — EN BRANCA
 
 Base remota verificada: `main` `c48386bb35a9d793e84a4f7b30380b3061738d62`, PR #193 fusionada. Això actualitza l'estat històric «BRANCA, NO PUBLICAT» de la secció següent: aquella secció descriu la revisió anterior, no l'estat actual de GitHub. No s'ha verificat de nou el desplegament públic en aquesta tasca.
