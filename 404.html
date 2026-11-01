@@ -9389,6 +9389,7 @@ async function openItineraryImport(){
  }catch(error){
   if(itineraryImportStillCurrent(state))
    $('itineraryImportStatus').textContent='No s’ha pogut recuperar la revisió o carregar documents. Pots descartar la còpia local.';
+   $('itineraryImportDiscardDraft').classList.remove('hidden');
  }
  updateItineraryImportConsent();
 }
