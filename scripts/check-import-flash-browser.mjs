@@ -54,6 +54,10 @@ try{
    await page.locator('[data-flash-resume]').tap();assert.equal(await page.locator('[data-flash-order]').getAttribute('data-flash-order'),'1');
    await page.locator('[data-flash-action="keep"]').tap();
    if(mode==='existing'){
+    await page.locator('#itineraryPlanningReport [data-flash-revisit]').tap();
+    assert.equal(await page.locator('[data-flash-order]').getAttribute('data-flash-order'),'0','revisit restores the first match card');
+    await page.locator('[data-flash-action="keep"]').tap();
+    await page.locator('[data-flash-action="keep"]').tap();
     await page.locator('#itineraryPlanningReport [data-flash-undo]').tap();
     await page.locator('#itineraryImportFlash [data-flash-undo]').tap();
     await page.locator('#itineraryImportFlash [data-flash-undo]').tap();
