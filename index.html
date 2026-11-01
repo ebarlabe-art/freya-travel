@@ -6902,6 +6902,7 @@ async function renderAgendaConflicts(){
 }
 function renderGenericItinerary(){
   if(!trip||isLondonTrip())return;
+  void refreshImportDraftButton();
   const restorePointEditor=preserveActivityPointEditor();
   renderItinerarySourceStatus();
   if($('pwaDiagnostic').open)void refreshPwaDiagnostics();
@@ -9278,6 +9279,16 @@ async function recoverItineraryReconciliation(state){
  $('itineraryImportSource').classList.add('hidden');$('itineraryImportPreview').classList.remove('hidden');
  $('itineraryImportSaveStatus').textContent='Hi ha un desament pendent de confirmar. Reintenta la mateixa operació per comprovar-ne el resultat sense duplicar-la.';
  renderItineraryImportPreview();return true;
+}
+async function refreshImportDraftButton(){
+ const userId=session?.user?.id,tripId=trip?.id,generation=tripLoadGeneration;
+ if(!userId||!tripId)return;
+ try{
+  const api=await loadTravelBookModule('import-itinerary-draft.mjs');
+  const found=await api.hasImportDraft({userId,tripId});
+  if(session?.user?.id===userId&&trip?.id===tripId&&tripLoadGeneration===generation)
+   $('openItineraryImport').textContent=found?'↩ Reprèn la revisió del PDF':'📄 Importa document';
+ }catch(_){}
 }
 function importDraftContext(){
  return {
