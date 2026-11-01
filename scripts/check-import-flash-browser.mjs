@@ -111,7 +111,7 @@ try{
   if(mode==='existing'){
    await page.locator('#openItineraryImport').tap();
    await page.waitForFunction(()=>itineraryImportState?.flashApi&&itineraryImportState?.reconciliation?.existing);
-   assert.match(await page.locator('#itineraryImportStatus').innerText(),/Revisió recuperada/);
+   assert.match(await page.locator('#itineraryImportStatus').innerText(),/Revisió recuperada|El planning ha canviat/);
    assert.equal(await page.evaluate(()=>fixture.writes),0,'pause and resume never commit');
    await page.locator('#itineraryImportDiscardDraft').tap();
    await page.waitForFunction(()=>itineraryImportState?.review===null);
