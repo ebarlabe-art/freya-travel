@@ -93,3 +93,14 @@ export async function discardUserImportDrafts(userId){
   for(const record of records||[])if(record.userId===userId)await remove(db,'drafts',record.id);
  }finally{db.close()}
 }
+
+export async function hasImportDraft(scope){
+ if(!scopeOk(scope))return false;
+ const db=await database();
+ try{
+  const record=await read(db,'drafts',id(scope.userId,scope.tripId));
+  if(!record)return false;
+  if(record.expiresAt<=Date.now()){await remove(db,'drafts',record.id);return false}
+  return true;
+ }finally{db.close()}
+}
