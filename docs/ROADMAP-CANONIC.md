@@ -149,6 +149,8 @@ Ha d'arribar a poder detectar/proposar, entre altres:
 ### A2. Importació intel·ligent
 **Prioritat: P0/P1**
 
+**Validació addicional Riga (1/11/2026, branca, no publicada).** Correcció limitada del fals solapament entre registres de vols completament idèntics, botó per tornar a revisar les decisions de coincidències mentre l'esborrany segueix obert i recomanacions més llegibles. No alterar el conflicte verificat del museu/parc ni les reserves. La importació tancada/recarregada no es recupera en aquesta correcció; no inventar persistència ni canviar el contracte del PDF temporal. Després de CI i verificació física autoritzada, reprendre A2/A3 sense ampliar aquesta fase.
+
 **Tancament acotat #198 (1/11/2026).** Pantalles flaix de #197 validades físicament segons la usuària: conservar-les. Corregir només visibilitat dels conflictes horaris verificats (flaix després de coincidències i distintius al planning) i impedir confirmació sense revisió explícita. Branca `codex/verified-conflicts-198`, no publicada. Després de revisió/validació, reprendre A2/A3 sense una nova fase d’integració. Tots els pendents següents es mantenen.
 
 **Últim ajust acotat P0 · issue #196 (1/11/2026).** PR #195 fusionada, però la validació física reportada encara mostra massa diagnòstics. Preparar pantalles flaix només per coincidències, recomanacions del planning complet i resum en dues seccions; prioritat al viatge buit. Reutilitzar RIG-03B/RIG-04, sense nova fase ni motor. Branca `codex/import-flash-review-196`, PR en esborrany; no desplegada. Si la prova física posterior amb el PDF real no supera aquest últim intent, aparcar aquesta integració i reprendre A2/A3. Es preserven tots els pendents següents.
