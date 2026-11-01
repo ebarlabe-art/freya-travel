@@ -4,6 +4,16 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## P0 · Represa de la revisió de PDF (1/11/2026) — BRANCA, NO PUBLICADA
+
+Branca `codex/import-draft-resume-20261101`, basada en la PR #200 fusionada. Quan una revisió no confirmada té proposta i conciliació carregades, «Pausa i desa» desa xifrades amb AES-GCM les dades de l'esborrany i, si cal, els bytes del PDF temporal en IndexedDB al **mateix dispositiu**. La clau no exportable és local. Caducitat: 24 h; 10 MB màxim de fitxer i 3 MB d'estat. No es creen documents remots ni es toca el planning. Al tornar a Itinerari es mostra «Reprèn la revisió del PDF» i en obrir es revalida la versió del planning per RLS abans de permetre confirmar. Si ha canviat, se'n descarten les decisions, no la lectura del PDF, per tornar a comparar. Les confirmacions RPC que ja estaven en curs conserven el contracte anterior de recuperació idempotent.
+
+«Descarta la revisió» elimina la còpia del dispositiu; el tancament de sessió també neteja els esborranys de l'usuari. En completar una importació, s'esborra l'esborrany. La restauració no és entre dispositius, ni recupera retroactivament revisions tancades abans d'aquesta versió. No és un secret lligat a biometria ni un disc remot: cal protegir el dispositiu.
+
+**Acceptació:** proves iPhone-sintètiques Chromium/WebKit, sincronització index/404, cap write fins confirmació, cap reimportació involuntària, importació a viatge buit sense regressió. No fusionar ni desplegar sense CI i revisió.
+
+---
+
 ## Seguiment P0 · Riga: duplicat aparent del vol i revisió recuperable (1/11/2026) — BRANCA, NO PUBLICAT
 
 Branca `codex/riga-conflict-review-20261101` basada en `main` després de les PR #197 i #199 fusionades. Canvi acotat, sense publicació ni modificació de dades reals.
