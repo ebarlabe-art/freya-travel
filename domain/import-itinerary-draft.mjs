@@ -30,9 +30,17 @@ async function keyFor(db,userId,create){
  let key=await read(db,'keys',userId);
  if(!key&&create){
   const proposed=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
-  // Re-read before storing to avoid needlessly replacing an existing key.
-  key=await read(db,'keys',userId);
-  if(!key){await put(db,'keys',proposed,userId);key=proposed}
+  key=await new Promise((resolve,reject)=>{
+   const tx=db.transaction('keys','readwrite'),store=tx.objectStore('keys');
+   const request=store.get(userId);let selected=null;
+   request.onsuccess=()=>{
+    selected=request.result||proposed;
+    if(!request.result)store.add(proposed,userId);
+   };
+   tx.oncomplete=()=>resolve(selected);
+   tx.onerror=()=>reject(tx.error||Error('No s’ha pogut protegir la revisió.'));
+   tx.onabort=()=>reject(tx.error||Error('Clau local no disponible.'));
+  });
  }
  return key;
 }
