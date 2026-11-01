@@ -67,7 +67,7 @@ function sameNamedLandmark(left,right){
  const a=norm(left),b=norm(right);
  const landmark=/\b(?:catedral|cathedral|castell|castle|casa|house|museu|museum|mercat|market|palau|palace|monument|esglesia|church|torre|tower|basilica|sant|saint)\b/;
  if(!landmark.test(a)||!landmark.test(b))return false;
- const stop=new Set(['de','del','dels','la','les','el','els','al','a','i','en','the','of','at','in','and','per','pel','una','un']);
+ const stop=new Set(['de','del','dels','la','les','el','els','al','a','i','en','the','of','at','in','and','per','pel','una','un','di','san','sant','saint']);
  const containsDistinctivePrefix=(from,to)=>{
   const tokens=from.split(' '),joined=' '+to+' ';
   for(let n=3;n<=Math.min(7,tokens.length);n++){
@@ -124,7 +124,7 @@ function contextualPlaceMatch(a,b){
  if(!placeScope(a)||!placeScope(b)||placeScope(a)!==placeScope(b))return false;
  const left=itineraryLandmarkSet(a),right=itineraryLandmarkSet(b);
  if(left.some(key=>right.includes(key)))return true;
- const stop=new Set('visita visit passeig walking walk tour guiada exterior interior centre centro historic historical old town ciutat city dinar lunch sopar dinner esmorzar breakfast de del dels la les el els al a i en the of at in and per pel una un amb with to'.split(' '));
+ const stop=new Set('visita visit passeig walking walk tour guiada exterior interior centre centro historic historical old town ciutat city dinar lunch sopar dinner esmorzar breakfast de del dels la les el els al a i en the of at in and per pel una un amb with to basilica catedral cathedral museu museum esglesia church sant saint san di'.split(' '));
  const tokens=v=>new Set(normalizePointName(v).split(' ').filter(t=>t.length>2&&!stop.has(t)));
  const x=tokens(a.title),y=tokens(b.title),shared=[...x].filter(t=>y.has(t));
  return shared.length>=2&&shared.length/Math.min(x.size,y.size)>=0.6;

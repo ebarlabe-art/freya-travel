@@ -13,7 +13,8 @@ export function initialPlanningDecisions(snapshot,state){
 }
 export function refreshAutomaticDecisions(snapshot,state){
  const orders=new Set(state.decisions.filter(d=>d.automatic).map(d=>d.source_order));
- const manual=state.decisions.filter(d=>!d.automatic);
+ const included=new Set(snapshot.items.filter(item=>item.included!==false).map(item=>item.source_order));
+ const manual=state.decisions.filter(d=>!d.automatic&&included.has(d.source_order));
  return [...manual,...equivalentDecisions(snapshot,state.existing,manual).filter(d=>orders.has(d.source_order))];
 }
 
