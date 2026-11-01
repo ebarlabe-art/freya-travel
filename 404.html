@@ -9602,7 +9602,10 @@ function handleItineraryFlashClick(event){
  const s=itineraryImportState,button=event.target.closest('button');
  if(!button||!s?.flashApi||!itineraryImportContextIsCurrent(s)||s.busy||s.reconciliation?.pendingRequest)return;
  try{
-  if(button.hasAttribute('data-flash-undo'))s.flashApi.undoFlash(s.reconciliation,s.flash);
+  if(button.hasAttribute('data-flash-revisit')){
+   const count=s.flashApi.reopenFlashMatches(s.api.summarizeItineraryReview(s.review,s.reconciliation.existing),s.reconciliation,planningContext(s),s.flash);
+   if(count)$('itineraryImportSaveStatus').textContent='Tornem a revisar '+count+' coincidències. Cap canvi desat.';
+  }else if(button.hasAttribute('data-flash-undo'))s.flashApi.undoFlash(s.reconciliation,s.flash);
   else if(button.dataset.flashResume!==undefined)s.flash.deferred=s.flash.deferred.filter(n=>n!==Number(button.dataset.flashResume));
   else if(button.dataset.flashAction){
    const order=Number(button.closest('[data-flash-order]').dataset.flashOrder);
