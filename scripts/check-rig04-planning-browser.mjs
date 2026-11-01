@@ -56,13 +56,15 @@ try{
     fixture.commits=[];fixture.uploads=0;fixture.documentWrites=0;
     db.storage.from=()=>({upload:async()=>{fixture.uploads++;return {data:{},error:null}},remove:async()=>{throw Error('Unexpected cleanup')}});
     db.from=table=>({insert:row=>{fixture.documentWrites++;return {select:()=>({single:async()=>({data:{...row,id:'14000000-0000-4000-8000-000000000099'},error:null})})}}});
-    db.rpc=async(name,request)=>{if(name!=='commit_itinerary_reconciliation')throw Error('Unexpected RPC');fixture.commits.push(request);return {data:{operation_id:request.p_operation_id,added:3,updated:0,retired:0},error:null}};
+    db.rpc=async(name,request)=>{if(name==='read_itinerary_reconciliation')return {data:[],error:null};if(name!=='commit_itinerary_reconciliation')throw Error('Unexpected RPC');fixture.commits.push(request);if(fixture.commits.length===1)return {data:null,error:{code:'PT409',message:'RIG_STALE'}};return {data:{operation_id:request.p_operation_id,added:3,updated:0,retired:0},error:null}};
     loadGenericItinerary=async()=>{};
    });
    await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
    assert.equal(await page.evaluate(()=>fixture.uploads+fixture.documentWrites+fixture.commits.length),0);
-   await page.locator('#itineraryImportConfirmYes').tap();await page.waitForFunction(()=>itineraryImportState===null);
-   assert.deepEqual(await page.evaluate(()=>[fixture.uploads,fixture.documentWrites,fixture.commits.length]),[1,1,1]);
+   await page.locator('#itineraryImportConfirmYes').tap();await page.waitForFunction(()=>itineraryImportState?.comparisonStale&&!itineraryImportState.busy);
+   await page.locator('#itineraryImportCompare').tap();await page.waitForFunction(()=>!itineraryImportState.preparing);
+   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirmYes').tap();await page.waitForFunction(()=>itineraryImportState===null);
+   assert.deepEqual(await page.evaluate(()=>[fixture.uploads,fixture.documentWrites,fixture.commits.length]),[1,1,2]);
    assert.equal(await page.evaluate(()=>fixture.commits[0].p_document_id),'14000000-0000-4000-8000-000000000099');
    assert.equal(await page.evaluate(()=>fixture.commits[0].p_changes.length),3);continue;
   }

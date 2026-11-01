@@ -9522,8 +9522,8 @@ function renderItineraryReconciliation(state,snapshot){
  const r=state.reconciliation,host=$('itineraryImportReconciliation');
  $('itineraryImportExcludeExisting').classList?.toggle?.('hidden',!!r);
  $('itineraryImportReviewResult').classList?.toggle?.('hidden',!!r);
- $('itineraryImportCompare').classList?.toggle?.('hidden',!!state.unified);
- $('itineraryImportCompare').textContent=r?'Recarrega la comparació':'Compara amb el planning existent';
+ $('itineraryImportCompare').classList?.toggle?.('hidden',!!state.unified&&!state.comparisonStale);
+ $('itineraryImportCompare').textContent=state.comparisonStale?'Revisa els canvis recents del viatge':r?'Recarrega la comparació':'Compara amb el planning existent';
  $('itineraryImportCompare').disabled=!!state.busy||!!state.saveCompleted||connectionUnavailable()||!!r?.pendingRequest;
  $('itineraryImportWrite').textContent=r?'Revisa el resum i confirma':'Desar activitats seleccionades';
  if(!r){if(state.unified)$('itineraryImportWrite').disabled=true;return;}
@@ -9547,13 +9547,13 @@ async function loadItineraryReconciliation(){
   if(!itineraryImportStillCurrent(state))return;
   if(error)throw error;if(!Array.isArray(data))throw Error('Resposta de comparació no vàlida.');
   const existing=data.map(row=>{const local=row.timing_kind==='exact'&&row.starts_at&&row.time_zone?isoToZonedLocal(row.starts_at,row.time_zone):'';return {...row,localDate:local?local.slice(0,10):row.local_date||'',timeLabel:local?local.slice(11,16):(row.approximate_start_time||'').slice(0,5)}});
-  state.reconciliation={api,existing,decisions:[],retire:[],pendingRequest:null};
+  state.reconciliation={api,existing,decisions:[],retire:[],pendingRequest:null};state.comparisonStale=false;
   $('itineraryImportPdfDetails').open=false;
   $('itineraryImportSaveStatus').textContent='Tria què vols fer amb cada candidata. No s’ha modificat res.';
  }catch{if(itineraryImportContextIsCurrent(state))$('itineraryImportSaveStatus').textContent='No s’ha pogut carregar la comparació segura. Reintenta quan hi hagi connexió i el backend estigui disponible.'}
  finally{if(itineraryImportContextIsCurrent(state)){state.busy=false;renderItineraryImportPreview()}}
 }
-$('itineraryImportCompare').onclick=()=>{void loadItineraryReconciliation()};
+$('itineraryImportCompare').onclick=()=>{const s=itineraryImportState;if(s?.unified){if(s.busy||s.preparing||s.reconciliation?.pendingRequest)return;s.reconciliation=null;void prepareUnifiedItineraryImport(s)}else void loadItineraryReconciliation()};
 $('itineraryImportReconciliation').addEventListener('click',event=>{
   if(!event.target.closest('#itineraryReconcileSuggestNew'))return;
   const s=itineraryImportState,r=s?.reconciliation;
@@ -9611,7 +9611,7 @@ async function writeItineraryReconciliation(state){
   $('itineraryImportSaveStatus').textContent='Desant el planning i els avisos en una sola operació…';
   const {data,error}=await db.rpc('commit_itinerary_reconciliation',r.pendingRequest);
   if(!itineraryImportContextIsCurrent(state))return;
-  if(error){if(error.code==='PT409'||error.code==='22023'||error.code==='42501'){sessionStorage.removeItem(itineraryReconciliationRecoveryKey(state));r.pendingRequest=null;r.decisions=[];r.retire=[]}throw error}
+  if(error){if(error.code==='PT409'||error.code==='22023'||error.code==='42501'){sessionStorage.removeItem(itineraryReconciliationRecoveryKey(state));r.pendingRequest=null;r.decisions=[];r.retire=[];state.comparisonStale=true}throw error}
   if(!data||data.operation_id!==r.pendingRequest.p_operation_id)throw Error('Resposta no confirmada');
   sessionStorage.removeItem(itineraryReconciliationRecoveryKey(state));
   state.saveCompleted=true;closeItineraryImport();await loadGenericItinerary(true);
