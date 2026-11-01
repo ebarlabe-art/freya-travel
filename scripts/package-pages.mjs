@@ -30,6 +30,7 @@ const runtimeDomain=[
   'import-itinerary-review.mjs',
   'import-itinerary-write.mjs',
   'itinerary-conflict-review.mjs','import-itinerary-flash.mjs',
+  'import-itinerary-draft.mjs','import-itinerary-draft-ui.mjs',
   'import-itinerary-planning.mjs',
   'import-itinerary-planning-ui.mjs',
   'import-itinerary-reconciliation.mjs',
