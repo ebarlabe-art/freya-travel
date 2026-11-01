@@ -4,6 +4,20 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## P0 · Conflictes horaris visibles #198 (1/11/2026) — BRANCA, NO PUBLICAT
+
+Base `main` `e0814fa` (PR #197 fusionada). La usuària confirma validació física de les pantalles de coincidències a l’iPhone; no es modifica aquesta interfície. La secció #196 següent és el relleu històric, no l’estat actual.
+
+Branca `codex/verified-conflicts-198`, checkout `/private/tmp/freya-import198`. Causa: RIG-04 ja detectava incompatibilitats, però la confirmació no exigia revisar-les; l’agenda podia deixar l’avís dins una fitxa. Adaptador petit sobre el motor existent: flaix automàtic de conflictes després de les coincidències, hores i explicació, primera proposta segura del motor i revisió explícita. «Ho he revisat; mantinc el conflicte» permet continuar sense bloqueig impossible, però el resum i la confirmació final indiquen que NO s’ha resolt. Canvis a hores/versions afectades invaliden la revisió. El guard s’executa abans i després de confirmar, abans de pujar documents o fer la RPC; reintents d’una operació ja confirmada conserven la idempotència. No hi ha desament en revisar o acceptar una proposta.
+
+Planning general: resum automàtic, accés directe a les activitats i distintius visibles, sense obrir fitxes ni modificar dades. Es reutilitza `assessCombinedItinerary`; les incerteses de durada, ubicació, trajecte o obertura no es converteixen en alarmes verificades. Les dades incompletes continuen sent incompletes; no es garanteix viabilitat. Les pantalles de coincidències i la via ràpida de viatge buit es preserven.
+
+Validació: 884 tests locals, build/paritat, clics Chromium/WebKit 390×844: bloqueig, revisió explícita, invalidació mentre la confirmació és oberta, resolució només a l’esborrany, cancel·lació, reserves protegides, agenda amb avisos i zero writes. Captures sintètiques a `docs/screenshots/verified-conflicts-198/`; no s’ha utilitzat el PDF real. Marcador de branca `pwa-verified-conflicts-198`, cache v47. Cap migració, Edge Function ni nova dependència; cap canvi remot o a Freya Proves.
+
+**Següent acció:** revisar PR en esborrany, captures i CI; només amb autorització publicar i validar físicament el conflicte del museu. Després reprendre A2/A3 del roadmap canònic, sense ampliar aquest flux. Canvis locals aliens al checkout principal preservats.
+
+---
+
 ## P0 · Pantalles flaix #196 (1/11/2026) — BRANCA, NO PUBLICAT
 
 Base `main` `7dae9a552b4ffe4142985ee378c14d3625bc3d4a`: PR #195 fusionada (verificat a GitHub). La secció #194 següent conserva el relleu històric. La prova física comunicada a #196 continuava mostrant massa decisions i diagnòstics; no es dona aquella experiència per validada.
