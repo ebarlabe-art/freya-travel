@@ -2538,7 +2538,7 @@ function offlineAuthNetworkError(error){
 }
 function clearOfflineUserData(userId=session?.user?.id){
   if(!userId)return false;
-  void loadTravelBookModule('import-itinerary-draft-ui.mjs').then(api=>api.discardUserImportDrafts(userId)).catch(()=>{});
+  if(typeof loadTravelBookModule==='function')void loadTravelBookModule('import-itinerary-draft-ui.mjs').then(api=>api.discardUserImportDrafts(userId)).catch(()=>{});
   clearOfflineSessionGrant(userId);
   if(session?.user?.id===userId)offlineReadOnlySession=false;
   offlineDocEpoch++;
