@@ -60,7 +60,6 @@ try{
     await page.locator('[data-flash-action="keep"]').tap();
     await page.locator('#itineraryPlanningReport [data-flash-undo]').tap();
     await page.locator('#itineraryImportFlash [data-flash-undo]').tap();
-    await page.locator('#itineraryImportFlash [data-flash-undo]').tap();
     await page.locator('[data-flash-action="update"]').tap();
     await page.locator('[data-flash-action="keep"]').tap();
     assert.match(await page.locator('[data-flash-conflicts]').innerText(),/Reserva confirmada/);
