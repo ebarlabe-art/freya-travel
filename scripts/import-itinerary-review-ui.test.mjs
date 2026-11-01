@@ -19,13 +19,15 @@ test('A2.7: AI PDF processing requires explicit opt-in, with no silent document 
  assert.match(html,/servei d.IA d.OpenAI/);
  assert.match(script,/\$\('itineraryImportConsent'\)\.checked/);
  assert.match(script,/db\.functions\.invoke\('import-itinerary'/);
- assert.match(script,/body:\{trip_id:state\.tripId,document_id:doc\.id\}/);
+ assert.match(script,/const body=\{trip_id:state\.tripId,document_id:doc\.id\}/);
  assert.doesNotMatch(script,/setInterval\(/);
 });
 test('A2.7: a chosen existing document is reused, file upload is user initiated',()=>{
  assert.match(script,/itineraryImportMimeAllowed\(row\.mime_type\)/);
  assert.match(script,/processItineraryImportDocument\(doc\)/);
- assert.match(script,/uploadTripDocument\(file,/);
+ assert.match(script,/uploadTripDocument\(state\.file,/);
+ const localFlow=script.slice(script.indexOf('async function processItineraryImportSelected()'),script.indexOf("$('itineraryImportAnalyze').onclick"));
+ assert.doesNotMatch(localFlow,/uploadTripDocument|\.insert\(|\.upload\(/);
  assert.match(script,/result\.size>10\*1024\*1024/);
  assert.match(script,/\$\('itineraryImportUpload'\)\.onclick/);
 });
@@ -42,7 +44,7 @@ test('A2.7 public: a document-source menu chooses PDF, photo, or a Freya file',(
  assert.match(script,/\.eq\('category','Foto'\)/);
  assert.match(script,/itineraryImportMimeAllowed\(row\.mime_type\)/);
  assert.match(script,/state\.file=result/);
- assert.match(script,/state\.uploadedDoc=doc/);
+ assert.match(script,/state\.uploadedDoc=await uploadTripDocument/);
  assert.match(script,/itineraryImportNormalizePhoto/);
  assert.match(script,/canvas\.toBlob/);
  assert.match(script,/\$\('itineraryImportConsent'\)\.checked=false/);
@@ -88,7 +90,7 @@ test('A2.7: Pages includes the same module graph as PWA cache',()=>{
  assert.match(worker,/\.\/domain\/import-itinerary-proposal\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-review\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-write\.mjs/);
- assert.match(worker,/freya-travel-release-6444-v44/);
+ assert.match(worker,/freya-travel-release-6444-v45/);
 });
 
 test('A2.9: real async completion re-enables the imported itinerary save button',async()=>{
@@ -119,6 +121,10 @@ test('A2.9: real async completion re-enables the imported itinerary save button'
   loadTravelBookModule:async name=>name==='import-itinerary-review.mjs'?
    {createItineraryReview:()=>({items:[{included:true}]})}:
    {deselectExactImportDuplicates:()=>0},
+  prepareUnifiedItineraryImport:async current=>{
+   assert.equal(current,state);assert.equal(state.busy,false);
+   state.busy=true;scope.renderItineraryImportPreview();state.busy=false;
+  },
   itineraryImportErrorMessage:()=>'' 
  };
  const fn=vm.runInNewContext(source+'; processItineraryImportDocument',scope);

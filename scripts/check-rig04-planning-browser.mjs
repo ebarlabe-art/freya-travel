@@ -12,27 +12,77 @@ try{
   const id=n=>'14000000-0000-4000-8000-'+String(n).padStart(12,'0');
   session={user:{id:id(3)}};trip={id:id(1),name:'Riga sintètic RIG04',start_date:'2030-12-26',end_date:'2031-01-02',time_zone:'Europe/Riga'};
   const field=value=>({value,confidence:'high',evidence:[{kind:'text',excerpt:value,page:1}]});
-  const existing=mode==='new'?[]:[{id:id(20),trip_id:id(1),title:'Catedral de Riga',city:'Riga',location_name:'Catedral de Riga',timing_kind:'exact',starts_at:'2030-12-27T08:00:00Z',ends_at:'2030-12-27T09:00:00Z',time_zone:'Europe/Riga',local_date:null,updated_at:'2026-10-29T12:00:00Z',status:'planned',photo_count:0,link_count:0,is_fixed:false}];
+  const existing=['new','local'].includes(mode)?[]:[{id:id(20),trip_id:id(1),title:'Catedral de Riga',city:'Riga',location_name:'Catedral de Riga',timing_kind:'exact',starts_at:'2030-12-27T08:00:00Z',ends_at:'2030-12-27T09:00:00Z',time_zone:'Europe/Riga',local_date:null,updated_at:'2026-10-29T12:00:00Z',status:'planned',photo_count:0,link_count:0,is_fixed:false}];
   const candidates=[['Riga Cathedral','2030-12-27','10:00','11:00'],['Museu','2030-12-27','10:30','12:00'],['Museu','2030-12-28','10:00','11:00']].map(([title,date,start,end],i)=>({source_order:i,classification_hint:'manual',warnings:[],fields:{title:field(title),city:field('Riga'),location_name:field(title),local_date:field(date),start_local_time:field(start),end_local_time:field(end),time_zone:field('Europe/Riga')}}));
+  if(mode==='compound'){
+   existing.splice(0,existing.length,...Array.from({length:13},(_,n)=>({id:id(20+n),trip_id:id(1),title:'Monument sintètic '+n,city:'Riga',location_name:'Monument sintètic '+n,timing_kind:'exact',starts_at:'2030-12-27T08:00:00Z',ends_at:'2030-12-27T09:00:00Z',time_zone:'Europe/Riga',updated_at:'2026-10-29T12:00:00Z',status:'planned',photo_count:0,link_count:0,is_fixed:false})));
+   existing[0].title=existing[0].location_name='Catedral de Riga';existing[1].title=existing[1].location_name='Casa dels Caps Negres';
+   candidates.splice(0,candidates.length,...Array.from({length:25},(_,n)=>{const title=n===0?'Visita a Riga Cathedral i dinar':n===1?'House of the Blackheads':n<13?existing[n].title:'Parc nou '+n;return {source_order:n,classification_hint:'manual',warnings:[],fields:{title:field(title),city:field('Riga'),location_name:field(title),local_date:field(n===1?'2030-12-28':'2030-12-27'),start_local_time:field(n<13?'10:00':'12:00'),end_local_time:field(n<13?'11:00':'13:00'),time_zone:field('Europe/Riga')}}}));
+  }
   const api=await loadTravelBookModule('import-itinerary-review.mjs'),saveApi=await loadTravelBookModule('import-itinerary-write.mjs');
-  itineraryProjection=mode==='new'?[]:[{key:'activity:'+id(30),tripId:trip.id,sourceId:id(30),sourceType:'activity',title:'Reserva confirmada',localDate:'2030-12-27',startsAt:'2030-12-27T09:15:00Z',endsAt:'2030-12-27T10:15:00Z',timeZone:'Europe/Riga',timingKind:'exact',status:'confirmed',sourceUpdatedAt:'2026-10-29T12:00Z'}];
+  itineraryProjection=['new','local'].includes(mode)?[]:[{key:'activity:'+id(30),tripId:trip.id,sourceId:id(30),sourceType:'activity',title:'Reserva confirmada',localDate:'2030-12-27',startsAt:'2030-12-27T09:15:00Z',endsAt:'2030-12-27T10:15:00Z',timeZone:'Europe/Riga',timingKind:'exact',status:'confirmed',sourceUpdatedAt:'2026-10-29T12:00Z'}];
   for(const type of ['flight','accommodation','activity','manual'])itinerarySourceReady[type]=itinerarySourceMarker(type,trip.id,tripLoadGeneration,session.user.id);
   itineraryImportState={tripId:trip.id,userId:session.user.id,generation:tripLoadGeneration,api,saveApi,documentId:id(6),review:api.createItineraryReview({schema_version:1,source:{kind:'document',document_id:id(6),mime_type:'application/pdf'},candidates},{tripId:trip.id,userId:session.user.id,documentId:id(6)}),busy:false};
-  window.fixture={proposal:{schema_version:1,source:{kind:'document',document_id:id(6),mime_type:'application/pdf'},candidates},existing,before:JSON.stringify(existing),agenda:JSON.stringify(itineraryProjection),writes:0,requests:[],fail:true};
+  window.fixture={mode,proposal:{schema_version:1,source:{kind:'document',document_id:id(6),mime_type:'application/pdf'},candidates},existing,before:JSON.stringify(existing),agenda:JSON.stringify(itineraryProjection),writes:0,requests:[],fail:true};
   db.rpc=async(name)=>{if(name==='read_itinerary_reconciliation')return {data:structuredClone(existing),error:null};fixture.writes++;throw Error('No writes allowed')};
   db.from=table=>{if(table!=='travel_documents')throw Error('Unexpected table');let photos=false;const q={select:()=>q,eq:(k,v)=>{if(k==='category'&&v==='Foto')photos=true;return q},neq:()=>q,order:async()=>({data:photos?[]:[{id:id(6),title:'PDF sintètic RIG04',file_name:'synthetic.pdf',mime_type:'application/pdf',category:'Altres'}],error:null}),insert:()=>{fixture.writes++;throw Error('No writes')},update:()=>{fixture.writes++;throw Error('No writes')}};return q};
-  Object.defineProperty(db,'functions',{configurable:true,value:{invoke:async(name,{body})=>{if(name==='import-itinerary')return {data:{proposal:fixture.proposal},error:null};fixture.requests.push(body);await new Promise(r=>setTimeout(r,30));return fixture.fail?{data:null,error:{message:'network failure'}}:{data:{route:{method:'routing',mode:'walk',distance_m:1000,duration_seconds:600,source:'Synthetic route',calculated_at:new Date().toISOString()}},error:null}}}});
+  Object.defineProperty(db,'functions',{configurable:true,value:{invoke:async(name,{body})=>{if(name==='import-itinerary'){fixture.transient=!!body.file;return {data:{proposal:{...fixture.proposal,source:{...fixture.proposal.source,document_id:body.document_id}}},error:null};}fixture.requests.push(body);await new Promise(r=>setTimeout(r,30));return fixture.fail?{data:null,error:{message:'network failure'}}:{data:{route:{method:'routing',mode:'walk',distance_m:1000,duration_seconds:600,source:'Synthetic route',calculated_at:new Date().toISOString()}},error:null}}}});
   APP_VIEWS.forEach(id=>document.getElementById(id)?.classList.toggle('hidden',id!=='itineraryView'));configureItineraryContent();
   for(const id of ['itineraryView','itineraryImportPanel','itineraryImportPreview']){let n=document.getElementById(id);while(n){n.classList.remove('hidden');n=n.parentElement}}document.getElementById('loginCard').classList.add('hidden');document.getElementById('itineraryImportSource').classList.add('hidden');renderItineraryImportPreview();
  };
- for(const mode of ['existing','new']){
+ for(const mode of ['existing','new','compound','local']){
   await page.evaluate(installFixture,mode);
   await page.locator('#openItineraryImport').tap();
-  await page.locator('#itineraryImportUpload').tap();await page.locator('#itineraryImportChooseExisting').tap();
-  await page.locator('#itineraryImportExisting').selectOption('14000000-0000-4000-8000-000000000006');
+  if(mode==='local'){
+   await page.locator('#itineraryImportUploadFile').setInputFiles({name:'synthetic.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4 synthetic itinerary')});
+  }else{
+   await page.locator('#itineraryImportUpload').tap();await page.locator('#itineraryImportChooseExisting').tap();
+   await page.locator('#itineraryImportExisting').selectOption('14000000-0000-4000-8000-000000000006');
+  }
   await page.locator('#itineraryImportConsent').check();await page.locator('#itineraryImportAnalyze').tap();
   await page.locator('#itineraryImportPreview').waitFor({state:'visible'});
-  await page.locator('#itineraryImportPlanning').tap();await page.locator('[data-planning-summary]').waitFor();
+  await page.locator('[data-planning-summary]').waitFor();
+  await page.waitForFunction(()=>!itineraryImportState.preparing&&!itineraryImportState.planningBusy);
+  assert.equal(await page.locator('#itineraryImportPlanning').isVisible(),false);
+  assert.ok(await page.evaluate(()=>fixture.requests.length>0),'routes start automatically');
+  if(mode==='local'){
+   assert.equal(await page.evaluate(()=>fixture.transient),true);
+   assert.equal(await page.evaluate(()=>fixture.writes),0);
+   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
+   assert.equal(await page.evaluate(()=>fixture.writes),0);
+   await page.locator('#itineraryImportConfirmNo').tap();await page.waitForFunction(()=>!itineraryImportState.busy);
+   assert.equal(await page.evaluate(()=>fixture.writes),0);
+   await page.evaluate(()=>{
+    fixture.commits=[];fixture.uploads=0;fixture.documentWrites=0;
+    db.storage.from=()=>({upload:async()=>{fixture.uploads++;return {data:{},error:null}},remove:async()=>{throw Error('Unexpected cleanup')}});
+    db.from=table=>({insert:row=>{fixture.documentWrites++;return {select:()=>({single:async()=>({data:{...row,id:'14000000-0000-4000-8000-000000000099'},error:null})})}}});
+    db.rpc=async(name,request)=>{if(name==='read_itinerary_reconciliation')return {data:[],error:null};if(name!=='commit_itinerary_reconciliation')throw Error('Unexpected RPC');fixture.commits.push(request);if(fixture.commits.length===1)return {data:null,error:{code:'PT409',message:'RIG_STALE'}};return {data:{operation_id:request.p_operation_id,added:3,updated:0,retired:0},error:null}};
+    loadGenericItinerary=async()=>{};
+   });
+   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
+   assert.equal(await page.evaluate(()=>fixture.uploads+fixture.documentWrites+fixture.commits.length),0);
+   await page.locator('#itineraryImportConfirmYes').tap();await page.waitForFunction(()=>itineraryImportState?.comparisonStale&&!itineraryImportState.busy);
+   await page.locator('#itineraryImportCompare').tap();await page.waitForFunction(()=>!itineraryImportState.preparing);
+   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirmYes').tap();await page.waitForFunction(()=>itineraryImportState===null);
+   assert.deepEqual(await page.evaluate(()=>[fixture.uploads,fixture.documentWrites,fixture.commits.length]),[1,1,2]);
+   assert.equal(await page.evaluate(()=>fixture.commits[0].p_document_id),'14000000-0000-4000-8000-000000000099');
+   assert.equal(await page.evaluate(()=>fixture.commits[0].p_changes.length),3);continue;
+  }
+  if(mode==='compound'){
+   assert.match(await page.locator('#itineraryImportReconciliation').innerText(),/Excepcions que necessiten revisió \(2\)/);
+   assert.equal(await page.locator('#itineraryImportWrite').isDisabled(),true);
+   assert.equal(await page.locator('#itineraryReconcileSuggestNew').count(),0);
+   for(const order of [0,1]){
+    const row=page.locator('[data-reconcile-row="'+order+'"]');await row.locator('summary').tap();
+    await row.locator('[data-reconcile-action]').selectOption('skip');
+   }
+   assert.equal(await page.locator('#itineraryImportWrite').isEnabled(),true);
+   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
+   assert.equal(await page.evaluate(()=>fixture.writes),0);await page.locator('#itineraryImportConfirmNo').tap();
+   await page.waitForFunction(()=>!itineraryImportState.busy);
+   assert.equal(await page.evaluate(()=>fixture.writes),0);
+   await page.locator('#itineraryImportExit').tap();continue;
+  }
   assert.equal(await page.locator('#itineraryImportDecisionDetails').evaluate(n=>n.open),false);
   assert.equal(await page.locator('#itineraryImportPdfDetails').evaluate(n=>n.open),false);
   const before=await page.evaluate(()=>JSON.stringify(itineraryImportState.review));
@@ -68,7 +118,7 @@ try{
   await endField.fill('');await endField.press('Tab');
   assert.ok(await page.evaluate(()=>itineraryImportState.planning.assessment.issues.some(i=>i.code==='duration'&&i.keys.includes('pdf:2'))));
   assert.notEqual(await page.evaluate(()=>itineraryImportState.planning.assessment.status),'supported');
-  await page.locator('#itineraryImportPlanning').tap();
+  await page.evaluate(()=>renderItineraryImportPreview());
   assert.equal(await page.evaluate(()=>new Set(itineraryImportState.reconciliation.decisions.map(d=>d.source_order)).size===itineraryImportState.reconciliation.decisions.length),true);
   if(mode==='existing'){
    await page.evaluate(()=>{itineraryImportState.api.changeItineraryReviewItem(itineraryImportState.review,0,'start_local_time','10:15');renderItineraryImportPreview()});

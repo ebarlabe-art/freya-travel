@@ -1,6 +1,6 @@
 # Freya Travel · Roadmap canònic
 
-**Versió:** 1.2  
+**Versió:** 1.3
 **Data de tall:** 8 d'octubre de 2026  
 **Versió publicada documentada al tall anterior (7 oct.):** 6.4.19  
 **Estat del document:** CANÒNIC
@@ -148,6 +148,11 @@ Ha d'arribar a poder detectar/proposar, entre altres:
 
 ### A2. Importació intel·ligent
 **Prioritat: P0/P1**
+
+**Correcció prioritària P0 · issue #194 (revisió 1/11/2026).** Després de RIG-03B/RIG-04 i la PR #193, unificar lectura del PDF, comparació, proposta d'integració i detecció de conflictes en un sol procés automàtic. L'usuari revisa les excepcions i confirma; cap coincidència parcial es considera automàticament nova. Reutilitzar els motors i el desament atòmic. Proves sintètiques Chromium/WebKit amb iPhone i viatges buits/existents; publicació i validació física encara pendents.
+
+Aquesta correcció és un **bloqueig funcional d'A2**, no una línia de desenvolupament paral·lela. Un cop validada, reprendre els pendents d'A2 i després A3 segons l'ordre canònic. Es mantenen tots els pendents següents. La correcció prepara l'anàlisi temporal dels PDF nous i ajorna la conservació a Documents fins a la confirmació explícita. L'Edge corresponent ha de precedir el frontend en un desplegament futur autoritzat.
+
 
 La base d'importació de reserves ja està implementada per PDF/imatge en vols, allotjament, activitats, transport local i cotxe, amb revisió abans d'escriure.
 

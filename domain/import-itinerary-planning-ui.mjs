@@ -8,12 +8,13 @@ export function initialPlanningDecisions(snapshot,state){
  const keeps=equivalentDecisions(snapshot,state.existing,state.decisions);
  // Reuse #191's ADD rules. Overlaps remain in the real review and are the
  // reason for this analysis; remove that flag only for this draft shortcut.
- const draft={...snapshot,items:snapshot.items.filter(i=>i.classification_hint==='manual').map(i=>({...i,review_flags:i.review_flags.filter(f=>f!=='possible_overlap_in_review')}))};
+ const draft={...snapshot,items:snapshot.items.filter(i=>i.classification_hint==='manual'&&(!state.unified||(!i.review_flags.includes('uncertain_extraction')&&!i.source_warnings?.length))).map(i=>({...i,review_flags:i.review_flags.filter(f=>f!=='possible_overlap_in_review')}))};
  return [...keeps,...proposeUnmatchedReconciliationDecisions(draft,{...state,decisions:[...state.decisions,...keeps]})];
 }
 export function refreshAutomaticDecisions(snapshot,state){
  const orders=new Set(state.decisions.filter(d=>d.automatic).map(d=>d.source_order));
- const manual=state.decisions.filter(d=>!d.automatic);
+ const included=new Set(snapshot.items.filter(item=>item.included!==false).map(item=>item.source_order));
+ const manual=state.decisions.filter(d=>!d.automatic&&included.has(d.source_order));
  return [...manual,...equivalentDecisions(snapshot,state.existing,manual).filter(d=>orders.has(d.source_order))];
 }
 

@@ -4,6 +4,22 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## P0 · Flux únic d'importació PDF #194 (1/11/2026) — EN BRANCA
+
+Base remota verificada: `main` `c48386bb35a9d793e84a4f7b30380b3061738d62`, PR #193 fusionada. Això actualitza l'estat històric «BRANCA, NO PUBLICAT» de la secció següent: aquella secció descriu la revisió anterior, no l'estat actual de GitHub. No s'ha verificat de nou el desplegament públic en aquesta tasca.
+
+[PR #195 en esborrany](https://github.com/ebarlabe-art/freya-travel/pull/195). Branca `codex/unified-pdf-import-194`, checkout `/private/tmp/freya-import194`. Es reutilitzen els comparadors, RIG-03B i RIG-04: preparació automàtica després de l'extracció, lectura de versions/proteccions, decisions segures, anàlisi de conflictes i primer lot de trajectes; revisió centrada en excepcions. Noms compostos amb punts compartits es detecten conservadorament; només equivalències completes amb dades operatives iguals es conserven automàticament. Notes, hores, dies i candidats ambigus no es descarten. No s'ha consultat ni modificat cap itinerari real.
+
+**Discrepància corregida:** l'Edge només admetia documents desats i el selector pujava el PDF abans d'analitzar-lo. Seguint el requisit estricte de #194, la branca afegeix una entrada temporal amb JWT/RLS, límit de 10 MB, validació de bytes i cap persistència prèvia. El document nou es conserva només després de confirmar; després s'utilitza el writer atòmic existent. L'entrada `document_id` tradicional segueix compatible. Cal desplegar aquesta Edge abans del frontend, només amb autorització futura.
+
+Proves: 872/872 unitàries, build/paritat, flux tàctil Chromium/WebKit 390×844 i WebKit iPad; fixture 25 propostes/13 visites: 11 coincidències segures, 12 noves i 2 excepcions. PDF temporal amb cancel·lació sense cap escriptura i confirmació simulada amb una pujada/un document, rebuig de la primera RPC per canvi concurrent i nova confirmació sense duplicar el document. SQL sintètic amb RLS, atomicitat i idempotència; PWA cache v45 i arrencada offline. No són una reconstrucció del PDF real Riga/Tallinn. La CI s'ha de comprovar al SHA de la PR; validació física pendent després d'una publicació autoritzada.
+
+Límits: àlies acotats, equivalències parcials revisables, horaris d'obertura sense font verificable i durades absents continuen pendents; primer lot de 20 trajectes, reintents explícits per evitar bucles/costos. El PDF temporal es perd si es tanca/recarrega abans de confirmar, tal com s'explica a la UI. Storage i la transacció SQL no són una única transacció: després de confirmar, una fallada pot deixar el document conservat sense activitats; no es declara èxit i la conciliació conserva la recuperació/idempotència existent. No s'elimina el document com a compensació.
+
+Roadmap canònic v1.3: #194 és bloqueig temporal d'A2; després reprendre A2/A3, DURANT/offline i Records. Marcadors de branca: `pwa-unified-pdf-import-194`, cache v45. Cap migració, merge o desplegament executat. Següent acció: revisar la PR en esborrany i CI; només amb autorització desplegar `import-itinerary` mantenint JWT/secrets, publicar el frontend i fer la prova física de Riga/Tallinn sense guardar fins a revisar les excepcions.
+
+---
+
 ## RIG-04 · Conciliació i viabilitat (29/10/2026) — BRANCA, NO PUBLICAT
 
 Base `main` `674fd37` (PR #191), branca `codex/rig04-intelligent-planning`. [PR #193](https://github.com/ebarlabe-art/freya-travel/pull/193), mantinguda en esborrany després de la revisió funcional. Auditoria, pla executat, contractes i límits: [RIG-04](rig04-planning.md). Es reutilitzen comparador, decisions, writer atòmic, projecció del planning i motor de rutes. Novetats: identitats multilingües conservadores, planning combinat en memòria, solapaments/marges/pendents i propostes revisables d'hora, ordre o dia. Acceptar canvia només l'esborrany; el desament continua requerint confirmació explícita.
