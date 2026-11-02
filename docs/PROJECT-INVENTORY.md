@@ -6,7 +6,7 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 ## Issue #208 · Conciliació PDF i recomanacions — BRANCA, NO PUBLICAT (2/11/2026)
 
-Base verificada `main` `5dc3917` (PR #207 fusionada; la nota històrica inferior descriu l’estat anterior). Branca `codex/pdf-reconciliation-208`, checkout `/private/tmp/freya-import208`. No s’ha verificat el desplegament públic ni consultat dades remotes en aquesta tasca.
+[PR #209](https://github.com/ebarlabe-art/freya-travel/pull/209), vinculada a la #208. Base verificada `main` `5dc3917` (PR #207 fusionada; la nota històrica inferior descriu l’estat anterior). Branca `codex/pdf-reconciliation-208`, checkout `/private/tmp/freya-import208`. No s’ha verificat el desplegament públic ni consultat dades remotes en aquesta tasca.
 
 **Diagnòstic:** la projecció de l’agenda no propagava número/aeroports al motor RIG-04, que només comparava títol i hores. La #207 corregia les targetes de vols, però no aquest motor. S’hi connecta la identitat conservadora existent: mateix viatge, número normalitzat, sortida, ruta única i arribada coherent. El càlcul agrupa trajectes i evita també trams entre dos bitllets del mateix vol; les targetes, bitllets, passatgers, seients i documents originals continuen individuals. Una ruta ambigua o una franja diferent continua revisable. El PDF només usa números/IATA explícits, sense inventar aeroports a partir de noms de ciutat.
 
