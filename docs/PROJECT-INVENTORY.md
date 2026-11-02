@@ -6,7 +6,7 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 ## Issue #210 · IB7848 a l’agenda i recomanació Catedral — BRANCA, NO PUBLICAT (3/11/2026)
 
-Base `main` `3f7b26b`, amb #209 fusionada. La prova física de la usuària és l’evidència de la incidència; no s’han consultat les reserves reals ni es pot certificar si són bitllets legítims o registres duplicats. Branca `codex/iphone-flight-advice-210`, checkout `/private/tmp/freya-import210`.
+[PR #211](https://github.com/ebarlabe-art/freya-travel/pull/211), vinculada a la #210. Base `main` `3f7b26b`, amb #209 fusionada. La prova física de la usuària és l’evidència de la incidència; no s’han consultat les reserves reals ni es pot certificar si són bitllets legítims o registres duplicats. Branca `codex/iphone-flight-advice-210`, checkout `/private/tmp/freya-import210`.
 
 **Causes verificades al codi:** #207 agrupava targetes de la vista Vols i #209 el càlcul RIG, però `renderGenericItinerary()` encara renderitzava cada bitllet individual. `flashRecommendation()` triava conservar/actualitzar comptant conflictes sense verificar durades completes ni la flexibilitat d’un esmorzar; les garanties de `proposeItinerarySolutions()` no s’aplicaven a aquest consell de coincidències.
 
