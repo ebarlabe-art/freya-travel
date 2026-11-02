@@ -1,3 +1,4 @@
+import {canonicalPlanningFlights} from './flight-journey-identity.mjs';
 // RIG-04: orchestration of existing matching, reconciliation and route contracts.
 // Every result is an in-memory proposal. No persistence or provider calls here.
 import {equivalentItineraryPlace,changeItineraryReviewItem} from './import-itinerary-review.mjs';
@@ -14,7 +15,7 @@ export function automaticEquivalentDecisions(snapshot,existing,decisions=[]){
  const additions=[];
  for(const item of snapshot.items){
   if(decided.has(item.source_order)||!item.included||item.classification_hint!=='manual'||item.review_flags.some(f=>!f.startsWith('possible_existing_')&&f!=='possible_overlap_in_review')||item.source_warnings?.length)continue;
-  const v=item.values,found=existing.filter(old=>equivalentItineraryPlace(v,old));
+  const v=item.values;if(/^(?:museu|museum|parc|park|esmorzar|breakfast|dinar|lunch|sopar|dinner|passeig|walk|centre històric)$/i.test(clean(v.title)))continue;const found=existing.filter(old=>equivalentItineraryPlace(v,old));
   if(found.length!==1)continue;
   const old=found[0],start=old.starts_at&&local(old.starts_at,old.time_zone),end=old.ends_at&&local(old.ends_at,old.time_zone);
   if(used.has(old.id)||old.status!=='planned'||old.is_optional||classifyReconciliationTiming(v).is_tentative||old.timing_kind!=='exact'||!v.start_local_time||!v.end_local_time)continue;
@@ -27,33 +28,25 @@ export function automaticEquivalentDecisions(snapshot,existing,decisions=[]){
  }
  return additions;
 }
-// Two records of the exact same flight leg can represent a shared booking or two passengers.
-// Do not classify them as incompatible commitments, but keep both records visible.
-// Distinct times, routes or transport types must still be checked normally.
-const sameConfirmedFlightLeg=(a,b)=>a.sourceType==='flight'&&b.sourceType==='flight'&&
- clean(a.title)!==''&&clean(a.title)===clean(b.title)&&
- stamp(a.startsAt)!==null&&stamp(a.startsAt)===stamp(b.startsAt)&&
- stamp(a.endsAt)!==null&&stamp(a.endsAt)===stamp(b.endsAt)&&
- a.localDate===b.localDate&&a.timeZone===b.timeZone;
 const projection=row=>({key:'manual:'+row.id,sourceId:row.id,sourceType:'manual',title:row.title,localDate:row.localDate||row.local_date||(row.starts_at&&local(row.starts_at,row.time_zone)?.local_date)||'',startsAt:row.starts_at,endsAt:row.ends_at,timeZone:row.time_zone,timingKind:row.timing_kind,status:row.status,sourceUpdatedAt:row.updated_at,location_name:row.location_name||'',address:row.address||'',city:row.city||'',fixed:!!row.is_fixed,mutable:false});
 export function combineImportItinerary(snapshot,state,{projection:agenda=[],convertLocalTime}={}){
  const plan=planItineraryReconciliation({snapshot,existing:state.existing,decisions:state.decisions,retireExistingIds:state.retire});
  const replaced=new Set([...plan.retire.map(r=>r.id),...plan.rows.filter(r=>r.action==='update').map(r=>r.target_id)]);
  const items=state.existing.filter(r=>!replaced.has(r.id)&&r.status!=='cancelled').map(projection);
  // Copy only scheduling fields, never documents, booking codes or private details.
- for(const row of agenda.filter(r=>r.sourceType!=='manual'&&!r.isCancelled&&r.status!=='cancelled'))items.push(Object.fromEntries(['key','sourceId','sourceType','title','localDate','startsAt','endsAt','timeZone','timingKind','status','sourceUpdatedAt'].map(k=>[k,row[k]])));
+ for(const row of agenda.filter(r=>r.sourceType!=='manual'&&!r.isCancelled&&r.status!=='cancelled'))items.push(Object.fromEntries(['key','sourceId','sourceType','title','localDate','startsAt','endsAt','timeZone','timingKind','status','sourceUpdatedAt','tripId','flightIdentity'].map(k=>[k,row[k]])));
  for(const row of plan.rows.filter(r=>['add','update'].includes(r.action))){
   const item=snapshot.items.find(i=>i.source_order===row.source_order),v=row.values,conditional=classifyReconciliationTiming(v).is_tentative;
   const convert=t=>t&&v.local_date&&v.time_zone?convertLocalTime(v.local_date+'T'+t,v.time_zone):null;
   const old=state.existing.find(r=>r.id===row.target_id);
-  items.push({key:'pdf:'+row.source_order,sourceType:'manual',sourceId:row.target_id,sourceOrder:row.source_order,title:v.title,localDate:v.local_date,startsAt:convert(v.start_local_time),endsAt:convert(v.end_local_time),timeZone:v.time_zone,timingKind:conditional?'approximate':v.start_local_time?'exact':'date',sourceUpdatedAt:old?.updated_at,location_name:v.location_name,address:v.address,city:v.city,values:{...v},conditional,mutable:item.classification_hint==='manual'&&!old?.is_fixed&&!/reserva(?:da|t|tada)?|confirmad[ao]|confirmed|booked|ticket|bitllet|vol\b|flight\b/i.test(v.title+' '+(v.notes||'')),status:'planned',fixed:false});
+  items.push({key:'pdf:'+row.source_order,sourceType:'manual',sourceId:row.target_id,sourceOrder:row.source_order,title:v.title,localDate:v.local_date,startsAt:convert(v.start_local_time),endsAt:convert(v.end_local_time),timeZone:v.time_zone,timingKind:conditional?'approximate':v.start_local_time?'exact':'date',sourceUpdatedAt:old?.updated_at,location_name:v.location_name,address:v.address,city:v.city,values:{...v},conditional,mutable:item.classification_hint==='manual'&&!old?.is_fixed&&!/reserva(?:da|t|tada)?|confirmad[ao]|confirmed|booked|ticket|bitllet|entrada|entrades|transport|tren\b|train\b|autob[uú]s|bus\b|ferry|vol\b|flight\b/i.test(v.title+' '+(v.notes||'')),status:'planned',fixed:false});
  }
  if(items.length>200)throw Error('Limita la revisió a 200 elements per analitzar-la al mòbil.');
  return {items,plan,complete:plan.complete};
 }
 export function planningRouteKey(a,b){return JSON.stringify([a.key,b.key,...[a,b].map(x=>[x.title,x.location_name,x.address,x.city,x.sourceUpdatedAt])])}
 export function planningPairs(items){
- const ordered=items.filter(x=>stamp(x.startsAt)!==null).sort((a,b)=>stamp(a.startsAt)-stamp(b.startsAt));
+ const ordered=canonicalPlanningFlights(items).filter(x=>stamp(x.startsAt)!==null).sort((a,b)=>stamp(a.startsAt)-stamp(b.startsAt));
  return ordered.slice(1).flatMap((b,i)=>{const a=ordered[i];return a.localDate===b.localDate?[{a,b,key:planningRouteKey(a,b)}]:[]});
 }
 export function planningRouteInput(pair,tripId){
@@ -63,8 +56,8 @@ export function planningRouteInput(pair,tripId){
 }
 export const verifiedPlanningRoute=(entry,now)=>routeIsVerified(entry)&&typeof entry.route.source==='string'&&entry.route.source.trim().length>0&&stamp(entry.route.calculated_at)!==null&&now-stamp(entry.route.calculated_at)>=0&&now-stamp(entry.route.calculated_at)<300000;
 export function assessCombinedItinerary(combined,{routes={},openings={},bufferMinutes=5,now=Date.now(),sourcesReady=true}={}){
- const issues=[],items=combined.items;
- const add=(kind,code,keys,message)=>issues.push({kind,code,keys,message});
+ const issues=[],items=canonicalPlanningFlights(combined.items);
+ const add=(kind,code,keys,message)=>issues.push({kind,code,keys:keys.flatMap(key=>items.find(x=>x.key===key)?.relatedKeys||[key]),message});
  if(!items.length)add('pending','empty',[],'No hi ha activitats per avaluar.');
  if(!combined.complete)add('pending','decisions',[],'Queden candidates pendents de decidir.');
  if(!sourcesReady)add('pending','sources',[],'Encara falten fonts del viatge; les reserves poden estar incompletes.');
@@ -85,7 +78,6 @@ export function assessCombinedItinerary(combined,{routes={},openings={},bufferMi
  // UTC instants catch midnight, timezone and overlapping long reservations.
  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
   const a=items[i],b=items[j],as=stamp(a.startsAt),ae=stamp(a.endsAt),bs=stamp(b.startsAt),be=stamp(b.endsAt);
-  if(sameConfirmedFlightLeg(a,b))continue;
   if(a.timingKind==='exact'&&b.timingKind==='exact'&&as!==null&&bs!==null&&((ae!==null&&be!==null&&as<be&&bs<ae)||(ae!==null&&be===null&&as<=bs&&bs<ae)||(be!==null&&ae===null&&bs<=as&&as<be)))add('conflict','overlap',[a.key,b.key],a.title+' i '+b.title+': les franges horàries se solapen.');
  }
  for(const {a,b,key} of planningPairs(items)){
@@ -101,11 +93,41 @@ export function assessCombinedItinerary(combined,{routes={},openings={},bufferMi
  const counts={conflicts:issues.filter(i=>i.kind==='conflict').length,tight:issues.filter(i=>i.kind==='tight').length,pending:issues.filter(i=>i.kind==='pending').length};
  return {issues,counts,status:counts.conflicts?'conflict':counts.pending?'pending':counts.tight?'tight':'supported',label:counts.conflicts?'Hi ha incompatibilitats':counts.pending?'Viabilitat pendent de verificar':counts.tight?'Itinerari ajustat':'Compatible amb les dades verificades; els trajectes són estimacions'};
 }
+// A park/walk is a revisable flexibility hint, never proof of opening hours.
+const flexibility=item=>/\b(passeig|walk|parc|park|jardi|jardí)\b/i.test(item.title)?2:1;
+function solutionReason(item,combined,assessment){
+ const keys=new Set(assessment.issues.filter(i=>i.kind==='conflict'&&i.keys.includes(item.key)).flatMap(i=>i.keys));
+ const preserved=combined.items.filter(x=>x.key!==item.key&&keys.has(x.key)).map(x=>'«'+x.title+'»').join(', ');
+ return 'Proposo moure «'+item.title+'»'+(preserved?' i mantenir '+preserved:'')+(flexibility(item)>1?': el passeig o zona oberta sembla més flexible.':': així es redueix el conflicte sense moure reserves protegides.')+' Es conserva la durada i no s’elimina cap activitat. Cal verificar obertures i trajectes pendents abans de donar la franja per viable.';
+}
+export function conflictRecommendation(analysis,conflict){
+ const proposals=analysis.solutions.filter(p=>conflict.items.some(x=>x.mutable&&x.sourceOrder===p.sourceOrder));
+ if(proposals.length)return {proposal:proposals[0],alternatives:proposals.slice(1,3),reason:proposals[0].reason,confidence:proposals[0].confidence};
+ const flexible=conflict.items.find(x=>flexibility(x)>1),other=conflict.items.find(x=>x!==flexible);
+ return {proposal:null,alternatives:[],confidence:'baixa',reason:flexible&&other?'Recomano mantenir «'+other.title+'» i revisar una altra franja per a «'+flexible.title+'», que sembla més flexible. Cal confirmar durada, trajectes i horaris d’obertura; no proposo una hora sense aquestes dades.':'Cal confirmar les hores, durades i trajectes abans de triar una alternativa. Les reserves protegides es mantenen.'};
+}
+// A user-edited alternative is still only a draft; recheck the whole itinerary.
+export function editItinerarySolution(review,solution,edits,combined,options,context){
+ if(options.sourcesReady===false)throw Error('Cal completar les fonts del viatge abans de moure visites.');
+ if(!solution||solution.signature!==planningSignature(combined))throw Error('L’esborrany ha canviat. Torna a analitzar-lo.');
+ const item=combined.items.find(x=>x.sourceOrder===solution.sourceOrder);
+ if(!item?.mutable||!/^\d{4}-\d{2}-\d{2}$/.test(edits.local_date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(edits.start_local_time)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(edits.end_local_time)||edits.local_date<context.startDate||edits.local_date>context.endDate)throw Error('Revisa la data i les hores dins del viatge.');
+ const start=context.convertLocalTime(edits.local_date+'T'+edits.start_local_time,item.timeZone),end=context.convertLocalTime(edits.local_date+'T'+edits.end_local_time,item.timeZone);
+ if(stamp(start)===null||stamp(end)===null||stamp(end)<=stamp(start)||local(start,item.timeZone)?.local_date!==edits.local_date||local(start,item.timeZone)?.time!==edits.start_local_time||local(end,item.timeZone)?.local_date!==edits.local_date||local(end,item.timeZone)?.time!==edits.end_local_time)throw Error('La franja o zona horària no és vàlida.');
+ const trial={...combined,items:combined.items.map(x=>x.key===item.key?{...x,startsAt:start,endsAt:end,localDate:edits.local_date}:x)};
+ const prior=assessCombinedItinerary(combined,options),after=assessCombinedItinerary(trial,options),fingerprint=i=>i.code+'|'+i.keys.join('|');
+ if(after.issues.some(i=>i.kind==='conflict'&&(i.keys.includes(item.key)||!prior.issues.some(p=>p.kind==='conflict'&&fingerprint(i)===fingerprint(p)))))throw Error('Aquesta alternativa encara crea un conflicte. Revisa una altra franja.');
+ const next=structuredClone(review),index=next.items.findIndex(x=>x.source_order===item.sourceOrder);
+ for(const [key,value] of Object.entries(edits))changeItineraryReviewItem(next,index,key,value);
+ return next;
+}
 export function proposeItinerarySolutions(combined,options,context){
  const base=assessCombinedItinerary(combined,options),bad=new Set(base.issues.filter(x=>x.kind==='conflict'||x.kind==='tight').flatMap(x=>x.keys)),proposals=[];
  const signature=planningSignature(combined);
  if(options.sourcesReady===false)return proposals;
- for(const item of combined.items.filter(x=>x.mutable&&bad.has(x.key)).slice(0,10)){
+ for(const item of combined.items.filter(x=>x.mutable&&bad.has(x.key)).sort((a,b)=>flexibility(b)-flexibility(a)).slice(0,10)){
+  const involved=new Set(base.issues.filter(i=>i.kind==='conflict'&&i.keys.includes(item.key)).flatMap(i=>i.keys));
+  if(combined.items.some(x=>involved.has(x.key)&&(x.timingKind!=='exact'||stamp(x.startsAt)===null||stamp(x.endsAt)===null||stamp(x.endsAt)<=stamp(x.startsAt))))continue;
   const start=stamp(item.startsAt),end=stamp(item.endsAt),duration=end-start;
   if(start===null||end===null||duration<=0||duration>86400000||item.conditional)continue;
   const candidates=new Set();
@@ -128,12 +150,12 @@ export function proposeItinerarySolutions(combined,options,context){
    if(next.issues.some(x=>x.kind==='conflict'&&!oldKeys.has(x.code+':'+[...x.keys].sort().join('|'))))continue;
    if(next.issues.some(x=>x.kind==='conflict'&&x.keys.includes(item.key)))continue;
    if(next.counts.conflicts>=base.counts.conflicts&&next.counts.tight>=base.counts.tight)continue;
-   proposals.push({id:proposals.length,signature,sourceOrder:item.sourceOrder,edits:{local_date:first.local_date,start_local_time:first.time,end_local_time:last.time},label:item.title+': '+first.local_date+' '+first.time+'–'+last.time,note:next.counts.pending?'Ajust de l’esborrany: redueix el conflicte conegut. Viabilitat pendent; cal verificar les dades que falten.':'Compatible amb les dades verificades; revisa el resultat.',kind:first.local_date===item.localDate?'time_order':'day'});
+   proposals.push({id:proposals.length,signature,sourceOrder:item.sourceOrder,edits:{local_date:first.local_date,start_local_time:first.time,end_local_time:last.time},label:item.title+': '+first.local_date+' '+first.time+'–'+last.time,note:next.counts.pending?'Ajust de l’esborrany: redueix el conflicte conegut. Viabilitat pendent; cal verificar les dades que falten.':'Compatible amb les dades verificades; revisa el resultat.',kind:first.local_date===item.localDate?'time_order':'day',confidence:next.counts.pending?'baixa':'mitjana',reason:solutionReason(item,combined,base),distance:Math.abs(at-start),flexibility:flexibility(item)});
    if(++count===3||proposals.length>=30)break;
   }
   if(proposals.length>=30)break;
  }
- return proposals;
+ return proposals.sort((a,b)=>b.flexibility-a.flexibility||Number(a.kind==='day')-Number(b.kind==='day')||a.distance-b.distance).map((p,id)=>({...p,id}));
 }
 export function acceptItinerarySolution(review,solution,combined,options,context){
  if(!solution||solution.signature!==planningSignature(combined))throw Error('L’esborrany ha canviat. Torna a analitzar-lo.');

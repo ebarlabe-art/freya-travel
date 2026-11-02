@@ -42,7 +42,7 @@ try{
    assert.equal(await page.locator('[data-flash-order]').getAttribute('data-flash-order'),'0');
    assert.match(await page.locator('.flash-progress').innerText(),/1 de 2/i);
    assert.match(await page.locator('.flash-advice').innerText(),/Conservar evita/);
-   assert.equal(await page.locator('.flash-options > section').count(),2);
+   assert.equal(await page.locator('[data-flash-date-options] > section').count(),2);
    if(capture&&mode==='existing')await page.locator('#itineraryImportFlash').screenshot({path:capture+'/'+engine+'-flash.png'});
    await page.locator('[data-flash-action="keep"]').tap();assert.equal(await page.locator('[data-flash-order]').getAttribute('data-flash-order'),'1');
    if(mode==='protected')assert.equal(await page.locator('[data-flash-action="update"]').isDisabled(),true);
@@ -102,7 +102,7 @@ try{
   assert.equal(await page.evaluate(()=>JSON.stringify(fixture.existing)===fixture.before&&JSON.stringify(itineraryProjection)===fixture.agenda),true);
   if(mode==='existing'){
    await page.locator('[data-conflict-open]').tap();
-   await page.locator('#itineraryConflictFlash [data-planning-accept]').tap();
+   await page.locator('#itineraryConflictFlash').getByRole('button',{name:'Acceptar el canvi proposat',exact:true}).tap();
    assert.equal(await page.locator('#itineraryConflictFlash').isVisible(),false,'safe proposal resolves overlap in draft');
    assert.equal(await page.evaluate(()=>fixture.writes),0);
   }
