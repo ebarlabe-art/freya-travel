@@ -116,3 +116,41 @@ export async function planFlightDocumentImport(rows,existing,links,documentId){
  }
  return plan;
 }
+
+// Scheduling projection only: never merge tickets or expose passenger/document data.
+// Require a resolved route, departure AND arrival instants; differing schedules
+// remain separate commitments even if the flight number/date happens to match.
+export function canonicalPlanningFlights(items=[]){
+ const raw=items.map(x=>({trip_id:x.tripId,...x.flightIdentity,departure_at:x.startsAt}));
+ const resolved=resolveIncompleteFlightJourneys(raw),groups=new Map(),result=[];
+ items.forEach((item,i)=>{
+  const r=resolved[i],start=instant(item.startsAt),end=instant(item.endsAt);
+  const journey=item.sourceType==='flight'&&start!==null&&end!==null&&end>start&&r.trip_id&&flightJourneyKey({date:new Date(start).toISOString().slice(0,10),flightNumber:r.flight_number,origin:r.departure_airport_code,destination:r.arrival_airport_code});
+  const key=journey?[r.trip_id,journey,start,end].join('|'):null;
+  if(key&&groups.has(key))groups.get(key).relatedKeys.push(item.key);
+  else {const copy={...item,relatedKeys:[item.key]};result.push(copy);if(key)groups.set(key,copy)}
+ });
+ return result;
+}
+
+// Only explicit flight numbers / IATA pairs in the document are evidence.
+// City names and passenger names never stand in for an airport identity.
+export function flightReviewIdentity(values,tripId,convertLocalTime){
+ const numbers=[...String(values.title||'').matchAll(/\b([A-Z]{2}[ -]?\d{1,4}[A-Z]?)\b/g)].map(m=>number(m[1]));
+ if(new Set(numbers).size!==1||!values.local_date||!values.start_local_time||!values.time_zone)return null;
+ const route=String(values.title||'').match(/\b([A-Z]{3})\s*(?:→|–|-|\/)\s*([A-Z]{3})\b/);
+ let departure;try{departure=convertLocalTime(values.local_date+'T'+values.start_local_time,values.time_zone)}catch{return null}
+ if(instant(departure)===null)return null;
+ return {trip_id:tripId,flight_number:numbers[0],departure_at:departure,departure_airport_code:route?.[1]||'',arrival_airport_code:route?.[2]||''};
+}
+export function matchingPlanningFlight(values,agenda,convertLocalTime){
+ const flights=agenda.filter(x=>x.sourceType==='flight'),tripIds=new Set(flights.map(x=>x.tripId));
+ if(tripIds.size!==1)return [];
+ const candidate=flightReviewIdentity(values,[...tripIds][0],convertLocalTime);if(!candidate)return [];
+ const raw=flights.map(x=>({...x.flightIdentity,trip_id:x.tripId,departure_at:x.startsAt}));
+ const resolved=resolveIncompleteFlightJourneys([...raw,candidate]),wanted=resolved.at(-1);
+ const route=r=>flightJourneyKey({date:new Date(instant(r.departure_at)).toISOString().slice(0,10),flightNumber:r.flight_number,origin:r.departure_airport_code,destination:r.arrival_airport_code});
+ if(!route(wanted))return [];
+ const indexes=resolved.slice(0,-1).flatMap((r,i)=>sameDeparture(r,wanted)&&route(r)===route(wanted)?[i]:[]);
+ return indexes.map(i=>flights[i]);
+}

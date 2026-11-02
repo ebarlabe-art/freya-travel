@@ -139,6 +139,8 @@ jobs:
         run: RECONCILE_TABLET=1 PLANNING_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-rig04-planning-browser.mjs
       - name: Flight PDF identity and retry flow
         run: PLANNING_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-flight-import-browser.mjs
+      - name: PDF reconciliation shared flights and recommendations
+        run: PLANNING_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-pdf-reconciliation-208-browser.mjs
       - name: Flash import mobile flow
         run: PLANNING_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-import-flash-browser.mjs
       - name: RIG04 planning touch flow

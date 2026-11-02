@@ -4,6 +4,22 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## Issue #208 · Conciliació PDF i recomanacions — BRANCA, NO PUBLICAT (2/11/2026)
+
+[PR #209](https://github.com/ebarlabe-art/freya-travel/pull/209), vinculada a la #208. Base verificada `main` `5dc3917` (PR #207 fusionada; la nota històrica inferior descriu l’estat anterior). Branca `codex/pdf-reconciliation-208`, checkout `/private/tmp/freya-import208`. No s’ha verificat el desplegament públic ni consultat dades remotes en aquesta tasca.
+
+**Diagnòstic:** la projecció de l’agenda no propagava número/aeroports al motor RIG-04, que només comparava títol i hores. La #207 corregia les targetes de vols, però no aquest motor. S’hi connecta la identitat conservadora existent: mateix viatge, número normalitzat, sortida, ruta única i arribada coherent. El càlcul agrupa trajectes i evita també trams entre dos bitllets del mateix vol; les targetes, bitllets, passatgers, seients i documents originals continuen individuals. Una ruta ambigua o una franja diferent continua revisable. El PDF només usa números/IATA explícits, sense inventar aeroports a partir de noms de ciutat.
+
+**Comparació i decisions:** classificació de visites noves, sense canvis, modificacions i coincidències ambigües; abans/després de nom, dates/hores, zona i contingut. Els conflictes reals segueixen separats al motor únic. Conservar o acceptar cada modificació només altera l’esborrany. Discrepància amb el diagnòstic inicial de la issue: RIG-03B ja té `commit_itinerary_reconciliation`, versions/CAS, actualització atòmica i idempotència; s’ha reutilitzat, no creat un segon writer. Reimportar una visita igual es conserva, les coincidències dubtoses no s’afegeixen silenciosament.
+
+**Recomanacions:** prioritzen passejos/parcs flexibles, mateix dia i menor desplaçament horari; mantenen durades i activitats, respecten reserves/entrades/transports i tornen a avaluar tot el planning. Motiu, confiança baixa/mitjana, alternatives, editar/acceptar/ignorar i confirmació final separada. Durades incompletes provoquen recomanació de verificació, no una hora inventada. Si falten trajectes/obertures verificats, les franges són orientatives i la viabilitat continua pendent. No hi ha nou proveïdor ni crides IA; consentiment i represa d’esborranys existents preservats.
+
+**Proves:** suite local 911/911, build/paritat; nou flux real de selecció PDF/consentiment/anàlisi/revisió/confirmació amb dades sintètiques i clics Chromium/WebKit 390×844. AY1020/AY1653, aeroports absents, vols diferents coincidents, rutes ambigües, zones, reimportació, abans/després, museu/parc, falta de dades, acceptació/edició/cancel·lació i cap escriptura abans de confirmar. CI executa la nova regressió als dos motors. Regressió #200 actualitzada per exigir identitat explícita, no igualtat de títol; selector de la prova flaix acotat per distingir les noves alternatives. Marcador de branca `pwa-pdf-reconciliation-208`, cache v49.
+
+**Límits/relleu:** no és un optimitzador global ni una cerca d’horaris d’obertura; màxims i proveïdor de rutes existents. Les activitats existents no seleccionades per actualitzar es mantenen protegides; una recomanació no les reprograma per darrere. Londres conserva el camí històric separat, Eivissa el contracte genèric. Sense migracions, Edge, Freya Proves, dades de producció, merge ni desplegament. Canvis locals aliens preservats. Següent pas: revisar PR/CI al SHA final i autoritzar publicació abans de validar físicament Riga–Tallinn a l’iPhone. Els pendents A2/A3 del roadmap es mantenen.
+
+---
+
 ## PR #207 · Vols amb aeroports incomplets (2/11/2026) — BRANCA, NO PUBLICAT
 
 [PR #207](https://github.com/ebarlabe-art/freya-travel/pull/207), mateixa branca `fix/flight-identity-missing-airports-207`, checkout `/private/tmp/freya-flight207`, base `main` `70a8521`. La PR inicial només connectava el resolutor al mòdul de domini; `index.html` encara duplicava l’agrupador i el PDF multitrajecte sempre inseria files noves. Integració completada al render real i al desament real d’importació de reserves PDF; el formulari d’un vol identificable amb document reutilitza el mateix writer. No s’ha modificat el motor d’importació d’itineraris RIG.

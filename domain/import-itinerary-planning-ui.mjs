@@ -3,7 +3,7 @@ import {combineImportItinerary,assessCombinedItinerary,proposeItinerarySolutions
 import {proposeUnmatchedReconciliationDecisions} from './import-itinerary-reconciliation-ui.mjs';
 import {automaticEquivalentDecisions as equivalentDecisions} from './import-itinerary-planning.mjs';
 import {RouteQueue,routeReasons,routeFeasibility} from './itinerary-route.mjs';
-export {automaticEquivalentDecisions,acceptItinerarySolution} from './import-itinerary-planning.mjs';
+export {automaticEquivalentDecisions,acceptItinerarySolution,editItinerarySolution} from './import-itinerary-planning.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function initialPlanningDecisions(snapshot,state){
  const keeps=equivalentDecisions(snapshot,state.existing,state.decisions);

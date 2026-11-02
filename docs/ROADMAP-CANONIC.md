@@ -147,6 +147,8 @@ Ha d'arribar a poder detectar/proposar, entre altres:
 **CLOSED quan:** cap ajust canvia el viatge sense consentiment; cada proposta explica què modifica i per què; historial/estat queden coherents.
 
 ### A2. Importació intel·ligent
+
+**Correcció #208 (2/11/2026, branca no publicada).** Connectar identitat de vols #207 al motor RIG, fer explícita la comparació abans/després i prioritzar recomanacions horàries revisables amb confiança i dades pendents. Reutilitzar RIG-03B/RIG-04; cap nou motor, migració o canvi remot. Validació sintètica i autorització abans de publicar. Es conserven tots els pendents A2/A3 següents.
 **Prioritat: P0/P1**
 
 **Validació addicional Riga (1/11/2026, branca, no publicada).** Correcció limitada del fals solapament entre registres de vols completament idèntics, botó per tornar a revisar les decisions de coincidències mentre l'esborrany segueix obert i recomanacions més llegibles. No alterar el conflicte verificat del museu/parc ni les reserves. La importació tancada/recarregada no es recupera en aquesta correcció; no inventar persistència ni canviar el contracte del PDF temporal. Després de CI i verificació física autoritzada, reprendre A2/A3 sense ampliar aquesta fase.

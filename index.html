@@ -2058,7 +2058,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-flight-identity-207';
+const FREYA_FRONTEND_RELEASE='pwa-pdf-reconciliation-208';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -6380,7 +6380,7 @@ function normalizedItineraryProjection(tripId,generation,userId=session?.user?.i
     if(arrival)detail.push(`Arribada ${arrival.date===departure.date?arrival.time:`${itineraryDayHeading(arrival.date)}, ${arrival.time}`}`);
     if(row.departure_terminal)detail.push(`Terminal sortida ${row.departure_terminal}`);
     if(row.arrival_terminal)detail.push(`Terminal arribada ${row.arrival_terminal}`);
-    items.push({key:`flight:${row.id}:departure`,tripId,sourceType:'flight',sourceId:row.id,sourceEvent:'departure',title:`${origin} → ${destination}`,eyebrow:'Vol',subtitle:carrier,details:detail,icon:'✈️',startsAt:row.departure_at,endsAt:row.arrival_at,timeZone:departure.timeZone,localDate:departure.date,timeLabel:departure.time,timingKind:'exact',localOrder:itineraryLocalOrder(departure.time),sortInstant:departure.instant,sortOrder:0,status:row.flight_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:flightItineraryMapUrl(row),documents:itineraryDocumentsFor('flight',row.id),tags:[]});
+    items.push({key:`flight:${row.id}:departure`,tripId,sourceType:'flight',sourceId:row.id,sourceEvent:'departure',flightIdentity:{trip_id:tripId,flight_number:row.flight_number,departure_airport_code:row.departure_airport_code,arrival_airport_code:row.arrival_airport_code},title:`${origin} → ${destination}`,eyebrow:'Vol',subtitle:carrier,details:detail,icon:'✈️',startsAt:row.departure_at,endsAt:row.arrival_at,timeZone:departure.timeZone,localDate:departure.date,timeLabel:departure.time,timingKind:'exact',localOrder:itineraryLocalOrder(departure.time),sortInstant:departure.instant,sortOrder:0,status:row.flight_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:flightItineraryMapUrl(row),documents:itineraryDocumentsFor('flight',row.id),tags:[]});
   });
   accommodationRows.forEach(row=>{
     if(row.trip_id!==tripId||itinerarySourceAvailable['accommodation']!==itinerarySourceMarker('accommodation',tripId,generation,userId))return;
@@ -9662,6 +9662,16 @@ async function handleItineraryPlanningClick(event){
  const s=itineraryImportState;if(!itineraryImportStillCurrent(s)||s.busy||s.planningBusy||!s.planning||s.reconciliation?.pendingRequest)return;
  const button=event.target.closest('button');if(!button)return;
  const current=s.planning;
+ if(button.hasAttribute('data-planning-cancel-edit')){button.closest('details').open=false;return}
+ if(button.dataset.planningEdit!==undefined){
+  try{
+   const editor=button.closest('[data-solution-editor]'),edits={local_date:editor.querySelector('[data-solution-date]').value,start_local_time:editor.querySelector('[data-solution-start]').value,end_local_time:editor.querySelector('[data-solution-end]').value};
+   const fresh=s.planningApi.analyzePlanning(s.api.summarizeItineraryReview(s.review,s.reconciliation.existing),s.reconciliation,planningContext(s),current);
+   s.review=s.planningApi.editItinerarySolution(s.review,current.solutions[Number(button.dataset.planningEdit)],edits,fresh.combined,fresh.options,fresh.context);
+   renderItineraryImportPreview();$('itineraryImportSaveStatus').textContent='Alternativa aplicada només a l’esborrany. Encara cal confirmar el desament.';
+  }catch(error){$('itineraryImportSaveStatus').textContent=error.message}
+  return;
+ }
  if(button.dataset.planningAccept!==undefined){
   try{
    const fresh=s.planningApi.analyzePlanning(s.api.summarizeItineraryReview(s.review,s.reconciliation.existing),s.reconciliation,planningContext(s),current);

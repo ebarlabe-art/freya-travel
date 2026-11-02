@@ -1,3 +1,4 @@
+import {flightReviewIdentity,resolveIncompleteFlightJourneys,flightJourneyKey} from './flight-journey-identity.mjs';
 import {normalizePointName} from './itinerary-place-points.mjs';
 import {normalizeItineraryImportProposal} from './import-itinerary-proposal.mjs';
 
@@ -155,6 +156,22 @@ export function matchingExistingImportItems(candidate,existing=[]){
   return [];
  });
 }
+// Explicit comparison, independent of decisions and never permission to write.
+export function existingReviewValues(row){
+ const local=value=>{if(!row.time_zone)return {};try{const parts=Object.fromEntries(new Intl.DateTimeFormat('sv-SE',{timeZone:row.time_zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(value)).map(p=>[p.type,p.value]));return {date:parts.year+'-'+parts.month+'-'+parts.day,time:parts.hour+':'+parts.minute}}catch{return {}}};
+ const start=row.starts_at?local(row.starts_at):{},end=row.ends_at?local(row.ends_at):{};
+ return {...row,local_date:start.date||row.localDate||row.local_date||'',start_local_time:start.time||row.timeLabel||'',end_local_time:end.time||'',time_zone:row.time_zone||''};
+}
+export function compareImportActivity(values,existing=[]){
+ const candidates=existing.filter(row=>matchingExistingImportItems(values,[existingReviewValues(row)]).length);
+ if(!candidates.length)return {kind:'new',changes:[]};
+ // Generic labels do not establish a visit identity, even with equal clocks.
+ const generic=/^(?:museu|museum|parc|park|esmorzar|breakfast|dinar|lunch|sopar|dinner|passeig|walk|centre historic)$/i.test(normalizePointName(values.title));
+ if(candidates.length!==1||generic)return {kind:'ambiguous',changes:[]};
+ const target=candidates[0],before=existingReviewValues(target);
+ const changes=[...EDITABLE].filter(key=>text(values[key])!==text(before[key])).map(key=>({key,before:before[key]||'',after:values[key]||''}));
+ return {kind:changes.length?'modified':'unchanged',targetId:target.id,changes};
+}
 export function excludeExistingImportItems(review,existing=[]){
  if(!review?.read_only||!Array.isArray(review.items))throw Error('Revisió no disponible.');
  let removed=0;
@@ -187,6 +204,7 @@ export function summarizeItineraryReview(review,existing=[]){
   evidence:item.evidence,source_warnings:item.source_warnings.slice(),
   source_flags:item.source_flags.slice(),edited_fields:Object.keys(item.edits),
   existing_matches:matchingExistingImportItems(effective(item),existing),
+  comparison:compareImportActivity(effective(item),existing),
   review_flags:candidateFlags(item,existing)
  }));
  // Flag exact duplicates across selected candidates without discarding them.
@@ -201,6 +219,14 @@ export function summarizeItineraryReview(review,existing=[]){
    if(!first.review_flags.includes('possible_duplicate_in_review'))first.review_flags.push('possible_duplicate_in_review');
   }else seen.set(key,item);
  }
+ // Local clocks are comparable only within the same explicit timezone below.
+ // Reuse #207's route inference with synthetic UTC labels, never convert/store
+ // these labels as actual flight instants.
+ const flightRows=snapshot.map(item=>item.classification_hint==='flight'?flightReviewIdentity(item.values,review.scope.tripId,s=>s+':00Z'):null);
+ const flightsByZone=new Map();
+ for(const item of snapshot)if(flightRows[item.index]){const zone=item.values.time_zone;if(!flightsByZone.has(zone))flightsByZone.set(zone,[]);flightsByZone.get(zone).push({...flightRows[item.index],index:item.index})}
+ const flightKeys=new Map();
+ for(const rows of flightsByZone.values())for(const row of resolveIncompleteFlightJourneys(rows))flightKeys.set(row.index,flightJourneyKey({date:snapshot[row.index].values.local_date,flightNumber:row.flight_number,origin:row.departure_airport_code,destination:row.arrival_airport_code}));
  // Suggest overlap only when both time spans are complete on the same date/time zone.
  const definite=snapshot.filter(x=>x.included&&x.values.local_date&&x.values.time_zone&&
   TIME.test(x.values.start_local_time)&&TIME.test(x.values.end_local_time)&&
@@ -208,6 +234,7 @@ export function summarizeItineraryReview(review,existing=[]){
  for(let i=0;i<definite.length;i++)for(let j=i+1;j<definite.length;j++){
   const a=definite[i],b=definite[j],x=a.values,y=b.values;
   if(x.local_date!==y.local_date||x.time_zone!==y.time_zone)continue;
+  if(flightKeys.get(a.index)&&flightKeys.get(a.index)===flightKeys.get(b.index)&&x.start_local_time===y.start_local_time&&x.end_local_time===y.end_local_time)continue;
   if(x.start_local_time<y.end_local_time&&y.start_local_time<x.end_local_time){
    if(!a.review_flags.includes('possible_overlap_in_review'))a.review_flags.push('possible_overlap_in_review');
    if(!b.review_flags.includes('possible_overlap_in_review'))b.review_flags.push('possible_overlap_in_review');
