@@ -2058,7 +2058,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-import-draft-resume-201';
+const FREYA_FRONTEND_RELEASE='pwa-flight-identity-207';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -4680,27 +4680,16 @@ function formatFlightDate(value){
     hour:'2-digit',minute:'2-digit'
   }).format(date);
 }
+let flightIdentityApi=null;
 function groupFlightRowsForDisplay(rows){
-  const groups=[],seen=new Map();
-  for(const row of rows){
-    let date=null;
-    try{
-      if(row.departure_at&&row.departure_time_zone){
-        date=new Intl.DateTimeFormat('sv-SE',{timeZone:row.departure_time_zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(row.departure_at));
-      }
-    }catch(_error){date=null}
-    const number=String(row.flight_number||'').toUpperCase().replace(/[\s-]/g,'');
-    const origin=String(row.departure_airport_code||'').toUpperCase().trim();
-    const destination=String(row.arrival_airport_code||'').toUpperCase().trim();
-    const key=date&&/^\d{4}-\d{2}-\d{2}$/.test(date)&&/^[A-Z0-9]{2,3}\d{1,4}[A-Z]?$/.test(number)&&/^[A-Z]{3}$/.test(origin)&&/^[A-Z]{3}$/.test(destination)&&origin!==destination
-      ?[trip?.id,date,number,origin,destination].join('|'):null;
-    if(key&&seen.has(key))groups[seen.get(key)].push(row);
-    else{if(key)seen.set(key,groups.length);groups.push([row])}
-  }
-  return groups;
+  if(!flightIdentityApi)return rows.map(row=>[row]);
+  return flightIdentityApi.groupStoredFlightCards(rows,row=>{
+    try{return row.departure_at&&row.departure_time_zone?new Intl.DateTimeFormat('sv-SE',{timeZone:row.departure_time_zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(row.departure_at)):null}catch{return null}
+  }).map(group=>group.passengers);
 }
 
 function renderFlights(){
+  if(!flightIdentityApi){const id=trip?.id,generation=tripLoadGeneration;void loadTravelBookModule('flight-journey-identity.mjs').then(api=>{flightIdentityApi=api;if(tripRequestIsCurrent(id,generation))renderFlights()}).catch(()=>msg('flightMsg','No s’han pogut agrupar els vols. Torna a obrir aquesta pantalla.',true));return}
   const list=$('flightList'),empty=$('flightEmpty');
   if(!list||!empty)return;
 
@@ -7795,6 +7784,8 @@ $('flightForm').onsubmit=async event=>{
       }
 
       flight=data;
+    }else if(bookingDocumentId&&payload.flight_number&&payload.departure_at){
+      [flight]=await saveFlightDocumentRows([{...payload,trip_id:tripId,created_by:session.user.id}],bookingDocumentId,tripId,generation,session.user.id);
     }else{
       const {data,error}=await db.from('trip_flights')
         .insert({
@@ -7842,7 +7833,7 @@ $('flightForm').onsubmit=async event=>{
         flight.id,
         'booking',
         bookingDocumentId,
-        editId?originalBooking:'',
+        editId?originalBooking:(flightDocumentLinksFor(flight.id,'booking')[0]?.document_id||''),
         flight.updated_at,
         tripId,
         generation
@@ -9135,6 +9126,22 @@ async function resolveImportedTimeZone(place){
     return exact.length===1?exact[0].place.timezone:null;
   }catch{return null}
 }
+async function saveFlightDocumentRows(rows,documentId,tripId,generation,userId){
+  const current=()=>tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId;
+  const check=()=>{if(!current())throw Error('El viatge o la sessió han canviat.');};
+  const api=await loadTravelBookModule('flight-journey-identity.mjs');check();
+  const [flights,links]=await Promise.all([db.from('trip_flights').select('*').eq('trip_id',tripId),db.from('trip_flight_documents').select('trip_id,flight_id,document_id,document_role').eq('trip_id',tripId)]);check();
+  if(flights.error)throw flights.error;if(links.error)throw links.error;
+  const plan=await api.planFlightDocumentImport(rows,flights.data||[],links.data||[],documentId);check();
+  const fresh=plan.filter(p=>!p.existing).map(p=>p.row);
+  // A previous partial attempt may have inserted this deterministic ID already.
+  for(const p of plan){const old=(flights.data||[]).find(r=>r.id===p.row.id);if(old&&!p.existing&&api.flightTicketConflict(old,p.row))throw Error('Hi ha un intent anterior amb dades diferents. Revisa el bitllet existent.');}
+  if(fresh.length){const result=await db.from('trip_flights').upsert(fresh,{onConflict:'id',ignoreDuplicates:true});check();if(result.error)throw result.error;}
+  const result=await db.from('trip_flights').select('*').eq('trip_id',tripId).in('id',plan.map(p=>p.row.id));check();if(result.error)throw result.error;
+  const saved=plan.map(p=>{const row=(result.data||[]).find(r=>r.id===p.row.id);if(!row)throw Error('No s’ha pogut verificar el bitllet desat.');const normalized=api.resolveIncompleteFlightJourneys([...(flights.data||[]),...plan.map(x=>x.row),row]).at(-1);if(api.flightTicketConflict(normalized,p.row))throw Error('El bitllet ha canviat. Revisa les dades abans de continuar.');return row});
+  flightDocumentLinks=links.data||[];
+  return saved;
+}
 async function createImportedFlightSegments(proposal,document,selectedFields){
   const segments=proposal?.flight_segments||[];
   if(segments.length<=1||!trip||!session)return [];
@@ -9157,14 +9164,15 @@ async function createImportedFlightSegments(proposal,document,selectedFields){
     };
     rows.push(payload);
   }
-  const {data,error}=await db.from('trip_flights').insert(rows).select('*');
-  if(error)throw error;
+  if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId)return [];
+  const data=await saveFlightDocumentRows(rows,document.id,tripId,generation,userId);
   if(!tripRequestIsCurrent(tripId,generation))return [];
-  for(const row of data||[])await syncFlightDocument(row.id,'booking',document.id,'',row.updated_at,tripId,generation);
-  const passengerNames=[...new Set(segments.flatMap(segment=>String(segment.passengers||common('passengers')||'').split(' · ')).map(name=>name.trim()).filter(Boolean))];
-  if(passengerNames.length){
-    const {error:travelerError}=await db.rpc('ensure_trip_flight_travelers',{p_trip_id:tripId,p_flight_ids:(data||[]).map(row=>row.id),p_names:passengerNames});
-    if(travelerError)throw travelerError;
+  for(const row of data||[]){
+    if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId)return [];
+    if(!flightDocumentLinks.some(l=>l.flight_id===row.id&&l.document_role==='booking'&&l.document_id===document.id))await syncFlightDocument(row.id,'booking',document.id,'',row.updated_at,tripId,generation);
+    if(!tripRequestIsCurrent(tripId,generation)||session?.user?.id!==userId)return [];
+    const passengerNames=[...new Set(String(row.passengers||'').split(' · ').map(n=>n.trim()).filter(Boolean))];
+    if(passengerNames.length){const {error:travelerError}=await db.rpc('ensure_trip_flight_travelers',{p_trip_id:tripId,p_flight_ids:[row.id],p_names:passengerNames});if(travelerError)throw travelerError;}
   }
   await Promise.all([loadDocuments(true),loadFlights(true)]);
   return data||[];
@@ -9180,7 +9188,7 @@ async function applyReservationImport(){
     if(target==='flight'&&proposal.flight_segments?.length>1){
       const created=await createImportedFlightSegments(proposal,document,fields);
       closeReservationImport();
-      msg('flightMsg',`Reserva llegida: he creat ${created.length} trams de vol separats i els he vinculat al mateix document. Revisa'ls abans de donar-los per confirmats.`);
+      msg('flightMsg',`Reserva llegida: he preparat ${created.length} trams de vol (reutilitzant els bitllets ja importats) i els he vinculat al mateix document. Revisa'ls abans de donar-los per confirmats.`);
       return;
     }else if(target==='flight'){
       await openFlightForm();

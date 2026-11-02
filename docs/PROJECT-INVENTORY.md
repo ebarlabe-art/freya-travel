@@ -4,6 +4,20 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## PR #207 · Vols amb aeroports incomplets (2/11/2026) — BRANCA, NO PUBLICAT
+
+[PR #207](https://github.com/ebarlabe-art/freya-travel/pull/207), mateixa branca `fix/flight-identity-missing-airports-207`, checkout `/private/tmp/freya-flight207`, base `main` `70a8521`. La PR inicial només connectava el resolutor al mòdul de domini; `index.html` encara duplicava l’agrupador i el PDF multitrajecte sempre inseria files noves. Integració completada al render real i al desament real d’importació de reserves PDF; el formulari d’un vol identificable amb document reutilitza el mateix writer. No s’ha modificat el motor d’importació d’itineraris RIG.
+
+Un trajecte visual pot agrupar bitllets individuals amb aeroports absents només quan el mateix viatge té una ruta completa única amb número i instant de sortida iguals. Números amb espais/guions i codis amb majúscules/espais normalitzats. Ambigüitat, altre viatge o altre instant no permeten inferència. La projecció no modifica les files originals.
+
+El mateix document/trajecte/passatge reutilitza el seu bitllet; documents o passatgers diferents conserven files i vincles individuals. Identificadors deterministes i inserció amb `ignoreDuplicates` permeten reintentar una fallada parcial sense sobreescriure reserves ni duplicar files. Cada tram associa només els seus passatgers, no la unió de tots els noms del PDF. Es preserven documents originals, targetes d’embarcament i equipatge. Les discrepàncies en bitllets ja importats exigeixen revisió; no s’hi aplica una correcció silenciosa.
+
+Proves: 904/904 tests locals, build/paritat; clics reals Chromium/WebKit 390×844 des del selector de PDF existent, lectura de l’Edge simulada amb contracte real, aplicació, retorn AY1020/AY1653, reimportació, fallada de vinculació i reintent, dues targetes i tots els documents/persones conservats. Dades sintètiques exclusivament. CI inclou aquest flux en tots dos motors. Marcador de branca `pwa-flight-identity-207`, cache v48; no acredita publicació.
+
+Límits: no reconcilia ni elimina duplicats històrics de la BD; només agrupa la vista i evita repetir la mateixa importació. Documents diferents es conserven com a bitllets individuals. Les escriptures de vols/vincles/passagers no són una transacció nova: una fallada parcial queda visible i el reintent és estable. Sense hora/zona/número verificables no s’inventa identitat. Cap migració, Edge desplegada, producció consultada/modificada o Freya Proves. Següent pas: revisar CI al SHA final, autoritzar merge/publicació si escau i validar físicament els vols de retorn. Preservats els canvis locals aliens del checkout principal.
+
+---
+
 ## P0 · Represa de la revisió de PDF (1/11/2026) — BRANCA, NO PUBLICADA
 
 Branca `codex/import-draft-resume-20261101`, basada en la PR #200 fusionada. Quan una revisió no confirmada té proposta i conciliació carregades, «Pausa i desa» desa xifrades amb AES-GCM les dades de l'esborrany i, si cal, els bytes del PDF temporal en IndexedDB al **mateix dispositiu**. La clau no exportable és local. Caducitat: 24 h; 10 MB màxim de fitxer i 3 MB d'estat. No es creen documents remots ni es toca el planning. Al tornar a Itinerari es mostra «Reprèn la revisió del PDF» i en obrir es revalida la versió del planning per RLS abans de permetre confirmar. Si ha canviat, se'n descarten les decisions, no la lectura del PDF, per tornar a comparar. Les confirmacions RPC que ja estaven en curs conserven el contracte anterior de recuperació idempotent.
