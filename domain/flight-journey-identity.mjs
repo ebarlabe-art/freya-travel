@@ -26,10 +26,12 @@ export function groupStoredFlightCards(rows=[],getLocalDate){
  const groups=[],positions=new Map();
  for(const row of rows){
   const date=typeof getLocalDate==='function'?getLocalDate(row):row.local_departure_date;
-  const key=flightJourneyKey({
+  const journey=flightJourneyKey({
    date,flightNumber:row.flight_number,
    origin:row.departure_airport_code,destination:row.arrival_airport_code
   });
+  // A flight card may never combine records belonging to different trips.
+  const key=journey&&row.trip_id?row.trip_id+'|'+journey:null;
   const item={...row};
   if(key&&positions.has(key))groups[positions.get(key)].passengers.push(item);
   else{
