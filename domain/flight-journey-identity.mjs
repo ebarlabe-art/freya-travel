@@ -23,6 +23,7 @@ export function groupFlightTickets(tickets=[]){
  * Only records with a complete, equal journey identity are grouped.
  */
 export function groupStoredFlightCards(rows=[],getLocalDate){
+ rows=resolveIncompleteFlightJourneys(rows);
  const groups=[],positions=new Map();
  for(const row of rows){
   const date=typeof getLocalDate==='function'?getLocalDate(row):row.local_departure_date;
@@ -64,4 +65,25 @@ export function groupFlightsWithTravelers(flights=[],assignments=[],travelers=[]
   flights:group.passengers,
   travelers:group.passengers.flatMap(flight=>byFlight.get(flight.id)||[])
  }));
+}
+
+/**
+ * Recover incomplete journey identities only from a unique, fully specified
+ * flight in the same trip. Flight number and departure instant must match.
+ * Never infer airport codes when candidates are ambiguous.
+ */
+export function resolveIncompleteFlightJourneys(rows=[]){
+ const complete=rows.filter(row=>/^[A-Z]{3}$/.test(String(row.departure_airport_code||'').toUpperCase())&&/^[A-Z]{3}$/.test(String(row.arrival_airport_code||'').toUpperCase()));
+ return rows.map(row=>{
+  if(row.departure_airport_code&&row.arrival_airport_code)return row;
+  if(!row.trip_id||!row.flight_number||!row.departure_at)return row;
+  const candidates=complete.filter(other=>other.trip_id===row.trip_id&&
+   String(other.flight_number||'').toUpperCase().replace(/[\\s-]/g,'')===String(row.flight_number).toUpperCase().replace(/[\\s-]/g,'')&&
+   Date.parse(other.departure_at)===Date.parse(row.departure_at)&&
+   (!row.departure_airport_code||String(row.departure_airport_code).toUpperCase()===String(other.departure_airport_code).toUpperCase())&&
+   (!row.arrival_airport_code||String(row.arrival_airport_code).toUpperCase()===String(other.arrival_airport_code).toUpperCase()));
+  const routes=new Set(candidates.map(c=>c.departure_airport_code+'|'+c.arrival_airport_code));
+  if(routes.size!==1)return row;
+  return {...row,departure_airport_code:candidates[0].departure_airport_code,arrival_airport_code:candidates[0].arrival_airport_code};
+ });
 }
