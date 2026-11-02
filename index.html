@@ -9476,7 +9476,7 @@ const itineraryImportReviewLabels={
 };
 function renderItineraryImportPreview(){
  const state=itineraryImportState;if(!itineraryImportContextIsCurrent(state)||!state.review||!state.api)return;
- $('itineraryImportSaveProposalWrap').classList.toggle('hidden',!state.review||!!state.saveCompleted);
+ $('itineraryImportSaveProposalWrap').classList?.toggle?.('hidden',!state.review||!!state.saveCompleted);
  const sourcesReady=itinerarySourcesAreReady(state.tripId,state.generation,state.userId);
  if(sourcesReady)state.previewExisting=itineraryProjection.map(row=>({title:row.title,localDate:row.localDate,timeLabel:row.timeLabel}));
  const existing=state.previewExisting||[];
