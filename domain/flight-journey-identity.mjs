@@ -16,3 +16,26 @@ export function groupFlightTickets(tickets=[]){
  }
  return groups;
 }
+
+/**
+ * Non-destructive view model for flight cards. The original records and their
+ * passenger-specific seat, booking reference and documents remain untouched.
+ * Only records with a complete, equal journey identity are grouped.
+ */
+export function groupStoredFlightCards(rows=[],getLocalDate){
+ const groups=[],positions=new Map();
+ for(const row of rows){
+  const date=typeof getLocalDate==='function'?getLocalDate(row):row.local_departure_date;
+  const key=flightJourneyKey({
+   date,flightNumber:row.flight_number,
+   origin:row.departure_airport_code,destination:row.arrival_airport_code
+  });
+  const item={...row};
+  if(key&&positions.has(key))groups[positions.get(key)].passengers.push(item);
+  else{
+   if(key)positions.set(key,groups.length);
+   groups.push({journeyKey:key,flight:item,passengers:[item]});
+  }
+ }
+ return groups;
+}
