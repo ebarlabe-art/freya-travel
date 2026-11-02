@@ -16,7 +16,7 @@ export async function pause(s,c){
    fileMeta:s.file?{name:s.file.name,type:s.file.type,size:s.file.size,lastModified:s.file.lastModified}:null
   },s.file,{current:()=>c.current(s)});
   if(!c.current(s))return;
-  c.close();c.button('↩ Reprèn la revisió del PDF');c.message('Revisió guardada xifrada durant 24 hores en aquest dispositiu. Cap canvi desat al viatge.');
+  c.close();c.button('↩ Reprèn la proposta');c.message('Revisió guardada xifrada durant 24 hores en aquest dispositiu. Cap canvi desat al viatge.');
  }catch(error){if(c.current(s))c.status('No s’ha pogut desar la revisió, que continua oberta: '+(error?.message||'Torna-ho a provar.'))}
  finally{if(c.current(s)){s.busy=false;c.render()}}
 }
