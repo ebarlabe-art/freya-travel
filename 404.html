@@ -1880,7 +1880,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         <p id="genericItineraryMessage" class="message hidden" role="status" aria-live="polite"></p>
         <div id="genericItineraryLoading" class="generic-itinerary-loading hidden">Preparant l’itinerari…</div>
         <section id="itineraryImportPanel" class="card hidden" aria-labelledby="itineraryImportTitle">
-          <div class="topbar"><h3 id="itineraryImportTitle">Importa un itinerari des d’un document</h3><button id="itineraryImportClose" class="ghost" type="button">Pausa i desa</button></div>
+          <div class="topbar"><h3 id="itineraryImportTitle">Importa un itinerari des d’un document</h3><button id="itineraryImportClose" class="ghost" type="button">Tanca</button></div>
           <p class="muted">Tria un document amb el teu itinerari. Freya en prepararà una proposta perquè la revisis abans d'afegir res al viatge.</p>
           <div id="itineraryImportSource" class="stack">
             <button id="itineraryImportUpload" type="button" class="secondary" aria-expanded="false" aria-controls="itineraryImportSourceMenu">＋ Pujar un document</button>
@@ -1925,10 +1925,14 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
             <button type="button" id="itineraryImportDiscardDraft" class="secondary hidden">Descarta la revisió local i comença de nou</button>
             <p id="itineraryImportSaveStatus" class="message" role="status" aria-live="polite">Encara no s'ha desat cap activitat.</p>
             <button type="button" id="itineraryImportWrite" disabled>Desar activitats seleccionades</button>
-            <button type="button" id="itineraryImportExit" class="secondary">Pausa i desa la revisió</button>
+            
             <div id="itineraryImportConfirm" class="stack hidden" role="group" aria-label="Confirmació de la importació">
               <p id="itineraryImportConfirmText" class="message"></p>
               <div class="row"><button type="button" id="itineraryImportConfirmYes">Confirmar i afegir</button><button type="button" id="itineraryImportConfirmNo">Cancel·lar</button></div>
+            </div>
+            <div id="itineraryImportSaveProposalWrap" class="stack hidden" style="margin-top:24px;padding-top:16px;border-top:1px solid var(--line, #ddd)">
+              <button type="button" id="itineraryImportExit" class="secondary">Desa la proposta</button>
+              <p class="muted">Guarda aquesta proposta per continuar revisant-la més endavant, sense modificar l’itinerari.</p>
             </div>
           </section>
         </section>
@@ -9287,7 +9291,7 @@ async function refreshImportDraftButton(){
   const api=await loadTravelBookModule('import-itinerary-draft.mjs');
   const found=await api.hasImportDraft({userId,tripId});
   if(session?.user?.id===userId&&trip?.id===tripId&&tripLoadGeneration===generation)
-   $('openItineraryImport').textContent=found?'↩ Reprèn la revisió del PDF':'📄 Importa document';
+   $('openItineraryImport').textContent=found?'↩ Reprèn la proposta':'📄 Importa document';
  }catch(_){}
 }
 function importDraftContext(){
@@ -9329,6 +9333,7 @@ function closeItineraryImport(){
  $('itineraryImportReconciliation').replaceChildren();$('itineraryImportReconciliation').classList.add('hidden');
  $('itineraryImportWarnings').replaceChildren();
  $('itineraryImportDiscardDraft').classList.add('hidden');
+ $('itineraryImportSaveProposalWrap').classList.add('hidden');
  $('itineraryImportConsent').checked=false;
  $('itineraryImportUploadFile').value='';
  $('itineraryImportPhotoFile').value='';
@@ -9364,6 +9369,7 @@ async function openItineraryImport(){
  $('itineraryImportPanel').classList.remove('hidden');
  $('itineraryImportSource').classList.remove('hidden');
  $('itineraryImportPreview').classList.add('hidden');
+ $('itineraryImportSaveProposalWrap').classList.add('hidden');
  $('itineraryImportStatus').textContent='Tria un document per començar.';
  $('itineraryImportExisting').innerHTML='<option value="">Selecciona un document o foto…</option>';
  showItineraryImportSourceMenu(false);
@@ -9470,6 +9476,7 @@ const itineraryImportReviewLabels={
 };
 function renderItineraryImportPreview(){
  const state=itineraryImportState;if(!itineraryImportContextIsCurrent(state)||!state.review||!state.api)return;
+ $('itineraryImportSaveProposalWrap').classList.toggle('hidden',!state.reconciliation||!!state.saveCompleted);
  const sourcesReady=itinerarySourcesAreReady(state.tripId,state.generation,state.userId);
  if(sourcesReady)state.previewExisting=itineraryProjection.map(row=>({title:row.title,localDate:row.localDate,timeLabel:row.timeLabel}));
  const existing=state.previewExisting||[];
