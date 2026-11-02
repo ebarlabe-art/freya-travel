@@ -21,7 +21,7 @@ try{
   const api=await loadTravelBookModule('import-itinerary-review.mjs'),saveApi=await loadTravelBookModule('import-itinerary-write.mjs');
   const proposal={schema_version:1,source:{kind:'document',document_id:id(6),mime_type:'application/pdf'},candidates};
   itineraryImportState={tripId:trip.id,userId:session.user.id,generation:tripLoadGeneration,api,saveApi,documentId:id(6),review:api.createItineraryReview(proposal,{tripId:trip.id,userId:session.user.id,documentId:id(6)}),busy:false};
-  window.fixture={existing,before:JSON.stringify(existing),flights:JSON.stringify(flightRows),writes:[],reads:0};
+  window.fixture={proposal,existing,before:JSON.stringify(existing),flights:JSON.stringify(flightRows),writes:[],reads:0};
   db.rpc=async(name,request)=>{if(name==='read_itinerary_reconciliation')return {data:structuredClone(existing),error:null};if(name!=='commit_itinerary_reconciliation')throw Error('Unexpected RPC');fixture.writes.push(request);return {data:{operation_id:request.p_operation_id,added:1,updated:1,retired:0},error:null}};
   db.from=table=>{if(table!=='travel_documents')throw Error('Unexpected table');let photos=false;const q={select:()=>q,eq:(k,v)=>{if(k==='category'&&v==='Foto')photos=true;return q},neq:()=>q,order:async()=>({data:photos?[]:[{id:id(6),title:'PDF sintètic 208',file_name:'synthetic.pdf',mime_type:'application/pdf',category:'Altres'}],error:null})};return q};
   Object.defineProperty(db,'functions',{configurable:true,value:{invoke:async(name,{body})=>name==='import-itinerary'?(fixture.reads++,{data:{proposal:{...proposal,source:{...proposal.source,document_id:body.document_id}}},error:null}):{data:null,error:{message:'Synthetic route unavailable'}}}});
@@ -52,5 +52,53 @@ try{
   else {assert.match(await page.locator('#itineraryImportConfirmText').innerText(),/1 actualitzades/);await page.locator('#itineraryImportConfirmYes').tap();await page.waitForFunction(()=>itineraryImportState===null&&document.getElementById('genericItineraryMessage').textContent.includes('Planning desat'));const request=await page.evaluate(()=>fixture.writes);assert.equal(request.length,1);assert.equal(request[0].p_document_id,'20800000-0000-4000-8000-000000000006');assert.match(JSON.stringify(request[0].p_changes),/20800000-0000-4000-8000-000000000020/);}
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  }
+
+ // #210: actual agenda renderer, not just the scheduling projection.
+ await page.evaluate(seed);
+ await page.evaluate(()=>{
+  renderAgendaRoutes=()=>{};proposeItineraryAutoPlaces=()=>{};proposeActivityPoints=async()=>{};generateItineraryDayContext=async()=>{};renderItineraryDayWeather=()=>{};
+  flightRows=flightRows.slice(0,2).map((r,i)=>({...r,flight_number:'IB7848',airline:'IBERIA',departure_airport_code:'BCN',arrival_airport_code:'RIX',departure_at:'2026-12-26T16:00Z',arrival_at:'2026-12-26T19:40Z',departure_time_zone:'Europe/Madrid',arrival_time_zone:'Europe/Riga'}));
+  flightDocumentLinks=flightRows.flatMap((r,i)=>['booking','boarding_pass'].map((role,n)=>({trip_id:trip.id,flight_id:r.id,document_role:role,document_id:'21000000-0000-4000-8000-'+String(i*2+n).padStart(12,'0')})));
+  fixture.flights=JSON.stringify(flightRows);fixture.documents=JSON.stringify(flightDocumentLinks);fixture.opened=[];
+  openFlightDocument=async(...args)=>{fixture.opened.push(args)};openItinerarySource=(...args)=>{fixture.opened.push(args)};
+  itineraryProjection=normalizedItineraryProjection(trip.id,tripLoadGeneration,session.user.id);
+  document.getElementById('itineraryImportPanel').classList.add('hidden');genericItinerarySelectedTripId=trip.id;genericItinerarySelectedDay='2026-12-26';
+  flightIdentityApi=null;renderGenericItinerary();
+ });
+ await page.locator('[data-flight-journey]').waitFor({state:'visible'});
+ assert.equal(await page.locator('.generic-itinerary-timeline > article').count(),1);
+ assert.match(await page.locator('[data-flight-journey]').innerText(),/IB7848/);
+ await page.locator('[data-journey-tickets] > summary').tap();
+ assert.match(await page.locator('[data-journey-tickets]').innerText(),/Eva/);assert.match(await page.locator('[data-journey-tickets]').innerText(),/Xesc/);assert.match(await page.locator('[data-journey-tickets]').innerText(),/1A/);assert.match(await page.locator('[data-journey-tickets]').innerText(),/1B/);
+ assert.equal(await page.locator('[data-journey-tickets] [data-itinerary-document]').count(),4);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ assert.equal(await page.locator('[data-journey-tickets] [data-trip-progress]').count(),2);
+ assert.equal(await page.locator('[data-journey-tickets] [data-trip-progress]').evaluateAll(nodes=>new Set(nodes.map(n=>n.dataset.tripProgress)).size),2);
+ for(const button of await page.locator('[data-journey-tickets] [data-itinerary-document]').all())await button.tap();
+ for(const button of await page.locator('[data-journey-tickets] [data-itinerary-source]').all())await button.tap();
+ assert.equal(await page.evaluate(()=>fixture.opened.length),6);
+ assert.equal(await page.evaluate(()=>new Set(fixture.opened.slice(0,4).map(x=>x[2])).size),4);
+ await page.evaluate(()=>renderGenericItinerary());assert.equal(await page.locator('[data-journey-tickets]').evaluate(n=>n.open),true);
+ assert.equal(await page.evaluate(()=>JSON.stringify(flightRows)===fixture.flights&&JSON.stringify(flightDocumentLinks)===fixture.documents&&fixture.writes.length===0),true);
+ // A real conflict stays visible even while passenger details are collapsed.
+ await page.evaluate(()=>{itineraryProjection.push({...itineraryProjection[0],key:'activity:overlap',sourceType:'activity',sourceId:'21000000-0000-4000-8000-000000000099',title:'Compromís sintètic incompatible',documents:[],flightIdentity:undefined});renderGenericItinerary()});
+ await page.locator('[data-flight-journey] [data-journey-conflict]').waitFor({state:'visible'});
+ // A different actual flight on the same clock remains a second commitment.
+ await page.evaluate(()=>{flightRows[1].flight_number='IB9999';itineraryProjection=normalizedItineraryProjection(trip.id,tripLoadGeneration,session.user.id);renderGenericItinerary()});
+ assert.equal(await page.locator('.generic-itinerary-timeline > article').count(),2);
+ // Real PDF entry point with the cathedral/optional breakfast evidence.
+ await page.evaluate(seed);
+ await page.evaluate(()=>{
+  const old=fixture.existing[0];old.title='Visita a la Catedral de Riga, plaça Doma laukums';old.location_name='Catedral de Riga';old.starts_at='2026-12-27T08:00Z';old.ends_at='2026-12-27T09:00Z';
+  const c=fixture.proposal.candidates[0];c.fields.title.value='Catedral de Riga i plaça principal del centre històric';c.fields.location_name.value='Catedral de Riga';c.fields.start_local_time.value='09:30';delete c.fields.end_local_time;
+  const b=fixture.proposal.candidates[1];b.fields.title.value='Esmorzar lliure prop del centre';b.fields.start_local_time.value='09:00';b.fields.end_local_time.value='10:00';
+ });
+ await page.locator('#openItineraryImport').tap();await page.locator('#itineraryImportUpload').tap();await page.locator('#itineraryImportChooseExisting').tap();await page.locator('#itineraryImportExisting').selectOption('20800000-0000-4000-8000-000000000006');await page.locator('#itineraryImportConsent').check();await page.locator('#itineraryImportAnalyze').tap();
+ await page.waitForFunction(()=>itineraryImportState?.planning&&!itineraryImportState.preparing&&!itineraryImportState.planningBusy);
+ assert.match(await page.locator('#itineraryImportFlash').innerText(),/Viabilitat pendent/);assert.match(await page.locator('#itineraryImportFlash').innerText(),/durada/);
+ assert.equal(await page.locator('#itineraryImportFlash .flash-recommended').count(),0);
+ assert.match(await page.locator('#itineraryImportFlash').innerText(),/Abans · Final/);assert.match(await page.locator('#itineraryImportFlash').innerText(),/Sense dades/);
+ assert.equal(await page.evaluate(()=>fixture.writes.length),0);
+ console.log('PASS #210 '+engine+': one IB7848 agenda journey, individual tickets/documents/actions, refresh, different flights, actual cathedral PDF without duration has no preferred date.');
  assert.deepEqual(errors,[]);console.log('PASS #208 '+engine+': real PDF flow, shared-flight projection, before/after, keep/update, park priority, confidence, edit/cancel/accept, final cancel/confirm, original tickets unchanged.');
 }finally{await browser.close();server.close()}

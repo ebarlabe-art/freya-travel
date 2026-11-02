@@ -148,6 +148,8 @@ Ha d'arribar a poder detectar/proposar, entre altres:
 
 ### A2. Importació intel·ligent
 
+**Correcció física #210 (3/11/2026, branca no publicada).** Agrupar trajectes compartits també a l’agenda, conservant bitllets individuals, i retirar preferències concloents de la comparació PDF quan falta durada o el solapament només implica un àpat flexible. Reutilitza #207/#209; verificació museu/parc preservada. Cap publicació sense autorització; els pendents següents es mantenen.
+
 **Correcció #208 (2/11/2026, branca no publicada).** Connectar identitat de vols #207 al motor RIG, fer explícita la comparació abans/després i prioritzar recomanacions horàries revisables amb confiança i dades pendents. Reutilitzar RIG-03B/RIG-04; cap nou motor, migració o canvi remot. Validació sintètica i autorització abans de publicar. Es conserven tots els pendents A2/A3 següents.
 **Prioritat: P0/P1**
 

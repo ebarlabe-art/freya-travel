@@ -2058,7 +2058,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-pdf-reconciliation-208';
+const FREYA_FRONTEND_RELEASE='pwa-iphone-flight-advice-210';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -6380,7 +6380,7 @@ function normalizedItineraryProjection(tripId,generation,userId=session?.user?.i
     if(arrival)detail.push(`Arribada ${arrival.date===departure.date?arrival.time:`${itineraryDayHeading(arrival.date)}, ${arrival.time}`}`);
     if(row.departure_terminal)detail.push(`Terminal sortida ${row.departure_terminal}`);
     if(row.arrival_terminal)detail.push(`Terminal arribada ${row.arrival_terminal}`);
-    items.push({key:`flight:${row.id}:departure`,tripId,sourceType:'flight',sourceId:row.id,sourceEvent:'departure',flightIdentity:{trip_id:tripId,flight_number:row.flight_number,departure_airport_code:row.departure_airport_code,arrival_airport_code:row.arrival_airport_code},title:`${origin} → ${destination}`,eyebrow:'Vol',subtitle:carrier,details:detail,icon:'✈️',startsAt:row.departure_at,endsAt:row.arrival_at,timeZone:departure.timeZone,localDate:departure.date,timeLabel:departure.time,timingKind:'exact',localOrder:itineraryLocalOrder(departure.time),sortInstant:departure.instant,sortOrder:0,status:row.flight_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:flightItineraryMapUrl(row),documents:itineraryDocumentsFor('flight',row.id),tags:[]});
+    items.push({key:`flight:${row.id}:departure`,tripId,sourceType:'flight',sourceId:row.id,sourceEvent:'departure',ticketLabel:flightTravelersFor(row.id).map(p=>[p.display_name,p.seat?'Seient '+p.seat:''].filter(Boolean).join(' · ')).join(' / ')||[row.passengers,row.seat?'Seient '+row.seat:''].filter(Boolean).join(' · '),flightIdentity:{trip_id:tripId,flight_number:row.flight_number,departure_airport_code:row.departure_airport_code,arrival_airport_code:row.arrival_airport_code},title:`${origin} → ${destination}`,eyebrow:'Vol',subtitle:carrier,details:detail,icon:'✈️',startsAt:row.departure_at,endsAt:row.arrival_at,timeZone:departure.timeZone,localDate:departure.date,timeLabel:departure.time,timingKind:'exact',localOrder:itineraryLocalOrder(departure.time),sortInstant:departure.instant,sortOrder:0,status:row.flight_status||'planning',sourceUpdatedAt:row.updated_at||'',mapUrl:flightItineraryMapUrl(row),documents:itineraryDocumentsFor('flight',row.id),tags:[]});
   });
   accommodationRows.forEach(row=>{
     if(row.trip_id!==tripId||itinerarySourceAvailable['accommodation']!==itinerarySourceMarker('accommodation',tripId,generation,userId))return;
@@ -6592,6 +6592,16 @@ async function loadTripReview(force=false){
 }
 function itineraryStatusLabel(status){return {planning:'En planificació',planned:'Planificat',reserved:'Reservat',confirmed:'Confirmat',completed:'Completat',cancelled:'Cancel·lat'}[status]||status||''}
 function itinerarySourceLabel(type,id=''){if(type==='activity'&&isLocalTransportActivity(activityRows.find(row=>row.id===id)))return 'Obrir transport';return {flight:'Obrir vol',accommodation:'Obrir allotjament',activity:'Obrir activitat',manual:'Editar planning'}[type]||'Obrir font'}
+// Read-only grouping; actions always retain each original ticket's identity.
+function groupedAgendaFlights(items){
+ if(!flightIdentityApi)return items;
+ return flightIdentityApi.canonicalPlanningFlights(items).map(group=>group.relatedKeys.length>1?{...group,tickets:items.filter(x=>group.relatedKeys.includes(x.key))}:items.find(x=>x.key===group.key));
+}
+function renderAgendaJourney(item){
+ if(!item.tickets)return renderItineraryItem(item);
+ return `<article class="generic-itinerary-entry" data-flight-journey="${esc(item.key)}"><div class="generic-itinerary-time">${esc(item.timeLabel)}</div><div class="generic-itinerary-card"><div class="generic-itinerary-main"><div class="generic-itinerary-icon">✈️</div><div class="generic-itinerary-copy"><small>Vol compartit · ${item.tickets.length} bitllets</small><strong>${esc(item.title)}</strong><p>${esc(item.subtitle||'')}</p>${item.details.map(d=>`<p>${esc(d)}</p>`).join('')}</div></div><details data-journey-tickets><summary>Passatgers, bitllets i reserves (${item.tickets.length})</summary>${item.tickets.map((ticket,i)=>`<section><h4>${esc(ticket.ticketLabel||'Bitllet '+(i+1))}</h4>${renderItineraryItem(ticket)}</section>`).join('')}</details></div></article>`;
+}
+let agendaFlightIdentityLoading=false;
 function renderItineraryItem(item,unscheduled=false){
   const details=[item.subtitle,...item.details].filter(Boolean);
   return `<article class="generic-itinerary-entry" data-itinerary-key="${esc(item.key)}"><div class="generic-itinerary-time ${item.timingKind==='approximate'?'approximate':''}">${unscheduled?'':esc(item.timeLabel)}</div><div class="generic-itinerary-card ${item.isCancelled?'cancelled':''} ${item.isCompleted?'trip-progress-done':''}"><div class="generic-itinerary-main"><div class="generic-itinerary-icon">${item.icon}</div><div class="generic-itinerary-copy"><small>${esc(item.eyebrow)}</small><strong>${esc(item.title)}</strong>${details.map(detail=>`<p>${esc(detail)}</p>`).join('')}${itineraryPointHtml(item)}${tripProgressStatusHtml(item)}${(item.tags||[]).map(tag=>`<span class="generic-itinerary-tag">${esc(tag)}</span>`).join('')}</div></div><div class="generic-itinerary-actions">${culturalGuideButton(item)}${tripProgressButton(item)}${item.documents.map(document=>`<button type="button" data-itinerary-document="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}" data-itinerary-document-role="${esc(document.role)}" ${document.documentId?`data-itinerary-document-id="${esc(document.documentId)}"`:''}>${esc(document.label)}</button>`).join('')}${item.mapUrl&&!itineraryPointRow(item)?.location_points?`<a href="${esc(item.mapUrl)}" target="_blank" rel="noopener">📍 Maps</a>`:''}<button type="button" class="source-action" data-itinerary-source="${esc(item.sourceType)}" data-itinerary-source-id="${esc(item.sourceId)}">${esc(itinerarySourceLabel(item.sourceType,item.sourceId))}</button>${itineraryPointRow(item)?`<button type="button" data-activity-points="${esc(item.key)}">📍 Edita els punts</button>`:''}${item.sourceType==='manual'&&!itineraryPointRow(item)&&!item.mapUrl?`<button type="button" data-itinerary-find-place="${esc(item.sourceId)}">📍 Cerca ubicació</button>`:''}${item.overnightCorrectionDate?`<button type="button" data-confirm-overnight-date="${esc(item.sourceId)}" data-overnight-target="${esc(item.overnightCorrectionDate)}">✓ Confirma la data del ${esc(item.overnightCorrectionDate.slice(-2))}, a les ${esc(item.timeLabel)}</button>`:''}${item.sourceType==='manual'?`<button type="button" data-delete-manual-itinerary="${esc(item.sourceId)}">Elimina</button>`:''}</div></div></article>`;
@@ -6916,7 +6926,12 @@ async function renderAgendaConflicts(){
 }
 function renderGenericItinerary(){
   if(!trip||isLondonTrip())return;
+  if(!flightIdentityApi&&!agendaFlightIdentityLoading){
+   agendaFlightIdentityLoading=true;const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id;
+   void loadTravelBookModule('flight-journey-identity.mjs').then(api=>{flightIdentityApi=api;if(itineraryRequestIsCurrent(tripId,generation,userId))renderGenericItinerary()}).catch(()=>{if(itineraryRequestIsCurrent(tripId,generation,userId))msg('genericItineraryMessage','No s’han pogut agrupar els bitllets. Es mostren individualment; torna a obrir l’agenda.',true)}).finally(()=>{agendaFlightIdentityLoading=false});
+  }
   void refreshImportDraftButton();
+  const openFlightGroups=new Set([...$('genericItineraryDays').querySelectorAll('[data-journey-tickets][open]')].map(n=>n.closest('[data-flight-journey]').dataset.flightJourney));
   const restorePointEditor=preserveActivityPointEditor();
   renderItinerarySourceStatus();
   if($('pwaDiagnostic').open)void refreshPwaDiagnostics();
@@ -6925,8 +6940,8 @@ function renderGenericItinerary(){
   const dates=[...new Set([...genericItineraryTripDates(),...scheduled.map(item=>item.localDate)])].sort(),today=genericItineraryToday(),selected=resolveGenericItineraryDay(dates,unscheduled.length>0),tabs=$('genericItineraryDayTabs');
   $('genericItineraryTitle').textContent=trip.name;
   tabs.innerHTML=dates.map(date=>`<button type="button" role="tab" class="generic-itinerary-day-tab ${date===selected?'active':''} ${date===today?'is-today':''}" data-generic-itinerary-day="${esc(date)}" aria-selected="${date===selected}"${date===today?' aria-current="date"':''}>${esc(genericItineraryDayTabLabel(date))}</button>`).join('')+(unscheduled.length?`<button type="button" role="tab" class="generic-itinerary-day-tab ${selected==='pending'?'active':''}" data-generic-itinerary-day="pending" aria-selected="${selected==='pending'}">Pendents</button>`:'');
-  const activeItems=groups.get(selected)||[];
-  $('genericItineraryDays').innerHTML=selected&&selected!=='pending'?`<section class="generic-itinerary-day">${dayMetadataEditorialHtml(selected)}${activeItems.length?`<div class="generic-itinerary-timeline">${activeItems.map(item=>renderItineraryItem(item)).join('')}</div>`:`<div class="generic-itinerary-empty"><strong>${itinerarySourcesAreReady()?'Cap pla per a aquest dia.':'Encara no hi ha plans carregats per a aquest dia.'}</strong>${itinerarySourcesAreReady()?'Pots afegir-ne un quan vulguis.':'Hi ha fonts pendents; consulta l’avís de càrrega.'}</div>`}</section>`:'';
+  const activeItems=groupedAgendaFlights(groups.get(selected)||[]);
+  $('genericItineraryDays').innerHTML=selected&&selected!=='pending'?`<section class="generic-itinerary-day">${dayMetadataEditorialHtml(selected)}${activeItems.length?`<div class="generic-itinerary-timeline">${activeItems.map(item=>renderAgendaJourney(item)).join('')}</div>`:`<div class="generic-itinerary-empty"><strong>${itinerarySourcesAreReady()?'Cap pla per a aquest dia.':'Encara no hi ha plans carregats per a aquest dia.'}</strong>${itinerarySourcesAreReady()?'Pots afegir-ne un quan vulguis.':'Hi ha fonts pendents; consulta l’avís de càrrega.'}</div>`}</section>`:'';
   $('genericItineraryDays').classList.toggle('hidden',selected==='pending');
   $('genericItineraryUnscheduledList').innerHTML=unscheduled.map(item=>renderItineraryItem(item,true)).join('');
   $('genericItineraryUnscheduled').classList.toggle('hidden',selected!=='pending'||!unscheduled.length);
@@ -6934,13 +6949,14 @@ function renderGenericItinerary(){
   $('genericItineraryModuleStatus').textContent=!itineraryProjection.length?'Cap element':itineraryProjection.length===1?'1 element':`${itineraryProjection.length} elements`;
   tabs.querySelectorAll('[data-generic-itinerary-day]').forEach(button=>button.onclick=()=>{genericItinerarySelectedTripId=trip.id;genericItinerarySelectedDay=button.dataset.genericItineraryDay;renderGenericItinerary()});
   const activeTab=tabs.querySelector('.active');if(activeTab)tabs.scrollLeft=Math.max(0,activeTab.offsetLeft-(tabs.clientWidth-activeTab.offsetWidth)/2);
+  for(const node of $('genericItineraryDays').querySelectorAll('[data-flight-journey]'))if(openFlightGroups.has(node.dataset.flightJourney))node.querySelector('[data-journey-tickets]').open=true;
   bindItineraryActions($('genericItineraryContent'));bindDayMetadataEditor();
   if(tripHomeItineraryFocus){
     const focus=tripHomeItineraryFocus;tripHomeItineraryFocus=null;
     requestAnimationFrame(()=>{
       if(!itineraryRequestIsCurrent(focus.tripId,focus.generation,focus.userId)||visibleAppView()!=='itineraryView')return;
       const card=[...$('genericItineraryContent').querySelectorAll('[data-itinerary-key]')].find(card=>card.dataset.itineraryKey===focus.key);
-      if(card){card.tabIndex=-1;card.focus({preventScroll:true});card.scrollIntoView({behavior:'smooth',block:'center'})}
+      if(card){for(let parent=card.parentElement;parent;parent=parent.parentElement)if(parent.tagName==='DETAILS')parent.open=true;card.tabIndex=-1;card.focus({preventScroll:true});card.scrollIntoView({behavior:'smooth',block:'center'})}
     });
   }
   renderItineraryDayWeather();

@@ -65,3 +65,14 @@ test('#200 users can reopen previous PDF choices before confirmation without cha
  assert.equal(flash.history.length,0);
  assert.equal(reopenFlashMatches(snapshot,state,context,flash),0);
 });
+
+test('#210 cathedral missing final time never prefers a date over a flexible breakfast',()=>{
+ const {snapshot,state}=setup();snapshot.items=[item(0,'Catedral de Riga i plaça principal del centre històric',{end_local_time:''})];
+ state.existing[0]={...old,title:'Visita a la Catedral de Riga, plaça Doma laukums'};
+ const breakfast={key:'activity:breakfast',sourceType:'activity',title:'Esmorzar lliure prop del centre',localDate:'2030-12-28',startsAt:'2030-12-28T09:00Z',endsAt:'2030-12-28T10:00Z',timeZone:'UTC',timingKind:'exact',status:'planned'};
+ const result=flashRecommendation(snapshot,state,{...context,projection:[breakfast]},snapshot.items[0],state.existing[0]);
+ assert.equal(result.choice,null);assert.match(result.text,/Viabilitat pendent/);assert.match(result.text,/durada/);assert.match(result.text,/flexible/);assert.doesNotMatch(result.text,/Conservar evita/);
+ snapshot.items[0].values.end_local_time='10:30';
+ const complete=flashRecommendation(snapshot,state,{...context,projection:[breakfast]},snapshot.items[0],state.existing[0]);assert.equal(complete.choice,null);assert.match(complete.text,/flexible/);
+ breakfast.status='confirmed';assert.equal(flashRecommendation(snapshot,state,{...context,projection:[breakfast]},snapshot.items[0],state.existing[0]).choice,'keep');
+});

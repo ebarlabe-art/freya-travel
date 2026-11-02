@@ -32,5 +32,6 @@ export function markConflictCards(root,analysis){
  const keys=new Set(importantConflicts(analysis).flatMap(c=>c.keys));
  for(const card of root.querySelectorAll('[data-itinerary-key]'))if(keys.has(card.dataset.itineraryKey)){
   const badge=document.createElement('strong');badge.dataset.conflictBadge='';badge.className='itinerary-conflict-badge';badge.textContent='⚠ Conflicte horari · Revisa el resum del planning';(card.querySelector('.generic-itinerary-card')||card).prepend(badge);
+  const journey=card.closest('[data-flight-journey]');if(journey&&!journey.querySelector('[data-journey-conflict]')){const summary=badge.cloneNode(true);summary.dataset.journeyConflict='';journey.querySelector(':scope > .generic-itinerary-card').prepend(summary)}
  }
 }

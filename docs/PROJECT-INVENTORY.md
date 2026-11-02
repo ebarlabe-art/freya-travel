@@ -4,6 +4,22 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
+## Issue #210 · IB7848 a l’agenda i recomanació Catedral — BRANCA, NO PUBLICAT (3/11/2026)
+
+Base `main` `3f7b26b`, amb #209 fusionada. La prova física de la usuària és l’evidència de la incidència; no s’han consultat les reserves reals ni es pot certificar si són bitllets legítims o registres duplicats. Branca `codex/iphone-flight-advice-210`, checkout `/private/tmp/freya-import210`.
+
+**Causes verificades al codi:** #207 agrupava targetes de la vista Vols i #209 el càlcul RIG, però `renderGenericItinerary()` encara renderitzava cada bitllet individual. `flashRecommendation()` triava conservar/actualitzar comptant conflictes sense verificar durades completes ni la flexibilitat d’un esmorzar; les garanties de `proposeItinerarySolutions()` no s’aplicaven a aquest consell de coincidències.
+
+**Correcció:** agrupació només visual a l’agenda mitjançant `canonicalPlanningFlights`, sobre la identitat conservadora compartida #207/#209. Un trajecte amb noms/seients i tots els bitllets, documents, progrés i accessos originals desplegables. No s’elimina ni s’actualitza cap fila. Identitat ambigua, número o horari diferent continua separat. S’hi preserva l’obertura del grup en refrescar, el focus a un bitllet i els avisos de conflicte visibles al grup. Londres manté el camí històric separat; no es crea cap motor específic per Riga/Eivissa.
+
+La Catedral 27/12 10–11 vs 28/12 09:30 sense final mostra viabilitat pendent i cap data recomanada; explica durada, obertura i trajectes pendents i que l’esmorzar lliure és flexible. Amb durada completa, un solapament només amb una activitat flexible tampoc selecciona una data com a millor. Les reserves explícites continuen protegides. Comparació abans/després i confirmació atòmica existents intactes. Es manté la regressió museu/parc #208, amb proposta orientativa i confiança baixa quan falten dades.
+
+**Validació:** suite local 912/912, build i paritat exacta; regressió ampliada Chromium/WebKit 390×844 sobre el build real: IB7848 en una targeta, dos noms/seients, quatre documents, dos accessos i progrés individual, refresc, vols diferents i PDF Catedral sense final. El mateix script conserva tot el flux museu/parc i confirmació/cancel·lació #208 i s’executa a la CI dels dos motors. Marcador de branca `pwa-iphone-flight-advice-210`, cache v50. Cap migració, Edge, dependència de l’app, canvi de producció, merge ni publicació. Eines temporals Playwright recuperades per a les proves locals.
+
+**Relleu:** revisar PR i CI del commit final; només amb autorització publicar i comprovar físicament els bitllets reals i la Catedral a l’iPhone. Canvis locals aliens del checkout principal preservats. Tots els pendents del roadmap es mantenen.
+
+---
+
 ## Issue #208 · Conciliació PDF i recomanacions — BRANCA, NO PUBLICAT (2/11/2026)
 
 [PR #209](https://github.com/ebarlabe-art/freya-travel/pull/209), vinculada a la #208. Base verificada `main` `5dc3917` (PR #207 fusionada; la nota històrica inferior descriu l’estat anterior). Branca `codex/pdf-reconciliation-208`, checkout `/private/tmp/freya-import208`. No s’ha verificat el desplegament públic ni consultat dades remotes en aquesta tasca.

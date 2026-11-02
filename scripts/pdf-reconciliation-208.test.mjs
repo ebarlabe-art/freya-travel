@@ -5,7 +5,7 @@ import {compareImportActivity,createItineraryReview,summarizeItineraryReview} fr
 const flight=(id,number='AY1020',extra={})=>({key:id,tripId:'trip',sourceType:'flight',title:'Tallinn → Helsinki',startsAt:'2027-01-02T09:00:00+02:00',endsAt:'2027-01-02T10:00:00+02:00',localDate:'2027-01-02',timeZone:'Europe/Tallinn',timingKind:'exact',flightIdentity:{flight_number:number,departure_airport_code:'TLL',arrival_airport_code:'HEL'},...extra});
 const conflicts=items=>assessCombinedItinerary({items,complete:true}).issues.filter(i=>i.kind==='conflict');
 test('#208 two individual AY1020 / AY1653 tickets are one scheduling journey; no mutation or zero-distance self route',()=>{
- for(const number of ['AY1020','AY1653']){
+ for(const number of ['IB7848','AY1020','AY1653']){
   const a=flight('a',number,{documents:['private'],passengers:'Eva',seat:'1A'}),b=flight('b',number,{title:'Flight ticket Xesc',seat:'1B',passengers:'Xesc',documents:['other'],flightIdentity:{flight_number:number}}),rows=[a,b],before=structuredClone(rows);
   assert.equal(conflicts(rows).length,0);assert.equal(planningPairs(rows).length,0);assert.equal(canonicalPlanningFlights(rows).length,1);assert.deepEqual(rows,before);
  }
