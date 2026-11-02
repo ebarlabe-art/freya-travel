@@ -21,7 +21,7 @@ export async function loadGroupedFlightCards(client,tripId,localDepartureDate){
   ...flight,
   local_departure_date:localDepartureDate?localDepartureDate(flight):
    (flight.departure_at&&flight.departure_time_zone
-    ?new Intl.DateTimeFormat('en-CA',{timeZone:flight.departure_time_zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(flight.departure_at))
+    ?new Intl.DateTimeFormat('sv-SE',{timeZone:flight.departure_time_zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(flight.departure_at))
     :null)
  }));
  return groupFlightsWithTravelers(mapped,assignments.data||[],travelers.data||[]).map(group=>({
