@@ -39,3 +39,27 @@ export function groupStoredFlightCards(rows=[],getLocalDate){
  }
  return groups;
 }
+
+/**
+ * Attach existing trip_flight_travelers to the read-only journey projection.
+ * Do not infer a passenger from the flight row itself: seat on trip_flights
+ * may be legacy data, and multiple travelers can belong to one flight.
+ */
+export function groupFlightsWithTravelers(flights=[],assignments=[],travelers=[]){
+ const names=new Map(travelers.map(person=>[person.id,person.display_name]));
+ const byFlight=new Map();
+ for(const assignment of assignments){
+  if(!byFlight.has(assignment.flight_id))byFlight.set(assignment.flight_id,[]);
+  byFlight.get(assignment.flight_id).push({
+   traveler_id:assignment.traveler_id,
+   display_name:names.get(assignment.traveler_id)||null,
+   seat:assignment.seat||null,
+   flight_id:assignment.flight_id
+  });
+ }
+ return groupStoredFlightCards(flights).map(group=>({
+  ...group,
+  flights:group.passengers,
+  travelers:group.passengers.flatMap(flight=>byFlight.get(flight.id)||[])
+ }));
+}
