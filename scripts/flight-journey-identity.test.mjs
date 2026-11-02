@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {flightJourneyKey,groupFlightTickets} from '../domain/flight-journey-identity.mjs';
+import {flightJourneyKey,groupFlightTickets,groupStoredFlightCards} from '../domain/flight-journey-identity.mjs';
 const base={date:'2026-12-26',flightNumber:'IB7848',origin:'BCN',destination:'RIX'};
 test('same journey groups different passenger tickets without discarding either',()=>{
  const tickets=[{...base,passenger:'Eva',documentId:'a'},{...base,flightNumber:'IB 7848',passenger:'Xesc',documentId:'b'}];
@@ -15,4 +15,18 @@ test('distinct flights, routes and dates remain separate',()=>{
 test('incomplete flight identity never silently groups tickets',()=>{
  assert.equal(flightJourneyKey({...base,origin:''}),null);
  assert.equal(groupFlightTickets([{...base,origin:''},{...base,origin:''}]).length,2);
+});
+
+test('flight card shows one journey but retains passenger-specific details',()=>{
+ const a={local_departure_date:'2026-12-26',flight_number:'IB7848',departure_airport_code:'BCN',arrival_airport_code:'RIX',passenger:'Eva',seat:'12A',booking_reference:'ABC',document_id:'doc-a'};
+ const b={...a,passenger:'Xesc',seat:'12B',document_id:'doc-b'};
+ const groups=groupStoredFlightCards([a,b]);
+ assert.equal(groups.length,1);
+ assert.deepEqual(groups[0].passengers.map(x=>[x.passenger,x.seat,x.document_id]),[['Eva','12A','doc-a'],['Xesc','12B','doc-b']]);
+ assert.equal(groups[0].passengers[0].booking_reference,'ABC');
+ assert.equal(groups[0].passengers[1].booking_reference,'ABC');
+});
+test('flight cards with missing identity are never merged',()=>{
+ const a={local_departure_date:'2026-12-26',flight_number:'IB7848',departure_airport_code:'BCN'};
+ assert.equal(groupStoredFlightCards([a,{...a}]).length,2);
 });
