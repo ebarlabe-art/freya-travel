@@ -50,3 +50,40 @@ test('does not group records when trip id is unavailable',()=>{
  const base={local_departure_date:'2026-12-26',flight_number:'IB7848',departure_airport_code:'BCN',arrival_airport_code:'RIX'};
  assert.equal(groupStoredFlightCards([base,{...base}]).length,2);
 });
+
+test('Riga return flights with missing airport codes resolve from unique matching records',()=>{
+ const a={trip_id:'riga',local_departure_date:'2027-01-02',flight_number:'AY1020',departure_at:'2027-01-02T10:20:00Z',departure_airport_code:'TLL',arrival_airport_code:'HEL'};
+ const b={...a,departure_airport_code:null,arrival_airport_code:null,id:'xesc'};
+ const c={...a,flight_number:'AY1653',departure_at:'2027-01-02T14:55:00Z',departure_airport_code:'HEL',arrival_airport_code:'BCN'};
+ const d={...c,departure_airport_code:null,arrival_airport_code:null,id:'xesc2'};
+ const groups=groupStoredFlightCards([a,b,c,d]);
+ assert.equal(groups.length,2);
+ assert.deepEqual(groups.map(g=>g.passengers.length),[2,2]);
+});
+test('ambiguous matching flights do not guess airports',()=>{
+ const a={trip_id:'riga',local_departure_date:'2027-01-02',flight_number:'AY1020',departure_at:'2027-01-02T10:20:00Z',departure_airport_code:'TLL',arrival_airport_code:'HEL'};
+ const b={...a,departure_airport_code:'RIX'};
+ const incomplete={...a,departure_airport_code:null,arrival_airport_code:null};
+ assert.equal(groupStoredFlightCards([a,b,incomplete]).length,3);
+});
+
+test('normalizes spaced flight numbers and airport case without mutating source tickets',()=>{
+ const a={trip_id:'riga',flight_number:'AY 1020',departure_at:'2027-01-02T10:20:00Z',departure_airport_code:' tll ',arrival_airport_code:'hel',local_departure_date:'2027-01-02'};
+ const b={...a,flight_number:'AY-1020',departure_airport_code:null,arrival_airport_code:null,seat:'1A'};
+ const before=structuredClone([a,b]);assert.equal(groupStoredFlightCards([a,b]).length,1);assert.deepEqual([a,b],before);
+ assert.equal(groupStoredFlightCards([a,{...b,departure_at:'2027-01-03T10:20:00Z'}]).length,2);
+ assert.equal(groupStoredFlightCards([a,{...b,trip_id:'other'}]).length,2);
+});
+
+test('document import reuses its own ticket; different passengers/documents remain individual',async()=>{
+ const {planFlightDocumentImport}=await import('../domain/flight-journey-identity.mjs');
+ const a={id:'old',trip_id:'trip',flight_number:'AY1020',departure_at:'2027-01-02T10:20:00Z',departure_airport_code:'TLL',arrival_airport_code:'HEL',passengers:'Eva',seat:'12A',booking_reference:'ABC'};
+ const links=[{trip_id:'trip',flight_id:'old',document_id:'docA',document_role:'booking'}];
+ const plan=await planFlightDocumentImport([{...a,id:undefined,departure_airport_code:null,arrival_airport_code:null}],[a],links,'docA');
+ assert.equal(plan[0].row.id,'old');assert.equal(plan[0].row.arrival_airport_code,'HEL');
+ const other=await planFlightDocumentImport([{...a,id:undefined,passengers:'Xesc',seat:'12B',departure_airport_code:null}],[a],links,'docB');
+ assert.notEqual(other[0].row.id,'old');assert.equal(other[0].existing,null);assert.equal(other[0].row.passengers,'Xesc');
+ assert.equal((await planFlightDocumentImport([{...a,id:undefined,passengers:'Xesc',seat:'12B',departure_airport_code:null}],[a],links,'docB'))[0].row.id,other[0].row.id);
+ await assert.rejects(()=>planFlightDocumentImport([{...a,seat:'13A'}],[a],links,'docA'),/diferents/);
+ assert.equal(a.seat,'12A');
+});
