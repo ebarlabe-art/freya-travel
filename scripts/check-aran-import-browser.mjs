@@ -40,19 +40,20 @@ try{
  assert.equal(items.filter(i=>i.original.local_date==='2026-11-09').length,2);
  assert.equal(await page.evaluate(()=>fixture.writes.length),0);
  assert.doesNotMatch(await page.locator('#itineraryPlanningReport').innerText(),/00:00/);
- // Expand an excluded alternative and opt in, then cancel that selection.
- const candidate=page.locator('[data-import-candidate="14"]');
- for(const id of ['itineraryImportAdvanced','itineraryImportPdfDetails','itineraryImportExcluded']){
-  const parent=page.locator('#'+id);if(await parent.count()&&!await parent.evaluate(n=>n.open))await parent.locator(':scope > summary').tap();
- }
- await candidate.locator(':scope > summary').tap();await page.locator('[data-import-include="14"]').check();
- await page.waitForFunction(()=>itineraryImportState.review.items[14].included===true);
- await page.locator('[data-import-include="14"]').uncheck();
+ // Alternatives are visible without navigating three nested details panels.
+ assert.equal(await page.locator('#itineraryImportAlternatives').isVisible(),true);
+ assert.equal(await page.locator('[data-import-alternative]').count(),4);
+ assert.equal(await page.locator('[data-alternative-day="2026-11-09"] [data-import-alternative]').count(),2);
+ const alternative=page.locator('[data-import-alternative="14"]');
+ assert.equal(await alternative.isChecked(),false);
+ await alternative.check();await page.waitForFunction(()=>itineraryImportState.review.items[14].included===true);
+ assert.equal(await page.locator('#itineraryImportAlternatives').isVisible(),true);
+ await alternative.uncheck();await page.waitForFunction(()=>itineraryImportState.review.items[14].included===false);
  assert.equal(await page.evaluate(()=>itineraryImportState.review.items.filter(i=>i.included).length),12);
  assert.equal(await page.evaluate(()=>fixture.writes.length),0);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
  await page.locator('#itineraryImportConfirmNo').tap();assert.equal(await page.evaluate(()=>fixture.writes.length),0);
  await mkdir('artifacts/aran',{recursive:true});await page.screenshot({path:`artifacts/aran/${engine}-review.png`,fullPage:true});
- assert.deepEqual(errors,[]);console.log(`PASS Aran ${engine}: original PDF selection, captured-real-provider 16 proposals/12 selected, four dates, opt-in/cancel alternative, no writes, 390x844.`);
+ assert.deepEqual(errors,[]);console.log(`PASS Aran ${engine}: original PDF selection, captured-real-provider 16 proposals/12 selected, four dates, visible grouped opt-in/cancel alternatives, no writes, 390x844.`);
 }finally{await browser.close();await new Promise(r=>server.close(r))}
