@@ -54,6 +54,13 @@ try{
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
  await page.locator('#itineraryImportConfirmNo').tap();assert.equal(await page.evaluate(()=>fixture.writes.length),0);
+ // After a save, an empty day surfaces a clear way to re-read a stored PDF.
+ await page.locator('#itineraryImportClose').tap();
+ await page.evaluate(()=>{genericItinerarySelectedTripId=trip.id;genericItinerarySelectedDay='2026-11-09';renderGenericItinerary()});
+ await page.locator('#itinerarySavedAlternatives').waitFor({state:'visible'});
+ await page.locator('#itinerarySavedAlternativesButton').tap();
+ await page.locator('#itineraryImportExistingWrap').waitFor({state:'visible'});
+ assert.equal(await page.evaluate(()=>fixture.writes.length),0);
  await mkdir('artifacts/aran',{recursive:true});await page.screenshot({path:`artifacts/aran/${engine}-review.png`,fullPage:true});
  assert.deepEqual(errors,[]);console.log(`PASS Aran ${engine}: original PDF selection, captured-real-provider 16 proposals/12 selected, four dates, visible grouped opt-in/cancel alternatives, no writes, 390x844.`);
 }finally{await browser.close();await new Promise(r=>server.close(r))}
