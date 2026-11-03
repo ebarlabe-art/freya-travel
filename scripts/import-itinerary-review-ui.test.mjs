@@ -167,11 +167,11 @@ test('A2.9: inline iPhone confirmation resolves only from explicit user interact
 });
 
 test('PDF alternatives are visible and recoverable without nested advanced menus',()=>{
- assert.match(script,/id="itineraryImportAlternatives"/);
- assert.match(script,/id="itineraryImportAlternativesByDay"/);
+ assert.match(html,/id="itineraryImportAlternatives"/);
+ assert.match(html,/id="itineraryImportAlternativesByDay"/);
  assert.match(script,/data-import-alternative/);
  assert.match(script,/data-alternative-day/);
- assert.match(script,/id="itinerarySavedAlternativesButton"/);
+ assert.match(html,/id="itinerarySavedAlternativesButton"/);
  assert.match(script,/openItineraryImport\(true\)/);
  assert.match(script,/state\.api\.changeItineraryReviewItem\(state\.review,index,'included',target\.checked\)/);
 });
