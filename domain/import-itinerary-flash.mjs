@@ -1,6 +1,6 @@
 import {matchingPlanningFlight,canonicalPlanningFlights} from './flight-journey-identity.mjs';
 // Presentation/decision adapter for RIG-03B/RIG-04. No IO or second planning engine.
-import {matchingExistingImportItems,compareImportActivity} from './import-itinerary-review.mjs';
+import {matchingExistingImportItems,compareImportActivity,existingReviewValues} from './import-itinerary-review.mjs';
 import {analyzePlanning} from './import-itinerary-planning-ui.mjs';
 import {proposeUnmatchedReconciliationDecisions} from './import-itinerary-reconciliation-ui.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -55,6 +55,11 @@ export function flashRecommendation(snapshot,state,context,item,target,previous=
  if(!target)return unknown;
  if(protectedRow(target))return {choice:'keep',text:'Conserva el compromís existent: està protegit i no es pot moure des d’aquesta importació.'};
  if(context.sourcesReady===false)return unknown;
+ const before=existingReviewValues(target),v=item.values;
+ const complete=x=>x.local_date&&x.time_zone&&x.start_local_time&&x.end_local_time&&x.end_local_time>x.start_local_time;
+ const flexible=x=>!x.fixed&&!x.reservation&&!['confirmed','reserved'].includes(x.status)&&!/(reserva|confirmed|booked|ticket|entrada|bitllet)/i.test(x.title||'')&&/\b(esmorzar|breakfast|dinar lliure|sopar lliure|passeig|walk|parc|park)\b/i.test(x.title||'');
+ const flexibilityNote=(context.projection||[]).some(flexible)||state.existing.some(flexible)||snapshot.items.some(i=>flexible(i.values))?' Un esmorzar lliure o passeig és flexible: podem revisar-ne la franja, no és per si sol una reserva fixa.':'';
+ if(!complete(v)||!complete(before))return {choice:null,text:'Viabilitat pendent: falta confirmar l’hora final o la durada de la visita. No puc recomanar una data com a millor sense aquesta dada. Cal comprovar també l’obertura i els trajectes.'+flexibilityNote};
  try{
   const variants=['keep','update'].map(action=>analyzePlanning(snapshot,{...state,decisions:[...state.decisions.filter(d=>d.source_order!==item.source_order),{source_order:item.source_order,action,target_id:target.id}]},context,previous));
   const problems=variants.map(a=>a.assessment.issues.filter(i=>i.kind==='conflict'||i.kind==='tight'));
@@ -67,8 +72,9 @@ export function flashRecommendation(snapshot,state,context,item,target,previous=
     const removed=problems[bad].find(i=>!problems[good].some(j=>signature(j)===signature(i)));
     const action=good===0?'Conservar':'Canviar';
     const other=removed.code==='overlap'?variants[bad].combined.items.find(x=>removed.keys.includes(x.key)&&x.key!=='pdf:'+item.source_order&&x.key!=='manual:'+target.id):null;
+    if(other&&flexible(other))return {choice:null,text:'Viabilitat pendent: la coincidència és amb «'+other.title+'», una activitat flexible. Revisa primer si es pot moure aquesta franja; no és un motiu suficient per descartar la visita. Cal confirmar durades, obertura i trajectes.'};
     const reason=removed.code==='overlap'?'un solapament horari'+(other?' amb «'+other.title+'»':' amb una altra visita'):removed.code==='travel'?'un trajecte sense prou temps':removed.code==='closed'?'una visita fora de l’horari d’obertura verificat':'un conflicte detectat al planning';
-    return {choice:good===0?'keep':'update',text:action+' evita '+reason+'.'};
+    return {choice:good===0?'keep':'update',text:action+' evita '+reason+'. Això només evita aquest conflicte conegut; cal confirmar l’obertura i els trajectes abans de donar la data per viable.'};
    }
   }
  }catch{}
