@@ -1,0 +1,175 @@
+{
+  "sha256": "7ef3df8ebaff9f354da8e5992babf170728af6fe6f0f5031e84563f4484fd1bc",
+  "rows": [
+    {
+      "page": 2,
+      "time": "09.00",
+      "time_box": [
+        66.0,
+        359.95,
+        91.575,
+        369.95
+      ],
+      "title": "Sortida d’Arties cap a Bausen.",
+      "title_box": [
+        134.0,
+        356.048,
+        270.658,
+        366.548
+      ]
+    },
+    {
+      "page": 2,
+      "time": "10.00",
+      "time_box": [
+        66.0,
+        415.95,
+        91.575,
+        425.95
+      ],
+      "title": "Bausen i excursió al Bòsc de Carlac.",
+      "title_box": [
+        134.0,
+        412.048,
+        297.606,
+        422.548
+      ]
+    },
+    {
+      "page": 2,
+      "time": "13.30",
+      "time_box": [
+        66.0,
+        459.95,
+        91.575,
+        469.95
+      ],
+      "title": "Dinar per la zona de Les.",
+      "title_box": [
+        134.0,
+        456.048,
+        246.954,
+        466.548
+      ]
+    },
+    {
+      "page": 2,
+      "time": "15.00",
+      "time_box": [
+        66.0,
+        503.95,
+        91.575,
+        513.95
+      ],
+      "title": "Canejan: carrerons, panoràmiques i miradors.",
+      "title_box": [
+        134.0,
+        500.048,
+        340.929,
+        510.548
+      ]
+    },
+    {
+      "page": 2,
+      "time": "17.00",
+      "time_box": [
+        66.0,
+        559.95,
+        91.575,
+        569.95
+      ],
+      "title": "Retorn cap a Arties.",
+      "title_box": [
+        134.0,
+        556.048,
+        224.704,
+        566.548
+      ]
+    },
+    {
+      "page": 3,
+      "time": "09.15",
+      "time_box": [
+        66.0,
+        207.95,
+        91.575,
+        217.95
+      ],
+      "title": "Sortida d’Arties cap a la Bassa d’Oles.",
+      "title_box": [
+        134.0,
+        204.048,
+        305.334,
+        214.548
+      ]
+    },
+    {
+      "page": 3,
+      "time": "10.00",
+      "time_box": [
+        66.0,
+        251.95,
+        91.575,
+        261.95
+      ],
+      "title": "Bassa d’Oles i Bòsc de Varicauba.",
+      "title_box": [
+        134.0,
+        248.048,
+        287.431,
+        258.548
+      ]
+    },
+    {
+      "page": 3,
+      "time": "12.00",
+      "time_box": [
+        66.0,
+        307.95,
+        91.575,
+        317.95
+      ],
+      "title": "Vilamòs: Ecomusèu Çò de Joanchiquet.",
+      "title_box": [
+        134.0,
+        304.048,
+        314.075,
+        314.548
+      ]
+    },
+    {
+      "page": 3,
+      "time": "13.30",
+      "time_box": [
+        66.0,
+        363.95,
+        91.575,
+        373.95
+      ],
+      "title": "Dinar a Vilamòs o Vielha.",
+      "title_box": [
+        134.0,
+        360.048,
+        248.996,
+        370.548
+      ]
+    },
+    {
+      "page": 3,
+      "time": "15.30",
+      "time_box": [
+        66.0,
+        407.95,
+        91.575,
+        417.95
+      ],
+      "title": "Vielha.",
+      "title_box": [
+        134.0,
+        404.048,
+        165.206,
+        414.548
+      ]
+    }
+  ]
+}

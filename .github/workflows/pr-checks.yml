@@ -141,6 +141,8 @@ jobs:
         run: PLANNING_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-flight-import-browser.mjs
       - name: PDF reconciliation shared flights and recommendations
         run: PLANNING_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-pdf-reconciliation-208-browser.mjs
+      - name: Original Aran PDF review on mobile
+        run: PLANNING_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-aran-import-browser.mjs
       - name: Flash import mobile flow
         run: PLANNING_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-import-flash-browser.mjs
       - name: RIG04 planning touch flow
