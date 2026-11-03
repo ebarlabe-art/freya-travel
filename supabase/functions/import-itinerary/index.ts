@@ -173,7 +173,7 @@ Deno.serve(async request=>{
   if(!proposal)throw firstError||errorCode('invalid_transcript');
   // Cached older frontends include all candidates by default. Never expose
   // optional choices to a client that cannot preserve opt-in semantics.
-  if(input.reader_version!==2&&proposal.candidates.some((item:any)=>item.warnings.some((w:string)=>w.startsWith('Alternativa opcional:'))))
+  if(input.reader_version!==2&&proposal.candidates.some((item:any)=>item.warnings.some((w:string)=>w.startsWith('Alternativa opcional:')||w.startsWith('Evidència pendent:'))))
    throw errorCode('reader_update_required');
   // Validate origin/destination against the authenticated place resolver.
   // The PDF is never sent to this service; only short place names.

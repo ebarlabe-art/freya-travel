@@ -9,7 +9,7 @@ test('Aran original: raw text reproduces the zero-candidate failure; literal ann
  const pages=JSON.parse(readFileSync(new URL('pages.json',root)));
  assert.throws(()=>extractItineraryProposalFromPages(pages,source),e=>e.code==='no_itinerary_candidates');
  const p=proposal();assert.equal(p.candidates.length,17);assert.equal(v(p.candidates[0],'daypart'),'midday');
- assert.deepEqual([...new Set(p.candidates.map(c=>v(c,'local_date')))].sort(),['2026-11-06','2026-11-07','2026-11-08','2026-11-09']);
+ assert.deepEqual([...new Set(p.candidates.map(c=>v(c,'local_date')).filter(Boolean))].sort(),['2026-11-06','2026-11-07','2026-11-08','2026-11-09']);
  assert.deepEqual(p.candidates.filter(c=>v(c,'local_date')==='2026-11-07'&&v(c,'start_local_time')).map(c=>v(c,'start_local_time')),['09:00','10:00','13:30','15:00','17:00']);
  assert.deepEqual(p.candidates.filter(c=>v(c,'local_date')==='2026-11-08'&&v(c,'start_local_time')).map(c=>v(c,'start_local_time')),['09:15','10:00','12:00','13:30','15:30']);
  assert.equal(p.candidates.filter(c=>v(c,'local_date')==='2026-11-06').length,3);
@@ -28,10 +28,36 @@ test('Aran alternatives are individually opt-in, no write and original remains i
  changeItineraryReviewItem(r,13,'included',true);assert.equal(r.items[13].included,true);changeItineraryReviewItem(r,13,'included',false);
  assert.equal(JSON.stringify(p),before);
 });
-test('semantic anchors reject invented title, hour, page and absent heading',()=>{
+test('unsupported field anchors isolate one candidate for review, preserving all others',()=>{
  for(const patch of [{title:'Visita inexistent'},{time:'08.00'},{page:99},{heading:'10 DIMARTS'}]){
-  const f=fixture();Object.assign(f.blocks[3],patch);assert.throws(()=>validateItineraryPdfTranscript(f),e=>e.code==='invalid_transcript');
+  const f=fixture();Object.assign(f.blocks[3],patch);const p=convert(f,source);
+  assert.equal(p.candidates.length,17);
+  assert.match(p.candidates[3].warnings.join(' '),/Evidència pendent/);
+  const r=createItineraryReview(p,{tripId:'t',userId:'u',documentId:source.document_id});
+  assert.equal(r.items[3].included,false);assert.equal(r.items[4].included,true);
+  if(patch.time||patch.page)assert.equal(v(p.candidates[3],'start_local_time'),undefined);
+  if(patch.heading||patch.page)assert.equal(v(p.candidates[3],'local_date'),undefined);
  }
+});
+test('real OpenAI response: complementary excerpts do not discard the ten correctly associated times',()=>{
+ const f=JSON.parse(readFileSync(new URL('openai-real-transcript.json',root))),p=convert(f,source);
+ assert.equal(f.complete,true);assert.equal(f.pages.length,4);
+ assert.deepEqual([...new Set(p.candidates.map(c=>v(c,'local_date')).filter(Boolean))].sort(),['2026-11-06','2026-11-07','2026-11-08','2026-11-09']);
+ for(const [date,times] of [['2026-11-07',['09:00','10:00','13:30','15:00','17:00']],['2026-11-08',['09:15','10:00','12:00','13:30','15:30']]]){
+  const cs=p.candidates.filter(c=>v(c,'local_date')===date&&v(c,'start_local_time'));
+  assert.deepEqual(cs.map(c=>v(c,'start_local_time')),times);
+  assert.ok(cs.every(c=>!c.warnings.some(w=>w.startsWith('Evidència pendent:'))));
+  assert.ok(cs.every(c=>c.fields.title.evidence[0].excerpt===v(c,'title')));
+ }
+ assert.equal(p.candidates.filter(c=>c.warnings.some(w=>w.startsWith('Alternativa opcional:'))).length,4);
+ assert.ok(!p.candidates.some(c=>/Casa Irene|Biniaran|Tauèrna/.test(v(c,'title'))));
+ assert.ok(p.candidates.every(c=>!v(c,'end_local_time')));
+});
+test('a real time elsewhere on the page is not evidence for another row',()=>{
+ const f=fixture();f.blocks[3].time='10.00';const p=convert(f,source);
+ assert.equal(v(p.candidates[3],'start_local_time'),undefined);
+ assert.match(p.candidates[3].warnings.join(' '),/Evidència pendent/);
+ assert.equal(v(p.candidates[4],'start_local_time'),'10:00');
 });
 test('duplicate semantic blocks do not create extra activities',()=>{
  const f=fixture();f.blocks.splice(4,0,structuredClone(f.blocks[3]));assert.equal(convert(f,source).candidates.length,17);
@@ -71,4 +97,31 @@ test('a mismatched contextual weekday never inherits the previous valid day',()=
 test('a semantic untimed route is an activity, not rejected as a generic document heading',()=>{
  const f={complete:true,warnings:[],pages:[{page:1,text:'2026-11-07\nRuta pel bosc'}],blocks:[{page:1,heading:'2026-11-07',title:'Ruta pel bosc',time:'',role:'activity',excerpt:'Ruta pel bosc'}]};
  assert.equal(convert(f,source).candidates[0].fields.title.value,'Ruta pel bosc');
+});
+test('captured OpenAI timed rows match independently extracted original PDF coordinates',()=>{
+ const layout=JSON.parse(readFileSync(new URL('native-layout.json',root)));
+ assert.equal(layout.sha256,createHash('sha256').update(readFileSync(new URL('original.pdf',root))).digest('hex'));
+ assert.equal(layout.rows.length,10);
+ for(const name of ['openai-real-transcript.json','openai-verified-transcript.json']){
+  const p=convert(JSON.parse(readFileSync(new URL(name,root))),source);
+  const rows=p.candidates.filter(c=>v(c,'start_local_time'));
+  assert.equal(rows.length,10);
+  for(const c of rows){
+   const row=layout.rows.find(r=>r.page===c.fields.title.evidence[0].page&&r.time.replace('.',':')===v(c,'start_local_time'));
+   assert.ok(row);assert.equal(row.title,v(c,'title'));
+   assert.ok(Math.abs(row.time_box[1]-row.title_box[1])<6);
+   assert.ok(row.time_box[2]<row.title_box[0]);
+  }
+ }
+});
+
+test('live reading passes semantic acceptance including Friday dinner and restaurant roles',async()=>{
+ const {assertAranReading}=await import('./aran-provider-assertions.mjs');
+ const f=JSON.parse(readFileSync(new URL('openai-verified-transcript.json',root)));assertAranReading(f,convert(f,source));
+});
+test('uninterpretable single block cannot discard the valid document; partial numeric matches are not times',()=>{
+ const f=fixture();f.blocks[3].title='16.3';const p=convert(f,source);
+ assert.equal(p.candidates.length,17);assert.match(p.candidates[3].warnings.join(' '),/Evidència pendent/);
+ const g={complete:true,warnings:[],pages:[{page:1,text:'2026-11-07\n109.00 Visita al bosc'}],blocks:[{page:1,title:'Visita al bosc',time:'09.00',heading:'2026-11-07',role:'activity',excerpt:'Visita al bosc'}]};
+ assert.equal(v(convert(g,source).candidates[0],'start_local_time'),undefined);
 });

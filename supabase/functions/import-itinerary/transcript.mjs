@@ -39,6 +39,7 @@ export function itineraryPdfTextInstructions(){
  return [
   'A més de pages, retorna blocks: interpreta semànticament la disposició visual (columnes, taules, targetes, textos sense hora) i associa cada títol a la seva hora de la mateixa fila encara que el text intern del PDF els separi. No depenguis d’un idioma o d’una plantilla.',
   'Cada block cita literalment title, heading (capçalera del dia, per exemple 07 DISSABTE), time (hora/franja literal o cadena buida), excerpt i la pàgina real. El text de pages ha de conservar aquestes cites. No converteixis una durada de visita en una hora d’inici/final. Si l’associació és dubtosa, time buit i avís; mai inventis.',
+  'excerpt és una cita complementària: NO cal que contingui title ni time. title, time i heading han de ser cites literals independents. A pages, mantén cada hora adjacent al títol de la mateixa fila visual i separa les files; mai agrupis totes les hores en una columna textual i després tots els títols. Conserva només la capçalera de data en heading, sense subtítols. Si no pots justificar la relació visual, deixa time buit i explica el dubte a warnings.',
   'role separa activity (pla principal), alternative (opció o pla B condicional), recommendation (restaurant recomanat, no reserva) i context (consells/informació). No converteixis el resum de portada ni les descripcions de les visites en activitats duplicades. Una alternativa continua sent opcional, encara que tingui hora.',
   'Conserva blocs sense hora i dates contextuals en heading, sense completar-les amb coneixement extern. Uneix només fragments visualment relacionats; conserva totes les paraules del títol com una cita literal.',
   'Transcriu exclusivament les línies que descriuen un itinerari de viatge dins del PDF o foto adjunts.',
@@ -87,21 +88,72 @@ export function validateItineraryPdfTranscript(raw,{allowIncomplete=false}={}){
  return {pages,warnings,complete:raw.complete,blocks};
 }
 const literal=value=>String(value).normalize('NFKC').replace(/\s+/g,' ').trim();
+// Each field has its own anchor. Adjacency checks use the model's visual
+// transcription, NOT independent OCR. Uncertain associations remain opt-in.
+function blockEvidence(block,pages,blocks){
+ const page=pages.find(p=>p.page===block.page),text=literal(page?.text||'');
+ const title=literal(block.title),hour=literal(block.time),heading=literal(block.heading);
+ const positions=[];
+ for(let at=text.indexOf(title);at>=0;at=text.indexOf(title,at+1))positions.push(at);
+ const left=at=>text.slice(0,at).trimEnd().replace(/[.:]$/,'').trimEnd();
+ const endsHour=s=>s.endsWith(hour)&&!/[\d.:]/.test(s.slice(0,-hour.length).slice(-1));
+ const startsHour=s=>s.startsWith(hour)&&!/[\d.:]/.test(s.slice(hour.length, hour.length+1));
+ const adjacent=at=>{const before=text.slice(0,at).trimEnd(),after=text.slice(at+title.length).trimStart();return endsHour(before)||endsHour(left(at))||startsHour(after)};
+ const matches=hour?positions.filter(adjacent):positions;
+ const titleAt=matches.length===1?matches[0]:positions[0]??-1,issues=[];
+ const titleOK=!!title&&titleAt>=0;
+ if(!titleOK)issues.push('títol no localitzat a la pàgina indicada');
+ const headingPage=[...pages].reverse().find(p=>p.page<=block.page&&heading&&literal(p.text).includes(heading));
+ let headingOK=!!page&&!!headingPage;
+ if(headingOK&&headingPage.page===block.page&&text.indexOf(heading)>titleAt)headingOK=false;
+ // A day heading cannot jump over another dated heading on the same page.
+ if(headingOK&&headingPage.page===block.page){
+  const from=text.indexOf(heading)+heading.length;
+  for(const other of blocks){
+   const h=literal(other.heading),at=h?text.indexOf(h):-1;
+   if(h!==heading&&at>=from&&at<titleAt&&resolveBlockDate(other.heading,pages))headingOK=false;
+  }
+ }
+ if(block.heading&&!headingOK)issues.push('capçalera absent o incompatible amb la posició de l’activitat');
+ let timeOK=!hour;
+ if(hour&&titleOK){
+  // Accept only adjacent cells/lines, in either reading order. Mere presence
+  // elsewhere on the page is insufficient (e.g. the next visit's time).
+  const before=text.slice(0,titleAt).trimEnd(),after=text.slice(titleAt+title.length).trimStart();
+  timeOK=matches.length===1&&adjacent(titleAt);
+  if(timeOK){
+   const beforeAt=before.endsWith(hour)?before.length-hour.length:-1;
+   const afterAt=after.startsWith(hour)?titleAt+title.length+(text.slice(titleAt+title.length).length-after.length):-1;
+   // Time shared by two different rows is ambiguous, not automatically assigned.
+   for(const other of blocks){
+    if(other===block||other.page!==block.page||literal(other.title)===title||literal(other.time)!==hour)continue;
+    const at=text.indexOf(literal(other.title));
+    if(at>=0&&((beforeAt>=0&&at<beforeAt&&text.slice(at+literal(other.title).length,beforeAt).trim()==='')||
+      (afterAt>=0&&at>afterAt&&text.slice(afterAt+hour.length,at).trim()==='')))timeOK=false;
+   }
+  }
+ }
+ if(hour&&!timeOK)issues.push('hora absent o associació amb el títol no demostrada');
+ const excerptOK=!!literal(block.excerpt)&&text.includes(literal(block.excerpt));
+ if(!excerptOK)issues.push('descripció complementària no literal');
+ return {titleOK,timeOK,headingOK,headingPage,excerptOK,issues};
+}
+function resolveBlockDate(heading,pages){
+ // Visual day labels can occupy separate lines and include a subtitle.
+ const lines=String(heading).split('\n').map(s=>s.trim()).filter(Boolean);
+ return resolveItineraryDateHeading(heading,pages)||
+  resolveItineraryDateHeading(lines.slice(0,2).join(' '),pages)||
+  resolveItineraryDateHeading(lines[0]||'',pages);
+}
 function validateSemanticBlocks(raw,pages){
  if(!Array.isArray(raw)||raw.length>200)fail('invalid_transcript');
- let previous=0;
  return raw.map(block=>{
   if(!block||typeof block!=='object'||Array.isArray(block)||Object.keys(block).some(k=>!['page','heading','title','time','role','excerpt'].includes(k)))fail('invalid_transcript');
-  const page=pages.find(p=>p.page===block.page);
-  if(!page||block.page<previous)fail('invalid_transcript');previous=block.page;
+  if(!Number.isInteger(block.page)||block.page<1||block.page>10000)fail('invalid_transcript');
   for(const [key,max] of Object.entries({heading:200,title:200,time:50,excerpt:500})){
    if(typeof block[key]!=='string'||block[key].length>max)fail('invalid_transcript');
   }
-  if(!literal(block.title)||!literal(block.excerpt)||!['activity','alternative','recommendation','context'].includes(block.role))fail('invalid_transcript');
-  // Anchors are literal/model-reported; never claim independent OCR verification.
-  if(!literal(page.text).includes(literal(block.excerpt))||!literal(block.excerpt).includes(literal(block.title)))fail('invalid_transcript');
-  if(block.time&&!literal(block.excerpt).includes(literal(block.time)))fail('invalid_transcript');
-  if(block.heading&&!pages.some(p=>p.page<=block.page&&literal(p.text).includes(literal(block.heading))))fail('invalid_transcript');
+  if(!literal(block.title)||!['activity','alternative','recommendation','context'].includes(block.role))fail('invalid_transcript');
   return {...block};
  });
 }
@@ -109,27 +161,45 @@ function semanticBlocksToProposal(transcript,source){
  const candidates=[],warnings=[],seen=new Set();
  for(const block of transcript.blocks){
   if(['context','recommendation'].includes(block.role))continue;
-  const headingPage=[...transcript.pages].reverse().find(p=>p.page<=block.page&&literal(p.text).includes(literal(block.heading)));
-  const date=block.heading?resolveItineraryDateHeading(block.heading,transcript.pages):null;
+  const evidence=blockEvidence(block,transcript.pages,transcript.blocks);
+  const {headingPage}=evidence;
+  const date=evidence.headingOK?resolveBlockDate(block.heading,transcript.pages):null;
   // Reuse the sole text-to-proposal engine. A semantic block supplies row
   // boundaries, not a second date/time model or a writer.
   const exact=/^(?:[01]?\d|2[0-3])[:.h][0-5]\d(?:\s*h)?(?:\s*(?:[-–—]|a|to)\s*(?:[01]?\d|2[0-3])[:.h][0-5]\d(?:\s*h)?)?$/i.test(block.time.trim());
-  const time=exact?block.time.trim():'';
+  const time=exact&&evidence.timeOK?block.time.trim():'';
   const dateContext=date?{...date,page:headingPage.page}:null;
   let extracted;
-  try{extracted=itineraryCandidateFromLiteralRow((time?time+' ':block.time?block.time+': ':'• ')+block.title,block.page,dateContext);}
+  try{extracted=itineraryCandidateFromLiteralRow((time?time+' ':block.time&&!exact&&evidence.timeOK?block.time+': ':'• ')+block.title,block.page,dateContext);}
   catch(error){
    if(error?.code!=='no_itinerary_candidates')throw error;
-   extracted=itineraryCandidateFromLiteralRow('• '+block.title,block.page,dateContext);
+   try{extracted=itineraryCandidateFromLiteralRow('• '+block.title,block.page,dateContext);}
+   catch(fallback){
+    if(fallback?.code!=='no_itinerary_candidates')throw fallback;
+    // Retain an uninterpretable suggestion only as an explicitly excluded draft.
+    evidence.issues.push('títol no interpretable com a activitat');
+    extracted={classification_hint:'manual',fields:{title:{value:block.title,confidence:'low',evidence:[{kind:'visual',page:block.page}]}}};
+   }
   }
   const fields={...extracted.fields};
   if(!date)delete fields.local_date;
-  for(const field of Object.values(fields))field.evidence=[{kind:'text',page:block.page,excerpt:block.excerpt}];
+  if(!evidence.timeOK){delete fields.start_local_time;delete fields.end_local_time;delete fields.daypart;}
+  for(const [key,field] of Object.entries(fields)){
+   const anchor=['start_local_time','end_local_time','daypart'].includes(key)?block.time:block.title;
+   field.evidence=[{kind:'text',page:block.page,excerpt:anchor}];
+   if(evidence.issues.length)field.confidence='low';
+  }
+  // Do not present absent text as confirmed evidence. A provisional title is
+  // visible solely to let the user identify/correct the disputed suggestion.
+  if(!evidence.titleOK)fields.title.evidence=[{kind:'visual',page:block.page}];
+  if(evidence.excerptOK&&block.excerpt!==block.title)
+   fields.notes={value:block.excerpt,confidence:'medium',evidence:[{kind:'text',page:block.page,excerpt:block.excerpt}]};
   if(date){
+   fields.local_date||={value:date.date,confidence:'low',evidence:[]};
    fields.local_date.evidence=[{kind:'text',page:headingPage.page,excerpt:block.heading}];
    if(date.context)fields.local_date.evidence.push({kind:'text',page:date.context.page,excerpt:date.context.evidence});
   }
-  const notices=[];
+  const notices=evidence.issues.length?['Evidència pendent: '+evidence.issues.join('; ')+'. Revisa el PDF abans de seleccionar aquesta activitat.']:[];
   if(!date)notices.push('Data ambigua: confirma el dia de l’activitat amb el document.');
   if(block.time&&!exact)notices.push('Franja orientativa: '+block.time+'. No s’ha inventat una hora exacta.');
   if(block.role==='alternative')notices.push('Alternativa opcional: exclosa inicialment; selecciona-la només si la vols incorporar.');

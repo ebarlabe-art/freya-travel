@@ -1,11 +1,11 @@
-// Original PDF bytes; provider response is a reviewed literal annotation, NOT a live AI run.
+// Original PDF bytes; replay a captured real OpenAI response, without live API calls.
 // Network, trip and persistence are isolated. No production reads/writes.
 import assert from 'node:assert/strict';import {readFile,mkdir} from 'node:fs/promises';import {createServer} from 'node:http';import {resolve,extname,sep} from 'node:path';import {pathToFileURL} from 'node:url';
 import {itineraryPdfTranscriptToProposal,itineraryPdfEnrichTimeZones} from '../supabase/functions/import-itinerary/transcript.mjs';
 const pw=await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href),engine=process.env.PLANNING_ENGINE||'chromium',dist=resolve('dist');
 const server=createServer(async(req,res)=>{const path=resolve(dist,new URL(req.url,'http://local').pathname.replace(/^\/freya-travel\//,'')||'index.html');if(!path.startsWith(dist+sep)){res.writeHead(404).end();return}try{res.setHeader('Content-Type',({'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript','.css':'text/css'})[extname(path)]||'application/octet-stream');res.end(await readFile(path))}catch{res.writeHead(404).end()}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${server.address().port}/freya-travel/`;
-const transcript=JSON.parse(await readFile('scripts/fixtures/aran/annotated-transcript.json','utf8'));
+const transcript=JSON.parse(await readFile('scripts/fixtures/aran/openai-verified-transcript.json','utf8'));
 const rawProposal=itineraryPdfTranscriptToProposal(transcript,{kind:'document',document_id:'21200000-0000-4000-8000-000000000006',mime_type:'application/pdf'});
 const proposal=await itineraryPdfEnrichTimeZones(rawProposal,{transcript,source:rawProposal.source,resolvePlace:async city=>city==='ARTIES'?'Europe/Madrid':null});
 const browser=await pw[engine].launch({headless:true});
@@ -35,23 +35,24 @@ try{
  assert.equal(await page.evaluate(()=>fixture.reads),1);assert.equal(await page.evaluate(()=>fixture.file),'original.pdf');
  assert.equal(await page.evaluate(()=>fixture.fileHash),(await readFile('scripts/fixtures/aran/sha256.txt','utf8')).trim());
  const items=await page.evaluate(()=>itineraryImportState.review.items);
- assert.equal(items.length,17);assert.equal(items.filter(i=>i.included).length,13);
+ assert.match(items[14].source_warnings.join(' '),/Evidència pendent/);assert.equal(items[14].included,false);
+ assert.equal(items.length,16);assert.equal(items.filter(i=>i.included).length,12);
  assert.equal(items.filter(i=>i.original.local_date==='2026-11-09').length,2);
  assert.equal(await page.evaluate(()=>fixture.writes.length),0);
  assert.doesNotMatch(await page.locator('#itineraryPlanningReport').innerText(),/00:00/);
  // Expand an excluded alternative and opt in, then cancel that selection.
- const candidate=page.locator('[data-import-candidate="13"]');
+ const candidate=page.locator('[data-import-candidate="14"]');
  for(const id of ['itineraryImportAdvanced','itineraryImportPdfDetails','itineraryImportExcluded']){
   const parent=page.locator('#'+id);if(await parent.count()&&!await parent.evaluate(n=>n.open))await parent.locator(':scope > summary').tap();
  }
- await candidate.locator(':scope > summary').tap();await page.locator('[data-import-include="13"]').check();
- await page.waitForFunction(()=>itineraryImportState.review.items[13].included===true);
- await page.locator('[data-import-include="13"]').uncheck();
- assert.equal(await page.evaluate(()=>itineraryImportState.review.items.filter(i=>i.included).length),13);
+ await candidate.locator(':scope > summary').tap();await page.locator('[data-import-include="14"]').check();
+ await page.waitForFunction(()=>itineraryImportState.review.items[14].included===true);
+ await page.locator('[data-import-include="14"]').uncheck();
+ assert.equal(await page.evaluate(()=>itineraryImportState.review.items.filter(i=>i.included).length),12);
  assert.equal(await page.evaluate(()=>fixture.writes.length),0);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
  await page.locator('#itineraryImportConfirmNo').tap();assert.equal(await page.evaluate(()=>fixture.writes.length),0);
  await mkdir('artifacts/aran',{recursive:true});await page.screenshot({path:`artifacts/aran/${engine}-review.png`,fullPage:true});
- assert.deepEqual(errors,[]);console.log(`PASS Aran ${engine}: original PDF selection, annotated-provider 17 proposals/13 selected, four dates, opt-in/cancel alternative, no writes, 390x844.`);
+ assert.deepEqual(errors,[]);console.log(`PASS Aran ${engine}: original PDF selection, captured-real-provider 16 proposals/12 selected, four dates, opt-in/cancel alternative, no writes, 390x844.`);
 }finally{await browser.close();await new Promise(r=>server.close(r))}

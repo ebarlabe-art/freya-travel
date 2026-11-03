@@ -41,6 +41,12 @@ test('#194 actual Edge accepts ephemeral PDF only after JWT/RLS read; no storage
   const old=await handler(request({trip_id:id,document_id:id,file:original}));assert.equal(old.status,409);assert.equal((await old.json()).error,'reader_update_required');
   const modern=await handler(request({trip_id:id,document_id:id,file:original,reader_version:2}));assert.equal(modern.status,200);
   const recovered=(await modern.json()).proposal;assert.equal(recovered.candidates.length,17);assert.equal(recovered.requires_user_confirmation,true);
+  providerTranscript=JSON.parse(await readFile(new URL('./fixtures/aran/openai-verified-transcript.json',import.meta.url),'utf8'));
+  const liveReplay=await handler(request({trip_id:id,document_id:id,file:original,reader_version:2}));
+  assert.equal(liveReplay.status,200);assert.equal((await liveReplay.json()).proposal.candidates.length,16);
+  providerTranscript.blocks=providerTranscript.blocks.filter(b=>b.role!=='alternative');
+  providerTranscript.blocks.find(b=>b.role==='activity').time='02.23';
+  assert.equal((await handler(request({trip_id:id,document_id:id,file:original}))).status,409);
   assert.equal((await handler(request({trip_id:id,document_id:id,file:original,reader_version:3}))).status,400);
   assert.ok(calls.filter(c=>c.url.includes('/rest/')).every(c=>c.method==='GET'));
   assert.ok(calls.every(c=>!c.url.includes('/storage/')));
