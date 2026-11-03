@@ -19,7 +19,7 @@ test('A2.7: AI PDF processing requires explicit opt-in, with no silent document 
  assert.match(html,/servei d.IA d.OpenAI/);
  assert.match(script,/\$\('itineraryImportConsent'\)\.checked/);
  assert.match(script,/db\.functions\.invoke\('import-itinerary'/);
- assert.match(script,/const body=\{trip_id:state\.tripId,document_id:doc\.id\}/);
+ assert.match(script,/const body=\{trip_id:state\.tripId,document_id:doc\.id,reader_version:2\}/);
  assert.doesNotMatch(script,/setInterval\(/);
 });
 test('A2.7: a chosen existing document is reused, file upload is user initiated',()=>{
@@ -90,7 +90,7 @@ test('A2.7: Pages includes the same module graph as PWA cache',()=>{
  assert.match(worker,/\.\/domain\/import-itinerary-proposal\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-review\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-write\.mjs/);
- assert.match(worker,/freya-travel-release-6444-v50/);
+ assert.match(worker,/freya-travel-release-6444-v51/);
 });
 
 test('A2.9: real async completion re-enables the imported itinerary save button',async()=>{

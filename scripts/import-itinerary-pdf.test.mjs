@@ -82,7 +82,7 @@ test('A2 public: reuse existing OpenAI billing and bound provider response',()=>
  assert.match(endpoint,/const OPENAI_API_KEY=Deno\.env\.get\('OPENAI_API_KEY'\)/);
  assert.match(endpoint,/const MODEL=Deno\.env\.get\('A2_IMPORT_MODEL'\)\|\|Deno\.env\.get\('TB04_CANDIDATE_MODEL'\)/);
  assert.match(endpoint,/if\(!OPENAI_API_KEY\|\|!MODEL\)/);
- assert.match(endpoint,/const MAX_OUTPUT_TOKENS=5000/);
+ assert.match(endpoint,/const MAX_OUTPUT_TOKENS=12000/);
  assert.match(endpoint,/max_output_tokens:MAX_OUTPUT_TOKENS/);
  assert.match(endpoint,/store:false/);
  assert.doesNotMatch(endpoint,/console\.log|console\.error/);

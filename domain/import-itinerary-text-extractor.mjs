@@ -60,12 +60,49 @@ function readDatePrefix(input,yearHint=null){
   }
  }
  const short=clean.match(DAY_MONTH);
- if(short&&yearHint){
+ if(short&&yearHint?.year){
   const month=MONTHS[stripAccents(short[2])];
   if(month)return {date:calendarDate(yearHint.year,month,short[1]),token:short[0],
    rest:clean.slice(short[0].length).trim(),confidence:'medium',yearEvidence:yearHint.evidence};
  }
  return null;
+}
+// A bounded document period is evidence, never a phone/trip-date default.
+export function itineraryDocumentPeriod(pages){
+ const found=new Map();
+ for(const {page,text} of pages)for(const line of text.split('\n')){
+  const same=line.match(/(?:^|\s)(\d{1,2})\s*(?:-|–|—|al|a|to)\s*(\d{1,2})\s+(?:de\s+)?([a-zà-ÿ]+)\s+(?:de\s+)?(20\d{2}|19\d{2})\b/i);
+  const numeric=line.match(/(\d{1,2}[./]\d{1,2}[./]\d{4})\s*[-–—]\s*(\d{1,2}[./]\d{1,2}[./]\d{4})/);
+  const words=line.match(/(\d{1,2}\s+(?:de\s+)?[a-zà-ÿ]+\s+(?:de\s+)?\d{4})\s*[-–—]\s*(\d{1,2}\s+(?:de\s+)?[a-zà-ÿ]+\s+(?:de\s+)?\d{4})/i);
+  let start,end;
+  if(numeric||words){const m=numeric||words;start=readDatePrefix(m[1])?.date;end=readDatePrefix(m[2])?.date;}
+  else if(same){const month=MONTHS[stripAccents(same[3])];start=calendarDate(same[4],month,same[1]);end=calendarDate(same[4],month,same[2]);}
+  if(start&&end&&start<=end&&Date.parse(end)-Date.parse(start)<=366*86400000)
+   found.set(start+'|'+end,{start,end,year:start.slice(0,4)===end.slice(0,4)?start.slice(0,4):null,evidence:line,page});
+ }
+ return found.size===1?[...found.values()][0]:null;
+}
+export function resolveItineraryDateHeading(heading,pages){
+ const period=itineraryDocumentPeriod(pages),yearHint=documentYearHint(pages)||period;
+ const label=heading.trim().split(/\s*[|]\s*/)[0];
+ const clean=label.replace(CALENDAR,'').replace(WEEKDAY,'');
+ const full=readDatePrefix(clean,yearHint);
+ if(full?.date)return {date:full.date,evidence:heading,page:null,context:full.yearEvidence?yearHint:null};
+ if(!period)return null;
+ const weekdays=['diumenge domingo sunday','dilluns lunes monday','dimarts martes tuesday','dimecres miercoles wednesday','dijous jueves thursday','divendres viernes friday','dissabte sabado saturday'];
+ const normalized=stripAccents(label).replace(/[,·]/g,' ').trim();
+ const dayFirst=normalized.match(/^(\d{1,2})\s+([a-z]+)$/),weekdayFirst=normalized.match(/^([a-z]+)\s+(\d{1,2})$/);
+ const short=dayFirst||weekdayFirst?null:clean.match(DAY_MONTH);
+ const weekday=dayFirst?.[2]||weekdayFirst?.[1]||stripAccents(label.match(WEEKDAY)?.[0]||'').trim();
+ const day=Number(dayFirst?.[1]||weekdayFirst?.[2]||short?.[1]);
+ const month=short?MONTHS[stripAccents(short[2])]:null;
+ if(!day||!weekdays.some(w=>w.split(' ').includes(weekday))||(short&&!month))return null;
+ const matches=[];
+ for(let ms=Date.parse(period.start);ms<=Date.parse(period.end);ms+=86400000){
+  const date=new Date(ms);
+  if(date.getUTCDate()===day&&(!month||date.getUTCMonth()+1===month)&&weekdays[date.getUTCDay()].split(' ').includes(weekday))matches.push(date.toISOString().slice(0,10));
+ }
+ return matches.length===1?{date:matches[0],evidence:heading,page:null,context:period}:null;
 }
 function makeField(value,excerpt,page,confidence='high'){
  return {value,confidence,evidence:[{kind:'text',excerpt:excerpt.slice(0,500),page}]};
@@ -99,7 +136,7 @@ function daypartValue(label){
   migdia:'midday',mediodia:'midday'};
  return mapping[stripAccents(label)]||null;
 }
-function readItem(line,hasDay){
+function readItem(line,hasDay,semanticBoundary=false){
  const normalized=line.trim().replace(/^\u2022\s*/,'• ');
  const clock=normalized.match(CLOCK);
  if(clock){
@@ -117,7 +154,7 @@ function readItem(line,hasDay){
   const bullet=normalized.match(BULLET);
   if(bullet){
    const title=cleanTitle(bullet[1]);
-   if(title&&/\p{L}/u.test(title)&&!ADMIN.test(title)&&!HEADER.test(title))return {title,confidence:'medium'};
+   if(title&&/\p{L}/u.test(title)&&!ADMIN.test(title)&&(semanticBoundary||!HEADER.test(title)))return {title,confidence:'medium'};
   }
  }
  return null;
@@ -212,7 +249,7 @@ function joinWrappedActivityRows(records){
  return result;
 }
 export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'}){
- const pages=normalizePages(rawPages),candidates=[],warnings=new Set(),yearHint=documentYearHint(pages);
+ const pages=normalizePages(rawPages),candidates=[],warnings=new Set(),yearHint=documentYearHint(pages)||itineraryDocumentPeriod(pages);
  let current=null,documentZone=null,pendingDaypart=null,unparsed=0,invalidDate=false;
  for(const {page,text} of pages){
   for(const record of joinWrappedActivityRows(clockRows(text))){
@@ -223,7 +260,8 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
    const dayMarker=CALENDAR.test(work);
    // Day labels often precede a weekday: "DIA 1 · Diumenge 27/12/2026".
    if(dayMarker)work=work.replace(CALENDAR,'').replace(WEEKDAY,'').trim();
-   const datePart=readDatePrefix(work,yearHint);
+   const contextual=resolveItineraryDateHeading(line,pages);
+   const datePart=readDatePrefix(work,yearHint)||(contextual?{date:contextual.date,rest:'',context:contextual.context}:null);
    const tz=explicitZone(line,page);
    if(tz?.invalid){
     documentZone=null;
@@ -245,7 +283,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     // Keep the explicit date as the active day for subsequent entries, even if
     // the heading also includes the first activity of that day.
     pendingDaypart=null;
-    current={date:datePart.date,evidence:datePart.yearEvidence?line+' | Any explícit al document: '+datePart.yearEvidence:line,page,confidence:datePart.confidence||'high',zone:tz&&!tz.invalid?tz:documentZone};
+    current={context:datePart.context,date:datePart.date,evidence:datePart.yearEvidence?line+' | Any explícit al document: '+datePart.yearEvidence:line,page,confidence:datePart.confidence||'high',zone:tz&&!tz.invalid?tz:documentZone};
     const tail=datePart.rest.replace(/^(?:[-–—·|]\s*)/,'');
     const inline=readItem(tail,false);
     if(inline){
@@ -255,6 +293,9 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     }
     if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
     continue;
+   }
+   if(/^(?:\d{1,2}\s+(?:dilluns|dimarts|dimecres|dijous|divendres|dissabte|diumenge|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|monday|tuesday|wednesday|thursday|friday|saturday|sunday))$/i.test(line)||(WEEKDAY.test(line)&&/^\d{1,2}(?:\s|$)/.test(work))){
+    current=null;pendingDaypart=null;warnings.add('Capçalera de dia ambigua: no s’ha reutilitzat la data anterior.');continue;
    }
    if((!CLOCK.test(line)&&PARTIAL_DATE.test(work))||/^(?:dia|día|day)\s*\d{1,3}\s*$/.test(line)){
     current=null;pendingDaypart=null;warnings.add('Hi ha dates sense any: cal confirmar-les.');continue;
@@ -282,7 +323,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     pendingDaypart=null;
    }
    if(item){
-    const dateContext=current?{date:current.date,evidence:current.evidence,page:current.page,confidence:current.confidence}:null;
+    const dateContext=current?{date:current.date,evidence:current.evidence,page:current.page,confidence:current.confidence,context:current.context}:null;
     const dateForItem=explicitNextMorningDate(line,item.start,dateContext)||dateContext;
     if(dateForItem!==dateContext)warnings.add('Una activitat de matinada indica explícitament el dia següent: comprova-la.');
     const candidate=makeCandidate(item,record.evidence,page,dateForItem,
@@ -326,7 +367,9 @@ function makeCandidate(item,line,page,date,zone,sourceOrder){
  const fields={title:makeField(title,line,page,item.confidence)};
  const place=explicit&&[...explicit].length<=200?explicit:mentionedPlace(title);
  if(place)fields.location_name=makeField(place,line,page,explicit?'medium':'medium');
- if(date)fields.local_date=makeField(date.date,date.evidence,date.page,date.confidence||'high');
+ if(date){fields.local_date=makeField(date.date,date.evidence,date.page,date.confidence||'high');
+  if(date.context)fields.local_date.evidence.push({kind:'text',excerpt:date.context.evidence,page:date.context.page});
+ }
  if(item.start)fields.start_local_time=makeField(item.start,line,page);
  if(item.end)fields.end_local_time=makeField(item.end,line,page);
  if(item.daypart)fields.daypart=makeField(item.daypart,line,page);
@@ -342,4 +385,12 @@ function makeCandidate(item,line,page,date,zone,sourceOrder){
 export function extractItineraryProposalFromText(rawText,source={kind:'manual'}){
  if(typeof rawText!=='string')fail('Text d’itinerari invàlid.');
  return extractItineraryProposalFromPages([{page:1,text:rawText}],source);
+}
+
+// Semantic readers supply a verified row boundary; parsing and field building
+// remain the same as for text pages. An absent date stays absent.
+export function itineraryCandidateFromLiteralRow(line,page,date=null){
+ const item=readItem(line,true,true);
+ if(!item)fail('No he pogut identificar cap activitat acreditada.','no_itinerary_candidates');
+ return makeCandidate(item,line,page,date,null,0);
 }

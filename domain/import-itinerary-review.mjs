@@ -20,7 +20,7 @@ function immutableItem(raw){
  return {source_order:raw.source_order,classification_hint:raw.classification_hint,original,
   evidence:Object.fromEntries(Object.entries(raw.fields).map(([key,field])=>[key,field.evidence])),
   confidence:Object.fromEntries(Object.entries(raw.fields).map(([key,field])=>[key,field.confidence])),
-  source_warnings:[...raw.warnings],source_flags:[...raw.review_flags],edits:{},included:true};
+  source_warnings:[...raw.warnings],source_flags:[...raw.review_flags],edits:{},included:!raw.warnings.some(w=>w.startsWith('Alternativa opcional:'))};
 }
 export function createItineraryReview(proposal,scope){
  // The A2.6 endpoint returns an already-normalized proposal with derived

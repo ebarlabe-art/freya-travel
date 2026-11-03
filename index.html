@@ -2058,7 +2058,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-iphone-flight-advice-210';
+const FREYA_FRONTEND_RELEASE='pwa-contextual-pdf-aran';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -9453,7 +9453,8 @@ function itineraryImportErrorMessage(code){
   invalid_file_type:'El document no és un PDF o una imatge vàlida.',
   unsupported_file_type:'Només es poden analitzar PDF i fotos JPG, PNG o WebP.',
   transcription_incomplete:'No s’ha pogut llegir tot l’itinerari. Prova amb un PDF més clar.',
-  no_itinerary_candidates:'No s’han trobat activitats amb prou evidència.',
+  no_itinerary_candidates:'No s’ha pogut reconstruir l’itinerari a partir de la lectura del document. No s’ha desat res. Torna-ho a provar; si es repeteix, conserva el PDF per revisar la lectura.',
+  reader_update_required:'Hi ha alternatives que requereixen la versió actualitzada de Freya. Comprova si hi ha actualitzacions i torna a obrir l’app. No s’ha desat res.',
   invalid_transcript:'La lectura automàtica no és prou fiable per crear una proposta.',
   provider_rate_limited:'El servei està ocupat. Torna-ho a provar més tard.',
   import_not_configured:'La lectura amb IA encara no està configurada. No s’ha afegit cap activitat a l’itinerari.',
@@ -9468,7 +9469,7 @@ async function processItineraryImportDocument(doc){
  $('itineraryImportAnalyze').disabled=true;$('itineraryImportUpload').disabled=true;
  $('itineraryImportStatus').textContent='Analitzant el document. Pot trigar una mica…';
  try{
-  const body={trip_id:state.tripId,document_id:doc.id};
+  const body={trip_id:state.tripId,document_id:doc.id,reader_version:2};
   if(doc.transient)body.file=doc.transient;
   const {data,error}=await db.functions.invoke('import-itinerary',{body});
   if(!itineraryImportStillCurrent(state)||state.epoch!==requestEpoch)return;
@@ -9538,6 +9539,8 @@ function renderItineraryImportPreview(){
  $('itineraryImportRemaining').textContent=result.selected===0?'No hi ha activitats noves per importar':result.selected+(result.selected===1?' activitat seleccionada per afegir':' activitats seleccionades per afegir');
  $('itineraryImportReviewHelp').textContent=result.selected===0?'Pots tancar la revisió o recuperar una activitat exclosa. El viatge no s’ha modificat.':'Revisa les activitats seleccionades abans de desar. Freya no modificarà cap element que ja tinguis al viatge.';
  $('itineraryImportSummary').textContent=state.reconciliation?'PDF analitzat: '+result.total+' propostes. Cap canvi desat fins a la confirmació final.':result.selected+' de '+result.total+' elements seleccionats · '+result.important+' per revisar · '+result.informational+' amb informació de confiança. '+(state.saveCompleted?'Desat.':'Encara no desat.');
+ const optionalCount=state.review.items.filter(item=>!item.included&&item.source_warnings.some(w=>w.startsWith('Alternativa opcional:'))).length;
+ if(optionalCount)$('itineraryImportSummary').textContent+=' '+optionalCount+' alternatives opcionals desmarcades. Pots triar-les a Detalls avançats → Editar les dades del PDF.';
  const pdfHeading=$('itineraryImportPdfDetails')?.querySelector?.('summary');
  if(pdfHeading)pdfHeading.textContent='Editar les dades del PDF ('+result.total+' propostes)';
  $('itineraryImportWrite').disabled=!!state.busy||!!state.saveCompleted||connectionUnavailable()||!!offlineReadOnlySession||result.selected===0;

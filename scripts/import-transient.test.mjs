@@ -11,13 +11,13 @@ test('#194 transient input is bounded, validates encoding and keeps contents out
 test('#194 actual Edge accepts ephemeral PDF only after JWT/RLS read; no storage or DB writes',async()=>{
  const savedFetch=globalThis.fetch,savedDeno=globalThis.Deno;let handler;const calls=[];
  globalThis.Deno={env:{get:key=>({SUPABASE_URL:'https://synthetic.supabase.co',SUPABASE_ANON_KEY:'synthetic-anon',OPENAI_API_KEY:'synthetic-key',A2_IMPORT_MODEL:'synthetic-model'})[key]},serve:fn=>{handler=fn}};
- let allowed=true;
+ let allowed=true,providerTranscript={complete:true,warnings:[],pages:[{page:1,text:'27/12/2030\n10:00 Visita al museu sintètic'}]};
  globalThis.fetch=async(url,options={})=>{
   const u=String(url);calls.push({url:u,method:options.method||'GET'});
   if(u.includes('/rest/v1/trips?'))return Response.json(allowed?[{id}]:[]);
   if(u.includes('/rest/v1/trip_stops'))return Response.json([]);
   if(u.includes('/functions/v1/place-resolution'))return Response.json({candidates:[]});
-  if(u==='https://api.openai.com/v1/responses')return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({complete:true,warnings:[],pages:[{page:1,text:'27/12/2030\n10:00 Visita al museu sintètic'}]})}]}]});
+  if(u==='https://api.openai.com/v1/responses')return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(providerTranscript)}]}]});
   throw Error('Unexpected network request');
  };
  try{
@@ -35,5 +35,15 @@ test('#194 actual Edge accepts ephemeral PDF only after JWT/RLS read; no storage
   assert.ok(calls.filter(c=>c.url.includes('/rest/')).every(c=>c.method==='GET'));
   calls.length=0;assert.equal((await handler(request({trip_id:id,document_id:id,file:{...file,base64:btoa('not a PDF')}}))).status,415);
   assert.equal(calls.some(c=>c.url.includes('openai.com')),false);
+  // Actual Edge handler + original Aran bytes, only provider transport mocked.
+  providerTranscript=JSON.parse(await readFile(new URL('./fixtures/aran/annotated-transcript.json',import.meta.url),'utf8'));
+  const original={name:'original.pdf',mime_type:'application/pdf',base64:(await readFile(new URL('./fixtures/aran/original.pdf',import.meta.url))).toString('base64')};
+  const old=await handler(request({trip_id:id,document_id:id,file:original}));assert.equal(old.status,409);assert.equal((await old.json()).error,'reader_update_required');
+  const modern=await handler(request({trip_id:id,document_id:id,file:original,reader_version:2}));assert.equal(modern.status,200);
+  const recovered=(await modern.json()).proposal;assert.equal(recovered.candidates.length,17);assert.equal(recovered.requires_user_confirmation,true);
+  assert.equal((await handler(request({trip_id:id,document_id:id,file:original,reader_version:3}))).status,400);
+  assert.ok(calls.filter(c=>c.url.includes('/rest/')).every(c=>c.method==='GET'));
+  assert.ok(calls.every(c=>!c.url.includes('/storage/')));
+
  }finally{globalThis.fetch=savedFetch;globalThis.Deno=savedDeno}
 });
