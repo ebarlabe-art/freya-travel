@@ -90,7 +90,7 @@ test('A2.7: Pages includes the same module graph as PWA cache',()=>{
  assert.match(worker,/\.\/domain\/import-itinerary-proposal\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-review\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-write\.mjs/);
- assert.match(worker,/freya-travel-release-6444-v51/);
+ assert.match(worker,/freya-travel-release-6444-v52/);
 });
 
 test('A2.9: real async completion re-enables the imported itinerary save button',async()=>{
@@ -164,6 +164,16 @@ test('A2.9: inline iPhone confirmation resolves only from explicit user interact
  assert.equal(await cancelled,false);
  assert.equal(state.confirmResolver,null);
  assert.equal($('itineraryImportConfirm').classList.hidden,true);
+});
+
+test('PDF alternatives are visible and recoverable without nested advanced menus',()=>{
+ assert.match(script,/id="itineraryImportAlternatives"/);
+ assert.match(script,/id="itineraryImportAlternativesByDay"/);
+ assert.match(script,/data-import-alternative/);
+ assert.match(script,/data-alternative-day/);
+ assert.match(script,/id="itinerarySavedAlternativesButton"/);
+ assert.match(script,/openItineraryImport\(true\)/);
+ assert.match(script,/state\.api\.changeItineraryReviewItem\(state\.review,index,'included',target\.checked\)/);
 });
 
 test('import review renders existing evidence and excludes matches only on explicit click',async()=>{
