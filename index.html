@@ -462,6 +462,16 @@
     .itinerary-import-consent{display:flex;align-items:flex-start;gap:10px;font-size:.92rem;line-height:1.5}
     .itinerary-import-consent input{width:auto!important;flex:0 0 auto;margin-top:5px}
     .itinerary-import-candidate{border:1px solid var(--line);border-radius:18px;padding:14px;background:#fff}
+    .itinerary-import-alternatives{margin:16px 0;padding:16px;border:1px solid #ccd9c7;border-radius:18px;background:#f9fbf8;overflow-wrap:anywhere}
+    .itinerary-import-alternatives h4{margin:0 0 8px;font-size:1.12rem}
+    .itinerary-import-alternatives p{margin:6px 0 12px;line-height:1.5}
+    .itinerary-import-alternative-day{margin:16px 0 0}
+    .itinerary-import-alternative-day h5{font-size:1rem;margin:0 0 9px}
+    .itinerary-import-alternative{display:flex;align-items:flex-start;gap:12px;min-height:52px;padding:12px;margin:8px 0;border:1px solid #d9e3d5;border-radius:12px;background:#fff;cursor:pointer}
+    .itinerary-import-alternative input{flex:none;width:22px;height:22px;margin:2px 0 0}
+    .itinerary-import-alternative span{display:grid;gap:5px;min-width:0}
+    .itinerary-import-alternative small{color:var(--muted);line-height:1.4}
+    #itinerarySavedAlternatives button{min-height:44px;white-space:normal}
 
     .itinerary-import-pdf-details{margin:18px 0;padding:14px;border:1px solid var(--line);border-radius:16px;background:#fff}
     .itinerary-import-pdf-details>summary{font-weight:700;cursor:pointer;padding:10px 0}
@@ -1904,6 +1914,11 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
           <section id="itineraryImportPreview" class="hidden" aria-labelledby="itineraryImportPreviewTitle">
             <h3 id="itineraryImportPreviewTitle">Revisa la proposta</h3>
             <p id="itineraryImportSummary" class="muted"></p>
+            <section id="itineraryImportAlternatives" class="itinerary-import-alternatives hidden" aria-labelledby="itineraryImportAlternativesTitle">
+              <h4 id="itineraryImportAlternativesTitle">🌿 Plans alternatius <span id="itineraryImportAlternativesCount"></span></h4>
+              <p>Opcions del document agrupades per dia. <strong>Estan desmarcades per defecte</strong> i només s’afegiran al planning si les selecciones i confirmes el desament.</p>
+              <div id="itineraryImportAlternativesByDay"></div>
+            </section>
             <div id="itineraryImportReviewResult" class="itinerary-import-result" role="status" aria-live="polite"></div>
             <p id="itineraryImportRemaining" role="status" aria-live="polite"></p>
             <button id="itineraryImportExcludeExisting" type="button">Desmarca les possibles coincidències amb el viatge</button>
@@ -1969,6 +1984,11 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         </section>
         <div id="genericItineraryBrowse">
           <div id="genericItineraryDayTabs" class="generic-itinerary-day-tabs" role="tablist" aria-label="Dies del viatge"></div>
+          <section id="itinerarySavedAlternatives" class="itinerary-import-alternatives hidden" aria-labelledby="itinerarySavedAlternativesTitle">
+            <h4 id="itinerarySavedAlternativesTitle">🌿 Tens plans alternatius al PDF?</h4>
+            <p>Si ja has desat el planning, les opcions que no vas seleccionar no apareixen a l’agenda. Pots recuperar-les del document original guardat al viatge, sense tornar a desar les activitats que ja tens.</p>
+            <button type="button" id="itinerarySavedAlternativesButton" class="secondary">Revisar alternatives del PDF desat</button>
+          </section>
           <div id="genericItineraryEmpty" class="generic-itinerary-empty hidden"><strong>Encara no hi ha cap element programat.</strong>Afegeix un pla o configura vols, allotjaments i activitats.</div>
           <div id="genericItineraryDays" class="generic-itinerary-days"></div>
           <section id="genericItineraryUnscheduled" class="generic-itinerary-unscheduled hidden"><h3>Per planificar</h3><p>Plans i activitats que encara no tenen dia ni hora.</p><div id="genericItineraryUnscheduledList" class="generic-itinerary-timeline"></div></section>
@@ -2058,7 +2078,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-contextual-pdf-aran';
+const FREYA_FRONTEND_RELEASE='pwa-visible-pdf-alternatives';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -6941,6 +6961,7 @@ function renderGenericItinerary(){
   $('genericItineraryTitle').textContent=trip.name;
   tabs.innerHTML=dates.map(date=>`<button type="button" role="tab" class="generic-itinerary-day-tab ${date===selected?'active':''} ${date===today?'is-today':''}" data-generic-itinerary-day="${esc(date)}" aria-selected="${date===selected}"${date===today?' aria-current="date"':''}>${esc(genericItineraryDayTabLabel(date))}</button>`).join('')+(unscheduled.length?`<button type="button" role="tab" class="generic-itinerary-day-tab ${selected==='pending'?'active':''}" data-generic-itinerary-day="pending" aria-selected="${selected==='pending'}">Pendents</button>`:'');
   const activeItems=groupedAgendaFlights(groups.get(selected)||[]);
+  $('itinerarySavedAlternatives').classList.toggle('hidden',!selected||selected==='pending'||activeItems.length>0);
   $('genericItineraryDays').innerHTML=selected&&selected!=='pending'?`<section class="generic-itinerary-day">${dayMetadataEditorialHtml(selected)}${activeItems.length?`<div class="generic-itinerary-timeline">${activeItems.map(item=>renderAgendaJourney(item)).join('')}</div>`:`<div class="generic-itinerary-empty"><strong>${itinerarySourcesAreReady()?'Cap pla per a aquest dia.':'Encara no hi ha plans carregats per a aquest dia.'}</strong>${itinerarySourcesAreReady()?'Pots afegir-ne un quan vulguis.':'Hi ha fonts pendents; consulta l’avís de càrrega.'}</div>`}</section>`:'';
   $('genericItineraryDays').classList.toggle('hidden',selected==='pending');
   $('genericItineraryUnscheduledList').innerHTML=unscheduled.map(item=>renderItineraryItem(item,true)).join('');
@@ -9373,6 +9394,8 @@ function closeItineraryImport(){
  $('itineraryImportExistingWrap').classList.add('hidden');
  $('itineraryImportConsentWrap').classList.add('hidden');
  $('itineraryImportCandidates').replaceChildren();
+ $('itineraryImportAlternativesByDay').replaceChildren();
+ $('itineraryImportAlternatives').classList.add('hidden');
  $('itineraryImportDecisionDetails').open=true;
  $('itineraryPlanningReport').replaceChildren();$('itineraryPlanningReport').classList.add('hidden');
  $('itineraryImportReconciliation').replaceChildren();$('itineraryImportReconciliation').classList.add('hidden');
@@ -9401,7 +9424,7 @@ function showItineraryImportSourceMenu(open){
  $('itineraryImportSourceMenu').classList.toggle('hidden',!open);
  $('itineraryImportUpload').setAttribute('aria-expanded',open?'true':'false');
 }
-async function openItineraryImport(){
+async function openItineraryImport(fromSavedPdf=false){
  if(!trip||!session||isLondonTrip()||offlineReadOnlySession||connectionUnavailable()){
   msg('genericItineraryMessage','Per importar un document, connecta’t a Internet i inicia sessió.',true);return;
  }
@@ -9435,6 +9458,11 @@ async function openItineraryImport(){
   const files=[...(documentRows||[]),...(photos||[])];
   state.docs=[...new Map(files.filter(row=>itineraryImportMimeAllowed(row.mime_type))
    .map(row=>[row.id,row])).values()];
+  if(fromSavedPdf){
+   $('itineraryImportExistingWrap').classList.remove('hidden');
+   $('itineraryImportStatus').textContent='Tria el PDF original desat a Documents, autoritza la lectura i prem Analitza el document. Revisa les coincidències abans de confirmar cap canvi.';
+   $('itineraryImportExisting').focus({preventScroll:true});
+  }
   $('itineraryImportExisting').innerHTML='<option value="">Selecciona un document o foto…</option>'+
    state.docs.map(doc=>'<option value="'+esc(doc.id)+'">'+esc(doc.title||doc.file_name||'Document')+
     (doc.category==='Foto'?' · Foto':'')+'</option>').join('');
@@ -9540,7 +9568,7 @@ function renderItineraryImportPreview(){
  $('itineraryImportReviewHelp').textContent=result.selected===0?'Pots tancar la revisió o recuperar una activitat exclosa. El viatge no s’ha modificat.':'Revisa les activitats seleccionades abans de desar. Freya no modificarà cap element que ja tinguis al viatge.';
  $('itineraryImportSummary').textContent=state.reconciliation?'PDF analitzat: '+result.total+' propostes. Cap canvi desat fins a la confirmació final.':result.selected+' de '+result.total+' elements seleccionats · '+result.important+' per revisar · '+result.informational+' amb informació de confiança. '+(state.saveCompleted?'Desat.':'Encara no desat.');
  const optionalCount=state.review.items.filter(item=>!item.included&&item.source_warnings.some(w=>w.startsWith('Alternativa opcional:'))).length;
- if(optionalCount)$('itineraryImportSummary').textContent+=' '+optionalCount+' alternatives opcionals desmarcades. Pots triar-les a Detalls avançats → Editar les dades del PDF.';
+ if(optionalCount)$('itineraryImportSummary').textContent+=' '+optionalCount+' alternatives opcionals desmarcades, visibles a «Plans alternatius».';
  const pdfHeading=$('itineraryImportPdfDetails')?.querySelector?.('summary');
  if(pdfHeading)pdfHeading.textContent='Editar les dades del PDF ('+result.total+' propostes)';
  $('itineraryImportWrite').disabled=!!state.busy||!!state.saveCompleted||connectionUnavailable()||!!offlineReadOnlySession||result.selected===0;
@@ -9574,6 +9602,25 @@ function renderItineraryImportPreview(){
      (ev?.[0]?.page?' · pàg. '+ev[0].page:'')+'</div>').join('')+'</div>'+
    '</details>';
  };
+ const alternatives=result.items.map((item,index)=>({item,index}))
+  .filter(row=>row.item.source_warnings.some(w=>w.startsWith('Alternativa opcional:')));
+ const groupsByDate=new Map();
+ for(const entry of alternatives){
+  const date=/^\d{4}-\d{2}-\d{2}$/.test(entry.item.values.local_date||'')?entry.item.values.local_date:'pending';
+  if(!groupsByDate.has(date))groupsByDate.set(date,[]);
+  groupsByDate.get(date).push(entry);
+ }
+ $('itineraryImportAlternatives').classList.toggle('hidden',!alternatives.length);
+ $('itineraryImportAlternativesCount').textContent='('+alternatives.length+')';
+ $('itineraryImportAlternativesByDay').innerHTML=[...groupsByDate.entries()].sort(([a],[b])=>a==='pending'?1:b==='pending'?-1:a.localeCompare(b)).map(([date,entries])=>{
+  const dayLabel=date==='pending'?'Dia pendent de confirmar':new Intl.DateTimeFormat('ca',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
+  return '<section class="itinerary-import-alternative-day" data-alternative-day="'+esc(date)+'"><h5>'+esc(dayLabel)+'</h5>'+
+   entries.map(({item,index})=>{
+    const uncertain=item.source_warnings.some(w=>w.startsWith('Evidència pendent:')||w.startsWith('Data ambigua:'));
+    return '<label class="itinerary-import-alternative"><input type="checkbox" data-import-alternative="'+index+'" aria-label="Seleccionar '+esc(item.values.title||'alternativa')+'"'+(item.included?' checked':'')+(state.busy||state.saveCompleted||!!state.reconciliation?.pendingRequest?' disabled':'')+'><span><strong>'+esc(item.values.title||'Alternativa sense títol')+'</strong><small>'+(item.values.start_local_time?esc(item.values.start_local_time)+' · ':'')+(item.included?'Seleccionada per revisar i confirmar':'Opcional · no seleccionada')+'</small>'+
+     (uncertain?'<small class="itinerary-import-warning">⚠ Data o evidència pendent: revisa els detalls abans de desar.</small>':'')+'</span></label>';
+   }).join('')+'</section>';
+ }).join('');
  const excluded=result.items.filter(item=>!item.included);
  const excludedConflicts=excluded.filter(dateConflict).length;
  const grouped=state.exclusionCompleted&&excluded.length;
@@ -9842,7 +9889,8 @@ $('itineraryImportExcludeExisting').onclick=()=>{
   $('itineraryImportSaveStatus').textContent='El viatge no s’ha modificat.';
  }catch(error){$('itineraryImportSaveStatus').textContent=error?.message||'No s’han pogut desmarcar les coincidències. Torna-ho a provar.';}
 };
-$('openItineraryImport').onclick=openItineraryImport;
+$('openItineraryImport').onclick=()=>{void openItineraryImport()};
+$('itinerarySavedAlternativesButton').onclick=()=>{void openItineraryImport(true)};
 $('itineraryImportClose').onclick=()=>{void pauseItineraryImport()};
 $('itineraryImportExit').onclick=()=>{void pauseItineraryImport()};
 $('itineraryImportDiscardDraft').onclick=async()=>{
@@ -10061,6 +10109,15 @@ async function writeConfirmedItineraryImport(){
  }
 }
 $('itineraryImportWrite').onclick=()=>{void writeConfirmedItineraryImport()};
+$('itineraryImportAlternativesByDay').addEventListener('change',event=>{
+ const target=event.target,state=itineraryImportState;
+ if(target.dataset.importAlternative===undefined||!itineraryImportStillCurrent(state)||state.busy||state.saveCompleted||state.reconciliation?.pendingRequest||!state.review||!state.api)return;
+ const index=Number(target.dataset.importAlternative);
+ if(!Number.isInteger(index)||index<0||index>=state.review.items.length||!state.review.items[index].source_warnings.some(w=>w.startsWith('Alternativa opcional:')))return;
+ try{state.api.changeItineraryReviewItem(state.review,index,'included',target.checked);renderItineraryImportPreview();
+  $('itineraryImportAlternativesByDay').querySelector('[data-import-alternative="'+index+'"]')?.focus({preventScroll:true});
+ }catch(error){$('itineraryImportStatus').textContent=error?.message||'No s’ha pogut modificar el pla alternatiu.'}
+});
 $('itineraryImportCandidates').addEventListener('change',event=>{
  const target=event.target,state=itineraryImportState;
  if(!itineraryImportContextIsCurrent(state)||state.busy||state.saveCompleted||!state.review||!state.api)return;
