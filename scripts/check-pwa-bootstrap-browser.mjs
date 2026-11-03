@@ -129,6 +129,9 @@ try{
   }));
   await page.reload();await page.locator('#loginCard').waitFor({state:'visible'});
   await page.waitForFunction(()=>navigator.serviceWorker.controller?.state==='activated');
+  // WebKit may report worker activation before its precached shell is queryable.
+  // Wait for the actual stored index; this never fabricates a cached response.
+  await page.waitForFunction(async()=>!!(await (await caches.open('freya-travel-release-6444-v52')).match(new URL('index.html',location.href).href)),null,{timeout:12000});
   assert.equal(await page.evaluate(async()=>!!(await (await caches.open('freya-travel-release-6444-v52')).match(new URL('index.html',location.href).href))),true);
   // 503 is not an offline exception: the previous worker returned the error instead of its SDK cache.
   fault='shell503';await page.reload().catch(async error=>{console.error('SW fallback failure',version,await page.evaluate(async()=>({keys:await caches.keys(),controller:navigator.serviceWorker.controller?.state,cache:!!(await (await caches.open('freya-travel-release-6444-v52')).match('./index.html'))})).catch(()=>null));throw error});await page.locator('#loginCard').waitFor({state:'visible'});fault='';
