@@ -55,8 +55,7 @@ try{
  await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
  await page.locator('#itineraryImportConfirmNo').tap();assert.equal(await page.evaluate(()=>fixture.writes.length),0);
  // After a save, an empty day surfaces a clear way to re-read a stored PDF.
- await page.locator('#itineraryImportClose').tap();
- await page.evaluate(()=>{genericItinerarySelectedTripId=trip.id;genericItinerarySelectedDay='2026-11-09';renderGenericItinerary()});
+ await page.evaluate(()=>{closeItineraryImport();genericItinerarySelectedTripId=trip.id;genericItinerarySelectedDay='2026-11-09';renderGenericItinerary()});
  await page.locator('#itinerarySavedAlternatives').waitFor({state:'visible'});
  await page.locator('#itinerarySavedAlternativesButton').tap();
  await page.locator('#itineraryImportExistingWrap').waitFor({state:'visible'});
