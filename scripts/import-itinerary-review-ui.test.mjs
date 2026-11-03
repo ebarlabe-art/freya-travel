@@ -90,7 +90,7 @@ test('A2.7: Pages includes the same module graph as PWA cache',()=>{
  assert.match(worker,/\.\/domain\/import-itinerary-proposal\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-review\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-write\.mjs/);
- assert.match(worker,/freya-travel-release-6444-v51/);
+ assert.match(worker,/freya-travel-release-6444-v52/);
 });
 
 test('A2.9: real async completion re-enables the imported itinerary save button',async()=>{
@@ -166,12 +166,22 @@ test('A2.9: inline iPhone confirmation resolves only from explicit user interact
  assert.equal($('itineraryImportConfirm').classList.hidden,true);
 });
 
+test('PDF alternatives are visible and recoverable without nested advanced menus',()=>{
+ assert.match(html,/id="itineraryImportAlternatives"/);
+ assert.match(html,/id="itineraryImportAlternativesByDay"/);
+ assert.match(script,/data-import-alternative/);
+ assert.match(script,/data-alternative-day/);
+ assert.match(html,/id="itinerarySavedAlternativesButton"/);
+ assert.match(script,/openItineraryImport\(true\)/);
+ assert.match(script,/state\.api\.changeItineraryReviewItem\(state\.review,index,'included',target\.checked\)/);
+});
+
 test('import review renders existing evidence and excludes matches only on explicit click',async()=>{
  const api=await import('../domain/import-itinerary-review.mjs');
  const field=value=>({value,confidence:'high',evidence:[{kind:'text',excerpt:value,page:1}]});
  const proposal={schema_version:1,source:{kind:'document',document_id:'doc',mime_type:'application/pdf'},candidates:['Museu','Passeig nou'].map((title,i)=>({source_order:i,classification_hint:'manual',fields:{title:field(title),local_date:field('2026-12-28'),start_local_time:field('09:00'),time_zone:field('Europe/Riga')},warnings:[]}))};
  const state={api,review:api.createItineraryReview(proposal,{tripId:'trip',userId:'user',documentId:'doc'})};
- const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,{children:[],addEventListener(){},querySelectorAll:()=>[],textContent:'',innerHTML:''});return elements.get(id)};
+ const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,{children:[],classList:{toggle(){},add(){},remove(){},contains(){return false}},addEventListener(){},querySelectorAll:()=>[],textContent:'',innerHTML:''});return elements.get(id)};
  const start=script.indexOf('const itineraryImportReviewLabels='),end=script.indexOf("$('openItineraryImport').onclick",start);
  vm.runInNewContext(script.slice(start,end)+';renderItineraryImportPreview();',{$,itineraryImportState:state,itineraryImportContextIsCurrent:()=>true,connectionUnavailable:()=>false,offlineReadOnlySession:false,itinerarySourcesAreReady:()=>true,itineraryProjection:[{title:'Museu',localDate:'2026-12-28',timeLabel:'09:00'}],esc:value=>String(value).replaceAll('<','&lt;')});
  assert.match($('itineraryImportCandidates').innerHTML,/Activitat existent/);
