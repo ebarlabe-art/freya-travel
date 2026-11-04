@@ -59,3 +59,15 @@ test('regression reproduced: previous worker delivered HTTP 503 instead of its c
   assert.equal((await pending).status,expected);
  }
 });
+
+test('PWA browser harness waits for resolved async conditions and fails on false/errors',async()=>{
+ const source=await readFile(new URL('./check-pwa-bootstrap-browser.mjs',import.meta.url),'utf8');
+ const helper=source.slice(source.indexOf('async function waitForAsyncCondition('),source.indexOf('let writes=0;'));
+ const wait=vm.runInNewContext(helper+';waitForAsyncCondition',{assert,Date,setTimeout});
+ let attempts=0;
+ const page={evaluate:async(predicate,arg)=>predicate(arg)};
+ await wait(page,async expected=>++attempts>=expected,3,{timeout:1000});
+ assert.equal(attempts,3,'a Promise resolving false must not finish the wait');
+ await assert.rejects(wait(page,async()=>false,null,{timeout:1}),/Timed out/);
+ await assert.rejects(wait(page,async()=>{throw Error('synthetic browser failure')}),/synthetic browser failure/);
+});

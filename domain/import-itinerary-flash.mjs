@@ -2,7 +2,7 @@ import {matchingPlanningFlight,canonicalPlanningFlights} from './flight-journey-
 // Presentation/decision adapter for RIG-03B/RIG-04. No IO or second planning engine.
 import {matchingExistingImportItems,compareImportActivity,existingReviewValues} from './import-itinerary-review.mjs';
 import {analyzePlanning} from './import-itinerary-planning-ui.mjs';
-import {proposeUnmatchedReconciliationDecisions} from './import-itinerary-reconciliation-ui.mjs';
+import {proposeUnmatchedReconciliationDecisions} from './import-itinerary-reconciliation.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const protectedRow=r=>r.reservation||r.is_fixed||r.status!=='planned'||r.photo_count>0||r.link_count>0;
 export const flashDay=d=>/^\d{4}-\d{2}-\d{2}$/.test(d||'')?new Intl.DateTimeFormat('ca',{day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(d+'T12:00Z')):'Dia pendent';
