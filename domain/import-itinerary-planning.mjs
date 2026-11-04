@@ -2,9 +2,8 @@ import {canonicalPlanningFlights} from './flight-journey-identity.mjs';
 // RIG-04: orchestration of existing matching, reconciliation and route contracts.
 // Every result is an in-memory proposal. No persistence or provider calls here.
 import {equivalentItineraryPlace,changeItineraryReviewItem} from './import-itinerary-review.mjs';
-import {planItineraryReconciliation} from './import-itinerary-reconciliation.mjs';
+import {planItineraryReconciliation,classifyReconciliationTiming} from './import-itinerary-reconciliation.mjs';
 import {routeFeasibility,routeIsVerified} from './itinerary-route.mjs';
-import {classifyReconciliationTiming} from './import-itinerary-reconciliation-ui.mjs';
 const clean=v=>String(v||'').normalize('NFKC').trim().toLowerCase();
 const stamp=v=>typeof v==='string'&&/(Z|[+-]\d{2}:\d{2})$/.test(v)&&Number.isFinite(Date.parse(v))?Date.parse(v):null;
 export const planningSignature=value=>JSON.stringify(value);
