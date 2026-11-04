@@ -22,6 +22,15 @@ export function proposeUnmatchedReconciliationDecisions(snapshot,state){
   state.existing.filter(row=>matchingExistingImportItems(item.values,[row]).length>0).length===0).map(item=>({source_order:item.source_order,action:'add'}));
 }
 
+export function suggestedReconciliationTarget(item,existing,action){
+ if(action!=='update'&&action!=='keep')return null;
+ const matches=existing.filter(row=>matchingExistingImportItems(item.values,[row]).length>0);
+ if(matches.length!==1)return null;
+ const row=matches[0];
+ if(action==='update'&&(row.status!=='planned'||row.is_fixed||row.photo_count||row.link_count))return null;
+ return row.id;
+}
+
 // RIG-03: pure reconciliation *proposal*. This module NEVER writes, updates,
 // deletes or assumes that an AI-generated itinerary is already a reservation.
 // The server must re-read and verify every base row in one transaction.

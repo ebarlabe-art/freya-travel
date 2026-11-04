@@ -1,20 +1,12 @@
-import {planItineraryReconciliation,classifyReconciliationTiming,proposeUnmatchedReconciliationDecisions} from './import-itinerary-reconciliation.mjs';
+import {planItineraryReconciliation,classifyReconciliationTiming,proposeUnmatchedReconciliationDecisions,suggestedReconciliationTarget} from './import-itinerary-reconciliation.mjs';
 import {prepareItineraryImportRows} from './import-itinerary-write.mjs';
 import {matchingExistingImportItems} from './import-itinerary-review.mjs';
 // Preserve the existing public export for callers and cached frontend versions.
-export {classifyReconciliationTiming,proposeUnmatchedReconciliationDecisions} from './import-itinerary-reconciliation.mjs';
+export {classifyReconciliationTiming,proposeUnmatchedReconciliationDecisions,suggestedReconciliationTarget} from './import-itinerary-reconciliation.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function reconciliationPlan(snapshot,state){return planItineraryReconciliation({snapshot,existing:state.existing,decisions:state.decisions,retireExistingIds:state.retire})}
 
 const matchesFor=(item,existing)=>existing.filter(row=>matchingExistingImportItems(item.values,[row]).length>0);
-export function suggestedReconciliationTarget(item,existing,action){
- if(action!=='update'&&action!=='keep')return null;
- const matches=matchesFor(item,existing);
- if(matches.length!==1)return null;
- const row=matches[0];
- if(action==='update'&&(row.status!=='planned'||row.is_fixed||row.photo_count||row.link_count))return null;
- return row.id;
-}
 export function reconciliationHtml(snapshot,state,disabled=false){
  let plan,error;
  try{plan=reconciliationPlan(snapshot,state)}catch(e){error=e.message}
