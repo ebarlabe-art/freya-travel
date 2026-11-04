@@ -11,6 +11,17 @@ export function classifyReconciliationTiming(values={}){
  return {is_optional:optional,is_tentative:optional||tentative.test(text)};
 }
 
+const safeForBulk=item=>item.included!==false&&
+ !!item.values.title?.trim()&&!!item.values.local_date&&
+ !['invalid_title','invalid_date','invalid_start_time','invalid_end_time','invalid_time_zone','timezone_needs_confirmation','date_required_for_time','time_order_needs_review','possible_duplicate_in_review','possible_overlap_in_review'].some(flag=>(item.review_flags||[]).includes(flag));
+/** Explicit, local-only shortcut: it suggests ADD only when no existing visit matches.
+ * It never commits or automatically retires existing itinerary entries. */
+export function proposeUnmatchedReconciliationDecisions(snapshot,state){
+ const used=new Set((state.decisions||[]).map(d=>d.source_order));
+ return snapshot.items.filter(item=>!used.has(item.source_order)&&safeForBulk(item)&&
+  state.existing.filter(row=>matchingExistingImportItems(item.values,[row]).length>0).length===0).map(item=>({source_order:item.source_order,action:'add'}));
+}
+
 // RIG-03: pure reconciliation *proposal*. This module NEVER writes, updates,
 // deletes or assumes that an AI-generated itinerary is already a reservation.
 // The server must re-read and verify every base row in one transaction.
