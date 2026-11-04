@@ -35,6 +35,13 @@ export function initialPlanningDecisions(snapshot,state){
  return [...keeps,...proposeUnmatchedReconciliationDecisions(draft,{...state,decisions:[...state.decisions,...keeps]})];
 }
 
+export function refreshAutomaticDecisions(snapshot,state){
+ const orders=new Set(state.decisions.filter(d=>d.automatic).map(d=>d.source_order));
+ const included=new Set(snapshot.items.filter(item=>item.included!==false).map(item=>item.source_order));
+ const manual=state.decisions.filter(d=>!d.automatic&&included.has(d.source_order));
+ return [...manual,...automaticEquivalentDecisions(snapshot,state.existing,manual).filter(d=>orders.has(d.source_order))];
+}
+
 const projection=row=>({key:'manual:'+row.id,sourceId:row.id,sourceType:'manual',title:row.title,localDate:row.localDate||row.local_date||(row.starts_at&&local(row.starts_at,row.time_zone)?.local_date)||'',startsAt:row.starts_at,endsAt:row.ends_at,timeZone:row.time_zone,timingKind:row.timing_kind,status:row.status,sourceUpdatedAt:row.updated_at,location_name:row.location_name||'',address:row.address||'',city:row.city||'',fixed:!!row.is_fixed,mutable:false});
 export function combineImportItinerary(snapshot,state,{projection:agenda=[],convertLocalTime}={}){
  const plan=planItineraryReconciliation({snapshot,existing:state.existing,decisions:state.decisions,retireExistingIds:state.retire});

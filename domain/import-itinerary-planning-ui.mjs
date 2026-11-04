@@ -1,16 +1,8 @@
 export {importantConflicts,unreviewedConflicts,conflictFlashHtml,conflictSummaryHtml} from './itinerary-conflict-review.mjs';
 import {combineImportItinerary,assessCombinedItinerary,proposeItinerarySolutions,planningPairs,planningRouteInput,planningSignature,verifiedPlanningRoute} from './import-itinerary-planning.mjs';
-import {automaticEquivalentDecisions as equivalentDecisions} from './import-itinerary-planning.mjs';
 import {RouteQueue,routeReasons,routeFeasibility} from './itinerary-route.mjs';
-export {initialPlanningDecisions,automaticEquivalentDecisions,acceptItinerarySolution,editItinerarySolution} from './import-itinerary-planning.mjs';
+export {initialPlanningDecisions,refreshAutomaticDecisions,automaticEquivalentDecisions,acceptItinerarySolution,editItinerarySolution} from './import-itinerary-planning.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export function refreshAutomaticDecisions(snapshot,state){
- const orders=new Set(state.decisions.filter(d=>d.automatic).map(d=>d.source_order));
- const included=new Set(snapshot.items.filter(item=>item.included!==false).map(item=>item.source_order));
- const manual=state.decisions.filter(d=>!d.automatic&&included.has(d.source_order));
- return [...manual,...equivalentDecisions(snapshot,state.existing,manual).filter(d=>orders.has(d.source_order))];
-}
-
 export function analyzePlanning(snapshot,state,context,previous={}){
  const combined=combineImportItinerary(snapshot,state,context),options={routes:previous.routes||{},openings:previous.openings||{},sourcesReady:context.sourcesReady,bufferMinutes:context.bufferMinutes??5};
  const assessment=assessCombinedItinerary(combined,options),solutions=proposeItinerarySolutions(combined,options,context);
