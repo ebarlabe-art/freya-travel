@@ -41,8 +41,14 @@ Els quatre mòduls ja figuren a packaging i precache. Cache v53 → v54 i expect
 - Caracterització abans/després: 30/30 tests (set nous casos de caracterització més 23 existents).
 - Comparació diferencial contra el codi de `c2f9ea4`: 1.080 casos amb resultats idèntics i no-mutació.
 - Nou test de congelació profunda de snapshot/estat i de resultats independents; exportació compatible per identitat i imports de consumidors/registre d'actius.
-- Suite completa local: 940/940; build, packaging i paritat superats. Regressions Chromium/WebKit i CI finals registrades a la PR del commit revisat.
+- Suite completa final: 941/941; build, packaging i paritat superats. Regressions Chromium/WebKit i CI finals registrades a la PR del commit revisat.
 - Cap prova física nova a l'iPhone ni estat de producció acreditat per aquests tests. Proves de navegador amb dades sintètiques; no s'envia el PDF a cap proveïdor real.
+
+## Incidència de validació PWA
+
+La primera execució Chromium local i WebKit de CI van fallar llegint la caché/offline després de l'actualització. El diagnòstic temporal va observar el worker antic servint la recàrrega tot i haver passat l'espera del test. La implementació instal·lada de Playwright 1.63.0 avalua el retorn Promise de `waitForFunction` com a truthy abans de resoldre'n el booleà: les tres esperes asíncrones existents no garantien que la condició fos certa.
+
+S'han substituït només aquestes tres esperes del test per polling del resultat resolt de `page.evaluate`, amb termini, propagació d'errors i resultat estrictament true. Es mantenen els asserts de caché, versió, 503, offline i esborranys; no s'afegeixen respostes de caché artificials ni retries globals del test. Una regressió del harness exigeix múltiples resultats false abans del true i comprova que false persistent o error fan fallar. Cap canvi de política al SW ni funcional a l'app.
 
 ## Riscos, reversió i A-03
 

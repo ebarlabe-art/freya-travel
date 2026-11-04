@@ -37,6 +37,16 @@ const browser=await pw[engine].launch({headless:true,...(engine==='chromium'&&pr
 const uid='13200000-0000-4000-8000-000000000001',tid='13200000-0000-4000-8000-000000000002';
 const trip={id:tid,name:'Synthetic Baltic trip',owner_id:uid,is_owner:true,start_date:'2026-12-26',end_date:'2027-01-02',time_zone:'Europe/Riga'};
 const rows=Array.from({length:13},(_,i)=>({id:`13200000-0000-4000-8000-${String(i+10).padStart(12,'0')}`,trip_id:tid,title:'Synthetic plan '+i,timing_kind:'exact',starts_at:`2026-12-${i<7?'27':'28'}T07:00:00Z`,time_zone:'Europe/Riga',location_name:null,status:'planned',sort_order:i}));
+// Playwright's waitForFunction treats a returned Promise as truthy before its
+// boolean resolves. Poll the resolved browser result for asynchronous SW checks.
+async function waitForAsyncCondition(page,predicate,arg,{timeout=12000}={}){
+ const deadline=Date.now()+timeout;
+ do{
+  if(await page.evaluate(predicate,arg)===true)return;
+  await new Promise(resolve=>setTimeout(resolve,50));
+ }while(Date.now()<deadline);
+ assert.fail('Timed out waiting for the resolved service-worker condition');
+}
 let writes=0;
 async function context({sw=false,persisted=false,tablet=false}={}){
  const ctx=await browser.newContext({viewport:tablet?{width:1024,height:768}:{width:390,height:844},hasTouch:true,isMobile:!tablet,serviceWorkers:sw?'allow':'block'});
@@ -122,9 +132,9 @@ try{
   assert.equal(await page.locator('#updateToast').isVisible(),false,'First installation is not an app update');
   const boots=await page.evaluate(()=>sessionStorage.boots);
   oldWorker=null;await page.evaluate(async()=>{const r=await navigator.serviceWorker.getRegistration();await r.update()});
-  await page.waitForFunction(async version=>{const keys=await caches.keys(),r=await navigator.serviceWorker.getRegistration();return keys.includes('freya-travel-release-6444-v54')&&!keys.includes('freya-travel-release-6444-v'+version)&&r?.active?.state==='activated'&&!r.installing&&!r.waiting&&navigator.serviceWorker.controller?.state==='activated'},version);
+  await waitForAsyncCondition(page,async version=>{const keys=await caches.keys(),r=await navigator.serviceWorker.getRegistration();return keys.includes('freya-travel-release-6444-v54')&&!keys.includes('freya-travel-release-6444-v'+version)&&r?.active?.state==='activated'&&!r.installing&&!r.waiting&&navigator.serviceWorker.controller?.state==='activated'},version);
   assert.equal(await page.evaluate(()=>sessionStorage.boots),boots,'An activated update must not reload a usable app or lose drafts');
-  await page.waitForFunction(()=>new Promise(resolve=>{
+  await waitForAsyncCondition(page,()=>new Promise(resolve=>{
    const channel=new MessageChannel(),timer=setTimeout(()=>resolve(false),500);
    channel.port1.onmessage=e=>{clearTimeout(timer);resolve(e.data?.cache==='freya-travel-release-6444-v54')};
    navigator.serviceWorker.controller?.postMessage({type:'FREYA_BOOT_VERSION'},[channel.port2]);
@@ -133,7 +143,7 @@ try{
   await page.waitForFunction(()=>navigator.serviceWorker.controller?.state==='activated');
   // WebKit may report worker activation before its precached shell is queryable.
   // Wait for the actual stored index; this never fabricates a cached response.
-  await page.waitForFunction(async()=>!!(await (await caches.open('freya-travel-release-6444-v54')).match(new URL('index.html',location.href).href)),null,{timeout:12000});
+  await waitForAsyncCondition(page,async()=>!!(await (await caches.open('freya-travel-release-6444-v54')).match(new URL('index.html',location.href).href)),null,{timeout:12000});
   assert.equal(await page.evaluate(async()=>!!(await (await caches.open('freya-travel-release-6444-v54')).match(new URL('index.html',location.href).href))),true);
   // 503 is not an offline exception: the previous worker returned the error instead of its SDK cache.
   fault='shell503';await page.reload().catch(async error=>{console.error('SW fallback failure',version,await page.evaluate(async()=>({keys:await caches.keys(),controller:navigator.serviceWorker.controller?.state,cache:!!(await (await caches.open('freya-travel-release-6444-v54')).match('./index.html'))})).catch(()=>null));throw error});await page.locator('#loginCard').waitFor({state:'visible'});fault='';

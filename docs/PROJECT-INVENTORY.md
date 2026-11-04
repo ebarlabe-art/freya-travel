@@ -9,7 +9,7 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 Base remota verificada `c2f9ea4`, que inclou #216 fusionada (el text A-01 inferior és el registre de la fase anterior, no una verificació de desplegament). Branca `codex/a02-unmatched-reconciliation`; [contracte, anàlisi i reversió](architecture-a02.md).
 
-`proposeUnmatchedReconciliationDecisions` i el predicat d'elegibilitat passen al domini existent; la UI reexporta i planning/flaix importen del domini. Mateix comparador, flags, ordre i no-mutació. Caracterització 30/30 abans/després, diferencial de 1.080 casos, suite 940/940. Build/paritat/packaging correctes; resultats finals de navegadors i CI a la PR. Cache v54 preparada, no publicada. Sense SQL, Edge, dependències noves ni dades remotes.
+`proposeUnmatchedReconciliationDecisions` i el predicat d'elegibilitat passen al domini existent; la UI reexporta i planning/flaix importen del domini. Mateix comparador, flags, ordre i no-mutació. Caracterització 30/30 abans/després, diferencial de 1.080 casos, suite final 941/941. Build/paritat/packaging correctes; resultats finals de navegadors i CI a la PR. Cache v54 preparada, no publicada. Sense SQL, Edge, dependències noves ni dades remotes.
 
 Relleu: revisar la PR en esborrany; no fusionar ni desplegar sense autorització. A-03 candidata: `suggestedReconciliationTarget`, encara no iniciada. Es preserven totes les prioritats del roadmap.
 
