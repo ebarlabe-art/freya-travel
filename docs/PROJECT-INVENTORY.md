@@ -5,6 +5,15 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
 
+## Fase A-01 · Primera extracció de domini — BRANCA, NO DESPLEGADA
+
+Base remota verificada `b1c2c764` (inclou #214 i #215 fusionades; l'apartat P0 inferior conserva el registre històric anterior a la fusió). Branca `codex/a01-reconciliation-timing`. Contractes i límits: [architecture-a01.md](architecture-a01.md).
+
+Únic canvi funcionalment equivalent: `classifyReconciliationTiming` passa al domini de conciliació existent; planning deixa d'importar-la de la UI, que conserva una reexportació compatible. Mateixos permisos, writer atòmic, idempotència, esborranys i flux PDF; sense migracions, Edge ni dades remotes. Cache v53 preparada, no publicada. Validació i resultats finals a la PR/CI del commit.
+
+Relleu: revisar PR en esborrany i evidències; no fusionar/desplegar sense autorització. Següent extracció candidata: `proposeUnmatchedReconciliationDecisions`, amb caracterització pròpia. No iniciada. Totes les prioritats del roadmap canònic es conserven.
+
+
 ## P0 · Lectura contextual del PDF Vall d’Aran — BRANCA, NO PUBLICADA (3/11/2026)
 
 PR #214 en esborrany. Branca `codex/p0-aran-pdf-import`, checkout `/private/tmp/freya-aran-import`, base `main` `d27669a` després de #211 fusionada. Prioritat per davant de noves funcionalitats A2/A3; referència #194. Els canvis locals aliens del checkout principal continuen intactes.

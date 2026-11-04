@@ -1,5 +1,16 @@
 import {matchingExistingImportItems} from './import-itinerary-review.mjs';
 
+// Wording from the imported PDF: a proposed hour is not a confirmed booking.
+// Approximate itinerary times remain visible without an exact-time reminder.
+export function classifyReconciliationTiming(values={}){
+ const wording=String(values.title||'')+' '+String(values.notes||'');
+ const text=wording.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ');
+ const conditional=/\b(?:opcionals?|optionals?|a confirmar|per confirmar|pendent de (?:reserva|confirmacio)|sense reserva|segons (?:la )?(?:reserva|disponibilitat|operador)|si (?:no )?hi ha neu|si s'ha tornat|en funcio de la neu|condicionat? a la neu)\b/;
+ const tentative=/\b(?:orientatiu|orientativa|orientatius|orientatives|aproximat|aproximada|aproximadament|aprox|hora a confirmar|horari a confirmar|hora pendent|subjecte a confirmacio)\b/;
+ const optional=conditional.test(text);
+ return {is_optional:optional,is_tentative:optional||tentative.test(text)};
+}
+
 // RIG-03: pure reconciliation *proposal*. This module NEVER writes, updates,
 // deletes or assumes that an AI-generated itinerary is already a reservation.
 // The server must re-read and verify every base row in one transaction.

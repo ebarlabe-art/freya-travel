@@ -1,17 +1,9 @@
-import {planItineraryReconciliation} from './import-itinerary-reconciliation.mjs';
+import {planItineraryReconciliation,classifyReconciliationTiming} from './import-itinerary-reconciliation.mjs';
 import {prepareItineraryImportRows} from './import-itinerary-write.mjs';
 import {matchingExistingImportItems} from './import-itinerary-review.mjs';
+// Preserve the existing public export for callers and cached frontend versions.
+export {classifyReconciliationTiming} from './import-itinerary-reconciliation.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-// Wording from the imported PDF: a proposed hour is not a confirmed booking.
-// Approximate itinerary times remain visible without an exact-time reminder.
-export function classifyReconciliationTiming(values={}){
- const wording=String(values.title||'')+' '+String(values.notes||'');
- const text=wording.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ');
- const conditional=/\b(?:opcionals?|optionals?|a confirmar|per confirmar|pendent de (?:reserva|confirmacio)|sense reserva|segons (?:la )?(?:reserva|disponibilitat|operador)|si (?:no )?hi ha neu|si s'ha tornat|en funcio de la neu|condicionat? a la neu)\b/;
- const tentative=/\b(?:orientatiu|orientativa|orientatius|orientatives|aproximat|aproximada|aproximadament|aprox|hora a confirmar|horari a confirmar|hora pendent|subjecte a confirmacio)\b/;
- const optional=conditional.test(text);
- return {is_optional:optional,is_tentative:optional||tentative.test(text)};
-}
 export function reconciliationPlan(snapshot,state){return planItineraryReconciliation({snapshot,existing:state.existing,decisions:state.decisions,retireExistingIds:state.retire})}
 
 const matchesFor=(item,existing)=>existing.filter(row=>matchingExistingImportItems(item.values,[row]).length>0);
