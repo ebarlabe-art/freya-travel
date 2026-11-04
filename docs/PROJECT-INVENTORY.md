@@ -5,6 +5,15 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
 
+## Fase A-03 · Extraccions agrupades — BRANCA, NO DESPLEGADA
+
+Base remota `8643306`, després de #217 fusionada; els apartats inferiors conserven l'històric, no acrediten desplegaments. Branca `codex/a03-grouped-domain-extractions`. [Anàlisi, contractes i reversió](architecture-a03.md).
+
+Tres extraccions en commits separables: `suggestedReconciliationTarget`, `initialPlanningDecisions` i `refreshAutomaticDecisions`, amb reexportacions compatibles i sense canviar motors ni regles. 33/33 proves abans/després de cada pas; 1.296 comparacions equivalents amb main. Cache v55 preparada, amb prova des de v54; cap canvi SQL/Edge/dades. Resultats finals de suite/build/navegadors/CI a la PR.
+
+Relleu: revisar una única PR en esborrany, sense fusió/publicació automàtica. A-04 candidata: `analyzePlanning`, no iniciada. Pendents i prioritats del roadmap preservats.
+
+
 ## Fase A-02 · Propostes de conciliació — BRANCA, NO DESPLEGADA
 
 Base remota verificada `c2f9ea4`, que inclou #216 fusionada (el text A-01 inferior és el registre de la fase anterior, no una verificació de desplegament). Branca `codex/a02-unmatched-reconciliation`; [contracte, anàlisi i reversió](architecture-a02.md).

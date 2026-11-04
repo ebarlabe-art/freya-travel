@@ -57,3 +57,17 @@ test('A-03 planning helpers preserve required-input errors',()=>{
  assert.throws(()=>initial({items:[item(0)]},{existing:[old]}),TypeError);
  assert.throws(()=>refresh({},state([keep])),TypeError);
 });
+
+test('A-03 compatible exports share implementations; domain has no UI dependency and assets exist',async()=>{
+ const reconciliation=await import('../domain/import-itinerary-reconciliation.mjs');
+ const planning=await import('../domain/import-itinerary-planning.mjs');
+ assert.equal(reconciliation.suggestedReconciliationTarget,target);
+ assert.equal(planning.initialPlanningDecisions,initial);assert.equal(planning.refreshAutomaticDecisions,refresh);
+ const {readFile}=await import('node:fs/promises');const read=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
+ for(const module of ['import-itinerary-planning.mjs','import-itinerary-reconciliation.mjs'])
+  assert.doesNotMatch(await read('domain/'+module),/from ['"][^'"]*-ui\.mjs['"]/);
+ for(const name of ['import-itinerary-planning.mjs','import-itinerary-planning-ui.mjs','import-itinerary-reconciliation.mjs','import-itinerary-reconciliation-ui.mjs']){
+  assert.ok((await read('scripts/package-pages.mjs')).includes("'"+name+"'"));
+  assert.ok((await read('sw.js')).includes("'./domain/"+name+"'"));
+ }
+});
