@@ -64,9 +64,9 @@ test('A-02 domain export and legacy UI export share one implementation',async()=
 test('A-02 consumers use the existing domain asset, without a new runtime path',async()=>{
  const {readFile}=await import('node:fs/promises');
  const read=name=>readFile(new URL('../'+name,import.meta.url),'utf8');
- for(const name of ['import-itinerary-flash.mjs','import-itinerary-planning-ui.mjs']){
+ for(const name of ['import-itinerary-flash.mjs','import-itinerary-planning.mjs']){
   const text=await read('domain/'+name);
-  assert.match(text,/import \{proposeUnmatchedReconciliationDecisions\} from '\.\/import-itinerary-reconciliation\.mjs'/);
+  assert.match(text,/import \{[^}]*proposeUnmatchedReconciliationDecisions[^}]*\} from '\.\/import-itinerary-reconciliation\.mjs'/);
   assert.doesNotMatch(text,/from '\.\/import-itinerary-reconciliation-ui\.mjs'/);
  }
  const domain=await read('domain/import-itinerary-reconciliation.mjs');

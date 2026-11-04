@@ -2,7 +2,7 @@ import {canonicalPlanningFlights} from './flight-journey-identity.mjs';
 // RIG-04: orchestration of existing matching, reconciliation and route contracts.
 // Every result is an in-memory proposal. No persistence or provider calls here.
 import {equivalentItineraryPlace,changeItineraryReviewItem} from './import-itinerary-review.mjs';
-import {planItineraryReconciliation,classifyReconciliationTiming} from './import-itinerary-reconciliation.mjs';
+import {planItineraryReconciliation,classifyReconciliationTiming,proposeUnmatchedReconciliationDecisions} from './import-itinerary-reconciliation.mjs';
 import {routeFeasibility,routeIsVerified} from './itinerary-route.mjs';
 const clean=v=>String(v||'').normalize('NFKC').trim().toLowerCase();
 const stamp=v=>typeof v==='string'&&/(Z|[+-]\d{2}:\d{2})$/.test(v)&&Number.isFinite(Date.parse(v))?Date.parse(v):null;
@@ -27,6 +27,21 @@ export function automaticEquivalentDecisions(snapshot,existing,decisions=[]){
  }
  return additions;
 }
+export function initialPlanningDecisions(snapshot,state){
+ const keeps=automaticEquivalentDecisions(snapshot,state.existing,state.decisions);
+ // Reuse #191's ADD rules. Overlaps remain in the real review and are the
+ // reason for this analysis; remove that flag only for this draft shortcut.
+ const draft={...snapshot,items:snapshot.items.filter(i=>i.classification_hint==='manual'&&(!state.unified||(!i.review_flags.includes('uncertain_extraction')&&!i.source_warnings?.length))).map(i=>({...i,review_flags:i.review_flags.filter(f=>f!=='possible_overlap_in_review')}))};
+ return [...keeps,...proposeUnmatchedReconciliationDecisions(draft,{...state,decisions:[...state.decisions,...keeps]})];
+}
+
+export function refreshAutomaticDecisions(snapshot,state){
+ const orders=new Set(state.decisions.filter(d=>d.automatic).map(d=>d.source_order));
+ const included=new Set(snapshot.items.filter(item=>item.included!==false).map(item=>item.source_order));
+ const manual=state.decisions.filter(d=>!d.automatic&&included.has(d.source_order));
+ return [...manual,...automaticEquivalentDecisions(snapshot,state.existing,manual).filter(d=>orders.has(d.source_order))];
+}
+
 const projection=row=>({key:'manual:'+row.id,sourceId:row.id,sourceType:'manual',title:row.title,localDate:row.localDate||row.local_date||(row.starts_at&&local(row.starts_at,row.time_zone)?.local_date)||'',startsAt:row.starts_at,endsAt:row.ends_at,timeZone:row.time_zone,timingKind:row.timing_kind,status:row.status,sourceUpdatedAt:row.updated_at,location_name:row.location_name||'',address:row.address||'',city:row.city||'',fixed:!!row.is_fixed,mutable:false});
 export function combineImportItinerary(snapshot,state,{projection:agenda=[],convertLocalTime}={}){
  const plan=planItineraryReconciliation({snapshot,existing:state.existing,decisions:state.decisions,retireExistingIds:state.retire});
