@@ -1,17 +1,9 @@
 export {importantConflicts,unreviewedConflicts,conflictFlashHtml,conflictSummaryHtml} from './itinerary-conflict-review.mjs';
 import {combineImportItinerary,assessCombinedItinerary,proposeItinerarySolutions,planningPairs,planningRouteInput,planningSignature,verifiedPlanningRoute} from './import-itinerary-planning.mjs';
-import {proposeUnmatchedReconciliationDecisions} from './import-itinerary-reconciliation.mjs';
 import {automaticEquivalentDecisions as equivalentDecisions} from './import-itinerary-planning.mjs';
 import {RouteQueue,routeReasons,routeFeasibility} from './itinerary-route.mjs';
-export {automaticEquivalentDecisions,acceptItinerarySolution,editItinerarySolution} from './import-itinerary-planning.mjs';
+export {initialPlanningDecisions,automaticEquivalentDecisions,acceptItinerarySolution,editItinerarySolution} from './import-itinerary-planning.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export function initialPlanningDecisions(snapshot,state){
- const keeps=equivalentDecisions(snapshot,state.existing,state.decisions);
- // Reuse #191's ADD rules. Overlaps remain in the real review and are the
- // reason for this analysis; remove that flag only for this draft shortcut.
- const draft={...snapshot,items:snapshot.items.filter(i=>i.classification_hint==='manual'&&(!state.unified||(!i.review_flags.includes('uncertain_extraction')&&!i.source_warnings?.length))).map(i=>({...i,review_flags:i.review_flags.filter(f=>f!=='possible_overlap_in_review')}))};
- return [...keeps,...proposeUnmatchedReconciliationDecisions(draft,{...state,decisions:[...state.decisions,...keeps]})];
-}
 export function refreshAutomaticDecisions(snapshot,state){
  const orders=new Set(state.decisions.filter(d=>d.automatic).map(d=>d.source_order));
  const included=new Set(snapshot.items.filter(item=>item.included!==false).map(item=>item.source_order));
