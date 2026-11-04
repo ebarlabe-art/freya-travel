@@ -7,6 +7,8 @@ import {pathToFileURL} from 'node:url';
 const engine=process.env.PWA_ENGINE||'chromium';
 const pw=await import(process.env.PLAYWRIGHT_MODULE?pathToFileURL(process.env.PLAYWRIGHT_MODULE).href:'playwright');
 const dist=resolve('dist'),legacy=await readFile(new URL('./fixtures/pwa-sw-v20.js',import.meta.url),'utf8');
+// Same SW policy as main v52: exercise the immediately previous cache as well.
+const previousWorker=(await readFile(new URL('../sw.js',import.meta.url),'utf8')).replace('6444-v53','6444-v52');
 let fault='',oldWorker=null;
 const server=createServer(async(req,res)=>{
  if(fault==='offline'){req.socket.destroy();return}
@@ -17,7 +19,7 @@ const server=createServer(async(req,res)=>{
  if(fault==='worker'&&name==='sw.js'){res.writeHead(503).end();return}
  try{
   let body=await readFile(path);
-  if(name==='sw.js'&&oldWorker)body=legacy.replaceAll('6444-v20','6444-v'+oldWorker);
+  if(name==='sw.js'&&oldWorker)body=oldWorker===52?previousWorker:legacy.replaceAll('6444-v20','6444-v'+oldWorker);
   if(fault==='syntax'&&(!name||name==='index.html'))body=body.toString().replace("const FREYA_FRONTEND_RELEASE=","const deliberatelyBroken = ; const FREYA_FRONTEND_RELEASE=");
   if(['sdk','init','session'].includes(fault)&&(!name||name==='index.html')){
    const marker="window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');";
@@ -113,28 +115,28 @@ try{
   assert.deepEqual(errors,[]);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await ctx.close();console.log('PASS '+engine+' persisted auth/13 plans/reload '+(tablet?'tablet':'390px'));
  }
  // Real old SW scripts, shell/SDK caches and activation. Never delete the legacy data cache.
- for(const version of [18,19,20]){
+ for(const version of [18,19,20,52]){
   oldWorker=version;const ctx=await context({sw:true}),page=await ctx.newPage();page.setDefaultTimeout(25000);
   await page.goto(url);await page.waitForFunction(()=>navigator.serviceWorker.controller);await page.locator('#loginCard').waitFor({state:'visible'});
   await page.evaluate(async()=>{const c=await caches.open('freya-travel-v1.5');await c.put('/freya-travel/local-copy',new Response('keep'));});
   assert.equal(await page.locator('#updateToast').isVisible(),false,'First installation is not an app update');
   const boots=await page.evaluate(()=>sessionStorage.boots);
   oldWorker=null;await page.evaluate(async()=>{const r=await navigator.serviceWorker.getRegistration();await r.update()});
-  await page.waitForFunction(async version=>{const keys=await caches.keys(),r=await navigator.serviceWorker.getRegistration();return keys.includes('freya-travel-release-6444-v52')&&!keys.includes('freya-travel-release-6444-v'+version)&&r?.active?.state==='activated'&&!r.installing&&!r.waiting&&navigator.serviceWorker.controller?.state==='activated'},version);
+  await page.waitForFunction(async version=>{const keys=await caches.keys(),r=await navigator.serviceWorker.getRegistration();return keys.includes('freya-travel-release-6444-v53')&&!keys.includes('freya-travel-release-6444-v'+version)&&r?.active?.state==='activated'&&!r.installing&&!r.waiting&&navigator.serviceWorker.controller?.state==='activated'},version);
   assert.equal(await page.evaluate(()=>sessionStorage.boots),boots,'An activated update must not reload a usable app or lose drafts');
   await page.waitForFunction(()=>new Promise(resolve=>{
    const channel=new MessageChannel(),timer=setTimeout(()=>resolve(false),500);
-   channel.port1.onmessage=e=>{clearTimeout(timer);resolve(e.data?.cache==='freya-travel-release-6444-v52')};
+   channel.port1.onmessage=e=>{clearTimeout(timer);resolve(e.data?.cache==='freya-travel-release-6444-v53')};
    navigator.serviceWorker.controller?.postMessage({type:'FREYA_BOOT_VERSION'},[channel.port2]);
   }));
   await page.reload();await page.locator('#loginCard').waitFor({state:'visible'});
   await page.waitForFunction(()=>navigator.serviceWorker.controller?.state==='activated');
   // WebKit may report worker activation before its precached shell is queryable.
   // Wait for the actual stored index; this never fabricates a cached response.
-  await page.waitForFunction(async()=>!!(await (await caches.open('freya-travel-release-6444-v52')).match(new URL('index.html',location.href).href)),null,{timeout:12000});
-  assert.equal(await page.evaluate(async()=>!!(await (await caches.open('freya-travel-release-6444-v52')).match(new URL('index.html',location.href).href))),true);
+  await page.waitForFunction(async()=>!!(await (await caches.open('freya-travel-release-6444-v53')).match(new URL('index.html',location.href).href)),null,{timeout:12000});
+  assert.equal(await page.evaluate(async()=>!!(await (await caches.open('freya-travel-release-6444-v53')).match(new URL('index.html',location.href).href))),true);
   // 503 is not an offline exception: the previous worker returned the error instead of its SDK cache.
-  fault='shell503';await page.reload().catch(async error=>{console.error('SW fallback failure',version,await page.evaluate(async()=>({keys:await caches.keys(),controller:navigator.serviceWorker.controller?.state,cache:!!(await (await caches.open('freya-travel-release-6444-v52')).match('./index.html'))})).catch(()=>null));throw error});await page.locator('#loginCard').waitFor({state:'visible'});fault='';
+  fault='shell503';await page.reload().catch(async error=>{console.error('SW fallback failure',version,await page.evaluate(async()=>({keys:await caches.keys(),controller:navigator.serviceWorker.controller?.state,cache:!!(await (await caches.open('freya-travel-release-6444-v53')).match('./index.html'))})).catch(()=>null));throw error});await page.locator('#loginCard').waitFor({state:'visible'});fault='';
   assert.equal(await page.evaluate(async()=>await (await caches.open('freya-travel-v1.5')).match('/freya-travel/local-copy').then(r=>r.text())),'keep');
   await page.goto(url+'freya-travel-v1.5/');await page.waitForURL(url);await page.locator('#loginCard').waitFor({state:'visible'});
   // WebKit's automation-level setOffline rejects navigation before dispatching to SW.
