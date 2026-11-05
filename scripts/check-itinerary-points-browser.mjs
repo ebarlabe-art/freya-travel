@@ -116,11 +116,10 @@ try{
  await editor.screenshot({path:resolve(tmpdir(),'freya-compact-editor-'+engine+'.png')});
  // Native names and linguistic variants are user queries, never invented coordinates or automatic choices.
  for(const [n,query]of [[1,'Piazza Maggiore'],[2,'Fontana del Nettuno'],[3,'Basilica di San Petronio'],[3,'Basilica de San Petronio']]){
-  await selectPoint(n);await editor.getByLabel('Nom del punt '+n,{exact:true}).fill(query);
-  const box=editor.locator('fieldset').nth(n-1);
-  await box.getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+  await selectPoint(n);const box=editor.locator('fieldset').nth(n-1);await editor.getByLabel('Nom del punt '+n,{exact:true}).fill(query);
+  await box.getByRole('button',{name:'Buscar ubicació',exact:true}).tap();
   await box.locator('[data-point-results] button').first().waitFor();
-  assert.match(await box.locator('[data-point-feedback]').innerText(),/Tria el lloc/);
+  assert.match(await box.locator('[data-point-feedback]').innerText(),/Quin d’aquests llocs/);
   assert.equal(writes.length,8,'Searching variants never saves or auto-confirms');
   assert.match(await box.locator('[data-point-toggle]').innerText(),/Tria una coincidència/,'Candidate requires explicit selection');
   await box.locator('[data-point-results] button').first().tap();
@@ -130,12 +129,12 @@ try{
  assert.ok(searches.some(s=>s.text.startsWith('Basilica di San Petronio,')));
  assert.ok(searches.some(s=>s.text.startsWith('Basilica de San Petronio,')),'Distinct language variants reach provider');
  await selectPoint(1);await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Unknown Museum');
- await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
- await editor.locator('fieldset').first().locator('[data-point-feedback]').filter({hasText:'Cap coincidència verificable'}).waitFor();
+ await editor.locator('fieldset').first().getByRole('button',{name:'Buscar ubicació',exact:true}).tap();
+ await editor.locator('fieldset').first().locator('[data-point-feedback]').filter({hasText:'No hem trobat el lloc'}).waitFor();
  assert.equal(await editor.locator('fieldset').first().locator('[data-point-results] button').count(),0);
  await selectPoint(1);
  await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Service failure');
- await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+ await editor.locator('fieldset').first().getByRole('button',{name:'Buscar ubicació',exact:true}).tap();
  await editor.locator('fieldset').first().locator('[data-point-feedback][data-error="true"]').waitFor();
  assert.ok((await editor.locator('fieldset').first().locator('[data-point-feedback]').innerText()).length>0,'Provider error shown next to search');
  await selectPoint(2);
@@ -147,7 +146,7 @@ try{
  // Real touch-sized UI: same-name nearby provider records collapse; different basilicas stay.
  const firstInput=editor.getByLabel('Nom del punt 1',{exact:true});
  await firstInput.fill('Basilica di San Domenico');
- await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+ await editor.locator('fieldset').first().getByRole('button',{name:'Buscar ubicació',exact:true}).tap();
  await editor.locator('[data-point-results] button').first().waitFor();
  const basilicaButtons=editor.locator('fieldset').first().locator('[data-point-results] button');
  assert.equal(await basilicaButtons.count(),1,'nearby San Domenico records collapsed and Santo Stefano excluded');
@@ -177,7 +176,7 @@ try{
  await editor.getByRole('button',{name:'Puja el punt 2',exact:true}).tap();
  await selectPoint(2);
  await editor.getByLabel('Nom del punt 2',{exact:true}).fill('Delayed Piazza');
- await editor.locator('fieldset').nth(1).getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+ await editor.locator('fieldset').nth(1).getByRole('button',{name:'Buscar ubicació',exact:true}).tap();
  await editor.locator('fieldset').nth(1).locator('[data-point-feedback]').filter({hasText:'Cercant'}).waitFor();
  await selectPoint(1);
  const beforeReview=writes.length;
@@ -207,14 +206,14 @@ try{
  rows[0].location_points.points[0].query='Remote Piazza';
  await page.evaluate(async()=>{await loadManualItineraryItems(true);renderGenericItinerary()});
  await editor.getByRole('alert').filter({hasText:'activitat ha canviat'}).waitFor();
- assert.equal(await editor.getByRole('button',{name:'Desa els punts',exact:true}).isDisabled(),true);
+ assert.equal(await editor.getByRole('button',{name:'Confirmar ubicacions',exact:true}).isDisabled(),true);
  await editor.getByText('Revisa els canvis de l’activitat',{exact:true}).tap();
  await editor.getByRole('alert').getByText(/Remote Piazza/).waitFor();
  await editor.getByRole('alert').screenshot({path:resolve(tmpdir(),'freya-point-conflict-'+engine+'.png')});
  await page.evaluate(()=>renderGenericItinerary());
  assert.equal(await editor.getByRole('alert').locator('details').getAttribute('open'),'','Open conflict review survives refresh');
  await editor.getByRole('button',{name:'Conserva el meu esborrany sobre aquesta versió',exact:true}).tap();
- assert.equal(await editor.getByRole('button',{name:'Desa els punts',exact:true}).isEnabled(),true);
+ assert.equal(await editor.getByRole('button',{name:'Confirmar ubicacions',exact:true}).isEnabled(),true);
  assert.equal(writes.length,beforeReview,'Refresh, candidate selection and conflict review never save');
  assert.equal(await editor.getByLabel('Nom del punt 2',{exact:true}).inputValue(),'Delayed Piazza');
  await editor.getByRole('button',{name:'Cancel·la',exact:true}).tap();
@@ -228,12 +227,12 @@ try{
  await editor.getByRole('button',{name:'Puja el punt 2',exact:true}).tap();
  await pointOptions(3);
  await editor.getByRole('button',{name:'Elimina el punt 3',exact:true}).tap();
- await editor.getByRole('button',{name:'Afegeix un punt',exact:true}).tap();
+ await editor.getByRole('button',{name:'Afegir un altre lloc',exact:true}).tap();
  await selectPoint(3);
  await editor.getByLabel('Nom del punt 3',{exact:true}).fill('Via del Pratello');
- await editor.locator('fieldset').nth(2).getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+ await editor.locator('fieldset').nth(2).getByRole('button',{name:'Buscar ubicació',exact:true}).tap();
  await editor.locator('[data-point-results] button').filter({hasText:'Via del Pratello'}).tap();
- await editor.getByRole('button',{name:'Desa els punts',exact:true}).tap();
+ await editor.getByRole('button',{name:'Confirmar ubicacions',exact:true}).tap();
  await page.waitForFunction(()=>manualItineraryRows[0].location_points.points[0].place.canonical_name==='Fontana del Nettuno');
  assert.deepEqual(rows[0].location_points.points.map(p=>p.place.canonical_name),['Fontana del Nettuno','Piazza Maggiore','Via del Pratello']);
  assert.equal(rows[0].location_points.points[2].status,'approximate');
@@ -246,15 +245,15 @@ try{
  assert.equal(searches.length,before,'Saved ordered locations reused on reload');
  await selectPoint(1);
  await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Fontana corretta');
- await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+ await editor.locator('fieldset').first().getByRole('button',{name:'Buscar ubicació',exact:true}).tap();
  await editor.locator('[data-point-results] button').filter({hasText:'Fontana corretta'}).tap();
- await editor.getByRole('button',{name:'Desa els punts',exact:true}).tap();
+ await editor.getByRole('button',{name:'Confirmar ubicacions',exact:true}).tap();
  await page.waitForFunction(()=>manualItineraryRows[0].location_points.points[0].place.canonical_name==='Fontana corretta');
  assert.equal(rows[0].title,originals[0].title,'Point correction never renames the activity');
  await first.tap();editor=page.locator('[data-activity-point-editor]');await editor.waitFor({state:'visible'});
  // A second member changes the revision after this editor opened.
  rows[0].updated_at='2031-01-01T00:00:00Z';const writesBefore=writes.length;
- await editor.getByRole('button',{name:'Desa els punts',exact:true}).tap();
+ await editor.getByRole('button',{name:'Confirmar ubicacions',exact:true}).tap();
  await editor.getByRole('status').filter({hasText:'activitat ha canviat'}).waitFor();
  assert.equal(writes.length,writesBefore,'Stale editor must not overwrite');
  await editor.getByRole('button',{name:'Cancel·la',exact:true}).tap();
@@ -262,7 +261,7 @@ try{
  await first.tap();await editor.waitFor({state:'visible'});
  await selectPoint(1);
  await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Delayed cancel');
- await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+ await editor.locator('fieldset').first().getByRole('button',{name:'Buscar ubicació',exact:true}).tap();
  for(let i=0;!releaseSearch&&i<100;i++)await new Promise(r=>setTimeout(r,10));assert.ok(releaseSearch);
  await editor.getByRole('button',{name:'Cancel·la',exact:true}).tap();releaseSearch();releaseSearch=null;
  await page.evaluate(()=>renderGenericItinerary());
@@ -270,7 +269,7 @@ try{
  await first.tap();await editor.waitFor({state:'visible'});
  await selectPoint(1);
  await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Delayed trip change');
- await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+ await editor.locator('fieldset').first().getByRole('button',{name:'Buscar ubicació',exact:true}).tap();
  for(let i=0;!releaseSearch&&i<100;i++)await new Promise(r=>setTimeout(r,10));assert.ok(releaseSearch);
  await page.evaluate(()=>selectTrip('missing-trip',{open:true}));
  releaseSearch();releaseSearch=null;
