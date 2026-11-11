@@ -5,6 +5,14 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
 
+## FOTOS-01.2 · Visor després del primer tancament — BRANCA, NO PUBLICADA
+
+Base remota `8553327` (#219 fusionada, v56 segons #220); l'apartat FOTOS-01 inferior conserva el relleu anterior a la fusió. L'usuària confirma càrregues físiques de 6 i 26 fotos; això no és una revalidació remota independent. Branca `fix/fotos-01-2-gallery-viewer`. [Diagnòstic, proves i reversió](fotos-01-2-gallery-viewer.md).
+
+Causa reproduïda amb historial natiu: el `popstate` de tancament no arribava al controlador de fotos quan `photoNavigation` i el marcador ja eren nuls; el guard quedava activat. Reproduïble també amb v55. Correcció d'una condició, pujada/cua intactes. 12 fotos antigues/noves en WebKit i Chromium, retorn d'editor i Back/Forward, sense escriptures. Suite 954/954, fotos57/57, build/packaging/paritat; cache v57 preparada amb regressió d'actualització des de v56. Detalls i CI a la PR.
+
+Relleu: revisar PR específica; no fusionar ni publicar sense autorització. Després, validació física de 10 obertures/tancaments a l'iPhone abans de tancar #220. Cap canvi a producció ni als canvis locals aliens. No reprèn A-04 ni amplia el roadmap.
+
 ## FOTOS-01 · P0 fiabilitat de càrrega — BRANCA, NO PUBLICADA
 
 Branca `fix/fotos-01-upload-reliability`, base main `574d52d`. [Auditoria, correcció i prova física pendent](fotos-01-upload-reliability.md). Codi públic v55 verificat en lectura; límit20/cua volàtil preexistents també al codi disponible a Bolonya. Storage/RPC/RLS/recomptes contrastats sense escriptures; no es coneix la causa exacta del Load failed individual.

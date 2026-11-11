@@ -8826,7 +8826,9 @@ function handlePhotoHistory(){
   else closeGenericPhoto(true);
 }
 function handleFreyaPopState(event){
-  if(typeof photoNavigation!=='undefined'&&(photoNavigation||event.state?.freyaPhoto)){handlePhotoHistory(event);return}
+  // Closing clears the viewer before native history traversal finishes. Its return
+  // entry has no photo marker, but still belongs to the pending photo transition.
+  if(typeof photoNavigation!=='undefined'&&(photoNavigation||photoHistoryPending||event.state?.freyaPhoto)){handlePhotoHistory(event);return}
   if(handleHomeTripPopState(event))return;
   handleBuilderPopState(event);
 }
