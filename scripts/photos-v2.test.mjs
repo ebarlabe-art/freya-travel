@@ -416,3 +416,18 @@ test('FOTOS-01 suspended queue keeps IDs, context and errors on restore; no auto
  const h=harness();const saved={...job(),scope:{tripId:'a',userId:'u'},status:'uploading',batchId:'batch',index:3,finalizationContext:{local_date:'2030-11-07'}};
  h.s.photoStore=async()=>({load:async()=>[saved]});await h.s.restorePhotoQueue();assert.equal(h.get('photoQueue[0].id'),'photo-id');assert.equal(h.get('photoQueue[0].status'),'error');assert.equal(h.get('photoQueue[0].finalizationContext.local_date'),'2030-11-07');assert.equal(h.get('photoQueueRunning'),false);
 });
+
+ test('real popstate dispatcher completes close after navigation and marker are cleared',async()=>{
+ const h=savedContextHarness();await h.s.loadGenericPhotos();
+ h.s.handleHomeTripPopState=()=>assert.fail('photo return must not reach home');
+ h.s.handleBuilderPopState=()=>assert.fail('photo return must not reach builder');
+ for(let i=0;i<12;i++){
+  h.s.openGenericPhoto('photo');assert.equal(h.get('photoNavigation.id'),'photo');
+  h.s.closeGenericPhoto();assert.equal(h.get('photoNavigation'),null);assert.equal(h.get('photoHistoryPending'),true);
+  h.s.openGenericPhoto('photo');assert.equal(h.get('photoNavigation'),null,'guard still blocks during traversal');
+  h.s.history.state=null;h.s.handleFreyaPopState({state:null});
+  assert.equal(h.get('photoHistoryPending'),false);assert.equal(h.get('photoReturnPosition'),null);
+ }
+ let home=0,builder=0;h.s.handleHomeTripPopState=()=>{home++;return false};h.s.handleBuilderPopState=()=>builder++;
+ h.s.handleFreyaPopState({state:null});assert.equal(home,1);assert.equal(builder,1);
+ });
