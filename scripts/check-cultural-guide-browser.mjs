@@ -9,7 +9,7 @@ const eivissa={...bolognaPlaces[0],canonical_name:'Dalt Vila',provider_place_id:
 const aran={...bolognaPlaces[0],canonical_name:'Esglesia de Sant Miquèu',provider_place_id:'synthetic-aran-vielha',country_code:'ES',locality:'Vielha',latitude:42.701,longitude:0.795,coordinate_role:'exact_location'};
 const aranRow=cultureRow(aran,40,cultureId(4));
 const aranUnverified={...cultureRow(aran,41,cultureId(4)),location_points:null,resolved_location:null};
-const manuals=[aranRow,aranUnverified,...bolognaPlaces.map((p,i)=>cultureRow(p,i)),cultureRow(eivissa,10,cultureId(2))],documents=[...bolognaPlaces,eivissa].map((p,i)=>guideProposal(p,culturalArticle(p,i),proposedSections(culturalArticle(p,i))));
+const manuals=[aranRow,aranUnverified,...bolognaPlaces.map((p,i)=>cultureRow(p,i)),cultureRow(eivissa,10,cultureId(2))],documents=[...bolognaPlaces,eivissa,aran].map((p,i)=>guideProposal(p,culturalArticle(p,i),proposedSections(culturalArticle(p,i))));
 const compound=cultureRow(bolognaPlaces[0],30);compound.title='Piazza Maggiore, Fontana del Nettuno i basílica de San Petronio';compound.location_points=pointSnapshot(compound,bolognaPlaces.slice(0,3).map((p,i)=>({id:'point-'+i,query:p.canonical_name,place:p})));manuals.push(compound);
 let httpMode='server';const httpCalls=[];
 const server=createServer(async(req,res)=>{
@@ -78,7 +78,7 @@ try{
  // New-trip Aran regression: verified and unresolved locations.
  await page.evaluate(async id=>{await selectTrip(id,{open:true});setAppView('activitiesView')},cultureId(4));
  await page.locator(`#activityList [data-cultural-guide="manual:${cultureId(60)}"]`).click();await dialog.waitFor({state:'visible'});
- assert.equal(await root.locator('h2').innerText(),aran.canonical_name);await closeGuide();
+ assert.equal(await root.locator('h2').innerText(),aran.canonical_name);await root.locator('[data-guide-text="history"]').waitFor({state:'visible'});assert.equal(await root.locator('[data-guide-text="history"]').innerText(),documents.at(-1).sections.history.text);assert.ok((await page.evaluate(()=>fixture.calls)).some(c=>c.action==='prepare'&&c.place_key===guidePlaceKey(aran)));await closeGuide();
  await page.locator(`#activityList [data-cultural-guide="manual:${cultureId(61)}"]`).click();await dialog.waitFor({state:'visible'});
  assert.match(await root.innerText(),/Cal confirmar la ubicació exacta/);await closeGuide();
  // London preserves all 13 cards while using the same device narration and controls.
