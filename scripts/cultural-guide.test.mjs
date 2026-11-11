@@ -147,3 +147,15 @@ test('new Vall d Aran trip uses the universal cultural guide identity contract',
  mismatched.location_points.points[0].query='Un altre monument';
  assert.deepEqual(culturalPlaces(mismatched),[],'a mismatched imported location must not receive another monument guide');
 });
+
+// A real-world name is not itself a provider-verified identity. These Aran examples
+// must remain visible to the place-resolution workflow without fabricating guide keys.
+test('Aran named visits remain identifiable for resolution, but require a verified provider identity for guides',async()=>{
+ const {extractActivityPoints}=await import('../domain/itinerary-place-points.mjs');
+ for(const title of ['Saint-Bertrand-de-Comminges','Luchon','Bosc de Carlac']){
+  const row={title};const points=extractActivityPoints(row);
+  assert.equal(points.length,1,title+' should be offered for geocoding');
+  assert.ok(points[0].query.length>0);
+  assert.equal(culturalPlaces(row).length,0,'A name alone must not forge a verified place');
+ }
+});
