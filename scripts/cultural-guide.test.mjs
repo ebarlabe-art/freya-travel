@@ -128,3 +128,22 @@ test('all inaccurate model quotes fail closed instead of creating an ungrounded 
 });
 
 // Regression: keep citation checks strict while allowing supported sections.
+
+test('new Vall d Aran trip uses the universal cultural guide identity contract',()=>{
+ const aran={...bolognaPlaces[0],canonical_name:'Esglesia de Sant Miquèu',provider_place_id:'synthetic-aran-les-1',country_code:'ES',locality:'Vielha',latitude:42.701,longitude:0.795,kind:'building',coordinate_role:'exact_location'};
+ const newTrip=cultureId(3),row=cultureRow(aran,44,newTrip);
+ const places=culturalPlaces(row);
+ assert.equal(places.length,1,'a new trip must expose its verified place');
+ assert.equal(places[0].canonical_name,aran.canonical_name);
+ assert.equal(guidePlaceKey(places[0]),'geoapify:synthetic-aran-les-1');
+ const article={...culturalArticle(aran,44),language:'en'};
+ assert.equal(sourceMatchesPlace(places[0],article),true);
+ const guide=guideProposal(places[0],article,proposedSections(article));
+ assert.equal(guide.place_key,guidePlaceKey(places[0]));
+ assert.equal(validateCulturalGuide(guide,guide.place_key).language,'ca');
+ const noLocation={...row,location_points:null,resolved_location:null};
+ assert.deepEqual(culturalPlaces(noLocation),[],'an imported name alone must not silently become a verified place');
+ const mismatched={...row,location_points:structuredClone(row.location_points)};
+ mismatched.location_points.points[0].query='Un altre monument';
+ assert.deepEqual(culturalPlaces(mismatched),[],'a mismatched imported location must not receive another monument guide');
+});
