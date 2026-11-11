@@ -2,7 +2,7 @@
 
 ## Abast i diagnòstic
 
-Base remota `8553327b640d45044b1b1a19db3550b7d7fef6d0` (PR #219, v56). Branca `fix/fotos-01-2-gallery-viewer`. Correcció preparada, no publicada; acceptació definitiva pendent d'iPhone físic.
+Base remota `8553327b640d45044b1b1a19db3550b7d7fef6d0` (PR #219, v56). Branca `fix/fotos-01-2-gallery-viewer`, [PR #221](https://github.com/ebarlabe-art/freya-travel/pull/221). Correcció preparada, no publicada; acceptació definitiva pendent d'iPhone físic.
 
 `closeGenericPhoto()` inicia `history.go(-1)` amb `photoHistoryPending=true` i immediatament elimina `photoNavigation`. L'entrada de destinació de la galeria no té `freyaPhoto`. Quan arriba el `popstate` natiu, `handleFreyaPopState()` no cridava `handlePhotoHistory()` perquè ni la navegació ni el marcador existien. El guard quedava activat indefinidament i `openGenericPhoto()` rebutjava qualsevol altra fotografia.
 

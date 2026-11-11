@@ -7,7 +7,7 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 
 ## FOTOS-01.2 · Visor després del primer tancament — BRANCA, NO PUBLICADA
 
-Base remota `8553327` (#219 fusionada, v56 segons #220); l'apartat FOTOS-01 inferior conserva el relleu anterior a la fusió. L'usuària confirma càrregues físiques de 6 i 26 fotos; això no és una revalidació remota independent. Branca `fix/fotos-01-2-gallery-viewer`. [Diagnòstic, proves i reversió](fotos-01-2-gallery-viewer.md).
+Base remota `8553327` (#219 fusionada, v56 segons #220); l'apartat FOTOS-01 inferior conserva el relleu anterior a la fusió. L'usuària confirma càrregues físiques de 6 i 26 fotos; això no és una revalidació remota independent. Branca `fix/fotos-01-2-gallery-viewer`, [PR #221 en esborrany](https://github.com/ebarlabe-art/freya-travel/pull/221). [Diagnòstic, proves i reversió](fotos-01-2-gallery-viewer.md).
 
 Causa reproduïda amb historial natiu: el `popstate` de tancament no arribava al controlador de fotos quan `photoNavigation` i el marcador ja eren nuls; el guard quedava activat. Reproduïble també amb v55. Correcció d'una condició, pujada/cua intactes. 12 fotos antigues/noves en WebKit i Chromium, retorn d'editor i Back/Forward, sense escriptures. Suite 954/954, fotos57/57, build/packaging/paritat; cache v57 preparada amb regressió d'actualització des de v56. Detalls i CI a la PR.
 
