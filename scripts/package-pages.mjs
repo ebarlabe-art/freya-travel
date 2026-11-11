@@ -5,6 +5,7 @@ import { build } from 'vite';
 const root=new URL('../',import.meta.url);
 const dist=new URL('../dist/',import.meta.url);
 const runtimeDomain=[
+  'photo-upload-store.mjs',
   'flight-journey-identity.mjs','cultural-guide.mjs',
   'cultural-guide-ui.mjs',
   'itinerary-route.mjs',

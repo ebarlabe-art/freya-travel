@@ -1467,12 +1467,12 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         </section>
         <section class="photo-upload-card">
           <section id="photoUploadV2" class="hidden" aria-label="Pujada de fotos">
-            <h3>Afegir fotos</h3><p>Fins a 20 fotos per lot · JPEG, PNG, WebP, HEIC o HEIF · màxim 32 MB cadascuna. Mantén Freya oberta fins que acabin. No es garanteix la pujada en segon pla.</p>
+            <h3>Afegir fotos</h3><p>Fins a 50 fotos per selecció · JPEG, PNG, WebP, HEIC o HEIF · màxim 32 MB cadascuna. La cua es conserva xifrada en aquest dispositiu. Mantén Freya oberta per pujar; després d’una interrupció podràs reprendre-la. iOS pot eliminar dades locals: conserva els originals fins a verificar la galeria.</p>
             <div id="photoBatchContext"></div>
             <label>Selecciona fotos<input id="photoFilesV2" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple></label>
             <p id="photoQueueMessage" role="status" aria-live="polite"></p>
-            <div id="photoQueueList"></div>
-            <div class="trip-home-actions"><button id="photoQueueUpload" type="button">Pujar fotos</button><button id="photoQueueClear" type="button">Acabar</button></div>
+            <p id="photoQueueProgress" role="status" aria-live="polite"></p><div id="photoQueueList"></div>
+            <div class="trip-home-actions"><button id="photoQueueUpload" type="button">Pujar fotos</button><button id="photoQueueRetry" type="button">Reintenta les fallides</button><button id="photoQueueClear" type="button">Acabar</button></div>
           </section>
           <form id="photoForm" class="photo-form">
             <input id="photoTitle" type="text" maxlength="80" placeholder="Títol o lloc (opcional)">
@@ -8548,6 +8548,26 @@ addFavoriteButtons();renderFavorites();
 let photoQueue=[],photoMetadata=[],photoContextDraft=null,photoBatchContext={local_date:null,activity_id:null,itinerary_item_id:null};
 let photoQueueRunning=false,photoV2LoadSequence=0,photoV2RenderSequence=0;
 let photoNavigation=null,photoSignedRows=[],photoHistoryPending=false,photoReturnPosition=null;
+let photoStorePromise=null,photoQueuePreparing=false,photoRestoreKey='',photoPersistence=Promise.resolve();
+function photoStore(){return photoStorePromise||(photoStorePromise=import('./domain/photo-upload-store.mjs').catch(error=>{photoStorePromise=null;throw error}))}
+function photoLocalError(error){return error?.name==='QuotaExceededError'?'No hi ha prou espai local per conservar aquesta foto. Allibera espai i torna-la a seleccionar.':error?.message||'No s’ha pogut conservar la cua. No tanquis Freya ni eliminis els originals.'}
+function persistPhotoJob(job){
+ const scope={...job.scope};
+ // Serialize metadata snapshots; an older input event must never overwrite a later state.
+ const save=async()=>{const store=await photoStore();await store.save(scope,job)};
+ photoPersistence=photoPersistence.catch(()=>{}).then(save);return photoPersistence;
+}
+function photoDraftChanged(job){persistPhotoJob(job).catch(error=>{if(photoScopeCurrent(job.scope))$('photoQueueMessage').textContent=photoLocalError(error)})}
+async function restorePhotoQueue(){
+ const scope=photoScope(),key=JSON.stringify([scope.userId,scope.tripId,scope.generation]);
+ if(!photoScopeCurrent(scope)||photoRestoreKey===key||photoQueuePreparing||photoQueueRunning)return;
+ photoRestoreKey=key;photoQueuePreparing=true;
+ try{const saved=await (await photoStore()).load(scope);if(!photoScopeCurrent(scope))return;
+  const known=new Set(photoQueue.map(j=>j.id));for(const job of saved){if(known.has(job.id))continue;if(job.status==='uploading'){job.status='error';job.error='Pujada interrompuda. Reintenta per verificar el resultat sense duplicar-la.'}photoQueue.push(job)}
+  if(saved.length)$('photoQueueMessage').textContent='Cua recuperada en aquest dispositiu. Revisa-la i prem Pujar o Reintenta; no cal tornar a seleccionar les fotos.';
+ }catch(error){if(photoScopeCurrent(scope)){photoRestoreKey='';$('photoQueueMessage').textContent=photoLocalError(error)}}
+ finally{if(photoScopeCurrent(scope)){photoQueuePreparing=false;renderPhotoQueue()}}
+}
 function photoScope(){return {tripId:trip?.id,userId:session?.user?.id,generation:tripLoadGeneration}}
 function photoScopeCurrent(scope){return !!scope?.tripId&&!!scope.userId&&session?.user?.id===scope.userId&&tripRequestIsCurrent(scope.tripId,scope.generation)&&!isLondonTrip()}
 function normalizedPhotoMime(file){
@@ -8570,7 +8590,7 @@ function renderPhotoBatchAction(){
 function applyPhotoBatchContext(){
   if(!photoScopeCurrent(photoScope())||photoQueueRunning)return;
   let applied=0,preserved=0;
-  pendingPhotoContextJobs().forEach(job=>{if(job.contextCustomized){preserved++;return}job.context=photoContextValue(photoBatchContext);applied++});
+  pendingPhotoContextJobs().forEach(job=>{if(job.contextCustomized){preserved++;return}job.context=photoContextValue(photoBatchContext);photoDraftChanged(job);applied++});
   renderPhotoQueue();$('photoQueueMessage').textContent=`Context aplicat a ${applied} fotos pendents. ${preserved} fotos amb context personalitzat conservades.`;
 }
 function savedPhotoContextHtml(job){
@@ -8580,13 +8600,7 @@ function savedPhotoContextHtml(job){
 }
 function refreshSavedPhotoContexts(){
   if(!photoScopeCurrent(photoScope()))return;const scope=photoScope();
-  let recovered=false;
-  if(!photoMetadataUnavailable)photoQueue.forEach(job=>{
-    if(job.status==='error'&&job.finalizationContext&&photoRows.some(row=>row.id===job.id)&&photoMetadata.some(row=>row.document_id===job.id&&row.upload_batch_id===job.batchId&&row.selection_index===job.index)){
-      job.status='uploaded';job.error='';recovered=true;
-    }
-  });
-  if(recovered){renderPhotoQueue();return}
+  // A metadata refresh alone cannot certify that Storage retained the original.
   $('photoQueueList').querySelectorAll('[data-saved-photo-context]').forEach(box=>{const job=photoQueue.find(job=>job.id===box.dataset.savedPhotoContext);if(job)box.innerHTML=savedPhotoContextHtml(job)});
   $('photoQueueList').querySelectorAll('[data-correct-photo]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))openPhotoContextEditor(button.dataset.correctPhoto)});
 }
@@ -8602,7 +8616,7 @@ function orderedGenericPhotos(rows,metadata){
 function resetPhotoV2(){
   resetPhotoNavigation();
   photoMetadataUnavailable=true;
-  photoQueue.forEach(job=>{if(job.preview)URL.revokeObjectURL(job.preview)});photoQueue=[];photoMetadata=[];photoContextDraft=null;photoBatchContext=photoContextValue();photoQueueRunning=false;photoV2LoadSequence++;photoV2RenderSequence++;
+  photoQueue.forEach(job=>{if(job.preview)URL.revokeObjectURL(job.preview)});photoQueue=[];photoMetadata=[];photoContextDraft=null;photoBatchContext=photoContextValue();photoQueueRunning=false;photoQueuePreparing=false;photoRestoreKey='';photoV2LoadSequence++;photoV2RenderSequence++;
   for(const id of ['photoQueueList','photoQueueMessage','photoBatchContext','photoContextEditor'])if($(id))$(id).innerHTML='';
   if($('photoFilesV2'))$('photoFilesV2').value='';if($('photoContextEditor'))$('photoContextEditor').classList.add('hidden');
 }
@@ -8651,27 +8665,36 @@ function bindContextPhotoActions(container,items){
 function preparePhotoV2(){
   updateTravelBookEntryVisibility();
   const generic=!!trip&&!isLondonTrip();$('photoUploadV2').classList.toggle('hidden',!generic);$('photoForm').classList.toggle('hidden',generic);if(!generic)return;
-  renderPhotoQueue();const scope=photoScope();ensureTripAgenda().then(()=>{if(photoScopeCurrent(scope)){renderPhotoQueue();renderGenericPhotos()}});
+  renderPhotoQueue();restorePhotoQueue();const scope=photoScope();ensureTripAgenda().then(()=>{if(photoScopeCurrent(scope)){renderPhotoQueue();renderGenericPhotos()}});
 }
 function renderPhotoQueue(){
   if(!trip||isLondonTrip())return;
   const batch=$('photoBatchContext');batch.innerHTML='<p>Context proposat per a les properes fotos. Per actualitzar les ja seleccionades, aplica’l explícitament als pendents.</p>'+photoContextFields(photoBatchContext,'batch')+'<div id="photoBatchActions"></div>';bindPhotoContext(batch,photoBatchContext,renderPhotoBatchAction);renderPhotoBatchAction();
-  $('photoQueueList').innerHTML=photoQueue.map(job=>`<article class="photo-queue-item" data-photo-job="${esc(job.id)}">${job.preview?`<img src="${esc(job.preview)}" loading="lazy" decoding="async" alt="Previsualització de ${esc(job.file.name)}">`:''}<div><strong>${esc(job.file.name)}</strong><p role="status">${esc({pending:'Pendent',uploading:'Pujant…',uploaded:'Pujada',error:'Error'}[job.status])}${job.error?` · ${esc(job.error)}`:''}</p>${job.status!=='uploaded'?`<label>Títol<input data-photo-title maxlength="160" value="${esc(job.title)}" ${job.status==='uploading'?'disabled':''}></label><fieldset ${job.status==='uploading'||job.finalizationContext?'disabled':''}>${photoContextFields(job.finalizationContext||job.context,job.id)}</fieldset><small data-photo-personalized>${job.contextCustomized?'Context personalitzat: no es reemplaçarà en aplicar el context superior.':''}</small>${job.finalizationContext?'<p>La finalització pot haver-se desat. El reintent recupera el resultat amb el mateix context; després podràs corregir-lo amb «Edita context».</p>':''}`:`<div data-saved-photo-context="${esc(job.id)}">${savedPhotoContextHtml(job)}</div>`}${job.status==='error'&&!job.invalid?'<button type="button" data-photo-retry>Reintenta la pujada / verifica el resultat</button>':''}</div></article>`).join('');
-  $('photoQueueList').querySelectorAll('[data-photo-job]').forEach(card=>{const job=photoQueue.find(job=>job.id===card.dataset.photoJob);if(job.status!=='uploaded'){if(!job.finalizationContext)bindPhotoContext(card,job.context,()=>{job.contextCustomized=true;card.querySelector('[data-photo-personalized]').textContent='Context personalitzat: no es reemplaçarà en aplicar el context superior.';renderPhotoBatchAction()});card.querySelector('[data-photo-title]').oninput=e=>job.title=e.target.value}const retry=card.querySelector('[data-photo-retry]');if(retry){retry.disabled=photoQueueRunning;const scope=photoScope();retry.onclick=()=>{if(photoScopeCurrent(scope))runPhotoQueue(job.id)}}});
+  $('photoQueueList').innerHTML=photoQueue.map(job=>`<article class="photo-queue-item" data-photo-job="${esc(job.id)}">${job.preview?`<img src="${esc(job.preview)}" loading="lazy" decoding="async" alt="Previsualització de ${esc(job.file.name)}">`:''}<div><strong>${esc(job.file.name)}</strong><p role="status">${esc({pending:'Pendent',uploading:'Pujant…',uploaded:'Desada',error:'Error'}[job.status])}${job.error?` · ${esc(job.error)}`:''}</p>${job.status!=='uploaded'?`<label>Títol<input data-photo-title maxlength="160" value="${esc(job.title)}" ${job.status==='uploading'||job.finalizationContext?'disabled':''}></label><fieldset ${job.status==='uploading'||job.finalizationContext?'disabled':''}>${photoContextFields(job.finalizationContext||job.context,job.id)}</fieldset><small data-photo-personalized>${job.contextCustomized?'Context personalitzat: no es reemplaçarà en aplicar el context superior.':''}</small>${job.finalizationContext?'<p>La finalització pot haver-se desat. El reintent recupera el resultat amb el mateix context; després podràs corregir-lo amb «Edita context».</p>':''}`:`<div data-saved-photo-context="${esc(job.id)}">${savedPhotoContextHtml(job)}</div>`}${job.invalid?'<button type="button" data-photo-invalid-remove>Retira aquest fitxer no compatible</button>':job.status==='error'&&!job.invalid?'<button type="button" data-photo-retry>Reintenta la pujada / verifica el resultat</button>':''}</div></article>`).join('');
+  $('photoQueueList').querySelectorAll('[data-photo-job]').forEach(card=>{const job=photoQueue.find(job=>job.id===card.dataset.photoJob);if(job.status!=='uploaded'){if(!job.finalizationContext)bindPhotoContext(card,job.context,()=>{job.contextCustomized=true;photoDraftChanged(job);card.querySelector('[data-photo-personalized]').textContent='Context personalitzat: no es reemplaçarà en aplicar el context superior.';renderPhotoBatchAction()});card.querySelector('[data-photo-title]').oninput=e=>{job.title=e.target.value;photoDraftChanged(job)}}const remove=card.querySelector('[data-photo-invalid-remove]');if(remove)remove.onclick=()=>{if(!photoQueueRunning&&!photoQueuePreparing){photoQueue=photoQueue.filter(j=>j!==job);renderPhotoQueue()}};const retry=card.querySelector('[data-photo-retry]');if(retry){retry.disabled=photoQueuePreparing;const scope=photoScope();retry.onclick=()=>{if(photoScopeCurrent(scope)){if(photoQueueRunning){job.retryRequested=true;$('photoQueueMessage').textContent='Reintent programat després de la foto actual.'}else runPhotoQueue(job.id)}}}});
   refreshSavedPhotoContexts();
-  $('photoQueueUpload').disabled=photoQueueRunning||!photoQueue.some(job=>job.status==='pending');$('photoQueueClear').disabled=photoQueueRunning;$('photoFilesV2').disabled=photoQueueRunning;
+  $('photoQueueProgress').textContent=`${photoQueue.filter(j=>j.status==='uploaded').length} de ${photoQueue.length} desades · ${photoQueue.filter(j=>j.status==='error').length} fallides${photoQueuePreparing?' · Preparant còpia local…':photoQueueRunning?' · Càrrega en curs':''}`;
+  $('photoQueueUpload').disabled=photoQueueRunning||photoQueuePreparing||!photoQueue.some(job=>job.status==='pending');$('photoQueueRetry').disabled=photoQueuePreparing||!photoQueue.some(job=>job.status==='error'&&!job.invalid);$('photoQueueClear').disabled=photoQueueRunning||photoQueuePreparing;$('photoFilesV2').disabled=photoQueueRunning||photoQueuePreparing;
 }
-function selectPhotoFiles(files){
-  const scope=photoScope();if(!photoScopeCurrent(scope)||photoQueueRunning)return;
-  // A full batch is a deliberate boundary: never silently discard extra selections.
-  if(files.length+photoQueue.length>20){$('photoQueueMessage').textContent='Màxim 20 fotos per lot. Tanca el lot o selecciona menys fotos.';return}
-  const batchId=photoQueue[0]?.batchId||crypto.randomUUID();let skipped=0;
+async function selectPhotoFiles(files){
+ const scope=photoScope();if(!photoScopeCurrent(scope)||photoQueueRunning||photoQueuePreparing)return;
+ if(files.length>50||files.length+photoQueue.length>200){$('photoQueueMessage').textContent='Selecciona fins a 50 fotos cada vegada. Acaba la cua abans de superar 200 fotos.';return}
+ photoQueuePreparing=true;renderPhotoQueue();let skipped=0,batchId=crypto.randomUUID(),index=0;
+ try{
   for(const file of files){
-    if(photoQueue.some(job=>job.file.name===file.name&&job.file.size===file.size&&job.file.lastModified===file.lastModified)){skipped++;continue}
-    const id=crypto.randomUUID(),error=photoFileError(file),mime=normalizedPhotoMime(file);
-    photoQueue.push({id,batchId,index:photoQueue.length,scope,file,mime,path:photoStablePath(scope,id,mime),title:file.name.slice(0,160),context:photoContextValue(photoBatchContext),status:error?'error':'pending',invalid:!!error,error,preview:error||mime==='image/heic'||mime==='image/heif'?'':URL.createObjectURL(file),uploaded:false});
+   if(!photoScopeCurrent(scope))return;
+   if(photoQueue.some(job=>job.file.name===file.name&&job.file.size===file.size&&job.file.lastModified===file.lastModified)){skipped++;continue}
+   if(index===20){batchId=crypto.randomUUID();index=0}
+   const id=crypto.randomUUID(),error=photoFileError(file),mime=normalizedPhotoMime(file);
+   const job={id,batchId,index:index++,scope,file,mime,path:photoStablePath(scope,id,mime),title:file.name.slice(0,160),context:photoContextValue(photoBatchContext),status:error?'error':'pending',invalid:!!error,error,preview:'',uploaded:false};
+   photoQueue.push(job);renderPhotoQueue();
+   if(!error)try{await persistPhotoJob(job)}catch(e){job.status='error';job.error=photoLocalError(e)}
+   // Yield between files and encrypt one original at a time; no full-image decode/previews.
+   await new Promise(resolve=>setTimeout(resolve,0));
   }
-  $('photoQueueMessage').textContent=skipped?`${skipped} seleccions repetides ignorades en aquest lot.`:'Revisa el context de cada foto abans de pujar.';renderPhotoQueue();
+  if(photoScopeCurrent(scope))$('photoQueueMessage').textContent=`${files.length-skipped} fotos revisades. ${skipped} seleccions repetides ignorades. Revisa el context i prem Pujar fotos. Les fallides indiquen què cal corregir.`;
+ }catch(error){if(photoScopeCurrent(scope))$('photoQueueMessage').textContent=photoLocalError(error)}
+ finally{if(photoScopeCurrent(scope)){photoQueuePreparing=false;renderPhotoQueue()}}
 }
 // Injectable I/O makes ambiguous responses, retries and scope switches testable.
 function photoRequestWithTimeout(request,wait=120000){
@@ -8681,6 +8704,9 @@ async function executePhotoJob(job,io,current){
   if(!current())return;
   job.status='uploading';job.error='';io.changed();
   try{
+    if(io.persist)await io.persist(job);if(!current())return;
+    if(io.verify&&await io.verify(job,'before')){if(!current())return;job.status='uploaded';job.error='';return}
+    if(!current())return;
     if(!job.uploaded){
       const result=await photoRequestWithTimeout(io.upload(job));if(!current())return;
       // Only this immutable random path can be reused. Never upsert/overwrite it.
@@ -8688,39 +8714,67 @@ async function executePhotoJob(job,io,current){
       job.uploaded=true;
     }
     job.finalizationContext??=photoContextValue(job.context);
+    job.finalizationTitle??=job.title;
+    if(io.persist)await io.persist(job);if(!current())return;
     const result=await photoRequestWithTimeout(io.finalize(job));if(!current())return;
     if(result.error){
       // Explicit transaction rejection is safe to correct; network/timeout is not.
-      if(['23503','23514','22023','42501','P0002'].includes(result.error.code))job.finalizationContext=null;
+      if(['23503','23514','22023','42501','P0002'].includes(result.error.code)){job.finalizationContext=null;job.finalizationTitle=null;}
       throw result.error;
     }
-    job.status='uploaded';job.error='';
-  }catch(error){if(current()){job.status='error';job.error=error?.message||'No s’ha pogut completar. Reintenta aquesta foto.'}}
-  finally{if(current())io.changed()}
+    if(io.verify&&!await io.verify(job,'after'))throw Error('La finalització no s’ha pogut verificar. Reintenta aquesta foto; es conserva la mateixa identitat.');
+    if(!current())return;job.status='uploaded';job.error='';
+  }catch(error){if(current()){job.status='error';job.error=/Load failed|Failed to fetch|network|offline/i.test(error?.message||'')?'La connexió s’ha interromput. La foto es conserva a la cua: reintenta per verificar si s’ha desat.':error?.message||'No s’ha pogut completar. Reintenta aquesta foto.'}}
+  finally{if(current()){try{if(io.persist)await io.persist(job)}catch(e){job.status='error';job.error=photoLocalError(e)}io.changed()}}
+}
+async function photoObjectExists(job){
+ const split=job.path.lastIndexOf('/'),name=job.path.slice(split+1);
+ const result=await photoRequestWithTimeout(db.storage.from(DOC_BUCKET).list(job.path.slice(0,split),{search:name,limit:10}));
+ if(result.error)throw result.error;
+ return (result.data||[]).some(row=>row.name===name&&Number(row.metadata?.size)===job.file.size);
+}
+async function verifyPhotoJob(job,current=()=>true){
+ if(!current())return false;
+ const scope=job.scope;
+ const result=await photoRequestWithTimeout(db.from('travel_documents').select('id,trip_id,created_by,file_path,category').eq('id',job.id).eq('trip_id',scope.tripId).maybeSingle());
+ if(!current())return false;if(result.error)throw result.error;if(!result.data)return false;
+ const row=result.data;
+ if(row.created_by!==scope.userId||row.file_path!==job.path||row.category!=='Foto')throw Error('La identitat de la foto no coincideix. No es torna a pujar.');
+ const meta=await photoRequestWithTimeout(db.from('trip_photo_metadata').select('document_id,upload_batch_id,selection_index').eq('document_id',job.id).eq('trip_id',scope.tripId).maybeSingle());
+ if(!current())return false;if(meta.error)throw meta.error;
+ if(meta.data?.upload_batch_id!==job.batchId||meta.data?.selection_index!==job.index)return false;
+ return photoObjectExists(job);
 }
 async function uploadPhotoV2Object(job,current){
-  if(!['image/heic','image/heif'].includes(job.mime)){
-    const image=new Image();image.src=job.preview;
-    try{await image.decode()}catch{throw new Error('No es pot llegir aquesta imatge.')}
-    finally{image.removeAttribute('src')}
-  }
-  if(!current())return {error:new Error('Pujada interrompuda pel canvi de viatge o usuari.')};
-  return db.storage.from(DOC_BUCKET).upload(job.path,job.file,{contentType:job.mime,upsert:false});
+ if(!current())return {error:new Error('Pujada interrompuda pel canvi de viatge o usuari.')};
+ if(await photoObjectExists(job)){if(!current())return {error:new Error('Pujada interrompuda.')};return {data:{path:job.path}}}
+ const file=job.file instanceof Blob?job.file:new Blob([await job.file.arrayBuffer()],{type:job.mime});
+ if(!current())return {error:new Error('Pujada interrompuda.')};
+ // No lossy recompression or mandatory decode of a 48 MP original on iOS.
+ const result=await db.storage.from(DOC_BUCKET).upload(job.path,file,{contentType:job.mime,upsert:false});
+ if(result.error&&!['409','Duplicate'].includes(String(result.error.statusCode||result.error.code)))return result;
+ if(!current())return {error:new Error('Pujada interrompuda.')};
+ if(!await photoObjectExists(job))return {error:new Error('El fitxer no s’ha pogut verificar a Storage. Reintenta sense tornar-lo a seleccionar.')};
+ return {data:result.data};
 }
 async function runPhotoQueue(onlyId=null){
-  const scope=photoScope();if(!photoScopeCurrent(scope)||photoQueueRunning)return;
-  photoQueueRunning=true;renderPhotoQueue();const current=()=>photoScopeCurrent(scope);
-  try{
-    const jobs=photoQueue.filter(job=>onlyId?job.id===onlyId&&job.status==='error'&&!job.invalid:job.status==='pending');
-    for(const job of jobs){
-      if(!current())return;
-      await executePhotoJob(job,{changed:renderPhotoQueue,upload:job=>uploadPhotoV2Object(job,current),finalize:job=>db.rpc('finalize_trip_photo',{p_trip_id:scope.tripId,p_document_id:job.id,p_title:job.title.trim()||job.file.name.slice(0,160),p_file_name:job.file.name,p_mime_type:job.mime,p_upload_batch_id:job.batchId,p_selection_index:job.index,p_local_date:job.finalizationContext.local_date,p_activity_id:job.finalizationContext.activity_id,p_itinerary_item_id:job.finalizationContext.itinerary_item_id})},current);
-      if(!current())return;
-    }
-    await photoRequestWithTimeout(loadGenericPhotos());if(!current())return;
-    $('photoQueueMessage').textContent='Les fotos pujades s’han conservat. Els errors es poden reintentar individualment amb la mateixa identitat.';
-  }catch(error){if(current())$('photoQueueMessage').textContent=error.message||'No s’ha pogut refrescar l’àlbum. El lot es conserva.'}
-  finally{if(current()){photoQueueRunning=false;renderPhotoQueue()}}
+ const scope=photoScope();if(!photoScopeCurrent(scope)||photoQueueRunning||photoQueuePreparing)return;
+ photoQueueRunning=true;renderPhotoQueue();const current=()=>photoScopeCurrent(scope);
+ try{
+  await photoPersistence;
+  await (await photoStore()).exclusive(scope,async()=>{
+   const jobs=photoQueue.filter(job=>onlyId?job.id===onlyId&&job.status==='error'&&!job.invalid:job.status==='pending'||job.retryRequested);
+   for(let n=0;n<jobs.length;n++){
+    const job=jobs[n];if(!current())return;job.retryRequested=false;
+    await executePhotoJob(job,{persist:persistPhotoJob,verify:(job,phase)=>verifyPhotoJob(job,current,phase),changed:renderPhotoQueue,upload:job=>uploadPhotoV2Object(job,current),finalize:job=>db.rpc('finalize_trip_photo',{p_trip_id:scope.tripId,p_document_id:job.id,p_title:job.finalizationTitle.trim()||job.file.name.slice(0,160),p_file_name:job.file.name,p_mime_type:job.mime,p_upload_batch_id:job.batchId,p_selection_index:job.index,p_local_date:job.finalizationContext.local_date,p_activity_id:job.finalizationContext.activity_id,p_itinerary_item_id:job.finalizationContext.itinerary_item_id})},current);
+    if(!current())return;
+    for(const requested of photoQueue.filter(j=>j.retryRequested&&!j.invalid)){requested.retryRequested=false;if(!jobs.slice(n+1).includes(requested))jobs.push(requested)}
+   }
+  });
+  if(!current())return;await photoRequestWithTimeout(loadGenericPhotos());if(!current())return;
+  $('photoQueueMessage').textContent='Càrrega acabada. Comprova el recompte: les fotos fallides es conserven per reintentar-les. Pots acabar les desades sense perdre els pendents.';
+ }catch(error){if(current())$('photoQueueMessage').textContent=photoLocalError(error)}
+ finally{if(current()){photoQueueRunning=false;renderPhotoQueue();if(photoQueue.some(j=>j.retryRequested&&!j.invalid))setTimeout(()=>{if(current())runPhotoQueue()},0)}}
 }
 async function loadGenericPhotos(silent=false){
   const scope=photoScope(),sequence=++photoV2LoadSequence;if(!photoScopeCurrent(scope))return;
@@ -8740,11 +8794,13 @@ async function loadGenericPhotos(silent=false){
 let photoMetadataUnavailable=true;
 async function renderGenericPhotos(scope=photoScope()){
   const sequence=++photoV2RenderSequence;if(!photoScopeCurrent(scope))return;
-  const rows=photoRows.slice(),signed=await Promise.all(rows.map(async row=>{try{const result=await db.storage.from(DOC_BUCKET).createSignedUrl(row.file_path,3600);return {...row,signedUrl:result.data?.signedUrl||''}}catch{return {...row,signedUrl:''}}}));
+  const rows=photoRows.slice(),signed=new Array(rows.length);let cursor=0;
+  await Promise.all(Array.from({length:Math.min(4,rows.length)},async()=>{while(cursor<rows.length&&photoScopeCurrent(scope)&&sequence===photoV2RenderSequence){const i=cursor++,row=rows[i];try{const result=await photoRequestWithTimeout(db.storage.from(DOC_BUCKET).createSignedUrl(row.file_path,3600),15000);signed[i]={...row,signedUrl:result.data?.signedUrl||''}}catch{signed[i]={...row,signedUrl:''}}}}));
   if(!photoScopeCurrent(scope)||sequence!==photoV2RenderSequence)return;
   $('photoCountLabel').textContent=`${rows.length} fotos`;if($('genericPhotosModuleStatus'))$('genericPhotosModuleStatus').textContent=`${rows.length} fotos`;$('photosEmpty').classList.toggle('hidden',rows.length>0);
   photoSignedRows=signed;
   $('photosList').innerHTML=signed.map(row=>`<article class="photo-card" data-photo-id="${esc(row.id)}"><button class="photo-open" type="button" data-photo-open="${esc(row.id)}">${row.signedUrl?`<img src="${esc(row.signedUrl)}" alt="${esc(row.title)}" loading="lazy">`:'<p>Imatge temporalment no disponible</p>'}<div class="photo-info photo-summary" data-photo-summary="${esc(row.id)}">${photoSummaryHtml(row)}</div></button><button type="button" class="photo-context-edit" data-edit-photo="${esc(row.id)}" ${photoMetadataUnavailable?'disabled':''}>Edita context</button><button class="photo-delete" type="button" data-photo-delete="${esc(row.id)}" aria-label="Eliminar foto">🗑</button></article>`).join('');
+  $('photosList').querySelectorAll('img').forEach(img=>{img.onerror=()=>{img.alt='Previsualització no disponible en aquest navegador. L’original es conserva.';const card=img.closest('[data-photo-id]'),row=signed.find(r=>r.id===card?.dataset.photoId);if(card&&!card.querySelector('[data-photo-original]')){const link=document.createElement('a');link.dataset.photoOriginal='';link.href=row.signedUrl;link.target='_blank';link.rel='noopener';link.textContent='Obre l’original (HEIC/HEIF pot requerir Fotos)';card.append(link)}}});
   $('photosList').querySelectorAll('[data-photo-open]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))openPhoto(button.dataset.photoOpen,signed)});
   $('photosList').querySelectorAll('[data-edit-photo]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))openPhotoContextEditor(button.dataset.editPhoto)});
   $('photosList').querySelectorAll('[data-photo-delete]').forEach(button=>button.onclick=()=>{if(photoScopeCurrent(scope))deleteGenericPhoto(button.dataset.photoDelete)});
@@ -8916,9 +8972,17 @@ async function deleteGenericPhoto(id){
     $('photoQueueMessage').textContent=cleanup.error?'Foto eliminada de l’àlbum; no s’ha pogut netejar el fitxer de Storage.':'Foto eliminada.';
   }catch(error){if(photoScopeCurrent(scope))$('photoQueueMessage').textContent=error.message||'No s’ha pogut eliminar.'}
 }
-$('photoFilesV2').onchange=e=>{selectPhotoFiles([...e.target.files]);e.target.value=''};
+$('photoFilesV2').onchange=async e=>{const files=[...e.target.files];e.target.value='';await selectPhotoFiles(files)};
 $('photoQueueUpload').onclick=()=>runPhotoQueue();
-$('photoQueueClear').onclick=()=>{if(photoQueueRunning)return;if(photoQueue.some(job=>job.status!=='uploaded')&&!confirm('Tancar el lot? Les fotos no completades s’hauran de tornar a seleccionar. Una resposta perduda podria haver desat una foto: revisa l’àlbum abans de tornar-la a pujar.'))return;photoQueue.forEach(job=>{if(job.preview)URL.revokeObjectURL(job.preview)});photoQueue=[];$('photoQueueMessage').textContent='';renderPhotoQueue()};
+$('photoQueueRetry').onclick=()=>{photoQueue.filter(j=>j.status==='error'&&!j.invalid).forEach(j=>j.retryRequested=true);if(photoQueueRunning)$('photoQueueMessage').textContent='Reintents programats després de la foto actual.';else runPhotoQueue()};
+$('photoQueueClear').onclick=async()=>{
+ if(photoQueueRunning||photoQueuePreparing)return;const scope=photoScope();photoQueuePreparing=true;
+ try{await photoPersistence;const store=await photoStore();for(const job of photoQueue.filter(j=>j.status==='uploaded'))await store.remove(scope,job.id);if(!photoScopeCurrent(scope))return;
+ photoQueue=photoQueue.filter(j=>j.status!=='uploaded');$('photoQueueMessage').textContent=photoQueue.length?'Les fotos pendents es conserven. Reintenta-les quan tinguis connexió.':'Totes les fotos s’han desat i s’ha alliberat la còpia local de la cua.';
+ }catch(e){if(photoScopeCurrent(scope))$('photoQueueMessage').textContent=photoLocalError(e)}finally{if(photoScopeCurrent(scope)){photoQueuePreparing=false;renderPhotoQueue()}}
+};
+window.addEventListener('pageshow',()=>{if(photoScopeCurrent(photoScope()))restorePhotoQueue()});
+window.addEventListener('online',()=>{if(photoScopeCurrent(photoScope()))$('photoQueueMessage').textContent='Connexió recuperada. Pots reprendre les fotos pendents o reintentar les fallides.'});
 // PHOTO_V2_END
 let photoRows=[];
 let pendingPhotoRows=[];

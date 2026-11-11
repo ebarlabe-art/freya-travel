@@ -1,3 +1,7 @@
+# FOTOS-01 — contracte successor en revisió
+
+La documentació V1 següent és històrica. La correcció FOTOS-01 prepara seleccions de 50, cua xifrada recuperable i verificació de persistència. Vegeu [diagnòstic, contracte i validació](fotos-01-upload-reliability.md). No publicada; el tancament exigeix validació física. HEIC/32 MB ja existien al main abans de FOTOS-01.
+
 # Contextual photos / Upload V2 — local V1
 
 `index.html` is the editable entry; regenerate `404.html` with `npm run entries:sync`.

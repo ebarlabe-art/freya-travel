@@ -5,6 +5,12 @@ Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.
 
 
+## FOTOS-01 · P0 fiabilitat de càrrega — BRANCA, NO PUBLICADA
+
+Branca `fix/fotos-01-upload-reliability`, base main `574d52d`. [Auditoria, correcció i prova física pendent](fotos-01-upload-reliability.md). Codi públic v55 verificat en lectura; límit20/cua volàtil preexistents també al codi disponible a Bolonya. Storage/RPC/RLS/recomptes contrastats sense escriptures; no es coneix la causa exacta del Load failed individual.
+
+Selecció50 en sublots20, cua local xifrada, reintents amb identitat estable, verificació document/metadades/objecte i originals sense recompressió. Cap SQL/Edge ni canvi de dades. CI de fotos obligatòria; resultats finals a la PR. **IMPLEMENTAT, PENDENT DE VALIDACIÓ**, no tancat. Cal revisar, autoritzar desplegament i provar fotos autèntiques a iPhone. Canvis locals aliens preservats; no reprèn ni barreja A-04.
+
 ## Fase A-03 · Extraccions agrupades — BRANCA, NO DESPLEGADA
 
 Base remota `8643306`, després de #217 fusionada; els apartats inferiors conserven l'històric, no acrediten desplegaments. Branca `codex/a03-grouped-domain-extractions`. [Anàlisi, contractes i reversió](architecture-a03.md).

@@ -71,9 +71,9 @@ test('owned undated Builder trips can still be discarded; dates are not invented
 test('clock repaints at next minute boundary and resumes on visibility without backend requests',()=>{
  const h=harness();h.s.updateHomeClock();assert.ok(h.s.timer.ms>0&&h.s.timer.ms<=60020);h.s.document.visibilityState='hidden';h.s.timer=null;h.s.updateHomeClock();assert.equal(h.s.timer,null);h.s.document.visibilityState='visible';h.docListeners.visibilitychange();assert.ok(h.s.timer);const clock=home.slice(home.indexOf('function updateHomeClock'));assert.doesNotMatch(clock,/db\.|loadBuilderList|selectTrip/);
 });
-test('Join, Photos and Smart Home remain byte-identical',()=>{
+test('Join, London photo uploader and Smart Home remain byte-identical',()=>{
  const old=execFileSync('git',['show','HEAD:index.html'],{encoding:'utf8',maxBuffer:8*1024*1024});
- for(const [start,end] of [["$('joinTrip').onclick=","$('copyCode').onclick="],['// PHOTO_V2_START','// PHOTO_V2_END'],['// TRIP_HOME_PURE_START','// TRIP_HOME_PURE_END']]){assert.ok(html.includes(start));assert.equal(html.slice(html.indexOf(start),html.indexOf(end)),old.slice(old.indexOf(start),old.indexOf(end)))}
+ for(const [start,end] of [["$('joinTrip').onclick=","$('copyCode').onclick="],["$('photoForm').onsubmit=",'async function deletePhoto'],['// TRIP_HOME_PURE_START','// TRIP_HOME_PURE_END']]){assert.ok(html.includes(start));assert.equal(html.slice(html.indexOf(start),html.indexOf(end)),old.slice(old.indexOf(start),old.indexOf(end)))}
 });
 test('Dissenya empty and multiple briefs keep truthful labels, without any mutation',async()=>{
  const h=harness();let rows=[];

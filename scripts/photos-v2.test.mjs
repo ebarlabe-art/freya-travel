@@ -8,8 +8,8 @@ function harness(){
  const nodes=new Map();const element=id=>{if(!nodes.has(id)){const children=new Map();nodes.set(id,{innerHTML:'',textContent:'',value:'',open:false,showModal(){this.open=true},close(){this.open=false},focus(){this.focused=true},removeAttribute(name){delete this[name]},scrollIntoView(){this.scrolled=true},classList:{add(){},remove(){},toggle(){}},querySelectorAll:()=>[],querySelector:selector=>{if(!children.has(selector))children.set(selector,{});return children.get(selector)}})}return nodes.get(id)};
  let n=0;const s=vm.createContext({console,setTimeout,clearTimeout,confirm:()=>true,history:{state:null,pushState(state){this.state=state},go(){}},window:{requestAnimationFrame:fn=>fn(),addEventListener(){},scrollY:2400,innerHeight:700,scrollTo(x,y){this.scrollY=y}},URL:{createObjectURL:()=>`blob:${++n}`,revokeObjectURL:()=>{}},crypto:{randomUUID:()=>`id-${++n}`},$:element,trip:{id:'a'},session:{user:{id:'u'}},tripLoadGeneration:1,isLondonTrip:()=>false,activityRows:[],manualItineraryRows:[],photoRows:[],esc:v=>String(v??''),setAppView:view=>s.view=view});
  s.tripRequestIsCurrent=(id,generation)=>s.trip?.id===id&&s.tripLoadGeneration===generation;
- s.DOC_BUCKET='trip-documents';
- vm.runInContext(code,s);const renderQueue=s.renderPhotoQueue;s.renderPhotoQueue=()=>{};
+ s.DOC_BUCKET='trip-documents';s.Blob=Blob;
+ vm.runInContext(code,s);s.photoStore=async()=>({save:async()=>{},load:async()=>[],remove:async()=>{},exclusive:async(scope,fn)=>fn()});s.verifyPhotoJob=async(job,current,phase)=>phase==='after';s.photoObjectExists=async()=>true;const renderQueue=s.renderPhotoQueue;s.renderPhotoQueue=()=>{};
  return {s,nodes,element,renderQueue,get:expression=>vm.runInContext(expression,s)};
 }
 const job=()=>({id:'photo-id',path:'a/photos/u/photo-id.jpg',status:'pending',uploaded:false,context:{},file:{name:'a.jpg'},error:''});
@@ -32,7 +32,7 @@ test('lost storage response retries identical path and accepts only duplicate, n
  await s.executePhotoJob(j,io,()=>true);assert.equal(j.status,'uploaded');assert.deepEqual(paths,[j.path,j.path]);assert.equal(finalized,1);
 });
 test('storage throw is one-photo error, not a rejected batch',async()=>{
- const {s}=harness(),j=job();await s.executePhotoJob(j,{changed(){},upload:async()=>{throw Error('offline')},finalize:()=>assert.fail()},()=>true);assert.equal(j.status,'error');assert.match(j.error,/offline/);
+ const {s}=harness(),j=job();await s.executePhotoJob(j,{changed(){},upload:async()=>{throw Error('offline')},finalize:()=>assert.fail()},()=>true);assert.equal(j.status,'error');assert.match(j.error,/connexió/);
 });
 test('switch during storage prevents finalize and late UI messages',async()=>{
  const {s}=harness(),j=job();let current=true,changes=0;
@@ -44,31 +44,32 @@ test('switch during finalize does not render or mutate new session state',async(
  await s.executePhotoJob(j,{changed(){changes++},finalize:async()=>{current=false;return success}},()=>current);
  assert.equal(changes,1);assert.equal(j.status,'uploading');assert.equal(j.metadata,undefined);
 });
-test('user, trip, generation, London are independent isolation guards',()=>{
+test('user, trip, generation, London are independent isolation guards',async()=>{
  const {s}=harness(),scope=s.photoScope();assert.equal(s.photoScopeCurrent(scope),true);
  s.session.user.id='b';assert.equal(s.photoScopeCurrent(scope),false);s.session.user.id='u';
  s.trip.id='b';assert.equal(s.photoScopeCurrent(scope),false);s.trip.id='a';
  s.tripLoadGeneration++;assert.equal(s.photoScopeCurrent(scope),false);s.tripLoadGeneration=1;
  s.isLondonTrip=()=>true;assert.equal(s.photoScopeCurrent(scope),false);
 });
-test('selection: limit20, stable batch/index, repeated selection ignored, invalid isolated, no inferred context',()=>{
+test('selection: 50 files use internal batches <=20; duplicates and invalids isolated',async()=>{
  const {s,get}=harness(),file=(i,type='image/jpeg')=>({name:`${i}.${type==='image/gif'?'gif':'jpg'}`,size:10,lastModified:i,type});
- s.selectPhotoFiles([file(1),file(2,'image/gif')]);assert.equal(get('photoQueue.length'),2);assert.equal(get('photoQueue[0].status'),'pending');assert.equal(get('photoQueue[1].status'),'error');assert.equal(get('photoQueue[0].context.local_date'),null);
- s.selectPhotoFiles([file(1),file(3)]);assert.equal(get('photoQueue.length'),3);assert.equal(get('photoQueue[2].index'),2);assert.equal(get('photoQueue[0].batchId===photoQueue[2].batchId'),true);
- s.selectPhotoFiles(Array.from({length:18},(_,i)=>file(i+4)));assert.equal(get('photoQueue.length'),3);
- s.selectPhotoFiles(Array.from({length:17},(_,i)=>file(i+4)));assert.equal(get('photoQueue.length'),20);
+ await s.selectPhotoFiles(Array.from({length:50},(_,i)=>file(i)));assert.equal(get('photoQueue.length'),50);
+ assert.deepEqual(Array.from(get('photoQueue'),j=>j.index),Array.from({length:50},(_,i)=>i%20));assert.equal(new Set(Array.from(get('photoQueue'),j=>j.batchId)).size,3);
+ await s.selectPhotoFiles([file(1),file(51,'image/gif')]);assert.equal(get('photoQueue.length'),51);assert.equal(get('photoQueue[50].invalid'),true);
+ assert.equal(get('photoQueue[0].context.local_date'),null);
+ await s.selectPhotoFiles(Array.from({length:51},(_,i)=>file(i+100)));assert.equal(get('photoQueue.length'),51);
 });
-test('context preselection remains editable, independent per photo, reset clears all',()=>{
+test('context preselection remains editable, independent per photo, reset clears all',async()=>{
  const {s,get}=harness();vm.runInContext("photoBatchContext={local_date:'2026-09-22',activity_id:'source',itinerary_item_id:null}",s);
- s.selectPhotoFiles([{name:'one',type:'image/png',size:1}]);vm.runInContext("photoBatchContext.activity_id='other'",s);assert.equal(get('photoQueue[0].context.activity_id'),'source');
+ await s.selectPhotoFiles([{name:'one',type:'image/png',size:1}]);vm.runInContext("photoBatchContext.activity_id='other'",s);assert.equal(get('photoQueue[0].context.activity_id'),'source');
  s.resetPhotoV2();assert.equal(get('photoQueue.length'),0);assert.equal(get('photoContextDraft'),null);assert.equal(get('photoBatchContext.activity_id'),null);
 });
 const selectedFile={name:'test.jpg',type:'image/jpeg',size:10,lastModified:1};
 function changeBatch(h,date,source){
  const box=h.element('photoBatchContext');box.querySelector('[data-photo-date]').onchange({target:{value:date}});box.querySelector('[data-photo-source]').onchange({target:{value:source}});
 }
-test('files selected before context: visible explicit action applies it and redraws individual fields',()=>{
- const h=harness();h.s.renderPhotoQueue=h.renderQueue;h.s.selectPhotoFiles([selectedFile]);
+test('files selected before context: visible explicit action applies it and redraws individual fields',async()=>{
+ const h=harness();h.s.renderPhotoQueue=h.renderQueue;await h.s.selectPhotoFiles([selectedFile]);
  changeBatch(h,'2026-09-13','activity:one');assert.equal(h.get('photoQueue[0].context.local_date'),null);
  assert.match(h.element('photoBatchActions').innerHTML,/Aplicar a totes les fotos pendents/);
  h.element('photoBatchActions').querySelector('[data-apply-photo-context]').onclick();
@@ -76,13 +77,13 @@ test('files selected before context: visible explicit action applies it and redr
  assert.match(h.element('photoQueueList').innerHTML,/value="2026-09-13"/);assert.match(h.element('photoQueueList').innerHTML,/value="activity:one" selected/);
  assert.match(h.element('photoQueueMessage').textContent,/1 fotos pendents/);
 });
-test('context chosen before files is copied, including planning, without automatic later changes',()=>{
- const h=harness();h.s.renderPhotoQueue=h.renderQueue;h.renderQueue();changeBatch(h,'2026-09-14','manual:plan');h.s.selectPhotoFiles([selectedFile]);
+test('context chosen before files is copied, including planning, without automatic later changes',async()=>{
+ const h=harness();h.s.renderPhotoQueue=h.renderQueue;h.renderQueue();changeBatch(h,'2026-09-14','manual:plan');await h.s.selectPhotoFiles([selectedFile]);
  assert.equal(h.get('photoQueue[0].context.itinerary_item_id'),'plan');assert.equal(h.get('photoQueue[0].context.activity_id'),null);
  changeBatch(h,'2026-09-15','');assert.equal(h.get('photoQueue[0].context.local_date'),'2026-09-14');
 });
-test('individual selector marks customization; batch action preserves it and reports skipped photos',()=>{
- const h=harness();h.s.selectPhotoFiles([selectedFile,{...selectedFile,name:'two.jpg'}]);
+test('individual selector marks customization; batch action preserves it and reports skipped photos',async()=>{
+ const h=harness();await h.s.selectPhotoFiles([selectedFile,{...selectedFile,name:'two.jpg'}]);
  const card=h.element('individual');card.dataset={photoJob:h.get('photoQueue[0].id')};h.element('photoQueueList').querySelectorAll=selector=>selector==='[data-photo-job]'?[card]:[];h.s.renderPhotoQueue=h.renderQueue;h.renderQueue();
  card.querySelector('[data-photo-source]').onchange({target:{value:'manual:personal'}});
  assert.equal(h.get('photoQueue[0].contextCustomized'),true);assert.match(card.querySelector('[data-photo-personalized]').textContent,/personalitzat/);
@@ -90,8 +91,8 @@ test('individual selector marks customization; batch action preserves it and rep
  assert.equal(h.get('photoQueue[0].context.itinerary_item_id'),'personal');assert.equal(h.get('photoQueue[0].context.local_date'),null);assert.equal(h.get('photoQueue[1].context.activity_id'),'batch');
  assert.match(h.element('photoQueueList').innerHTML,/value="manual:personal" selected/);assert.match(h.element('photoQueueMessage').textContent,/1 fotos amb context personalitzat conservades/);
 });
-test('batch action cannot touch errors, uploaded photos or in-flight requests; stale button cannot cross trips',()=>{
- const h=harness();h.s.renderPhotoQueue=h.renderQueue;h.s.selectPhotoFiles([selectedFile]);changeBatch(h,'2026-09-13','activity:one');
+test('batch action cannot touch errors, uploaded photos or in-flight requests; stale button cannot cross trips',async()=>{
+ const h=harness();h.s.renderPhotoQueue=h.renderQueue;await h.s.selectPhotoFiles([selectedFile]);changeBatch(h,'2026-09-13','activity:one');
  const click=h.element('photoBatchActions').querySelector('[data-apply-photo-context]').onclick;h.s.trip.id='b';click();assert.equal(h.get('photoQueue[0].context.activity_id'),null);h.s.trip.id='a';
  for(const status of ['error','uploaded','uploading']){vm.runInContext(`photoQueue[0].status='${status}'`,h.s);h.s.applyPhotoBatchContext();assert.equal(h.get('photoQueue[0].context.activity_id'),null)}
  vm.runInContext("photoQueue[0].status='pending';photoQueueRunning=true",h.s);h.s.applyPhotoBatchContext();assert.equal(h.get('photoQueue[0].context.activity_id'),null);
@@ -120,7 +121,7 @@ test('Realtime refresh updates saved representations but preserves a stale open 
 test('ambiguous finalization retry keeps original payload/identity; does not become a context update',async()=>{
  const h=harness(),calls=[];h.s.uploadPhotoV2Object=async()=>({});h.s.loadGenericPhotos=async()=>{};
  h.s.db={rpc:async(name,payload)=>{calls.push({name,...payload});return calls.length===1?{error:{message:'lost response'}}:success}};
- h.s.selectPhotoFiles([selectedFile]);vm.runInContext("photoQueue[0].context.local_date='2026-09-13'",h.s);await h.s.runPhotoQueue();
+ await h.s.selectPhotoFiles([selectedFile]);vm.runInContext("photoQueue[0].context.local_date='2026-09-13'",h.s);await h.s.runPhotoQueue();
  assert.equal(h.get('photoQueue[0].status'),'error');assert.equal(h.get('photoQueue[0].finalizationContext.local_date'),'2026-09-13');
  // Even a detached control cannot alter the retry snapshot after an uncertain commit.
  vm.runInContext("photoQueue[0].context.local_date='2026-09-20'",h.s);h.renderQueue();assert.match(h.element('photoQueueList').innerHTML,/<fieldset disabled>/);assert.match(h.element('photoQueueList').innerHTML,/mateix context/);
@@ -132,11 +133,11 @@ test('explicit FK rejection unlocks correction without changing retry object ide
  assert.equal(j.finalizationContext,null);j.context={activity_id:'replacement'};
  await h.s.executePhotoJob(j,{changed(){},finalize:async value=>{assert.equal(value.finalizationContext.activity_id,'replacement');return success}},()=>true);assert.equal(j.status,'uploaded');assert.equal(j.path,'a/photos/u/photo-id.jpg');
 });
-test('backend confirmation of an ambiguous upload promotes it to correction flow, without reupload',async()=>{
+test('metadata alone cannot confirm an ambiguous upload without Storage verification',async()=>{
  const h=savedContextHarness();vm.runInContext("photoQueue[0].status='error';photoQueue[0].finalizationContext={};photoQueue[0].batchId='batch';photoQueue[0].index=0",h.s);h.state.row.upload_batch_id='batch';h.state.row.selection_index=0;
- h.s.renderPhotoQueue=h.renderQueue;await h.s.loadGenericPhotos();assert.equal(h.get('photoQueue[0].status'),'uploaded');assert.match(h.element('photoQueueList').innerHTML,/Editar informació/);assert.doesNotMatch(h.element('photoQueueList').innerHTML,/data-photo-retry/);
+ h.s.renderPhotoQueue=h.renderQueue;await h.s.loadGenericPhotos();assert.equal(h.get('photoQueue[0].status'),'error');h.renderQueue();assert.match(h.element('photoQueueList').innerHTML,/data-photo-retry/);
 });
-test('gallery preserves selection order inside batches, newest batches first; legacy rows remain visible',()=>{
+test('gallery preserves selection order inside batches, newest batches first; legacy rows remain visible',async()=>{
  const {s}=harness();const rows=[{id:'first',created_at:'2026-09-22T10:00:00Z'},{id:'last',created_at:'2026-09-22T10:01:00Z'},{id:'old',created_at:'2026-09-21T00:00:00Z'}];
  const metadata=[{document_id:'first',upload_batch_id:'batch',selection_index:0},{document_id:'last',upload_batch_id:'batch',selection_index:1}];
  assert.deepEqual(Array.from(s.orderedGenericPhotos(rows,metadata),row=>row.id),['first','last','old']);assert.equal(rows[0].id,'first');
@@ -160,9 +161,9 @@ test('late signed URLs cannot replace the new trip gallery',async()=>{
  const pending=s.renderGenericPhotos();s.trip.id='b';finish({data:{signedUrl:'old-url'}});await pending;assert.equal(nodes.has('photosList'),false);
 });
 test('actual batch scheduler continues after one RPC error and retries only that photo',async()=>{
- const {s,get}=harness();s.Image=class{decode(){return Promise.resolve()}removeAttribute(){}};
+ const {s,get}=harness();s.uploadPhotoV2Object=async job=>{uploads.push(job.path);return {}};
  const uploads=[];let calls=0;s.db={storage:{from:()=>({upload:async path=>{uploads.push(path);return {}}})},rpc:async()=>++calls===1?{error:{message:'offline'}}:success};s.loadGenericPhotos=async()=>{};
- s.selectPhotoFiles([{name:'one.jpg',size:10,type:'image/jpeg',lastModified:1},{name:'two.jpg',size:10,type:'image/jpeg',lastModified:2}]);
+ await s.selectPhotoFiles([{name:'one.jpg',size:10,type:'image/jpeg',lastModified:1},{name:'two.jpg',size:10,type:'image/jpeg',lastModified:2}]);
  await s.runPhotoQueue();assert.equal(get('photoQueue[0].status'),'error');assert.equal(get('photoQueue[1].status'),'uploaded');assert.equal(get('photoQueueRunning'),false);
  await s.runPhotoQueue(get('photoQueue[0].id'));assert.equal(get('photoQueue[0].status'),'uploaded');assert.equal(uploads.length,2);assert.equal(calls,3);
 });
@@ -176,30 +177,30 @@ test('context correction sends original baseline; conflict preserves current for
  let args;s.db={rpc:async(name,input)=>{assert.equal(name,'set_trip_photo_context');args=input;return {error:{code:'40001'}}}};
  await s.savePhotoContext({preventDefault(){}});assert.equal(args.p_expected_updated_at,'original');assert.equal(get('photoContextDraft.version'),'original');assert.equal(get('photoContextDraft.context.activity_id'),'a1');assert.match(nodes.get('photoContextMessage').textContent,/altre participant/);assert.equal(get('photoContextDraft.saving'),false);
 });
-test('static JS compiles, HTML IDs unique, entry parity',()=>{
+test('static JS compiles, HTML IDs unique, entry parity',async()=>{
  for(const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g))if(!/src=/.test(match[1])&&!/application\/ld\+json/.test(match[1]))new vm.Script(match[2]);
  const staticHtml=html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'');const ids=Array.from(staticHtml.matchAll(/\bid="([^"]+)"/g),m=>m[1]);assert.equal(ids.length,new Set(ids).size);
  assert.equal(readFileSync(new URL('../404.html',import.meta.url),'utf8'),html);
 });
-test('source action offers only activity/manual; explicit click proposes source/day',()=>{
+test('source action offers only activity/manual; explicit click proposes source/day',async()=>{
  const {s,get}=harness();assert.equal(s.photoContextAction({sourceType:'flight'}),'');assert.equal(s.photoContextAction({sourceType:'accommodation'}),'');
  const item={key:'activity:one',sourceType:'activity',sourceId:'one',tripId:'a',localDate:'2026-09-22'},button={dataset:{addContextPhotos:item.key}};
  const container={querySelectorAll:selector=>selector==='[data-add-context-photos]'?[button]:[]};s.bindContextPhotoActions(container,[item]);button.onclick();assert.equal(s.view,'photosView');assert.equal(get('photoBatchContext.activity_id'),'one');assert.equal(get('photoBatchContext.local_date'),'2026-09-22');
  s.trip.id='b';s.view=null;button.onclick();assert.equal(s.view,null);
 });
-test('unsupported formats, empty and huge files have individual clear errors',()=>{
+test('unsupported formats, empty and huge files have individual clear errors',async()=>{
  const {s}=harness();for(const type of ['video/mp4','image/svg+xml','image/gif'])assert.match(s.photoFileError({name:'unsupported.bin',type,size:1}),/Format/);
  for(const type of ['image/heic','image/heif'])assert.equal(s.photoFileError({name:'phone.heic',type,size:1}),'' ,'HEIC/HEIF are supported photo formats');
  assert.match(s.photoFileError({type:'image/jpeg',size:0}),/buit/);assert.match(s.photoFileError({type:'image/png',size:33*1024*1024}),/32 MB/);assert.equal(s.photoFileError({type:'image/webp',size:100}),'');
 });
-test('no localStorage/automatic context inference; legacy London uploader remains gated',()=>{
+test('no localStorage/automatic context inference; legacy London uploader remains gated',async()=>{
  assert.doesNotMatch(code,/localStorage|exif|geolocation|deriveTripHomeState/);
  assert.match(html,/preparePhotoV2\(\);if\(!isLondonTrip\(\)\)return loadGenericPhotos/);
  assert.match(html,/function clearTripScopedState\(\)\{\s*closeDocumentViewer\(\);\s*offlineSnapshotActive=false;offlineSnapshotSavedAt=null;updateConnectivityBanner\(\);\s*resetPhotoV2\(\)/);
  assert.match(html,/if\(!isLondonTrip\(\)\)return;\s*const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;\s*const files=\[\.\.\.\$\('photoFile'\)/);
 });
 
-test('compact summary: day/activity, day/planning, manual planning location and no duplicate place',()=>{
+test('compact summary: day/activity, day/planning, manual planning location and no duplicate place',async()=>{
  const h=harness();vm.runInContext('photoMetadataUnavailable=false',h.s);
  h.s.activityRows=[{trip_id:'a',id:'activity',title:'Cala Comte',location_name:'Cala Comte'}];
  h.s.manualItineraryRows=[{trip_id:'a',id:'plan',title:'Sopar',location_name:'Can Rafalet'}];
@@ -208,7 +209,7 @@ test('compact summary: day/activity, day/planning, manual planning location and 
  h.s.manualItineraryRows[0].title='';
  assert.equal(h.s.photoContextLabel({itinerary_item_id:'plan'}),'Font vinculada · Can Rafalet');
 });
-test('caption-only, context-only, legacy and empty photos keep a compact authoritative summary',()=>{
+test('caption-only, context-only, legacy and empty photos keep a compact authoritative summary',async()=>{
  const h=harness();vm.runInContext("photoMetadataUnavailable=false;photoMetadata=[{document_id:'day',local_date:'2026-09-13'}]",h.s);
  assert.match(h.s.photoSummaryHtml({id:'day',title:''}),/>13 set</);
  assert.doesNotMatch(h.s.photoSummaryHtml({id:'day',title:''}),/photo-summary-caption/);
@@ -389,9 +390,29 @@ test('late preview cannot paint after a different photo is selected or scope res
  h.s.resetPhotoV2();h.element('photoLightboxImage').src='new-scope';complete({data:{signedUrl:'old-scope'}});
  await new Promise(resolve=>setImmediate(resolve));assert.equal(h.element('photoLightboxImage').src,'new-scope');
 });
-test('generic navigation dispatch leaves London lightbox implementation intact',()=>{
+test('generic navigation dispatch leaves London lightbox implementation intact',async()=>{
  assert.match(html,/function openPhoto\(id,rows\)\{if\(!isLondonTrip\(\)\)return openGenericPhoto\(id,rows\);const p=rows.find/);
  assert.match(html,/function closePhotoLightbox\(\)\{if\(photoNavigation\)return closeGenericPhoto\(\);/);
  assert.match(html,/\.photo-lightbox\.photo-detail-active/);
  assert.doesNotMatch(code,/setAppView\('photosView'\).*scroll/);
+});
+
+test('FOTOS-01 HTTP success without authoritative verification is never saved',async()=>{
+ const h=harness(),j=job();let persisted=0;
+ await h.s.executePhotoJob(j,{changed(){},persist:async()=>{persisted++},upload:async()=>({data:{path:j.path}}),finalize:async()=>({data:{}}),verify:async()=>false},()=>true);
+ assert.equal(j.status,'error');assert.match(j.error,/verificar/);assert.ok(persisted>=2);
+});
+test('FOTOS-01 local persistence failure prevents any upload and explains quota',async()=>{
+ const h=harness(),j=job();await h.s.executePhotoJob(j,{changed(){},persist:async()=>{const e=Error('quota');e.name='QuotaExceededError';throw e},upload:()=>assert.fail('never remote'),finalize:()=>assert.fail('never remote')},()=>true);
+ assert.equal(j.status,'error');assert.match(j.error,/espai local/);
+});
+test('FOTOS-01 previously finalized identity is recovered without upload or RPC',async()=>{
+ const h=harness(),j=job();await h.s.executePhotoJob(j,{changed(){},persist:async()=>{},verify:async()=>true,upload:()=>assert.fail(),finalize:()=>assert.fail()},()=>true);assert.equal(j.status,'uploaded');
+});
+test('FOTOS-01 scope switch during verification cannot mark a different session saved',async()=>{
+ const h=harness(),j=job();let current=true;await h.s.executePhotoJob(j,{changed(){},persist:async()=>{},verify:async()=>{current=false;return true},upload:()=>assert.fail(),finalize:()=>assert.fail()},()=>current);assert.equal(j.status,'uploading');
+});
+test('FOTOS-01 suspended queue keeps IDs, context and errors on restore; no automatic writes',async()=>{
+ const h=harness();const saved={...job(),scope:{tripId:'a',userId:'u'},status:'uploading',batchId:'batch',index:3,finalizationContext:{local_date:'2030-11-07'}};
+ h.s.photoStore=async()=>({load:async()=>[saved]});await h.s.restorePhotoQueue();assert.equal(h.get('photoQueue[0].id'),'photo-id');assert.equal(h.get('photoQueue[0].status'),'error');assert.equal(h.get('photoQueue[0].finalizationContext.local_date'),'2030-11-07');assert.equal(h.get('photoQueueRunning'),false);
 });
