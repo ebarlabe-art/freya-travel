@@ -160,3 +160,14 @@ test('Aran named visits remain identifiable for resolution, but require a verifi
   assert.equal(culturalPlaces(row).length,0,'A name alone must not forge a verified place');
  }
 });
+
+test('a verified legacy location still opens its guide when imported ordered points are pending',()=>{
+ const place=bolognaPlaces[0],row=cultureRow(place,88);
+ row.location_points.points=[{id:'point-0',query:place.canonical_name,status:'pending',place:null}];
+ row.resolved_location={title:row.title,address:row.address??null,city:row.city??null,location_name:row.location_name??null,place};
+ assert.deepEqual(culturalPlaces(row).map(guidePlaceKey),[guidePlaceKey(place)]);
+ const stale={...row,title:'A different monument'};
+ assert.deepEqual(culturalPlaces(stale),[],'changed activity must not inherit old identity');
+ const wrong={...row,resolved_location:{...row.resolved_location,place:bolognaPlaces[1]}};
+ assert.deepEqual(culturalPlaces(wrong),[],'verified place with a different name is never linked');
+});
