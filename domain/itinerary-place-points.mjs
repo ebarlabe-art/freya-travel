@@ -10,7 +10,7 @@ export function extractActivityPoints(row){
  const raw=(row.resolved_location&&!row.address?String(row.title||''):explicit)||String(row.title||'');
  // Walks to a named natural landmark are visits too. Keep the distinctive
  // destination (not the generic word 'passeig') for safe geocoding.
- const walkingDestination=!explicit?raw.match(/^(?:passeig|caminada|excursió|ruta|visita)\\s+(?:(?:a|al|a la|pel|per|per la|fins a|fins al|fins a la)\\s+)?((?:bosc|fageda|parc|jardins|llac|estany|cascada|castell|església|monestir)\\s+(?:de|del|dels|de la|d\\u2019|d')\\s*[\\p{L}\\p{M}\\p{N}\\s\\u2019'-]+?)(?=\\s*[,;.(]|$)/iu):null;
+ const walkingDestination=!explicit?raw.match(/^(?:passeig|caminada|excursió|ruta|visita)\s+(?:(?:a|al|a la|pel|per|per la|fins a|fins al|fins a la)\s+)?((?:bosc|fageda|parc|jardins|llac|estany|cascada|castell|església|monestir)\s+(?:de|del|dels|de la|d\u2019|d')\s*[\p{L}\p{M}\p{N}\s\u2019'-]+?)(?=\s*[,;.(]|$)/iu):null;
  if(walkingDestination)return [{id:'point-0',query:walkingDestination[1].trim(),status:'pending',place:null}];
  if(!raw||/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(raw))return [];
  const parts=raw.split(new RegExp('\\s*[,;]\\s*|\\s+i\\s+(?=(?:visita\\s+a\\s+)?'+anchor+'\\b)|\\s+i\\s+(?=(?:dinar|sopar|esmorzar|aperitiu)\\b)','iu'));
