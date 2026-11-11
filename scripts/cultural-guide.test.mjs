@@ -152,10 +152,11 @@ test('new Vall d Aran trip uses the universal cultural guide identity contract',
 // must remain visible to the place-resolution workflow without fabricating guide keys.
 test('Aran named visits remain identifiable for resolution, but require a verified provider identity for guides',async()=>{
  const {extractActivityPoints}=await import('../domain/itinerary-place-points.mjs');
- for(const title of ['Saint-Bertrand-de-Comminges','Luchon','Bosc de Carlac']){
+ for(const title of ['Saint-Bertrand-de-Comminges','Luchon','Bosc de Carlac','Passeig pel bosc de Carlac','Caminada pel bosc de Carlac']){
   const row={title};const points=extractActivityPoints(row);
   assert.equal(points.length,1,title+' should be offered for geocoding');
   assert.ok(points[0].query.length>0);
+  if(title.toLowerCase().includes('passeig')||title.toLowerCase().includes('caminada'))assert.equal(points[0].query.toLowerCase(),'bosc de carlac');
   assert.equal(culturalPlaces(row).length,0,'A name alone must not forge a verified place');
  }
 });
