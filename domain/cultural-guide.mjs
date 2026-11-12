@@ -14,7 +14,8 @@ export function culturalPlaces(row){
  const seen=new Set();return candidates.filter(({query,place,confirmed})=>{
   // A persisted, provider-verified legacy choice is an explicit location identity.
   // The activity title may describe lunch, a walk or a town, not the place name.
-  // Ordered imported points without that confirmation keep the stricter name guard.\n  if(!validPointPlace(place)||!['exact_location','representative_point'].includes(place.coordinate_role)||(!confirmed&&culturalName(query)!==culturalName(place.canonical_name)))return false;
+  // Ordered imported points without that confirmation keep the stricter name guard.
+  if(!validPointPlace(place)||!['exact_location','representative_point'].includes(place.coordinate_role)||(!confirmed&&culturalName(query)!==culturalName(place.canonical_name)))return false;
   const key=guidePlaceKey(place);if(seen.has(key))return false;seen.add(key);return true;
  }).map(({place})=>Object.fromEntries(['provider','provider_place_id','canonical_name','latitude','longitude','country_code','locality','kind','coordinate_role','attribution'].map(k=>[k,place[k]??null])));
 }
