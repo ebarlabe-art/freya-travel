@@ -57,7 +57,7 @@ test('v25: find-place opens direct picker, never the full editor; existing rows 
  assert.doesNotMatch(html,/openManualItineraryForm\(button\.dataset\.itineraryFindPlace\)/);
  assert.match(html,/resolved_location:itineraryAutoPlaceSnapshot\(row,place\)/);
  assert.match(html,/\.eq\('trip_id',tripId\)\.eq\('id',id\)\.eq\('updated_at',revision\)\.is\('location_name',null\)/);
- assert.match(html,/data\?'Ubicació desada/);
+ assert.match(html,/data\?\(place\.coordinate_role==='representative_point'/);
  assert.match(packageScript,/'itinerary-quick-place\.mjs'/);
  assert.match(worker,/'\.\/domain\/itinerary-quick-place\.mjs'/);
  assert.match(worker,/freya-travel-release-6444-v59/);
@@ -74,7 +74,7 @@ test('v25: recognisable landmark is suggested and a single confirmation saves th
   });
   await settle();
   assert.deepEqual(queries,['Archiginnasio, Bologna']);
-  assert.match(view.section.textContent||view.section.children[3].textContent,/ubicació concreta/i);
+  assert.match(view.section.textContent||view.section.children[3].textContent,/ubicació/i);
   const choices=view.section.children.at(-1);
   assert.equal(choices.children.length,1);
   assert.match(choices.children[0].textContent,/Confirma: Archiginnasio/);
