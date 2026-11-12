@@ -111,10 +111,13 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
     const request=++serial;busy=true;state.loading=true;state.error=false;state.empty=false;state.candidates=[];state.message='Cercant el punt…';render();
     try{
      const options=await search(query);if(!active()||request!==serial)return;
-     // Never display other saints/landmarks as matches to this requested name.
-     const exactMatches=options.filter(p=>matchingPointCandidate(query,p));
-     state.candidates=visiblePointCandidates(exactMatches).map(pointPlace);state.empty=state.candidates.length===0;
-     state.message=state.candidates.length?'Tria el lloc correcte. Encara no s’ha desat.'+(exactMatches.length>state.candidates.length?' Coincidències repetides agrupades.':''):'Cap coincidència verificable. Prova el nom local o una altra variant; el punt continua pendent.';
+     // This is an explicit human picker, not automatic geocoding. Do not hide
+     // a valid provider candidate just because the itinerary contains an alias,
+     // a translation or a typo (Sant Bertrand / Saint-Bertrand). Rank exact
+     // names first, but require the traveller to inspect and confirm the choice.
+     const ranked=[...options].sort((a,b)=>Number(matchingPointCandidate(query,b))-Number(matchingPointCandidate(query,a)));
+     state.candidates=visiblePointCandidates(ranked).map(pointPlace);state.empty=state.candidates.length===0;
+     state.message=state.candidates.length?'Tria el lloc correcte i comprova la població i el país. Encara no s’ha desat.'+(ranked.length>state.candidates.length?' Coincidències repetides agrupades.':''):'Cap coincidència verificable. Prova el nom local o una altra variant; el punt continua pendent.';
     }catch(e){if(active()&&request===serial){state.error=true;state.message=e.message||'La cerca no està disponible. Torna-ho a provar.'}}
     finally{if(active()&&request===serial){busy=false;state.loading=false;render()}}
    });
