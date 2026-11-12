@@ -28,7 +28,7 @@ La prova carrega la PWA compilada a 390×844 i un viatge sintètic inicialment b
 6. Reobrir la guia executa `prepare` del handler cultural real, amb el `source_id` i `place_key` correctes, i mostra el text de cadascun dels tres llocs.
 7. Les propostes culturals continuen locals fins a revisió i desament. Els camps originals importats es conserven.
 
-Regressions complementàries a tots dos motors: `check-cultural-guide-browser.mjs` (Bolonya, Eivissa, Londres, Activities/Itinerary, Back/Forward, errors, offline, recàrrega), `check-itinerary-points-browser.mjs`, `check-automatic-places-browser.mjs` i `check-aran-import-browser.mjs` (PDF original amb transcripció real capturada). La prova de tauleta de guia s'executa també amb `CULTURE_TABLET=1`.
+Regressions complementàries a tots dos motors: `check-cultural-guide-browser.mjs` (Bolonya, Eivissa, Londres, Activities/Itinerary, Back/Forward, errors, offline, recàrrega), `check-itinerary-points-browser.mjs`, `check-automatic-places-browser.mjs` i `check-aran-import-browser.mjs` (PDF original amb transcripció real capturada). La prova de tauleta de guia s'executa també amb `CULTURE_TABLET=1`. Totes aquestes proves han passat localment en els motors indicats. També han passat `check-v27-production.mjs` i `check-pwa-bootstrap-browser.mjs` en Chromium i WebKit, amb actualització de caches v18/v19/v20/v52–v57 a v58, recuperació HTTP 503 i arrencada offline conservant les dades locals. La primera CI va detectar expectatives v57 obsoletes als scripts de packaging/bootstrap; corregides sense afeblir els controls.
 
 ## Límits i publicació
 
