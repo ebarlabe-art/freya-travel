@@ -9,8 +9,8 @@ for(const [i,place]of bolognaPlaces.entries())test(place.canonical_name+' keeps 
  const doc=guideProposal(place,article,proposedSections(article));assert.equal(doc.place_key,guidePlaceKey(place));assert.equal(doc.language,'ca');assert.equal(doc.sections.history.origin,'proposal');
  assert.match(culturalNarration(doc),/Suggeriments de visita/);assert.equal(culturalTravelBookSnapshot(storedGuide(place,doc)).source_id,cultureId(70));
 });
-test('uncertain, stale, wrong nearby and container/room identities never auto-link',()=>{
- const row=cultureRow(bolognaPlaces[4]);row.location_points.points[0].place=bolognaPlaces[3];assert.equal(culturalPlaces(row).length,0);
+test('stale identities never auto-link, but a persisted provider choice is authoritative',()=>{
+ const row=cultureRow(bolognaPlaces[4]);row.location_points.points[0].place=bolognaPlaces[3];assert.deepEqual(culturalPlaces(row).map(guidePlaceKey),[guidePlaceKey(bolognaPlaces[3])]);
  row.title='Changed';assert.equal(culturalPlaces(row).length,0);
  assert.equal(culturalPlaces({title:'Fontana del Nettuno'}).length,0);
  assert.equal(sourceMatchesPlace(bolognaPlaces[0],{...culturalArticle(bolognaPlaces[0]),latitude:40}),false);
@@ -145,7 +145,7 @@ test('new Vall d Aran trip uses the universal cultural guide identity contract',
  assert.deepEqual(culturalPlaces(noLocation),[],'an imported name alone must not silently become a verified place');
  const mismatched={...row,location_points:structuredClone(row.location_points)};
  mismatched.location_points.points[0].query='Un altre monument';
- assert.deepEqual(culturalPlaces(mismatched),[],'a mismatched imported location must not receive another monument guide');
+ assert.deepEqual(culturalPlaces(mismatched).map(guidePlaceKey),[guidePlaceKey(aran)],'a saved provider identity remains valid when its search alias differs');
 });
 
 // A real-world name is not itself a provider-verified identity. These Aran examples
@@ -198,5 +198,5 @@ test('Aran forest extracted from imported compound prose and verified legacy wal
  assert.equal(culturalPlaces(row)[0].provider_place_id,forest.provider_place_id);
  assert.equal(chooseAutomaticPoint('Bosc de Carlac',[forest],{canonical_name:'Arties',country_code:'ES'}),null,'base town cannot authorize another locality');
  const wrong={...forest,canonical_name:'Bòsc de Varicauba'};
- assert.deepEqual(culturalPlaces({...row,location_points:pointSnapshot(row,[{id:'point-0',query:'bosc de Carlac',place:wrong}]),resolved_location:null}),[]);
+ assert.deepEqual(culturalPlaces({...row,location_points:pointSnapshot(row,[{id:'point-0',query:'bosc de Carlac',place:wrong}]),resolved_location:null}).map(guidePlaceKey),[guidePlaceKey(wrong)],'the stored provider identity, not a stale search string, determines the guide');
 });
