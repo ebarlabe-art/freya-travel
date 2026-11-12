@@ -17,7 +17,8 @@ function confirmedLegacyPlace(row){
 }
 function savedRoutePoint(place){
  if(!validPointPlace(place))return {error:'missing_place'};
- if(place.coordinate_role==='representative_point'&&!['city','town','village','hamlet'].includes(place.kind))return {error:'approximate_place'};
+ if(place.coordinate_role==='representative_point'&&!['city','town','village','hamlet'].includes(place.kind)&&
+  !(place.locality&&clean(place.canonical_name)===clean(place.locality)))return {error:'approximate_place'};
  return {point:{id:place.provider_place_id,label:place.canonical_name,lat:place.latitude,lon:place.longitude,
   ...(place.coordinate_role==='representative_point'?{approximate:true}:{})}};
 }
