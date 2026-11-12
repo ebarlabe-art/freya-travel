@@ -2,7 +2,7 @@
 export const MAX_POINTS=12;
 export const normalizePointName=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
  .replace(/centre historic|historic cent(?:er|re)/g,'centro storico').replace(/\b(?:basílica|basilique)\b/g,'basilica').replace(/[^a-z0-9]+/g,' ').replace(/\b(?:de|di|del|della|dell|la|le|il)\b/g,' ').replace(/\s+/g,' ').trim();
-const anchor='(?:Piazza|Plaça|Plaza|Square|Fontana|Font|Fountain|Via|Viale|Carrer|Street|Museu|Museum|Museo|Catedral|Cathedral|Castell|Castle|Basílica|Basilica|Torre|Tower|Mercat|Market|Parc|Park|Palau|Palazzo|Finestrella|Archiginnasio|Teatro|Theatre|Theater|Quadrilatero|Due Torri|centre històric|centro storico|historic centre)';
+const anchor='(?:Piazza|Plaça|Plaza|Square|Fontana|Font|Fountain|Via|Viale|Carrer|Street|Museu|Museum|Museo|Catedral|Cathedral|Castell|Castle|Basílica|Basilica|Torre|Tower|Mercat|Market|Parc|Park|Palau|Palazzo|Finestrella|Archiginnasio|Teatro|Theatre|Theater|Quadrilatero|Due Torri|centre històric|centro storico|historic centre|B[oò]sc|Fageda)';
 export function extractActivityPoints(row){
  // Explicit addresses/venues take precedence over prose; never infer a restaurant from a meal.
  if(row.address)return [{id:'point-0',query:String(row.address).trim(),status:'pending',place:null}];

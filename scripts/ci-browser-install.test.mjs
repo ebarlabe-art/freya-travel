@@ -33,6 +33,7 @@ test('workflow retains every existing browser invocation on an independent requi
  expected.push('PLANNING_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-aran-import-browser.mjs');
  expected.push('PHOTO_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-photos-upload-browser.mjs');
  expected.push('PHOTO_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-photos-viewer-browser.mjs');
+ expected.push('CULTURE_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-aran-cultural-flow-browser.mjs');
  assert.deepEqual(commands(current),expected.sort());
  const browser=current.split('  browser-tests:')[1].split('  legacy-suite:')[0];
  assert.match(browser,/fail-fast: false/);assert.match(browser,/engine: \[chromium, webkit\]/);assert.doesNotMatch(browser,/continue-on-error:|needs:/);

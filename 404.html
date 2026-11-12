@@ -5380,10 +5380,20 @@ async function openCulturalGuide(key,fromHistory=false){
  try{
   culturalGuideModule=culturalGuideModule||await loadTravelBookModule('cultural-guide-ui.mjs');
   if(sequence!==culturalGuideOpenSequence||!culturalScopeCurrent(scope))return;
-  if(!culturalGuideController)culturalGuideController=culturalGuideModule.createCulturalGuideController({dialog:$('culturalGuideDialog'),root:$('culturalGuideRoot'),db,scope:culturalScope,current:culturalScopeCurrent,source:key=>{const item=culturalSource(key);return item?{item,row:tripHomeSourceRow(item)}:null},offline:connectionUnavailable,cacheRead:()=>readOfflineTripSnapshot(),cacheWrite:patch=>mergeOfflineTripSnapshot(patch),narration:{speak:narrateCatalan,stop:stopCatalanNarration,pause:pauseCatalanNarration,resume:resumeCatalanNarration,rate:rateCatalanNarration,hasCatalan:()=>!!catalanVoice()},onClose:()=>{if(history.state?.culturalGuide&&culturalScopeCurrent(history.state.culturalGuide))history.back()}});
+  if(!culturalGuideController)culturalGuideController=culturalGuideModule.createCulturalGuideController({dialog:$('culturalGuideDialog'),root:$('culturalGuideRoot'),db,verifyPlace:verifyCulturalGuidePlace,scope:culturalScope,current:culturalScopeCurrent,source:key=>{const item=culturalSource(key);return item?{item,row:tripHomeSourceRow(item)}:null},offline:connectionUnavailable,cacheRead:()=>readOfflineTripSnapshot(),cacheWrite:patch=>mergeOfflineTripSnapshot(patch),narration:{speak:narrateCatalan,stop:stopCatalanNarration,pause:pauseCatalanNarration,resume:resumeCatalanNarration,rate:rateCatalanNarration,hasCatalan:()=>!!catalanVoice()},onClose:()=>{if(history.state?.culturalGuide&&culturalScopeCurrent(history.state.culturalGuide))history.back()}});
   if(!fromHistory){const origin={...history.state};delete origin.culturalGuide;delete origin.culturalGuideOrigin;history.replaceState({...origin,culturalGuideOrigin:scope},'');history.pushState({...origin,culturalGuide:{...scope,key}},'')}
   await culturalGuideController.open(key);
  }catch(_){if(culturalScopeCurrent(scope))msg(visibleAppView()==='activitiesView'?'activityMsg':'genericItineraryMessage','No s’ha pogut obrir la guia cultural. Torna-ho a provar amb connexió.',true)}
+}
+async function verifyCulturalGuidePlace(key){
+ const item=culturalSource(key);if(!item||connectionUnavailable())return;
+ const origin={...history.state};delete origin.culturalGuide;delete origin.culturalGuideOrigin;history.replaceState(origin,'');
+ genericItinerarySelectedTripId=trip.id;genericItinerarySelectedDay=item.localDate||'pending';
+ setAppView('itineraryView');renderGenericItinerary();
+ const button=[...$('genericItineraryContent').querySelectorAll('[data-activity-points]')].find(b=>b.dataset.activityPoints===key);
+ if(button)await openActivityPointEditor(button);
+ else if(item.sourceType==='manual')openManualItineraryForm(item.sourceId);
+ else openItinerarySource(item.sourceType,item.sourceId,'itineraryView');
 }
 function handleCulturalGuideHistory(event){
  const route=event.state?.culturalGuide;
@@ -5723,10 +5733,14 @@ async function openActivityPointEditor(button){
  const readRow=()=>itineraryPointRow(item);
  try{
   const context=await itineraryPointContext(),{mountActivityPointEditor}=await loadTravelBookModule('itinerary-place-points-ui.mjs');if(!context||!current())return;
-  if(!button.isConnected)return;
+  // The agenda may rebuild while the editor modules load (including guide handoff).
+  if(!button.isConnected)button=[...$('genericItineraryContent').querySelectorAll('[data-activity-points]')].find(b=>b.dataset.activityPoints===item.key);
+  if(!button?.isConnected)return;
   closeActivityPointEditor();
   const root=mountActivityPointEditor({host:button.closest('.generic-itinerary-card'),row,current,readRow,
-   search:query=>{context.queue.blocked=false;return context.queue.find(query,itineraryAutoPlaceDestination(row))},
+   // A traveller-directed search must also find cross-border day trips.
+   // No base-city/country constraint; every result still requires explicit selection and save.
+   search:query=>{context.queue.blocked=false;return context.queue.find(query,null)},
    save:async(snapshot,baseline)=>{if(!current())throw Error('El viatge ha canviat.');
     try{await saveActivityPoints(baseline,snapshot,scope)}catch(error){if(current()){if(row._placeSource==='activity')await loadActivities(true);else await loadManualItineraryItems(true)}throw error}
     if(scope!==itineraryAutoPlaceScope())return;if(row._placeSource==='activity')await loadActivities(true);else await loadManualItineraryItems(true);

@@ -1,3 +1,6 @@
 
 # Real PDF fixture used for physical iPhone validation.
 scripts/fixtures/v27-london-itinerary.pdf binary
+
+# Synthetic PDF for the isolated Aran import-to-guide regression.
+scripts/fixtures/aran/synthetic-cultural-itinerary.pdf binary

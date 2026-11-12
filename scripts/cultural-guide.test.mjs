@@ -171,3 +171,18 @@ test('a verified legacy location still opens its guide when imported ordered poi
  const wrong={...row,resolved_location:{...row.resolved_location,place:bolognaPlaces[1]}};
  assert.deepEqual(culturalPlaces(wrong),[],'verified place with a different name is never linked');
 });
+
+test('Aran forest extracted from imported compound prose and verified legacy walks opens its own guide',async()=>{
+ const {extractActivityPoints,pointSnapshot,chooseAutomaticPoint}=await import('../domain/itinerary-place-points.mjs');
+ const forest={...bolognaPlaces[0],canonical_name:'Bòsc de Carlac',provider_place_id:'synthetic-carlac',country_code:'ES',locality:'Bausen',kind:'natural.forest',coordinate_role:'representative_point'};
+ const compound={title:'Bausen i excursió al Bòsc de Carlac.'};
+ assert.equal(extractActivityPoints(compound)[0].query,'Bòsc de Carlac');
+ const row={title:'Passeig pel bosc de Carlac',city:null,location_name:null,address:null};
+ row.resolved_location={...row,place:forest};
+ assert.equal(culturalPlaces(row)[0].provider_place_id,forest.provider_place_id);
+ row.location_points=pointSnapshot(row,[{id:'point-0',query:'bosc de Carlac',place:forest}]);
+ assert.equal(culturalPlaces(row)[0].provider_place_id,forest.provider_place_id);
+ assert.equal(chooseAutomaticPoint('Bosc de Carlac',[forest],{canonical_name:'Arties',country_code:'ES'}),null,'base town cannot authorize another locality');
+ const wrong={...forest,canonical_name:'Bòsc de Varicauba'};
+ assert.deepEqual(culturalPlaces({...row,location_points:pointSnapshot(row,[{id:'point-0',query:'bosc de Carlac',place:wrong}]),resolved_location:null}),[]);
+});
