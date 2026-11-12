@@ -4,7 +4,7 @@ export function culturalName(value){return normalizePointName(value).replace(/^(
 export function guidePlaceKey(p){if(!validPointPlace(p))throw Error('Cal una ubicació verificada.');return p.provider+':'+p.provider_place_id}
 export function culturalPlaces(row){
  const points=savedActivityPoints(row);
- const verifiedPoints=points?.filter(p=>p.place&&p.status!=='pending').map(p=>({query:p.query,place:p.place}))??[];
+ const verifiedPoints=points?.filter(p=>p.place&&p.status!=='pending').map(p=>({query:p.query,place:p.place,confirmed:true}))??[];
  // Legacy verified locations must remain usable while an imported activity has
  // pending ordered points. The original input fingerprint still has to match.
  const extracted=extractActivityPoints({...row,location_name:null,venue_name:null,address:null,resolved_location:null});
@@ -14,8 +14,9 @@ export function culturalPlaces(row){
  const seen=new Set();return candidates.filter(({query,place,confirmed})=>{
   // A persisted, provider-verified legacy choice is an explicit location identity.
   // The activity title may describe lunch, a walk or a town, not the place name.
-  // Ordered imported points without that confirmation keep the stricter name guard.
-  if(!validPointPlace(place)||!['exact_location','representative_point'].includes(place.coordinate_role)||(!confirmed&&culturalName(query)!==culturalName(place.canonical_name)))return false;
+  // Ordered points with a saved provider identity are also confirmed. The query
+  // is a search alias, not the cultural subject's name. Pending points stay out.
+  if(!validPointPlace(place)||!['exact_location','representative_point'].includes(place.coordinate_role)||!confirmed)return false;
   const key=guidePlaceKey(place);if(seen.has(key))return false;seen.add(key);return true;
  }).map(({place})=>Object.fromEntries(['provider','provider_place_id','canonical_name','latitude','longitude','country_code','locality','kind','coordinate_role','attribution'].map(k=>[k,place[k]??null])));
 }
