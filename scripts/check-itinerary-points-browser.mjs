@@ -127,8 +127,8 @@ try{
   assert.match(await box.locator('[data-point-toggle]').innerText(),/Ubicació verificada/);
   assert.equal(writes.length,8,'Selecting each of the three monuments keeps an unsaved draft');
  }
- assert.ok(searches.some(s=>s.text.startsWith('Basilica di San Petronio,')));
- assert.ok(searches.some(s=>s.text.startsWith('Basilica de San Petronio,')),'Distinct language variants reach provider');
+ assert.ok(searches.some(s=>s.text==='Basilica di San Petronio'&&!s.country_code));
+ assert.ok(searches.some(s=>s.text==='Basilica de San Petronio'&&!s.country_code),'Distinct language variants reach provider');
  await selectPoint(1);await editor.getByLabel('Nom del punt 1',{exact:true}).fill('Unknown Museum');
  await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
  await editor.locator('fieldset').first().locator('[data-point-feedback]').filter({hasText:'Cap coincidència verificable'}).waitFor();

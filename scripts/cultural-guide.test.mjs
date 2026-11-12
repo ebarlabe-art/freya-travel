@@ -128,3 +128,61 @@ test('all inaccurate model quotes fail closed instead of creating an ungrounded 
 });
 
 // Regression: keep citation checks strict while allowing supported sections.
+
+test('new Vall d Aran trip uses the universal cultural guide identity contract',()=>{
+ const aran={...bolognaPlaces[0],canonical_name:'Esglesia de Sant Miquèu',provider_place_id:'synthetic-aran-les-1',country_code:'ES',locality:'Vielha',latitude:42.701,longitude:0.795,kind:'building',coordinate_role:'exact_location'};
+ const newTrip=cultureId(3),row=cultureRow(aran,44,newTrip);
+ const places=culturalPlaces(row);
+ assert.equal(places.length,1,'a new trip must expose its verified place');
+ assert.equal(places[0].canonical_name,aran.canonical_name);
+ assert.equal(guidePlaceKey(places[0]),'geoapify:synthetic-aran-les-1');
+ const article={...culturalArticle(aran,44),language:'en'};
+ assert.equal(sourceMatchesPlace(places[0],article),true);
+ const guide=guideProposal(places[0],article,proposedSections(article));
+ assert.equal(guide.place_key,guidePlaceKey(places[0]));
+ assert.equal(validateCulturalGuide(guide,guide.place_key).language,'ca');
+ const noLocation={...row,location_points:null,resolved_location:null};
+ assert.deepEqual(culturalPlaces(noLocation),[],'an imported name alone must not silently become a verified place');
+ const mismatched={...row,location_points:structuredClone(row.location_points)};
+ mismatched.location_points.points[0].query='Un altre monument';
+ assert.deepEqual(culturalPlaces(mismatched),[],'a mismatched imported location must not receive another monument guide');
+});
+
+// A real-world name is not itself a provider-verified identity. These Aran examples
+// must remain visible to the place-resolution workflow without fabricating guide keys.
+test('Aran named visits remain identifiable for resolution, but require a verified provider identity for guides',async()=>{
+ const {extractActivityPoints}=await import('../domain/itinerary-place-points.mjs');
+ for(const title of ['Saint-Bertrand-de-Comminges','Luchon','Bosc de Carlac','Passeig pel bosc de Carlac','Caminada pel bosc de Carlac']){
+  const row={title};const points=extractActivityPoints(row);
+  assert.equal(points.length,1,title+' should be offered for geocoding');
+  assert.ok(points[0].query.length>0);
+  if(title.toLowerCase().includes('passeig')||title.toLowerCase().includes('caminada'))assert.equal(points[0].query.toLowerCase(),'bosc de carlac');
+  assert.equal(culturalPlaces(row).length,0,'A name alone must not forge a verified place');
+ }
+});
+
+test('a verified legacy location still opens its guide when imported ordered points are pending',()=>{
+ const place=bolognaPlaces[0],row=cultureRow(place,88);
+ row.location_points.points=[{id:'point-0',query:place.canonical_name,status:'pending',place:null}];
+ row.resolved_location={title:row.title,address:row.address??null,city:row.city??null,location_name:row.location_name??null,place};
+ assert.deepEqual(culturalPlaces(row).map(guidePlaceKey),[guidePlaceKey(place)]);
+ const stale={...row,title:'A different monument'};
+ assert.deepEqual(culturalPlaces(stale),[],'changed activity must not inherit old identity');
+ const wrong={...row,resolved_location:{...row.resolved_location,place:bolognaPlaces[1]}};
+ assert.deepEqual(culturalPlaces(wrong),[],'verified place with a different name is never linked');
+});
+
+test('Aran forest extracted from imported compound prose and verified legacy walks opens its own guide',async()=>{
+ const {extractActivityPoints,pointSnapshot,chooseAutomaticPoint}=await import('../domain/itinerary-place-points.mjs');
+ const forest={...bolognaPlaces[0],canonical_name:'Bòsc de Carlac',provider_place_id:'synthetic-carlac',country_code:'ES',locality:'Bausen',kind:'natural.forest',coordinate_role:'representative_point'};
+ const compound={title:'Bausen i excursió al Bòsc de Carlac.'};
+ assert.equal(extractActivityPoints(compound)[0].query,'Bòsc de Carlac');
+ const row={title:'Passeig pel bosc de Carlac',city:null,location_name:null,address:null};
+ row.resolved_location={...row,place:forest};
+ assert.equal(culturalPlaces(row)[0].provider_place_id,forest.provider_place_id);
+ row.location_points=pointSnapshot(row,[{id:'point-0',query:'bosc de Carlac',place:forest}]);
+ assert.equal(culturalPlaces(row)[0].provider_place_id,forest.provider_place_id);
+ assert.equal(chooseAutomaticPoint('Bosc de Carlac',[forest],{canonical_name:'Arties',country_code:'ES'}),null,'base town cannot authorize another locality');
+ const wrong={...forest,canonical_name:'Bòsc de Varicauba'};
+ assert.deepEqual(culturalPlaces({...row,location_points:pointSnapshot(row,[{id:'point-0',query:'bosc de Carlac',place:wrong}]),resolved_location:null}),[]);
+});

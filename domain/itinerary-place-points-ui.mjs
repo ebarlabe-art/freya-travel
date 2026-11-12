@@ -112,15 +112,17 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
     try{
      const options=await search(query);if(!active()||request!==serial)return;
      // Never display other saints/landmarks as matches to this requested name.
-     const exactMatches=options.filter(p=>matchingPointCandidate(query,p,{city:row.city||undefined}));
+     const exactMatches=options.filter(p=>matchingPointCandidate(query,p));
      state.candidates=visiblePointCandidates(exactMatches).map(pointPlace);state.empty=state.candidates.length===0;
      state.message=state.candidates.length?'Tria el lloc correcte. Encara no s’ha desat.'+(exactMatches.length>state.candidates.length?' Coincidències repetides agrupades.':''):'Cap coincidència verificable. Prova el nom local o una altra variant; el punt continua pendent.';
     }catch(e){if(active()&&request===serial){state.error=true;state.message=e.message||'La cerca no està disponible. Torna-ho a provar.'}}
     finally{if(active()&&request===serial){busy=false;state.loading=false;render()}}
    });
    body.append(input,hint,find,feedback,results);
+   // Explicit selection adopts the provider identity, including aliases such as Luchon.
+   // The activity title and original imported fields remain unchanged.
    for(const p of state.candidates){
-    const button=action('',()=>{if(!active()||busy)return;point.place=p;point.status=p.coordinate_role==='exact_location'?'resolved':'approximate';state.candidates=[];state.message='Punt seleccionat. Prem «Desa els punts» per confirmar els canvis.';state.error=false;render()});
+    const button=action('',()=>{if(!active()||busy)return;point.place=p;point.query=p.canonical_name;point.status=p.coordinate_role==='exact_location'?'resolved':'approximate';state.candidates=[];state.message='Punt seleccionat. Prem «Desa els punts» per confirmar els canvis.';state.error=false;render()});
     button.className='point-place-option';button.append(el('strong',p.canonical_name),el('small',pointCandidateDescription(p)));results.append(button);
    }
    if(point.place){

@@ -1,10 +1,16 @@
-import {savedActivityPoints,validPointPlace,normalizePointName} from './itinerary-place-points.mjs';
+import {savedActivityPoints,validPointPlace,normalizePointName,extractActivityPoints} from './itinerary-place-points.mjs';
 export const GUIDE_SECTIONS={history:'Història',context:'Context',curiosities:'Curiositats',highlights:'Punts d’interès',practical:'Informació pràctica',suggestions:'Suggeriments de visita'};
 export function culturalName(value){return normalizePointName(value).replace(/^(?:basilica|palazzo|palau|church|chiesa) /,'').trim()}
 export function guidePlaceKey(p){if(!validPointPlace(p))throw Error('Cal una ubicació verificada.');return p.provider+':'+p.provider_place_id}
 export function culturalPlaces(row){
  const points=savedActivityPoints(row);
- const candidates=points?points.filter(p=>p.place&&p.status!=='pending').map(p=>({query:p.query,place:p.place})):row.resolved_location&&(row.resolved_location.location_name??null)===(row.location_name||row.venue_name||null)&&['title','address','city'].every(k=>(row.resolved_location[k]??null)===(row[k]??null))?[{query:row.title,place:row.resolved_location.place}]:[];
+ const verifiedPoints=points?.filter(p=>p.place&&p.status!=='pending').map(p=>({query:p.query,place:p.place}))??[];
+ // Legacy verified locations must remain usable while an imported activity has
+ // pending ordered points. The original input fingerprint still has to match.
+ const extracted=extractActivityPoints({...row,location_name:null,venue_name:null,address:null,resolved_location:null});
+ const legacyQuery=extracted.length===1?extracted[0].query:row.title;
+ const legacy=row.resolved_location&&(row.resolved_location.location_name??null)===(row.location_name||row.venue_name||null)&&['title','address','city'].every(k=>(row.resolved_location[k]??null)===(row[k]??null))?{query:legacyQuery,place:row.resolved_location.place}:null;
+ const candidates=legacy?[...verifiedPoints,legacy]:verifiedPoints;
  const seen=new Set();return candidates.filter(({query,place})=>{
   if(!validPointPlace(place)||!['exact_location','representative_point'].includes(place.coordinate_role)||culturalName(query)!==culturalName(place.canonical_name))return false;
   const key=guidePlaceKey(place);if(seen.has(key))return false;seen.add(key);return true;

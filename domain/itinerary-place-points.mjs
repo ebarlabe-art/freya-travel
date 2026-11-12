@@ -2,12 +2,16 @@
 export const MAX_POINTS=12;
 export const normalizePointName=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
  .replace(/centre historic|historic cent(?:er|re)/g,'centro storico').replace(/\b(?:basílica|basilique)\b/g,'basilica').replace(/[^a-z0-9]+/g,' ').replace(/\b(?:de|di|del|della|dell|la|le|il)\b/g,' ').replace(/\s+/g,' ').trim();
-const anchor='(?:Piazza|Plaça|Plaza|Square|Fontana|Font|Fountain|Via|Viale|Carrer|Street|Museu|Museum|Museo|Catedral|Cathedral|Castell|Castle|Basílica|Basilica|Torre|Tower|Mercat|Market|Parc|Park|Palau|Palazzo|Finestrella|Archiginnasio|Teatro|Theatre|Theater|Quadrilatero|Due Torri|centre històric|centro storico|historic centre)';
+const anchor='(?:Piazza|Plaça|Plaza|Square|Fontana|Font|Fountain|Via|Viale|Carrer|Street|Museu|Museum|Museo|Catedral|Cathedral|Castell|Castle|Basílica|Basilica|Torre|Tower|Mercat|Market|Parc|Park|Palau|Palazzo|Finestrella|Archiginnasio|Teatro|Theatre|Theater|Quadrilatero|Due Torri|centre històric|centro storico|historic centre|B[oò]sc|Fageda)';
 export function extractActivityPoints(row){
  // Explicit addresses/venues take precedence over prose; never infer a restaurant from a meal.
  if(row.address)return [{id:'point-0',query:String(row.address).trim(),status:'pending',place:null}];
  const explicit=String(row.address||row.location_name||row.venue_name||'').trim();
  const raw=(row.resolved_location&&!row.address?String(row.title||''):explicit)||String(row.title||'');
+ // Walks to a named natural landmark are visits too. Keep the distinctive
+ // destination (not the generic word 'passeig') for safe geocoding.
+ const walkingDestination=!explicit?raw.match(/^(?:passeig|caminada|excursió|ruta|visita)\s+(?:(?:a|al|a la|pel|per|per la|fins a|fins al|fins a la)\s+)?((?:bosc|fageda|parc|jardins|llac|estany|cascada|castell|església|monestir)\s+(?:de|del|dels|de la|d\u2019|d')\s*[\p{L}\p{M}\p{N}\s\u2019'-]+?)(?=\s*[,;.(]|$)/iu):null;
+ if(walkingDestination)return [{id:'point-0',query:walkingDestination[1].trim(),status:'pending',place:null}];
  if(!raw||/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(raw))return [];
  const parts=raw.split(new RegExp('\\s*[,;]\\s*|\\s+i\\s+(?=(?:visita\\s+a\\s+)?'+anchor+'\\b)|\\s+i\\s+(?=(?:dinar|sopar|esmorzar|aperitiu)\\b)','iu'));
  const names=parts.flatMap(part=>{

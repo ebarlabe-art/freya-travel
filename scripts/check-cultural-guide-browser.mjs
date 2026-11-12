@@ -4,9 +4,12 @@ import {installCulturalGuideFixture} from './fixtures/install-cultural-guide-fix
 import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import {createServer} from 'node:http';import {resolve,extname,sep} from 'node:path';import {pathToFileURL} from 'node:url';
 import {bolognaPlaces,cultureId,cultureRow,culturalArticle,proposedSections} from './fixtures/cultural-guide.mjs';import {guideProposal,guidePlaceKey} from '../domain/cultural-guide.mjs';
 const pw=await import(process.env.PLAYWRIGHT_MODULE?pathToFileURL(process.env.PLAYWRIGHT_MODULE).href:'playwright'),engine=process.env.CULTURE_ENGINE||'chromium',dist=resolve('dist');
-const trips=[{id:cultureId(1),name:'Bolonya sintètica',time_zone:'Europe/Rome'},{id:cultureId(2),name:'Eivissa sintètica',time_zone:'Europe/Madrid'},{id:cultureId(3),name:'Londres sintètic',time_zone:'Europe/London',experience_key:'london-2026'}].map(t=>({...t,owner_id:cultureId(9),start_date:'2026-12-27',end_date:'2026-12-28',is_owner:true}));
+const trips=[{id:cultureId(1),name:'Bolonya sintètica',time_zone:'Europe/Rome'},{id:cultureId(2),name:'Eivissa sintètica',time_zone:'Europe/Madrid'},{id:cultureId(3),name:'Londres sintètic',time_zone:'Europe/London',experience_key:'london-2026'},{id:cultureId(4),name:'Vall d’Aran nova sintètica',time_zone:'Europe/Madrid'}].map(t=>({...t,owner_id:cultureId(9),start_date:'2026-12-27',end_date:'2026-12-28',is_owner:true}));
 const eivissa={...bolognaPlaces[0],canonical_name:'Dalt Vila',provider_place_id:'synthetic-eivissa',country_code:'ES',locality:'Eivissa',latitude:38.906,longitude:1.436};
-const manuals=[...bolognaPlaces.map((p,i)=>cultureRow(p,i)),cultureRow(eivissa,10,cultureId(2))],documents=[...bolognaPlaces,eivissa].map((p,i)=>guideProposal(p,culturalArticle(p,i),proposedSections(culturalArticle(p,i))));
+const aran={...bolognaPlaces[0],canonical_name:'Esglesia de Sant Miquèu',provider_place_id:'synthetic-aran-vielha',country_code:'ES',locality:'Vielha',latitude:42.701,longitude:0.795,coordinate_role:'exact_location'};
+const aranRow=cultureRow(aran,40,cultureId(4));
+const aranUnverified={...cultureRow(aran,41,cultureId(4)),location_points:null,resolved_location:null};
+const manuals=[aranRow,aranUnverified,...bolognaPlaces.map((p,i)=>cultureRow(p,i)),cultureRow(eivissa,10,cultureId(2))],documents=[...bolognaPlaces,eivissa,aran].map((p,i)=>guideProposal(p,culturalArticle(p,i),proposedSections(culturalArticle(p,i))));
 const compound=cultureRow(bolognaPlaces[0],30);compound.title='Piazza Maggiore, Fontana del Nettuno i basílica de San Petronio';compound.location_points=pointSnapshot(compound,bolognaPlaces.slice(0,3).map((p,i)=>({id:'point-'+i,query:p.canonical_name,place:p})));manuals.push(compound);
 let httpMode='server';const httpCalls=[];
 const server=createServer(async(req,res)=>{
@@ -72,6 +75,12 @@ try{
  await page.evaluate(()=>fixture.mismatch=false);await openGuide(10);
  const priorCalls=await page.evaluate(()=>fixture.calls.length);await page.evaluate(()=>{fixture.mismatch=false;fixture.delay=new Promise(r=>fixture.release=r)});await root.locator('[data-guide-search]').click();await page.waitForFunction(n=>fixture.calls.length===n+1,priorCalls);
  await page.evaluate(async id=>{await selectTrip(id,{open:true});setAppView('discoverView');fixture.release();fixture.delay=null},cultureId(3));await dialog.waitFor({state:'hidden'});
+ // New-trip Aran regression: verified and unresolved locations.
+ await page.evaluate(async id=>{await selectTrip(id,{open:true});setAppView('activitiesView')},cultureId(4));
+ await page.locator(`#activityList [data-cultural-guide="manual:${cultureId(60)}"]`).click();await dialog.waitFor({state:'visible'});
+ assert.equal(await root.locator('h2').innerText(),aran.canonical_name);await root.locator('[data-guide-text="history"]').waitFor({state:'visible'});assert.equal(await root.locator('[data-guide-text="history"]').innerText(),documents.at(-1).sections.history.text);assert.ok((await page.evaluate(()=>fixture.calls)).some(c=>c.action==='prepare'&&c.place_key===guidePlaceKey(aran)));await closeGuide();
+ await page.locator(`#activityList [data-cultural-guide="manual:${cultureId(61)}"]`).click();await dialog.waitFor({state:'visible'});
+ assert.match(await root.innerText(),/Cal confirmar la ubicació exacta/);await closeGuide();
  // London preserves all 13 cards while using the same device narration and controls.
  await page.evaluate(async id=>{fixture.mismatch=false;await selectTrip(id,{open:true});setAppView('discoverView')},cultureId(3));assert.equal(await page.locator('#guideGrid .place-guide').count(),13);await page.locator('[data-listen-guide]').first().click();await page.locator('#audioPause').click();await page.locator('#audioPause').click();await page.locator('#audioStop').click();
  // Reopen saved cards from Itinerary; no new guide writes when opening or listening.
