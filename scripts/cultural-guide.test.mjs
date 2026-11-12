@@ -168,8 +168,22 @@ test('a verified legacy location still opens its guide when imported ordered poi
  assert.deepEqual(culturalPlaces(row).map(guidePlaceKey),[guidePlaceKey(place)]);
  const stale={...row,title:'A different monument'};
  assert.deepEqual(culturalPlaces(stale),[],'changed activity must not inherit old identity');
- const wrong={...row,resolved_location:{...row.resolved_location,place:bolognaPlaces[1]}};
- assert.deepEqual(culturalPlaces(wrong),[],'verified place with a different name is never linked');
+ const selected={...row,resolved_location:{...row.resolved_location,place:bolognaPlaces[1]}};
+ assert.deepEqual(culturalPlaces(selected).map(guidePlaceKey),[guidePlaceKey(bolognaPlaces[1])],'the persisted selected identity wins over the activity prose');
+});
+
+
+test('regression #226: a confirmed town opens its cultural guide for lunch, even when the title is not the town name',()=>{
+ const town={...bolognaPlaces[0],canonical_name:'Saint-Bertrand-de-Comminges',provider_place_id:'synthetic-saint-bertrand-town',country_code:'FR',locality:'Saint-Bertrand-de-Comminges',kind:'city',coordinate_role:'representative_point'};
+ const row={title:'Dinar a Sant Bertrand du Conninges a Chez Simone',city:'Arties',address:null,location_name:null,venue_name:null,location_points:null};
+ row.resolved_location={title:row.title,city:row.city,address:row.address,location_name:null,place:town};
+ assert.deepEqual(culturalPlaces(row).map(guidePlaceKey),[guidePlaceKey(town)],'confirmed town is a valid guide subject, not just a monument');
+ const stale={...row,title:'Una altra activitat'};
+ assert.deepEqual(culturalPlaces(stale),[],'an old location must not attach to an edited activity with a changed fingerprint');
+ const forest={...town,canonical_name:'Bòsc de Carlac',provider_place_id:'synthetic-carlac',country_code:'ES',locality:'Bausen',kind:'natural.forest'};
+ const walk={...row,title:'Passeig pel bosc de Carlac',resolved_location:null};
+ walk.resolved_location={title:walk.title,city:walk.city,address:walk.address,location_name:null,place:forest};
+ assert.deepEqual(culturalPlaces(walk).map(guidePlaceKey),[guidePlaceKey(forest)],'natural areas are valid guide subjects');
 });
 
 test('Aran forest extracted from imported compound prose and verified legacy walks opens its own guide',async()=>{
