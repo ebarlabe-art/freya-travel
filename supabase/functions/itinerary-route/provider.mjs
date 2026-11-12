@@ -7,6 +7,20 @@ export function destinationContext(row,stops){
  if(contexts.length!==1||!contexts[0].country_code)return null;
  return {city:city||contexts[0].canonical_name,country:contexts[0].country_code.toLowerCase()};
 }
+// Explicitly confirmed geographic identity is independent of the trip base city.
+// A town centre is a representative destination; forests still require an access point.
+function confirmedLegacyPlace(row){
+ const saved=row.resolved_location,p=saved?.place;
+ if(!validPointPlace(p)||!['title','address','city','location_name'].every(field=>
+  (saved?.[field]??null)===(field==='location_name'?(row.location_name||row.venue_name||null):(row[field]??null))))return null;
+ return p;
+}
+function savedRoutePoint(place){
+ if(!validPointPlace(place))return {error:'missing_place'};
+ if(place.coordinate_role==='representative_point'&&!['city','town','village','hamlet'].includes(place.kind))return {error:'approximate_place'};
+ return {point:{id:place.provider_place_id,label:place.canonical_name,lat:place.latitude,lon:place.longitude,
+  ...(place.coordinate_role==='representative_point'?{approximate:true}:{})}};
+}
 export function routeProvider({key,fetcher=fetch,timeoutMs=8000,now=Date.now,spacingMs=300,maxCalls=2000}){
  let next=0,day='',count=0;const cache=new Map();
  async function query(url){
@@ -31,25 +45,22 @@ export function routeProvider({key,fetcher=fetch,timeoutMs=8000,now=Date.now,spa
   async resolve(row,context,choice,endpoint='first'){
    if(row.location_points!==null&&row.location_points!==undefined){
     const points=savedActivityPoints(row),p=(endpoint==='last'?points?.at(-1):points?.[0])?.place;
-    // Never fall back to a superseded single location or turn an area centroid into an exact entrance.
-    if(!validPointPlace(p))return {error:'missing_place'};
-    if(p.coordinate_role!=='exact_location')return {error:'approximate_place'};
-    return {point:{id:p.provider_place_id,label:p.canonical_name,lat:p.latitude,lon:p.longitude}};
+    if(validPointPlace(p))return savedRoutePoint(p);
+    // A pending auto-extracted point must not hide a separately confirmed
+    // legacy location. Never use a stale fingerprint or an unverified guess.
+    const legacy=confirmedLegacyPlace(row);
+    return legacy?savedRoutePoint(legacy):{error:'missing_place'};
    }
    if(!choice&&Number.isFinite(row.latitude)&&Math.abs(row.latitude)<=90&&Number.isFinite(row.longitude)&&Math.abs(row.longitude)<=180){
     return {point:{id:'coordinates:'+row.latitude+':'+row.longitude,label:row.venue_name||row.location_name||row.title||row.address,lat:row.latitude,lon:row.longitude}};
    }
+   // A confirmed choice may be in France even when the overnight base is in Spain.
+   // It is not a new automatic geocoding guess, and needs no base-city filter.
+   const legacy=!choice?confirmedLegacyPlace(row):null;
+   if(legacy)return savedRoutePoint(legacy);
    const name=row.location_name||row.venue_name||row.address;
    if(!name)return {error:'missing_place'};
    if(!context)return {error:'missing_context'};
-   const saved=row.resolved_location,p=saved?.place;
-   if(!choice&&p?.provider==='geoapify'&&typeof p.provider_place_id==='string'&&p.provider_place_id&&
-    p.coordinate_role==='exact_location'&&p.country_code?.toLowerCase()===context.country&&
-    clean(p.locality)===clean(context.city)&&
-    ['location_name','address','city','title'].every(field=>(saved[field]||null)===((field==='location_name'?row.location_name||row.venue_name:row[field])||null))&&
-    Number.isFinite(p.latitude)&&Math.abs(p.latitude)<=90&&Number.isFinite(p.longitude)&&Math.abs(p.longitude)<=180){
-    return {point:{id:p.provider_place_id,label:p.canonical_name,lat:p.latitude,lon:p.longitude}};
-   }
    const data=await memo(JSON.stringify(['place',name,row.address,context]),async()=>{
     const url=new URL('https://api.geoapify.com/v1/geocode/search');url.search=new URLSearchParams({text:[name,row.address!==name?row.address:'',context.city,context.country].filter(Boolean).join(', '),filter:'countrycode:'+context.country,lang:'ca',limit:'5',format:'json'}).toString();return query(url);
    });
