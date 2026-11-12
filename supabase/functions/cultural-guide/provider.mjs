@@ -15,7 +15,7 @@ async function publicRequest(url,fetcher){
  try{return await response.json()}catch{throw Error('source_unavailable')}
 }
 async function wiki(language,params,fetcher=fetch){
- if(!['ca','it','en'].includes(language))throw Error('source_unavailable');
+ if(!['ca','it','en','fr'].includes(language))throw Error('source_unavailable');
  const url=new URL(`https://${language}.wikipedia.org/w/api.php`);url.search=new URLSearchParams({action:'query',format:'json',formatversion:'2',...params}).toString();
  return publicRequest(url,fetcher);
 }
@@ -29,9 +29,9 @@ export async function readCulturalArticle(language,pageid,fetcher=fetch){
  if(!page||page.missing||page.pageprops?.disambiguation!==undefined||typeof page.extract!=='string'||!page.extract.trim()||!Number.isSafeInteger(page.revisions?.[0]?.revid))throw Error('source_unsuitable');
  const names=[page.title],qid=page.pageprops?.wikibase_item;let latitude=page.coordinates?.[0]?.lat,longitude=page.coordinates?.[0]?.lon;
  if(/^Q\d+$/.test(qid||'')){
-  const url=new URL('https://www.wikidata.org/w/api.php');url.search=new URLSearchParams({action:'wbgetentities',format:'json',ids:qid,props:'labels|aliases|claims',languages:'ca|it|en'}).toString();
+  const url=new URL('https://www.wikidata.org/w/api.php');url.search=new URLSearchParams({action:'wbgetentities',format:'json',ids:qid,props:'labels|aliases|claims',languages:'ca|it|en|fr'}).toString();
   const entity=(await publicRequest(url,fetcher)).entities?.[qid];
-  for(const lang of ['ca','it','en']){if(entity?.labels?.[lang]?.value)names.push(entity.labels[lang].value);for(const alias of entity?.aliases?.[lang]||[])names.push(alias.value)}
+  for(const lang of ['ca','it','en','fr']){if(entity?.labels?.[lang]?.value)names.push(entity.labels[lang].value);for(const alias of entity?.aliases?.[lang]||[])names.push(alias.value)}
   const coord=entity?.claims?.P625?.[0]?.mainsnak?.datavalue?.value;if(latitude===undefined&&coord?.globe==='http://www.wikidata.org/entity/Q2'){latitude=coord.latitude;longitude=coord.longitude}
  }
  return {language,pageid:page.pageid,title:page.title,names,latitude,longitude,revision:page.revisions[0].revid,extract:page.extract.slice(0,18000)};
