@@ -95,7 +95,7 @@ test('v27: saved coordinates are reused; a changed manual location discards the 
  const {p,calls}=provider();
  const row={title:'Visit',location_name:'Museum A',address:null,city:'Bologna'};
  row.resolved_location={...row,place:{canonical_name:'Museum A',provider:'geoapify',provider_place_id:'saved-a',country_code:'IT',locality:'Bologna',
-  coordinate_role:'exact_location',latitude:44.49,longitude:11.34}};
+  coordinate_role:'exact_location',latitude:44.49,longitude:11.34,attribution:'Synthetic'}};
  const result=await p.resolve(row,{city:'Bologna',country:'it'});
  assert.equal(result.point.id,'saved-a');assert.equal(calls.length,0);
  await p.resolve({...row,location_name:'Corrected meeting point'},{city:'Bologna',country:'it'});
@@ -103,6 +103,25 @@ test('v27: saved coordinates are reused; a changed manual location discards the 
  assert.equal(row.location_name,'Museum A');
 });
 
+test('regression #226: cross-border confirmed town routes from its saved identity even with pending points',async()=>{
+ const {p,calls}=provider();
+ const town={provider:'geoapify',provider_place_id:'fr-saint-bertrand',canonical_name:'Saint-Bertrand-de-Comminges',
+  country_code:'FR',locality:'Saint-Bertrand-de-Comminges',kind:'city',coordinate_role:'representative_point',
+  latitude:43.026,longitude:0.571,attribution:'Synthetic'};
+ const row={title:'Dinar a Sant Bertrand du Conninges a Chez Simone',city:'Arties',address:null,location_name:town.canonical_name};
+ row.resolved_location={title:row.title,city:row.city,address:null,location_name:row.location_name,place:town};
+ row.location_points={version:1,input:{title:row.title,city:row.city,address:null,location_name:row.location_name},
+  points:[{id:'point-0',query:'Sant Bertrand du Conninges',status:'pending',place:null}]};
+ const result=await p.resolve(row,{city:'Arties',country:'es'});
+ assert.equal(result.point.id,'fr-saint-bertrand');
+ assert.equal(result.point.approximate,true);
+ assert.equal(calls.length,0,'confirmed identity must not trigger a second geocoding guess');
+ const stale={...row,title:'Visita a un altre poble'};
+ assert.equal((await p.resolve(stale,{city:'Arties',country:'es'})).error,'missing_place');
+ const forest={...town,provider_place_id:'carlac',canonical_name:'Bòsc de Carlac',locality:'Bausen',country_code:'ES',kind:'natural.forest'};
+ const forestRow={...row,resolved_location:{...row.resolved_location,place:forest}};
+ assert.equal((await p.resolve(forestRow,{city:'Arties',country:'es'})).error,'approximate_place','forest centroid is not an invented trail entrance');
+});
 test('v27: map links contain verified endpoints and the selected mode only',async()=>{
  const {routeMapUrl}=await import('../domain/itinerary-route.mjs');
  assert.equal(routeMapUrl({method:'routing',mode:'walk'}),null);
