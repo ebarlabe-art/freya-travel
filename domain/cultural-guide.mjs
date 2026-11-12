@@ -9,10 +9,10 @@ export function culturalPlaces(row){
  // pending ordered points. The original input fingerprint still has to match.
  const extracted=extractActivityPoints({...row,location_name:null,venue_name:null,address:null,resolved_location:null});
  const legacyQuery=extracted.length===1?extracted[0].query:row.title;
- const legacy=row.resolved_location&&(row.resolved_location.location_name??null)===(row.location_name||row.venue_name||null)&&['title','address','city'].every(k=>(row.resolved_location[k]??null)===(row[k]??null))?{query:legacyQuery,place:row.resolved_location.place}:null;
+ const legacy=row.resolved_location&&(row.resolved_location.location_name??null)===(row.location_name||row.venue_name||null)&&['title','address','city'].every(k=>(row.resolved_location[k]??null)===(row[k]??null))?{query:legacyQuery,place:row.resolved_location.place,confirmed:true}:null;
  const candidates=legacy?[...verifiedPoints,legacy]:verifiedPoints;
- const seen=new Set();return candidates.filter(({query,place})=>{
-  if(!validPointPlace(place)||!['exact_location','representative_point'].includes(place.coordinate_role)||culturalName(query)!==culturalName(place.canonical_name))return false;
+ const seen=new Set();return candidates.filter(({query,place,confirmed})=>{
+  // A persisted, provider-verified legacy choice is an explicit location identity.\n  // The activity title may describe lunch, a walk or a town, not the place name.\n  // Ordered imported points without that confirmation keep the stricter name guard.\n  if(!validPointPlace(place)||!['exact_location','representative_point'].includes(place.coordinate_role)||(!confirmed&&culturalName(query)!==culturalName(place.canonical_name)))return false;
   const key=guidePlaceKey(place);if(seen.has(key))return false;seen.add(key);return true;
  }).map(({place})=>Object.fromEntries(['provider','provider_place_id','canonical_name','latitude','longitude','country_code','locality','kind','coordinate_role','attribution'].map(k=>[k,place[k]??null])));
 }
