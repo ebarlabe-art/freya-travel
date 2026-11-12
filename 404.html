@@ -6671,29 +6671,30 @@ async function openQuickItineraryPlacePicker(button){
  const current=()=>itineraryRequestIsCurrent(tripId,generation,userId)&&visibleAppView()==='itineraryView'&&
   !!button.isConnected&&manualItineraryRows.some(value=>value.id===id&&value.updated_at===revision);
  try{
-  const {mountQuickItineraryPlace}=await import('./domain/itinerary-quick-place.mjs');
+  const {mountQuickItineraryPlace,selectableItineraryPlace}=await import('./domain/itinerary-quick-place.mjs');
   if(!current())return;
   const prior=day?itineraryAutoPlaceContextFor(day)?.records.get(itineraryAutoPlaceRecordKey(row)):null;
+  const extracted=(await loadTravelBookModule('itinerary-place-points.mjs')).extractActivityPoints(row);
   mountQuickItineraryPlace({
-   host,row,query:itineraryAutoPlaceQuery(row)||manualItineraryPlaceQuery(row),
+   host,row,query:extracted[0]?.query||itineraryAutoPlaceQuery(row)||manualItineraryPlaceQuery(row),
    initialOptions:prior?.status==='done'?prior.options:null,current,
    autoSave:true,automaticMatch:options=>itineraryAutoPlaceVerified(row,options),
    search:async text=>{
-    const destination=itineraryAutoPlaceDestination(row);
-    const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text,language:'ca',...(destination?{country_code:destination.country_code}:{})}});
+    // Manual search may target a town across a border, not the trip's base city.
+    const {data,error}=await db.functions.invoke('place-resolution',{body:{action:'search',text,language:'ca'}});
     if(error||data?.error)return {error:itineraryAutoPlaceFailure(error,data)};
     return {options:itineraryAutoPlaceOptions(data)};
    },
    save:async place=>{
     if(!current()||connectionUnavailable())return false;
-    if(place.coordinate_role!=='exact_location')throw Error('Cal un lloc concret per calcular els trajectes.');
+    if(!selectableItineraryPlace(place))throw Error('Cal una ubicació geogràfica vàlida per vincular-la al planning.');
     const {data,error}=await db.from('trip_itinerary_items').update(Object.hasOwn(row,'resolved_location')?{location_name:place.canonical_name,resolved_location:itineraryAutoPlaceSnapshot(row,place)}:{location_name:place.canonical_name})
      .eq('trip_id',tripId).eq('id',id).eq('updated_at',revision).is('location_name',null)
      .select('id').maybeSingle();
     if(error)throw error;
     await loadManualItineraryItems(true);
     if(itineraryRequestIsCurrent(tripId,generation,userId)){
-     msg('genericItineraryMessage',data?'Ubicació desada. Recalculant els trajectes.':'L’activitat ha canviat. Revisa el planning.',!data);
+     msg('genericItineraryMessage',data?(place.coordinate_role==='representative_point'?'Població o espai natural desat. El punt del mapa és aproximat.':'Ubicació desada. Recalculant els trajectes.'):'L’activitat ha canviat. Revisa el planning.',!data);
     }
     return !!data;
    }
