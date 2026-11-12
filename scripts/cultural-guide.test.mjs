@@ -71,6 +71,19 @@ test('automatic preparation falls back to Italian and never falls back after a s
  const events=[];const timed=setup({readArticle:async()=>{throw new DOMException('private upstream contents','TimeoutError')},diagnose:e=>events.push(e)});
  const response=await timed.handler(request({...timed.data,action:'prepare'})),body=await response.json();assert.equal(response.status,503);assert.equal(body.error,'source_timeout');assert.equal(body.stage,'read_source');assert.match(body.request_id,/^[a-f0-9-]{36}$/);assert.doesNotMatch(JSON.stringify(events),/private|Bearer|place_key|trip_id/);
 });
+test('regression #226: a French town can use its French Wikipedia article when Catalan has no source',async()=>{
+ const place={...bolognaPlaces[0],canonical_name:'Saint-Bertrand-de-Comminges',provider_place_id:'fr-saint-bertrand',country_code:'FR',locality:'Saint-Bertrand-de-Comminges',kind:'city',coordinate_role:'representative_point'};
+ const row=cultureRow(place),article={...culturalArticle(place,72),language:'fr'},languages=[];
+ const handler=createCulturalGuideHandler({authenticate:async()=>cultureId(9),readItem:async()=>row,
+  search:async(_place,language)=>{languages.push(language);return language==='fr'?[article]:[]},
+  readArticle:async()=>article,generate:async payload=>proposedSections({title:payload.source_title,extract:payload.source_text})});
+ const data={action:'prepare',trip_id:cultureId(1),source_type:'manual',source_id:row.id,place_key:guidePlaceKey(place),language:'ca'};
+ const response=await handler(request(data)),body=await response.json();
+ assert.equal(response.status,200,JSON.stringify(body));
+ assert.deepEqual(languages,['ca','fr']);
+ assert.equal(body.document.sources[0].url.startsWith('https://fr.wikipedia.org/'),true);
+ assert.equal(validateCulturalGuide(body.document,data.place_key).language,'ca');
+});
 test('generation and citation failures return safe stage and correlation instead of a blank guide',async()=>{
  for(const options of [{generate:async()=>{throw Error('invalid_response')}},{generate:async()=>({})}]){
   const {handler,data}=setup(options);const response=await handler(request(data)),body=await response.json();assert.equal(response.status,503);assert.equal(body.error,'invalid_response');assert.ok(['generate','validate'].includes(body.stage));
