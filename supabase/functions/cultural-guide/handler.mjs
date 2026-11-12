@@ -26,7 +26,7 @@ export function createCulturalGuideHandler({authenticate,readItem,search,readArt
    const auth=request.headers.get('authorization'),user=await authenticate(auth);if(!user)return reply({error:'unauthorized'},401);
    const raw=await request.text();if(raw.length>2000)return reply({error:'invalid_request'},400);
    let data;try{data=JSON.parse(raw)}catch{return reply({error:'invalid_request'},400)}
-   if(!data||Object.keys(data).some(k=>!['action','trip_id','source_type','source_id','place_key','language','pageid'].includes(k))||!uuid.test(data.trip_id)||!uuid.test(data.source_id)||!['manual','activity'].includes(data.source_type)||!['search','propose','prepare'].includes(data.action)||!['ca','it','en'].includes(data.language)||typeof data.place_key!=='string'||data.place_key.length>600||data.action==='propose'&&(!Number.isSafeInteger(data.pageid)||data.pageid<1))return reply({error:'invalid_request'},400);
+   if(!data||Object.keys(data).some(k=>!['action','trip_id','source_type','source_id','place_key','language','pageid'].includes(k))||!uuid.test(data.trip_id)||!uuid.test(data.source_id)||!['manual','activity'].includes(data.source_type)||!['search','propose','prepare'].includes(data.action)||!['ca','it','en','fr'].includes(data.language)||typeof data.place_key!=='string'||data.place_key.length>600||data.action==='propose'&&(!Number.isSafeInteger(data.pageid)||data.pageid<1))return reply({error:'invalid_request'},400);
    // Read under the current caller's RLS; the client cannot supply a name, notes or documents.
    stage='read_visit';const row=await readItem(auth,data.trip_id,data.source_type,data.source_id);if(!row)return reply({error:'unavailable'},403);
    const place=culturalPlaces(row).find(p=>guidePlaceKey(p)===data.place_key);if(!place)return reply({error:'place_changed'},409);
@@ -35,7 +35,7 @@ export function createCulturalGuideHandler({authenticate,readItem,search,readArt
    stage='search';if(data.action==='search')return reply({candidates:(await search(place,data.language)).slice(0,6).map(p=>({pageid:p.pageid,title:p.title,language:data.language}))});
    let article;
    if(data.action==='prepare'){
-    const languages=[...new Set([data.language,place.country_code==='IT'?'it':null,'en'].filter(Boolean))];
+    const languages=[...new Set([data.language,place.country_code==='IT'?'it':place.country_code==='FR'?'fr':null,'en'].filter(Boolean))];
     for(const language of languages){
      stage='search';const candidates=await search(place,language);
      const exact=candidates.filter(c=>culturalName(c.title)===culturalName(place.canonical_name));
