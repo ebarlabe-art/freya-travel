@@ -18,6 +18,13 @@ test('ordered points: one activity, every named place, no invented meal venues',
  assert.deepEqual(extractActivityPoints({title:'Hotel',address:'Via 20 Settembre 23'}).map(p=>p.query),['Via 20 Settembre 23']);
  const title=cases[0][0];assert.equal(extractActivityPoints({title,location_name:'Piazza Maggiore',resolved_location:{place:{}}}).length,3,'old automatically stored first location must not hide the remaining points');
 });
+test('regression #226: lunch at a named town keeps the town as a confirmable location, not a guessed restaurant',()=>{
+ const row={title:'Dinar a Sant Bertrand du Conninges a Chez Simone'};
+ assert.deepEqual(extractActivityPoints(row).map(p=>p.query),['Sant Bertrand du Conninges']);
+ assert.equal(extractActivityPoints(row)[0].place,null,'the settlement is pending until provider confirmation');
+ assert.deepEqual(extractActivityPoints({title:'Dinar a Saint-Bertrand-de-Comminges al restaurant Chez Simone'}).map(p=>p.query),['Saint-Bertrand-de-Comminges']);
+ assert.deepEqual(extractActivityPoints({title:'Dinar'}),[],'a generic meal must not fabricate a place');
+});
 test('provider keeps street and district names and only provider supplied addresses',()=>{
  assert.equal(place(undefined,'street',{street:'Via del Pratello',place_id:'street'}).canonical_name,'Via del Pratello');
  assert.equal(place(undefined,'building',{place_id:'address',street:'Via XX Settembre',address_line1:'Via XX Settembre 23'}).canonical_name,'Via XX Settembre 23');

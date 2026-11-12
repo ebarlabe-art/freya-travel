@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {mountQuickItineraryPlace,prioritizeItineraryPlaces} from '../domain/itinerary-quick-place.mjs';
+import {mountQuickItineraryPlace,prioritizeItineraryPlaces,selectableItineraryPlace,automaticItineraryPlace} from '../domain/itinerary-quick-place.mjs';
 
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const fallback=readFileSync(new URL('../404.html',import.meta.url),'utf8');
@@ -57,10 +57,10 @@ test('v25: find-place opens direct picker, never the full editor; existing rows 
  assert.doesNotMatch(html,/openManualItineraryForm\(button\.dataset\.itineraryFindPlace\)/);
  assert.match(html,/resolved_location:itineraryAutoPlaceSnapshot\(row,place\)/);
  assert.match(html,/\.eq\('trip_id',tripId\)\.eq\('id',id\)\.eq\('updated_at',revision\)\.is\('location_name',null\)/);
- assert.match(html,/data\?'Ubicació desada/);
+ assert.match(html,/data\?\(place\.coordinate_role==='representative_point'/);
  assert.match(packageScript,/'itinerary-quick-place\.mjs'/);
  assert.match(worker,/'\.\/domain\/itinerary-quick-place\.mjs'/);
- assert.match(worker,/freya-travel-release-6444-v58/);
+ assert.match(worker,/freya-travel-release-6444-v59/);
  assert.match(html,/pwa-visible-pdf-alternatives/);
 });
 
@@ -74,7 +74,7 @@ test('v25: recognisable landmark is suggested and a single confirmation saves th
   });
   await settle();
   assert.deepEqual(queries,['Archiginnasio, Bologna']);
-  assert.match(view.section.textContent||view.section.children[3].textContent,/ubicació concreta/i);
+  assert.match(view.section.textContent||view.section.children[3].textContent,/ubicació/i);
   const choices=view.section.children.at(-1);
   assert.equal(choices.children.length,1);
   assert.match(choices.children[0].textContent,/Confirma: Archiginnasio/);
@@ -117,6 +117,31 @@ test('v25: approximate or missing candidates cannot be assigned as exact routing
  });
 });
 
+test('regression #226: explicitly selected French town is saved despite representative coordinates; never auto-saved',async()=>{
+ const town={...place('Saint-Bertrand-de-Comminges','representative_point'),kind:'city',country_code:'FR'};
+ assert.equal(selectableItineraryPlace(town),true);
+ assert.equal(automaticItineraryPlace({title:'Dinar a Sant Bertrand'},'Saint-Bertrand-de-Comminges',[town],'FR'),null);
+ await harness(async({add})=>{
+  const saved=[];
+  const view=add({row:{id:'item-1',title:'Dinar a Sant Bertrand du Conninges a Chez Simone'},initialOptions:[town],autoSave:true,
+   automaticMatch:()=>null,search:async()=>({options:[town]}),save:async p=>{saved.push(p);return true}});
+  const button=view.section.children.at(-1).children[0];
+  assert.match(button.textContent,/Saint-Bertrand-de-Comminges/);
+  assert.match(button.textContent,/Zona aproximada/);
+  assert.equal(saved.length,0);
+  await button.onclick();
+  assert.equal(saved.length,1);
+  assert.equal(saved[0],town);
+ });
+ assert.equal(selectableItineraryPlace({...town,kind:'unknown'}),false,'unclassified approximate results are not selectable');
+});
+test('regression #226: manual itinerary search is not restricted to the trip base country',()=>{
+ assert.match(html,/const extracted=\(await loadTravelBookModule\('itinerary-place-points\.mjs'\)\)\.extractActivityPoints\(row\)/);
+ const picker=html.slice(html.indexOf('async function openQuickItineraryPlacePicker(button){'),html.indexOf('function bindItineraryActions(container){'));
+ assert.match(picker,/search:async text=>/);
+ assert.doesNotMatch(picker,/country_code:destination\.country_code/);
+ assert.match(picker,/selectableItineraryPlace\(place\)/);
+});
 test('v25: stale response after closing cannot update location or render choices',async()=>{
  await harness(async({add})=>{
   let finish,saves=0;

@@ -144,18 +144,18 @@ try{
  assert.equal(await editor.locator('fieldset').first().locator('[data-point-feedback][data-error="true"]').isVisible(),true,'Error survives point switching');
  await editor.getByRole('button',{name:'Cancel·la',exact:true}).tap();await first.tap();await editor.waitFor({state:'visible'});
 
- // Real touch-sized UI: same-name nearby provider records collapse; different basilicas stay.
+ // Real touch-sized UI: same-name nearby records collapse; distinct provider alternatives remain visible for explicit choice.
  const firstInput=editor.getByLabel('Nom del punt 1',{exact:true});
  await firstInput.fill('Basilica di San Domenico');
  await editor.locator('fieldset').first().getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
  await editor.locator('[data-point-results] button').first().waitFor();
  const basilicaButtons=editor.locator('fieldset').first().locator('[data-point-results] button');
- assert.equal(await basilicaButtons.count(),1,'nearby San Domenico records collapsed and Santo Stefano excluded');
+ assert.equal(await basilicaButtons.count(),2,'nearby San Domenico records collapse, but a distinct alternative remains available');
  assert.equal(await basilicaButtons.first().locator('strong').innerText(),'Basilica di San Domenico');
  assert.match(await basilicaButtons.first().locator('small').innerText(),/Piazza San Domenico · Lloc exacte/);
- assert.equal(await basilicaButtons.filter({hasText:'Santo Stefano'}).count(),0,'Wrong saint must never appear');
+ assert.equal(await basilicaButtons.filter({hasText:'Santo Stefano'}).count(),1,'a different place is clearly labelled, never silently assigned');
  const queriesBeforeToggle=searches.length;await selectPoint(2);await selectPoint(1);
- assert.equal(await basilicaButtons.count(),1);assert.equal(searches.length,queriesBeforeToggle);
+ assert.equal(await basilicaButtons.count(),2);assert.equal(searches.length,queriesBeforeToggle);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no sideways mobile scrolling');
  assert.equal(writes.length,8,'searching and grouping candidates never writes');
  await firstInput.fill('Piazza Maggiore provisional');

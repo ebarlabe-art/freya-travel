@@ -46,9 +46,10 @@ export function createRouteHandler({authenticate,readTrip,readItem,readStops,pro
     origin=await provider.resolve(a,destinationContext(a,stops),input.choices?.origin,'last');
     destination=await provider.resolve(b,destinationContext(b,stops),input.choices?.destination,'first');
    }
-   const safe=result=>result.point?{label:result.point.label}:result;
+   const safe=result=>result.point?{label:result.point.label,...(result.point.approximate?{approximate:true}:{})}:result;
    if(!origin.point||!destination.point)return reply({status:'insufficient',origin:safe(origin),destination:safe(destination)});
    const route=await provider.route(origin.point,destination.point,input.mode);
+   if(origin.point.approximate||destination.point.approximate)route.quality=(route.quality||'Ruta calculada.')+' El punt de la població és aproximat: comprova el punt d’arribada abans de sortir.';
    return reply({status:'ready',origin:safe(origin),destination:safe(destination),route});
   }catch(e){
    const code=['missing_context','missing_place','rate_limited','provider_unavailable','invalid_response','no_route','mode_unavailable'].includes(e.message)?e.message:'provider_unavailable';

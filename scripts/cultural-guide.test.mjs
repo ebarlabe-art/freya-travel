@@ -9,8 +9,8 @@ for(const [i,place]of bolognaPlaces.entries())test(place.canonical_name+' keeps 
  const doc=guideProposal(place,article,proposedSections(article));assert.equal(doc.place_key,guidePlaceKey(place));assert.equal(doc.language,'ca');assert.equal(doc.sections.history.origin,'proposal');
  assert.match(culturalNarration(doc),/Suggeriments de visita/);assert.equal(culturalTravelBookSnapshot(storedGuide(place,doc)).source_id,cultureId(70));
 });
-test('uncertain, stale, wrong nearby and container/room identities never auto-link',()=>{
- const row=cultureRow(bolognaPlaces[4]);row.location_points.points[0].place=bolognaPlaces[3];assert.equal(culturalPlaces(row).length,0);
+test('stale identities never auto-link, but a persisted provider choice is authoritative',()=>{
+ const row=cultureRow(bolognaPlaces[4]);row.location_points.points[0].place=bolognaPlaces[3];assert.deepEqual(culturalPlaces(row).map(guidePlaceKey),[guidePlaceKey(bolognaPlaces[3])]);
  row.title='Changed';assert.equal(culturalPlaces(row).length,0);
  assert.equal(culturalPlaces({title:'Fontana del Nettuno'}).length,0);
  assert.equal(sourceMatchesPlace(bolognaPlaces[0],{...culturalArticle(bolognaPlaces[0]),latitude:40}),false);
@@ -70,6 +70,19 @@ test('automatic preparation falls back to Italian and never falls back after a s
  assert.equal((await handler(request({...data,action:'prepare',language:'ca'}))).status,200);assert.deepEqual(languages,['ca','it']);
  const events=[];const timed=setup({readArticle:async()=>{throw new DOMException('private upstream contents','TimeoutError')},diagnose:e=>events.push(e)});
  const response=await timed.handler(request({...timed.data,action:'prepare'})),body=await response.json();assert.equal(response.status,503);assert.equal(body.error,'source_timeout');assert.equal(body.stage,'read_source');assert.match(body.request_id,/^[a-f0-9-]{36}$/);assert.doesNotMatch(JSON.stringify(events),/private|Bearer|place_key|trip_id/);
+});
+test('regression #226: a French town can use its French Wikipedia article when Catalan has no source',async()=>{
+ const place={...bolognaPlaces[0],canonical_name:'Saint-Bertrand-de-Comminges',provider_place_id:'fr-saint-bertrand',country_code:'FR',locality:'Saint-Bertrand-de-Comminges',kind:'city',coordinate_role:'representative_point'};
+ const row=cultureRow(place),article={...culturalArticle(place,72),language:'fr'},languages=[];
+ const handler=createCulturalGuideHandler({authenticate:async()=>cultureId(9),readItem:async()=>row,
+  search:async(_place,language)=>{languages.push(language);return language==='fr'?[article]:[]},
+  readArticle:async()=>article,generate:async payload=>proposedSections({title:payload.source_title,extract:payload.source_text})});
+ const data={action:'prepare',trip_id:cultureId(1),source_type:'manual',source_id:row.id,place_key:guidePlaceKey(place),language:'ca'};
+ const response=await handler(request(data)),body=await response.json();
+ assert.equal(response.status,200,JSON.stringify(body));
+ assert.deepEqual(languages,['ca','fr']);
+ assert.equal(body.document.sources[0].url.startsWith('https://fr.wikipedia.org/'),true);
+ assert.equal(validateCulturalGuide(body.document,data.place_key).language,'ca');
 });
 test('generation and citation failures return safe stage and correlation instead of a blank guide',async()=>{
  for(const options of [{generate:async()=>{throw Error('invalid_response')}},{generate:async()=>({})}]){
@@ -145,7 +158,7 @@ test('new Vall d Aran trip uses the universal cultural guide identity contract',
  assert.deepEqual(culturalPlaces(noLocation),[],'an imported name alone must not silently become a verified place');
  const mismatched={...row,location_points:structuredClone(row.location_points)};
  mismatched.location_points.points[0].query='Un altre monument';
- assert.deepEqual(culturalPlaces(mismatched),[],'a mismatched imported location must not receive another monument guide');
+ assert.deepEqual(culturalPlaces(mismatched).map(guidePlaceKey),[guidePlaceKey(aran)],'a saved provider identity remains valid when its search alias differs');
 });
 
 // A real-world name is not itself a provider-verified identity. These Aran examples
@@ -168,8 +181,22 @@ test('a verified legacy location still opens its guide when imported ordered poi
  assert.deepEqual(culturalPlaces(row).map(guidePlaceKey),[guidePlaceKey(place)]);
  const stale={...row,title:'A different monument'};
  assert.deepEqual(culturalPlaces(stale),[],'changed activity must not inherit old identity');
- const wrong={...row,resolved_location:{...row.resolved_location,place:bolognaPlaces[1]}};
- assert.deepEqual(culturalPlaces(wrong),[],'verified place with a different name is never linked');
+ const selected={...row,resolved_location:{...row.resolved_location,place:bolognaPlaces[1]}};
+ assert.deepEqual(culturalPlaces(selected).map(guidePlaceKey),[guidePlaceKey(bolognaPlaces[1])],'the persisted selected identity wins over the activity prose');
+});
+
+
+test('regression #226: a confirmed town opens its cultural guide for lunch, even when the title is not the town name',()=>{
+ const town={...bolognaPlaces[0],canonical_name:'Saint-Bertrand-de-Comminges',provider_place_id:'synthetic-saint-bertrand-town',country_code:'FR',locality:'Saint-Bertrand-de-Comminges',kind:'city',coordinate_role:'representative_point'};
+ const row={title:'Dinar a Sant Bertrand du Conninges a Chez Simone',city:'Arties',address:null,location_name:null,venue_name:null,location_points:null};
+ row.resolved_location={title:row.title,city:row.city,address:row.address,location_name:null,place:town};
+ assert.deepEqual(culturalPlaces(row).map(guidePlaceKey),[guidePlaceKey(town)],'confirmed town is a valid guide subject, not just a monument');
+ const stale={...row,title:'Una altra activitat'};
+ assert.deepEqual(culturalPlaces(stale),[],'an old location must not attach to an edited activity with a changed fingerprint');
+ const forest={...town,canonical_name:'Bòsc de Carlac',provider_place_id:'synthetic-carlac',country_code:'ES',locality:'Bausen',kind:'natural.forest'};
+ const walk={...row,title:'Passeig pel bosc de Carlac',resolved_location:null};
+ walk.resolved_location={title:walk.title,city:walk.city,address:walk.address,location_name:null,place:forest};
+ assert.deepEqual(culturalPlaces(walk).map(guidePlaceKey),[guidePlaceKey(forest)],'natural areas are valid guide subjects');
 });
 
 test('Aran forest extracted from imported compound prose and verified legacy walks opens its own guide',async()=>{
@@ -184,5 +211,5 @@ test('Aran forest extracted from imported compound prose and verified legacy wal
  assert.equal(culturalPlaces(row)[0].provider_place_id,forest.provider_place_id);
  assert.equal(chooseAutomaticPoint('Bosc de Carlac',[forest],{canonical_name:'Arties',country_code:'ES'}),null,'base town cannot authorize another locality');
  const wrong={...forest,canonical_name:'Bòsc de Varicauba'};
- assert.deepEqual(culturalPlaces({...row,location_points:pointSnapshot(row,[{id:'point-0',query:'bosc de Carlac',place:wrong}]),resolved_location:null}),[]);
+ assert.deepEqual(culturalPlaces({...row,location_points:pointSnapshot(row,[{id:'point-0',query:'bosc de Carlac',place:wrong}]),resolved_location:null}).map(guidePlaceKey),[guidePlaceKey(wrong)],'the stored provider identity, not a stale search string, determines the guide');
 });

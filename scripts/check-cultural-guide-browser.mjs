@@ -80,7 +80,7 @@ try{
  await page.locator(`#activityList [data-cultural-guide="manual:${cultureId(60)}"]`).click();await dialog.waitFor({state:'visible'});
  assert.equal(await root.locator('h2').innerText(),aran.canonical_name);await root.locator('[data-guide-text="history"]').waitFor({state:'visible'});assert.equal(await root.locator('[data-guide-text="history"]').innerText(),documents.at(-1).sections.history.text);assert.ok((await page.evaluate(()=>fixture.calls)).some(c=>c.action==='prepare'&&c.place_key===guidePlaceKey(aran)));await closeGuide();
  await page.locator(`#activityList [data-cultural-guide="manual:${cultureId(61)}"]`).click();await dialog.waitFor({state:'visible'});
- assert.match(await root.innerText(),/Cal confirmar la ubicació exacta/);await closeGuide();
+ assert.match(await root.innerText(),/Tria o confirma el lloc/);await closeGuide();
  // London preserves all 13 cards while using the same device narration and controls.
  await page.evaluate(async id=>{fixture.mismatch=false;await selectTrip(id,{open:true});setAppView('discoverView')},cultureId(3));assert.equal(await page.locator('#guideGrid .place-guide').count(),13);await page.locator('[data-listen-guide]').first().click();await page.locator('#audioPause').click();await page.locator('#audioPause').click();await page.locator('#audioStop').click();
  // Reopen saved cards from Itinerary; no new guide writes when opening or listening.

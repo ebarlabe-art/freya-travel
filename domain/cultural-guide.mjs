@@ -4,15 +4,19 @@ export function culturalName(value){return normalizePointName(value).replace(/^(
 export function guidePlaceKey(p){if(!validPointPlace(p))throw Error('Cal una ubicació verificada.');return p.provider+':'+p.provider_place_id}
 export function culturalPlaces(row){
  const points=savedActivityPoints(row);
- const verifiedPoints=points?.filter(p=>p.place&&p.status!=='pending').map(p=>({query:p.query,place:p.place}))??[];
+ const verifiedPoints=points?.filter(p=>p.place&&p.status!=='pending').map(p=>({query:p.query,place:p.place,confirmed:true}))??[];
  // Legacy verified locations must remain usable while an imported activity has
  // pending ordered points. The original input fingerprint still has to match.
  const extracted=extractActivityPoints({...row,location_name:null,venue_name:null,address:null,resolved_location:null});
  const legacyQuery=extracted.length===1?extracted[0].query:row.title;
- const legacy=row.resolved_location&&(row.resolved_location.location_name??null)===(row.location_name||row.venue_name||null)&&['title','address','city'].every(k=>(row.resolved_location[k]??null)===(row[k]??null))?{query:legacyQuery,place:row.resolved_location.place}:null;
+ const legacy=row.resolved_location&&(row.resolved_location.location_name??null)===(row.location_name||row.venue_name||null)&&['title','address','city'].every(k=>(row.resolved_location[k]??null)===(row[k]??null))?{query:legacyQuery,place:row.resolved_location.place,confirmed:true}:null;
  const candidates=legacy?[...verifiedPoints,legacy]:verifiedPoints;
- const seen=new Set();return candidates.filter(({query,place})=>{
-  if(!validPointPlace(place)||!['exact_location','representative_point'].includes(place.coordinate_role)||culturalName(query)!==culturalName(place.canonical_name))return false;
+ const seen=new Set();return candidates.filter(({query,place,confirmed})=>{
+  // A persisted, provider-verified legacy choice is an explicit location identity.
+  // The activity title may describe lunch, a walk or a town, not the place name.
+  // Ordered points with a saved provider identity are also confirmed. The query
+  // is a search alias, not the cultural subject's name. Pending points stay out.
+  if(!validPointPlace(place)||!['exact_location','representative_point'].includes(place.coordinate_role)||!confirmed)return false;
   const key=guidePlaceKey(place);if(seen.has(key))return false;seen.add(key);return true;
  }).map(({place})=>Object.fromEntries(['provider','provider_place_id','canonical_name','latitude','longitude','country_code','locality','kind','coordinate_role','attribution'].map(k=>[k,place[k]??null])));
 }
@@ -29,7 +33,7 @@ export function validateCulturalGuide(value,placeKey){
  if(!value||value.version!==1||value.language!=='ca'||value.place_key!==placeKey||!value.sections||!Array.isArray(value.sources)||value.sources.length>8)throw Error('Fitxa cultural no vàlida.');
  if(Object.keys(value).some(k=>!['version','language','place_key','sections','sources'].includes(k))||Object.keys(value.sections).length!==6)throw Error('Camps culturals no vàlids.');
  const ids=new Set();for(const source of value.sources){
-  if(!source||Object.keys(source).some(k=>!['id','title','excerpt','url','license'].includes(k))||typeof source.id!=='string'||source.id.length>120||ids.has(source.id)||typeof source.title!=='string'||source.title.length>300||typeof source.excerpt!=='string'||source.excerpt.length>18000||typeof source.url!=='string'||!/^https:\/\/(?:ca|it|en)\.wikipedia\.org\/w\/index\.php\?oldid=\d+$/.test(source.url)||typeof source.license!=='string'||source.license.length>200)throw Error('Font cultural no vàlida.');ids.add(source.id);
+  if(!source||Object.keys(source).some(k=>!['id','title','excerpt','url','license'].includes(k))||typeof source.id!=='string'||source.id.length>120||ids.has(source.id)||typeof source.title!=='string'||source.title.length>300||typeof source.excerpt!=='string'||source.excerpt.length>18000||typeof source.url!=='string'||!/^https:\/\/(?:ca|it|en|fr)\.wikipedia\.org\/w\/index\.php\?oldid=\d+$/.test(source.url)||typeof source.license!=='string'||source.license.length>200)throw Error('Font cultural no vàlida.');ids.add(source.id);
  }
  for(const key of Object.keys(GUIDE_SECTIONS)){
   const section=value.sections[key];if(!section||typeof section.text!=='string'||section.text.length>4000||!['source','proposal','user'].includes(section.origin)||!Array.isArray(section.evidence)||section.evidence.length>8||Object.keys(section).some(k=>!['text','origin','evidence'].includes(k)))throw Error('Secció cultural no vàlida.');

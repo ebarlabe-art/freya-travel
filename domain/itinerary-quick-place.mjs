@@ -1,10 +1,18 @@
 // Direct, non-destructive place lookup for an existing itinerary card.
 // The parent owns authorization, optimistic writes and agenda refresh.
 const clean=value=>String(value??'').trim();
-function usable(place){
- return place&&clean(place.canonical_name)&&clean(place.canonical_name).length<=200&&
-  place.coordinate_role==='exact_location'&&Number.isFinite(place.latitude)&&Number.isFinite(place.longitude);
+// A confirmed town or natural area is a valid place, even when its coordinates
+// are representative rather than an entrance or a building. Never auto-save these.
+export function selectableItineraryPlace(place){
+ if(!place||!clean(place.canonical_name)||clean(place.canonical_name).length>200||
+  !Number.isFinite(place.latitude)||!Number.isFinite(place.longitude))return false;
+ if(place.coordinate_role==='exact_location')return true;
+ const kind=String(place.kind||'').toLowerCase();
+ return place.coordinate_role==='representative_point'&&
+  (['city','town','village','hamlet','suburb','district','neighbourhood','quarter','park','national_park','island'].includes(kind)||
+   /^natural[._]/.test(kind));
 }
+const usable=selectableItineraryPlace;
 
 // Candidate relevance is a visual suggestion only: no writes or route geometry.
 // Compare the full activity meaning, not only the first keyword used for geocoding.
@@ -50,7 +58,7 @@ export function prioritizeItineraryPlaces(row,query,places){
 // Strong compound names win only when they are distinct from competing POIs.
 export function automaticItineraryPlace(row,query,places,countryCode){
  if(!/^[A-Z]{2}$/.test(String(countryCode||'')))return null;
- const exact=(Array.isArray(places)?places:[]).filter(p=>usable(p)&&p.country_code===countryCode);
+ const exact=(Array.isArray(places)?places:[]).filter(p=>usable(p)&&p.coordinate_role==='exact_location'&&p.country_code===countryCode);
  if(!exact.length)return null;
  const {recommended}=prioritizeItineraryPlaces(row,query,exact);
  if(recommended)return recommended;
@@ -94,18 +102,18 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
  close.onclick=closePanel;
  function display(options,searchedFor=query){
   if(!active())return;
-  const exact=(Array.isArray(options)?options:[]).filter(usable).slice(0,5);
+  const selectable=(Array.isArray(options)?options:[]).filter(usable).slice(0,5);
   choices.replaceChildren();
-  if(!exact.length){
+  if(!selectable.length){
    status.textContent='No he trobat un lloc prou concret. Prova un altre nom o edita la ubicació manualment.';
    return;
   }
-  const {recommended,choices:ranked}=prioritizeItineraryPlaces(row,searchedFor,exact);
+  const {recommended,choices:ranked}=prioritizeItineraryPlaces(row,searchedFor,selectable);
   // Zero taps when a known, same-country POI is distinctive enough.
   // The same guarded save path is used as for a manual choice.
-  const confident=autoSave?(automaticMatch?automaticMatch(exact):automaticItineraryPlace(row,searchedFor,exact,countryCode)):null;
+  const confident=autoSave?(automaticMatch?automaticMatch(selectable):automaticItineraryPlace(row,searchedFor,selectable,countryCode)):null;
   status.textContent=recommended?'He reconegut la ubicació més probable per a aquesta activitat. Confirma-la, o consulta les alternatives si no és correcta.':
-   exact.length===1?'He trobat una ubicació concreta. Confirma-la per vincular-la a aquesta activitat.':
+   selectable.length===1?'He trobat una ubicació. Confirma-la per vincular-la a aquesta activitat.':
    'Hi ha diverses ubicacions possibles. Tria la correcta.';
   const altBox=recommended&&ranked.length>1?document.createElement('details'):null;
   if(altBox){
@@ -117,8 +125,8 @@ export function mountQuickItineraryPlace({host,row,query,search,save,current,ini
   ranked.forEach(place=>{
    const button=document.createElement('button');button.type='button';button.className='secondary';
    button.dataset.placeCanonical=place.canonical_name;
-   button.textContent=(place===recommended||exact.length===1?'✓ Confirma: ':'📍 ')+
-    [place.canonical_name,place.administrative_area,place.country_code].filter(Boolean).join(' · ');
+   button.textContent=(place===recommended||selectable.length===1?'✓ Confirma: ':'📍 ')+
+    [place.canonical_name,place.administrative_area,place.country_code,place.coordinate_role==='representative_point'?'Zona aproximada':null].filter(Boolean).join(' · ');
    button.style.cssText='text-align:left;white-space:normal;overflow-wrap:anywhere;';
    button.onclick=async()=>{
     if(!active()||busy)return;
