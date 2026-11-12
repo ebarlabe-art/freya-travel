@@ -5797,7 +5797,7 @@ function itineraryAutoPlaceVerified(row,options){
 function itineraryAutoPlaceSnapshot(row,place){
  return {location_name:row.location_name||(!row.address?place.canonical_name:null),address:row.address||null,city:row.city||null,title:row.title,
   place:{canonical_name:place.canonical_name,country_code:place.country_code,locality:place.locality||null,
-   latitude:place.latitude,longitude:place.longitude,coordinate_role:place.coordinate_role,
+   latitude:place.latitude,longitude:place.longitude,coordinate_role:place.coordinate_role,kind:place.kind||null,
    provider:place.provider,provider_place_id:place.provider_place_id,attribution:place.attribution}};
 }
 function itineraryAutoPlaceScope(){
