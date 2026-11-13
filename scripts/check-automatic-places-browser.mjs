@@ -45,7 +45,7 @@ const server=createServer(async(req,res)=>{
  try{res.setHeader('Content-Type',({'.js':'text/javascript','.mjs':'text/javascript','.html':'text/html','.css':'text/css','.webmanifest':'application/manifest+json'})[extname(path)]||'application/octet-stream');res.end(await readFile(path))}catch{res.writeHead(404).end()}
 });
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${server.address().port}/freya-travel/`;
-const browser=await pw[engine].launch({headless:true});
+const browser=await pw[engine].launch({headless:true,...(engine==='chromium'&&process.env.IMPORT_BROWSER_PATH?{executablePath:process.env.IMPORT_BROWSER_PATH}:{})});
 try{
  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
  await ctx.route('**/*',route=>new URL(route.request().url()).origin===new URL(url).origin?route.continue():route.abort());
@@ -56,7 +56,7 @@ try{
   const row=allRows.find(row=>filters.every(([key,value])=>(row[key]??null)===value));
   if(!row)return {data:null,error:null};
   writes.push({id:row.id,patch});Object.assign(row,patch,{updated_at:new Date(Date.now()+writes.length).toISOString()});
-  return {data:{id:row.id},error:null};
+  return {data:structuredClone(row),error:null};
  });
  await page.exposeFunction('fixtureInvoke',async(name,body)=>{
   if(name==='itinerary-route')return {data:await(await handler(new Request('https://synthetic',{method:'POST',headers:{authorization:'Bearer synthetic'},body:JSON.stringify(body)}))).json(),error:null};

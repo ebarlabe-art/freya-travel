@@ -60,8 +60,8 @@ test('v25: find-place opens direct picker, never the full editor; existing rows 
  assert.match(html,/data\?\(place\.coordinate_role==='representative_point'/);
  assert.match(packageScript,/'itinerary-quick-place\.mjs'/);
  assert.match(worker,/'\.\/domain\/itinerary-quick-place\.mjs'/);
- assert.match(worker,/freya-travel-release-6444-v59/);
- assert.match(html,/pwa-visible-pdf-alternatives/);
+ assert.match(worker,/freya-travel-release-6444-v60/);
+ assert.match(html,/pwa-geography-identity-228/);
 });
 
 test('v25: recognisable landmark is suggested and a single confirmation saves the existing row',async()=>{
