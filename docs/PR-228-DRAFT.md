@@ -1,6 +1,6 @@
 # fix: persistir identitat geogràfica entre planning, rutes i guia (#228)
 
-**Esborrany local de PR contra main. No pujat, no obert a GitHub, no fusionar ni desplegar.**
+**[PR #229](https://github.com/ebarlabe-art/freya-travel/pull/229), DRAFT contra main. Push i creació autoritzats expressament el 13/11/2026. No fusionar ni desplegar.**
 
 Una ubicació seleccionada al formulari manual només desava el nom i els triggers podien esborrar una selecció existent quan canviava la descripció. A més, l'editor comprovava només un id afectat i els consumidors de mapa/rutes/guia no recuperaven el mateix conjunt de punts. La correcció conserva identitats de proveïdor vigents, verifica el snapshot real retornat i reutilitza una lectura comuna, mantenint la correcció de Saint-Bertrand de #227.
 
@@ -20,7 +20,7 @@ Refs #228, #226. No tancar automàticament: falta validació live/iPhone.
 - Postgres descartable amb migracions i RLS reals: invalidació antiga reproduïda, nou contracte de preservació, retirades, pendents, CAS, membres/aliens/anon, camps originals. Proves de la guia cultural també correctes.
 - Chromium: PDF → revisió → importació confirmada → selecció de Saint-Bertrand/Luchon/Carlac i àpat al poble → guia; formulari manual → ubicació → tancament/reobertura de Postgres en disc → recàrrega PWA → mapa i guia. El proveïdor i el wrapper d'importació són simulats; no és PostgREST real.
 - Chromium: regressions de Londres/Eivissa/Bolonya, punts ordenats, rutes, automatismes, guia/audioguia, navegació, offline/recàrrega i bootstrap de caches v18–v59 a v60, correctes.
-- WebKit local **bloquejat**: descàrrega HTTP403 per la política de xarxa. La matriu Chromium/WebKit segueix a CI i executarà també la persistència local, però **CI encara no executada** perquè el push ha estat bloquejat per revisió automàtica d'aprovació.
+- WebKit local **bloquejat**: descàrrega HTTP403 per la política de xarxa. La matriu Chromium/WebKit segueix a CI i executarà també la persistència local, els resultats del SHA actual s’han de consultar a la PR. El bloqueig anterior de push queda substituït per l’autorització específica del 13/11/2026.
 
 ## Pendents i publicació
 
