@@ -15,8 +15,8 @@ export function extractActivityPoints(row){
  // A meal can also identify a town worth visiting. Extract only an explicit
  // settlement before a named establishment, never infer a restaurant from "dinar".
  // This remains a pending suggestion: no provider identity is assigned silently.
- const mealSettlement=!explicit?raw.match(/^(?:dinar|sopar|esmorzar|aperitiu|lunch|dinner|breakfast)\s+(?:a|al|a la|en)\s+(.+?)\s+(?:a|al|a la|en)\s+(?:chez|restaurant|caf[eè]|bar|bistrot|bistro|taverna|hostal|hotel)\b/iu):null;
- if(mealSettlement)return [{id:'point-0',query:mealSettlement[1].trim(),status:'pending',place:null}];
+ const meal= !explicit?raw.match(/^(?:dinar|sopar|esmorzar|aperitiu|lunch|dinner|breakfast)\s+(?:a|al|a la|en)\s+(.+?)(?:\s+(?:a|al|a la|en)\s+((?:chez|restaurant|caf[eè]|bar|bistrot|bistro|taverna|hostal|hotel)\b.+))?$/iu):null;
+ if(meal)return [...new Set([meal[1],meal[2]].filter(Boolean).map(x=>x.trim()))].map((query,i)=>({id:'point-'+i,query,status:'pending',place:null}));
  if(!raw||/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(raw))return [];
  const parts=raw.split(new RegExp('\\s*[,;]\\s*|\\s+i\\s+(?=(?:visita\\s+a\\s+)?'+anchor+'\\b)|\\s+i\\s+(?=(?:dinar|sopar|esmorzar|aperitiu)\\b)','iu'));
  const names=parts.flatMap(part=>{
@@ -88,7 +88,7 @@ export function chooseAutomaticPoint(query,options,context){
  // Genuine distant homonyms remain ambiguous; multiple records of the same nearby landmark do not.
  if(!unique.every(p=>nearSamePoint(p,unique[0])))return null;
  const exact=unique.filter(p=>p.coordinate_role==='exact_location');
- const allowed=exact.length?exact:unique.filter(p=>['street','suburb','district','neighbourhood','quarter','city_block','square'].includes(p.kind));
+ const allowed=exact.length?exact:unique.filter(p=>(['street','suburb','district','neighbourhood','quarter','city_block','square','natural.forest','forest','park','nature_reserve','national_park'].includes(p.kind)||(['city','town','village','hamlet'].includes(p.kind)&&samePointName(p.canonical_name,context.canonical_name))));
  if(!allowed.length)return null;
  return pointPlace(allowed[0]);
 }
@@ -102,6 +102,22 @@ export function pointSnapshot(row,points){
 export function savedActivityPoints(row){
  const s=row.location_points;
  return s?.version===1&&Object.entries(pointInput(row)).every(([k,v])=>s.input?.[k]===v)&&Array.isArray(s.points)?s.points:null;
+}
+// A confirmed legacy choice and ordered points share one read contract.
+// Empty ordered points are an explicit removal; never resurrect a legacy location.
+export function confirmedLegacyPlace(row){
+ const s=row.resolved_location,p=s?.place;
+ return validPointPlace(p)&&Object.entries(pointInput(row)).every(([k,v])=>(s[k]??null)===v)?p:null;
+}
+export function activityGeographicPoints(row){
+ const points=savedActivityPoints(row);
+ if(points?.length===0||points?.some(p=>p.status!=='pending'&&validPointPlace(p.place)))return points;
+ const legacy=confirmedLegacyPlace(row);
+ return legacy?[{id:'legacy-location',query:legacy.canonical_name,status:legacy.coordinate_role==='exact_location'?'resolved':'approximate',place:pointPlace(legacy)}]:points;
+}
+export function samePointSnapshot(a,b){
+ const canonical=v=>v===null||typeof v!=='object'?JSON.stringify(v):Array.isArray(v)?'['+v.map(canonical).join(',')+']':'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}';
+ return !!a&&!!b&&canonical(a)===canonical(b);
 }
 export function pointMapUrl(place){return validPointPlace(place)?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place.latitude+','+place.longitude):null}
 export class ActivityPointQueue{

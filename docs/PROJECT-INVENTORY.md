@@ -1,5 +1,22 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## #228 · Auditoria transversal de geografia — BRANCA, NO DESPLEGADA (13/11/2026)
+
+Entrada vigent per a aquesta tasca; les notes de #225 «no fusionada» inferiors són històriques. `main` verificat: `4bee578` (#225 i #227 ja fusionades); branca independent `fix/228-stable-geographic-identity`, checkout `/workspace/freya-228`. El checkout anterior i els seus canvis locals queden intactes. No es treballa a main, no es recrea Sites ni cap altra app.
+
+**Diagnòstic comprovat:** el formulari manual copiava només el nom de la selecció; els triggers desplegats anul·laven els snapshots per canvis de prosa; el desament de punts comprovava només un id; mapa/editor/guia/rutes consumien variants diferents. #227 ja havia retirat la comparació rígida de nom per a llocs confirmats i aquesta correcció es preserva. Metadades Supabase llegides en READ ONLY, sense files de viatges: RLS activa i polítiques de membres; bundles cultural-guide v7 i itinerary-route v7 idèntics a main. No s'atribueix el defecte a una versió Edge antiga ni es descarten errors particulars de sessió/dispositiu no observats.
+
+**Correcció en branca:** selecció manual completa desada en l'activitat i comprovació del snapshot retornat; lector geogràfic compartit per punts/legacy, mapes, editor, guia i rutes; consultes separades de poble/restaurant explícits, pobles i espais naturals amb precisió representativa conservada i homònims protegits. Migració local `20261113124532_preserve_confirmed_activity_geography.sql` manté seleccions vigents en edicions descriptives, no eleva suggeriments ni ressuscita eliminacions/snapshots obsolets. No hi ha backfill, polítiques, privilegis ni arquitectura nous. Canviar el lloc requereix selecció o retirada explícita, no editar-ne només el text. Cache preparada v60 i paritat generada.
+
+**Resultats locals:** 968/968 proves Node, build/paritat, control del paquet públic; Chromium Aran complet amb Postgres descartable, triggers/RLS reals, manual/importat, tancament/reobertura de la base i recàrrega, mapa i guia; regressions de punts, rutes, automatismes, guia/audioguia (Bolonya/Eivissa/Londres) i bootstrap/caches antigues, correctes. Proves SQL de punts i guia cultural correctes. Generació, fonts, auth/JWT de proveïdor i dades del viatge són fixtures; no es presenten com a proves live. La CI manté les dues branques Chromium/WebKit i incorpora persistència SQL al flux cultural.
+
+**Pendents que impedeixen declarar el tancament real:** WebKit local no instal·lable (HTTP403 de la política de xarxa); CI remota de la PR #229 en revisió: consultar els checks del SHA actual, sense assumir-ne el resultat; entorn Supabase/proveïdors live de prova no configurat; iPhone físic/PWA, suspensió i sincronització de dos membres pendents de validació de l'usuari. Un punt representatiu d'un bosc no acredita un accés exacte per a rutes. Les identitats ja perdudes no es poden reconstruir sense evidència.
+
+**Relleu i publicació:** diagnòstic, cadena completa, criteris, inventari d'altres issues i passos de reversió a [location-identity-228-audit.md](location-identity-228-audit.md). Correcció al commit local `312a788`; [text de PR d’esborrany preparat](PR-228-DRAFT.md), refs #228/#226 sense tancament automàtic. El bloqueig de push anterior queda superat per l’autorització expressa del 13/11/2026: només aquesta branca, PR DRAFT i CI. [PR #229](https://github.com/ebarlabe-art/freya-travel/pull/229) oberta, sense merge. Els resultats remots i la validació física s’han de contrastar al SHA actual abans de publicar; no es dona #228 per resolta. Només amb autorització específica: migració local → bundles Edge cultural-guide i itinerary-route amb domini compartit → frontend v60 → prova física. No s'ha aplicat cap migració, escrit cap dada remota, fusionat ni desplegat. L'evidència remota i els logs locals són fora de Git; cap snapshot real afegit al repositori.
+
+---
+
+
 Revisió: **22/10/2026 (UTC)**. Base tècnica: `main` **`4846b3e4cdbdf1a65bb1233e0c5f8903f69ae0d9`**, després de la PR #174. Auditoria completada sobre les fonts accessibles; la recuperació d'arxius externs i la validació funcional remota continuen limitades tal com s'explica aquí.
 
 **Prioritats canòniques:** [ROADMAP-CANONIC.md](ROADMAP-CANONIC.md), v1.2. Aquest inventari registra evidència i relleu; no és un altre roadmap. Les discrepàncies no canvien silenciosament l'ordre canònic. Aquesta revisió es prepara a `docs/historical-audit-20261022`: fins al merge és documentació de branca, no de `main`.

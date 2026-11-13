@@ -2078,7 +2078,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-visible-pdf-alternatives';
+const FREYA_FRONTEND_RELEASE='pwa-geography-identity-228';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -3465,7 +3465,7 @@ let genericItinerarySelectedTripId=null;
 let manualItineraryChannel=null;
 let manualItineraryRows=[];
 let manualItinerarySubmitting=false;
-let manualItineraryPlaceQueryEpoch=0;
+let manualItineraryPlaceQueryEpoch=0,manualItinerarySelectedPlace=null;
 let itineraryAutoPlaceContext=null;
 let manualItineraryLoadSequence=0;
 let dayMetadataChannel=null;
@@ -5364,6 +5364,7 @@ function activityLocation(row){
   const seen=new Set();return [row.venue_name,row.address,row.city].filter(value=>{const key=String(value||'').trim().toLocaleLowerCase('ca');if(!key||seen.has(key))return false;seen.add(key);return true}).join(' · ');
 }
 function activityMapUrl(row){
+  const verified=verifiedActivityMapUrl(row);if(verified)return verified;
   if(row.latitude!=null&&row.longitude!=null)return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${row.latitude},${row.longitude}`)}`;
   const query=[row.venue_name,row.address,row.city].filter(Boolean).join(', ');return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:'';
 }
@@ -5429,6 +5430,7 @@ function handleActivityPlanningHistory(event){
 function renderActivities(){
   const list=$('activityList'),empty=$('activityEmpty'),collection=$('activityCollection'),count=$('activityCount');if(!list||!empty)return;
   if(!trip||!session||isLondonTrip()){list.innerHTML='';empty.classList.add('hidden');collection?.classList.add('hidden');$('activitySourceStatus')?.classList.add('hidden');return}
+  if(itineraryPointScope?.scope!==itineraryAutoPlaceScope()){const scope=itineraryAutoPlaceScope();void itineraryPointContext().then(context=>{if(context&&scope===itineraryAutoPlaceScope()&&visibleAppView()==='activitiesView')renderActivities()}).catch(()=>{})}
   culturalGuideController?.reconcile();
   syncGenericConfirmedModules();
   const projected=unifiedActivityItems(),byKey=new Map(projected.map(item=>[item.key,item]));
@@ -5544,13 +5546,14 @@ function saveManualItineraryDraft(){
   const form=$('manualItineraryForm');if(form.dataset.tripId!==trip.id)return;
   const fields={};MANUAL_ITINERARY_DRAFT_FIELDS.forEach(id=>{const element=$(id);fields[id]=element.type==='checkbox'?element.checked:element.value});
   const key=manualItineraryDraftKey();if(!key)return;
-  try{localStorage.setItem(key,JSON.stringify({version:MANUAL_ITINERARY_DRAFT_VERSION,userId:session.user.id,tripId:trip.id,editId:form.dataset.editId||'',originalUpdatedAt:form.dataset.originalUpdatedAt||'',sortOrder:Number(form.dataset.sortOrder||0),fields,savedAt:Date.now()}))}catch(_){}
+  try{localStorage.setItem(key,JSON.stringify({version:MANUAL_ITINERARY_DRAFT_VERSION,userId:session.user.id,tripId:trip.id,editId:form.dataset.editId||'',originalUpdatedAt:form.dataset.originalUpdatedAt||'',sortOrder:Number(form.dataset.sortOrder||0),fields,selectedPlace:manualItinerarySelectedPlace,savedAt:Date.now()}))}catch(_){}
 }
 function clearManualItineraryDraft(tripId=trip?.id,userId=session?.user?.id){const key=manualItineraryDraftKey(tripId,userId);if(key)try{localStorage.removeItem(key)}catch(_){}}
 function setManualItineraryFormMode(active){
   $('manualItineraryFormCard').classList.toggle('hidden',!active);$('genericItineraryBrowse').classList.toggle('hidden',active);$('addManualItineraryItem').classList.toggle('hidden',active);$('refreshGenericItinerary').classList.toggle('hidden',active);
 }
 function resetManualItineraryFormUi(){
+ manualItinerarySelectedPlace=null;
  manualItineraryPlaceQueryEpoch++;
  $('manualItineraryPlaceResults').replaceChildren();
  $('manualItineraryPlaceStatus').textContent='';
@@ -5563,6 +5566,7 @@ function updateManualItineraryTimingFields(){
   $('manualItineraryStartAt').required=exact;$('manualItineraryApproximateStartTime').required=approximate;$('manualItineraryTimeZone').required=exact||approximate;$('manualItineraryDate').required=dated;$('manualItineraryDaypart').required=daypart;
 }
 function populateManualItineraryForm(row=null){
+ manualItinerarySelectedPlace=null;
   const form=$('manualItineraryForm');form.reset();form.dataset.editId=row?.id||'';form.dataset.tripId=trip.id;form.dataset.originalUpdatedAt=row?.updated_at||'';form.dataset.sortOrder=String(row?.sort_order??Math.max(0,...manualItineraryRows.map(item=>Number(item.sort_order)||0))+10);form.dataset.remoteConflict='';
   $('manualItineraryFormTitle').textContent=row?'Editar el planning':'Afegir al planning';$('manualItineraryTitle').value=row?.title||'';$('manualItineraryTimingKind').value=row?.timing_kind||'exact';$('manualItineraryDate').value=row?.local_date||'';$('manualItineraryDaypart').value=row?.daypart||'morning';$('manualItineraryTimeZone').value=row?.time_zone||trip.time_zone||Intl.DateTimeFormat().resolvedOptions().timeZone||'';$('manualItineraryStartAt').value=isoToZonedLocal(row?.starts_at,$('manualItineraryTimeZone').value);$('manualItineraryEndAt').value=isoToZonedLocal(row?.ends_at,$('manualItineraryTimeZone').value);$('manualItineraryApproximateStartTime').value=itineraryLocalTime(row?.approximate_start_time);$('manualItineraryApproximateEndTime').value=itineraryLocalTime(row?.approximate_end_time);$('manualItineraryLocation').value=row?.location_name||'';$('manualItineraryAddress').value=row?.address||'';$('manualItineraryCity').value=row?.city||'';resetManualItineraryPlaceSearch(row);$('manualItineraryFixed').checked=!!row?.is_fixed;$('manualItineraryOptional').checked=!!row?.is_optional;$('manualItineraryStatus').value=row?.status||'planned';$('manualItineraryNotes').value=row?.notes||'';updateManualItineraryTimingFields();setManualItineraryFormMode(true);
 }
@@ -5573,10 +5577,12 @@ function restoreManualItineraryDraft(){
   if(!trip||!session||isLondonTrip())return false;const draft=readManualItineraryDraft();if(!draft)return false;
   const row=draft.editId?manualItineraryRows.find(item=>item.id===draft.editId):null;if(draft.editId&&!row){clearManualItineraryDraft();return false}
   populateManualItineraryForm(row);const form=$('manualItineraryForm');form.dataset.editId=draft.editId||'';form.dataset.originalUpdatedAt=draft.originalUpdatedAt||'';form.dataset.sortOrder=String(draft.sortOrder??row?.sort_order??0);
+  manualItinerarySelectedPlace=draft.selectedPlace||null;
   MANUAL_ITINERARY_DRAFT_FIELDS.forEach(id=>{const element=$(id);if(!element||!(id in (draft.fields||{})))return;if(element.type==='checkbox')element.checked=!!draft.fields[id];else element.value=draft.fields[id]??''});updateManualItineraryTimingFields();setManualItineraryFormMode(true);if(row&&row.updated_at!==(draft.originalUpdatedAt||'')){form.dataset.remoteConflict='true';msg('genericItineraryMessage','Aquest element ha canviat mentre no eres aquí. Hem conservat el teu esborrany; en desar comprovarem la versió actual.',true)}return true;
 }
 function closeManualItineraryForm(){clearManualItineraryDraft($('manualItineraryForm').dataset.tripId||trip?.id);resetManualItineraryFormUi();renderGenericItinerary()}
-function manualItineraryMapUrl(row){if(!row.location_name&&!row.address)return '';const query=[row.location_name,row.address,row.city].filter(Boolean).join(', ');return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:''}
+function verifiedActivityMapUrl(row){const api=itineraryPointScope?.api;return api?api.pointMapUrl(api.activityGeographicPoints(row)?.[0]?.place):null}
+function manualItineraryMapUrl(row){const verified=verifiedActivityMapUrl(row);if(verified)return verified;if(!row.location_name&&!row.address)return '';const query=[row.location_name,row.address,row.city].filter(Boolean).join(', ');return query?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`:''}
 function manualItineraryPlaceQuery(row){
  const title=String(row?.location_name||row?.title||'').trim().replace(/^(?:visita(?:\s+(?:a|al|a la))?|passejada(?:\s+per)?|visit(?:\s+to)?|excursió(?:\s+a)?)[\s:–-]+/i,'');
  const city=String(row?.city||trip?.name||'').trim();
@@ -5617,6 +5623,7 @@ async function searchManualItineraryPlaces(){
    button.textContent='📍 '+[place.canonical_name,place.administrative_area,place.country_code].filter(Boolean).join(' · ')+(exact?'':' · Zona aproximada');
    button.onclick=()=>{
     if(!current())return;
+    manualItinerarySelectedPlace=structuredClone(place);
     $('manualItineraryLocation').value=place.canonical_name;
     // Administrative area is not necessarily a city; no fabricated street address or coordinates.
     status.textContent='Lloc seleccionat: '+place.canonical_name+(exact?'':' (zona aproximada)')+'. Revisa ciutat i adreça; prem «Desa» per guardar.';
@@ -5662,7 +5669,7 @@ function itineraryPointRow(item){
 }
 function itineraryPointHtml(item){
  const row=itineraryPointRow(item);if(!row)return '';
- const points=row.location_points?.points;
+ const points=itineraryPointScope?.api?itineraryPointScope.api.activityGeographicPoints(row):null;
  if(!Array.isArray(points))return '<p class="muted">'+(Number.isFinite(row.latitude)&&Number.isFinite(row.longitude)?'Ubicació original conservada. Pots afegir punts verificats.':'Ubicacions pendents de verificar')+'</p>';
  if(!points.length)return '<p class="muted">Sense punts geogràfics seleccionats</p>';
  return '<ol class="activity-point-list">'+points.map(point=>{
@@ -5682,14 +5689,17 @@ async function itineraryPointContext(){
    if(error||(data?.error&&data.error!=='no_match'))throw Error(itineraryAutoPlaceFailure(error,data));
    return itineraryAutoPlaceOptions(data);
   })};
+  queueMicrotask(()=>{if(scope===itineraryAutoPlaceScope())renderGenericItinerary()});
  }
  return itineraryPointScope;
 }
 async function saveActivityPoints(row,snapshot,scope){
  if(scope!==itineraryAutoPlaceScope()||connectionUnavailable()||isLondonTrip())throw Error('El viatge o la connexió han canviat.');
  const {data,error}=await db.from(row._placeSource==='activity'?'trip_activities':'trip_itinerary_items').update({location_points:snapshot})
-  .eq('trip_id',trip.id).eq('id',row.id).eq('updated_at',row.updated_at).select('id').maybeSingle();
+  .eq('trip_id',trip.id).eq('id',row.id).eq('updated_at',row.updated_at).select('id,location_points,updated_at').maybeSingle();
  if(error||!data)throw Error('L’activitat ha canviat o no s’ha pogut desar. Actualitza el planning abans de tornar-ho a provar.');
+ const api=(await itineraryPointContext())?.api;
+ if(scope!==itineraryAutoPlaceScope()||!api?.samePointSnapshot(data.location_points,snapshot))throw Error('La ubicació no ha quedat desada com s’havia confirmat. Recarrega el planning i revisa-la abans de repetir.');
 }
 async function proposeActivityPoints(day){
  if(!trip||!session||isLondonTrip()||connectionUnavailable()||day==='pending')return;
@@ -6865,7 +6875,8 @@ async function renderAgendaRoutes(items,day){
    if(!result.error)rentals=result.data||[];
   }catch(_){}
   if(!current())return;
-  const projected=items.map(item=>{const row=tripHomeSourceRow(item);return {...item,isTransport:(item.sourceType==='activity'&&isLocalTransportActivity(row))||(item.sourceType==='manual'&&/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(String(row?.title||''))),hasRoutePlace:!!(row?.location_points||row?.location_name||row?.venue_name||row?.address||(Number.isFinite(row?.latitude)&&Number.isFinite(row?.longitude))),locationPoints:Array.isArray(row?.location_points?.points)?row.location_points.points:null}});
+  const pointsApi=await loadTravelBookModule('itinerary-place-points.mjs');if(!current())return;
+  const projected=items.map(item=>{const row=tripHomeSourceRow(item);return {...item,isTransport:(item.sourceType==='activity'&&isLocalTransportActivity(row))||(item.sourceType==='manual'&&/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(String(row?.title||''))),hasRoutePlace:!!(row?.location_points||row?.location_name||row?.venue_name||row?.address||(Number.isFinite(row?.latitude)&&Number.isFinite(row?.longitude))),locationPoints:row?pointsApi.activityGeographicPoints(row):null}});
   agendaRouteModule.mountAgendaRoutes({root:$('genericItineraryDays'),items:projected,tripId,userId,generation,day,current,contextKey:JSON.stringify(tripStopRows),online:()=>!connectionUnavailable(),preserveViewport:preserveActivityPointViewport,
    invoke:async body=>{const {data,error}=await db.functions.invoke('itinerary-route',{body});if(data)return data;if(error?.context){try{return await error.context.json()}catch(_){}}return {error:'provider_unavailable'}},
    rentals,timeZone:trip.time_zone||'UTC',
@@ -7660,8 +7671,16 @@ $('manualItineraryForm').onsubmit=async event=>{
   const payload={title,timing_kind:kind,local_date:localDate,starts_at:startsAt,ends_at:endsAt,approximate_start_time:approximateStartTime,approximate_end_time:approximateEndTime,time_zone:timeZone,daypart,location_name:optionalText($('manualItineraryLocation').value),address:optionalText($('manualItineraryAddress').value),city:optionalText($('manualItineraryCity').value),notes:optionalText($('manualItineraryNotes').value),status:$('manualItineraryStatus').value,is_fixed:$('manualItineraryFixed').checked,is_optional:$('manualItineraryOptional').checked,sort_order:Number(form.dataset.sortOrder||0)};
   manualItinerarySubmitting=true;$('saveManualItinerary').disabled=true;msg('genericItineraryMessage',editingId?'Desant els canvis…':'Afegint al planning…');
   try{
-    if(editingId){if(!originalUpdatedAt)throw new Error('No s’ha pogut verificar la versió de l’element. Torna a obrir-lo abans de desar.');const {data,error}=await db.from('trip_itinerary_items').update(payload).eq('trip_id',tripId).eq('id',editingId).eq('updated_at',originalUpdatedAt).select('*').maybeSingle();if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return;if(error)throw error;if(!data){await recoverManualItineraryConflict(editingId,tripId,generation);return}}
-    else{const {error}=await db.from('trip_itinerary_items').insert({...payload,trip_id:tripId,created_by:userId});if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return;if(error)throw error}
+    if(manualItinerarySelectedPlace){
+      const api=await loadTravelBookModule('itinerary-place-points.mjs');
+      if(!api.validPointPlace(manualItinerarySelectedPlace)||payload.location_name!==manualItinerarySelectedPlace.canonical_name)throw Error('La selecció del lloc ha canviat. Torna a triar-lo o conserva el nom confirmat.');
+      const previous=editingId?api.activityGeographicPoints(manualItineraryRows.find(r=>r.id===editingId)||{}):null;
+      payload.location_points=api.pointSnapshot(payload,[{id:previous?.[0]?.id||'point-0',query:manualItinerarySelectedPlace.canonical_name,place:manualItinerarySelectedPlace},...(previous?.slice(1)||[])]);
+      payload.resolved_location=null;
+    }
+    if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return;
+    if(editingId){if(!originalUpdatedAt)throw new Error('No s’ha pogut verificar la versió de l’element. Torna a obrir-lo abans de desar.');const {data,error}=await db.from('trip_itinerary_items').update(payload).eq('trip_id',tripId).eq('id',editingId).eq('updated_at',originalUpdatedAt).select('*').maybeSingle();if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return;if(error)throw error;if(!data){await recoverManualItineraryConflict(editingId,tripId,generation);return}if(payload.location_points){const api=await loadTravelBookModule('itinerary-place-points.mjs');if(!api.samePointSnapshot(data.location_points,payload.location_points))throw Error('La ubicació no ha quedat desada. Recarrega i revisa el planning.');}}
+    else{const {data,error}=await db.from('trip_itinerary_items').insert({...payload,trip_id:tripId,created_by:userId}).select('id,location_points').single();if(payload.location_points&&!error){const api=await loadTravelBookModule('itinerary-place-points.mjs');if(!api.samePointSnapshot(data?.location_points,payload.location_points))throw Error('La ubicació no ha quedat desada. Recarrega i revisa el planning.');}if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return;if(error)throw error}
     clearManualItineraryDraft(tripId,userId);resetManualItineraryFormUi();await loadManualItineraryItems(true);if(!itineraryRequestIsCurrent(tripId,generation,userId))return;msg('genericItineraryMessage',editingId?'Planning actualitzat.':'Element afegit al planning.');
   }catch(error){if(itineraryRequestIsCurrent(tripId,generation,userId)&&!isLondonTrip())msg('genericItineraryMessage',error?.message||'No s’ha pogut desar l’element.',true)}finally{if(itineraryRequestIsCurrent(tripId,generation,userId)&&!isLondonTrip()){manualItinerarySubmitting=false;$('saveManualItinerary').disabled=false}}
 };

@@ -28,7 +28,7 @@ function harness(providerResult){
  let resolveProvider, saveCalls=0;
  const db={functions:{invoke:()=>new Promise(resolve=>{resolveProvider=resolve})}};
  if(providerResult!==undefined)db.functions.invoke=async()=>providerResult;
- const scope={
+ const scope={structuredClone,
   $,trip:{id:'trip-1',name:'Riga'},session:{user:{id:'user-1'}},tripLoadGeneration:4,
   isLondonTrip:()=>false,connectionUnavailable:()=>false,
   itineraryRequestIsCurrent:()=>true,db,
@@ -36,7 +36,7 @@ function harness(providerResult){
   document:{createElement:()=>({type:'',className:'',textContent:'',onclick:null})}
  };
  const context=vm.createContext(scope);
- vm.runInContext('let manualItineraryPlaceQueryEpoch=0;'+source,context);
+ vm.runInContext('let manualItineraryPlaceQueryEpoch=0,manualItinerarySelectedPlace=null;'+source,context);
  return {$,context,resolve:payload=>resolveProvider(payload),get saved(){return saveCalls}};
 }
 
@@ -79,6 +79,7 @@ test('A2.10: provider suggestions remain uncommitted until user selects and save
  assert.equal(h.$('manualItineraryCity').value,'','Region must not silently fill city');
  assert.equal(h.$('manualItineraryAddress').value,'','No fabricated address');
  assert.equal(h.saved,1,'Only existing draft save, not database write');
+ assert.equal(vm.runInContext('manualItinerarySelectedPlace.canonical_name',h.context),'Castell de Riga','selected provider identity is retained for save');
  assert.equal(h.$('manualItineraryPlaceResults').children.length,0);
 });
 

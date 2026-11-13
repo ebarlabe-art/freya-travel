@@ -1,4 +1,4 @@
-import {MAX_POINTS,extractActivityPoints,savedActivityPoints,pointSnapshot,pointPlace,pointMapUrl,normalizePointName,matchingPointCandidate} from './itinerary-place-points.mjs';
+import {MAX_POINTS,activityGeographicPoints,extractActivityPoints,savedActivityPoints,pointSnapshot,pointPlace,pointMapUrl,normalizePointName,matchingPointCandidate} from './itinerary-place-points.mjs';
 const el=(tag,text)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node};
 // This is display-only: never change provider matches, the selected snapshot or auto-resolution.
 // Only collapse equal names in the same city/country at almost the same coordinates.
@@ -57,7 +57,7 @@ const candidateStyles=`
 export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,current=()=>true}){
  document.querySelectorAll('[data-activity-point-editor]').forEach(node=>node.dispose?.());
  const root=el('section');root.dataset.activityPointEditor='';root.className='activity-point-editor';root.setAttribute('aria-label','Punts de '+row.title);
- const points=structuredClone(savedActivityPoints(row)||extractActivityPoints(row));
+ const points=structuredClone(activityGeographicPoints(row)||extractActivityPoints(row));
  const heading=el('h4','Punts de l’activitat'),help=el('p','Tria un punt per revisar-lo. Els canvis només es desen quan ho confirmes.');
  const list=el('div'),status=el('p');status.setAttribute('role','status');
  const add=el('button','Afegeix un punt'),submit=el('button','Desa els punts'),close=el('button','Cancel·la');
