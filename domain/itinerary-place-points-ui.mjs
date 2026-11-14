@@ -1,4 +1,4 @@
-import {MAX_POINTS,activityGeographicPoints,extractActivityPoints,savedActivityPoints,pointSnapshot,pointPlace,pointMapUrl,normalizePointName,matchingPointCandidate} from './itinerary-place-points.mjs';
+import {validPointPlace,MAX_POINTS,activityGeographicPoints,extractActivityPoints,savedActivityPoints,pointSnapshot,pointPlace,pointMapUrl,normalizePointName,matchingPointCandidate} from './itinerary-place-points.mjs';
 const el=(tag,text)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node};
 // This is display-only: never change provider matches, the selected snapshot or auto-resolution.
 // Only collapse equal names in the same city/country at almost the same coordinates.
@@ -26,6 +26,28 @@ export function pointCandidateDescription(p){
  const local=segments.find(x=>normalizePointName(x)!==name);
  const where=local||p.locality||p.country_code||'';
  return [where,p.coordinate_role==='representative_point'?'Zona aproximada':'Lloc exacte'].filter(Boolean).join(' · ');
+}
+
+// Describe the verified server snapshot, never the search results or local draft.
+export function pointSaveMessage(snapshot){
+ const points=snapshot.points,confirmed=points.filter(p=>p.status!=='pending'&&validPointPlace(p.place)).length;
+ if(!points.length)return 'Canvis desats. No hi ha ubicacions seleccionades.';
+ if(confirmed===points.length)return 'Canvis desats. Ubicacions confirmades al servidor: '+confirmed+'.';
+ return 'Canvis desats. Ubicacions confirmades: '+confirmed+'. Punts pendents de confirmar: '+(points.length-confirmed)+'. La Guia només pot utilitzar les ubicacions confirmades.';
+}
+
+// Search text is a draft; only selecting a candidate replaces confirmed identity.
+export function editPointSearch(point,state,value){
+ state.searchQuery=value;
+ if(!point.place)point.query=value;
+ state.candidates=[];state.empty=false;state.error=false;
+ state.message=point.place?'Cerca modificada. Es conserva la ubicació seleccionada fins que triïs un altre resultat.':'Nom modificat. Cerca i selecciona el lloc per confirmar-ne la ubicació.';
+}
+export function selectPointCandidate(point,state,candidate){
+ point.place=pointPlace(candidate);point.query=point.place.canonical_name;
+ point.status=point.place.coordinate_role==='exact_location'?'resolved':'approximate';
+ state.searchQuery=point.query;state.candidates=[];state.empty=false;state.error=false;
+ state.message='Ubicació seleccionada, encara no confirmada al servidor. Prem «Desa els punts».';
 }
 const candidateStyles=`
  .activity-point-editor{font-size:14px;line-height:1.4}
@@ -95,18 +117,18 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
    const state=stateFor(point),box=el('fieldset'),legend=el('legend');
    const toggle=el('button');toggle.type='button';toggle.className='point-toggle';toggle.dataset.pointToggle='';toggle.setAttribute('aria-label','Edita el punt '+(i+1));toggle.setAttribute('aria-expanded',String(selectedId===point.id));toggle.disabled=saving;
    const title=el('strong'),badge=el('small');
-   const updateSummary=()=>{title.textContent=(i+1)+'. '+(point.place?.canonical_name||point.query||'Punt nou');badge.textContent=state.loading?'Cercant…':state.error?'Cerca no disponible':state.empty?'Sense coincidències':state.candidates.length?'Tria una coincidència':point.place?(point.status==='approximate'?'Zona aproximada':'Ubicació verificada'):'Pendent de verificar'};
+   const updateSummary=()=>{title.textContent=(i+1)+'. '+(point.place?.canonical_name||point.query||'Punt nou');badge.textContent=state.loading?'Cercant…':state.error?'Cerca no disponible':state.empty?'Sense coincidències':state.candidates.length?'Tria una coincidència':point.place?(point.status==='approximate'?'Zona aproximada seleccionada':'Ubicació seleccionada'):'Pendent de verificar'};
    updateSummary();toggle.append(title,badge);legend.append(toggle);box.append(legend);
    toggle.onclick=()=>{if(!active()||saving)return;selectedId=selectedId===point.id?null:point.id;render()};
    const body=el('div');body.dataset.pointBody='';body.hidden=selectedId!==point.id;box.append(body);
-   const input=el('input');input.value=point.query;input.maxLength=500;input.setAttribute('aria-label','Nom del punt '+(i+1));input.disabled=busy;
+   const input=el('input');input.value=state.searchQuery??point.query;input.maxLength=500;input.setAttribute('aria-label','Nom del punt '+(i+1));input.disabled=busy;
    const hint=el('small','Pots provar el nom local o una variant en una altra llengua. Revisa sempre el lloc retornat.');
    const feedback=el('p');feedback.dataset.pointFeedback='';feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');feedback.textContent=state.message;feedback.dataset.error=String(state.error);
    const results=el('div');results.dataset.pointResults='';
-   input.oninput=()=>{point.query=input.value;point.place=null;point.status='pending';state.candidates=[];state.empty=false;state.error=false;state.message='Nom modificat. Cerca i confirma el lloc abans de desar-lo com a verificat.';results.replaceChildren();body.querySelector('[data-point-place-info]')?.remove();feedback.textContent=state.message;feedback.dataset.error='false';updateSummary()};
+   input.oninput=()=>{editPointSearch(point,state,input.value);results.replaceChildren();feedback.textContent=state.message;feedback.dataset.error='false';updateSummary()};
    const find=action('Cerca aquest punt',async()=>{
     if(!active()||busy)return;
-    const query=point.query.trim();
+    const query=(state.searchQuery??point.query).trim();
     if(!query){state.message='Escriu un nom de lloc.';state.error=true;render();return}
     const request=++serial;busy=true;state.loading=true;state.error=false;state.empty=false;state.candidates=[];state.message='Cercant el punt…';render();
     try{
@@ -125,7 +147,7 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
    // Explicit selection adopts the provider identity, including aliases such as Luchon.
    // The activity title and original imported fields remain unchanged.
    for(const p of state.candidates){
-    const button=action('',()=>{if(!active()||busy)return;point.place=p;point.query=p.canonical_name;point.status=p.coordinate_role==='exact_location'?'resolved':'approximate';state.candidates=[];state.message='Punt seleccionat. Prem «Desa els punts» per confirmar els canvis.';state.error=false;render()});
+    const button=action('',()=>{if(!active()||busy)return;selectPointCandidate(point,state,p);render()});
     button.className='point-place-option';button.append(el('strong',p.canonical_name),el('small',pointCandidateDescription(p)));results.append(button);
    }
    if(point.place){
@@ -144,6 +166,7 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
  close.onclick=()=>{if(!saving)root.dispose()};
  submit.onclick=async()=>{
   if(busy||!active())return;
+  if(points.some(p=>stateFor(p).candidates.length)){status.textContent='Tria una coincidència abans de desar. La cerca no confirma la ubicació.';return}
   root.syncRow(readRow());if(!latest||latest.updated_at!==row.updated_at)return;
   try{const snapshot=pointSnapshot(row,points);saving=true;busy=true;render();status.textContent='Desant els punts…';await save(snapshot,row);if(active())root.dispose()}
   catch(e){if(active())status.textContent=e.message||'No s’han pogut desar. Revisa el planning abans de repetir.'}
