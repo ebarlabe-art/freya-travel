@@ -8,6 +8,7 @@ import {pathToFileURL} from 'node:url';
 import {itineraryPdfTranscriptToProposal} from '../supabase/functions/import-itinerary/transcript.mjs';
 import {normalizeGeoapify} from '../supabase/functions/place-resolution/providers/geoapify.mjs';
 import {createCulturalGuideHandler} from '../supabase/functions/cultural-guide/handler.mjs';
+import {geographyDatabase} from './fixtures/itinerary-geography-db.mjs';
 import {culturalArticle,proposedSections} from './fixtures/cultural-guide.mjs';
 const pw=await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href),engine=process.env.CULTURE_ENGINE||'chromium',dist=resolve('dist');
 const id=n=>'22300000-0000-4000-8000-'+String(n).padStart(12,'0');
@@ -17,19 +18,28 @@ const ambiguous={...places[0],provider_place_id:'synthetic-distant-homonym',lati
 const transcript={complete:true,warnings:[],pages:[{page:1,text:'07/11/2026 · Zona horària: Europe/Madrid\n09:00–10:00 '+titles[0]+'\n11:00–12:00 '+titles[1]+'\n15:00–16:00 '+titles[2]+'\n17:00–18:00 '+titles[3]}]};
 const proposal=itineraryPdfTranscriptToProposal(transcript,{kind:'document',document_id:id(3),mime_type:'application/pdf'});
 const rows=[],writes=[],searches=[],calls=[],documents=[],uploads=[];
+const geoDb=process.env.PGLITE_MODULE?await geographyDatabase({module:process.env.PGLITE_MODULE,tripId:id(1),userId:id(2)}):null;
+let seeded=false;
 const handler=createCulturalGuideHandler({authenticate:async()=>id(2),readItem:async(_auth,trip,type,item)=>rows.find(r=>r.trip_id===trip&&r.id===item),search:async p=>[culturalArticle(p,places.findIndex(x=>x.provider_place_id===p.provider_place_id))],readArticle:async(_lang,pageid)=>culturalArticle(places[pageid-100],pageid-100),generate:async payload=>{calls.push(payload);return proposedSections({title:payload.source_title,extract:payload.source_text})}});
 const server=createServer(async(req,res)=>{const path=resolve(dist,new URL(req.url,'http://local').pathname.replace(/^\/freya-travel\//,'')||'index.html');if(!path.startsWith(dist+sep)){res.writeHead(404).end();return}try{res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css'})[extname(path)]||'application/octet-stream');res.end(await readFile(path))}catch{res.writeHead(404).end()}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${server.address().port}/freya-travel/`;
-const browser=await pw[engine].launch({headless:true});let pageForDebug;
+const browser=await pw[engine].launch({headless:true,...(process.env.IMPORT_BROWSER_PATH?{executablePath:process.env.IMPORT_BROWSER_PATH}:{})});let pageForDebug;
 try{
  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
  await ctx.route('**/*',r=>new URL(r.request().url()).origin===new URL(url).origin?r.continue():r.abort());await ctx.routeWebSocket('**/*',s=>s.close());
  const page=await ctx.newPage(),errors=[];pageForDebug=page;page.setDefaultTimeout(20000);page.on('pageerror',e=>errors.push(e.message));
- await page.exposeFunction('fixtureRead',table=>table==='trip_itinerary_items'?rows:table==='travel_documents'?documents:table==='trip_stops'?[{trip_id:id(1),canonical_name:'Arties',country_code:'ES',time_zone:'Europe/Madrid',position:1}]:[]);
+ await page.exposeFunction('fixtureRead',async table=>table==='trip_itinerary_items'?(geoDb?await geoDb.rows():rows):table==='travel_documents'?documents:table==='trip_stops'?[{trip_id:id(1),canonical_name:'Arties',country_code:'ES',time_zone:'Europe/Madrid',position:1}]:[]);
  await page.exposeFunction('fixtureDocument',data=>{const row={...data,id:id(3),created_at:'2026-11-01T00:00:00Z'};documents.push(row);return {data:row,error:null}});
  await page.exposeFunction('fixtureUpload',({path,size})=>{uploads.push({path,size});return {error:null}});
- await page.exposeFunction('fixtureUpdate',({patch,filters})=>{const row=rows.find(r=>filters.every(([k,v])=>(r[k]??null)===v));assert.ok(row,'optimistic update matches');assert.deepEqual(Object.keys(patch),['location_points']);writes.push({id:row.id,patch});Object.assign(row,patch,{updated_at:new Date(Date.now()+writes.length).toISOString()});return {data:{id:row.id},error:null}});
- await page.exposeFunction('fixtureRpc',(name,body)=>{if(name==='read_itinerary_reconciliation')return {data:structuredClone(rows),error:null};if(name==='commit_itinerary_reconciliation'){assert.equal(rows.length,0);for(const c of body.p_changes){assert.equal(c.action,'add');rows.push({...c.fields,id:c.id,trip_id:body.p_trip_id,created_by:id(2),status:'planned',is_fixed:false,location_points:null,resolved_location:null,created_at:'2026-11-01T00:00:00Z',updated_at:'2026-11-01T00:00:00Z'})}writes.push({import:body});return {data:{operation_id:body.p_operation_id,added:rows.length,updated:0,retired:0},error:null}}return {data:[],error:null}});
+ await page.exposeFunction('fixtureUpdate',async({patch,filters})=>{
+  if(geoDb&&!seeded){const actual=await geoDb.insert(rows);rows.splice(0,rows.length,...actual);seeded=true;}
+  const row=rows.find(r=>filters.every(([k,v])=>(r[k]??null)===v));
+  if(!row)return {data:null,error:null};
+  writes.push({id:row.id,patch});
+  if(geoDb){const saved=await geoDb.patch(patch,filters);const actual=await geoDb.rows();rows.splice(0,rows.length,...actual);return {data:saved,error:null};}
+  Object.assign(row,patch,{updated_at:new Date(Date.now()+writes.length).toISOString()});return {data:structuredClone(row),error:null};
+ });
+ await page.exposeFunction('fixtureRpc',async(name,body)=>{if(name==='read_itinerary_reconciliation')return {data:structuredClone(rows),error:null};if(name==='commit_itinerary_reconciliation'){assert.equal(rows.length,0);for(const c of body.p_changes){assert.equal(c.action,'add');rows.push({...c.fields,id:c.id,trip_id:body.p_trip_id,created_by:id(2),status:'planned',is_fixed:false,location_points:null,resolved_location:null,created_at:'2026-11-01T00:00:00Z',updated_at:'2026-11-01T00:00:00Z'})}writes.push({import:body});if(geoDb){const actual=await geoDb.insert(rows);rows.splice(0,rows.length,...actual);seeded=true;}return {data:{operation_id:body.p_operation_id,added:rows.length,updated:0,retired:0},error:null}}return {data:[],error:null}});
  await page.exposeFunction('fixtureInvoke',async(name,body)=>{
   if(name==='import-itinerary')return {data:{proposal:{...proposal,source:{...proposal.source,document_id:body.document_id}}},error:null};
   if(name==='place-resolution'){searches.push(body);const p=body.text==='Luchon'?places[1]:body.text.includes('Sant Bertrand du Conninges')?places[3]:places.find(p=>body.text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').startsWith(p.canonical_name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')));return {data:{candidates:(!p||body.country_code&&body.country_code!==p.country_code?[]:p===places[0]?[p,ambiguous]:[p]).map(place=>({place}))},error:null}}
@@ -37,7 +47,7 @@ try{
   return {data:{error:'no_match'},error:null};
  });
  await page.goto(url);await page.locator('#loginCard').waitFor({state:'visible'});
- await page.evaluate(async({tripId,userId})=>{
+ const install=async({tripId,userId})=>{
   db.rpc=(name,body)=>window.fixtureRpc(name,body);
   db.from=table=>{let patch=null,insert=null,filters=[];const execute=async()=>insert?window.fixtureDocument(insert):patch?window.fixtureUpdate({patch,filters}):{data:(await window.fixtureRead(table)).filter(r=>filters.every(([k,v])=>r[k]===v)),error:null};const q=new Proxy({}, {get:(_,key)=>{if(key==='then')return (yes,no)=>execute().then(yes,no);if(key==='insert'&&table==='travel_documents')return value=>{insert=value;return q};if(key==='single')return execute;if(key==='update')return value=>{patch=value;return q};if(key==='eq'||key==='is')return (k,v)=>{filters.push([k,v]);return q};if(key==='maybeSingle')return async()=>{const r=await execute();return {...r,data:Array.isArray(r.data)?r.data[0]||null:r.data}};if(['insert','upsert','delete'].includes(key))throw Error('Unexpected mutation '+table);return ()=>q}});return q};
   Object.defineProperty(db,'storage',{configurable:true,value:{from:()=>({upload:(path,file)=>window.fixtureUpload({path,size:file.size})})}});
@@ -47,7 +57,8 @@ try{
   tripStopRows=(await db.from('trip_stops').select('*').eq('trip_id',trip.id)).data;
   await ensureTripAgenda(true);setAppView('itineraryView');configureItineraryContent();
   let n=document.getElementById('itineraryView');while(n){n.classList.remove('hidden');n=n.parentElement}document.getElementById('loginCard').classList.add('hidden');
- },{tripId:id(1),userId:id(2)});
+ };
+ await page.evaluate(install,{tripId:id(1),userId:id(2)});
  await page.locator('#openItineraryImport').tap();await page.locator('#itineraryImportUploadFile').setInputFiles('scripts/fixtures/aran/synthetic-cultural-itinerary.pdf');await page.locator('#itineraryImportConsent').check();await page.locator('#itineraryImportAnalyze').tap();
  await page.waitForFunction(()=>itineraryImportState?.reconciliation&&!itineraryImportState.preparing&&!itineraryImportState.planningBusy&&!itineraryImportState.busy);
  assert.equal(writes.length,0);assert.equal(await page.evaluate(()=>itineraryImportState.review.items.length),4);
@@ -73,5 +84,29 @@ try{
  assert.ok(searches.some(s=>s.text===titles[0]&&!s.country_code));
  for(const row of rows){const original=originals.find(r=>r.id===row.id);for(const k of Object.keys(original).filter(k=>!['location_points','updated_at'].includes(k)))assert.deepEqual(row[k],original[k],k)}
  assert.equal(writes.filter(w=>w.patch?.location_points?.points.some(p=>p.place)).length,4);assert.equal(calls.filter(c=>c.action==='prepare').length,4);assert.deepEqual(errors,[]);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
- console.log(`PASS Aran cultural flow ${engine}: PDF upload/review/confirmed import → pending cross-border and ambiguous places → guide verification action → explicit geography save → automatic guide preparation for Saint-Bertrand, Bagnères-de-Luchon, Carlac and a lunch-town alias; original fields preserved; 390px; no external traffic.`);
-}catch(e){console.error(await pageForDebug?.evaluate(()=>({editor:!!document.querySelector('[data-activity-point-editor]'),view:visibleAppView(),message:document.getElementById('genericItineraryMessage')?.textContent,html:document.getElementById('genericItineraryContent')?.innerText.slice(0,1000),status:document.getElementById('itineraryImportStatus')?.textContent,save:document.getElementById('itineraryImportSaveStatus')?.textContent,state:itineraryImportState&&{busy:itineraryImportState.busy,preparing:itineraryImportState.preparing,reconciliation:!!itineraryImportState.reconciliation,items:itineraryImportState.review?.items}})));throw e}finally{await browser.close();await new Promise(r=>server.close(r))}
+
+ // The ordinary manual form must persist the provider identity, not just a name.
+ const lunch=rows.find(r=>r.title===titles[3]);
+ await page.evaluate(sourceId=>openManualItineraryForm(sourceId),lunch.id);
+ await page.locator('#manualItineraryPlaceQuery').fill('Luchon');
+ await page.locator('#manualItineraryPlaceSearch').tap();
+ await page.locator('#manualItineraryPlaceResults button').first().tap();
+ await page.locator('#manualItineraryTitle').fill('Dinar i visita al patrimoni de Luchon');
+ await page.locator('#saveManualItinerary').tap();
+ await page.waitForFunction(()=>document.getElementById('manualItineraryFormCard').classList.contains('hidden'));
+ assert.equal(rows.find(r=>r.id===lunch.id).location_points.points[0].place.canonical_name,'Bagnères-de-Luchon');
+ // Editing prose through an older client must not clear confirmed geography.
+ if(geoDb){
+  const current=rows.find(r=>r.id===lunch.id);
+  await geoDb.patch({title:'Dinar a Luchon · text revisat',city:'Context editorial diferent'},[['id',lunch.id],['trip_id',id(1)],['updated_at',current.updated_at]]);
+  const diskRows=await geoDb.reopen();rows.splice(0,rows.length,...diskRows);
+  assert.equal(rows.find(r=>r.id===lunch.id).location_points.points[0].place.canonical_name,'Bagnères-de-Luchon');
+ }
+ await page.reload();await page.locator('#loginCard').waitFor({state:'visible'});await page.evaluate(install,{tripId:id(1),userId:id(2)});
+ const restored=page.locator(`[data-itinerary-key="manual:${lunch.id}"]`);
+ await restored.locator('a[href*="maps/search"]').first().waitFor({state:'visible'});
+ await restored.locator('[data-cultural-guide]').tap();await page.locator('[data-guide-text="history"]').waitFor();
+ assert.ok((await page.locator('[data-guide-text="history"]').innerText()).includes('Bagnères-de-Luchon'));
+ assert.deepEqual(errors,[]);
+ console.log(`PASS Aran cultural flow ${engine}: PDF upload/review/confirmed import → pending cross-border and ambiguous places → guide verification action → explicit geography save → automatic guide preparation for Saint-Bertrand, Bagnères-de-Luchon, Carlac and a lunch-town alias; original fields preserved; manual form identity save, reload/map/guide reuse${geoDb?', real local Postgres triggers/RLS and database close/reopen':''}; 390px; no external traffic.`);
+}catch(e){console.error(await pageForDebug?.evaluate(()=>({editor:!!document.querySelector('[data-activity-point-editor]'),view:visibleAppView(),message:document.getElementById('genericItineraryMessage')?.textContent,html:document.getElementById('genericItineraryContent')?.innerText.slice(0,1000),status:document.getElementById('itineraryImportStatus')?.textContent,save:document.getElementById('itineraryImportSaveStatus')?.textContent,state:itineraryImportState&&{busy:itineraryImportState.busy,preparing:itineraryImportState.preparing,reconciliation:!!itineraryImportState.reconciliation,items:itineraryImportState.review?.items}})));throw e}finally{await browser.close();await new Promise(r=>server.close(r));if(geoDb)await geoDb.close()}

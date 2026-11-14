@@ -55,7 +55,7 @@ try{
   const row=allRows.find(row=>filters.every(([key,value])=>(row[key]??null)===value));
   if(!row)return {data:null,error:null};
   writes.push({id:row.id,patch});Object.assign(row,patch,{updated_at:new Date(Date.now()+writes.length).toISOString()});
-  return {data:{id:row.id},error:null};
+  return {data:structuredClone(row),error:null};
  });
  await page.exposeFunction('fixtureInvoke',async(name,body)=>{
   if(name==='itinerary-route')return {data:await(await handler(new Request('https://synthetic',{method:'POST',headers:{authorization:'Bearer synthetic'},body:JSON.stringify(body)}))).json(),error:null};

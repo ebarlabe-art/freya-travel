@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {pointSnapshot} from '../domain/itinerary-place-points.mjs';
 if(!process.env.PGLITE_MODULE)throw Error('PGLITE_MODULE required');
-const {PGlite}=await import(pathToFileURL(process.env.PGLITE_MODULE).href),db=new PGlite();
+const {PGlite}=await import(pathToFileURL(process.env.PGLITE_MODULE).href),db=new PGlite(process.env.PGLITE_DATA_DIR||undefined);
 const id=n=>'13800000-0000-4000-8000-'+String(n).padStart(12,'0');
 const owner=id(1),member=id(2),outsider=id(3),trip=id(4);
 const migration=name=>readFile(new URL('../supabase/migrations/'+name,import.meta.url),'utf8');
@@ -57,5 +57,32 @@ try{
  assert.equal((await db.query('select location_points from trip_itinerary_items')).rows[0].location_points,null);
  assert.equal((await db.query('select location_points from trip_activities')).rows[0].location_points,null);
  assert.deepEqual((await db.query('select starts_at from trip_itinerary_items')).rows[0].starts_at,before.starts_at);
- console.log('PASS actual baselines + additive points migration: no backfill, fields preserved, valid/invalid points, owner/member/outsider/anon RLS, stale editor conflict, reorder/remove, old frontend invalidation. No remote state verified.');
+
+ await db.exec('reset role');
+ await db.exec(await migration('20261113124532_preserve_confirmed_activity_geography.sql'));
+ await db.exec('set role authenticated');
+ const confirmedPlace={...place,canonical_name:'Saint-Bertrand-de-Comminges',country_code:'FR',locality:'Saint-Bertrand-de-Comminges',kind:'city',provider_place_id:'synthetic-town'};
+ for(const table of ['trip_itinerary_items','trip_activities']){
+  const row=(await db.query('select * from '+table)).rows[0];
+  const current=pointSnapshot(row,[{id:'town',query:'Sant Bertrand',place:confirmedPlace},{id:'pending',query:'Chez Simone',place:null}]);
+  await db.query('update '+table+' set location_points=$1 where id=$2',[current,row.id]);
+  const changed=(await db.query("update "+table+" set title='Dinar al poble i visita al patrimoni',city='Text editorial corregit' where id=$1 returning *",[row.id])).rows[0];
+  assert.equal(changed.location_points.points.length,1,'confirmed identity survives; stale pending query is not promoted');
+  assert.equal(changed.location_points.points[0].place.provider_place_id,'synthetic-town');
+  assert.deepEqual(changed.location_points.input,pointSnapshot(changed,[]).input);
+  for(const k of Object.keys(row).filter(k=>!['title','city','location_points','updated_at','updated_by'].includes(k)))assert.deepEqual(changed[k],row[k],k+' preserved after descriptive edit');
+  const legacy={...pointSnapshot(changed,[]).input,place:{...confirmedPlace,coordinate_role:'exact_location'}};
+  await db.query('update '+table+' set resolved_location=$1 where id=$2',[legacy,row.id]);
+  const renamed=(await db.query("update "+table+" set title='Nou text de la mateixa visita' where id=$1 returning *",[row.id])).rows[0];
+  assert.equal(renamed.resolved_location.place.provider_place_id,'synthetic-town','legacy snapshot survives old client title update');
+  assert.equal(renamed.resolved_location.title,renamed.title);
+  const empty=pointSnapshot(renamed,[]);await db.query('update '+table+' set location_points=$1 where id=$2',[empty,row.id]);
+  const removed=(await db.query("update "+table+" set title='Text posterior a eliminar els punts' where id=$1 returning *",[row.id])).rows[0];
+  assert.deepEqual(removed.location_points.points,[],'explicit removal survives edit');
+  await db.query('update '+table+' set location_points=null,resolved_location=null where id=$1',[row.id]);
+  const cleared=(await db.query('select * from '+table+' where id=$1',[row.id])).rows[0];assert.equal(cleared.location_points,null);assert.equal(cleared.resolved_location,null);
+ }
+ await db.exec('reset role;set "test.user"=\''+outsider+'\';set role authenticated;');
+ for(const table of ['trip_itinerary_items','trip_activities'])assert.equal((await db.query('update '+table+' set location_points=null returning id')).rows.length,0,'new contract keeps RLS');
+ console.log('PASS actual baselines + additive points migration: no backfill, fields preserved, valid/invalid points, owner/member/outsider/anon RLS, stale editor conflict, reorder/remove, baseline invalidation reproduced, then #228 preservation of confirmed/legacy identities, pending-query invalidation, explicit removal and RLS verified. No remote state verified.');
 }finally{await db.close()}

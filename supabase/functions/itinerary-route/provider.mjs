@@ -1,4 +1,4 @@
-import {savedActivityPoints,validPointPlace} from '../../../domain/itinerary-place-points.mjs';
+import {activityGeographicPoints,confirmedLegacyPlace,validPointPlace} from '../../../domain/itinerary-place-points.mjs';
 const clean=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 export function destinationContext(row,stops){
  const city=row.city||row.resolved_location?.place?.locality;
@@ -9,12 +9,6 @@ export function destinationContext(row,stops){
 }
 // Explicitly confirmed geographic identity is independent of the trip base city.
 // A town centre is a representative destination; forests still require an access point.
-function confirmedLegacyPlace(row){
- const saved=row.resolved_location,p=saved?.place;
- if(!validPointPlace(p)||!['title','address','city','location_name'].every(field=>
-  (saved?.[field]??null)===(field==='location_name'?(row.location_name||row.venue_name||null):(row[field]??null))))return null;
- return p;
-}
 function savedRoutePoint(place){
  if(!validPointPlace(place))return {error:'missing_place'};
  if(place.coordinate_role==='representative_point'&&!['city','town','village','hamlet'].includes(place.kind)&&
@@ -45,12 +39,12 @@ export function routeProvider({key,fetcher=fetch,timeoutMs=8000,now=Date.now,spa
  return {
   async resolve(row,context,choice,endpoint='first'){
    if(row.location_points!==null&&row.location_points!==undefined){
-    const points=savedActivityPoints(row),p=(endpoint==='last'?points?.at(-1):points?.[0])?.place;
+    const points=activityGeographicPoints(row),p=(endpoint==='last'?points?.at(-1):points?.[0])?.place;
     if(validPointPlace(p))return savedRoutePoint(p);
     // A pending auto-extracted point must not hide a separately confirmed
     // legacy location. Never use a stale fingerprint or an unverified guess.
     const legacy=confirmedLegacyPlace(row);
-    return legacy?savedRoutePoint(legacy):{error:'missing_place'};
+    return points?.length===0?{error:'missing_place'}:legacy?savedRoutePoint(legacy):{error:'missing_place'};
    }
    if(!choice&&Number.isFinite(row.latitude)&&Math.abs(row.latitude)<=90&&Number.isFinite(row.longitude)&&Math.abs(row.longitude)<=180){
     return {point:{id:'coordinates:'+row.latitude+':'+row.longitude,label:row.venue_name||row.location_name||row.title||row.address,lat:row.latitude,lon:row.longitude}};

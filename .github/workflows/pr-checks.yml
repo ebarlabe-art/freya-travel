@@ -122,9 +122,12 @@ jobs:
         if: matrix.engine == 'webkit'
         timeout-minutes: 5
         run: PWA_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-pwa-bootstrap-browser.mjs
+      - name: Install isolated geography database for browser persistence
+        timeout-minutes: 3
+        run: npm install --prefix "$RUNNER_TEMP/geography-db" --ignore-scripts --no-audit --no-fund @electric-sql/pglite@0.5.16
       - name: Aran import to cultural guide full flow
         timeout-minutes: 5
-        run: CULTURE_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-aran-cultural-flow-browser.mjs
+        run: PGLITE_MODULE="$RUNNER_TEMP/geography-db/node_modules/@electric-sql/pglite/dist/index.js" CULTURE_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-aran-cultural-flow-browser.mjs
       - name: Cultural guide Chromium mobile
         if: matrix.engine == 'chromium'
         timeout-minutes: 5

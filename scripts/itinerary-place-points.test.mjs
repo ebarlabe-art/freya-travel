@@ -20,9 +20,9 @@ test('ordered points: one activity, every named place, no invented meal venues',
 });
 test('regression #226: lunch at a named town keeps the town as a confirmable location, not a guessed restaurant',()=>{
  const row={title:'Dinar a Sant Bertrand du Conninges a Chez Simone'};
- assert.deepEqual(extractActivityPoints(row).map(p=>p.query),['Sant Bertrand du Conninges']);
+ assert.deepEqual(extractActivityPoints(row).map(p=>p.query),['Sant Bertrand du Conninges','Chez Simone']);
  assert.equal(extractActivityPoints(row)[0].place,null,'the settlement is pending until provider confirmation');
- assert.deepEqual(extractActivityPoints({title:'Dinar a Saint-Bertrand-de-Comminges al restaurant Chez Simone'}).map(p=>p.query),['Saint-Bertrand-de-Comminges']);
+ assert.deepEqual(extractActivityPoints({title:'Dinar a Saint-Bertrand-de-Comminges al restaurant Chez Simone'}).map(p=>p.query),['Saint-Bertrand-de-Comminges','restaurant Chez Simone']);
  assert.deepEqual(extractActivityPoints({title:'Dinar'}),[],'a generic meal must not fabricate a place');
 });
 test('provider keeps street and district names and only provider supplied addresses',()=>{
