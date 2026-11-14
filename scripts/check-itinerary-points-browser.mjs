@@ -124,7 +124,7 @@ try{
   assert.equal(writes.length,8,'Searching variants never saves or auto-confirms');
   assert.match(await box.locator('[data-point-toggle]').innerText(),/Tria una coincidència/,'Candidate requires explicit selection');
   await box.locator('[data-point-results] button').first().tap();
-  assert.match(await box.locator('[data-point-toggle]').innerText(),/Ubicació verificada/);
+  assert.match(await box.locator('[data-point-toggle]').innerText(),/Ubicació seleccionada/);
   assert.equal(writes.length,8,'Selecting each of the three monuments keeps an unsaved draft');
  }
  assert.ok(searches.some(s=>s.text==='Basilica di San Petronio'&&!s.country_code));

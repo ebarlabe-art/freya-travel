@@ -5700,6 +5700,7 @@ async function saveActivityPoints(row,snapshot,scope){
  if(error||!data)throw Error('L’activitat ha canviat o no s’ha pogut desar. Actualitza el planning abans de tornar-ho a provar.');
  const api=(await itineraryPointContext())?.api;
  if(scope!==itineraryAutoPlaceScope()||!api?.samePointSnapshot(data.location_points,snapshot))throw Error('La ubicació no ha quedat desada com s’havia confirmat. Recarrega el planning i revisa-la abans de repetir.');
+ return data.location_points;
 }
 async function proposeActivityPoints(day){
  if(!trip||!session||isLondonTrip()||connectionUnavailable()||day==='pending')return;
@@ -5742,7 +5743,7 @@ async function openActivityPointEditor(button){
  const current=()=>scope===itineraryAutoPlaceScope();
  const readRow=()=>itineraryPointRow(item);
  try{
-  const context=await itineraryPointContext(),{mountActivityPointEditor}=await loadTravelBookModule('itinerary-place-points-ui.mjs');if(!context||!current())return;
+  const context=await itineraryPointContext(),{mountActivityPointEditor,pointSaveMessage}=await loadTravelBookModule('itinerary-place-points-ui.mjs');if(!context||!current())return;
   // The agenda may rebuild while the editor modules load (including guide handoff).
   if(!button.isConnected)button=[...$('genericItineraryContent').querySelectorAll('[data-activity-points]')].find(b=>b.dataset.activityPoints===item.key);
   if(!button?.isConnected)return;
@@ -5752,9 +5753,9 @@ async function openActivityPointEditor(button){
    // No base-city/country constraint; every result still requires explicit selection and save.
    search:query=>{context.queue.blocked=false;return context.queue.find(query,null)},
    save:async(snapshot,baseline)=>{if(!current())throw Error('El viatge ha canviat.');
-    try{await saveActivityPoints(baseline,snapshot,scope)}catch(error){if(current()){if(row._placeSource==='activity')await loadActivities(true);else await loadManualItineraryItems(true)}throw error}
+    let persisted;try{persisted=await saveActivityPoints(baseline,snapshot,scope)}catch(error){if(current()){if(row._placeSource==='activity')await loadActivities(true);else await loadManualItineraryItems(true)}throw error}
     if(scope!==itineraryAutoPlaceScope())return;if(row._placeSource==='activity')await loadActivities(true);else await loadManualItineraryItems(true);
-    msg('genericItineraryMessage','Punts desats. Els horaris i les dades originals es conserven.');}
+    msg('genericItineraryMessage',pointSaveMessage(persisted));}
   });
   activityPointEditor={root,scope,key:item.key,readRow};
  }catch(error){if(current())msg('genericItineraryMessage',error.message,true)}
