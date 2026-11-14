@@ -87,12 +87,13 @@ test('foreign trip items cannot enter the result and selector does not mutate in
 });
 
 function loaderHarness(){
-  const renders=[],pending=[],calls=[];
+  const renders=[],pending=[],calls=[],autoCalls=[];
   const sandbox=vm.createContext({console,Promise,Map,setInterval,clearInterval,
     document:{addEventListener(){}},window:{addEventListener(){}},
     trip:{id:'a'},session:{user:{id:'u1'}},tripLoadGeneration:1,
     itinerarySourceReady:{},isLondonTrip:()=>sandbox.trip?.experience_key==='london-2026',
     connectionUnavailable:()=>false,
+    proposeActivityPoints:()=>{autoCalls.push(true);return new Promise(()=>{})},
     itinerarySourceMarker:(type,id,generation,user)=>`${type}:${user}:${id}:${generation}`,
     itineraryRequestIsCurrent:(id,generation,user)=>sandbox.trip?.id===id&&sandbox.tripLoadGeneration===generation&&sandbox.session?.user?.id===user,
     renderTripHome:()=>renders.push(`${sandbox.session?.user?.id}:${sandbox.trip?.id}:${sandbox.tripLoadGeneration}`),
@@ -111,7 +112,7 @@ function loaderHarness(){
   sandbox.itinerarySourcesAreReady=()=>['flight','activity','accommodation','manual'].every(type=>sandbox.itinerarySourceReady[type]===sandbox.itinerarySourceMarker(type,sandbox.trip.id,sandbox.tripLoadGeneration,sandbox.session.user.id));
   const block=html.slice(html.indexOf('let tripHomeTimer='),html.indexOf('function tripHomeSourceRow'));
   vm.runInContext(block,sandbox);
-  return {sandbox,renders,pending,calls};
+  return {sandbox,renders,pending,calls,autoCalls};
 }
 test('concurrent Home/Itinerary batch consumers share four source fetches',async()=>{
   const {sandbox,pending,calls}=loaderHarness();
@@ -120,10 +121,10 @@ test('concurrent Home/Itinerary batch consumers share four source fetches',async
   await sandbox.ensureTripAgenda();assert.equal(calls.length,4);
 });
 test('realtime/mutation during in-flight fetch queues reconciliation, not a lost event',async()=>{
-  const {sandbox,pending,calls}=loaderHarness();
+  const {sandbox,pending,calls,autoCalls}=loaderHarness();
   const first=sandbox.loadActivities(true),second=sandbox.loadActivities(true);assert.equal(first,second);
   pending[0].finish();await new Promise(setImmediate);assert.equal(calls.length,2);
-  pending[1].finish();await first;
+  pending[1].finish();await first;assert.equal(autoCalls.length,1,'background detection runs once and does not block reconciliation');
 });
 test('failed source makes the shared snapshot incomplete; explicit retry can recover',async()=>{
   const {sandbox,pending}=loaderHarness();const first=sandbox.ensureTripAgenda();pending.forEach(entry=>entry.finish(entry.type!=='flight'));

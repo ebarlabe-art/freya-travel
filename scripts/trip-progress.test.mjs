@@ -87,6 +87,7 @@ test('a later RPC response cannot replace a newer Realtime row',async()=>{
 test('a pre-event in-flight source fetch cannot paint after Realtime queues a newer refresh',async()=>{
   const h=harness(),pending=[];const s=h.sandbox;
   s.renderTripHome=()=>{};s.itinerarySourceReady={};
+  let autoCalls=0;s.proposeActivityPoints=()=>{autoCalls++;return new Promise(()=>{})};
   s.itinerarySourceMarker=(type,id,generation,user)=>`${type}:${id}:${generation}:${user}`;
   s.fetchAgendaActivities=()=>{
     const sequence=++s.activityLoadSequence;
@@ -96,7 +97,7 @@ test('a pre-event in-flight source fetch cannot paint after Realtime queues a ne
   const first=s.loadActivities(true);s.loadActivities(true);
   pending[0]({updated_at:'stale',completed_at:null});await new Promise(setImmediate);
   assert.equal(h.row.updated_at,'v1');assert.equal(pending.length,2);
-  pending[1]({updated_at:'newest',completed_at:'2026-09-10T10:00:00Z'});await first;assert.equal(h.row.updated_at,'newest');
+  pending[1]({updated_at:'newest',completed_at:'2026-09-10T10:00:00Z'});await first;assert.equal(h.row.updated_at,'newest');assert.equal(autoCalls,1,'background detection must not delay the newest snapshot');
 });
 test('conflict reloads source and requires a new user decision, never automatic retry',async()=>{
   const h=harness();const pending=h.sandbox.setTripEventCompleted(base,true,'message');h.requests[0].resolve({error:{code:'40001'}});await pending;
