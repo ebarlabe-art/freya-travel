@@ -32,7 +32,7 @@ const server=createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('Content-Type',({'.js':'text/javascript','.mjs':'text/javascript','.html':'text/html','.css':'text/css','.webmanifest':'application/manifest+json'})[extname(path)]||'application/octet-stream');res.end(body);
  }catch{res.writeHead(404).end()}
 });
-await new Promise(r=>server.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${server.address().port}/freya-travel/`;
+await new Promise(r=>server.listen(0,'127.0.0.1',r));let url=`http://127.0.0.1:${server.address().port}/freya-travel/`;
 const browser=await pw[engine].launch({headless:true,...(engine==='chromium'&&process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
 const uid='13200000-0000-4000-8000-000000000001',tid='13200000-0000-4000-8000-000000000002';
 const trip={id:tid,name:'Synthetic Baltic trip',owner_id:uid,is_owner:true,start_date:'2026-12-26',end_date:'2027-01-02',time_zone:'Europe/Riga'};
@@ -126,6 +126,11 @@ try{
  }
  // Real old SW scripts, shell/SDK caches and activation. Never delete the legacy data cache.
  for(const version of [18,19,20,52,53,54,55,56,57,58,59]){
+  // Give each closed/recreated browser context its own origin. Reuse the same
+  // loopback server; previous WebKit contexts must not share CacheStorage identity.
+  await new Promise(r=>server.close(r));
+  await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  url=`http://127.0.0.1:${server.address().port}/freya-travel/`;
   oldWorker=version;const ctx=await context({sw:true}),page=await ctx.newPage();page.setDefaultTimeout(25000);
   await page.goto(url);await page.waitForFunction(()=>navigator.serviceWorker.controller);await page.locator('#loginCard').waitFor({state:'visible'});
   await page.evaluate(async()=>{const c=await caches.open('freya-travel-v1.5');await c.put('/freya-travel/local-copy',new Response('keep'));});
@@ -148,11 +153,6 @@ try{
   assert.equal(await page.evaluate(async()=>!!(await (await caches.open('freya-travel-release-6444-v63')).match(new URL('index.html',location.href).href))),true);
   // 503 is not an offline exception: the previous worker returned the error instead of its SDK cache.
   fault='shell503';await page.reload().catch(async error=>{console.error('SW fallback failure',version,await page.evaluate(async()=>({keys:await caches.keys(),controller:navigator.serviceWorker.controller?.state,cache:!!(await (await caches.open('freya-travel-release-6444-v63')).match('./index.html'))})).catch(()=>null));throw error});await page.locator('#loginCard').waitFor({state:'visible'});fault='';
-  // CacheStorage reads can lag navigation in WebKit. Only observe: never recreate a missing entry.
-  await waitForAsyncCondition(page,async()=>{
-   const response=await (await caches.open('freya-travel-v1.5')).match('/freya-travel/local-copy');
-   return !!response&&await response.text()==='keep';
-  });
   assert.equal(await page.evaluate(async()=>{
    const response=await (await caches.open('freya-travel-v1.5')).match('/freya-travel/local-copy');
    return response?await response.text():null;
