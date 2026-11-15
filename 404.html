@@ -7442,7 +7442,9 @@ async function selectTrip(tripId,{open=false,applyDeepLink=false}={}){
   if(isLondonTrip()){await ensureDefaultChecklistItems();if(!tripRequestIsCurrent(selected.id,generation))return false;addFavoriteButtons();initFlightChecklist()}
   if(!connectionUnavailable()){subscribe();subscribeDocuments();if(isLondonTrip())subscribeExpenses();else{subscribeAccommodations();subscribeFlights();subscribeActivities();subscribeCarRentals();subscribeManualItineraryItems();subscribeTripDayMetadata()}}
   if(applyDeepLink)applyPendingInitialView();
-  refreshPushUi();return true;
+  refreshPushUi();
+  if(open&&!applyDeepLink&&!isLondonTrip())await refreshImportDraftButton(true);
+  return true;
 }
 async function initializeGenericChecklistDefaults(){
   if(!trip||!session||isLondonTrip())return;
@@ -9468,14 +9470,20 @@ async function recoverItineraryReconciliation(state){
  $('itineraryImportSaveStatus').textContent='Hi ha un desament pendent de confirmar. Reintenta la mateixa operació per comprovar-ne el resultat sense duplicar-la.';
  renderItineraryImportPreview();return true;
 }
-async function refreshImportDraftButton(){
+async function refreshImportDraftButton(resumeOnEntry=false){
+ const entryView=visibleAppView();
  const userId=session?.user?.id,tripId=trip?.id,generation=tripLoadGeneration;
  if(!userId||!tripId)return;
  try{
   const api=await loadTravelBookModule('import-itinerary-draft.mjs');
   const found=await api.hasImportDraft({userId,tripId});
-  if(session?.user?.id===userId&&trip?.id===tripId&&tripLoadGeneration===generation)
+  if(session?.user?.id===userId&&trip?.id===tripId&&tripLoadGeneration===generation){
    $('openItineraryImport').textContent=found?'↩ Reprèn la proposta':'📄 Importa document';
+   if(found&&resumeOnEntry&&visibleAppView()===entryView&&[tripDashboardId(),'itineraryView'].includes(entryView)&&!itineraryImportState&&!isLondonTrip()&&!offlineReadOnlySession&&!connectionUnavailable()){
+    if(entryView!=='itineraryView')setAppView('itineraryView');
+    await openItineraryImport();
+   }
+  }
  }catch(_){}
 }
 function importDraftContext(){
@@ -9490,7 +9498,7 @@ function importDraftContext(){
   modules:()=>Promise.all(['import-itinerary-review.mjs','import-itinerary-write.mjs','import-itinerary-reconciliation-ui.mjs','import-itinerary-planning-ui.mjs','import-itinerary-flash.mjs'].map(loadTravelBookModule)),
   planningContext,
   showReview:()=>{$('itineraryImportSource').classList.add('hidden');$('itineraryImportPreview').classList.remove('hidden');$('itineraryImportAdvanced').open=false;$('itineraryImportDiscardDraft').classList.remove('hidden')},
-  resumeMessage:stale=>{$('itineraryImportStatus').textContent=stale?'El planning ha canviat: cal revisar de nou les coincidències.':'Revisió recuperada. Comprova els conflictes abans de confirmar.';$('itineraryImportSaveStatus').textContent='Esborrany local recuperat. Cap canvi desat.'}
+  resumeMessage:stale=>{$('itineraryImportStatus').textContent=stale?'El planning ha canviat: cal revisar de nou les coincidències.':'Proposta desada · Pendent de confirmar. Comprova els conflictes abans de confirmar.';$('itineraryImportSaveStatus').textContent='Proposta desada · Pendent de confirmar. Encara no incorporada a l’itinerari.'}
  };
 }
 async function pauseItineraryImport(){
