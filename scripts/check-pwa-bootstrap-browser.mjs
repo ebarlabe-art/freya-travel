@@ -129,6 +129,7 @@ try{
   oldWorker=version;const ctx=await context({sw:true}),page=await ctx.newPage();page.setDefaultTimeout(25000);
   await page.goto(url);await page.waitForFunction(()=>navigator.serviceWorker.controller);await page.locator('#loginCard').waitFor({state:'visible'});
   await page.evaluate(async()=>{const c=await caches.open('freya-travel-v1.5');await c.put('/freya-travel/local-copy',new Response('keep'));});
+  assert.equal(await page.evaluate(async()=>await (await (await caches.open('freya-travel-v1.5')).match('/freya-travel/local-copy')).text()),'keep','Legacy fixture must be readable before upgrade');
   assert.equal(await page.locator('#updateToast').isVisible(),false,'First installation is not an app update');
   const boots=await page.evaluate(()=>sessionStorage.boots);
   oldWorker=null;await page.evaluate(async()=>{const r=await navigator.serviceWorker.getRegistration();await r.update()});
@@ -147,7 +148,15 @@ try{
   assert.equal(await page.evaluate(async()=>!!(await (await caches.open('freya-travel-release-6444-v63')).match(new URL('index.html',location.href).href))),true);
   // 503 is not an offline exception: the previous worker returned the error instead of its SDK cache.
   fault='shell503';await page.reload().catch(async error=>{console.error('SW fallback failure',version,await page.evaluate(async()=>({keys:await caches.keys(),controller:navigator.serviceWorker.controller?.state,cache:!!(await (await caches.open('freya-travel-release-6444-v63')).match('./index.html'))})).catch(()=>null));throw error});await page.locator('#loginCard').waitFor({state:'visible'});fault='';
-  assert.equal(await page.evaluate(async()=>await (await caches.open('freya-travel-v1.5')).match('/freya-travel/local-copy').then(r=>r.text())),'keep');
+  // CacheStorage reads can lag navigation in WebKit. Only observe: never recreate a missing entry.
+  await waitForAsyncCondition(page,async()=>{
+   const response=await (await caches.open('freya-travel-v1.5')).match('/freya-travel/local-copy');
+   return !!response&&await response.text()==='keep';
+  });
+  assert.equal(await page.evaluate(async()=>{
+   const response=await (await caches.open('freya-travel-v1.5')).match('/freya-travel/local-copy');
+   return response?await response.text():null;
+  }),'keep','Original legacy data must survive the worker upgrade and 503 reload');
   await page.goto(url+'freya-travel-v1.5/');await page.waitForURL(url);await page.locator('#loginCard').waitFor({state:'visible'});
   // WebKit's automation-level setOffline rejects navigation before dispatching to SW.
   // Drop actual server connections and set the offline hint instead; Chromium also uses native emulation.

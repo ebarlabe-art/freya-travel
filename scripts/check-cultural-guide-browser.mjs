@@ -81,6 +81,12 @@ try{
  assert.equal(await root.locator('h2').innerText(),aran.canonical_name);await root.locator('[data-guide-text="history"]').waitFor({state:'visible'});assert.equal(await root.locator('[data-guide-text="history"]').innerText(),documents.at(-1).sections.history.text);assert.ok((await page.evaluate(()=>fixture.calls)).some(c=>c.action==='prepare'&&c.place_key===guidePlaceKey(aran)));await closeGuide();
  await page.locator(`#activityList [data-cultural-guide="manual:${cultureId(61)}"]`).click();await dialog.waitFor({state:'visible'});
  assert.match(await root.innerText(),/Tria o confirma el lloc/);await closeGuide();
+ await page.waitForFunction(()=>fixture.geographyWrites.length===1);
+ const geography=await page.evaluate(()=>fixture.geographyWrites);
+ assert.equal(geography[0].filters.id,aranUnverified.id);
+ assert.deepEqual(geography[0].patch.location_points,pointSnapshot(aranUnverified,[{id:'point-0',query:aranUnverified.location_name,place:null}]));
+ const persistedPending=await page.evaluate(id=>fixture.manuals.find(row=>row.id===id),aranUnverified.id);
+ assert.deepEqual({...persistedPending,location_points:null,updated_at:aranUnverified.updated_at},aranUnverified,'Autodetection changes no operational fields');
  // London preserves all 13 cards while using the same device narration and controls.
  await page.evaluate(async id=>{fixture.mismatch=false;await selectTrip(id,{open:true});setAppView('discoverView')},cultureId(3));assert.equal(await page.locator('#guideGrid .place-guide').count(),13);await page.locator('[data-listen-guide]').first().click();await page.locator('#audioPause').click();await page.locator('#audioPause').click();await page.locator('#audioStop').click();
  // Reopen saved cards from Itinerary; no new guide writes when opening or listening.
