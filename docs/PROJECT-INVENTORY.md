@@ -1,5 +1,11 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## #228 · Cerca automàtica fora de les parades — BRANCA, NO PUBLICADA
+
+Base main `edd5507` (#231 fusionada). Cas confirmat: Tour Eiffel, París en un viatge Vall d’Aran. `proposeActivityPoints()` descartava l’activitat quan `itineraryAutoPlaceDestination()` retornava null. Ara cerca amb la ciutat explícita sense heretar el país d’una parada diferent; sense ciutat també pot cercar, però no autoconfirma. `chooseAutomaticPoint()` admet context sense país només amb ciutat i nom coincidents, candidats del mateix país i a menys de 120 m, i almenys una ubicació exacta. Es mantenen la protecció de seleccions manuals/retirades, CAS i comprovació de la resposta persistent.
+
+Prova focalitzada `automatic-location-outside-trip.test.mjs`: FAIL abans (zero cerques), PASS després. Executa el handler de creació, càrrega, cerca, selecció, PATCH verificat i lectura de la Guia amb transport/base de dades sintètics; no és una prova de proveïdor live ni una prova visual. Cache v63 preparada, paritat index/404 verificada. Sense SQL, Edge, dades reals ni infraestructura nova. Següent pas: revisar la PR i CI; autoritzar fusió/desplegament i verificar el cas real abans de tancar #228.
+
 ## #228 · Auditoria transversal de geografia — BRANCA, NO DESPLEGADA (13/11/2026)
 
 Entrada vigent per a aquesta tasca; les notes de #225 «no fusionada» inferiors són històriques. `main` verificat: `4bee578` (#225 i #227 ja fusionades); branca independent `fix/228-stable-geographic-identity`, checkout `/workspace/freya-228`. El checkout anterior i els seus canvis locals queden intactes. No es treballa a main, no es recrea Sites ni cap altra app.

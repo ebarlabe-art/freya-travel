@@ -80,14 +80,17 @@ export function autoPendingPoints(row){
  return null;
 }
 export function chooseAutomaticPoint(query,options,context){
- if(!context?.canonical_name||!/^[A-Z]{2}$/.test(context.country_code||''))return null;
- const candidates=options.filter(validPointPlace).filter(p=>p.country_code===context.country_code&&
+ if(!context?.canonical_name||(context.country_code&&!/^[A-Z]{2}$/.test(context.country_code)))return null;
+ const candidates=options.filter(validPointPlace).filter(p=>(!context.country_code||p.country_code===context.country_code)&&
    normalizePointName(p.locality)===normalizePointName(context.canonical_name)&&samePointName(query,p.canonical_name));
  if(!candidates.length)return null;
  const unique=[...new Map(candidates.map(p=>[p.provider_place_id,p])).values()];
  // Genuine distant homonyms remain ambiguous; multiple records of the same nearby landmark do not.
- if(!unique.every(p=>nearSamePoint(p,unique[0])))return null;
+ if(!unique.every(p=>p.country_code===unique[0].country_code&&nearSamePoint(p,unique[0])))return null;
  const exact=unique.filter(p=>p.coordinate_role==='exact_location');
+ // Outside known trip stops require an explicit matching city and an exact place.
+ // Never derive a country from the first result or accept distant homonyms.
+ if(!context.country_code&&!exact.length)return null;
  const allowed=exact.length?exact:unique.filter(p=>(['street','suburb','district','neighbourhood','quarter','city_block','square','natural.forest','forest','park','nature_reserve','national_park'].includes(p.kind)||(['city','town','village','hamlet'].includes(p.kind)&&samePointName(p.canonical_name,context.canonical_name))));
  if(!allowed.length)return null;
  return pointPlace(allowed[0]);
