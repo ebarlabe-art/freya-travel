@@ -5702,38 +5702,54 @@ async function saveActivityPoints(row,snapshot,scope){
  if(scope!==itineraryAutoPlaceScope()||!api?.samePointSnapshot(data.location_points,snapshot))throw Error('La ubicació no ha quedat desada com s’havia confirmat. Recarrega el planning i revisa-la abans de repetir.');
  return data.location_points;
 }
-async function proposeActivityPoints(day){
- if(!trip||!session||isLondonTrip()||connectionUnavailable()||day==='pending')return;
- const context=await itineraryPointContext();if(!context||context.running||context.queue.blocked)return;
- const rows=itineraryProjection.filter(item=>item.localDate===day&&!item.isCancelled).map(itineraryPointRow).filter(row=>row&&row.latitude==null&&row.longitude==null&&(row.location_points===null||context.api.autoPendingPoints(row)));
- context.running=true;let manual=false,activity=false;
+async function proposeActivityPoints(){
+ if(!trip||!session||isLondonTrip()||connectionUnavailable())return;
+ const context=await itineraryPointContext();if(!context)return;
+ if(context.running){context.rescan=true;return}
+ // Read persisted sources directly: no selected day, projection or date required.
+ const rows=[...manualItineraryRows.map(row=>({...row,_placeSource:'manual'})),...activityRows.filter(row=>!isLocalTransportActivity(row)).map(row=>({...row,_placeSource:'activity'}))]
+  .filter(row=>row.trip_id===trip.id&&row.status!=='cancelled'&&row.reservation_status!=='cancelled'&&row.latitude==null&&row.longitude==null&&
+   !context.api.confirmedLegacyPlace(row)&&!(context.api.savedActivityPoints(row)||[]).some(p=>p.place)&&
+   (row.location_points===null||context.api.autoPendingPoints(row)));
+ context.running=true;context.rescan=false;let manual=false,activity=false;
  try{
   for(const row of rows){
-   if(context.scope!==itineraryAutoPlaceScope()||connectionUnavailable())break;
+   if(context.scope!==itineraryAutoPlaceScope()||connectionUnavailable()||context.queue.count>=30)break;
    const key=itineraryAutoPlaceRecordKey(row);
-   if(context.seen.has(key))continue;context.seen.add(key);
+   if(context.seen.has(key))continue;
    const destination=itineraryAutoPlaceDestination(row);if(!destination)continue;
-   const points=structuredClone(row.location_points===null?context.api.extractActivityPoints(row):context.api.autoPendingPoints(row));
-   if(!points?.length)continue;
-   let changed=row.location_points===null||(Array.isArray(row.location_points?.points)&&row.location_points.points.length!==points.length);
-   for(const point of points){
-    if(point.place)continue;
-    const options=await context.queue.find(point.query,destination);
-    if(context.scope!==itineraryAutoPlaceScope())return;
-    const resolved=context.api.chooseAutomaticPoint(point.query,options,destination);
-    if(resolved){point.place=resolved;changed=true}
+   context.seen.add(key);
+   try{
+    const points=structuredClone(row.location_points===null?context.api.extractActivityPoints(row):context.api.autoPendingPoints(row));
+    if(!points?.length)continue;
+    let changed=row.location_points===null;
+    for(const point of points){
+     const options=await context.queue.find(point.query,destination);
+     if(context.scope!==itineraryAutoPlaceScope()||connectionUnavailable())return;
+     const resolved=context.api.chooseAutomaticPoint(point.query,options,destination);
+     if(resolved){point.place=resolved;changed=true}
+    }
+    if(!changed)continue;
+    // A manual edit while the provider was responding always wins, including removal.
+    const latest=(row._placeSource==='activity'?activityRows:manualItineraryRows).find(value=>value.id===row.id);
+    if(!latest||latest.updated_at!==row.updated_at)continue;
+    await saveActivityPoints(row,context.api.pointSnapshot(row,points),context.scope);
+    if(row._placeSource==='activity')activity=true;else manual=true;
+   }catch(_){
+    // Keep the activity usable. One failed lookup/save must not abort other rows.
+    // The existing per-session request cap still applies; each version is tried once.
+    context.queue.blocked=false;
    }
-   if(!changed)continue;
-   await saveActivityPoints(row,context.api.pointSnapshot(row,points),context.scope);
-   if(row._placeSource==='activity')activity=true;else manual=true;
   }
- }catch(error){if(context.scope===itineraryAutoPlaceScope())msg('genericItineraryMessage',error.message,true)}
- finally{
-  if(context.scope===itineraryAutoPlaceScope()){
-   if(activity)await loadActivities(true);if(manual)await loadManualItineraryItems(true);
+ }finally{
+  try{
+   if(context.scope===itineraryAutoPlaceScope()){
+    if(activity)await loadActivities(true);if(manual)await loadManualItineraryItems(true);
+   }
+  }finally{
+   context.running=false;
+   if(context.scope===itineraryAutoPlaceScope()&&context.rescan)void proposeActivityPoints().catch(()=>{});
   }
-  context.running=false;
-  if(context.scope===itineraryAutoPlaceScope()&&genericItinerarySelectedDay&&genericItinerarySelectedDay!==day)void proposeActivityPoints(genericItinerarySelectedDay).catch(()=>{});
  }
 }
 async function openActivityPointEditor(button){
@@ -6170,7 +6186,7 @@ function loadAgendaSource(type,loader,refresh){
     return result;
   })().finally(()=>{
     if(agendaRequests.get(key)===request)agendaRequests.delete(key);
-    if(itineraryRequestIsCurrent(tripId,generation,userId)){scheduleItineraryRebuild();renderTripHome();if(typeof refreshPhotoSummaries==='function')refreshPhotoSummaries()}
+    if(itineraryRequestIsCurrent(tripId,generation,userId)){scheduleItineraryRebuild();renderTripHome();if(typeof refreshPhotoSummaries==='function')refreshPhotoSummaries();if(type==='manual'||type==='activity')void proposeActivityPoints().catch(()=>{})}
   });
   return request.promise;
 }
