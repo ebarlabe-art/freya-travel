@@ -36,7 +36,7 @@ test('#196 final overview has exactly two main groups; missing data is not a con
  const {snapshot,state,flash}=setup();state.existing=[];state.decisions=prepareFlashDecisions(snapshot,state,context);
  snapshot.items[1].values.local_date='2030-12-27';snapshot.items[1].values.end_local_time='';
  const a=analyzePlanning(snapshot,state,context),html=flashPlanningHtml(a,snapshot,state,context,flash);
- assert.equal((html.match(/<section data-flash-/g)||[]).length,2);assert.match(html,/Itinerari vàlid, sense conflictes/);assert.match(html,/Conflictes per resoldre/);assert.match(html,/No s’han detectat incompatibilitats/);assert.doesNotMatch(html,/aspectes pendents|trams pendents/);
+ assert.equal((html.match(/<section data-flash-/g)||[]).length,2);assert.match(html,/Activitats sense conflictes detectats/);assert.doesNotMatch(html,/Itinerari vàlid, sense conflictes/);assert.match(html,/Conflictes per resoldre/);assert.match(html,/No s’han detectat incompatibilitats/);assert.doesNotMatch(html,/aspectes pendents|trams pendents/);
 });
 test('#196 related flight is a confirmation choice, never an automatic reservation change',()=>{
  const {snapshot,state,flash}=setup();snapshot.items=[{...item(0,'Vol BCN → RIX'),classification_hint:'flight'}];state.existing=[];
