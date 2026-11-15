@@ -5717,7 +5717,8 @@ async function proposeActivityPoints(){
    if(context.scope!==itineraryAutoPlaceScope()||connectionUnavailable()||context.queue.count>=30)break;
    const key=itineraryAutoPlaceRecordKey(row);
    if(context.seen.has(key))continue;
-   const destination=itineraryAutoPlaceDestination(row);if(!destination)continue;
+   // Trip stops are a hint, not a prerequisite. Never borrow their country for another city.
+   const destination=itineraryAutoPlaceDestination(row)||{canonical_name:String(row.city||'').trim()};
    context.seen.add(key);
    try{
     const points=structuredClone(row.location_points===null?context.api.extractActivityPoints(row):context.api.autoPendingPoints(row));
