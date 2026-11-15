@@ -45,6 +45,8 @@ try{
  await p.locator('#copyGenericCode').click();assert.equal(await p.evaluate(()=>copiedInvitation),'SYNTH1');
  await p.goBack();await p.locator('#manualTripView').waitFor({state:'visible'});await p.goForward();await p.locator('#genericDashboardView').waitFor({state:'visible'});
  const b=await client('friend',{width:390,height:844});await b.page.locator('[data-home-view="joinTripView"]').click();await b.page.locator('#inviteInput').fill(' synth1 ');await b.page.locator('#joinTrip').click();await b.page.locator('#genericDashboardView').waitFor({state:'visible'});
+ // The dashboard is shown before selectTrip finishes its asynchronous reads (including saved PDF lookup).
+ await b.page.waitForFunction(()=>!document.getElementById('joinTrip').disabled);
  assert.equal(await b.page.evaluate(()=>trip.id),rows[0].id);assert.equal(await b.page.locator('#inviteInput').inputValue(),'');
  await b.start();await b.page.locator('[data-home-view="upcomingTripsView"]').click();assert.equal(await b.page.locator('[data-select-trip]').count(),1);await b.page.locator('[data-select-trip]').click();await b.page.locator('#genericDashboardView').waitFor({state:'visible'});
  await b.page.evaluate(()=>navigator.serviceWorker.ready);assert.ok(await b.page.evaluate(()=>navigator.serviceWorker.controller));
