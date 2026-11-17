@@ -149,6 +149,7 @@ export function applyTravelBookComposition(page,document){
 export function applyTravelBookDocuments(proposal,records){
  if(!records?.length)return structuredClone(proposal);
  const next=structuredClone(proposal),generated=flattenTravelBookPages(next),sections=[],used=new Set();
+ const reserved=new Set(records.flatMap(r=>(r.document?.elements||[]).filter(e=>e.type==='image').map(e=>e.asset_id)));
  const allItems=next.sections.flatMap(s=>s.items||s.pages.flatMap(p=>p.items));
  const append=(page,section)=>{
   const last=sections.at(-1),target=last&&last.key===section.key?last:{...structuredClone(section),items:[],pages:[]};
@@ -165,7 +166,7 @@ export function applyTravelBookDocuments(proposal,records){
   const section=match?next.sections[match.sectionIndex]:{key:'memories:undated',role:'memories',local_date:null,title_candidate:null,layout_hint:'hero'};
   const base=match?.page||{index:i,layout_hint:'hero',creative_style:'hero_editorial',title:'Records',subtitle:null,stickers:[],sticker_positions:{},items:[]};
   const page=doc?.elements?.length?applyTravelBookComposition({...structuredClone(base),items:allItems},doc):structuredClone(base);
-  if(!doc?.elements?.length)page.items=page.items.filter(item=>!used.has(item.asset_id));
+  if(!doc?.elements?.length)page.items=page.items.filter(item=>!used.has(item.asset_id)&&!reserved.has(item.asset_id));
   if(!page.items.length)throw Error('Aquesta composició no es pot representar amb l’editor actual. No s’ha modificat.');
   append(page,section);
  }

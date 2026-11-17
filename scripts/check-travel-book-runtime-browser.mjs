@@ -33,9 +33,10 @@ try{
   const saveCtx=await context({serviceWorkers:'block',viewport:{width:390,height:844}}),savePage=await saveCtx.newPage();
   let saved=null,version=1,failing=false,loseReceipt=false;const receipts=new Map(),requests=[];
   await saveCtx.route('**/rest/v1/rpc/save_travel_book_compositions_v1',async route=>{
+   if(route.request().method()==='OPTIONS')return route.fulfill({status:204,headers:{'access-control-allow-origin':'*','access-control-allow-headers':'*','access-control-allow-methods':'POST, OPTIONS'}});
    const body=route.request().postDataJSON();requests.push(body);
-   const reply=data=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
-   if(failing)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'Synthetic unavailable'})});
+   const reply=data=>route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(data)});
+   if(failing)return route.fulfill({status:503,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({message:'Synthetic unavailable'})});
    if(receipts.has(body.p_operation_id))return reply(receipts.get(body.p_operation_id));
    assert.equal(body.p_changes[0].expected_version,version);
    saved=structuredClone(body.p_changes[0].document);version++;
