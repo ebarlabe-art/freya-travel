@@ -49,3 +49,39 @@ test('ALB-05.5 persisted records apply in exact page order',()=>{
  assert.equal(restored.sections[0].pages[0].title,'Desat A');
  assert.equal(restored.sections[0].pages[1].title,'Desat B');
 });
+
+test('#213 editing copy preserves element IDs, crop, geometry, locks and non-editor content',()=>{
+ const page={index:0,layout_hint:'hero',creative_style:'hero_editorial',title:'Abans',subtitle:'Comentari',stickers:['heart'],sticker_positions:{heart:{x:0,y:0,rotation:0}},items:[{asset_id:id(10),source_snapshot_ids:[],overlay_text:'Peu'}]};
+ const previous=compositionFromTravelBookPage({page,compositionId:id(1),pageId:id(2),makeId:ids()});
+ const image=previous.elements.find(e=>e.type==='image');
+ image.crop={x:0.1,y:0.2,width:0.7,height:0.6};image.geometry.rotation=17;image.locks={content:true,geometry:true};
+ previous.locks.layout=true;
+ const restored=applyTravelBookComposition({...page,items:[]},previous);
+ const next=compositionFromTravelBookPage({page:{...restored,title:'Després',subtitle:'Nou comentari',items:restored.items.map(i=>({...i,overlay_text:'Nou peu'}))},compositionId:id(1),pageId:id(2),previousDocument:previous,makeId:()=>{throw Error('Unexpected replacement')}});
+ assert.deepEqual(next.elements.map(e=>e.id),previous.elements.map(e=>e.id));
+ assert.deepEqual(next.elements.find(e=>e.type==='image'),image);
+ assert.deepEqual(next.elements.map(e=>e.geometry),previous.elements.map(e=>e.geometry));
+ assert.deepEqual(next.locks,previous.locks);
+ assert.equal(applyTravelBookComposition(page,next).items[0].overlay_text,'Nou peu');
+ assert.equal(applyTravelBookComposition(page,next).title,'Després');
+ assert.equal(previous.elements[0].text,'Abans');
+});
+
+test('#213 regeneration cannot replace saved photos or shrink saved pages',()=>{
+ const item=n=>({asset_id:id(n),source_snapshot_ids:[],caption_candidate:null,overlay_text:null});
+ const page=n=>({index:0,layout_hint:'hero',creative_style:'hero_editorial',title:'Saved '+n,subtitle:null,stickers:[],sticker_positions:{},items:[item(n)]});
+ const doc=n=>compositionFromTravelBookPage({page:page(n),compositionId:id(n+100),pageId:id(n+200),makeId:ids(n+300)});
+ const proposal={sections:[{key:'memories:undated',role:'memories',local_date:null,items:[item(12)],pages:[page(12)]}]};
+ const result=applyTravelBookDocuments(proposal,[{document:doc(10)},{document:doc(11)}]);
+ assert.deepEqual(result.sections[0].pages.map(p=>p.items[0].asset_id),[id(10),id(11),id(12)]);
+ assert.deepEqual(result.sections[0].pages.map(p=>p.title),['Saved 10','Saved 11','Saved 12']);
+ assert.equal(result.stats.ready_photos,3);
+});
+
+test('#213 legacy documents without a Freya label retain their editorial content',()=>{
+ const page={index:0,layout_hint:'hero',creative_style:'hero_editorial',title:'Legacy',subtitle:null,stickers:[],sticker_positions:{},items:[{asset_id:id(10),source_snapshot_ids:[],overlay_text:null}]};
+ const doc=compositionFromTravelBookPage({page,compositionId:id(1),pageId:id(2),makeId:ids()});doc.metadata.label=null;
+ const restored=applyTravelBookComposition({...page,title:'Generated'},doc);
+ assert.equal(restored.title,'Legacy');
+ assert.deepEqual(compositionFromTravelBookPage({page:restored,compositionId:id(1),pageId:id(2),previousDocument:doc}),doc);
+});
