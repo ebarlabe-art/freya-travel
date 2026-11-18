@@ -121,3 +121,23 @@ test('#213 unknown legacy presentation is preserved and excluded from the templa
  assert.match(travelBookTemplateRestriction(doc),/presentació pròpia/);
  assert.equal(applyTravelBookComposition(page,doc).title,'Legacy');
 });
+
+
+test('#213 appearance roundtrip changes only metadata and supports defaults and locks',()=>{
+ const page={index:0,layout_hint:'hero',creative_style:'hero_editorial',title:'Records',subtitle:null,stickers:[],sticker_positions:{},items:[{asset_id:id(10)}]};
+ const original=compositionFromTravelBookPage({page,compositionId:id(1),pageId:id(2),makeId:ids()});
+ original.elements.find(e=>e.type==='image').crop={x:.1,y:.2,width:.7,height:.6};
+ original.elements.find(e=>e.type==='image').geometry.rotation=18;
+ const edit=visual=>compositionFromTravelBookPage({page:{...applyTravelBookComposition(page,original),visual},compositionId:id(1),pageId:id(2),previousDocument:original});
+ const saved=edit([1,2,3]);
+ assert.deepEqual({...saved,metadata:original.metadata},original);
+ assert.ok(saved.metadata.label.length<=160);
+ assert.deepEqual(applyTravelBookComposition(page,saved).visual,[1,2,3]);
+ const restored=compositionFromTravelBookPage({page:{...applyTravelBookComposition(page,saved),visual:[0,0,0]},compositionId:id(1),pageId:id(2),previousDocument:saved});
+ assert.deepEqual(restored,original);
+ assert.deepEqual(applyTravelBookComposition(page,original).visual,[0,0,0]);
+ original.locks.layout=true;assert.throws(()=>edit([1,2,3]),/bloquejada/);
+ original.locks.layout=false;original.elements[0].locks.content=true;assert.throws(()=>edit([1,2,3]),/bloquejat/);
+ original.elements[0].locks.content=false;original.elements[0].locks.geometry=true;assert.throws(()=>edit([1,2,3]),/bloquejada/);
+ assert.throws(()=>edit([9,0,0]),/invàlid/);
+});

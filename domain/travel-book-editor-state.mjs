@@ -11,7 +11,22 @@ const textElement=(id,role,text,source_snapshot_ids=[],g=geometry())=>({id,type:
 const imageElement=(id,asset_id,g)=>({id,type:'image',asset_id,crop:{x:0,y:0,width:1,height:1},geometry:g,locks:locks()});
 const defaultStickerPosition=(index)=>({x:82-(index%3)*14,y:12+Math.floor(index/3)*12,rotation:index%2?8:-7});
 
-function labelFor(page){return JSON.stringify({ft:1,style:page.creative_style,layout:page.layout_hint}).slice(0,160)}
+export function travelBookAppearance(value=[0,0,0]){
+ if(!Array.isArray(value)||value.length!==3||value.some(n=>!Number.isInteger(n)||n<0||n>3))throw Error('Aspecte de pàgina invàlid.');
+ return [...value];
+}
+export function travelBookAppearanceRestriction(document){
+ return travelBookTemplateRestriction(document)||(document?.elements?.some(e=>e.locks.content)?'El contingut està bloquejat. Es conserva el seu aspecte.':null);
+}
+function appearanceLabel(label,value){
+ const next={...label};delete next.v;
+ const visual=travelBookAppearance(value);
+ if(visual.some(Boolean))next.v=visual;
+ const result=JSON.stringify(next);
+ if(result.length>160)throw Error('Les metadades existents no permeten afegir aquest aspecte sense perdre informació.');
+ return result;
+}
+function labelFor(page){return appearanceLabel({ft:1,style:page.creative_style,layout:page.layout_hint},page.visual)}
 function readLabel(document){
  try{const value=JSON.parse(document?.metadata?.label||'');return value?.ft===1?value:null}catch{return null}
 }
@@ -56,6 +71,9 @@ function patchSavedPage(page,previous,makeId){
  if(oldLabel&&(oldLabel.style!==page.creative_style||oldLabel.layout!==page.layout_hint)){
   const reason=travelBookTemplateRestriction(previous);if(reason)throw Error(reason);
  }
+ if(JSON.stringify(travelBookAppearance(page.visual))!==JSON.stringify(travelBookAppearance(oldLabel?.v))){
+  const reason=travelBookAppearanceRestriction(previous);if(reason)throw Error(reason);
+ }
  const document=structuredClone(previous),elements=document.elements,visible=applyTravelBookComposition(page,previous);
  const updateText=(element,value,role,g)=>{
   if(element){
@@ -90,7 +108,7 @@ function patchSavedPage(page,previous,makeId){
   }else document.elements.push(textElement(makeId(),'body',STICKER_PREFIX+sticker,[],geometry(c.x,c.y,16,16,c.rotation)));
  }
  const label=readLabel(document);
- if(label)document.metadata.label=JSON.stringify({...label,style:page.creative_style,layout:page.layout_hint});
+ if(label)document.metadata.label=appearanceLabel({...label,style:page.creative_style,layout:page.layout_hint},page.visual);
  return document;
 }
 
@@ -135,6 +153,7 @@ export function applyTravelBookComposition(page,document){
  if(!document.elements.length)return page;
  const label=readLabel(document);
  const next=structuredClone(page);
+ next.visual=travelBookAppearance(label?.v);
  if(label?.style&&['hero_editorial','scrapbook','narrative'].includes(label.style))next.creative_style=label.style;
  if(label?.layout&&['hero','duo','triptych','grid','story_grid'].includes(label.layout))next.layout_hint=label.layout;
  const title=document.elements.find(e=>e.type==='text'&&e.role==='title');

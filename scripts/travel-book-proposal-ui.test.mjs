@@ -67,7 +67,8 @@ test('ALB-05.3 exposes direct page editing without replacing the creative propos
 test('ALB-05.3 keeps page edits scoped to the selected page and preserves index\/404 parity contract',()=>{
  assert.match(html,/travelBookApplyPageEdit\(sectionIndex,pageIndex/);
  assert.match(html,/section_index:sectionIndex,page_index:pageIndex/);
- assert.match(html,/state\.proposal=api\.editTravelBookPage/);
+ assert.match(html,/const next=api\.editTravelBookPage/);
+ assert.match(html,/state\.proposal=next/);
 });
 
 
