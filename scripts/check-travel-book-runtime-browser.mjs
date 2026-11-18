@@ -49,19 +49,20 @@ try{
     const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
     session={user:{id:id(90)}};trip={id:id(91),experience_key:null};
     const api=await travelBookProposalApi(),editor=await travelBookEditorApi(),book={id:id(92)};
-    let proposal=api.buildInitialTravelBookProposal({trip_id:trip.id,book_id:book.id,photos:[{asset_id:id(93),status:'ready'}]});
+    let proposal=api.buildInitialTravelBookProposal({trip_id:trip.id,book_id:book.id,photos:[93,97,98].map(n=>({asset_id:id(n),status:'ready'}))});
+    const visuals=new Map([93,97,98].map((n,i)=>[id(n),'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="120" height="90"><rect width="120" height="90" fill="${['#b6c9a3','#e2bf95','#bba7cf'][i]}"/><text x="12" y="48" font-size="18">Foto ${i+1}</text></svg>`)]));
     let persistence={book,edition:{id:id(94)},records:[{composition_id:id(95),page_id:id(96),current_version:version,document:saved}]};
     const recovered=recover?await recoverTravelBookEdits(book,api):null;
-    if(recovered){proposal=recovered.proposal;persistence=recovered.persistence;travelBookProposalState={...recovered,visuals:new Map(),totalGallery:1};travelBookPendingEdits.set(travelBookEditKey(travelBookProposalState),travelBookProposalState)}
+    if(recovered){proposal=recovered.proposal;persistence=recovered.persistence;travelBookProposalState={...recovered,visuals,totalGallery:3};travelBookPendingEdits.set(travelBookEditKey(travelBookProposalState),travelBookProposalState)}
     else{proposal=editor.applyTravelBookDocuments(proposal,persistence.records);travelBookProposalState=null}
-    renderTravelBookProposal(proposal,new Map(),1,persistence);travelBookProposalState.api=api;
+    renderTravelBookProposal(proposal,visuals,3,persistence);travelBookProposalState.api=api;
     for(let el=document.getElementById('travelBookView');el;el=el.parentElement)el.classList.remove('hidden');
     if(recovered){travelBookSaveStatus(travelBookProposalState);document.getElementById('travelBookRetrySave').classList.remove('hidden')}
    },{saved,version,recover});
   }
   await savePage.goto(url,{waitUntil:'load'});await openEditor();
   for(const [selector,value] of [['[data-tb-edit="title"]','Títol desat'],['[data-tb-edit="subtitle"]','Comentari desat'],['[data-tb-photo-edit]','Text de fotografia']]){
-   await savePage.locator(selector).fill(value);await savePage.locator(selector).press('Tab');
+   await savePage.locator(selector).first().fill(value);await savePage.locator(selector).first().press('Tab');
    await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent==='✓ Canvis desats.');
   }
   await savePage.locator('[data-tb-template="scrapbook"]').click();
@@ -69,7 +70,7 @@ try{
   await savePage.reload();await openEditor();
   assert.equal(await savePage.locator('[data-tb-edit="title"]').textContent(),'Títol desat');
   assert.equal(await savePage.locator('[data-tb-edit="subtitle"]').textContent(),'Comentari desat');
-  assert.equal(await savePage.locator('[data-tb-photo-edit]').textContent(),'Text de fotografia');
+  assert.equal(await savePage.locator('[data-tb-photo-edit]').first().textContent(),'Text de fotografia');
   assert.equal(await savePage.locator('[data-tb-template="scrapbook"]').getAttribute('aria-pressed'),'true');
   console.log('PASS #213 real input/focusout: title, comment, photo text and composition survive reopening');
   // Template changes retain the persisted physical document, even with a custom crop.
@@ -86,6 +87,8 @@ try{
    assert.equal(await savePage.locator(`[data-tb-template="${style}"]`).getAttribute('aria-pressed'),'true');
    assert.equal(await savePage.locator('.travel-book-page').first().getAttribute('data-creative'),style);
   }
+  assert.equal(await savePage.locator('.travel-book-template-preview img').count(),9);
+  assert.equal(await savePage.evaluate(()=>[...document.querySelectorAll('.travel-book-template-preview img')].every(img=>img.complete&&img.naturalWidth>0)),true);
   assert.equal(await savePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   if(process.env.RUNNER_TEMP){const directory=resolve(process.env.RUNNER_TEMP,'browser-install-logs');await mkdir(directory,{recursive:true});await savePage.locator('.travel-book-templates').screenshot({path:resolve(directory,'travel-book-templates.png')})
   const writes=requests.length;saved.locks.layout=true;
