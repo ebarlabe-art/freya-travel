@@ -114,6 +114,10 @@ jobs:
       - name: Download and verify browser
         timeout-minutes: 5
         run: bash scripts/ci-browser-install.sh browser "${{ matrix.engine }}"
+      - name: Travel Book real Pages build browser regression
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 5
+        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-travel-book-runtime-browser.mjs
       - name: PWA bootstrap Chromium real build
         if: matrix.engine == 'chromium'
         timeout-minutes: 5
@@ -215,10 +219,6 @@ jobs:
         if: matrix.engine == 'chromium'
         timeout-minutes: 5
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-shared-trip-browser.mjs
-      - name: Travel Book real Pages build browser regression
-        if: matrix.engine == 'chromium'
-        timeout-minutes: 5
-        run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-travel-book-runtime-browser.mjs
       - name: Preserve browser installation diagnostics
         if: always()
         uses: actions/upload-artifact@v4

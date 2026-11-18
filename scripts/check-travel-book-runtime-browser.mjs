@@ -91,8 +91,10 @@ try{
   assert.equal(await savePage.locator('.travel-book-template-preview img').count(),9);
   await savePage.locator('.travel-book-templates').scrollIntoViewIfNeeded();
   await savePage.waitForFunction(()=>[...document.querySelectorAll('.travel-book-template-preview img')].every(img=>img.complete&&img.naturalWidth>0));
-  assert.equal(await savePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+
   if(process.env.RUNNER_TEMP){const directory=resolve(process.env.RUNNER_TEMP,'browser-install-logs');await mkdir(directory,{recursive:true});await savePage.locator('.travel-book-templates').screenshot({path:resolve(directory,'travel-book-templates.png')})}
+  const widthEvidence=await savePage.evaluate(()=>({viewport:innerWidth,width:document.documentElement.scrollWidth,overflow:[...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&(r.right>innerWidth+1||r.left< -1)}).map(e=>({tag:e.tagName,id:e.id,cls:e.className,left:e.getBoundingClientRect().left,right:e.getBoundingClientRect().right})).slice(0,25)}));
+  assert.ok(widthEvidence.width<=widthEvidence.viewport,JSON.stringify(widthEvidence));
   const writes=requests.length;saved.locks.layout=true;
   await savePage.reload();await openEditor();
   assert.equal(await savePage.locator('[data-tb-template="narrative"]').isDisabled(),true);
