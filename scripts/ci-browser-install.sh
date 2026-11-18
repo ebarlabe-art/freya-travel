@@ -38,11 +38,11 @@ case "$stage" in
     node "$cli" --version
     ;;
   dependencies)
-    # The original run stalled on the Azure Ubuntu mirror. Use Ubuntu's
+    # Hosted runners can use slow Azure or regional EC2 Ubuntu mirrors. Use Ubuntu's
     # official HTTPS archive on this disposable hosted runner, preserving pockets.
     for sources in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
       if [[ -f "$sources" ]]; then
-        sudo sed -i -E 's#https?://azure.archive.ubuntu.com/ubuntu#https://archive.ubuntu.com/ubuntu#g' "$sources"
+        sudo sed -i -E 's#https?://(azure|[a-z0-9-]+[.]ec2)[.]archive[.]ubuntu[.]com/ubuntu#https://archive.ubuntu.com/ubuntu#g' "$sources"
       fi
     done
     # Bound apt mirror/lock stalls as well as the complete install-deps process.
