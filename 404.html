@@ -305,6 +305,7 @@
     .travel-book-stickers{position:absolute;inset:0;z-index:6;pointer-events:none}.travel-book-stickers:empty{display:none}.travel-book-sticker{position:absolute;display:grid;place-items:center;min-width:40px;min-height:40px;font-size:1.9rem;line-height:1;filter:drop-shadow(0 2px 3px rgba(55,35,63,.18));pointer-events:auto;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}.travel-book-sticker.dragging{cursor:grabbing;filter:drop-shadow(0 5px 8px rgba(55,35,63,.28));z-index:8}
     .travel-book-editable{cursor:text;border-radius:8px;transition:background .15s,box-shadow .15s}.travel-book-editable:hover,.travel-book-editable:focus{background:rgba(255,255,255,.58);box-shadow:0 0 0 5px rgba(255,255,255,.28);outline:none}
     .travel-book-edit-placeholder{color:#8a7e90;font-style:italic}.travel-book-page-tools{position:relative;z-index:5;display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:0 3px 6px}.travel-book-page-tools button,.travel-book-page-tools select{border:1px solid rgba(91,42,168,.18);background:rgba(255,255,255,.88);color:#5b2aa8;border-radius:999px;padding:8px 11px;font-size:.78rem;font-weight:800;cursor:pointer}.travel-book-page-tools button:hover{background:#fff}.travel-book-page-tools .danger{color:#9e3344}.travel-book-sticker-tools{display:flex;gap:6px;flex-wrap:wrap}.travel-book-sticker-tools button{display:inline-flex;align-items:center;gap:4px}.travel-book-sticker-tools button.active{background:#5b2aa8;color:#fff;border-color:#5b2aa8}
+    .travel-book-page-editor{display:grid;gap:10px;min-width:0}
     .travel-book-templates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;min-width:0}
     .travel-book-page-tools .travel-book-template{display:flex;flex-direction:column;gap:7px;align-items:stretch;min-height:44px;min-width:0;padding:6px;border-radius:12px;white-space:normal;line-height:1.3}
     .travel-book-template[aria-pressed="true"]{outline:2px solid #5b2aa8;outline-offset:1px;background:#f3ebff}
@@ -2507,7 +2508,7 @@ function renderTravelBookProposal(proposal,visuals,totalGallery=proposal.stats.r
       const copy=`<div class="travel-book-creative-copy"><h4 class="travel-book-editable" contenteditable="true" role="textbox" data-tb-edit="title" data-section-index="${sectionIndex}" data-page-index="${pageIndex}">${esc(page.title)}</h4><p class="travel-book-editable ${page.subtitle?'':'travel-book-edit-placeholder'}" contenteditable="true" role="textbox" data-tb-edit="subtitle" data-section-index="${sectionIndex}" data-page-index="${pageIndex}">${esc(page.subtitle||'Toca aquí per afegir un comentari')}</p></div>`;
       const stickers=`<div class="travel-book-stickers">${[...new Set((page.stickers||[]).map(sticker=>sticker==='tape'?'flower':sticker))].map(sticker=>travelBookStickerHtml(sticker,page)).join('')}</div>`;
       const styleLabel={hero_editorial:'Foto protagonista',scrapbook:'Collage',narrative:'Història'}[page.creative_style]||'Composició';
-      return `<article class="travel-book-page" data-layout="${esc(page.layout_hint)}" data-creative="${esc(page.creative_style)}"><div class="travel-book-page-label">Pàgina ${pageIndex+1} · ${esc(styleLabel)}</div>${travelBookPageTools(page,sectionIndex,pageIndex)}${stickers}${copy}<div class="travel-book-page-grid">${photos}</div></article>`;
+      return `<div class="travel-book-page-editor">${travelBookPageTools(page,sectionIndex,pageIndex)}<article class="travel-book-page" data-section-index="${sectionIndex}" data-page-index="${pageIndex}" data-layout="${esc(page.layout_hint)}" data-creative="${esc(page.creative_style)}"><div class="travel-book-page-label">Pàgina ${pageIndex+1} · ${esc(styleLabel)}</div>${stickers}${copy}<div class="travel-book-page-grid">${photos}</div></article></div>`;
     }).join('');
     return `<section id="${travelBookSectionId(section,sectionIndex)}" class="travel-book-section"><div class="travel-book-section-head"><div><small>${section.role==='day'?'Dia del viatge':'Records'}</small><h3>${esc(formatTravelBookDate(section.local_date))}</h3></div><small>${section.items.length} fotos · ${section.pages?.length||0} pàgines</small></div><div class="travel-book-pages">${pages}</div></section>`;
   }).join(''):'<div class="travel-book-empty">Encara no hi ha cap foto editorial preparada per construir la proposta.</div>';
@@ -2552,7 +2553,7 @@ function renderTravelBookProposal(proposal,visuals,totalGallery=proposal.stats.r
   const cancelStickerDrag=event=>stopStickerDrag(event,true);
   sectionsEl.onpointerdown=event=>{
     const stickerEl=event.target.closest('.travel-book-sticker');if(!stickerEl)return;
-    const pageEl=stickerEl.closest('.travel-book-page'),tools=pageEl?.querySelector('[data-section-index][data-page-index]');if(!pageEl||!tools)return;
+    const pageEl=stickerEl.closest('.travel-book-page'),tools=pageEl;if(!pageEl||!tools)return;
     event.preventDefault();
     try{stickerEl.setPointerCapture?.(event.pointerId)}catch{}
     stickerEl.classList.add('dragging');

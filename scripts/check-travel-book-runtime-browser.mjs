@@ -87,6 +87,7 @@ try{
    assert.equal(await savePage.locator(`[data-tb-template="${style}"]`).getAttribute('aria-pressed'),'true');
    assert.equal(await savePage.locator('.travel-book-page').first().getAttribute('data-creative'),style);
   }
+  assert.equal(await savePage.evaluate(()=>{const tools=document.querySelector('.travel-book-page-tools').getBoundingClientRect(),page=document.querySelector('.travel-book-page').getBoundingClientRect();return tools.bottom<=page.top}),true,'Decorations must not cover the template controls');
   assert.equal(await savePage.locator('.travel-book-template-preview img').count(),9);
   await savePage.locator('.travel-book-templates').scrollIntoViewIfNeeded();
   await savePage.waitForFunction(()=>[...document.querySelectorAll('.travel-book-template-preview img')].every(img=>img.complete&&img.naturalWidth>0));
