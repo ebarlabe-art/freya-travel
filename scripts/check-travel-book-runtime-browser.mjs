@@ -88,9 +88,10 @@ try{
    assert.equal(await savePage.locator('.travel-book-page').first().getAttribute('data-creative'),style);
   }
   assert.equal(await savePage.locator('.travel-book-template-preview img').count(),9);
-  assert.equal(await savePage.evaluate(()=>[...document.querySelectorAll('.travel-book-template-preview img')].every(img=>img.complete&&img.naturalWidth>0)),true);
+  await savePage.locator('.travel-book-templates').scrollIntoViewIfNeeded();
+  await savePage.waitForFunction(()=>[...document.querySelectorAll('.travel-book-template-preview img')].every(img=>img.complete&&img.naturalWidth>0));
   assert.equal(await savePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
-  if(process.env.RUNNER_TEMP){const directory=resolve(process.env.RUNNER_TEMP,'browser-install-logs');await mkdir(directory,{recursive:true});await savePage.locator('.travel-book-templates').screenshot({path:resolve(directory,'travel-book-templates.png')})
+  if(process.env.RUNNER_TEMP){const directory=resolve(process.env.RUNNER_TEMP,'browser-install-logs');await mkdir(directory,{recursive:true});await savePage.locator('.travel-book-templates').screenshot({path:resolve(directory,'travel-book-templates.png')})}
   const writes=requests.length;saved.locks.layout=true;
   await savePage.reload();await openEditor();
   assert.equal(await savePage.locator('[data-tb-template="narrative"]').isDisabled(),true);
