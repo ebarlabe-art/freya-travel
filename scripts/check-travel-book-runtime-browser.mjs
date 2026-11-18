@@ -56,6 +56,8 @@ try{
     if(recovered){proposal=recovered.proposal;persistence=recovered.persistence;travelBookProposalState={...recovered,visuals,totalGallery:3};travelBookPendingEdits.set(travelBookEditKey(travelBookProposalState),travelBookProposalState)}
     else{proposal=editor.applyTravelBookDocuments(proposal,persistence.records);travelBookProposalState=null}
     renderTravelBookProposal(proposal,visuals,3,persistence);travelBookProposalState.api=api;
+    // Match setAppView visibility; the synthetic loader bypasses its remote data fetch.
+    APP_VIEWS.forEach(view=>document.getElementById(view)?.classList.toggle('hidden',view!=='travelBookView'));
     for(let el=document.getElementById('travelBookView');el;el=el.parentElement)el.classList.remove('hidden');
     if(recovered){travelBookSaveStatus(travelBookProposalState);document.getElementById('travelBookRetrySave').classList.remove('hidden')}
    },{saved,version,recover});
@@ -95,6 +97,7 @@ try{
   if(process.env.RUNNER_TEMP){const directory=resolve(process.env.RUNNER_TEMP,'browser-install-logs');await mkdir(directory,{recursive:true});await savePage.locator('.travel-book-templates').screenshot({path:resolve(directory,'travel-book-templates.png')})}
   const widthEvidence=await savePage.evaluate(()=>({viewport:innerWidth,width:document.documentElement.scrollWidth,overflow:[...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&(r.right>innerWidth+1||r.left< -1)}).map(e=>({tag:e.tagName,id:e.id,cls:e.className,left:e.getBoundingClientRect().left,right:e.getBoundingClientRect().right})).slice(0,25)}));
   assert.ok(widthEvidence.width<=widthEvidence.viewport,JSON.stringify(widthEvidence));
+  console.log('PASS #213 mobile width: '+JSON.stringify(widthEvidence));
   const writes=requests.length;saved.locks.layout=true;
   await savePage.reload();await openEditor();
   assert.equal(await savePage.locator('[data-tb-template="narrative"]').isDisabled(),true);
