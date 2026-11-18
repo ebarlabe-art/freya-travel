@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {compositionFromTravelBookPage,applyTravelBookComposition,applyTravelBookDocuments} from '../domain/travel-book-editor-state.mjs';
+import {compositionFromTravelBookPage,applyTravelBookComposition,applyTravelBookDocuments,travelBookTemplateRestriction} from '../domain/travel-book-editor-state.mjs';
 
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 function ids(start=100){let n=start;return()=>id(n++)}
@@ -84,4 +84,40 @@ test('#213 legacy documents without a Freya label retain their editorial content
  const restored=applyTravelBookComposition({...page,title:'Generated'},doc);
  assert.equal(restored.title,'Legacy');
  assert.deepEqual(compositionFromTravelBookPage({page:restored,compositionId:id(1),pageId:id(2),previousDocument:doc}),doc);
+});
+
+
+test('#213 templates only change presentation metadata across all existing layouts',()=>{
+ for(const layout of ['hero','duo','triptych','grid','story_grid']){
+  const page={index:0,layout_hint:layout,creative_style:'hero_editorial',title:'Editorial',subtitle:'Text',stickers:[],sticker_positions:{},items:[{asset_id:id(10),source_snapshot_ids:[],overlay_text:'Caption'}]};
+  let doc=compositionFromTravelBookPage({page,compositionId:id(1),pageId:id(2),makeId:ids()});
+  const image=doc.elements.find(e=>e.type==='image');image.crop={x:.1,y:.1,width:.8,height:.8};image.geometry={x:17,y:22,width:82,height:61,rotation:12};image.locks.content=true;
+  const caption=doc.elements.find(e=>e.role==='caption');doc.elements.push({...structuredClone(caption),id:id(900),text:'Another saved caption',locks:{content:true,geometry:false}});
+  const original=structuredClone(doc);
+  for(const style of ['scrapbook','narrative','hero_editorial']){
+   const restored=applyTravelBookComposition(page,doc);
+   assert.equal(travelBookTemplateRestriction(doc),null);
+   doc=compositionFromTravelBookPage({page:{...restored,creative_style:style},compositionId:id(1),pageId:id(2),previousDocument:doc});
+   assert.deepEqual({...doc,metadata:original.metadata},original);
+   const reopened=applyTravelBookComposition(page,doc);assert.equal(reopened.creative_style,style);assert.equal(reopened.layout_hint,layout);
+  }
+ }
+});
+
+test('#213 locked geometry and layout reject template changes without altering the document',()=>{
+ const page={index:0,layout_hint:'hero',creative_style:'hero_editorial',title:'Locked',subtitle:null,stickers:[],sticker_positions:{},items:[{asset_id:id(10),source_snapshot_ids:[],overlay_text:null}]};
+ for(const lock of ['layout','geometry']){
+  const doc=compositionFromTravelBookPage({page,compositionId:id(1),pageId:id(2),makeId:ids()});
+  if(lock==='layout')doc.locks.layout=true;else doc.elements[0].locks.geometry=true;
+  const original=structuredClone(doc);assert.match(travelBookTemplateRestriction(doc),/bloquejada/);
+  assert.throws(()=>compositionFromTravelBookPage({page:{...page,creative_style:'scrapbook'},compositionId:id(1),pageId:id(2),previousDocument:doc}),/bloquejada/);
+  assert.deepEqual(doc,original);
+ }
+});
+
+test('#213 unknown legacy presentation is preserved and excluded from the template selector',()=>{
+ const page={index:0,layout_hint:'hero',creative_style:'hero_editorial',title:'Legacy',subtitle:null,stickers:[],sticker_positions:{},items:[{asset_id:id(10),source_snapshot_ids:[],overlay_text:null}]};
+ const doc=compositionFromTravelBookPage({page,compositionId:id(1),pageId:id(2),makeId:ids()});doc.metadata.label='Custom saved presentation';
+ assert.match(travelBookTemplateRestriction(doc),/presentació pròpia/);
+ assert.equal(applyTravelBookComposition(page,doc).title,'Legacy');
 });

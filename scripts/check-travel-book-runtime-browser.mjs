@@ -1,7 +1,7 @@
 // Exercises the actual Pages build, not an extracted or rewritten HTML fixture.
 // Playwright is test tooling only; CI installs it outside the application package.
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
+import {readFile,mkdir} from 'node:fs/promises';
 import {createServer} from 'node:http';
 import {resolve,extname,sep} from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
@@ -49,29 +49,64 @@ try{
     const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
     session={user:{id:id(90)}};trip={id:id(91),experience_key:null};
     const api=await travelBookProposalApi(),editor=await travelBookEditorApi(),book={id:id(92)};
-    let proposal=api.buildInitialTravelBookProposal({trip_id:trip.id,book_id:book.id,photos:[{asset_id:id(93),status:'ready'}]});
+    let proposal=api.buildInitialTravelBookProposal({trip_id:trip.id,book_id:book.id,photos:[93,97,98].map(n=>({asset_id:id(n),status:'ready'}))});
+    const visuals=new Map([93,97,98].map((n,i)=>[id(n),'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="120" height="90"><rect width="120" height="90" fill="${['#b6c9a3','#e2bf95','#bba7cf'][i]}"/><text x="12" y="48" font-size="18">Foto ${i+1}</text></svg>`)]));
     let persistence={book,edition:{id:id(94)},records:[{composition_id:id(95),page_id:id(96),current_version:version,document:saved}]};
     const recovered=recover?await recoverTravelBookEdits(book,api):null;
-    if(recovered){proposal=recovered.proposal;persistence=recovered.persistence;travelBookProposalState={...recovered,visuals:new Map(),totalGallery:1};travelBookPendingEdits.set(travelBookEditKey(travelBookProposalState),travelBookProposalState)}
+    if(recovered){proposal=recovered.proposal;persistence=recovered.persistence;travelBookProposalState={...recovered,visuals,totalGallery:3};travelBookPendingEdits.set(travelBookEditKey(travelBookProposalState),travelBookProposalState)}
     else{proposal=editor.applyTravelBookDocuments(proposal,persistence.records);travelBookProposalState=null}
-    renderTravelBookProposal(proposal,new Map(),1,persistence);travelBookProposalState.api=api;
+    renderTravelBookProposal(proposal,visuals,3,persistence);travelBookProposalState.api=api;
+    // Match setAppView visibility; the synthetic loader bypasses its remote data fetch.
+    APP_VIEWS.forEach(view=>document.getElementById(view)?.classList.toggle('hidden',view!=='travelBookView'));
     for(let el=document.getElementById('travelBookView');el;el=el.parentElement)el.classList.remove('hidden');
     if(recovered){travelBookSaveStatus(travelBookProposalState);document.getElementById('travelBookRetrySave').classList.remove('hidden')}
    },{saved,version,recover});
   }
   await savePage.goto(url,{waitUntil:'load'});await openEditor();
   for(const [selector,value] of [['[data-tb-edit="title"]','Títol desat'],['[data-tb-edit="subtitle"]','Comentari desat'],['[data-tb-photo-edit]','Text de fotografia']]){
-   await savePage.locator(selector).fill(value);await savePage.locator(selector).press('Tab');
+   await savePage.locator(selector).first().fill(value);await savePage.locator(selector).first().press('Tab');
    await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent==='✓ Canvis desats.');
   }
-  await savePage.locator('[data-tb-style]').selectOption('scrapbook');
+  await savePage.locator('[data-tb-template="scrapbook"]').click();
   await savePage.waitForFunction(()=>travelBookProposalState.persistence.records.every(r=>!r.dirty&&!r.pending)&&!travelBookProposalState.saving);
   await savePage.reload();await openEditor();
   assert.equal(await savePage.locator('[data-tb-edit="title"]').textContent(),'Títol desat');
   assert.equal(await savePage.locator('[data-tb-edit="subtitle"]').textContent(),'Comentari desat');
-  assert.equal(await savePage.locator('[data-tb-photo-edit]').textContent(),'Text de fotografia');
-  assert.equal(await savePage.locator('[data-tb-style]').inputValue(),'scrapbook');
+  assert.equal(await savePage.locator('[data-tb-photo-edit]').first().textContent(),'Text de fotografia');
+  assert.equal(await savePage.locator('[data-tb-template="scrapbook"]').getAttribute('aria-pressed'),'true');
   console.log('PASS #213 real input/focusout: title, comment, photo text and composition survive reopening');
+  // Template changes retain the persisted physical document, even with a custom crop.
+  saved.elements.find(e=>e.type==='image').crop={x:.1,y:.1,width:.8,height:.8};
+  saved.elements.find(e=>e.type==='image').geometry.rotation=12;
+  const editorial=structuredClone(saved);
+  await savePage.reload();await openEditor();
+  for(const style of ['hero_editorial','narrative','scrapbook']){
+   const card=savePage.locator(`[data-tb-template="${style}"]`),box=await card.boundingBox();assert.ok(box&&box.height>=44);
+   await card.click();
+   await savePage.waitForFunction(()=>!travelBookProposalState.saving&&travelBookProposalState.persistence.records.every(r=>!r.dirty&&!r.pending));
+   assert.deepEqual({...saved,metadata:editorial.metadata},editorial);
+   await savePage.reload();await openEditor();
+   assert.equal(await savePage.locator(`[data-tb-template="${style}"]`).getAttribute('aria-pressed'),'true');
+   assert.equal(await savePage.locator('.travel-book-page').first().getAttribute('data-creative'),style);
+  }
+  assert.equal(await savePage.evaluate(()=>{const tools=document.querySelector('.travel-book-page-tools').getBoundingClientRect(),page=document.querySelector('.travel-book-page').getBoundingClientRect();return tools.bottom<=page.top}),true,'Decorations must not cover the template controls');
+  assert.equal(await savePage.locator('.travel-book-template-preview img').count(),9);
+  await savePage.locator('.travel-book-templates').scrollIntoViewIfNeeded();
+  await savePage.waitForFunction(()=>[...document.querySelectorAll('.travel-book-template-preview img')].every(img=>img.complete&&img.naturalWidth>0));
+
+  if(process.env.RUNNER_TEMP){const directory=resolve(process.env.RUNNER_TEMP,'browser-install-logs');await mkdir(directory,{recursive:true});await savePage.locator('.travel-book-templates').screenshot({path:resolve(directory,'travel-book-templates.png')})}
+  const widthEvidence=await savePage.evaluate(()=>({viewport:innerWidth,width:document.documentElement.scrollWidth,overflow:[...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&(r.right>innerWidth+1||r.left< -1)}).map(e=>({tag:e.tagName,id:e.id,cls:e.className,left:e.getBoundingClientRect().left,right:e.getBoundingClientRect().right})).slice(0,25)}));
+  assert.ok(widthEvidence.width<=widthEvidence.viewport,JSON.stringify(widthEvidence));
+  console.log('PASS #213 mobile width: '+JSON.stringify(widthEvidence));
+  const writes=requests.length;saved.locks.layout=true;
+  await savePage.reload();await openEditor();
+  assert.equal(await savePage.locator('[data-tb-template="narrative"]').isDisabled(),true);
+  assert.match(await savePage.locator('.travel-book-template-hint').textContent(),/bloquejada/);
+  assert.equal(await savePage.evaluate(async()=>{try{await travelBookApplyPageEdit(0,0,{creative_style:'narrative'});return false}catch(e){return e.message.includes('bloquejada')}}),true);
+  assert.equal(requests.length,writes);
+  saved.locks.layout=false;await savePage.reload();await openEditor();
+  console.log('PASS #213 templates: three visual choices, mobile target size, reload persistence, exact editorial preservation and lock rejection without writes');
+
   failing=true;
   await savePage.locator('[data-tb-edit="title"]').fill('Pendent recuperable');await savePage.locator('[data-tb-edit="title"]').press('Tab');
   await savePage.waitForFunction(()=>!!travelBookProposalState.persistence.records[0].error&&!travelBookProposalState.saving);

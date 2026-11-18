@@ -15,6 +15,17 @@ function labelFor(page){return JSON.stringify({ft:1,style:page.creative_style,la
 function readLabel(document){
  try{const value=JSON.parse(document?.metadata?.label||'');return value?.ft===1?value:null}catch{return null}
 }
+// Templates change presentation metadata only; physical composition remains authoritative.
+export function travelBookTemplateRestriction(document){
+ if(!document)return null;
+ if(!validateComposition(document))return 'La composició desada no és vàlida. Es conserva sense canvis.';
+ if(document.kind!=='page')return 'Aquesta composició doble no admet el canvi de plantilla des d’aquest editor.';
+ if(document.locks.layout||document.elements.some(e=>e.locks.geometry))return 'La disposició o la posició d’un element està bloquejada. Es conserva la plantilla actual.';
+ const label=readLabel(document);
+ if(document.elements.length&&(!label||!['hero_editorial','scrapbook','narrative'].includes(label.style)||!['hero','duo','triptych','grid','story_grid'].includes(label.layout)))return 'Aquesta composició té una presentació pròpia. Es conserva sense substituir-la per una plantilla.';
+ return null;
+}
+
 function oldId(document,predicate,makeId){
  const found=document?.elements?.find(predicate)?.id;
  return UUID.test(found||'')?found:makeId();
@@ -41,20 +52,26 @@ export function flattenTravelBookPages(proposal){
 
 // Patch only fields exposed by the current editor. Hidden editorial properties are authoritative.
 function patchSavedPage(page,previous,makeId){
- const document=structuredClone(previous),elements=document.elements;
+ const oldLabel=readLabel(previous);
+ if(oldLabel&&(oldLabel.style!==page.creative_style||oldLabel.layout!==page.layout_hint)){
+  const reason=travelBookTemplateRestriction(previous);if(reason)throw Error(reason);
+ }
+ const document=structuredClone(previous),elements=document.elements,visible=applyTravelBookComposition(page,previous);
  const updateText=(element,value,role,g)=>{
   if(element){
    if(element.locks.content&&element.text!==value)throw Error('Aquest element té el contingut protegit.');
    element.text=value;
   }else if(value)elements.push(textElement(makeId(),role,value,[],g));
  };
- updateText(elements.find(e=>e.type==='text'&&e.role==='title'),page.title||'','title',geometry(12,12,186,18));
- updateText(elements.find(e=>e.type==='text'&&e.role==='body'&&!e.text.startsWith(STICKER_PREFIX)),page.subtitle||'','body',geometry(12,32,186,18));
+ if(page.title!==visible.title)updateText(elements.find(e=>e.type==='text'&&e.role==='title'),page.title||'','title',geometry(12,12,186,18));
+ if((page.subtitle||'')!==(visible.subtitle||''))updateText(elements.find(e=>e.type==='text'&&e.role==='body'&&!e.text.startsWith(STICKER_PREFIX)),page.subtitle||'','body',geometry(12,32,186,18));
  for(const item of page.items){
   const at=elements.findIndex(e=>e.type==='image'&&(item.editor_image_id?e.id===item.editor_image_id:e.asset_id===item.asset_id));
   if(at<0)throw Error('La fotografia ja no correspon a la composició desada.');
   const image=elements[at];let caption;
   for(let i=at+1;i<elements.length&&elements[i].type!=='image';i++)if(elements[i].type==='text'&&elements[i].role==='caption'){caption=elements[i];break}
+  const visibleItem=visible.items.find(e=>e.editor_image_id===image.id);
+  if((item.overlay_text||'')===(visibleItem?.overlay_text||''))continue;
   if(caption)updateText(caption,item.overlay_text||'','caption');
   else if(item.overlay_text)elements.splice(at+1,0,textElement(makeId(),'caption',item.overlay_text,[],geometry(image.geometry.x+3,image.geometry.y+image.geometry.height-16,Math.max(1,image.geometry.width-6),13)));
  }
