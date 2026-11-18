@@ -7,7 +7,7 @@ import {resolve,extname,sep} from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const dist=resolve(process.env.PAGES_DIST||resolve(root,'dist'));
-const {chromium}=await import(process.env.PLAYWRIGHT_MODULE?pathToFileURL(process.env.PLAYWRIGHT_MODULE).href:'playwright');
+const engines=await import(process.env.PLAYWRIGHT_MODULE?pathToFileURL(process.env.PLAYWRIGHT_MODULE).href:'playwright');
 const mime={'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript','.css':'text/css','.png':'image/png','.webmanifest':'application/manifest+json'};
 const missing=[];
 const server=createServer(async(req,res)=>{
@@ -19,7 +19,7 @@ const server=createServer(async(req,res)=>{
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const origin=`http://127.0.0.1:${server.address().port}`,url=origin+'/freya-travel/';
-const browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
+const browser=await engines[process.env.TRAVEL_BOOK_ENGINE||'chromium'].launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
 const apis=['travelBookProposalApi','travelBookBatchApi','travelBookEditorApi'];
 async function context(options={}){
   const ctx=await browser.newContext(options);
@@ -29,6 +29,71 @@ async function context(options={}){
   return ctx;
 }
 try{
+  // #213: real DOM events and encrypted browser storage; synthetic RPC receipts only.
+  const saveCtx=await context({serviceWorkers:'block',viewport:{width:390,height:844}}),savePage=await saveCtx.newPage();
+  let saved=null,version=1,failing=false,loseReceipt=false;const receipts=new Map(),requests=[];
+  await saveCtx.route('**/rest/v1/rpc/save_travel_book_compositions_v1',async route=>{
+   if(route.request().method()==='OPTIONS')return route.fulfill({status:204,headers:{'access-control-allow-origin':'*','access-control-allow-headers':'*','access-control-allow-methods':'POST, OPTIONS'}});
+   const body=route.request().postDataJSON();requests.push(body);
+   const reply=data=>route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(data)});
+   if(failing)return route.fulfill({status:503,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({message:'Synthetic unavailable'})});
+   if(receipts.has(body.p_operation_id))return reply(receipts.get(body.p_operation_id));
+   assert.equal(body.p_changes[0].expected_version,version);
+   saved=structuredClone(body.p_changes[0].document);version++;
+   const result={compositions:[{composition_id:saved.composition_id,version}]};receipts.set(body.p_operation_id,result);
+   if(loseReceipt){loseReceipt=false;return route.abort('failed')}
+   return reply(result);
+  });
+  async function openEditor(recover=false){
+   await savePage.evaluate(async({saved,version,recover})=>{
+    const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
+    session={user:{id:id(90)}};trip={id:id(91),experience_key:null};
+    const api=await travelBookProposalApi(),editor=await travelBookEditorApi(),book={id:id(92)};
+    let proposal=api.buildInitialTravelBookProposal({trip_id:trip.id,book_id:book.id,photos:[{asset_id:id(93),status:'ready'}]});
+    let persistence={book,edition:{id:id(94)},records:[{composition_id:id(95),page_id:id(96),current_version:version,document:saved}]};
+    const recovered=recover?await recoverTravelBookEdits(book,api):null;
+    if(recovered){proposal=recovered.proposal;persistence=recovered.persistence;travelBookProposalState={...recovered,visuals:new Map(),totalGallery:1};travelBookPendingEdits.set(travelBookEditKey(travelBookProposalState),travelBookProposalState)}
+    else{proposal=editor.applyTravelBookDocuments(proposal,persistence.records);travelBookProposalState=null}
+    renderTravelBookProposal(proposal,new Map(),1,persistence);travelBookProposalState.api=api;
+    for(let el=document.getElementById('travelBookView');el;el=el.parentElement)el.classList.remove('hidden');
+    if(recovered){travelBookSaveStatus(travelBookProposalState);document.getElementById('travelBookRetrySave').classList.remove('hidden')}
+   },{saved,version,recover});
+  }
+  await savePage.goto(url,{waitUntil:'load'});await openEditor();
+  for(const [selector,value] of [['[data-tb-edit="title"]','Títol desat'],['[data-tb-edit="subtitle"]','Comentari desat'],['[data-tb-photo-edit]','Text de fotografia']]){
+   await savePage.locator(selector).fill(value);await savePage.locator(selector).press('Tab');
+   await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent==='✓ Canvis desats.');
+  }
+  await savePage.locator('[data-tb-style]').selectOption('scrapbook');
+  await savePage.waitForFunction(()=>travelBookProposalState.persistence.records.every(r=>!r.dirty&&!r.pending)&&!travelBookProposalState.saving);
+  await savePage.reload();await openEditor();
+  assert.equal(await savePage.locator('[data-tb-edit="title"]').textContent(),'Títol desat');
+  assert.equal(await savePage.locator('[data-tb-edit="subtitle"]').textContent(),'Comentari desat');
+  assert.equal(await savePage.locator('[data-tb-photo-edit]').textContent(),'Text de fotografia');
+  assert.equal(await savePage.locator('[data-tb-style]').inputValue(),'scrapbook');
+  console.log('PASS #213 real input/focusout: title, comment, photo text and composition survive reopening');
+  failing=true;
+  await savePage.locator('[data-tb-edit="title"]').fill('Pendent recuperable');await savePage.locator('[data-tb-edit="title"]').press('Tab');
+  await savePage.waitForFunction(()=>!!travelBookProposalState.persistence.records[0].error&&!travelBookProposalState.saving);
+  assert.match(await savePage.locator('#travelBookMessage').textContent(),/No s’han desat/);
+  await savePage.evaluate(async()=>{await travelBookProposalState.localSave});
+  savePage.on('dialog',dialog=>dialog.accept());
+  await savePage.reload();await openEditor(true);
+  assert.equal(await savePage.locator('[data-tb-edit="title"]').textContent(),'Pendent recuperable');
+  failing=false;await savePage.locator('#travelBookRetrySave').click();
+  await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent==='✓ Canvis desats.');
+  assert.equal(saved.elements.find(e=>e.role==='title').text,'Pendent recuperable');
+  console.log('PASS #213 failure retains encrypted pending edits through reload; retry persists them');
+  loseReceipt=true;const beforeVersion=version;
+  await savePage.locator('[data-tb-edit="title"]').fill('Resposta perduda');await savePage.locator('[data-tb-edit="title"]').press('Tab');
+  await savePage.waitForFunction(()=>!!travelBookProposalState.persistence.records[0].error&&!travelBookProposalState.saving);
+  const original=requests.at(-1);await savePage.locator('#travelBookRetrySave').click();
+  await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent==='✓ Canvis desats.');
+  assert.deepEqual(requests.at(-1),original);assert.equal(version,beforeVersion+1);
+  console.log('PASS #213 lost server receipt retries the same operation without duplicate version');
+  await saveCtx.close();
+  if(!process.env.TRAVEL_BOOK_SAVE_ONLY){
+
   const ctx=await context({serviceWorkers:'block'}),page=await ctx.newPage(),errors=[],modules=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('response',response=>{if(/travel-book.*\.mjs/.test(response.url()))modules.push({url:response.url(),status:response.status(),type:response.headers()['content-type']})});
@@ -585,4 +650,5 @@ async function visibleOfflineTripCard(page,tripId,timeout=15000){
     'Expired session rejected online must close and revoke its local offline grant');
   console.log('PASS expired SDK session revoked after reconnect: no token, offline grant or private trip access');
   await coldCtx.close();
+  }
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}

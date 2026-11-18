@@ -1,5 +1,15 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## #213 · Fiabilitat del desament editorial — BRANCA, NO PUBLICADA
+
+Branca `fix/213-editor-save-recovery`, base main `2b4d484`. Correcció focalitzada: captura `input`/`focusout` abans de navegar, cua amb resposta persistent verificada, CAS i reintent de la mateixa operació després d’una resposta perduda. Estats pendent/desat/error i botó de reintent. Els pendents reutilitzen la caixa forta xifrada del navegador; no contenen URLs signades i cada instància conserva un esborrany independent. Eliminar les còpies privades del dispositiu també elimina aquests pendents.
+
+La recuperació prioritza ordre, fotos i documents editorials desats davant la proposta regenerada. Editar text conserva IDs, geometria, retall i bloquejos; documents antics sense etiqueta Freya continuen llegint-se. Documents que l’editor actual no pot representar es rebutgen sense sobreescriure’ls. No s’afegeixen controls ni s’alteren SQL/Edge/dades reals. Cache preparada v65; `404.html` generat.
+
+Verificació local: 38 proves focalitzades PASS (editor-state, proposal, proposal-ui, save-queue), build, paritat i control del paquet públic PASS. La prova de navegador #213 està incorporada al control runtime existent, amb RPC sintètic i IndexedDB/WebCrypto reals: text→focusout→desar→reobrir, composició, error→recàrrega→reintent i resposta perduda. Execució local bloquejada en arrencar Chrome; pendent de CI, sense donar-la per passada. iPhone físic/suspensió del sistema pendent; cap navegador pot garantir l’última pulsació si el procés es tanca abans d’acabar l’escriptura local. El missatge “desat” només correspon a confirmació del servidor.
+
+Següent acció: revisar PR/CI de la branca i autoritzar qualsevol fusió/publicació separadament. #213 continua oberta.
+
 ## #228 · Cerca automàtica fora de les parades — BRANCA, NO PUBLICADA
 
 Base main `edd5507` (#231 fusionada). Cas confirmat: Tour Eiffel, París en un viatge Vall d’Aran. `proposeActivityPoints()` descartava l’activitat quan `itineraryAutoPlaceDestination()` retornava null. Ara cerca amb la ciutat explícita sense heretar el país d’una parada diferent; sense ciutat també pot cercar, però no autoconfirma. `chooseAutomaticPoint()` admet context sense país només amb ciutat i nom coincidents, candidats del mateix país i a menys de 120 m, i almenys una ubicació exacta. Es mantenen la protecció de seleccions manuals/retirades, CAS i comprovació de la resposta persistent.

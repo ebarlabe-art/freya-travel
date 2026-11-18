@@ -1498,6 +1498,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
 
     <div id="travelBookView" class="hidden">
       <button id="travelBookBack" class="ghost back" type="button">← Tornar</button>
+      <button id="travelBookRetrySave" class="secondary hidden" type="button">Reintenta desar els canvis</button>
       <div class="travel-book-shell">
         <section class="travel-book-hero">
           <small>📖 Travel Book · Primera proposta</small>
@@ -2105,6 +2106,7 @@ function msg(id,text,error=false){const el=$(id);el.textContent=text;el.classNam
 function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function isLondonTrip(value=trip){return value?.experience_key==='london-2026'}
 let travelBookProposalState=null,travelBookBatchRunning=false,travelBookSaveQueue=Promise.resolve(),travelBookReturnView='photosView';
+const travelBookPendingEdits=new Map();
 const travelBookModuleLoads=new Map();
 function loadTravelBookModule(file){
   let entry=travelBookModuleLoads.get(file);
@@ -2266,77 +2268,175 @@ function travelBookStickerHtml(sticker,page){
 }
 function travelBookPageAt(sectionIndex,pageIndex){return travelBookProposalState?.proposal?.sections?.[sectionIndex]?.pages?.[pageIndex]||null}
 async function ensureTravelBookEdition(book,proposal){
-  let editionResult=await db.from('travel_book_editions').select('id,title,structure_version,created_at').eq('trip_id',trip.id).eq('book_id',book.id).order('created_at',{ascending:true}).limit(1);
+  let editionResult=await db.from('travel_book_editions').select('id,title,structure_version,created_at').eq('trip_id',proposal.trip_id).eq('book_id',book.id).order('created_at',{ascending:true}).limit(1);
   if(editionResult.error)throw editionResult.error;
   let edition=editionResult.data?.[0]||null;
   if(!edition){
-    const editionId=crypto.randomUUID(),created=await db.rpc('create_travel_book_edition_v1',{p_trip_id:trip.id,p_book_id:book.id,p_edition_id:editionId,p_title:(book.title||'Travel Book').slice(0,160),p_operation_id:crypto.randomUUID()});
+    const editionId=crypto.randomUUID(),created=await db.rpc('create_travel_book_edition_v1',{p_trip_id:proposal.trip_id,p_book_id:book.id,p_edition_id:editionId,p_title:(book.title||'Travel Book').slice(0,160),p_operation_id:crypto.randomUUID()});
     if(created.error)throw created.error;
     edition={id:editionId,title:book.title||'Travel Book',structure_version:created.data?.structure_version||1};
   }
-  const editor=await travelBookEditorApi(),flat=editor.flattenTravelBookPages(proposal);
+  const editor=await travelBookEditorApi();
   const [compositionsResult,pagesResult]=await Promise.all([
-    db.from('travel_book_compositions').select('id,current_version,created_at').eq('trip_id',trip.id).eq('book_id',book.id).eq('edition_id',edition.id).is('removed_at',null),
-    db.from('travel_book_pages').select('id,composition_id,slot,position').eq('trip_id',trip.id).eq('book_id',book.id).eq('edition_id',edition.id).not('position','is',null).order('position',{ascending:true})
+    db.from('travel_book_compositions').select('id,current_version,created_at').eq('trip_id',proposal.trip_id).eq('book_id',book.id).eq('edition_id',edition.id).is('removed_at',null),
+    db.from('travel_book_pages').select('id,composition_id,slot,position').eq('trip_id',proposal.trip_id).eq('book_id',book.id).eq('edition_id',edition.id).not('position','is',null).order('position',{ascending:true})
   ]);
   if(compositionsResult.error)throw compositionsResult.error;if(pagesResult.error)throw pagesResult.error;
   const compositions=compositionsResult.data||[],orderedIds=[...new Set((pagesResult.data||[]).map(row=>row.composition_id))],byId=new Map(compositions.map(row=>[row.id,row]));
   let active=orderedIds.map(id=>byId.get(id)).filter(Boolean);
-  if(active.length!==flat.length){
-    const keep=active.slice(0,Math.min(active.length,flat.length)),remove=active.slice(flat.length).map(row=>row.id),add=[];
+  const ids=active.map(row=>row.id);
+  const versions=ids.length?await db.from('travel_book_composition_versions').select('composition_id,version,document').in('composition_id',ids):{data:[],error:null};
+  if(versions.error)throw versions.error;
+  const currentDocs=new Map((versions.data||[]).map(row=>[`${row.composition_id}:${row.version}`,row.document]));
+  if(active.some(row=>!currentDocs.has(`${row.id}:${row.current_version}`)))throw Error('No s’ha pogut recuperar la versió desada de totes les pàgines.');
+  proposal=editor.applyTravelBookDocuments(proposal,active.map(row=>({document:currentDocs.get(`${row.id}:${row.current_version}`)||null})));
+  const flat=editor.flattenTravelBookPages(proposal);
+  if(active.length<flat.length){
+    const keep=active,remove=[],add=[];
     for(let i=keep.length;i<flat.length;i++)add.push({id:crypto.randomUUID(),page_ids:[crypto.randomUUID()]});
     const order=[...keep.map(row=>row.id),...add.map(row=>row.id)];
-    const changed=await db.rpc('change_travel_book_structure_v1',{p_trip_id:trip.id,p_book_id:book.id,p_edition_id:edition.id,p_operation_id:crypto.randomUUID(),p_expected_structure_version:edition.structure_version,p_add:add,p_remove:remove,p_order:order});
+    const changed=await db.rpc('change_travel_book_structure_v1',{p_trip_id:proposal.trip_id,p_book_id:book.id,p_edition_id:edition.id,p_operation_id:crypto.randomUUID(),p_expected_structure_version:edition.structure_version,p_add:add,p_remove:remove,p_order:order});
     if(changed.error)throw changed.error;
     edition={...edition,structure_version:changed.data?.structure_version||edition.structure_version+1};
-    const refreshedComps=await db.from('travel_book_compositions').select('id,current_version,created_at').eq('trip_id',trip.id).eq('book_id',book.id).eq('edition_id',edition.id).is('removed_at',null);
-    const refreshedPages=await db.from('travel_book_pages').select('id,composition_id,slot,position').eq('trip_id',trip.id).eq('book_id',book.id).eq('edition_id',edition.id).not('position','is',null).order('position',{ascending:true});
+    const refreshedComps=await db.from('travel_book_compositions').select('id,current_version,created_at').eq('trip_id',proposal.trip_id).eq('book_id',book.id).eq('edition_id',edition.id).is('removed_at',null);
+    const refreshedPages=await db.from('travel_book_pages').select('id,composition_id,slot,position').eq('trip_id',proposal.trip_id).eq('book_id',book.id).eq('edition_id',edition.id).not('position','is',null).order('position',{ascending:true});
     if(refreshedComps.error)throw refreshedComps.error;if(refreshedPages.error)throw refreshedPages.error;
     const refreshedById=new Map((refreshedComps.data||[]).map(row=>[row.id,row]));
     active=[...new Set((refreshedPages.data||[]).map(row=>row.composition_id))].map(id=>refreshedById.get(id)).filter(Boolean);
     pagesResult.data=refreshedPages.data||[];
   }
   const pageRows=pagesResult.data||[],pageByComposition=new Map(pageRows.map(row=>[row.composition_id,row]));
-  const ids=active.map(row=>row.id);
-  const versions=ids.length?await db.from('travel_book_composition_versions').select('composition_id,version,document').in('composition_id',ids):{data:[],error:null};
-  if(versions.error)throw versions.error;
-  const currentDocs=new Map((versions.data||[]).map(row=>[`${row.composition_id}:${row.version}`,row.document]));
   const records=active.map(row=>({composition_id:row.id,page_id:pageByComposition.get(row.id)?.id,current_version:Number(row.current_version),document:currentDocs.get(`${row.id}:${row.current_version}`)||null}));
-  return {edition,records};
+  return {edition,records,proposal};
 }
-async function persistTravelBookPage(sectionIndex,pageIndex){
-  const state=travelBookProposalState;if(!state?.persistence?.edition||!state.persistence.records)return;
-  const editor=await travelBookEditorApi(),flat=editor.flattenTravelBookPages(state.proposal),flatIndex=flat.findIndex(row=>row.sectionIndex===sectionIndex&&row.pageIndex===pageIndex);
-  const record=state.persistence.records[flatIndex],entry=flat[flatIndex];if(!record||!entry)return;
-  const document=editor.compositionFromTravelBookPage({page:entry.page,compositionId:record.composition_id,pageId:record.page_id,previousDocument:record.document});
-  const result=await db.rpc('save_travel_book_compositions_v1',{p_trip_id:trip.id,p_book_id:state.persistence.book.id,p_edition_id:state.persistence.edition.id,p_operation_id:crypto.randomUUID(),p_changes:[{expected_version:record.current_version,document}]});
+function travelBookEditScope(state){return state?.userId===session?.user?.id&&state?.proposal?.trip_id===trip?.id}
+function travelBookEditKey(state){return state.userId+':'+state.proposal.trip_id+':'+state.proposal.book_id}
+// Reuse the encrypted local vault for unacknowledged editorial changes.
+// Each editor instance has its own draft: two tabs cannot overwrite each other's work.
+function retainTravelBookEdits(state){
+ if(!travelBookEditScope(state))return Promise.resolve();
+ state.draftId ||= 'freya-travel-book-draft:'+crypto.randomUUID();
+ const id=offlineDocId(state.userId,state.proposal.trip_id,state.draftId),epoch=offlineDocEpoch;
+ const data=JSON.stringify({version:1,proposal:state.proposal,persistence:state.persistence});
+ state.localSave=(state.localSave||Promise.resolve()).catch(()=>{}).then(async()=>{
+  const database=await offlineDocDatabase(),key=await offlineDocKey(database,state.userId,true),iv=crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:new TextEncoder().encode(id)},key,new TextEncoder().encode(data));
+  if(session?.user?.id!==state.userId||offlineDocEpoch!==epoch)return;
+  await offlineDocTx(database,['records'],'readwrite',tx=>tx.objectStore('records').put({key:id,userId:state.userId,tripId:state.proposal.trip_id,documentId:state.draftId,bookId:state.proposal.book_id,size:data.length,iv:Array.from(iv),ciphertext,savedAt:Date.now()}));
+  state.localError=null;
+ }).catch(error=>{state.localError=error;travelBookSaveStatus(state)});
+ return state.localSave;
+}
+async function recoverTravelBookEdits(book,api){
+ const scope=offlineDocScope(),database=await offlineDocDatabase(),rows=await offlineDocUserRows(database,scope.userId);
+ const row=rows.filter(r=>r.tripId===scope.tripId&&r.bookId===book.id&&r.documentId?.startsWith('freya-travel-book-draft:')).sort((a,b)=>b.savedAt-a.savedAt)[0];
+ if(!row||!offlineDocScopeCurrent(scope))return null;
+ const key=await offlineDocKey(database,scope.userId),bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(row.iv),additionalData:new TextEncoder().encode(row.key)},key,row.ciphertext);
+ const draft=JSON.parse(new TextDecoder().decode(bytes));
+ if(!offlineDocScopeCurrent(scope))return null;
+ if(draft.version!==1||draft.proposal?.trip_id!==scope.tripId||draft.proposal?.book_id!==book.id||!api.validateInitialTravelBookProposal(draft.proposal)||!draft.persistence?.records)throw Error('No es pot recuperar l’edició pendent. La còpia local es conserva.');
+ return {...draft,userId:scope.userId,draftId:row.documentId,api};
+}
+async function forgetTravelBookEdits(state){
+ await state.localSave;
+ if(!state.draftId||state.persistence.records.some(r=>r.dirty||r.pending))return;
+ const database=await offlineDocDatabase();
+ await offlineDocTx(database,['records'],'readwrite',tx=>tx.objectStore('records').delete(offlineDocId(state.userId,state.proposal.trip_id,state.draftId)));
+}
+function travelBookSaveStatus(state){
+ if(state!==travelBookProposalState||!travelBookEditScope(state))return;
+ const records=state.persistence?.records||[],error=records.find(r=>r.error),pending=records.some(r=>r.dirty||r.pending);
+ msg('travelBookMessage',error?'No s’han desat tots els canvis. Es conserven pendents. '+(error.error.code==='40001'?'Una altra sessió ha modificat la pàgina; no se sobreescriurà.':error.error.message||'Reintenta el desament.'):pending?'Canvis pendents · Desant…':'✓ Canvis desats.',!!error);
+ if(state.localError)msg('travelBookMessage','Canvis pendents. No s’ha pogut conservar la còpia local; mantén l’editor obert fins que es desi al servidor.',true);
+ $('travelBookRetrySave').classList.toggle('hidden',!error&&!state.localError);
+}
+async function persistTravelBookPage(state,record){
+ if(!travelBookEditScope(state))return;
+ const editor=await travelBookEditorApi();
+ while(record.dirty||record.pending){
+  if(!travelBookEditScope(state))return;
+  if(!record.pending){
+   const index=state.persistence.records.indexOf(record),entry=editor.flattenTravelBookPages(state.proposal)[index];
+   if(!entry)throw Error('No es troba la pàgina pendent.');
+   const document=editor.compositionFromTravelBookPage({page:entry.page,compositionId:record.composition_id,pageId:record.page_id,previousDocument:record.document});
+   record.pending={revision:record.revision,document,operationId:crypto.randomUUID(),expectedVersion:record.current_version};
+  }
+  await retainTravelBookEdits(state);
+  if(!travelBookEditScope(state))return;
+  const pending=record.pending;
+  const result=await db.rpc('save_travel_book_compositions_v1',{p_trip_id:state.proposal.trip_id,p_book_id:state.proposal.book_id,p_edition_id:state.persistence.edition.id,p_operation_id:pending.operationId,p_changes:[{expected_version:pending.expectedVersion,document:pending.document}]});
   if(result.error)throw result.error;
   const saved=result.data?.compositions?.find(value=>value.composition_id===record.composition_id);
-  record.current_version=Number(saved?.version||record.current_version);record.document=document;
-  msg('travelBookMessage','✓ Canvis desats.');
+  if(!Number.isSafeInteger(saved?.version)||saved.version<pending.expectedVersion)throw Error('El servidor no ha confirmat el desament.');
+  record.current_version=saved.version;record.document=pending.document;record.pending=null;record.error=null;
+  record.dirty=record.revision!==pending.revision;
+ }
 }
-function queueTravelBookSave(sectionIndex,pageIndex){
-  travelBookSaveQueue=travelBookSaveQueue.then(()=>persistTravelBookPage(sectionIndex,pageIndex)).catch(error=>{
-    msg('travelBookMessage',error?.code==='40001'?'L’àlbum ha canviat en un altre dispositiu. Torna’l a obrir abans de continuar.':(error?.message||'No s’han pogut desar els canvis.'),true);
-  });
-  return travelBookSaveQueue;
+function queueTravelBookSave(sectionIndex,pageIndex,state=travelBookProposalState,{retry=false}={}){
+ if(!state?.persistence?.records||!travelBookEditScope(state))return Promise.resolve();
+ clearTimeout(state.saveTimer);
+ if(!retry){
+  const entries=state.proposal.sections.flatMap((section,si)=>section.pages.map((page,pi)=>({si,pi}))),index=entries.findIndex(p=>p.si===sectionIndex&&p.pi===pageIndex),record=state.persistence.records[index];
+  if(!record)return Promise.resolve();
+  record.revision=(record.revision||0)+1;record.dirty=true;
+ }
+ travelBookPendingEdits.set(travelBookEditKey(state),state);
+ void retainTravelBookEdits(state);
+ travelBookSaveStatus(state);
+ if(state.saving)return state.saving;
+ state.saving=travelBookSaveQueue=travelBookSaveQueue.then(async()=>{
+  while(travelBookEditScope(state)){
+   const record=state.persistence.records.find(r=>r.dirty||r.pending);
+   if(!record)break;
+   try{await persistTravelBookPage(state,record)}catch(error){record.error=error;break}
+  }
+ }).finally(async()=>{
+  if(!state.persistence.records.some(r=>r.dirty||r.pending)){
+   try{await forgetTravelBookEdits(state);state.localError=null}catch(error){state.localError=error}
+   if(!state.persistence.records.some(r=>r.dirty||r.pending))travelBookPendingEdits.delete(travelBookEditKey(state));
+  }else await retainTravelBookEdits(state);
+  state.saving=null;
+  travelBookSaveStatus(state);
+  if(travelBookEditScope(state)&&state.persistence.records.some(r=>r.dirty||r.pending)&&!state.persistence.records.some(r=>r.error))void queueTravelBookSave(null,null,state,{retry:true});
+ });
+ return state.saving;
 }
 async function travelBookApplyPageEdit(sectionIndex,pageIndex,changes){
-  const api=await travelBookProposalApi(),state=travelBookProposalState;
-  if(!state?.proposal)return;
-  state.proposal=api.editTravelBookPage(state.proposal,{section_index:sectionIndex,page_index:pageIndex,...changes});
-  const persistence=state.persistence;
-  renderTravelBookProposal(state.proposal,state.visuals,state.totalGallery||state.proposal.stats.ready_photos,persistence);
-  queueTravelBookSave(sectionIndex,pageIndex);
+ const state=travelBookProposalState,api=await travelBookProposalApi();if(!state?.proposal||state!==travelBookProposalState)return;
+ state.proposal=api.editTravelBookPage(state.proposal,{section_index:sectionIndex,page_index:pageIndex,...changes});
+ renderTravelBookProposal(state.proposal,state.visuals,state.totalGallery,state.persistence);
+ queueTravelBookSave(sectionIndex,pageIndex,state);
 }
 async function travelBookApplyPhotoText(sectionIndex,pageIndex,itemIndex,value){
-  const api=await travelBookProposalApi(),state=travelBookProposalState;
-  if(!state?.proposal)return;
-  state.proposal=api.editTravelBookPhotoOverlay(state.proposal,{section_index:sectionIndex,page_index:pageIndex,item_index:itemIndex,text:value});
-  const persistence=state.persistence;
-  renderTravelBookProposal(state.proposal,state.visuals,state.totalGallery||state.proposal.stats.ready_photos,persistence);
-  queueTravelBookSave(sectionIndex,pageIndex);
+ const state=travelBookProposalState,api=await travelBookProposalApi();if(!state?.proposal||state!==travelBookProposalState)return;
+ state.proposal=api.editTravelBookPhotoOverlay(state.proposal,{section_index:sectionIndex,page_index:pageIndex,item_index:itemIndex,text:value});
+ queueTravelBookSave(sectionIndex,pageIndex,state);
 }
+function captureTravelBookText(el){
+ const state=travelBookProposalState;if(!state?.api||!travelBookEditScope(state))return;
+ const si=Number(el.dataset.sectionIndex),pi=Number(el.dataset.pageIndex),page=state.proposal.sections[si]?.pages[pi];if(!page)return;
+ const value=el.textContent.trim(),photo=el.hasAttribute('data-tb-photo-edit'),field=el.dataset.tbEdit;
+ if(!photo&&!['title','subtitle'].includes(field))return;
+ if((photo?page.items[Number(el.dataset.itemIndex)]?.overlay_text:page[field]||'')===(value||null)||(!photo&&(page[field]||'')===value))return;
+ try{
+  state.proposal=photo?state.api.editTravelBookPhotoOverlay(state.proposal,{section_index:si,page_index:pi,item_index:Number(el.dataset.itemIndex),text:value}):state.api.editTravelBookPage(state.proposal,{section_index:si,page_index:pi,[field]:value});
+  // Capture on input, before focus/navigation can replace the DOM. Coalesce network writes.
+  const flat=state.proposal.sections.flatMap(s=>s.pages),record=state.persistence?.records[flat.indexOf(state.proposal.sections[si].pages[pi])];
+  if(!record)throw Error('La pàgina encara no es pot desar.');
+  record.revision=(record.revision||0)+1;record.dirty=true;
+  travelBookPendingEdits.set(travelBookEditKey(state),state);void retainTravelBookEdits(state);travelBookSaveStatus(state);
+  clearTimeout(state.saveTimer);state.saveTimer=setTimeout(()=>queueTravelBookSave(null,null,state,{retry:true}),400);
+ }catch(error){msg('travelBookMessage',error.message,true)}
+}
+function flushTravelBookEdits(){
+ const el=document.activeElement;if(el?.matches?.('[data-tb-edit],[data-tb-photo-edit]'))captureTravelBookText(el);
+ const state=travelBookProposalState;
+ return state&&travelBookPendingEdits.has(travelBookEditKey(state))?queueTravelBookSave(null,null,state,{retry:true}):Promise.resolve();
+}
+$('travelBookRetrySave').onclick=()=>flushTravelBookEdits();
+window.addEventListener('pagehide',()=>{void flushTravelBookEdits()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)void flushTravelBookEdits()});
+window.addEventListener('beforeunload',event=>{if(travelBookProposalState&&travelBookPendingEdits.has(travelBookEditKey(travelBookProposalState))){event.preventDefault();event.returnValue=''}});
 async function travelBookAlternativeTitle(sectionIndex,pageIndex){
   const api=await travelBookProposalApi(),state=travelBookProposalState,page=travelBookPageAt(sectionIndex,pageIndex);
   if(!state?.proposal||!page)return;
@@ -2358,7 +2458,7 @@ function travelBookPageTools(page,sectionIndex,pageIndex){
   </div>`;
 }
 function renderTravelBookProposal(proposal,visuals,totalGallery=proposal.stats.ready_photos,persistence=travelBookProposalState?.persistence||null){
-  travelBookProposalState={proposal,visuals,totalGallery,persistence};
+  travelBookProposalState=Object.assign(travelBookProposalState?.persistence===persistence?travelBookProposalState:{},{proposal,visuals,totalGallery,persistence,userId:session?.user?.id});
   $('travelBookTitle').textContent=proposal.title;
   const totalPages=proposal.sections.reduce((sum,section)=>sum+(section.pages?.length||0),0);
   $('travelBookSummary').innerHTML=`<span class="travel-book-chip">${proposal.stats.ready_photos} de ${totalGallery} fotos preparades</span><span class="travel-book-chip">${proposal.sections.length} dies/blocs</span><span class="travel-book-chip">${totalPages} pàgines proposades</span>`;
@@ -2388,17 +2488,10 @@ function renderTravelBookProposal(proposal,visuals,totalGallery=proposal.stats.r
     const el=event.target.closest('[data-tb-edit],[data-tb-photo-edit]');
     if(el&&event.key==='Enter'&&!event.shiftKey){event.preventDefault();el.blur()}
   };
-  sectionsEl.onblur=event=>{
-    const photoText=event.target.closest('[data-tb-photo-edit]');
-    if(photoText){
-      travelBookApplyPhotoText(Number(photoText.dataset.sectionIndex),Number(photoText.dataset.pageIndex),Number(photoText.dataset.itemIndex),photoText.textContent.trim()).catch(error=>msg('travelBookMessage',error?.message||'No s’ha pogut desar el text de la foto.',true));
-      return;
-    }
-    const el=event.target.closest('[data-tb-edit]');if(!el)return;
-    const sectionIndex=Number(el.dataset.sectionIndex),pageIndex=Number(el.dataset.pageIndex),field=el.dataset.tbEdit;
-    let value=el.textContent.trim();
-    if(field==='subtitle'&&value==='Toca aquí per afegir un comentari')value='';
-    travelBookApplyPageEdit(sectionIndex,pageIndex,{[field]:value}).catch(error=>msg('travelBookMessage',error?.message||'No s’ha pogut desar el canvi.',true));
+  sectionsEl.oninput=event=>{const el=event.target.closest('[data-tb-edit],[data-tb-photo-edit]');if(el)captureTravelBookText(el)};
+  sectionsEl.onfocusout=event=>{
+    const el=event.target.closest('[data-tb-edit],[data-tb-photo-edit]');if(!el)return;
+    captureTravelBookText(el);void flushTravelBookEdits();
   };
   sectionsEl.onchange=event=>{
     const select=event.target.closest('[data-tb-style]');if(!select)return;
@@ -2455,15 +2548,30 @@ function renderTravelBookProposal(proposal,visuals,totalGallery=proposal.stats.r
 }
 async function loadTravelBookView(){
   if(!trip||isLondonTrip())return;
+  const loadScope={userId:session?.user?.id,proposal:{trip_id:trip.id}};
+  const pending=[...travelBookPendingEdits.values()].find(state=>travelBookEditScope(state));
+  if(pending){travelBookProposalState=pending;renderTravelBookProposal(pending.proposal,pending.visuals,pending.totalGallery,pending.persistence);travelBookSaveStatus(pending);return}
   msg('travelBookMessage','Preparant la primera proposta…');
   try{
     const book=await ensureTravelBookProject(),sources=await loadTravelBookProposalSources(book),api=await travelBookProposalApi();
+    if(!travelBookEditScope(loadScope))return;
+    const recovered=await recoverTravelBookEdits(book,api);
+    if(!travelBookEditScope(loadScope))return;
+    if(recovered){
+     travelBookProposalState={...recovered,visuals:sources.visuals,totalGallery:sources.totalGallery};
+     travelBookPendingEdits.set(travelBookEditKey(travelBookProposalState),travelBookProposalState);
+     renderTravelBookProposal(recovered.proposal,sources.visuals,sources.totalGallery,recovered.persistence);
+     msg('travelBookMessage','Edicions pendents recuperades. Reintenta desar-les.');$('travelBookRetrySave').classList.remove('hidden');return;
+    }
     let proposal=api.buildInitialTravelBookProposal({trip_id:trip.id,book_id:book.id,title:book.title,photos:sources.photos});
     if(!api.validateInitialTravelBookProposal(proposal))throw new Error('La proposta no ha superat la validació.');
     const persistence=await ensureTravelBookEdition(book,proposal),editor=await travelBookEditorApi();
-    proposal=editor.applyTravelBookDocuments(proposal,persistence.records);
+    if(!travelBookEditScope(loadScope))return;
+    proposal=persistence.proposal;
     if(!api.validateInitialTravelBookProposal(proposal))throw new Error('L’edició desada no ha superat la validació.');
     renderTravelBookProposal(proposal,sources.visuals,sources.totalGallery,{book,edition:persistence.edition,records:persistence.records});
+    travelBookProposalState.api=api;
+    $('travelBookRetrySave').classList.add('hidden');
     setTravelBookBatchUi({done:proposal.stats.ready_photos,total:sources.totalGallery,errors:0,message:proposal.stats.ready_photos===sources.totalGallery?'Totes les fotos ja estan preparades.':'Hi ha fotos pendents de preparar. Freya pot continuar sense duplicar les que ja estan fetes.',running:travelBookBatchRunning});
     msg('travelBookMessage',proposal.stats.ready_photos?'':'Encara no hi ha fotos editorials en estat ready.');
   }catch(error){msg('travelBookMessage',error?.message||'No s’ha pogut preparar la proposta.',true)}
@@ -2735,7 +2843,7 @@ async function offlineDocPruneTrip(scope,serverDocs){
   const database=await offlineDocDatabase(),records=await offlineDocUserRows(database,scope.userId);
   if(!offlineDocScopeCurrent(scope))return false;
   // Parking photos live outside travel_documents and must survive its sync.
-  const discarded=records.filter(value=>value.tripId===scope.tripId&&value.documentId!=='freya-parking-photo-v1'&&allowed.get(value.documentId)!==value.filePath);
+  const discarded=records.filter(value=>value.tripId===scope.tripId&&value.documentId!=='freya-parking-photo-v1'&&!value.documentId?.startsWith('freya-travel-book-draft:')&&allowed.get(value.documentId)!==value.filePath);
   if(discarded.length)await offlineDocTx(database,['records'],'readwrite',tx=>{
     for(const record of discarded)tx.objectStore('records').delete(record.key);
   });
@@ -4592,6 +4700,7 @@ function persistNavigationState(view){
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
 function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent='';}
 function setAppView(id){
+  if(id!=='travelBookView'&&visibleAppView()==='travelBookView')void flushTravelBookEdits();
   if(id!==visibleAppView()){stopCatalanNarration();resetCulturalGuide()}
   if(id!=='itineraryView'&&!$('itineraryImportPanel').classList.contains('hidden'))closeItineraryImport();
   if(id==='constructionView')id='designTripView';
