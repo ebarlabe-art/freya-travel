@@ -1,7 +1,7 @@
 // Exercises the actual Pages build, not an extracted or rewritten HTML fixture.
 // Playwright is test tooling only; CI installs it outside the application package.
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
+import {readFile,mkdir} from 'node:fs/promises';
 import {createServer} from 'node:http';
 import {resolve,extname,sep} from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
@@ -64,14 +64,39 @@ try{
    await savePage.locator(selector).fill(value);await savePage.locator(selector).press('Tab');
    await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent==='✓ Canvis desats.');
   }
-  await savePage.locator('[data-tb-style]').selectOption('scrapbook');
+  await savePage.locator('[data-tb-template="scrapbook"]').click();
   await savePage.waitForFunction(()=>travelBookProposalState.persistence.records.every(r=>!r.dirty&&!r.pending)&&!travelBookProposalState.saving);
   await savePage.reload();await openEditor();
   assert.equal(await savePage.locator('[data-tb-edit="title"]').textContent(),'Títol desat');
   assert.equal(await savePage.locator('[data-tb-edit="subtitle"]').textContent(),'Comentari desat');
   assert.equal(await savePage.locator('[data-tb-photo-edit]').textContent(),'Text de fotografia');
-  assert.equal(await savePage.locator('[data-tb-style]').inputValue(),'scrapbook');
+  assert.equal(await savePage.locator('[data-tb-template="scrapbook"]').getAttribute('aria-pressed'),'true');
   console.log('PASS #213 real input/focusout: title, comment, photo text and composition survive reopening');
+  // Template changes retain the persisted physical document, even with a custom crop.
+  saved.elements.find(e=>e.type==='image').crop={x:.1,y:.1,width:.8,height:.8};
+  saved.elements.find(e=>e.type==='image').geometry.rotation=12;
+  const editorial=structuredClone(saved);
+  await savePage.reload();await openEditor();
+  for(const style of ['hero_editorial','narrative','scrapbook']){
+   const card=savePage.locator(`[data-tb-template="${style}"]`),box=await card.boundingBox();assert.ok(box&&box.height>=44);
+   await card.click();
+   await savePage.waitForFunction(()=>!travelBookProposalState.saving&&travelBookProposalState.persistence.records.every(r=>!r.dirty&&!r.pending));
+   assert.deepEqual({...saved,metadata:editorial.metadata},editorial);
+   await savePage.reload();await openEditor();
+   assert.equal(await savePage.locator(`[data-tb-template="${style}"]`).getAttribute('aria-pressed'),'true');
+   assert.equal(await savePage.locator('.travel-book-page').first().getAttribute('data-creative'),style);
+  }
+  assert.equal(await savePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  if(process.env.RUNNER_TEMP){const directory=resolve(process.env.RUNNER_TEMP,'browser-install-logs');await mkdir(directory,{recursive:true});await savePage.locator('.travel-book-templates').screenshot({path:resolve(directory,'travel-book-templates.png')})
+  const writes=requests.length;saved.locks.layout=true;
+  await savePage.reload();await openEditor();
+  assert.equal(await savePage.locator('[data-tb-template="narrative"]').isDisabled(),true);
+  assert.match(await savePage.locator('.travel-book-template-hint').textContent(),/bloquejada/);
+  assert.equal(await savePage.evaluate(async()=>{try{await travelBookApplyPageEdit(0,0,{creative_style:'narrative'});return false}catch(e){return e.message.includes('bloquejada')}}),true);
+  assert.equal(requests.length,writes);
+  saved.locks.layout=false;await savePage.reload();await openEditor();
+  console.log('PASS #213 templates: three visual choices, mobile target size, reload persistence, exact editorial preservation and lock rejection without writes');
+
   failing=true;
   await savePage.locator('[data-tb-edit="title"]').fill('Pendent recuperable');await savePage.locator('[data-tb-edit="title"]').press('Tab');
   await savePage.waitForFunction(()=>!!travelBookProposalState.persistence.records[0].error&&!travelBookProposalState.saving);

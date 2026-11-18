@@ -1,5 +1,13 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## #213 · Fase 2, plantilles visuals — BRANCA, NO PUBLICADA
+
+Base `main` `ad15580`, amb PR #234 fusionada (verificat 18/11/2026; aquesta observació substitueix l’estat històric de branca de l’entrada inferior). Branca `feat/213-visual-templates`. El desplegable de composició es converteix en tres targetes amb miniatures de les fotos: Foto protagonista (`hero_editorial`), Collage (`scrapbook`) i Història (`narrative`). Reutilitza la disposició existent (hero/duo/triptych/grid/story_grid), el renderer i el desament de #234; no recalcula geometries ni genera composicions substitutives.
+
+Els canvis de plantilla només modifiquen la presentació de la pàgina. Les propietats editorials es conserven; els bloquejos de layout/geometria, spreads i presentacions antigues no reconegudes impedeixen el canvi, amb explicació visible. Un bloqueig de contingut es respecta sense impedir un canvi de presentació que no altera el contingut. Les miniatures són orientatives: no són una previsualització d’impressió ni un nou renderer de geometria física.
+
+Verificació local: 27 proves focalitzades PASS (editor-state, proposal-ui i save-queue), build, paritat i paquet públic. Control de navegador existent ampliat per seleccionar les tres targetes, desar/reobrir, comparar íntegrament el document editorial i impedir escriptures amb bloquejos. Resultat remot i captura disponibles a la PR; iPhone físic pendent. Cache v66 preparada; sense SQL, dependències, Edge, dades reals, merge ni desplegament. Següent pas: revisar la PR vinculada a #213 i el resultat del control de navegador abans d’autoritzar la publicació.
+
 ## #213 · Fiabilitat del desament editorial — BRANCA, NO PUBLICADA
 
 Branca `fix/213-editor-save-recovery`, base main `2b4d484`. Correcció focalitzada: captura `input`/`focusout` abans de navegar, cua amb resposta persistent verificada, CAS i reintent de la mateixa operació després d’una resposta perduda. Estats pendent/desat/error i botó de reintent. Els pendents reutilitzen la caixa forta xifrada del navegador; no contenen URLs signades i cada instància conserva un esborrany independent. Eliminar les còpies privades del dispositiu també elimina aquests pendents.
