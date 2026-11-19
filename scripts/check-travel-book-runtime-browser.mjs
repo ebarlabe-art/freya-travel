@@ -181,6 +181,13 @@ try{
   await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent==='✓ Canvis desats.');
   assert.deepEqual(requests.at(-1),original);assert.equal(version,beforeVersion+1);
   console.log('PASS #213 lost server receipt retries the same operation without duplicate version');
+  // The mobile collage's existing scrollable caption genuinely clips this long text.
+  await savePage.locator('#travelBookExport').click();
+  await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent.includes('text que no cap'));
+  assert.equal(await savePage.locator('#travelBookPrintNow').count(),0);
+  await savePage.locator('[data-tb-photo-edit]').first().fill('Foto');
+  await savePage.locator('[data-tb-photo-edit]').first().press('Tab');
+  await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent==='✓ Canvis desats.');
   // v69: print the real visible DOM, including saved generic geometry and custom colors.
   const output=resolve(process.env.RUNNER_TEMP||'/tmp','browser-install-logs');await mkdir(output,{recursive:true});
   for(const style of ['hero_editorial','scrapbook','narrative']){
@@ -189,7 +196,6 @@ try{
    await savePage.reload();await openEditor();
    const snapshot=structuredClone(saved),beforePrint=requests.length,printedVersion=version;
    await savePage.locator('.travel-book-page').screenshot({path:resolve(output,'travel-book-'+style+'-screen.png')});
-   console.log('PDF text bounds',await savePage.locator('.travel-book-editable,.travel-book-photo-overlay,.travel-book-cover-copy').evaluateAll(els=>els.filter(el=>el.textContent.trim()).map(el=>({class:el.className,h:el.clientHeight,sh:el.scrollHeight,w:el.clientWidth,sw:el.scrollWidth,overflow:getComputedStyle(el).overflow}))));
    await savePage.locator('#travelBookExport').click();
    await savePage.waitForFunction(()=>document.getElementById('travelBookPrintDialog')?.open||document.getElementById('travelBookMessage').classList.contains('error'));
    assert.equal(await savePage.locator('#travelBookPrintNow').count(),1,await savePage.locator('#travelBookMessage').textContent());
