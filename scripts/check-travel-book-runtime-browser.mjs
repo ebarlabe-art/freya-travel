@@ -294,7 +294,7 @@ try{
     for(const [i,item] of base.items.entries())state.visuals.set(item.asset_id,'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="${['#6ba9bd','#d79173','#8cabb0'][i]}"/><stop offset="1" stop-color="#f9e6bb"/></linearGradient></defs><rect width="1200" height="800" fill="url(#sky)"/><circle cx="900" cy="180" r="75" fill="#fff0c0"/><path d="M0 470L270 180 560 460 810 260 1200 500V800H0Z" fill="#55756d"/><path d="M0 530Q300 450 600 550T1200 520V800H0Z" fill="${['#478397','#b5a67d','#668c86'][i]}"/><path d="M0 720Q400 530 740 700T1200 720V800H0Z" fill="#394f49"/></svg>`));
     renderTravelBookProposal(state.proposal,state.visuals,state.totalGallery,state.persistence);
    },format);
-   await savePage.waitForFunction(()=>[...document.querySelectorAll('#travelBookSections img')].every(i=>i.complete&&i.naturalWidth));
+   for(let i=0;i<3;i++){await savePage.locator('.travel-book-page').nth(i).scrollIntoViewIfNeeded();await savePage.locator('.travel-book-page').nth(i).evaluate(async el=>{await Promise.all([...el.querySelectorAll('img')].map(img=>{img.loading='eager';return img.decode()}))})}
    await savePage.evaluate(()=>document.querySelectorAll('.travel-book-page').forEach(sizeTravelBookPage));
    const exportRequests=requests.length,exportVersion=version,exportDocument=structuredClone(saved);
    for(let i=0;i<3;i++)await savePage.locator('.travel-book-page').nth(i).screenshot({path:resolve(output,`v70-${format}-${i}-screen.png`)});

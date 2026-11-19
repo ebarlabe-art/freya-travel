@@ -2533,8 +2533,9 @@ async function travelBookAlternativeTitle(sectionIndex,pageIndex){
   if(title)await travelBookApplyPageEdit(sectionIndex,pageIndex,{title});
 }
 
-function travelBookEditorialSlots(style,count){
+function travelBookEditorialSlots(style,count,format){
  if(count===1)return [[0,0,12,12]];
+ if(style==='hero_editorial'&&format==='portrait')return [[0,0,12,8],...Array.from({length:count-1},(_,i)=>[Math.floor(i*12/(count-1)),8,Math.floor((i+1)*12/(count-1))-Math.floor(i*12/(count-1)),4])];
  if(style==='hero_editorial')return [[0,0,8,12],...Array.from({length:count-1},(_,i)=>[8,Math.floor(i*12/(count-1)),4,Math.floor((i+1)*12/(count-1))-Math.floor(i*12/(count-1))])];
  if(style==='narrative')return [[0,0,12,7],...Array.from({length:count-1},(_,i)=>[Math.floor(i*12/(count-1)),7,Math.floor((i+1)*12/(count-1))-Math.floor(i*12/(count-1)),5])];
  return ({2:[[0,0,7,12],[7,1,5,10]],3:[[0,0,7,7],[7,0,5,12],[0,7,7,5]],4:[[0,0,7,7],[7,0,5,5],[0,7,7,5],[7,5,5,7]],5:[[0,0,7,7],[7,0,5,4],[7,4,5,4],[7,8,5,4],[0,7,7,5]],6:[[0,0,5,7],[5,0,4,5],[9,0,3,6],[0,7,5,5],[5,5,4,7],[9,6,3,6]]})[count];
@@ -2549,19 +2550,19 @@ function fitTravelBookCrop(photo){
 }
 function sizeTravelBookPage(article){
  const stage=article.parentElement,viewport=stage.parentElement;
- if(!article.dataset.editorial){article.style.transform='';stage.style.cssText='';return}
+ if(!article.dataset.editorial){article.style.transform='';article.style.position='';stage.style.cssText='';return}
  const scale=viewport.dataset.zoom==='true'?1:Math.min(1,viewport.clientWidth/article.offsetWidth);
- article.style.transform='scale('+scale+')';stage.style.width=article.offsetWidth*scale+'px';stage.style.height=article.offsetHeight*scale+'px';
+ article.style.position='absolute';article.style.transform='scale('+scale+')';stage.style.width=article.offsetWidth*scale+'px';stage.style.height=article.offsetHeight*scale+'px';
  article.querySelectorAll('.travel-book-photo').forEach(fitTravelBookCrop);
 }
 function paintTravelBookFormat(article,page,format){
  if(format)article.dataset.editorial=format;else delete article.dataset.editorial;
- const photos=[...article.querySelectorAll('.travel-book-photo')],slots=travelBookEditorialSlots(page.creative_style,photos.length);
+ const photos=[...article.querySelectorAll('.travel-book-photo')],slots=travelBookEditorialSlots(page.creative_style,photos.length,format);
  photos.forEach((photo,i)=>{
   const img=photo.querySelector('img');if(!img)return;
   let frame=photo.querySelector('.tb-crop-window');
   if(format){
-   if(!frame){frame=document.createElement('div');frame.className='tb-crop-window';img.before(frame);frame.append(img)}
+   if(!frame){frame=document.createElement('div');frame.className='tb-crop-window';frame.style.cssText='width:100%;height:100%;left:0;top:0';img.before(frame);frame.append(img)}
    frame.dataset.crop=JSON.stringify(page.items[i].editor_crop||{x:0,y:0,width:1,height:1});
    const [x,y,w,h]=slots[i];photo.style.setProperty('--tb-col',(x+1)+' / span '+w);photo.style.setProperty('--tb-row',(y+1)+' / span '+h);
    photo.style.setProperty('--tb-tilt',page.creative_style==='scrapbook'?(i%2?1:-1)+'deg':'0deg');
@@ -2642,7 +2643,7 @@ async function prepareTravelBookPrint(){
   ]);
  }finally{clearTimeout(timer)}
  if(state!==travelBookProposalState||!travelBookEditScope(state)||state.saving||state.persistence?.records?.some(r=>r.dirty||r.pending)||signature!==JSON.stringify(state.proposal))throw Error('L’àlbum ha canviat mentre es preparava. Torna a exportar.');
- for(const source of sources){await Promise.all([...source.querySelectorAll('img')].map(img=>img.decode()));source.querySelectorAll('.travel-book-photo').forEach(fitTravelBookCrop)}
+ for(const source of sources){await Promise.all([...source.querySelectorAll('img')].map(img=>{img.loading='eager';return img.decode()}));source.querySelectorAll('.travel-book-photo').forEach(fitTravelBookCrop)}
  for(const source of sources)for(const el of source.querySelectorAll('.travel-book-editable,.travel-book-photo-overlay,.travel-book-cover-copy,.travel-book-creative-copy')){
   if(el.classList.contains('travel-book-edit-placeholder')||!el.textContent.trim())continue;
   const style=getComputedStyle(el);
@@ -2668,7 +2669,7 @@ async function prepareTravelBookPrint(){
   const stage=document.createElement('div');
   stage.style.cssText='position:absolute;transform-origin:top left;width:'+width+'px;height:'+height+'px;left:'+((sheetWidth-width*scale)/2)+'px;top:'+((sheetHeight-height*scale)/2)+'px;transform:scale('+scale+')';
   const clone=travelBookPrintClone(source);
-  if(source.dataset.editorial)clone.style.transform='none';
+  if(source.dataset.editorial){clone.style.transform='none';clone.style.position='relative'}
   clone.style.margin='0';clone.style.borderColor='transparent';clone.style.borderRadius='0';clone.style.boxShadow='none';
   clone.style.backgroundColor='transparent';clone.style.backgroundImage='none';
   stage.append(clone);sheet.append(stage);root.append(sheet);
