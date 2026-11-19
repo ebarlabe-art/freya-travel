@@ -34,6 +34,7 @@ test('workflow retains every existing browser invocation on an independent requi
  expected.push('PHOTO_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-photos-upload-browser.mjs');
  expected.push('PHOTO_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-photos-viewer-browser.mjs');
  expected.push('PGLITE_MODULE="$RUNNER_TEMP/geography-db/node_modules/@electric-sql/pglite/dist/index.js" CULTURE_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-aran-cultural-flow-browser.mjs');
+ expected.push('TRAVEL_BOOK_ENGINE=webkit TRAVEL_BOOK_SAVE_ONLY=1 node scripts/check-travel-book-runtime-browser.mjs');
  assert.deepEqual(commands(current),expected.sort());
  const browser=current.split('  browser-tests:')[1].split('  legacy-suite:')[0];
  assert.match(browser,/fail-fast: false/);assert.match(browser,/engine: \[chromium, webkit\]/);assert.doesNotMatch(browser,/continue-on-error:|needs:/);

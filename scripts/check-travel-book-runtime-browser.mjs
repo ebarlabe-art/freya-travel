@@ -231,6 +231,8 @@ try{
   assert.equal(await savePage.locator('.travel-book-print-sheet').count(),4);
   for(let i=0;i<4;i++){
    const sheet=savePage.locator('.travel-book-print-sheet').nth(i);
+   await sheet.screenshot({path:resolve(output,'travel-book-full-page-'+i+'.png')});
+   console.log('Full-page bounds',i,await sheet.evaluate(el=>{const s=el.firstElementChild,c=s.firstElementChild;return {sheet:el.getBoundingClientRect().toJSON(),copy:c.getBoundingClientRect().toJSON(),position:getComputedStyle(s).position,photos:[...c.querySelectorAll('img')].map(p=>p.naturalWidth),labels:[...c.querySelectorAll('.travel-book-page-label,.travel-book-cover-copy small')].map(p=>getComputedStyle(p).visibility)}}));
    assert.equal(await sheet.evaluate(el=>{
     const stage=el.firstElementChild,copy=stage.firstElementChild,b=el.getBoundingClientRect(),c=copy.getBoundingClientRect();
     const photos=[...copy.querySelectorAll('img')];
