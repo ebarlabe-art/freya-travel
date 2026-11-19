@@ -2566,7 +2566,8 @@ async function prepareTravelBookPrint(){
  if(state!==travelBookProposalState||!travelBookEditScope(state)||state.saving||state.persistence?.records?.some(r=>r.dirty||r.pending)||signature!==JSON.stringify(state.proposal))throw Error('L’àlbum ha canviat mentre es preparava. Torna a exportar.');
  for(const source of sources)for(const el of source.querySelectorAll('.travel-book-editable,.travel-book-photo-overlay,.travel-book-cover-copy')){
   if(el.classList.contains('travel-book-edit-placeholder')||!el.textContent.trim())continue;
-  if(el.scrollHeight>el.clientHeight+2||el.scrollWidth>el.clientWidth+2)throw Error('Hi ha text que no cap sencer a la pàgina. Revisa’l abans d’exportar per evitar talls.');
+  const style=getComputedStyle(el);
+  if((style.overflowY!=='visible'&&el.scrollHeight>el.clientHeight+2)||(style.overflowX!=='visible'&&el.scrollWidth>el.clientWidth+2))throw Error('Hi ha text que no cap sencer a la pàgina. Revisa’l abans d’exportar per evitar talls.');
  }
  closeTravelBookPrint();
  const root=document.createElement('div');root.id='travelBookPrintPages';root.setAttribute('aria-hidden','true');

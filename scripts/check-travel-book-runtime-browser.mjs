@@ -189,6 +189,7 @@ try{
    await savePage.reload();await openEditor();
    const snapshot=structuredClone(saved),beforePrint=requests.length,printedVersion=version;
    await savePage.locator('.travel-book-page').screenshot({path:resolve(output,'travel-book-'+style+'-screen.png')});
+   console.log('PDF text bounds',await savePage.locator('.travel-book-editable,.travel-book-photo-overlay,.travel-book-cover-copy').evaluateAll(els=>els.filter(el=>el.textContent.trim()).map(el=>({class:el.className,h:el.clientHeight,sh:el.scrollHeight,w:el.clientWidth,sw:el.scrollWidth,overflow:getComputedStyle(el).overflow}))));
    await savePage.locator('#travelBookExport').click();
    await savePage.waitForFunction(()=>document.getElementById('travelBookPrintDialog')?.open||document.getElementById('travelBookMessage').classList.contains('error'));
    assert.equal(await savePage.locator('#travelBookPrintNow').count(),1,await savePage.locator('#travelBookMessage').textContent());
