@@ -181,6 +181,50 @@ try{
   await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent==='✓ Canvis desats.');
   assert.deepEqual(requests.at(-1),original);assert.equal(version,beforeVersion+1);
   console.log('PASS #213 lost server receipt retries the same operation without duplicate version');
+  // The mobile collage's existing scrollable caption genuinely clips this long text.
+  await savePage.locator('#travelBookExport').click();
+  await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent.includes('text que no cap'));
+  assert.equal(await savePage.locator('#travelBookPrintNow').count(),0);
+  await savePage.locator('[data-tb-photo-edit]').first().fill('Foto');
+  await savePage.locator('[data-tb-photo-edit]').first().press('Tab');
+  await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent==='✓ Canvis desats.');
+  // v69: print the real visible DOM, including saved generic geometry and custom colors.
+  const output=resolve(process.env.RUNNER_TEMP||'/tmp','browser-install-logs');await mkdir(output,{recursive:true});
+  for(const style of ['hero_editorial','scrapbook','narrative']){
+   saved.metadata.label=JSON.stringify({...JSON.parse(saved.metadata.label),style});
+   saved.locks.layout=true; // Export is read-only and is allowed on locked pages.
+   await savePage.reload();await openEditor();
+   const snapshot=structuredClone(saved),beforePrint=requests.length,printedVersion=version;
+   await savePage.locator('.travel-book-page').screenshot({path:resolve(output,'travel-book-'+style+'-screen.png')});
+   await savePage.locator('#travelBookExport').click();
+   await savePage.waitForFunction(()=>document.getElementById('travelBookPrintDialog')?.open||document.getElementById('travelBookMessage').classList.contains('error'));
+   assert.equal(await savePage.locator('#travelBookPrintNow').count(),1,await savePage.locator('#travelBookMessage').textContent());
+   assert.equal(await savePage.locator('.travel-book-print-sheet').count(),2);
+   assert.equal(await savePage.evaluate(()=>{
+    const source=document.querySelector('#travelBookSections .travel-book-page'),copy=document.querySelector('#travelBookPrintPages .travel-book-page');
+    return ['backgroundColor','gridTemplateColumns','width','height','transform'].every(key=>getComputedStyle(source)[key]===copy.style[key])&&source.querySelectorAll('img').length===copy.querySelectorAll('img').length;
+   }),true);
+   await savePage.evaluate(()=>{window.print=()=>{window.testPrintCalled=true}});
+   await savePage.locator('#travelBookPrintNow').click();
+   assert.equal(await savePage.evaluate(()=>window.testPrintCalled),true);
+   await savePage.emulateMedia({media:'print'});
+   await savePage.locator('.travel-book-print-sheet').nth(1).screenshot({path:resolve(output,'travel-book-'+style+'-print.png')});
+   const pdf=await savePage.pdf({path:resolve(output,'travel-book-'+style+'.pdf'),preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false});
+   assert.equal((pdf.toString('latin1').match(/\/Type\s*\/Page\b/g)||[]).length,2,'One cover and one unbroken album page');
+   await savePage.emulateMedia({media:'screen'});
+   await savePage.evaluate(()=>closeTravelBookPrint());
+   assert.equal(requests.length,beforePrint);assert.equal(version,printedVersion);assert.deepEqual(saved,snapshot);
+  }
+  await savePage.locator('#travelBookSections .travel-book-photo img').first().evaluate(img=>img.src='data:image/png;base64,broken');
+  await savePage.locator('#travelBookExport').click();
+  await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent.includes('fotografia'));
+  assert.equal(await savePage.locator('#travelBookPrintNow').count(),0);
+  await savePage.reload();await openEditor();
+  await savePage.locator('[data-tb-photo-edit]').first().evaluate(el=>{el.style.height='1px';el.style.maxHeight='1px'});
+  await savePage.locator('#travelBookExport').click();
+  await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent.includes('text que no cap'));
+  assert.equal(await savePage.locator('#travelBookPrintNow').count(),0);
+  console.log('PASS v69: three real Chromium PDFs, two pages each, visible templates/custom colors preserved, native print activation, missing photos and clipped text blocked, zero export writes');
   await saveCtx.close();
   if(!process.env.TRAVEL_BOOK_SAVE_ONLY){
 
