@@ -190,7 +190,8 @@ try{
    const snapshot=structuredClone(saved),beforePrint=requests.length,printedVersion=version;
    await savePage.locator('.travel-book-page').screenshot({path:resolve(output,'travel-book-'+style+'-screen.png')});
    await savePage.locator('#travelBookExport').click();
-   await savePage.locator('#travelBookPrintNow').waitFor({state:'visible'});
+   await savePage.waitForFunction(()=>document.getElementById('travelBookPrintDialog')?.open||document.getElementById('travelBookMessage').classList.contains('error'));
+   assert.equal(await savePage.locator('#travelBookPrintNow').count(),1,await savePage.locator('#travelBookMessage').textContent());
    assert.equal(await savePage.locator('.travel-book-print-sheet').count(),2);
    assert.equal(await savePage.evaluate(()=>{
     const source=document.querySelector('#travelBookSections .travel-book-page'),copy=document.querySelector('#travelBookPrintPages .travel-book-page');
