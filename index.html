@@ -276,7 +276,7 @@
     #travelBookPrintDialog::backdrop{background:#24162f99}
     #travelBookPrintDialog button{min-height:44px;white-space:normal;margin:4px 0}
     @media print{
-      @page{size:A4 portrait;margin:0}
+      @page{size:auto;margin:0}
       @page tb-landscape{size:A4 landscape;margin:0}
       @page tb-portrait{size:A4 portrait;margin:0}
       body.travel-book-printing{margin:0!important;padding:0!important;background:white!important;display:block!important;min-height:0!important}
@@ -375,7 +375,8 @@
     .travel-book-page[data-editorial] .travel-book-page-grid{display:grid;min-height:0;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:repeat(12,minmax(0,1fr));grid-auto-rows:auto;gap:14px}
     .travel-book-page[data-editorial] .travel-book-photo{min-height:0;border-radius:3px!important;position:relative;overflow:hidden;background:transparent;transform:rotate(var(--tb-tilt,0deg))!important;grid-column:var(--tb-col)!important;grid-row:var(--tb-row)!important}
     .travel-book-page[data-editorial][data-creative="scrapbook"] .travel-book-page-grid{gap:10px 18px}
-    .travel-book-page[data-editorial][data-creative="scrapbook"] .travel-book-photo{margin:-2px;padding:9px;background:#fff;box-shadow:0 6px 13px #24162f26}
+    .travel-book-page[data-editorial][data-creative="scrapbook"] .travel-book-photo{margin:0;padding:0;background:transparent;box-shadow:none}
+    .travel-book-page[data-editorial][data-creative="scrapbook"] .tb-crop-window{outline:7px solid #fff;box-shadow:0 7px 17px #24162f35;border-radius:2px}
     .tb-crop-window{position:absolute;overflow:hidden}
     .travel-book-page[data-editorial] .tb-crop-window img{position:absolute;max-width:none;max-height:none;object-fit:fill}
     .travel-book-page[data-editorial] .travel-book-photo-overlay{font-size:20px;line-height:1.25;max-height:40%;left:14px;right:14px;bottom:14px}
@@ -2538,7 +2539,7 @@ function travelBookEditorialSlots(style,count,format){
  if(count===1)return [[0,0,12,12]];
  if(style==='hero_editorial'&&format==='portrait')return [[0,0,12,8],...Array.from({length:count-1},(_,i)=>[Math.floor(i*12/(count-1)),8,Math.floor((i+1)*12/(count-1))-Math.floor(i*12/(count-1)),4])];
  if(style==='hero_editorial')return [[0,0,8,12],...Array.from({length:count-1},(_,i)=>[8,Math.floor(i*12/(count-1)),4,Math.floor((i+1)*12/(count-1))-Math.floor(i*12/(count-1))])];
- if(style==='narrative')return [[0,0,12,7],...Array.from({length:count-1},(_,i)=>[Math.floor(i*12/(count-1)),7,Math.floor((i+1)*12/(count-1))-Math.floor(i*12/(count-1)),5])];
+ if(style==='narrative')return ({2:[[0,0,7,12],[7,0,5,12]],3:[[0,0,7,12],[7,0,5,6],[7,6,5,6]],4:[[0,0,6,12],[6,0,6,4],[6,4,6,4],[6,8,6,4]],5:[[0,0,7,7],[7,0,5,7],[0,7,4,5],[4,7,4,5],[8,7,4,5]],6:[[0,0,6,8],[6,0,6,8],[0,8,3,4],[3,8,3,4],[6,8,3,4],[9,8,3,4]]})[count];
  return ({2:[[0,0,7,12],[7,1,5,10]],3:[[0,0,7,7],[7,0,5,12],[0,7,7,5]],4:[[0,0,7,7],[7,0,5,5],[0,7,7,5],[7,5,5,7]],5:[[0,0,7,7],[7,0,5,4],[7,4,5,4],[7,8,5,4],[0,7,7,5]],6:[[0,0,5,7],[5,0,4,5],[9,0,3,6],[0,7,5,5],[5,5,4,7],[9,6,3,6]]})[count];
 }
 function fitTravelBookCrop(photo){
@@ -2598,7 +2599,7 @@ function travelBookTemplateChoices(page,sectionIndex,pageIndex){
 }
 // Print the existing visible renderer; never rebuild or write composition documents.
 function closeTravelBookPrint(){
- $('travelBookPrintDialog')?.remove();$('travelBookPrintPages')?.remove();
+ $('travelBookPrintDialog')?.remove();$('travelBookPrintPages')?.remove();$('travelBookPrintPageSize')?.remove();
  document.body.classList.remove('travel-book-printing');
  $('travelBookExport')?.focus({preventScroll:true});
 }
@@ -2680,6 +2681,11 @@ async function prepareTravelBookPrint(){
   stage.append(clone);sheet.append(stage);root.append(sheet);
  }
  document.body.append(root);
+ // Safari may ignore named @page orientations. When the album uses a uniform
+ // format, set the physical sheet size globally. Remove this rule after print.
+ const formats=sources.map(el=>el.dataset.editorial==='landscape'?'landscape':'portrait');
+ const uniform=formats.every(value=>value===formats[0]);
+ if(uniform){const printSize=document.createElement('style');printSize.id='travelBookPrintPageSize';printSize.textContent='@media print{@page{size:A4 '+formats[0]+';margin:0}}';document.head.append(printSize)}
  try{await Promise.all([...root.querySelectorAll('img')].map(img=>img.decode()))}catch{root.remove();throw Error('No s’ha pogut preparar alguna fotografia per imprimir. Torna-ho a provar.')}
  const dialog=document.createElement('dialog');dialog.id='travelBookPrintDialog';
  dialog.innerHTML='<h2>PDF preparat</h2><p>'+sources.length+' pàgines · Fons complet. Es conserven la composició i els enquadraments, amb el fons estès a tot el full.</p><p>Tria A4 amb l’orientació de les pàgines (horitzontal o vertical), marges zero, sense capçaleres ni peus (URL, data i numeració) del navegador, i activa els gràfics de fons. Una impressora física pot imposar marges si no admet impressió sense vores. A l’iPhone, obre la previsualització d’impressió i utilitza Compartir per desar el PDF a Fitxers.</p><p>El resultat final depèn de les opcions del diàleg d’impressió. No és un fitxer d’impremta professional.</p><button type="button" id="travelBookPrintNow">Imprimeix / Desa PDF</button> <button type="button" id="travelBookPrintClose" class="secondary">Tanca</button>';
