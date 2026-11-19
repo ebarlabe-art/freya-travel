@@ -274,9 +274,19 @@ try{
   await savePage.locator('[data-tb-format-cancel]').click();
   assert.equal(await savePage.locator('.travel-book-page').getAttribute('data-editorial'),null);
   assert.deepEqual(saved,legacyDocument);
-  await savePage.locator('[data-tb-format]').selectOption('landscape');
-  await savePage.locator('[data-tb-format-save]').click();
+  // The entire album can be previewed and cancelled without any write.
+  await savePage.locator('#travelBookFormatAllPreview').click();
+  assert.equal(await savePage.locator('.travel-book-page').getAttribute('data-editorial'),'landscape');
+  assert.equal(requests.length,beforeFormat);
+  assert.deepEqual(saved,legacyDocument);
+  await savePage.locator('#travelBookFormatAllCancel').click();
+  assert.equal(await savePage.locator('.travel-book-page').getAttribute('data-editorial'),null);
+  assert.deepEqual(saved,legacyDocument);
+  // One explicit confirmation persists through the existing page save queue.
+  await savePage.locator('#travelBookFormatAllPreview').click();
+  await savePage.locator('#travelBookFormatAllSave').click();
   await savePage.waitForFunction(()=>!travelBookProposalState.saving&&travelBookProposalState.persistence.records.every(r=>!r.dirty&&!r.pending));
+  assert.match(await savePage.locator('#travelBookFormatAllStatus').textContent(),/Àlbum horitzontal desat/);
   assert.deepEqual({...saved,metadata:legacyDocument.metadata},legacyDocument);
   await savePage.reload();await openEditor();
   assert.equal(await savePage.locator('.travel-book-page').getAttribute('data-editorial'),'landscape');
