@@ -56,7 +56,7 @@ function appearanceLabel(label,value){
  if(result.length>160)throw Error('Les metadades existents no permeten afegir aquest aspecte sense perdre informació.');
  return result;
 }
-function labelFor(page){assertAppearanceContrast(page);return appearanceLabel({ft:1,style:page.creative_style,layout:page.layout_hint},page.visual)}
+function labelFor(page){assertAppearanceContrast(page);return appearanceLabel({ft:1,style:page.creative_style,layout:page.layout_hint,...(page.editorial_format?{f:page.editorial_format==='landscape'?'l':'p'}:{})},page.visual)}
 function readLabel(document){
  try{const value=JSON.parse(document?.metadata?.label||'');return value?.ft===1?value:null}catch{return null}
 }
@@ -98,6 +98,9 @@ export function flattenTravelBookPages(proposal){
 // Patch only fields exposed by the current editor. Hidden editorial properties are authoritative.
 function patchSavedPage(page,previous,makeId){
  const oldLabel=readLabel(previous);
+ if((page.editorial_format||null)!==(oldLabel?.f==='l'?'landscape':oldLabel?.f==='p'?'portrait':null)){
+  const reason=travelBookAppearanceRestriction(previous);if(reason)throw Error(reason);
+ }
  if(oldLabel&&(oldLabel.style!==page.creative_style||oldLabel.layout!==page.layout_hint)){
   const reason=travelBookTemplateRestriction(previous);if(reason)throw Error(reason);
  }
@@ -139,7 +142,11 @@ function patchSavedPage(page,previous,makeId){
   }else document.elements.push(textElement(makeId(),'body',STICKER_PREFIX+sticker,[],geometry(c.x,c.y,16,16,c.rotation)));
  }
  const label=readLabel(document);
- if(label)document.metadata.label=appearanceLabel({...label,style:page.creative_style,layout:page.layout_hint},page.visual);
+ if(label){
+  const next={...label,style:page.creative_style,layout:page.layout_hint};
+  if(page.editorial_format)next.f=page.editorial_format==='landscape'?'l':'p';else delete next.f;
+  document.metadata.label=appearanceLabel(next,page.visual);
+ }
  return document;
 }
 
@@ -185,6 +192,7 @@ export function applyTravelBookComposition(page,document){
  const label=readLabel(document);
  const next=structuredClone(page);
  next.visual=travelBookAppearance(label?.v);
+ next.editorial_format=label?.f==='l'?'landscape':label?.f==='p'?'portrait':null;
  if(label?.style&&['hero_editorial','scrapbook','narrative'].includes(label.style))next.creative_style=label.style;
  if(label?.layout&&['hero','duo','triptych','grid','story_grid'].includes(label.layout))next.layout_hint=label.layout;
  const title=document.elements.find(e=>e.type==='text'&&e.role==='title');
@@ -193,7 +201,7 @@ export function applyTravelBookComposition(page,document){
  next.subtitle=subtitle?.text||null;
  next.subtitle_classification=next.subtitle?'user_statement':null;
  const itemByAsset=new Map(next.items.map(item=>[item.asset_id,item]));
- next.items=document.elements.filter(e=>e.type==='image').map(e=>({...structuredClone(itemByAsset.get(e.asset_id)||{asset_id:e.asset_id,caption_candidate:null,caption_classification:null,source_snapshot_ids:[]}),editor_image_id:e.id,overlay_text:null,overlay_text_classification:null}));
+ next.items=document.elements.filter(e=>e.type==='image').map(e=>({...structuredClone(itemByAsset.get(e.asset_id)||{asset_id:e.asset_id,caption_candidate:null,caption_classification:null,source_snapshot_ids:[]}),editor_image_id:e.id,editor_crop:structuredClone(e.crop),overlay_text:null,overlay_text_classification:null}));
  let currentItem=null;
  for(const element of document.elements){
   if(element.type==='image'){currentItem=next.items.find(item=>item.editor_image_id===element.id)||null;continue}
