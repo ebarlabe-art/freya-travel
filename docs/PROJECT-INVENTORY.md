@@ -1,5 +1,14 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## #213 · Fase 3, personalització visual — BRANCA, NO PUBLICADA
+
+Personalització per pàgina dins l'editor existent: tres paletes (pruna, bosc, oceà), tres fons (blanc, crema, boira) i tres combinacions de fonts locals (editorial, moderna, clàssica), més els valors de la plantilla. Els controls previsualitzen sense escriure; «Desa l'aspecte» reutilitza la cua i confirmació persistent de #234. Recuperar els predeterminats també requereix desar.
+
+Metadades compactes opcionals en el label existent (límit 160), sense migracions ni dependències. Es preserven elements, IDs, fotos, textos, retalls, geometria i ordre. Bloquejos de layout, geometria o contingut impedeixen canvis visuals. Els documents antics sense personalització mantenen la presentació de plantilla. Metadades que no hi caben es rebutgen sense truncar-les.
+
+Proves focalitzades de roundtrip/preservació/bloquejos, UI i cua; control Chromium existent ampliat amb previsualització sense RPC, desament/reobertura, restauració i amplada 390 px. Resultat remot a la PR. Cache v67 preparada. Pendent iPhone físic i validació específica de personalització en WebKit; les miniatures de plantilla continuen sent orientatives. Cap fusió ni desplegament autoritzat.
+
+
 ## #213 · Fase 2, plantilles visuals — BRANCA, NO PUBLICADA
 
 Base `main` `ad15580`, amb PR #234 fusionada (verificat 18/11/2026; aquesta observació substitueix l’estat històric de branca de l’entrada inferior). Branca `feat/213-visual-templates`, [PR #235](https://github.com/ebarlabe-art/freya-travel/pull/235). La prova de navegador va detectar un sticker que interceptava un toc; els controls s’han separat de la superfície editorial dins de la mateixa pàgina, sense modificar coordenades. El desplegable de composició es converteix en tres targetes amb miniatures de les fotos: Foto protagonista (`hero_editorial`), Collage (`scrapbook`) i Història (`narrative`). Reutilitza la disposició existent (hero/duo/triptych/grid/story_grid), el renderer i el desament de #234; no recalcula geometries ni genera composicions substitutives.

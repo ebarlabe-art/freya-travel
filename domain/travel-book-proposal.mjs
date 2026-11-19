@@ -95,7 +95,7 @@ export function proposeAlternativeTravelBookTitle(page,usedTitles=[]){
  used.add(page.title);
  return creativeCopy(page.creative_style,!!page.subtitle,used,Number.isInteger(page.index)?page.index+1:0).title;
 }
-export function editTravelBookPage(proposal,{section_index,page_index,title,subtitle,creative_style,stickers,sticker_positions}){
+export function editTravelBookPage(proposal,{section_index,page_index,title,subtitle,creative_style,stickers,sticker_positions,visual}){
  if(!validateInitialTravelBookProposal(proposal))fail('ALB053_INVALID_PROPOSAL');
  const section=proposal.sections?.[section_index],page=section?.pages?.[page_index];
  if(!page)fail('ALB053_PAGE_NOT_FOUND');
@@ -109,6 +109,10 @@ export function editTravelBookPage(proposal,{section_index,page_index,title,subt
  if(creative_style!==undefined){
   if(!CREATIVE_STYLES.includes(creative_style))fail('ALB053_INVALID_STYLE');
   target.creative_style=creative_style;
+ }
+ if(visual!==undefined){
+  if(!Array.isArray(visual)||visual.length!==3||visual.some(n=>!Number.isInteger(n)||n<0||n>3))fail('ALB053_INVALID_APPEARANCE');
+  target.visual=[...visual];
  }
  if(stickers!==undefined){
   if(!Array.isArray(stickers)||stickers.some(sticker=>!['sparkle','tape','postcard','heart','quote','flower','leaf','sun'].includes(sticker)))fail('ALB053_INVALID_STICKERS');
