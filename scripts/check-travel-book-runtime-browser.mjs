@@ -286,7 +286,7 @@ try{
   await savePage.locator('#travelBookFormatAllPreview').click();
   await savePage.locator('#travelBookFormatAllSave').click();
   await savePage.waitForFunction(()=>!travelBookProposalState.saving&&travelBookProposalState.persistence.records.every(r=>!r.dirty&&!r.pending));
-  assert.match(await savePage.locator('#travelBookFormatAllStatus').textContent(),/Àlbum horitzontal desat/);
+  await savePage.locator('#travelBookFormatAllStatus').filter({hasText:'Àlbum horitzontal desat'}).waitFor();
   assert.deepEqual({...saved,metadata:legacyDocument.metadata},legacyDocument);
   await savePage.reload();await openEditor();
   assert.equal(await savePage.locator('.travel-book-page').getAttribute('data-editorial'),'landscape');
