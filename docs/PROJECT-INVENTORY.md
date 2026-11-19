@@ -1,5 +1,16 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## #213 · v69, PDF de l'aspecte visible — BRANCA, NO PUBLICADA
+
+«Exporta a PDF» prepara una còpia temporal del DOM visible del Travel Book amb estils i dimensions calculats fixats; no incorpora un segon renderer ni reconstrueix composicions. Portada i cada pàgina ocupen un full A4, escalats proporcionalment amb marges. Reutilitza la impressió nativa del navegador, amb una segona acció explícita compatible amb el requisit d'activació de Safari. Sense llibreries, serveis, migracions ni escriptures de persistència.
+
+Comprova fotos, fonts, canvis pendents/previsualitzacions no desades i text amb contingut desbordat. Errors clars i sense impressió parcial. Les pàgines bloquejades es poden exportar perquè l'operació és de lectura. Les geometries genèriques desades no bloquegen l'exportació.
+
+Discrepància coneguda: la geometria física desada no descriu les disposicions CSS de les plantilles actuals. v69 exporta l'aspecte visible autoritzat, no interpreta aquestes coordenades ni els retalls no representats. Unificar aquest contracte és una possible millora posterior, fora d'abast.
+
+Proves: 29 contractes editorials PASS; control Chromium existent ampliat per generar PDFs de les tres plantilles amb colors personalitzats, comptar pàgines, preservar les dades i impedir exportació amb fotos absents o textos tallats. PDFs/captures de prova sintètics a l'artefacte CI; resultat a la PR. iPhone físic pendent. Cal seleccionar A4, fons i capçaleres/peus desactivats al diàleg natiu; no es promet qualitat d'impremta ni una descàrrega directa. Cache v69 preparada. Sense fusió ni desplegament.
+
+
 ## #213 · Fase 3.1, ampliació de colors — BRANCA, NO PUBLICADA
 
 Manté els índexs 0–3 de la v67. Afegeix Bordeus, Terracota, Xocolata, Gris i Negre; fons Rosa pàl·lid, Sàlvia, Sorra, Blau cel i Lavanda. Text/accents i fons admeten també #rrggbb amb selectors natius. Previsualització sense RPC i desament explícit amb la cua existent.

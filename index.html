@@ -270,6 +270,19 @@
     .photo-lightbox-close{position:absolute;top:calc(18px + env(safe-area-inset-top));right:18px;border:0;border-radius:999px;width:44px;height:44px;background:#fff;color:#4c235f;font-size:1.4rem;font-weight:900;cursor:pointer}
     @media(max-width:520px){.photo-grid{grid-template-columns:1fr 1fr;gap:10px}.photo-info{padding:11px}.photo-hero{padding:23px 19px}}
 
+
+    #travelBookPrintPages{display:none}
+    #travelBookPrintDialog{width:min(520px,calc(100% - 32px));max-height:85dvh;overflow:auto;border:1px solid #dfd1ea;border-radius:18px;padding:20px}
+    #travelBookPrintDialog::backdrop{background:#24162f99}
+    #travelBookPrintDialog button{min-height:44px;white-space:normal;margin:4px 0}
+    @media print{
+      @page{size:A4 portrait;margin:10mm}
+      body.travel-book-printing{margin:0!important;padding:0!important;background:white!important}
+      body.travel-book-printing>*:not(#travelBookPrintPages){display:none!important}
+      body.travel-book-printing #travelBookPrintPages{display:block!important}
+      .travel-book-print-sheet{display:block;width:190mm;height:276mm;margin:0;padding:0;break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always}
+      .travel-book-print-sheet:last-child{break-after:auto;page-break-after:auto}
+    }
     .travel-book-entry{display:grid;gap:12px;background:linear-gradient(135deg,#fff8ef,#f7efff);border:1px solid #ead9f2;border-radius:26px;padding:20px;box-shadow:0 16px 40px rgba(52,24,84,.09)}
     .travel-book-entry h3{margin:0}.travel-book-entry p{margin:0;color:#655b6d;line-height:1.5}.travel-book-entry button{justify-self:start}
     .travel-book-shell{display:grid;gap:18px}.travel-book-hero{padding:26px;border-radius:30px;color:#fff;background:linear-gradient(135deg,#3c1e73,#6a34a9 55%,#c04fc2);box-shadow:0 24px 60px rgba(70,31,118,.2)}
@@ -1532,6 +1545,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
 
     <div id="travelBookView" class="hidden">
       <button id="travelBookBack" class="ghost back" type="button">← Tornar</button>
+      <button id="travelBookExport" class="secondary" type="button">Exporta a PDF</button>
       <button id="travelBookRetrySave" class="secondary hidden" type="button">Reintenta desar els canvis</button>
       <div class="travel-book-shell">
         <section class="travel-book-hero">
@@ -2503,6 +2517,90 @@ function travelBookTemplateChoices(page,sectionIndex,pageIndex){
   return `<button type="button" class="travel-book-template" data-tb-template="${style}" aria-pressed="${selected}" aria-describedby="${hint}"${reason&&!selected?' disabled':''}><span class="travel-book-template-preview" data-template="${style}" data-layout="${esc(page.layout_hint)}" aria-hidden="true"><span class="travel-book-template-copy">${esc(page.title)}</span><span class="travel-book-template-grid">${photos}</span></span><span>${selected?'✓ ':''}${label}</span></button>`;
  }).join('')}<small id="${hint}" class="travel-book-template-hint">${esc(reason||'Vista orientativa. Es conserven totes les fotos, els textos i els ajustos desats.')}</small></div>`;
 }
+// Print the existing visible renderer; never rebuild or write composition documents.
+function closeTravelBookPrint(){
+ $('travelBookPrintDialog')?.remove();$('travelBookPrintPages')?.remove();
+ document.body.classList.remove('travel-book-printing');
+ $('travelBookExport')?.focus({preventScroll:true});
+}
+function travelBookPrintClone(source){
+ const clone=source.cloneNode(true),originals=[source,...source.querySelectorAll('*')],copies=[clone,...clone.querySelectorAll('*')];
+ originals.forEach((original,i)=>{
+  const copy=copies[i],style=getComputedStyle(original);
+  copy.removeAttribute('id');copy.removeAttribute('contenteditable');copy.removeAttribute('tabindex');
+  for(const property of style)copy.style.setProperty(property,style.getPropertyValue(property));
+  copy.style.setProperty('animation','none');copy.style.setProperty('transition','none');
+  copy.style.setProperty('print-color-adjust','exact');copy.style.setProperty('-webkit-print-color-adjust','exact');
+  if(original.tagName==='IMG'){copy.src=original.currentSrc||original.src;copy.removeAttribute('srcset');copy.loading='eager'}
+ });
+ // Editor prompts are not album text. Their layout space is retained.
+ clone.querySelectorAll('.travel-book-edit-placeholder,.travel-book-photo-overlay:empty').forEach(el=>el.style.visibility='hidden');
+ return clone;
+}
+async function prepareTravelBookPrint(){
+ const state=travelBookProposalState;
+ if(!state||!travelBookEditScope(state)||$('travelBookView').classList.contains('hidden'))throw Error('Obre el Travel Book abans d’exportar.');
+ if(state.saving||state.persistence?.records?.some(r=>r.dirty||r.pending||r.error))throw Error('Espera que els canvis estiguin desats abans d’exportar.');
+ const articles=[...$('travelBookSections').querySelectorAll('.travel-book-page')];
+ if(!articles.length)throw Error('Aquest àlbum encara no té pàgines per exportar.');
+ const signature=JSON.stringify(state.proposal);
+ for(const article of articles){
+  const page=state.proposal.sections[Number(article.dataset.sectionIndex)].pages[Number(article.dataset.pageIndex)];
+  if(JSON.stringify([article.dataset.palette,article.dataset.background,article.dataset.fonts])!==JSON.stringify((page.visual||[0,0,0]).map(String)))throw Error('Desa o descarta la previsualització de colors abans d’exportar.');
+  if(article.querySelectorAll('.travel-book-photo img').length!==page.items.length)throw Error('Falta alguna fotografia. Torna a obrir l’àlbum i comprova les fotos.');
+ }
+ const cover=$('travelBookCover'),sources=[...(!cover.classList.contains('hidden')?[cover]:[]),...articles];
+ const images=sources.flatMap(el=>[...el.querySelectorAll('img')]);
+ if(!cover.classList.contains('hidden')&&!cover.querySelector('img'))throw Error('No s’ha pogut carregar la fotografia de portada.');
+ let timer;
+ try{
+  await Promise.race([
+   Promise.all([document.fonts.ready,...images.map(async original=>{
+    const image=new Image();image.src=original.currentSrc||original.src;
+    try{await image.decode()}catch{throw Error('No s’ha pogut carregar alguna fotografia. Comprova la connexió i torna-ho a provar.')}
+    if(!image.naturalWidth)throw Error('Hi ha una fotografia buida.');
+   })]),
+   new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Les fotografies triguen massa a carregar. Torna-ho a provar.')),15000)})
+  ]);
+ }finally{clearTimeout(timer)}
+ if(state!==travelBookProposalState||!travelBookEditScope(state)||state.saving||state.persistence?.records?.some(r=>r.dirty||r.pending)||signature!==JSON.stringify(state.proposal))throw Error('L’àlbum ha canviat mentre es preparava. Torna a exportar.');
+ for(const source of sources)for(const el of source.querySelectorAll('.travel-book-editable,.travel-book-photo-overlay,.travel-book-cover-copy')){
+  if(el.classList.contains('travel-book-edit-placeholder')||!el.textContent.trim())continue;
+  if(el.scrollHeight>el.clientHeight+2||el.scrollWidth>el.clientWidth+2)throw Error('Hi ha text que no cap sencer a la pàgina. Revisa’l abans d’exportar per evitar talls.');
+ }
+ closeTravelBookPrint();
+ const root=document.createElement('div');root.id='travelBookPrintPages';root.setAttribute('aria-hidden','true');
+ for(const source of sources){
+  const width=source.offsetWidth,height=source.offsetHeight,padding=16;
+  const scale=Math.min((190*96/25.4)/(width+padding*2),(275*96/25.4)/(height+padding*2));
+  if(!width||!height||scale<.5)throw Error('Una pàgina és massa llarga per imprimir-la llegiblement. Redueix-ne el text abans d’exportar.');
+  const sheet=document.createElement('section');sheet.className='travel-book-print-sheet';
+  const stage=document.createElement('div');stage.style.cssText='position:relative;transform-origin:top left;width:'+(width+padding*2)+'px;height:'+(height+padding*2)+'px;transform:scale('+scale+')';
+  const clone=travelBookPrintClone(source);clone.style.position='absolute';clone.style.left=padding+'px';clone.style.top=padding+'px';clone.style.margin='0';
+  stage.append(clone);sheet.append(stage);root.append(sheet);
+ }
+ document.body.append(root);
+ try{await Promise.all([...root.querySelectorAll('img')].map(img=>img.decode()))}catch{root.remove();throw Error('No s’ha pogut preparar alguna fotografia per imprimir. Torna-ho a provar.')}
+ const dialog=document.createElement('dialog');dialog.id='travelBookPrintDialog';
+ dialog.innerHTML='<h2>PDF preparat</h2><p>'+sources.length+' pàgines. Es conserva l’aspecte visible de l’àlbum.</p><p>Tria A4, sense capçaleres ni peus del navegador, i activa els gràfics de fons. A l’iPhone, obre la previsualització d’impressió i utilitza Compartir per desar el PDF a Fitxers.</p><p>El resultat final depèn de les opcions del diàleg d’impressió. No és un fitxer d’impremta professional.</p><button type="button" id="travelBookPrintNow">Imprimeix / Desa PDF</button> <button type="button" id="travelBookPrintClose" class="secondary">Tanca</button>';
+ document.body.append(dialog);
+ dialog.addEventListener('cancel',event=>{event.preventDefault();closeTravelBookPrint()});
+ $('travelBookPrintClose').onclick=closeTravelBookPrint;
+ $('travelBookPrintNow').onclick=()=>{
+  if(state!==travelBookProposalState||!travelBookEditScope(state)){closeTravelBookPrint();return}
+  dialog.close();document.body.classList.add('travel-book-printing');
+  // Direct user activation is retained for Safari/iPhone's native print dialog.
+  try{window.print()}catch{document.body.classList.remove('travel-book-printing');dialog.showModal();msg('travelBookMessage','No s’ha pogut obrir la impressió. Torna-ho a provar.',true)}
+ };
+ dialog.showModal();
+}
+window.addEventListener('afterprint',()=>{document.body.classList.remove('travel-book-printing');const dialog=$('travelBookPrintDialog');if(dialog&&!dialog.open)dialog.showModal()});
+$('travelBookExport').onclick=async()=>{
+ const button=$('travelBookExport');button.disabled=true;
+ try{await prepareTravelBookPrint()}catch(error){msg('travelBookMessage',error.message||'No s’ha pogut preparar el PDF.',true)}
+ finally{button.disabled=false}
+};
+
 function travelBookPersonalization(page,sectionIndex,pageIndex){
  const editor=travelBookModuleLoads.get('travel-book-editor-state.mjs')?.api;
  const index=editor?.flattenTravelBookPages(travelBookProposalState.proposal).findIndex(e=>e.sectionIndex===sectionIndex&&e.pageIndex===pageIndex);
