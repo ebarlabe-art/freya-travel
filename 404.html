@@ -2574,7 +2574,8 @@ async function prepareTravelBookPrint(){
  for(const source of sources){
   const width=source.offsetWidth,height=source.offsetHeight;
   const sheetWidth=210*96/25.4,sheetHeight=296.8*96/25.4;
-  const scale=Math.min(sheetWidth/width,sheetHeight/height);
+  const bounds=source.getBoundingClientRect();
+  const scale=Math.min(sheetWidth/bounds.width,sheetHeight/bounds.height);
   if(!width||!height||scale<.5)throw Error('Una pàgina és massa llarga per imprimir-la llegiblement. Redueix-ne el text abans d’exportar.');
   const sheet=document.createElement('section');sheet.className='travel-book-print-sheet';
   // Extend the existing page background, not its photographs. Keep the editorial
