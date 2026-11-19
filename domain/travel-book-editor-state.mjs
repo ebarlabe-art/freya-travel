@@ -11,9 +11,39 @@ const textElement=(id,role,text,source_snapshot_ids=[],g=geometry())=>({id,type:
 const imageElement=(id,asset_id,g)=>({id,type:'image',asset_id,crop:{x:0,y:0,width:1,height:1},geometry:g,locks:locks()});
 const defaultStickerPosition=(index)=>({x:82-(index%3)*14,y:12+Math.floor(index/3)*12,rotation:index%2?8:-7});
 
+// Existing indices 0–3 are the v67 contract; custom colors are #rrggbb strings.
+export const travelBookPalettes=[
+ ['Plantilla',null,null],['Pruna','#4b254b','#783e72'],['Bosc','#213f32','#42674c'],['Oceà','#173d50','#275f78'],
+ ['Bordeus','#571f32','#762b46'],['Terracota','#693c2e','#85482f'],['Xocolata','#432b22','#654634'],['Gris','#34383d','#51565c'],['Negre','#171717','#292929']
+];
+export const travelBookBackgrounds=[
+ ['Plantilla',null],['Blanc','#ffffff'],['Crema','#fff8eb'],['Boira','#eef2f3'],
+ ['Rosa pàl·lid','#f9e9ed'],['Sàlvia','#e9f0e5'],['Sorra','#f1e7d5'],['Blau cel','#e8f2fa'],['Lavanda','#efebf7']
+];
 export function travelBookAppearance(value=[0,0,0]){
- if(!Array.isArray(value)||value.length!==3||value.some(n=>!Number.isInteger(n)||n<0||n>3))throw Error('Aspecte de pàgina invàlid.');
- return [...value];
+ if(!Array.isArray(value)||value.length!==3||value.some((n,i)=>i<2?!(Number.isInteger(n)&&n>=0&&n<=8)&&!(typeof n==='string'&&/^#[0-9a-f]{6}$/i.test(n)):!Number.isInteger(n)||n<0||n>3))throw Error('Aspecte de pàgina invàlid.');
+ return value.map(n=>typeof n==='string'?n.toLowerCase():n);
+}
+export function travelBookAppearanceColors(value,style='hero_editorial'){
+ const [palette,background]=travelBookAppearance(value);
+ const ink=typeof palette==='string'?palette:travelBookPalettes[palette][1];
+ const accent=typeof palette==='string'?palette:travelBookPalettes[palette][2];
+ const fill=typeof background==='string'?background:travelBookBackgrounds[background][1];
+ const stops=fill?[fill]:style==='scrapbook'?['#fffaf3']:style==='narrative'?['#f9f3ec','#ffffff']:['#fff9ef','#f6edf9'];
+ return {ink,accent,fill,stops,texts:ink?[ink,accent]:['#37263d','#66586c','#6c6174']};
+}
+const luminance=hex=>{
+ const rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4);
+ return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;
+};
+export function travelBookAppearanceContrast(value,style){
+ const colors=travelBookAppearanceColors(value,style),levels=colors.stops.map(luminance),low=Math.min(...levels),high=Math.max(...levels);
+ // Entire gradient luminance interval, not just its endpoints.
+ const ratio=Math.min(...colors.texts.map(luminance).map(t=>t>=low&&t<=high?1:t<low?(low+.05)/(t+.05):(t+.05)/(high+.05)));
+ return {ratio,valid:ratio>=4.5,message:ratio>=4.5?'': 'Contrast insuficient entre text i fons. Cal un mínim de 4,5:1. Canvia un dels colors abans de desar.'};
+}
+function assertAppearanceContrast(page){
+ const result=travelBookAppearanceContrast(page.visual,page.creative_style);if(!result.valid)throw Error(result.message);
 }
 export function travelBookAppearanceRestriction(document){
  return travelBookTemplateRestriction(document)||(document?.elements?.some(e=>e.locks.content)?'El contingut està bloquejat. Es conserva el seu aspecte.':null);
@@ -26,7 +56,7 @@ function appearanceLabel(label,value){
  if(result.length>160)throw Error('Les metadades existents no permeten afegir aquest aspecte sense perdre informació.');
  return result;
 }
-function labelFor(page){return appearanceLabel({ft:1,style:page.creative_style,layout:page.layout_hint},page.visual)}
+function labelFor(page){assertAppearanceContrast(page);return appearanceLabel({ft:1,style:page.creative_style,layout:page.layout_hint},page.visual)}
 function readLabel(document){
  try{const value=JSON.parse(document?.metadata?.label||'');return value?.ft===1?value:null}catch{return null}
 }
@@ -74,6 +104,7 @@ function patchSavedPage(page,previous,makeId){
  if(JSON.stringify(travelBookAppearance(page.visual))!==JSON.stringify(travelBookAppearance(oldLabel?.v))){
   const reason=travelBookAppearanceRestriction(previous);if(reason)throw Error(reason);
  }
+ if(oldLabel&&(oldLabel.style!==page.creative_style||JSON.stringify(travelBookAppearance(page.visual))!==JSON.stringify(travelBookAppearance(oldLabel.v))))assertAppearanceContrast(page);
  const document=structuredClone(previous),elements=document.elements,visible=applyTravelBookComposition(page,previous);
  const updateText=(element,value,role,g)=>{
   if(element){
