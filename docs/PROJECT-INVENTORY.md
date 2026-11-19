@@ -1,5 +1,13 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## #213 · v69.1, PDF amb fons complet — BRANCA, NO PUBLICADA
+
+Correcció de l'exportació nativa v69: el fons de la composició ocupa l'A4, el contingut es centra i s'escala proporcionalment sense canviar fotografies ni enquadraments. El contenidor transformat queda absolut i confinat al full, evitant que la seva mida sense transformar provoqui pàgines buides a WebKit. La portada conserva la imatge i el títol, amb fons complet. S'eliminen les vores/ombres de targeta i s'oculten les etiquetes de l'editor en la còpia impresa. No es modifiquen dades ni el contracte editorial.
+
+Referència local revisada: PDF Eivissa produït per Safari/iOS, 44 pàgines; les primeres quatre mostren targetes sobre blanc, etiquetes editorials, peus del navegador i fulls buits intercalats. No s'incorpora el document privat al repositori. Prova sintètica ampliada: portada + tres plantilles en un únic PDF, geometria dels fulls, fons complet, absència d'escriptures i captures Chromium/WebKit al runner existent. Resultats finals a la PR.
+
+Modalitat implementada: fons complet predeterminat. Foto a sang pendent: no hi ha un marc de pàgina/enquadrament A4 amb consentiment en el renderitzat actual; omplir el full amb la imatge canviaria el retall. No s'amplia ara l'editor ni s'aplica aquesta transformació als collages. Cal revisar el PDF a l'iPhone físic; WebKit automatitzat no valida el diàleg Quartz d'iOS. Impressió: A4, marges zero, fons activats i capçaleres/peus desactivats; la impressora pot imposar marges físics. Cache v69.1 preparada, sense desplegament.
+
 ## #213 · v69, PDF de l'aspecte visible — BRANCA, NO PUBLICADA
 
 «Exporta a PDF» prepara una còpia temporal del DOM visible del Travel Book amb estils i dimensions calculats fixats; no incorpora un segon renderer ni reconstrueix composicions. Portada i cada pàgina ocupen un full A4, escalats proporcionalment amb marges. Reutilitza la impressió nativa del navegador, amb una segona acció explícita compatible amb el requisit d'activació de Safari. Sense llibreries, serveis, migracions ni escriptures de persistència.
