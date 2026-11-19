@@ -111,8 +111,8 @@ export function editTravelBookPage(proposal,{section_index,page_index,title,subt
   target.creative_style=creative_style;
  }
  if(visual!==undefined){
-  if(!Array.isArray(visual)||visual.length!==3||visual.some(n=>!Number.isInteger(n)||n<0||n>3))fail('ALB053_INVALID_APPEARANCE');
-  target.visual=[...visual];
+  if(!Array.isArray(visual)||visual.length!==3||visual.some((n,i)=>i<2?!(Number.isInteger(n)&&n>=0&&n<=8)&&!(typeof n==='string'&&/^#[0-9a-f]{6}$/i.test(n)):!Number.isInteger(n)||n<0||n>3))fail('ALB053_INVALID_APPEARANCE');
+  target.visual=visual.map(n=>typeof n==='string'?n.toLowerCase():n);
  }
  if(stickers!==undefined){
   if(!Array.isArray(stickers)||stickers.some(sticker=>!['sparkle','tape','postcard','heart','quote','flower','leaf','sun'].includes(sticker)))fail('ALB053_INVALID_STICKERS');

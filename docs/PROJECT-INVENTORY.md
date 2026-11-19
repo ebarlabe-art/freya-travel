@@ -1,5 +1,16 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## #213 · Fase 3.1, ampliació de colors — BRANCA, NO PUBLICADA
+
+Manté els índexs 0–3 de la v67. Afegeix Bordeus, Terracota, Xocolata, Gris i Negre; fons Rosa pàl·lid, Sàlvia, Sorra, Blau cel i Lavanda. Text/accents i fons admeten també #rrggbb amb selectors natius. Previsualització sense RPC i desament explícit amb la cua existent.
+
+Les metadades continuen al label de 160 caràcters: cas estàndard amb dos colors personalitzats, 83 caràcters. Es preserven altres metadades; si el document no té espai, el canvi es rebutja abans de mutar l'estat, mai es trunca. Sense migracions ni dependències.
+
+Contrast mínim 4,5:1 per al text i els accents textuals sobre el fons de pàgina, inclòs l'interval del degradat de plantilla. Validació a la previsualització i al convertidor persistent; cap ajust automàtic dels colors seleccionats. Gris de l'etiqueta auxiliar de plantilla enfosquit a #6c6174 per garantir també els predeterminats. Els overlays sobre fotografies i decoracions conserven els estils existents: no són recolorits per aquests selectors.
+
+Validació: 29 proves focalitzades PASS (compatibilitat v67, paletes, llindar de contrast, metadades, conservació i bloquejos). Control Chromium existent ampliat amb colors personalitzats, contrast rebutjat sense escriptures, desament/reobertura i amplada mòbil. Resultat remot a la PR; iPhone físic i recorregut específic WebKit pendents. Cache v68 preparada, sense fusió ni desplegament.
+
+
 ## #213 · Fase 3, personalització visual — BRANCA, NO PUBLICADA
 
 Personalització per pàgina dins l'editor existent: tres paletes (pruna, bosc, oceà), tres fons (blanc, crema, boira) i tres combinacions de fonts locals (editorial, moderna, clàssica), més els valors de la plantilla. Els controls previsualitzen sense escriure; «Desa l'aspecte» reutilitza la cua i confirmació persistent de #234. Recuperar els predeterminats també requereix desar.

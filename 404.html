@@ -282,7 +282,7 @@
     .travel-book-section{background:#fff;border:1px solid #eadff2;border-radius:24px;padding:18px;box-shadow:0 12px 32px rgba(54,24,89,.08);scroll-margin-top:16px}
     .travel-book-section-head{display:flex;justify-content:space-between;gap:10px;align-items:end;margin-bottom:13px}.travel-book-section-head h3{margin:0}.travel-book-section-head small{color:#786d80}
     .travel-book-pages{display:grid;gap:14px}.travel-book-page{background:#f9f6fb;border:1px solid #eee4f3;border-radius:20px;padding:10px;display:grid;gap:8px;min-height:180px}
-    .travel-book-page-label{font-size:.72rem;color:#786d80;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:2px 3px}
+    .travel-book-page-label{font-size:.72rem;color:#6c6174;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:2px 3px}
     .travel-book-page-grid{display:grid;gap:8px;grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:96px}
     .travel-book-page[data-layout="hero"] .travel-book-photo{grid-column:1/-1;grid-row:span 3}
     .travel-book-page[data-layout="duo"] .travel-book-photo{grid-column:span 3;grid-row:span 2}
@@ -329,13 +329,11 @@
     .travel-book-personalization fieldset{min-width:0;margin:8px 0;display:grid;gap:10px;border:0;padding:0}
     .travel-book-personalization label{display:grid;gap:5px;min-width:0}.travel-book-personalization select{width:100%;min-width:0;min-height:44px}
     .travel-book-personalization button{min-height:44px;white-space:normal}.travel-book-personalization small{display:block}
-    .travel-book-page[data-palette="1"]{--tb-ink:#4b254b;--tb-accent:#783e72}
-    .travel-book-page[data-palette="2"]{--tb-ink:#213f32;--tb-accent:#42674c}
-    .travel-book-page[data-palette="3"]{--tb-ink:#173d50;--tb-accent:#275f78}
+    .travel-book-personalization input[type="color"]{width:100%;min-height:44px;padding:4px;border:1px solid #cac4d0;border-radius:8px;background:#fff}
     .travel-book-page:not([data-palette="0"]) .travel-book-creative-copy h4,.travel-book-page:not([data-palette="0"]) .travel-book-creative-copy p{color:var(--tb-ink)}
     .travel-book-page:not([data-palette="0"]) .travel-book-page-label{color:var(--tb-accent)}
     .travel-book-page:not([data-palette="0"]) .travel-book-creative-copy{border-color:var(--tb-accent)}
-    .travel-book-page[data-background="1"]{background:#fff}.travel-book-page[data-background="2"]{background:#fff8eb}.travel-book-page[data-background="3"]{background:#eef2f3}
+    .travel-book-page[data-appearance-colors="true"] .travel-book-creative-copy .travel-book-editable:hover,.travel-book-page[data-appearance-colors="true"] .travel-book-creative-copy .travel-book-editable:focus{background:transparent;box-shadow:none;outline:1px dashed currentColor}
     .travel-book-page[data-fonts="1"]{--tb-heading:Georgia,serif;--tb-body:Arial,sans-serif}
     .travel-book-page[data-fonts="2"]{--tb-heading:Arial,sans-serif;--tb-body:Arial,sans-serif}
     .travel-book-page[data-fonts="3"]{--tb-heading:"Palatino Linotype",Palatino,serif;--tb-body:Georgia,serif}
@@ -2447,7 +2445,8 @@ async function travelBookApplyPageEdit(sectionIndex,pageIndex,changes){
   const reason=(changes.visual!==undefined?editor.travelBookAppearanceRestriction:editor.travelBookTemplateRestriction)(record.pending?.document||record.document);if(reason)throw Error(reason);
  }
  const next=api.editTravelBookPage(state.proposal,{section_index:sectionIndex,page_index:pageIndex,...changes});
- if(changes.visual!==undefined){
+ if(changes.visual!==undefined||changes.creative_style!==undefined){
+  const contrast=editor.travelBookAppearanceContrast(next.sections[sectionIndex].pages[pageIndex].visual,next.sections[sectionIndex].pages[pageIndex].creative_style);if(!contrast.valid)throw Error(contrast.message);
   const index=editor.flattenTravelBookPages(next).findIndex(e=>e.sectionIndex===sectionIndex&&e.pageIndex===pageIndex),record=state.persistence.records[index];
   editor.compositionFromTravelBookPage({page:next.sections[sectionIndex].pages[pageIndex],compositionId:record.composition_id,pageId:record.page_id,previousDocument:record.pending?.document||record.document});
  }
@@ -2509,8 +2508,20 @@ function travelBookPersonalization(page,sectionIndex,pageIndex){
  const index=editor?.flattenTravelBookPages(travelBookProposalState.proposal).findIndex(e=>e.sectionIndex===sectionIndex&&e.pageIndex===pageIndex);
  const record=travelBookProposalState.persistence?.records?.[index];
  const reason=!record?'La pàgina encara no es pot desar.':editor?.travelBookAppearanceRestriction(record.pending?.document||record.document);
- const options=[['Colors',['Plantilla','Pruna','Bosc','Oceà']],['Fons',['Plantilla','Blanc','Crema','Boira']],['Tipografies',['Plantilla','Editorial','Moderna','Clàssica']]];
- return `<details class="travel-book-personalization"><summary>Personalització</summary><fieldset${reason?' disabled':''}><legend>Aspecte de la pàgina</legend>${options.map(([label,values],i)=>`<label>${label}<select data-tb-appearance="${i}">${values.map((name,n)=>`<option value="${n}"${(page.visual?.[i]||0)===n?' selected':''}>${name}</option>`).join('')}</select></label>`).join('')}<button type="button" data-tb-appearance-reset>Recupera l’aspecte de la plantilla</button><button type="button" data-tb-appearance-save>Desa l’aspecte</button></fieldset><small data-tb-appearance-status role="status">${esc(reason||'Previsualitza abans de desar. Les fotos i els textos es conserven.')}</small></details>`;
+ const visual=page.visual||[0,0,0],colors=editor?.travelBookAppearanceColors(visual,page.creative_style);
+ const options=[['Colors',(editor?.travelBookPalettes||[]).map(v=>v[0])],['Fons',(editor?.travelBookBackgrounds||[]).map(v=>v[0])],['Tipografies',['Plantilla','Editorial','Moderna','Clàssica']]];
+ const contrast=editor?.travelBookAppearanceContrast(visual,page.creative_style);
+ const hint='tb-appearance-status-'+sectionIndex+'-'+pageIndex;
+ return `<details class="travel-book-personalization"><summary>Personalització</summary><fieldset${reason?' disabled':''}><legend>Aspecte de la pàgina</legend>${options.map(([label,values],i)=>`<label>${label}<select data-tb-appearance="${i}" aria-describedby="${hint}">${values.map((name,n)=>`<option value="${n}"${visual[i]===n?' selected':''}>${name}</option>`).join('')}${i<2?`<option value="custom"${typeof visual[i]==='string'?' selected':''}>Personalitzat</option>`:''}</select></label>${i<2?`<label data-tb-custom-label="${i}"${typeof visual[i]==='string'?'':' class="hidden"'}>Color personalitzat de ${i===0?'text i accents':'fons'}<input type="color" data-tb-custom-color="${i}" aria-describedby="${hint}" value="${esc(typeof visual[i]==='string'?visual[i]:i===0?(colors?.ink||'#37263d'):(colors?.fill||colors?.stops[0]||'#ffffff'))}"></label>`:''}`).join('')}<button type="button" data-tb-appearance-reset>Recupera l’aspecte de la plantilla</button><button type="button" data-tb-appearance-save${contrast&&!contrast.valid?' disabled':''}>Desa l’aspecte</button></fieldset><small id="${hint}" data-tb-appearance-status role="status">${esc(reason||contrast?.message||'Previsualitza abans de desar. Les fotos i els textos es conserven.')}</small></details>`;
+}
+function paintTravelBookAppearance(article,visual){
+ const editor=travelBookModuleLoads.get('travel-book-editor-state.mjs')?.api;if(!editor)return;
+ const values=editor.travelBookAppearance(visual),colors=editor.travelBookAppearanceColors(values,article.dataset.creative);
+ ['palette','background','fonts'].forEach((key,i)=>article.dataset[key]=values[i]);
+ article.dataset.appearanceColors=String(!!(values[0]||values[1]));
+ for(const [key,value] of [['--tb-ink',colors.ink],['--tb-accent',colors.accent]])value?article.style.setProperty(key,value):article.style.removeProperty(key);
+ article.style.background=colors.fill||'';
+
 }
 function travelBookPageTools(page,sectionIndex,pageIndex){
   const selected=new Set(page.stickers.map(sticker=>sticker==='tape'?'flower':sticker));
@@ -2540,10 +2551,11 @@ function renderTravelBookProposal(proposal,visuals,totalGallery=proposal.stats.r
       const copy=`<div class="travel-book-creative-copy"><h4 class="travel-book-editable" contenteditable="true" role="textbox" data-tb-edit="title" data-section-index="${sectionIndex}" data-page-index="${pageIndex}">${esc(page.title)}</h4><p class="travel-book-editable ${page.subtitle?'':'travel-book-edit-placeholder'}" contenteditable="true" role="textbox" data-tb-edit="subtitle" data-section-index="${sectionIndex}" data-page-index="${pageIndex}">${esc(page.subtitle||'Toca aquí per afegir un comentari')}</p></div>`;
       const stickers=`<div class="travel-book-stickers">${[...new Set((page.stickers||[]).map(sticker=>sticker==='tape'?'flower':sticker))].map(sticker=>travelBookStickerHtml(sticker,page)).join('')}</div>`;
       const styleLabel={hero_editorial:'Foto protagonista',scrapbook:'Collage',narrative:'Història'}[page.creative_style]||'Composició';
-      return `<div class="travel-book-page-editor">${travelBookPageTools(page,sectionIndex,pageIndex)}<article class="travel-book-page" data-section-index="${sectionIndex}" data-page-index="${pageIndex}" data-layout="${esc(page.layout_hint)}" data-creative="${esc(page.creative_style)}" data-palette="${page.visual?.[0]||0}" data-background="${page.visual?.[1]||0}" data-fonts="${page.visual?.[2]||0}"><div class="travel-book-page-label">Pàgina ${pageIndex+1} · ${esc(styleLabel)}</div>${stickers}${copy}<div class="travel-book-page-grid">${photos}</div></article></div>`;
+      return `<div class="travel-book-page-editor">${travelBookPageTools(page,sectionIndex,pageIndex)}<article class="travel-book-page" data-section-index="${sectionIndex}" data-page-index="${pageIndex}" data-layout="${esc(page.layout_hint)}" data-creative="${esc(page.creative_style)}" data-palette="0" data-background="0" data-fonts="${page.visual?.[2]||0}"><div class="travel-book-page-label">Pàgina ${pageIndex+1} · ${esc(styleLabel)}</div>${stickers}${copy}<div class="travel-book-page-grid">${photos}</div></article></div>`;
     }).join('');
     return `<section id="${travelBookSectionId(section,sectionIndex)}" class="travel-book-section"><div class="travel-book-section-head"><div><small>${section.role==='day'?'Dia del viatge':'Records'}</small><h3>${esc(formatTravelBookDate(section.local_date))}</h3></div><small>${section.items.length} fotos · ${section.pages?.length||0} pàgines</small></div><div class="travel-book-pages">${pages}</div></section>`;
   }).join(''):'<div class="travel-book-empty">Encara no hi ha cap foto editorial preparada per construir la proposta.</div>';
+  $('travelBookSections').querySelectorAll('.travel-book-page').forEach(article=>paintTravelBookAppearance(article,proposal.sections[Number(article.dataset.sectionIndex)].pages[Number(article.dataset.pageIndex)].visual));
   if(proposal.warnings.includes('photos_without_date_context')){
     $('travelBookSections').insertAdjacentHTML('afterbegin','<div class="travel-book-warning">Algunes fotos encara no tenen context de dia. Freya les conserva com a records sense data en lloc d’inventar-ne una.</div>');
   }
@@ -2595,13 +2607,19 @@ function renderTravelBookProposal(proposal,visuals,totalGallery=proposal.stats.r
     window.addEventListener('pointercancel',cancelStickerDrag,{capture:true,passive:false});
   };
   const previewAppearance=tools=>{
-   const values=[...tools.querySelectorAll('[data-tb-appearance]')].map(el=>Number(el.value));
+   const values=[...tools.querySelectorAll('[data-tb-appearance]')].map(el=>el.value==='custom'?tools.querySelector(`[data-tb-custom-color="${el.dataset.tbAppearance}"]`).value:Number(el.value));
+   tools.querySelectorAll('[data-tb-custom-label]').forEach(el=>el.classList.toggle('hidden',typeof values[Number(el.dataset.tbCustomLabel)]!=='string'));
    const article=tools.closest('.travel-book-page-editor').querySelector('.travel-book-page');
-   ['palette','background','fonts'].forEach((key,i)=>article.dataset[key]=values[i]);
-   tools.querySelector('[data-tb-appearance-status]').textContent='Previsualització · Encara no desada';
+   paintTravelBookAppearance(article,values);
+   const result=travelBookModuleLoads.get('travel-book-editor-state.mjs').api.travelBookAppearanceContrast(values,article.dataset.creative);
+   tools.querySelector('[data-tb-appearance-status]').textContent=result.message||'Previsualització · Encara no desada';
+   tools.querySelector('[data-tb-appearance-save]').disabled=!result.valid;
    return values;
   };
-  sectionsEl.onchange=event=>{if(event.target.matches('[data-tb-appearance]'))previewAppearance(event.target.closest('.travel-book-page-tools'))};
+  const appearanceInput=event=>{if(event.target.matches('[data-tb-appearance],[data-tb-custom-color]'))previewAppearance(event.target.closest('.travel-book-page-tools'))};
+  sectionsEl.onchange=appearanceInput;
+  const captureTextInput=sectionsEl.oninput;
+  sectionsEl.oninput=event=>{captureTextInput(event);appearanceInput(event)};
   sectionsEl.onclick=event=>{
     const tools=event.target.closest('[data-section-index][data-page-index]');if(!tools)return;
     const sectionIndex=Number(tools.dataset.sectionIndex),pageIndex=Number(tools.dataset.pageIndex);

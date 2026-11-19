@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {compositionFromTravelBookPage,applyTravelBookComposition,applyTravelBookDocuments,travelBookTemplateRestriction} from '../domain/travel-book-editor-state.mjs';
+import {compositionFromTravelBookPage,applyTravelBookComposition,applyTravelBookDocuments,travelBookTemplateRestriction,travelBookAppearanceContrast,travelBookAppearance} from '../domain/travel-book-editor-state.mjs';
 
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 function ids(start=100){let n=start;return()=>id(n++)}
@@ -140,4 +140,31 @@ test('#213 appearance roundtrip changes only metadata and supports defaults and 
  original.locks.layout=false;original.elements[0].locks.content=true;assert.throws(()=>edit([1,2,3]),/bloquejat/);
  original.elements[0].locks.content=false;original.elements[0].locks.geometry=true;assert.throws(()=>edit([1,2,3]),/bloquejada/);
  assert.throws(()=>edit([9,0,0]),/invàlid/);
+});
+
+
+test('#213 expanded and custom colors preserve v67, metadata capacity and contrast',()=>{
+ const page={index:0,layout_hint:'story_grid',creative_style:'hero_editorial',title:'Records',subtitle:null,stickers:[],sticker_positions:{},items:[{asset_id:id(10)}],visual:[1,2,3]};
+ const old=compositionFromTravelBookPage({page,compositionId:id(1),pageId:id(2),makeId:ids()});
+ assert.deepEqual(applyTravelBookComposition(page,old).visual,[1,2,3]);
+ const edit=visual=>compositionFromTravelBookPage({page:{...applyTravelBookComposition(page,old),visual},compositionId:id(1),pageId:id(2),previousDocument:old});
+ for(let ink=0;ink<=8;ink++)for(let bg=0;bg<=8;bg++)for(const style of ['hero_editorial','scrapbook','narrative']){
+  assert.equal(travelBookAppearanceContrast([ink,bg,0],style).valid,true);
+ }
+ for(const visual of [[4,4,3],[8,8,0],['#123456','#ffffff',3],['#ffffff','#000000',0]]){
+  const saved=edit(visual);
+  assert.deepEqual({...saved,metadata:old.metadata},old);
+  assert.deepEqual(applyTravelBookComposition(page,saved).visual,visual);
+  assert.ok(saved.metadata.label.length<=160);
+ }
+ assert.equal(travelBookAppearanceContrast(['#767676','#ffffff',0]).valid,true);
+ assert.equal(travelBookAppearanceContrast(['#777777','#ffffff',0]).valid,false);
+ assert.equal(travelBookAppearanceContrast(['#ffffff',0,0],'hero_editorial').valid,false);
+ assert.throws(()=>edit(['#ffffff','#ffffff',0]),/Contrast insuficient/);
+ for(const bad of [['red',1,0],['#fff',1,0],['#000000;display:none',1,0],[9,1,0],[1,1,4]])assert.throws(()=>travelBookAppearance(bad),/invàlid/);
+ const label=JSON.parse(old.metadata.label);label.extra='x'.repeat(75);old.metadata.label=JSON.stringify(label);
+ assert.ok(old.metadata.label.length<=160);
+ const snapshot=structuredClone(old);
+ assert.throws(()=>edit(['#123456','#ffffff',3]),/metadades/);
+ assert.deepEqual(old,snapshot);
 });
