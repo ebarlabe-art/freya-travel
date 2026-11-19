@@ -202,19 +202,55 @@ try{
    assert.equal(await savePage.locator('.travel-book-print-sheet').count(),2);
    assert.equal(await savePage.evaluate(()=>{
     const source=document.querySelector('#travelBookSections .travel-book-page'),copy=document.querySelector('#travelBookPrintPages .travel-book-page');
-    return ['backgroundColor','gridTemplateColumns','width','height','transform'].every(key=>getComputedStyle(source)[key]===copy.style[key])&&source.querySelectorAll('img').length===copy.querySelectorAll('img').length;
+    return ['gridTemplateColumns','width','height','transform'].every(key=>getComputedStyle(source)[key]===copy.style[key])&&source.querySelectorAll('img').length===copy.querySelectorAll('img').length;
    }),true);
    await savePage.evaluate(()=>{window.print=()=>{window.testPrintCalled=true}});
    await savePage.locator('#travelBookPrintNow').click();
    assert.equal(await savePage.evaluate(()=>window.testPrintCalled),true);
    await savePage.emulateMedia({media:'print'});
    await savePage.locator('.travel-book-print-sheet').nth(1).screenshot({path:resolve(output,'travel-book-'+style+'-print.png')});
+   if((process.env.TRAVEL_BOOK_ENGINE||'chromium')==='chromium'){
    const pdf=await savePage.pdf({path:resolve(output,'travel-book-'+style+'.pdf'),preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false});
    assert.equal((pdf.toString('latin1').match(/\/Type\s*\/Page\b/g)||[]).length,2,'One cover and one unbroken album page');
+   }
    await savePage.emulateMedia({media:'screen'});
    await savePage.evaluate(()=>closeTravelBookPrint());
    assert.equal(requests.length,beforePrint);assert.equal(version,printedVersion);assert.deepEqual(saved,snapshot);
   }
+  // One actual multi-page album: cover + all three templates, at mobile width.
+  await savePage.evaluate(()=>{
+   const state=travelBookProposalState,base=state.proposal.sections[0].pages[0];
+   state.proposal.sections[0].pages=['hero_editorial','scrapbook','narrative'].map(style=>({...structuredClone(base),creative_style:style}));
+   renderTravelBookProposal(state.proposal,state.visuals,state.totalGallery,state.persistence);
+  });
+  const multiSnapshot=structuredClone(saved),multiRequests=requests.length,multiVersion=version;
+  await savePage.locator('#travelBookExport').click();
+  await savePage.locator('#travelBookPrintNow').waitFor({state:'visible'});
+  await savePage.locator('#travelBookPrintNow').click();
+  await savePage.emulateMedia({media:'print'});
+  assert.equal(await savePage.locator('.travel-book-print-sheet').count(),4);
+  for(let i=0;i<4;i++){
+   const sheet=savePage.locator('.travel-book-print-sheet').nth(i);
+
+   assert.equal(await sheet.evaluate(el=>{
+    const stage=el.firstElementChild,copy=stage.firstElementChild,b=el.getBoundingClientRect(),c=copy.getBoundingClientRect();
+    const photos=[...copy.querySelectorAll('img')];
+    return getComputedStyle(stage).position==='absolute'&&b.width>790&&b.height>1120&&
+     c.left>=b.left-1&&c.right<=b.right+1&&c.top>=b.top-1&&c.bottom<=b.bottom+1&&
+     (c.width/b.width>.99||c.height/b.height>.99)&&photos.length>0&&photos.every(p=>p.naturalWidth>0)&&
+     [...copy.querySelectorAll('.travel-book-page-label,.travel-book-cover-copy small')].every(p=>getComputedStyle(p).visibility==='hidden');
+   }),true,'Full page, centred proportional composition, no controls or blank content');
+   if(i)assert.equal(await sheet.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(18, 52, 86)');
+   await sheet.screenshot({path:resolve(output,'travel-book-full-page-'+i+'.png')});
+  }
+  if((process.env.TRAVEL_BOOK_ENGINE||'chromium')==='chromium'){
+  const multiPdf=await savePage.pdf({path:resolve(output,'travel-book-full-page.pdf'),preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false});
+  assert.equal((multiPdf.toString('latin1').match(/\/Type\s*\/Page\b/g)||[]).length,4,'No interleaved blank pages');
+  }
+  assert.deepEqual(saved,multiSnapshot);assert.equal(requests.length,multiRequests);assert.equal(version,multiVersion);
+  await savePage.emulateMedia({media:'screen'});await savePage.evaluate(()=>closeTravelBookPrint());
+  await savePage.reload();await openEditor();
+  console.log('PASS v69.1: four-page album, full backgrounds, centred proportional content, no editor labels, no blank pages, zero writes');
   await savePage.locator('#travelBookSections .travel-book-photo img').first().evaluate(img=>img.src='data:image/png;base64,broken');
   await savePage.locator('#travelBookExport').click();
   await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent.includes('fotografia'));
@@ -224,7 +260,7 @@ try{
   await savePage.locator('#travelBookExport').click();
   await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent.includes('text que no cap'));
   assert.equal(await savePage.locator('#travelBookPrintNow').count(),0);
-  console.log('PASS v69: three real Chromium PDFs, two pages each, visible templates/custom colors preserved, native print activation, missing photos and clipped text blocked, zero export writes');
+  console.log('PASS export:',process.env.TRAVEL_BOOK_ENGINE||'chromium','three templates, full-page print layout, native print activation, missing photos and clipped text blocked, zero export writes; PDF generation verified on Chromium only');
   await saveCtx.close();
   if(!process.env.TRAVEL_BOOK_SAVE_ONLY){
 

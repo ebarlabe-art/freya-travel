@@ -276,11 +276,11 @@
     #travelBookPrintDialog::backdrop{background:#24162f99}
     #travelBookPrintDialog button{min-height:44px;white-space:normal;margin:4px 0}
     @media print{
-      @page{size:A4 portrait;margin:10mm}
-      body.travel-book-printing{margin:0!important;padding:0!important;background:white!important}
+      @page{size:A4 portrait;margin:0}
+      body.travel-book-printing{margin:0!important;padding:0!important;background:white!important;display:block!important;min-height:0!important}
       body.travel-book-printing>*:not(#travelBookPrintPages){display:none!important}
       body.travel-book-printing #travelBookPrintPages{display:block!important}
-      .travel-book-print-sheet{display:block;width:190mm;height:276mm;margin:0;padding:0;break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always}
+      .travel-book-print-sheet{position:relative;display:block;box-sizing:border-box;width:210mm;height:296.8mm;overflow:hidden;margin:0;padding:0;border:0;break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always;print-color-adjust:exact;-webkit-print-color-adjust:exact}
       .travel-book-print-sheet:last-child{break-after:auto;page-break-after:auto}
     }
     .travel-book-entry{display:grid;gap:12px;background:linear-gradient(135deg,#fff8ef,#f7efff);border:1px solid #ead9f2;border-radius:26px;padding:20px;box-shadow:0 16px 40px rgba(52,24,84,.09)}
@@ -2534,7 +2534,7 @@ function travelBookPrintClone(source){
   if(original.tagName==='IMG'){copy.src=original.currentSrc||original.src;copy.removeAttribute('srcset');copy.loading='eager'}
  });
  // Editor prompts are not album text. Their layout space is retained.
- clone.querySelectorAll('.travel-book-edit-placeholder,.travel-book-photo-overlay:empty').forEach(el=>el.style.visibility='hidden');
+ clone.querySelectorAll('.travel-book-edit-placeholder,.travel-book-photo-overlay:empty,.travel-book-page-label,.travel-book-cover-copy small').forEach(el=>el.style.visibility='hidden');
  return clone;
 }
 async function prepareTravelBookPrint(){
@@ -2572,18 +2572,29 @@ async function prepareTravelBookPrint(){
  closeTravelBookPrint();
  const root=document.createElement('div');root.id='travelBookPrintPages';root.setAttribute('aria-hidden','true');
  for(const source of sources){
-  const width=source.offsetWidth,height=source.offsetHeight,padding=16;
-  const scale=Math.min((190*96/25.4)/(width+padding*2),(275*96/25.4)/(height+padding*2));
+  const width=source.offsetWidth,height=source.offsetHeight;
+  const sheetWidth=210*96/25.4,sheetHeight=296.8*96/25.4;
+  const bounds=source.getBoundingClientRect();
+  const scale=Math.min(sheetWidth/bounds.width,sheetHeight/bounds.height);
   if(!width||!height||scale<.5)throw Error('Una pàgina és massa llarga per imprimir-la llegiblement. Redueix-ne el text abans d’exportar.');
   const sheet=document.createElement('section');sheet.className='travel-book-print-sheet';
-  const stage=document.createElement('div');stage.style.cssText='position:relative;transform-origin:top left;width:'+(width+padding*2)+'px;height:'+(height+padding*2)+'px;transform:scale('+scale+')';
-  const clone=travelBookPrintClone(source);clone.style.position='absolute';clone.style.left=padding+'px';clone.style.top=padding+'px';clone.style.margin='0';
+  // Extend the existing page background, not its photographs. Keep the editorial
+  // content proportional and centred. Absolute positioning prevents WebKit from
+  // paginating the unscaled layout box into an extra blank sheet.
+  const appearance=getComputedStyle(source);
+  sheet.style.backgroundColor=appearance.backgroundColor;
+  sheet.style.backgroundImage=appearance.backgroundImage;
+  const stage=document.createElement('div');
+  stage.style.cssText='position:absolute;transform-origin:top left;width:'+width+'px;height:'+height+'px;left:'+((sheetWidth-width*scale)/2)+'px;top:'+((sheetHeight-height*scale)/2)+'px;transform:scale('+scale+')';
+  const clone=travelBookPrintClone(source);
+  clone.style.margin='0';clone.style.borderColor='transparent';clone.style.borderRadius='0';clone.style.boxShadow='none';
+  clone.style.backgroundColor='transparent';clone.style.backgroundImage='none';
   stage.append(clone);sheet.append(stage);root.append(sheet);
  }
  document.body.append(root);
  try{await Promise.all([...root.querySelectorAll('img')].map(img=>img.decode()))}catch{root.remove();throw Error('No s’ha pogut preparar alguna fotografia per imprimir. Torna-ho a provar.')}
  const dialog=document.createElement('dialog');dialog.id='travelBookPrintDialog';
- dialog.innerHTML='<h2>PDF preparat</h2><p>'+sources.length+' pàgines. Es conserva l’aspecte visible de l’àlbum.</p><p>Tria A4, sense capçaleres ni peus del navegador, i activa els gràfics de fons. A l’iPhone, obre la previsualització d’impressió i utilitza Compartir per desar el PDF a Fitxers.</p><p>El resultat final depèn de les opcions del diàleg d’impressió. No és un fitxer d’impremta professional.</p><button type="button" id="travelBookPrintNow">Imprimeix / Desa PDF</button> <button type="button" id="travelBookPrintClose" class="secondary">Tanca</button>';
+ dialog.innerHTML='<h2>PDF preparat</h2><p>'+sources.length+' pàgines · Fons complet. Es conserven la composició i els enquadraments, amb el fons estès a tot el full.</p><p>Tria A4, marges zero, sense capçaleres ni peus (URL, data i numeració) del navegador, i activa els gràfics de fons. Una impressora física pot imposar marges si no admet impressió sense vores. A l’iPhone, obre la previsualització d’impressió i utilitza Compartir per desar el PDF a Fitxers.</p><p>El resultat final depèn de les opcions del diàleg d’impressió. No és un fitxer d’impremta professional.</p><button type="button" id="travelBookPrintNow">Imprimeix / Desa PDF</button> <button type="button" id="travelBookPrintClose" class="secondary">Tanca</button>';
  document.body.append(dialog);
  dialog.addEventListener('cancel',event=>{event.preventDefault();closeTravelBookPrint()});
  $('travelBookPrintClose').onclick=closeTravelBookPrint;
