@@ -2578,8 +2578,8 @@ function observeTravelBookPages(){
 }
 function travelBookFormatControls(page,si,pi){
  const state=travelBookProposalState,editor=travelBookModuleLoads.get('travel-book-editor-state.mjs')?.api;
- const index=state.proposal.sections.flatMap((s,i)=>s.pages.map((p,j)=>({i,j}))).findIndex(p=>p.i===si&&p.j===pi),record=state.persistence?.records[index];
- const reason=editor?.travelBookAppearanceRestriction(record?.pending?.document||record?.document);
+ const index=state.proposal.sections.flatMap((s,i)=>s.pages.map((p,j)=>({i,j}))).findIndex(p=>p.i===si&&p.j===pi),record=state.persistence?.records?.[index];
+ const reason=!editor||!record?'Preparant la pàgina…':editor.travelBookAppearanceRestriction(record.pending?.document||record.document);
  return `<div class="tb-format-tools"><label>Format <select data-tb-format${reason?' disabled':''}><option value=""${!page.editorial_format?' selected':''}>Original desat</option><option value="landscape"${page.editorial_format==='landscape'?' selected':''}>Horitzontal</option><option value="portrait"${page.editorial_format==='portrait'?' selected':''}>Vertical</option></select></label><button type="button" data-tb-format-save hidden>Confirma i desa el format</button><button type="button" data-tb-format-cancel hidden>Descarta</button><button type="button" data-tb-zoom>Amplia / pàgina completa</button><small data-tb-format-status>${esc(reason||'Les fotos conserven la zona desada, sense cap retall addicional. Ampliar només canvia la vista.')}</small></div>`;
 }
 
@@ -2608,6 +2608,10 @@ function travelBookPrintClone(source){
   copy.removeAttribute('id');copy.removeAttribute('contenteditable');copy.removeAttribute('tabindex');
   for(const property of style)copy.style.setProperty(property,style.getPropertyValue(property));
   copy.style.setProperty('animation','none');copy.style.setProperty('transition','none');
+  // The print sheet owns page selection; copied screen 'page:auto' must not
+  // start a different named-page context inside the editorial grid.
+  copy.style.setProperty('page','inherit');copy.style.setProperty('break-inside','avoid');
+  copy.style.setProperty('break-before','auto');copy.style.setProperty('break-after','auto');
   copy.style.setProperty('print-color-adjust','exact');copy.style.setProperty('-webkit-print-color-adjust','exact');
   if(original.tagName==='IMG'){copy.src=original.currentSrc||original.src;copy.removeAttribute('srcset');copy.loading='eager'}
  });
@@ -2669,7 +2673,7 @@ async function prepareTravelBookPrint(){
   const stage=document.createElement('div');
   stage.style.cssText='position:absolute;transform-origin:top left;width:'+width+'px;height:'+height+'px;left:'+((sheetWidth-width*scale)/2)+'px;top:'+((sheetHeight-height*scale)/2)+'px;transform:scale('+scale+')';
   const clone=travelBookPrintClone(source);
-  if(source.dataset.editorial){clone.style.transform='none';clone.style.position='relative'}
+  if(source.dataset.editorial){clone.style.transform='none';clone.style.position='absolute';clone.style.left='0';clone.style.top='0'}
   clone.style.margin='0';clone.style.borderColor='transparent';clone.style.borderRadius='0';clone.style.boxShadow='none';
   clone.style.backgroundColor='transparent';clone.style.backgroundImage='none';
   stage.append(clone);sheet.append(stage);root.append(sheet);
