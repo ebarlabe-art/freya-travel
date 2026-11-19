@@ -76,6 +76,7 @@ function pagesFor(items,usedTitles){
   const firstCaption=slice.find(item=>item.caption_candidate)?.caption_candidate||null;
   pages.push({
    index:pageIndex,
+   editorial_format:'landscape',
    layout_hint:layoutHint(slice.length),
    creative_style:style,
    title:copy.title,
@@ -95,7 +96,7 @@ export function proposeAlternativeTravelBookTitle(page,usedTitles=[]){
  used.add(page.title);
  return creativeCopy(page.creative_style,!!page.subtitle,used,Number.isInteger(page.index)?page.index+1:0).title;
 }
-export function editTravelBookPage(proposal,{section_index,page_index,title,subtitle,creative_style,stickers,sticker_positions,visual}){
+export function editTravelBookPage(proposal,{section_index,page_index,title,subtitle,creative_style,stickers,sticker_positions,visual,editorial_format}){
  if(!validateInitialTravelBookProposal(proposal))fail('ALB053_INVALID_PROPOSAL');
  const section=proposal.sections?.[section_index],page=section?.pages?.[page_index];
  if(!page)fail('ALB053_PAGE_NOT_FOUND');
@@ -109,6 +110,10 @@ export function editTravelBookPage(proposal,{section_index,page_index,title,subt
  if(creative_style!==undefined){
   if(!CREATIVE_STYLES.includes(creative_style))fail('ALB053_INVALID_STYLE');
   target.creative_style=creative_style;
+ }
+ if(editorial_format!==undefined){
+  if(!['landscape','portrait',null].includes(editorial_format))fail('ALB070_INVALID_FORMAT');
+  target.editorial_format=editorial_format;
  }
  if(visual!==undefined){
   if(!Array.isArray(visual)||visual.length!==3||visual.some((n,i)=>i<2?!(Number.isInteger(n)&&n>=0&&n<=8)&&!(typeof n==='string'&&/^#[0-9a-f]{6}$/i.test(n)):!Number.isInteger(n)||n<0||n>3))fail('ALB053_INVALID_APPEARANCE');
@@ -204,6 +209,7 @@ export function validateInitialTravelBookProposal(value){
   const pageAssets=[];
   for(const page of section.pages){
    if(!Number.isInteger(page.index)||page.index<0||!['hero','duo','triptych','grid','story_grid'].includes(page.layout_hint)||!CREATIVE_STYLES.includes(page.creative_style)||typeof page.title!=='string'||!page.title||!Array.isArray(page.stickers)||page.stickers.some(sticker=>!['sparkle','tape','postcard','heart','quote','flower','leaf','sun'].includes(sticker))||!page.sticker_positions||typeof page.sticker_positions!=='object'||Array.isArray(page.sticker_positions)||Object.entries(page.sticker_positions).some(([key,pos])=>!page.stickers.includes(key)||!pos||!Number.isFinite(Number(pos.x))||Number(pos.x)<0||Number(pos.x)>100||!Number.isFinite(Number(pos.y))||Number(pos.y)<0||Number(pos.y)>100||!Number.isFinite(Number(pos.rotation||0))||Math.abs(Number(pos.rotation||0))>360)||!Array.isArray(page.items)||!page.items.length||page.items.length>6)return false;
+   if(page.editorial_format!=null&&!['landscape','portrait'].includes(page.editorial_format))return false;
    if(page.subtitle!==null&&typeof page.subtitle!=='string')return false;
    if(page.subtitle&&page.subtitle_classification!=='user_statement')return false;
    for(const item of page.items){

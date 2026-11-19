@@ -168,3 +168,23 @@ test('#213 expanded and custom colors preserve v67, metadata capacity and contra
  assert.throws(()=>edit(['#123456','#ffffff',3]),/metadades/);
  assert.deepEqual(old,snapshot);
 });
+
+test('v70 format round-trip preserves legacy elements, crop, geometry, locks and metadata',()=>{
+ const page={index:0,layout_hint:'hero',creative_style:'hero_editorial',title:'Records',subtitle:null,stickers:[],sticker_positions:{},items:[{asset_id:id(10)}]};
+ const old=compositionFromTravelBookPage({page,compositionId:id(1),pageId:id(2),makeId:ids()});
+ old.elements.find(e=>e.type==='image').crop={x:.1,y:.2,width:.7,height:.6};
+ const legacy=applyTravelBookComposition({...page,editorial_format:'landscape'},old);
+ assert.equal(legacy.editorial_format,null);
+ assert.deepEqual(legacy.items[0].editor_crop,old.elements.find(e=>e.type==='image').crop);
+ for(const format of ['landscape','portrait']){
+  const next=compositionFromTravelBookPage({page:{...legacy,editorial_format:format},compositionId:id(1),pageId:id(2),previousDocument:old});
+  assert.deepEqual({...next,metadata:old.metadata},old);
+  assert.ok(next.metadata.label.length<=160);
+  assert.equal(applyTravelBookComposition(page,next).editorial_format,format);
+ }
+ for(const kind of ['layout','geometry','content']){
+  const locked=structuredClone(old);
+  if(kind==='layout')locked.locks.layout=true;else locked.elements[0].locks[kind]=true;
+  assert.throws(()=>compositionFromTravelBookPage({page:{...legacy,editorial_format:'landscape'},compositionId:id(1),pageId:id(2),previousDocument:locked}),/bloqueja|protegi/);
+ }
+});

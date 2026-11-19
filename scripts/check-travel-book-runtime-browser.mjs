@@ -50,6 +50,7 @@ try{
     session={user:{id:id(90)}};trip={id:id(91),experience_key:null};
     const api=await travelBookProposalApi(),editor=await travelBookEditorApi(),book={id:id(92)};
     let proposal=api.buildInitialTravelBookProposal({trip_id:trip.id,book_id:book.id,photos:[93,97,98].map(n=>({asset_id:id(n),status:'ready'}))});
+    proposal.sections.forEach(s=>s.pages.forEach(p=>delete p.editorial_format));
     const visuals=new Map([93,97,98].map((n,i)=>[id(n),'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="120" height="90"><rect width="120" height="90" fill="${['#b6c9a3','#e2bf95','#bba7cf'][i]}"/><text x="12" y="48" font-size="18">Foto ${i+1}</text></svg>`)]));
     let persistence={book,edition:{id:id(94)},records:[{composition_id:id(95),page_id:id(96),current_version:version,document:saved}]};
     const recovered=recover?await recoverTravelBookEdits(book,api):null;
@@ -261,6 +262,65 @@ try{
   await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent.includes('text que no cap'));
   assert.equal(await savePage.locator('#travelBookPrintNow').count(),0);
   console.log('PASS export:',process.env.TRAVEL_BOOK_ENGINE||'chromium','three templates, full-page print layout, native print activation, missing photos and clipped text blocked, zero export writes; PDF generation verified on Chromium only');
+  // v70: explicit migration preview, durable metadata only, real DOM and native PDF.
+  saved.locks.layout=false;
+  await savePage.reload();await openEditor();
+  const legacyDocument=structuredClone(saved),beforeFormat=requests.length;
+  await savePage.locator('[data-tb-format]').selectOption('landscape');
+  assert.equal(requests.length,beforeFormat);
+  await savePage.locator('#travelBookExport').click();
+  await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent.includes('previsualització'));
+  assert.equal(await savePage.locator('#travelBookPrintNow').count(),0);
+  await savePage.locator('[data-tb-format-cancel]').click();
+  assert.equal(await savePage.locator('.travel-book-page').getAttribute('data-editorial'),null);
+  assert.deepEqual(saved,legacyDocument);
+  await savePage.locator('[data-tb-format]').selectOption('landscape');
+  await savePage.locator('[data-tb-format-save]').click();
+  await savePage.waitForFunction(()=>!travelBookProposalState.saving&&travelBookProposalState.persistence.records.every(r=>!r.dirty&&!r.pending));
+  assert.deepEqual({...saved,metadata:legacyDocument.metadata},legacyDocument);
+  await savePage.reload();await openEditor();
+  assert.equal(await savePage.locator('.travel-book-page').getAttribute('data-editorial'),'landscape');
+  await savePage.locator('[data-tb-zoom]').click();
+  assert.equal(await savePage.locator('.travel-book-page').evaluate(el=>el.getBoundingClientRect().width),1122);
+  await savePage.locator('[data-tb-zoom]').click();
+  assert.ok(await savePage.locator('.travel-book-page').evaluate(el=>el.getBoundingClientRect().width<=390));
+  for(const format of ['landscape','portrait']){
+   await savePage.reload();await openEditor();
+   await savePage.evaluate(format=>{
+    const state=travelBookProposalState,base=state.proposal.sections[0].pages[0];
+    base.title='Dies de llum';base.subtitle='Records entre el mar i la muntanya';base.items.forEach(item=>item.overlay_text=null);
+    state.proposal.sections[0].pages=['hero_editorial','scrapbook','narrative'].map((style,index)=>({...structuredClone(base),index,creative_style:style,editorial_format:format}));
+    // Deterministic synthetic landscape images: no private photographs or network.
+    for(const [i,item] of base.items.entries())state.visuals.set(item.asset_id,'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="${['#6ba9bd','#d79173','#8cabb0'][i]}"/><stop offset="1" stop-color="#f9e6bb"/></linearGradient></defs><rect width="1200" height="800" fill="url(#sky)"/><circle cx="900" cy="180" r="75" fill="#fff0c0"/><path d="M0 470L270 180 560 460 810 260 1200 500V800H0Z" fill="#55756d"/><path d="M0 530Q300 450 600 550T1200 520V800H0Z" fill="${['#478397','#b5a67d','#668c86'][i]}"/><path d="M0 720Q400 530 740 700T1200 720V800H0Z" fill="#394f49"/></svg>`));
+    renderTravelBookProposal(state.proposal,state.visuals,state.totalGallery,state.persistence);
+   },format);
+   await savePage.waitForFunction(()=>[...document.querySelectorAll('#travelBookSections img')].every(i=>i.complete&&i.naturalWidth));
+   await savePage.evaluate(()=>document.querySelectorAll('.travel-book-page').forEach(sizeTravelBookPage));
+   const exportRequests=requests.length,exportVersion=version,exportDocument=structuredClone(saved);
+   for(let i=0;i<3;i++)await savePage.locator('.travel-book-page').nth(i).screenshot({path:resolve(output,`v70-${format}-${i}-screen.png`)});
+   assert.ok(await savePage.evaluate(()=>document.documentElement.scrollWidth<=390));
+   const normalized=await savePage.locator('#travelBookSections .travel-book-page').evaluateAll(els=>els.map(el=>{const p=el.getBoundingClientRect();return [...el.querySelectorAll('.travel-book-photo')].map(photo=>{const b=photo.getBoundingClientRect();return [(b.x-p.x)/p.width,(b.y-p.y)/p.height,b.width/p.width,b.height/p.height]})}));
+   await savePage.locator('#travelBookExport').click();
+   await savePage.waitForFunction(()=>document.getElementById('travelBookPrintDialog')?.open||document.getElementById('travelBookMessage').classList.contains('error'));
+   assert.equal(await savePage.locator('#travelBookPrintNow').count(),1,await savePage.locator('#travelBookMessage').textContent());
+   await savePage.evaluate(()=>{window.print=()=>{}});await savePage.locator('#travelBookPrintNow').click();
+   await savePage.emulateMedia({media:'print'});
+   assert.equal(await savePage.locator('.travel-book-print-sheet').count(),4);
+   const printed=await savePage.locator('#travelBookPrintPages .travel-book-page').evaluateAll(els=>els.map(el=>{const p=el.getBoundingClientRect();return [...el.querySelectorAll('.travel-book-photo')].map(photo=>{const b=photo.getBoundingClientRect();return [(b.x-p.x)/p.width,(b.y-p.y)/p.height,b.width/p.width,b.height/p.height]})}));
+   normalized.forEach((page,i)=>page.forEach((photo,j)=>photo.forEach((n,k)=>assert.ok(Math.abs(n-printed[i][j][k])<.002,'Screen and PDF photo proportions match'))));
+   for(let i=0;i<4;i++){
+    const sheet=savePage.locator('.travel-book-print-sheet').nth(i);
+    assert.equal(await sheet.evaluate((el,format)=>{const b=el.getBoundingClientRect();return Math.abs(b.width/b.height-(format==='landscape'?297/209.8:210/296.8))<.002&&!!el.querySelector('img')},format),true);
+    await sheet.screenshot({path:resolve(output,`v70-${format}-${i}-print.png`)});
+   }
+   if((process.env.TRAVEL_BOOK_ENGINE||'chromium')==='chromium'){
+    const pdf=await savePage.pdf({path:resolve(output,`v70-${format}.pdf`),preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false});
+    assert.equal((pdf.toString('latin1').match(/\/Type\s*\/Page\b/g)||[]).length,4);
+   }
+   assert.equal(requests.length,exportRequests);assert.equal(version,exportVersion);assert.deepEqual(saved,exportDocument);
+   await savePage.emulateMedia({media:'screen'});await savePage.evaluate(()=>closeTravelBookPrint());
+  }
+  console.log('PASS v70: explicit legacy preview/cancel/confirm/reopen, unchanged crops and elements, mobile zoom, six editorial layouts, screen/print geometry parity, four sheets per orientation, zero export writes');
   await saveCtx.close();
   if(!process.env.TRAVEL_BOOK_SAVE_ONLY){
 

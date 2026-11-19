@@ -1,5 +1,15 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## #213 · v70, pàgines editorials — BRANCA, NO PUBLICADA
+
+Pàgines noves horitzontals per defecte (A4), alternativa vertical; renderer únic de dimensions fixes amb viewport mòbil a escala i ampliació. Les tres plantilles distribueixen les fotos en una superfície editorial, no en columnes dependents del viewport. Foto protagonista prioritza una imatge; Collage usa regions asimètriques amb marcs i girs moderats; Història combina una imatge ampla i secundàries. No s'introdueix moviment lliure ni un motor paral·lel.
+
+Compatibilitat: l'absència de `f` en les metadades manté la representació antiga. Un canvi de format mostra previsualització i requereix «Confirma i desa el format»; descartar no escriu. `f:l/p` reutilitza metadata.label (límit 160 validat), la cua de desament i les restriccions existents. Elements, IDs, geometries i crops persistits no es reescriuen. La representació editorial mostra la regió crop desada sense retallar-la de nou per encaixar: poden quedar espais dins dels marcs per conservar tota la imatge. No s'aplica detecció de cares ni s'inventa un enquadrament. La portada adopta el format de la primera pàgina i mostra la foto completa.
+
+PDF natiu: còpia del mateix DOM de pàgina, sense l'escala de navegació mòbil, fulls A4 amb orientació corresponent i contingut fora del flux de fragmentació. Previsualitzacions no confirmades, fotos absents i text desbordat impedeixen una exportació parcial. El text llarg s'ha d'ajustar explícitament, no es retalla ni es redueix silenciosament.
+
+Validació focalitzada: compatibilitat/crops/bloquejos, previsualitzar/descartar/confirmar/reobrir, sis combinacions de plantilla i orientació, zoom mòbil, paritat geomètrica pantalla/impressió, PDF de quatre fulls i absència d'escriptures. Resultats i captures a la PR. WebKit automatitzat valida media print; el diàleg Quartz d'iPhone requereix comprovació física. Sense migracions, dependències ni producció. Cache v70 preparada.
+
 ## #213 · v69.1, PDF amb fons complet — BRANCA, NO PUBLICADA
 
 Correcció de l'exportació nativa v69: el fons de la composició ocupa l'A4, el contingut es centra i s'escala proporcionalment sense canviar fotografies ni enquadraments. El contenidor transformat queda absolut i confinat al full, evitant que la seva mida sense transformar provoqui pàgines buides a WebKit. La portada conserva la imatge i el títol, amb fons complet. S'eliminen les vores/ombres de targeta i s'oculten les etiquetes de l'editor en la còpia impresa. No es modifiquen dades ni el contracte editorial.
