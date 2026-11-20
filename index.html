@@ -280,8 +280,8 @@
       @page tb-landscape{size:A4 landscape;margin:0}
       @page tb-portrait{size:A4 portrait;margin:0}
       body.travel-book-printing{margin:0!important;padding:0!important;background:white!important;display:block!important;min-height:0!important}
-      body.travel-book-printing>*:not(#travelBookPrintPages){display:none!important}
-      body.travel-book-printing #travelBookPrintPages{display:block!important}
+      body.travel-book-printing>*:not(#travelBookPrintPages),body:has(> #travelBookPrintPages)>*:not(#travelBookPrintPages){display:none!important}
+      body.travel-book-printing #travelBookPrintPages,body:has(> #travelBookPrintPages)>#travelBookPrintPages{display:block!important}
       .travel-book-print-sheet{position:relative;display:block;box-sizing:border-box;width:210mm;height:296.8mm;overflow:hidden;margin:0;padding:0;border:0;break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always;print-color-adjust:exact;-webkit-print-color-adjust:exact}
       .travel-book-print-sheet:last-child{break-after:auto;page-break-after:auto}
     }
@@ -2702,7 +2702,10 @@ async function prepareTravelBookPrint(){
  };
  dialog.showModal();
 }
-window.addEventListener('afterprint',()=>{document.body.classList.remove('travel-book-printing');const dialog=$('travelBookPrintDialog');if(dialog&&!dialog.open)dialog.showModal()});
+window.addEventListener('beforeprint',()=>{if($('travelBookPrintPages'))document.body.classList.add('travel-book-printing')});
+// On iOS Safari, changing print orientation may fire afterprint before the final
+// preview snapshot. Keep the print scope until the user explicitly closes it.
+window.addEventListener('afterprint',()=>{const dialog=$('travelBookPrintDialog');if(dialog&&!dialog.open)dialog.showModal()});
 $('travelBookExport').onclick=async()=>{
  const button=$('travelBookExport');button.disabled=true;
  try{await prepareTravelBookPrint()}catch(error){msg('travelBookMessage',error.message||'No s’ha pogut preparar el PDF.',true)}
