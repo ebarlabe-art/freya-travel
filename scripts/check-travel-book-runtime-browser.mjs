@@ -236,7 +236,7 @@ try{
    assert.equal(await sheet.evaluate(el=>{
     const stage=el.firstElementChild,copy=stage.firstElementChild,b=el.getBoundingClientRect(),c=copy.getBoundingClientRect();
     const photos=[...copy.querySelectorAll('img')];
-    return getComputedStyle(stage).position==='absolute'&&b.width>790&&b.height>1120&&
+    return getComputedStyle(stage).position==='absolute'&&b.width>680&&b.height>950&&
      c.left>=b.left-1&&c.right<=b.right+1&&c.top>=b.top-1&&c.bottom<=b.bottom+1&&
      (c.width/b.width>.99||c.height/b.height>.99)&&photos.length>0&&photos.every(p=>p.naturalWidth>0)&&
      [...copy.querySelectorAll('.travel-book-page-label,.travel-book-cover-copy small')].every(p=>getComputedStyle(p).visibility==='hidden');
@@ -326,6 +326,13 @@ try{
    if((process.env.TRAVEL_BOOK_ENGINE||'chromium')==='chromium'){
     const pdf=await savePage.pdf({path:resolve(output,`v70-${format}.pdf`),preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false});
     assert.equal((pdf.toString('latin1').match(/\/Type\s*\/Page\b/g)||[]).length,4);
+    // Approximate AirPrint reserving 12 mm on every side for headers/footers:
+    // the album must still yield one complete PDF sheet per source page.
+    const reserved=await savePage.addStyleTag({content:'@media print{@page tb-'+format+'{margin:12mm}}'});
+    try{
+     const inset=await savePage.pdf({path:resolve(output,`v70-${format}-safari-margins.pdf`),preferCSSPageSize:true,printBackground:true,displayHeaderFooter:true});
+     assert.equal((inset.toString('latin1').match(/\/Type\s*\/Page\b/g)||[]).length,4,'One source page per physical A4 sheet with Safari-like margins');
+    }finally{await reserved.evaluate(el=>el.remove())}
    }
    assert.equal(requests.length,exportRequests);assert.equal(version,exportVersion);assert.deepEqual(saved,exportDocument);
    await savePage.emulateMedia({media:'screen'});await savePage.evaluate(()=>closeTravelBookPrint());

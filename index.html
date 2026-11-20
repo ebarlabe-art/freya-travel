@@ -2662,12 +2662,19 @@ async function prepareTravelBookPrint(){
  for(const source of sources){
   const width=source.offsetWidth,height=source.offsetHeight;
   const landscape=source.dataset.editorial==='landscape';
-  const sheetWidth=(landscape?297:210)*96/25.4,sheetHeight=(landscape?209.8:296.8)*96/25.4;
+  // Safari/iOS AirPrint reserves space for URL, date and page numbers even if
+  // @page requests zero margins. Never size printable content to the full A4:
+  // that fragments each album page into two physical pages on the iPhone.
+  // Keep the entire saved layout proportional and inside a conservative A4
+  // printable area (26 mm total clearance per axis); do not crop photographs.
+  const physicalWidth=landscape?297:210,physicalHeight=landscape?209.8:296.8;
+  const printFit=.87;
+  const sheetWidth=physicalWidth*printFit*96/25.4,sheetHeight=physicalHeight*printFit*96/25.4;
   const bounds=source.dataset.editorial?{width,height}:source.getBoundingClientRect();
   const scale=Math.min(sheetWidth/bounds.width,sheetHeight/bounds.height);
   if(!width||!height||scale<.5)throw Error('Una pàgina és massa llarga per imprimir-la llegiblement. Redueix-ne el text abans d’exportar.');
   const sheet=document.createElement('section');sheet.className='travel-book-print-sheet';
-  sheet.style.width=(landscape?297:210)+'mm';sheet.style.height=(landscape?209.8:296.8)+'mm';sheet.style.page=landscape?'tb-landscape':'tb-portrait';
+  sheet.style.width=(physicalWidth*printFit)+'mm';sheet.style.height=(physicalHeight*printFit)+'mm';sheet.style.page=landscape?'tb-landscape':'tb-portrait';
   // Extend the existing page background, not its photographs. Keep the editorial
   // content proportional and centred. Absolute positioning prevents WebKit from
   // paginating the unscaled layout box into an extra blank sheet.
@@ -2690,7 +2697,7 @@ async function prepareTravelBookPrint(){
  if(uniform){const printSize=document.createElement('style');printSize.id='travelBookPrintPageSize';printSize.textContent='@media print{@page{size:A4 '+formats[0]+';margin:0}}';document.head.append(printSize)}
  try{await Promise.all([...root.querySelectorAll('img')].map(img=>img.decode()))}catch{root.remove();throw Error('No s’ha pogut preparar alguna fotografia per imprimir. Torna-ho a provar.')}
  const dialog=document.createElement('dialog');dialog.id='travelBookPrintDialog';
- dialog.innerHTML='<h2>PDF preparat</h2><p>'+sources.length+' pàgines · Fons complet. Es conserven la composició i els enquadraments, amb el fons estès a tot el full.</p><p>Tria A4 amb l’orientació de les pàgines (horitzontal o vertical), marges zero, sense capçaleres ni peus (URL, data i numeració) del navegador, i activa els gràfics de fons. Una impressora física pot imposar marges si no admet impressió sense vores. A l’iPhone, obre la previsualització d’impressió i utilitza Compartir per desar el PDF a Fitxers.</p><p>El resultat final depèn de les opcions del diàleg d’impressió. No és un fitxer d’impremta professional.</p><button type="button" id="travelBookPrintNow">Imprimeix / Desa PDF</button> <button type="button" id="travelBookPrintClose" class="secondary">Tanca</button>';
+ dialog.innerHTML='<h2>PDF preparat</h2><p>'+sources.length+' pàgines. El contingut i els enquadraments es mantenen complets dins una zona A4 segura per a Safari, amb marges per evitar pàgines tallades.</p><p>Tria A4 amb l’orientació de les pàgines (horitzontal o vertical). Safari pot afegir automàticament URL, data i numeració; si la impressió no ofereix desactivar-los, poden aparèixer al PDF. A l’iPhone, utilitza Compartir per desar el PDF a Fitxers.</p><p>El resultat final depèn de les opcions del diàleg d’impressió. No és un fitxer d’impremta professional.</p><button type="button" id="travelBookPrintNow">Imprimeix / Desa PDF</button> <button type="button" id="travelBookPrintClose" class="secondary">Tanca</button>';
  document.body.append(dialog);
  dialog.addEventListener('cancel',event=>{event.preventDefault();closeTravelBookPrint()});
  $('travelBookPrintClose').onclick=closeTravelBookPrint;

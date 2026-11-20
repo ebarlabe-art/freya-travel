@@ -1,5 +1,11 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## #213 · iPhone AirPrint A4 amb marges de seguretat — BRANCA, NO PUBLICADA
+
+Incidència real iPhone (captura 21/11/2026): el selector d'impressió mostra 44 pàgines, i fotografies/composicions apareixen tallades o gairebé buides. La PR #243 aïlla correctament l'àlbum de la interfície, però no resol la paginació. El codi actual dimensionava cada full a pràcticament tot l'A4 (297 × 209,8 mm en horitzontal); Safari imprimeix URL, data i numeració i pot reservar àrea per a aquests peus malgrat @page margin:0. Hipòtesi concreta: el contingut sobrepassa la zona física i cada pàgina es fragmenta.
+
+Correcció acotada a la branca: el full temporal es limita al 87% de cada dimensió física A4, conserva la proporció de la composició sencera, fotos, crops, textos i ordre de les pàgines. Marges blancs acceptats per impedir talls. El diàleg informa que els peus d'iOS poden continuar apareixent si Safari no permet desactivar-los; no es promet impressió a sang. No es modifiquen dades ni documents desats, dependències o arquitectura. Test de navegador existent ampliat amb simulació de 12 mm de zona reservada, per cada orientació, i recompte de pàgines; CI pendent. Cal una única validació real a l'iPhone abans de considerar resolt i abans de fusionar/publicar.
+
 ## #213 · v70, pàgines editorials — BRANCA, NO PUBLICADA
 
 Pàgines noves horitzontals per defecte (A4), alternativa vertical; renderer únic de dimensions fixes amb viewport mòbil a escala i ampliació. Les tres plantilles distribueixen les fotos en una superfície editorial, no en columnes dependents del viewport. Foto protagonista prioritza una imatge; Collage usa regions asimètriques amb marcs i girs moderats; Història combina una imatge ampla i secundàries. No s'introdueix moviment lliure ni un motor paral·lel.
