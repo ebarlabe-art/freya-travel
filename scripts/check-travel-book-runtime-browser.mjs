@@ -333,6 +333,15 @@ try{
      const inset=await savePage.pdf({path:resolve(output,`v70-${format}-safari-margins.pdf`),preferCSSPageSize:true,printBackground:true,displayHeaderFooter:true});
      assert.equal((inset.toString('latin1').match(/\/Type\s*\/Page\b/g)||[]).length,4,'One source page per physical A4 sheet with Safari-like margins');
     }finally{await reserved.evaluate(el=>el.remove())}
+    if(format==='landscape'){
+     // iPhone Safari may paginate with portrait width even after the user
+     // selects horizontal orientation. Print layout must not split pages.
+     const portraitFallback=await savePage.addStyleTag({content:'@media print{@page tb-landscape{size:A4 portrait;margin:12mm}}'});
+     try{
+      const fallback=await savePage.pdf({path:resolve(output,'v70-landscape-portrait-pagination.pdf'),preferCSSPageSize:true,printBackground:true,displayHeaderFooter:true});
+     assert.equal((fallback.toString('latin1').match(/\/Type\s*\/Page\b/g)||[]).length,4,'No landscape sheet split under portrait-width Safari pagination');
+     }finally{await portraitFallback.evaluate(el=>el.remove())}
+    }
    }
    assert.equal(requests.length,exportRequests);assert.equal(version,exportVersion);assert.deepEqual(saved,exportDocument);
    await savePage.emulateMedia({media:'screen'});await savePage.evaluate(()=>closeTravelBookPrint());

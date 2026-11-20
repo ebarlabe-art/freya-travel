@@ -2668,7 +2668,9 @@ async function prepareTravelBookPrint(){
   // Keep the entire saved layout proportional and inside a conservative A4
   // printable area (26 mm total clearance per axis); do not crop photographs.
   const physicalWidth=landscape?297:210,physicalHeight=landscape?209.8:296.8;
-  const printFit=.87;
+  const printFit=landscape?Math.min(.87,180/297):.87;
+  // A landscape album must fit even if iOS paginates on a portrait-width
+  // layout viewport after the user switches the print orientation.
   const sheetWidth=physicalWidth*printFit*96/25.4,sheetHeight=physicalHeight*printFit*96/25.4;
   const bounds=source.dataset.editorial?{width,height}:source.getBoundingClientRect();
   const scale=Math.min(sheetWidth/bounds.width,sheetHeight/bounds.height);
