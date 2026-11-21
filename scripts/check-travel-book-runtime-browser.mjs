@@ -64,6 +64,26 @@ try{
    },{saved,version,recover});
   }
   await savePage.goto(url,{waitUntil:'load'});await openEditor();
+  // Digital album: one read-only, mobile-first reader over the same persisted proposal.
+  const readerRequests=requests.length,readerSaved=structuredClone(saved);
+  await savePage.locator('#travelBookOpenReader').click();
+  assert.equal(await savePage.locator('#travelBookReader').evaluate(el=>el.open),true);
+  assert.equal(await savePage.locator('#travelBookReaderCounter').textContent(),'1 / 2');
+  await savePage.locator('#travelBookReaderNext').click();
+  assert.equal(await savePage.locator('#travelBookReaderCounter').textContent(),'2 / 2');
+  assert.ok(await savePage.locator('#travelBookReaderContent .tb-reader-tile img').count()>0);
+  assert.match(await savePage.locator('#travelBookReaderContent .tb-reader-paper-head h2').textContent(),/./);
+  await savePage.locator('[data-tb-reader-photo]').first().click();
+  assert.equal(await savePage.locator('#travelBookReaderZoom').getAttribute('aria-hidden'),'false');
+  await savePage.waitForFunction(()=>{const img=document.getElementById('travelBookReaderZoomImage');return img.complete&&img.naturalWidth>0});
+  await savePage.locator('#travelBookReaderZoomClose').click();
+  await savePage.locator('#travelBookReaderPrev').click();
+  assert.equal(await savePage.locator('#travelBookReaderCounter').textContent(),'1 / 2');
+  await savePage.locator('#travelBookReaderClose').click();
+  assert.equal(await savePage.locator('#travelBookReader').evaluate(el=>el.open),false);
+  assert.equal(requests.length,readerRequests);
+  assert.deepEqual(saved,readerSaved);
+  console.log('PASS digital Travel Book: cover, reader, page navigation, full photo, close, zero writes');
   for(const [selector,value] of [['[data-tb-edit="title"]','Títol desat'],['[data-tb-edit="subtitle"]','Comentari desat'],['[data-tb-photo-edit]','Text de fotografia']]){
    await savePage.locator(selector).first().fill(value);await savePage.locator(selector).first().press('Tab');
    await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent==='✓ Canvis desats.');
