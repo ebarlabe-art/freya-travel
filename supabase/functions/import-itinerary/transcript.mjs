@@ -160,20 +160,20 @@ function validateSemanticBlocks(raw,pages){
 // The model may preserve labelled PDF fields inside a semantic block's
 // excerpt instead of separate page rows. Promote only a fully labelled,
 // literally evidenced excerpt; do not reinterpret free-form travel notes.
-const BLOCK_PLACE_LABEL=/(?:^|\\s)(lloc|ubicaci[oó]|localitzaci[oó]|place|location|venue|adre[cç]a|address|ciutat|city)\\s*:/giu;
+const BLOCK_PLACE_LABEL=/(?:^|\s)(lloc|ubicaci[oó]|localitzaci[oó]|place|location|venue|adre[cç]a|address|ciutat|city)\s*:/giu;
 function labelledBlockPlaceFields(excerpt){
  const source=String(excerpt||'').trim();
  const labels=[...source.matchAll(BLOCK_PLACE_LABEL)];
  if(!labels.length||labels[0].index!==0)return null;
  const values={};
  for(let i=0;i<labels.length;i++){
-  const label=labels[i],raw=label[1].normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();
+  const label=labels[i],raw=label[1].normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   const key=['adreca','address'].includes(raw)?'address':['ciutat','city'].includes(raw)?'city':'location_name';
   const value=source.slice(label.index+label[0].length,i+1<labels.length?labels[i+1].index:undefined).trim();
   const limit=key==='address'?500:200;
   // New prose lines or duplicate/empty labels are ambiguous; keep Notes
   // intact for human review instead of silently moving or dropping text.
-  if(!value||value.includes('\\n')||[...value].length>limit||Object.hasOwn(values,key))return null;
+  if(!value||value.includes('\n')||[...value].length>limit||Object.hasOwn(values,key))return null;
   values[key]=value;
  }
  return values;
