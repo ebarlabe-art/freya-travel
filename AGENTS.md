@@ -1,5 +1,21 @@
 # FREYA TRAVEL — AGENTS.md
 
+## DIRECTRIU PRIORITÀRIA: EFICIÈNCIA I AVENÇ
+
+- Objectiu: acabar i publicar Freya Travel, no perfeccionar indefinidament els entorns de proves.
+- Prioritza sempre la solució més curta i segura.
+- Fes només les proves necessàries i proporcionades al risc.
+- Reutilitza el codi, les dades i la infraestructura existents.
+- No creïs aplicacions ni entorns paral·lels sense autorització.
+- No converteixis incidències concretes en auditories generals.
+- Evita encadenar diagnòstics i proves quan pots resoldre la tasca en una intervenció.
+- Si el cost o la complexitat augmenten, atura't i proposa una alternativa més eficient.
+- Quan una incidència estigui suficientment verificada, tanca-la i avança.
+- Mantén una única aplicació i una única font de veritat: `ebarlabe-art/freya-travel`.
+- No modifiquis producció ni dades reals sense autorització.
+
+**Regla principal: cada acció ha d'acostar-nos de manera tangible a publicar Freya Travel.**
+
 ## 1. Què és Freya Travel
 
 Freya Travel no és simplement una aplicació per guardar reserves.
