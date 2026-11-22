@@ -16,6 +16,7 @@ const DAYPART=/^(mat[ií]|morning|mañana|tarda|afternoon|vespre|evening|nit|nig
 const UNTYPED_DAYPART=/^(mat[ií]|morning|mañana|tarda|afternoon|vespre|evening|nit|night|migdia|mediod[ií]a)\s*,\s*(?:sense hora exacta|sin hora exacta|no exact time)\s*(?:[:–—-]\s*(.+))?$/i;
 const ADMIN=/^(?:(?:reserva|booking|reference|refer[eè]ncia|localitzador|confirmaci[oó]|tel[eè]fon|phone|contacte|total|preu|price|cost|notes?|document|passaport|passport|p[aà]gina|page)\s*[:#])/i;
 const HEADER=/^(?:(?:itinerari|itinerary|programa|planning|pla de viatge|ruta|destinaci[oó])(?:\s+.{0,80})?)$/i;
+const EXPLICIT_PLACE=/^(lloc|ubicaci[oó]|localitzaci[oó]|place|location|venue|adre[cç]a|address|ciutat|city)\s*[:：]\s*(.*)$/i;
 const MONTHS={
  gener:1,enero:1,january:1,jan:1,
  febrer:2,febrero:2,february:2,feb:2,
@@ -106,6 +107,14 @@ export function resolveItineraryDateHeading(heading,pages){
 }
 function makeField(value,excerpt,page,confidence='high'){
  return {value,confidence,evidence:[{kind:'text',excerpt:excerpt.slice(0,500),page}]};
+}
+function explicitPlaceField(line){
+ const match=line.match(EXPLICIT_PLACE);
+ if(!match)return null;
+ const label=stripAccents(match[1]);
+ const field=label==='adreca'||label==='address'?'address':label==='ciutat'||label==='city'?'city':'location_name';
+ const value=match[2].trim();
+ return {field,value:value&&[...value].length<=(field==='address'?500:200)?value:null};
 }
 function canonicalTime(value){
  const match=/^(\d{1,2})[:.h](\d{2})$/.exec(value);
@@ -234,10 +243,12 @@ function joinWrappedActivityRows(records){
       /^(?:NO\s|ATENCI[OÓ]|IMPORTANT|NOTA\b|La pista\b|Els hotels\b|Planificar\b)/i.test(following)||
       ADMIN.test(following))break;
     const dangling=/\b(?:del|de|d['’]|segons|la|el|els|les|al|a|amb|per|cap|o|i)\s*$/i.test(previous);
-    const separateLabel=/^(?:[|｜]\s*)?(?:lloc|ubicaci[oó]|location|place|venue|adre[cç]a|address)\s*:/i.test(following);
+    const separateLabel=EXPLICIT_PLACE.test(following);
+    // A labelled location is a separate evidential field, not part of a title.
+    if(separateLabel)break;
     const continuedPlace=/[|｜]\s*(?:lloc|ubicaci[oó]|location|place|venue)\s*:/i.test(previous)&&
       /^(?:[a-zà-ÿ]|\d)/u.test(following);
-    if(!dangling&&!separateLabel&&!continuedPlace)break;
+    if(!dangling&&!continuedPlace)break;
     const next=records[++i];
     record.raw=previous+' '+next.raw.trim();
     record.evidence+=(record.evidence?'\n':'')+next.evidence;
@@ -252,10 +263,30 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
  const pages=normalizePages(rawPages),candidates=[],warnings=new Set(),yearHint=documentYearHint(pages)||itineraryDocumentPeriod(pages);
  let current=null,documentZone=null,pendingDaypart=null,unparsed=0,invalidDate=false;
  for(const {page,text} of pages){
+  // A field belongs only to the immediately preceding activity on this page.
+  let placeTarget=null;
   for(const record of joinWrappedActivityRows(clockRows(text))){
    const raw=record.raw;
    const line=raw.trim().replace(/\s+/g,' ');
-   if(!line||line.length>1000){if(line.length>1000)warnings.add('Línia massa llarga: cal revisar el document.');continue;}
+   if(!line||line.length>1000){
+    placeTarget=null;
+    if(line.length>1000)warnings.add('Línia massa llarga: cal revisar el document.');
+    continue;
+   }
+   const labelled=explicitPlaceField(line);
+   if(labelled){
+    if(placeTarget){
+     if(!labelled.value)warnings.add('Camp de lloc explícit buit o massa llarg: comprova el PDF.');
+     else if(!placeTarget.assigned.has(labelled.field)){
+      const original=placeTarget.candidate.fields[ labelled.field ];
+      const inline=labelled.field==='location_name'&&original&&/[|｜]\s*(?:lloc|ubicaci[oó]|location|place|venue)\s*:/i.test(original.evidence?.[0]?.excerpt||'');
+      if(!inline)placeTarget.candidate.fields[labelled.field]=makeField(labelled.value,line,page);
+      placeTarget.assigned.add(labelled.field);
+     }
+    }
+    continue;
+   }
+   placeTarget=null;
    let work=line.replace(WEEKDAY,'');
    const dayMarker=CALENDAR.test(work);
    // Day labels often precede a weekday: "DIA 1 · Diumenge 27/12/2026".
@@ -290,6 +321,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
      // Explicit date on the same line belongs only to that item.
      const candidate=makeCandidate(inline,line,page,{date:datePart.date,evidence:current.evidence,page,confidence:current.confidence},current.zone,candidates.length);
      candidates.push(candidate);
+     placeTarget={candidate,assigned:new Set()};
     }
     if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
     continue;
@@ -331,6 +363,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     if(record.repaired)candidate.warnings.push('Franja horària partida entre línies: comprova les hores amb el PDF.');
     if(record.wrapped)candidate.warnings.push('Línia d’activitat partida al PDF: comprova el text complet.');
     candidates.push(candidate);
+    placeTarget={candidate,assigned:new Set()};
    }else if(current&&!ADMIN.test(line)&&!tz)unparsed++;
    if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
   }

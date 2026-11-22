@@ -236,3 +236,45 @@ test('missing digit never gets invented from a later unrelated line',()=>{
  const p=parse('25/10/2026\n16.15–16.3\n18.30 h Tornada');
  assert.equal(p.candidates.length,1);assert.equal(val(p.candidates[0],'title'),'Tornada');
 });
+
+
+test('A2 explicit PDF labels: retain place, address and city on the same activity with page evidence',()=>{
+ const p=extractItineraryProposalFromPages([
+  {page:1,text:'DIA 1 · Diumenge 27/12/2026\n10:00 Visita a la Catedral\nLloc: Catedral de Riga\nAdreça: Herdera laukums 6\nCiutat: Riga\n11:00 Passeig pel riu'},
+  {page:2,text:'28/12/2026\n09:00 Visita al museu\nLocation: Latvian National Museum of Art\nAddress: Jaņa Rozentāla laukums 1\nCity: Riga'}
+ ],source);
+ assert.equal(p.candidates.length,3);
+ assert.equal(val(p.candidates[0],'title'),'Visita a la Catedral');
+ assert.equal(val(p.candidates[0],'location_name'),'Catedral de Riga');
+ assert.equal(val(p.candidates[0],'address'),'Herdera laukums 6');
+ assert.equal(val(p.candidates[0],'city'),'Riga');
+ assert.equal(p.candidates[0].fields.location_name.evidence[0].excerpt,'Lloc: Catedral de Riga');
+ assert.equal(p.candidates[0].fields.location_name.evidence[0].page,1);
+ assert.equal(val(p.candidates[1],'location_name'),undefined);
+ assert.equal(val(p.candidates[2],'location_name'),'Latvian National Museum of Art');
+ assert.equal(p.candidates[2].fields.city.evidence[0].page,2);
+ assert.equal(p.read_only,true);
+ assert.equal(p.requires_user_confirmation,true);
+});
+
+test('A2 explicit PDF labels never spill through note, blank row, different activity or page',()=>{
+ const p=extractItineraryProposalFromPages([
+  {page:1,text:'27/12/2026\n09:00 Visita a la Catedral\nNota: reservar entrada\nLloc: No atribuir\n10:00 Visita al museu\n\nLloc: No atribuir tampoc'},
+  {page:2,text:'Lloc: Mai de la pàgina anterior\n11:00 Mercat de Nadal\nCiutat: Riga\nLloc: Mercat Central'}
+ ],source);
+ assert.equal(p.candidates.length,3);
+ assert.equal(val(p.candidates[0],'location_name'),undefined);
+ assert.equal(val(p.candidates[1],'location_name'),undefined);
+ assert.equal(val(p.candidates[2],'location_name'),'Mercat Central');
+ assert.equal(val(p.candidates[2],'city'),'Riga');
+});
+
+test('A2 explicit PDF labels respect inline place, retain first separate label and reject empty values',()=>{
+ const p=extractItineraryProposalFromText('27/12/2026\n09:00 Visita al Mercat | Lloc: Mercat Central de Riga\nLloc: Un altre lloc\nAdreça: Carrer 2\nAdreça: Carrer 3\nCiutat:\n10:00 Visita a la Torre\nLloc: Torre de Sant Pere',source);
+ assert.equal(p.candidates.length,2);
+ assert.equal(val(p.candidates[0],'location_name'),'Mercat Central de Riga');
+ assert.equal(val(p.candidates[0],'address'),'Carrer 2');
+ assert.equal(val(p.candidates[0],'city'),undefined);
+ assert.equal(val(p.candidates[1],'location_name'),'Torre de Sant Pere');
+ assert.ok(p.warnings.some(w=>/Camp de lloc explícit/.test(w)));
+});
