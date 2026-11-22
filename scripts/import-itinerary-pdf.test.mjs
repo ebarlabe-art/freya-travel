@@ -231,6 +231,51 @@ test('v27: ordinary PDF descriptions are not promoted to place names; trailing p
  assert.equal(p.candidates[1].fields.location_name,undefined);assert.equal(p.candidates[2].fields.location_name,undefined);
 });
 
+test('A2.16: page labels complete truncated semantic excerpts for Barcelona PDF',()=>{
+ const day1='DIA 1 · Dissabte 10/04/2027',day2='DIA 2 · Diumenge 11/04/2027';
+ const visits=[
+  [1,day1,'10:00 - 11:15','Visita a la Sagrada Família','Basílica de la Sagrada Família','Carrer de Mallorca, 401'],
+  [1,day1,'12:00 - 13:00','Visita a la Casa Batlló','Casa Batlló','Passeig de Gràcia, 43'],
+  [2,day2,'09:30 - 10:30','Visita al Palau de la Música Catalana','Palau de la Música Catalana','Carrer del Palau de la Música, 4-6'],
+  [2,day2,'11:30 - 12:30','Visita a la Catedral de Barcelona','Catedral de Barcelona','Pla de la Seu, s/n']
+ ];
+ const pages=[1,2].map(page=>({page,text:[
+  page===1?day1:day2,
+  ...visits.filter(v=>v[0]===page).flatMap(v=>[
+   v[2]+' '+v[3],'Lloc: '+v[4],'Adreça: '+v[5],'Ciutat: Barcelona'
+  ]),
+  page===1?'15:30 - 16:15 Passeig lliure i descans':'15:00 - 16:00 Temps lliure pel centre'
+ ].join('\n')}));
+ const blocks=visits.map(v=>({page:v[0],heading:v[1],title:v[3],
+  time:v[2],role:'activity',excerpt:'Lloc: '+v[4]}));
+ blocks.push({page:1,heading:day1,title:'Passeig lliure i descans',time:'15:30 - 16:15',role:'activity',excerpt:'Passeig lliure i descans'});
+ blocks.push({page:2,heading:day2,title:'Temps lliure pel centre',time:'15:00 - 16:00',role:'activity',excerpt:'Temps lliure pel centre'});
+ const doc={complete:true,warnings:[],pages,blocks};
+ const items=itineraryPdfTranscriptToProposal(doc,source).candidates;
+ assert.equal(items.length,6);
+ visits.forEach((visit,i)=>{
+  const fields=items[i].fields;
+  assert.equal(fields.location_name.value,visit[4]);
+  assert.equal(fields.address.value,visit[5]);
+  assert.equal(fields.city.value,'Barcelona');
+  assert.equal(fields.address.evidence[0].page,visit[0]);
+  assert.equal(fields.address.evidence[0].excerpt,'Adreça: '+visit[5]);
+  assert.equal(fields.city.evidence[0].excerpt,'Ciutat: Barcelona');
+  assert.equal(fields.notes,undefined);
+ });
+ items.slice(4).forEach(item=>{
+  assert.equal(item.fields.location_name,undefined);
+  assert.equal(item.fields.address,undefined);
+  assert.equal(item.fields.city,undefined);
+ });
+ const missing={...doc,pages:pages.map(p=>({...p,text:p.text.split('\n')
+  .filter(line=>!/^Adreça:|^Ciutat:/.test(line)).join('\n')}))};
+ const incomplete=itineraryPdfTranscriptToProposal(missing,source).candidates;
+ assert.equal(incomplete[0].fields.address,undefined);
+ assert.equal(incomplete[0].fields.city,undefined);
+ assert.match(itineraryPdfTextInstructions(),/transcriu literalment a pages.text totes les línies etiquetades Lloc, Adreça i Ciutat/);
+});
+
 test('A2.14: semantic PDF block promotes labelled place, address and city instead of Notes',()=>{
  const title='Visita a la Sagrada Família';
  const heading='DIA 1 · Dissabte 10/04/2027';
