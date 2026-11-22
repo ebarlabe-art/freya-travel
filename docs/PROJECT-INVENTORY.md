@@ -1,5 +1,13 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## A2.14 · Ubicacions dins de descripcions de blocs semàntics — CORRECCIÓ EN PR
+
+Prova física a iPhone, 22/11/2026: amb el PDF fictici de Barcelona, Freya detecta 6 propostes i 4 visites noves, però els camps **Lloc, Adreça i Ciutat** de la Sagrada Família estan buits. Els tres valors apareixen agrupats dins de **Notes**, amb evidència de pàgina 1. A2.13 no es pot donar per validada end-to-end. El camí `pages[]` processa correctament les línies etiquetades; el camí de lectura `blocks[]` convertia sistemàticament l'`excerpt` en `notes`.
+
+Correcció mínima: `semanticBlocksToProposal` a `supabase/functions/import-itinerary/transcript.mjs` reconeix un fragment literal que **comença** amb etiquetes explícites `Lloc/Place`, `Adreça/Address` o `Ciutat/City` (en espais o línies), només quan `blockEvidence` acredita el fragment a la mateixa pàgina. Assigna els valors a `location_name`, `address` i `city` amb evidència `text` i confiança mitjana; no toca `notes` ordinàries, i conserva fragments amb etiquetes duplicades, buides o amb prosa no estructurada a Notes per revisió manual. No crea un nou extractor ni modifica desament, RLS o dades.
+
+Proves focalitzades afegides a `scripts/import-itinerary-pdf.test.mjs` per reproduir el cas de Barcelona, evitar filtracions entre activitats i protegir notes normals. **No desplegar fins que passin les comprovacions; després, un únic desplegament d'`import-itinerary` amb paritat dels altres fitxers i prova curta a l'iPhone.** La incidència de desament reportada a la mateixa prova té un missatge genèric i no està diagnosticada: mantenir-la separada fins que es provi amb dates dins del viatge.
+
 ## A2.13 · Etiquetes explícites de lloc en PDFs — FUSIONADA, EDGE V14 ACTIVA
 
 Relleu 22/11/2026, des de main posterior a #246: el Travel Book digital v71 de #245 és a producció i validat visualment a l'iPhone; el PDF natiu queda experimental, i la impressió física queda per a més endavant. La prioritat torna a ser la importació intel·ligent A2. Els estats «branca, no publicada» de les entrades històriques de #213 són fotografies del moment de redacció, no l'estat vigent.
