@@ -1,14 +1,14 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
-## A2.13 · Etiquetes explícites de lloc en PDFs — BRANCA, NO PUBLICADA
+## A2.13 · Etiquetes explícites de lloc en PDFs — FUSIONADA, EDGE V14 ACTIVA
 
 Relleu 22/11/2026, des de main posterior a #246: el Travel Book digital v71 de #245 és a producció i validat visualment a l'iPhone; el PDF natiu queda experimental, i la impressió física queda per a més endavant. La prioritat torna a ser la importació intel·ligent A2. Els estats «branca, no publicada» de les entrades històriques de #213 són fotografies del moment de redacció, no l'estat vigent.
 
 Canvi A2 acotat a `fix/a2-explicit-pdf-place-labels`: reutilitzar `domain/import-itinerary-text-extractor.mjs` i `import-itinerary-proposal.mjs`, sense segon parser ni escriptures. Interpretar una etiqueta independent `Lloc/Ubicació/Location/Place/Venue`, `Adreça/Address` o `Ciutat/City` com a camp literal de la visita immediatament anterior en la mateixa pàgina. Conservar l'evidència de text i pàgina; la primera etiqueta literal guanya; un lloc explícit de la mateixa línia té prioritat; una etiqueta independent pot substituir el lloc inferit del títol. Cap propagació a través de notes, buits, altres activitats o salts de pàgina; valors massa llargs o buits es marquen per revisar. No es geocodifica, no es reordena, no es creen ni dupliquen activitats.
 
-La PR antiga #123 és una proposta històrica no fusionada i la seva implementació ja no encaixa amb el parser modern, que té `clockRows` i `joinWrappedActivityRows`. No fusionar-la directament. Aquest tall ha afegit proves focalitzades al test existent. **CI pendent de consultar i validació amb un PDF de prova pendent.** `import-itinerary-text-extractor.mjs` s'utilitza des de la funció Edge `import-itinerary`; una fusió de codi a GitHub **no prova ni desplega** el backend. No desplegar ni tocar dades reals sense autorització explícita. La verificació i un eventual desplegament d'Edge són passos independents.
+La PR antiga #123 és una proposta històrica no fusionada i ja no encaixa amb el parser modern, que té `clockRows` i `joinWrappedActivityRows`. No fusionar-la. **PR #247 fusionada a `main` (commit `25a3f06`), CI 7/7 PASS**, inclosa la regressió de Riga i Chromium/WebKit. La funció Edge de producció `import-itinerary` s'ha desplegat per separat a **v14 ACTIVE**, conservant exactament els altres quatre fitxers, amb `verify_jwt=true`. El canvi és exclusivament d'extracció literal: no modifica viatges, registres, configuracions de permisos ni bases de dades. No s'ha executat una importació amb un PDF real autenticat: validació funcional final a l'iPhone encara pendent. El merge té `[skip ci]` perquè els canvis no afecten el frontend i no requereixen un nou desplegament GitHub Pages; el darrer desplegament del frontend públic segueix sent el v71.
 
-**Següent acció:** revisar CI de la PR d'aquest tall i, quan estigui aprovada, decidir el desplegament controlat d'Edge i una única comprovació d'importació real a l'iPhone.
+**Següent acció:** fer una única prova controlada d'importació d'un PDF amb `Lloc/Adreça/Ciutat` en línies separades a la PWA pública, sense confirmar desament ni duplicar activitats; si es veuen els camps amb evidència i els valors correctes, tancar A2.13 i avançar.
 
 ## #213 · Lector digital immersiu Travel Book — BRANCA, NO PUBLICADA
 
