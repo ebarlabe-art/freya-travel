@@ -1,5 +1,11 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## #213 · Lector digital immersiu Travel Book — BRANCA, NO PUBLICADA
+
+Decisió de producte 21/11/2026 després de la prova física de l'iPhone amb PR #244: Safari ja no divideix l'àlbum (22 pàgines en lloc de 44), però el PDF A4 té massa marge blanc i el resultat visual no és acceptable per a un producte publicable. S'atura la inversió en el PDF natiu. Impressió física i eventual partner passen a una fase comercial posterior del roadmap, sense dependència o proveïdor nou ara.
+
+Nova implementació proposada a la branca feat/travel-book-immersive-reader: un lector digital a pantalla completa dins del Travel Book existent. Portada fotogràfica; un sol bloc/pàgina renderitzat cada cop; mosaic visual responsive per pàgina; text i comentaris desats; fotografia ampliable a pantalla completa; navegació per botons, teclat i gestos horitzontals; retorn a l'editor. Reutilitza proposal, visuals i la persistència existents, sense migracions, fotos noves, escriptures o sistema paral·lel. L'exportació nativa existent no és reescrita; és experimental i queda desprioritzada. Canvi a cache PWA v71, paritat index/404, prova sintètica de lectura sense escriptures. PR #245 oberta. CI i validació física a l'iPhone pendents; la publicació no està autoritzada. Següent acció: revisar les proves de la PR i validar visualment l'àlbum digital abans de fusionar-lo.
+
 ## #213 · iPhone AirPrint A4 amb marges de seguretat — BRANCA, NO PUBLICADA
 
 Incidència real iPhone (captura 21/11/2026): el selector d'impressió mostra 44 pàgines, i fotografies/composicions apareixen tallades o gairebé buides. La PR #243 aïlla correctament l'àlbum de la interfície, però no resol la paginació. El codi actual dimensionava cada full a pràcticament tot l'A4 (297 × 209,8 mm en horitzontal); Safari imprimeix URL, data i numeració i pot reservar àrea per a aquests peus malgrat @page margin:0. Hipòtesi concreta: el contingut sobrepassa la zona física i cada pàgina es fragmenta.

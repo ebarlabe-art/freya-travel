@@ -298,11 +298,13 @@ A partir de les fotos contextuals existents:
 - textos/diari;
 - restaurants i moments;
 - estadístiques;
-- PDF;
+- àlbum digital immersiu, atractiu i usable des de l'iPhone;
 - compartir;
-- base per imprimir.
+- impressió física amb partner en una fase comercial posterior, desacoblada del model editorial.
 
 **CLOSED quan:** un viatge acabat pot transformar-se en un record coherent sense reconstruir-lo manualment.
+
+**Decisió 21/11/2026:** després de la validació a l'iPhone, l'exportació PDF nativa es considera experimental i no bloquejarà la publicació del producte digital. Es prioritza l'experiència de lectura amb fotografies grans i els records ja desats. El format per a impremta i la connexió amb partners es valoraran després, sense crear una aplicació paral·lela.
 
 ### C2. Diari de viatge, pensat per capturar sense robar temps
 **Prioritat: P1**
