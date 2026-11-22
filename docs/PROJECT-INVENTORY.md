@@ -1,5 +1,13 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## A2.15 · Sortida d'una conciliació d'importació pendent — EN PR, NO PUBLICADA
+
+Prova real iPhone, 22/11/2026: la importació de Barcelona mostrava `No s’ha confirmat el desament. Pots reintentar la mateixa operació sense duplicar-la.` En tancar i tornar a entrar al viatge, `recoverItineraryReconciliation` recuperava la mateixa proposta de `sessionStorage`, mentre el botó de descartar estava bloquejat per `pendingRequest`; impossible carregar un altre PDF sense intervenció tècnica. La causa exacta de l'error inicial de desament encara no està provada; les dates fictícies del PDF poden ser fora del viatge, però no atribuïm la incidència a això sense evidència.
+
+Solució mínima sobre l'UI existent: mostrar sempre l'opció explícita de descartar una revisió oberta i, si hi ha una operació de desament amb resultat desconegut, advertir que no desfà possibles canvis al servidor. Amb confirmació humana, consultar la instantània actual via `read_itinerary_reconciliation` (només lectura) abans d'abandonar l'operació; si falla, conservar-ne la recuperació. Esborrar només l'esborrany local IndexedDB i la clau de recuperació de sessió del viatge/usuari; no tocar dades, RLS ni l'escriptura idempotent del servidor. Tornar a mostrar el selector de PDF i avisar que cal comprovar les activitats existents abans de confirmar una nova importació. Les operacions encara pendents poden haver-se desat remotament: l'abandonament **no les desfà**.
+
+Prova browser focalitzada en el test RIG-03B existent: després d'una resposta de desament perduda, abandonar amb confirmació, comprovar que no es fan escriptures noves, que la recuperació local desapareix i que torna el selector de documents. Cache PWA v72 amb paritat index/404. **PR i CI pendents, cap merge ni publicació feta.** No executar proves sobre dades reals ni manipular la base de dades de Barcelona.
+
 ## A2.14 · Ubicacions dins de descripcions de blocs semàntics — FUSIONAT, EDGE V15 ACTIVA
 
 Prova física a iPhone, 22/11/2026: amb el PDF fictici de Barcelona, Freya detecta 6 propostes i 4 visites noves, però els camps **Lloc, Adreça i Ciutat** de la Sagrada Família estan buits. Els tres valors apareixen agrupats dins de **Notes**, amb evidència de pàgina 1. A2.13 no es pot donar per validada end-to-end. El camí `pages[]` processa correctament les línies etiquetades; el camí de lectura `blocks[]` convertia sistemàticament l'`excerpt` en `notes`.
