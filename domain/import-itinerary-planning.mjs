@@ -38,7 +38,10 @@ export function initialPlanningDecisions(snapshot,state){
 export function refreshAutomaticDecisions(snapshot,state){
  const orders=new Set(state.decisions.filter(d=>d.automatic).map(d=>d.source_order));
  const included=new Set(snapshot.items.filter(item=>item.included!==false).map(item=>item.source_order));
- const manual=state.decisions.filter(d=>!d.automatic&&included.has(d.source_order));
+ // Explicitly refusing an evidence-pending excluded item is a real user
+ // decision. Keep it across preview rerenders, unlike automatic add choices.
+ const manual=state.decisions.filter(d=>!d.automatic&&
+  (included.has(d.source_order)||(d.action==='skip'&&snapshot.items.some(item=>item.source_order===d.source_order&&!item.included))));
  return [...manual,...automaticEquivalentDecisions(snapshot,state.existing,manual).filter(d=>orders.has(d.source_order))];
 }
 
