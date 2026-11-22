@@ -157,6 +157,27 @@ function validateSemanticBlocks(raw,pages){
   return {...block};
  });
 }
+// The model may preserve labelled PDF fields inside a semantic block's
+// excerpt instead of separate page rows. Promote only a fully labelled,
+// literally evidenced excerpt; do not reinterpret free-form travel notes.
+const BLOCK_PLACE_LABEL=/(?:^|\\s)(lloc|ubicaci[oó]|localitzaci[oó]|place|location|venue|adre[cç]a|address|ciutat|city)\\s*:/giu;
+function labelledBlockPlaceFields(excerpt){
+ const source=String(excerpt||'').trim();
+ const labels=[...source.matchAll(BLOCK_PLACE_LABEL)];
+ if(!labels.length||labels[0].index!==0)return null;
+ const values={};
+ for(let i=0;i<labels.length;i++){
+  const label=labels[i],raw=label[1].normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();
+  const key=['adreca','address'].includes(raw)?'address':['ciutat','city'].includes(raw)?'city':'location_name';
+  const value=source.slice(label.index+label[0].length,i+1<labels.length?labels[i+1].index:undefined).trim();
+  const limit=key==='address'?500:200;
+  // New prose lines or duplicate/empty labels are ambiguous; keep Notes
+  // intact for human review instead of silently moving or dropping text.
+  if(!value||value.includes('\\n')||[...value].length>limit||Object.hasOwn(values,key))return null;
+  values[key]=value;
+ }
+ return values;
+}
 function semanticBlocksToProposal(transcript,source){
  const candidates=[],warnings=[],seen=new Set();
  for(const block of transcript.blocks){
@@ -192,8 +213,14 @@ function semanticBlocksToProposal(transcript,source){
   // Do not present absent text as confirmed evidence. A provisional title is
   // visible solely to let the user identify/correct the disputed suggestion.
   if(!evidence.titleOK)fields.title.evidence=[{kind:'visual',page:block.page}];
-  if(evidence.excerptOK&&block.excerpt!==block.title)
-   fields.notes={value:block.excerpt,confidence:'medium',evidence:[{kind:'text',page:block.page,excerpt:block.excerpt}]};
+  if(evidence.excerptOK&&block.excerpt!==block.title){
+   const labelled=labelledBlockPlaceFields(block.excerpt);
+   const explicitTitlePlace=/[|｜]\\s*(?:lloc|ubicaci[oó]|location|place|venue)\\s*:/i.test(block.title);
+   if(labelled&&(!explicitTitlePlace||!labelled.location_name||labelled.location_name===fields.location_name?.value)){
+    for(const [field,value] of Object.entries(labelled))
+     fields[field]={value,confidence:'medium',evidence:[{kind:'text',page:block.page,excerpt:block.excerpt}]};
+   }else fields.notes={value:block.excerpt,confidence:'medium',evidence:[{kind:'text',page:block.page,excerpt:block.excerpt}]};
+  }
   if(date){
    fields.local_date||={value:date.date,confidence:'low',evidence:[]};
    fields.local_date.evidence=[{kind:'text',page:headingPage.page,excerpt:block.heading}];
