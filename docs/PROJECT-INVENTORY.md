@@ -1,5 +1,13 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## A2.16 · Camps Lloc/Adreça/Ciutat entre pàgina i blocs — BRANCA, NO PUBLICADA
+
+Prova real iPhone (22/11/2026): després de #248/#249, el PDF fictici de Barcelona carrega les sis activitats però la fitxa de Sagrada Família mostra Lloc correcte i Adreça/Ciutat buits. El PDF original de dues pàgines, inspeccionat directament, conté els tres camps literals per a quatre visites: Sagrada Família, Casa Batlló, Palau de la Música i Catedral. Les dues activitats de temps lliure no tenen ubicació. La resposta estructurada real del model no és accessible en aquest relleu, així que encara no es pot confirmar en quin pas de la transcripció es perden les etiquetes.
+
+Canvi mínim: instruir la transcripció a conservar les etiquetes i, al camí semàntic existent, reutilitzar `extractItineraryProposalFromPages` per completar només camps literals que no apareixen a l'excerpt. Exigir coincidència única de títol, pàgina, data i hora, i conservar la citació original de cada línia; amb ambigüitat o absència no inventar res ni transferir dades entre visites. Regressió focalitzada amb les quatre ubicacions exactes i les dues activitats sense ubicació. Cap canvi de RLS, escriptures o dades reals.
+
+**Pendent:** CI de la PR i validació end-to-end amb el mateix PDF a iPhone abans de tancar la incidència. L'error inicial de desament continua separat; cap merge ni desplegament d'aquesta correcció.
+
 ## A2.15 · Sortida d'una conciliació d'importació pendent — EN PR, NO PUBLICADA
 
 Prova real iPhone, 22/11/2026: la importació de Barcelona mostrava `No s’ha confirmat el desament. Pots reintentar la mateixa operació sense duplicar-la.` En tancar i tornar a entrar al viatge, `recoverItineraryReconciliation` recuperava la mateixa proposta de `sessionStorage`, mentre el botó de descartar estava bloquejat per `pendingRequest`; impossible carregar un altre PDF sense intervenció tècnica. La causa exacta de l'error inicial de desament encara no està provada; les dates fictícies del PDF poden ser fora del viatge, però no atribuïm la incidència a això sense evidència.
