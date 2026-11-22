@@ -259,7 +259,7 @@ test('A2 explicit PDF labels: retain place, address and city on the same activit
 
 test('A2 explicit PDF labels never spill through note, blank row, different activity or page',()=>{
  const p=extractItineraryProposalFromPages([
-  {page:1,text:'27/12/2026\n09:00 Visita a la Catedral\nNota: reservar entrada\nLloc: No atribuir\n10:00 Visita al museu\n\nLloc: No atribuir tampoc'},
+  {page:1,text:'27/12/2026\n09:00 Primera activitat\nNota: reservar entrada\nLloc: No atribuir\n10:00 Segona activitat\n\nLloc: No atribuir tampoc'},
   {page:2,text:'Lloc: Mai de la pàgina anterior\n11:00 Mercat de Nadal\nCiutat: Riga\nLloc: Mercat Central'}
  ],source);
  assert.equal(p.candidates.length,3);
