@@ -1,12 +1,12 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
-## A2.14 · Ubicacions dins de descripcions de blocs semàntics — CORRECCIÓ EN PR
+## A2.14 · Ubicacions dins de descripcions de blocs semàntics — FUSIONAT, EDGE V15 ACTIVA
 
 Prova física a iPhone, 22/11/2026: amb el PDF fictici de Barcelona, Freya detecta 6 propostes i 4 visites noves, però els camps **Lloc, Adreça i Ciutat** de la Sagrada Família estan buits. Els tres valors apareixen agrupats dins de **Notes**, amb evidència de pàgina 1. A2.13 no es pot donar per validada end-to-end. El camí `pages[]` processa correctament les línies etiquetades; el camí de lectura `blocks[]` convertia sistemàticament l'`excerpt` en `notes`.
 
 Correcció mínima: `semanticBlocksToProposal` a `supabase/functions/import-itinerary/transcript.mjs` reconeix un fragment literal que **comença** amb etiquetes explícites `Lloc/Place`, `Adreça/Address` o `Ciutat/City` (en espais o línies), només quan `blockEvidence` acredita el fragment a la mateixa pàgina. Assigna els valors a `location_name`, `address` i `city` amb evidència `text` i confiança mitjana; no toca `notes` ordinàries, i conserva fragments amb etiquetes duplicades, buides o amb prosa no estructurada a Notes per revisió manual. No crea un nou extractor ni modifica desament, RLS o dades.
 
-Proves focalitzades afegides a `scripts/import-itinerary-pdf.test.mjs` per reproduir el cas de Barcelona, evitar filtracions entre activitats i protegir notes normals. **No desplegar fins que passin les comprovacions; després, un únic desplegament d'`import-itinerary` amb paritat dels altres fitxers i prova curta a l'iPhone.** La incidència de desament reportada a la mateixa prova té un missatge genèric i no està diagnosticada: mantenir-la separada fins que es provi amb dates dins del viatge.
+Proves focalitzades a `scripts/import-itinerary-pdf.test.mjs` per reproduir el cas de Barcelona, evitar filtracions entre activitats i protegir notes normals. **PR #248 fusionada (commit `d0fda510`, CI 7/7 PASS)**; actualitzada exclusivament la funció existent de Supabase `import-itinerary` a **v15 ACTIVE**, amb `verify_jwt=true`, comprovada paritat exacta del mòdul desplegat respecte de `main` i sense canvis als altres quatre fitxers del paquet. No s'ha modificat el frontend ni les dades dels viatges. **Pendent**: descartar la proposta local antiga, reimportar una vegada el mateix PDF de Barcelona sense confirmar el desament i verificar els tres camps a l'iPhone. L'error genèric de desament de la prova anterior no està diagnosticat: mantenir separat fins a provar-ho amb dates dins del viatge.
 
 ## A2.13 · Etiquetes explícites de lloc en PDFs — FUSIONADA, EDGE V14 ACTIVA
 
