@@ -230,3 +230,61 @@ test('v27: ordinary PDF descriptions are not promoted to place names; trailing p
  assert.equal(p.candidates[0].fields.location_name.value,'British Museum');
  assert.equal(p.candidates[1].fields.location_name,undefined);assert.equal(p.candidates[2].fields.location_name,undefined);
 });
+
+test('A2.14: semantic PDF block promotes labelled place, address and city instead of Notes',()=>{
+ const title='Visita a la Sagrada Família';
+ const heading='DIA 1 · Dissabte 10/04/2027';
+ const excerpt='Lloc: Basílica de la Sagrada Família\nAdreça: Carrer de Mallorca, 401\nCiutat: Barcelona';
+ const doc={complete:true,warnings:[],pages:[{page:1,text:heading+'\n10:00 - 11:15 '+title+'\n'+excerpt}],
+  blocks:[{page:1,heading,title,time:'10:00 - 11:15',role:'activity',excerpt}]};
+ const result=itineraryPdfTranscriptToProposal(doc,source);
+ assert.equal(result.candidates.length,1);
+ const fields=result.candidates[0].fields;
+ assert.equal(fields.title.value,title);
+ assert.equal(fields.location_name.value,'Basílica de la Sagrada Família');
+ assert.equal(fields.address.value,'Carrer de Mallorca, 401');
+ assert.equal(fields.city.value,'Barcelona');
+ assert.equal(fields.notes,undefined);
+ for(const key of ['location_name','address','city']){
+  assert.equal(fields[key].evidence[0].page,1);
+  assert.equal(fields[key].evidence[0].excerpt,excerpt);
+  assert.equal(fields[key].confidence,'medium');
+ }
+ assert.equal(result.read_only,true);
+ assert.equal(result.requires_user_confirmation,true);
+});
+
+test('A2.14: semantic fields only belong to the block that cites them',()=>{
+ const heading='DIA 1 · Dissabte 10/04/2027';
+ const title='Visita a la Sagrada Família';
+ const excursion='Temps lliure a Barcelona';
+ const labels='Lloc: Basílica de la Sagrada Família Adreça: Carrer de Mallorca, 401 Ciutat: Barcelona';
+ const note='Passeig pel centre sense cap reserva';
+ const text=[heading,'10:00 '+title,labels,'12:00 '+excursion,note].join('\n');
+ const doc={complete:true,warnings:[],pages:[{page:1,text}],blocks:[
+  {page:1,heading,title,time:'10:00',role:'activity',excerpt:labels},
+  {page:1,heading,title:excursion,time:'12:00',role:'activity',excerpt:note}
+ ]};
+ const candidates=itineraryPdfTranscriptToProposal(doc,source).candidates;
+ assert.equal(candidates.length,2);
+ assert.equal(candidates[0].fields.city.value,'Barcelona');
+ assert.equal(candidates[1].fields.location_name,undefined);
+ assert.equal(candidates[1].fields.city,undefined);
+ assert.equal(candidates[1].fields.address,undefined);
+ assert.equal(candidates[1].fields.notes.value,note);
+});
+
+test('A2.14: prose and ambiguous duplicate labels remain in Notes',()=>{
+ const heading='DIA 1 · Dissabte 10/04/2027',title='Visita a la Sagrada Família';
+ for(const excerpt of [
+  'Recorda mirar el rellotge. Lloc: Sagrada Família',
+  'Lloc: Sagrada Família Lloc: una altra ubicació'
+ ]){
+  const doc={complete:true,warnings:[],pages:[{page:1,text:heading+'\n10:00 '+title+'\n'+excerpt}],
+   blocks:[{page:1,heading,title,time:'10:00',role:'activity',excerpt}]};
+  const fields=itineraryPdfTranscriptToProposal(doc,source).candidates[0].fields;
+  assert.equal(fields.notes.value,excerpt);
+  assert.equal(fields.city,undefined);
+  assert.equal(fields.address,undefined);
+ }
+});
