@@ -10716,10 +10716,7 @@ $('itineraryImportDiscardDraft').onclick=async()=>{
  const s=itineraryImportState;
  if(!itineraryImportContextIsCurrent(s)||s.busy||s.preparing||s.planningBusy||!s.review||s.saveCompleted)return;
  const pending=!!s.reconciliation?.pendingRequest;
- const warning=pending?
-  'Aquest desament té un resultat desconegut. Abandonar-ne la recuperació NO desfà cap canvi que ja hagi arribat al servidor. Freya comprovarà el planning abans d’una nova importació. Vols abandonar només aquesta proposta local?':
-  'Vols descartar aquesta revisió local i començar una nova importació? No s’eliminarà cap activitat del viatge.';
- if(!window.confirm(warning))return;
+ if(pending&&!window.confirm('Aquest desament té un resultat desconegut. Abandonar-ne la recuperació NO desfà cap canvi que ja hagi arribat al servidor. Freya comprovarà el planning abans d’una nova importació. Vols abandonar només aquesta proposta local?'))return;
  s.busy=true;
  $('itineraryImportDiscardDraft').disabled=true;
  $('itineraryImportSaveStatus').textContent=pending?'Comprovant el planning abans d’abandonar la recuperació…':'Descartant només la revisió local…';
