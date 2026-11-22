@@ -133,6 +133,7 @@ try{
    await page.waitForFunction(()=>itineraryImportState?.flashApi&&itineraryImportState?.reconciliation?.existing);
    assert.match(await page.locator('#itineraryImportStatus').innerText(),/Proposta desada · Pendent de confirmar|El planning ha canviat/);
    assert.equal(await page.evaluate(()=>fixture.writes),0,'pause and resume never commit');
+   page.once('dialog',dialog=>dialog.accept());
    await page.locator('#itineraryImportDiscardDraft').tap();
    await page.waitForFunction(()=>itineraryImportState?.review===null);
    await page.locator('#itineraryImportClose').tap();
