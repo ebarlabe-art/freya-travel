@@ -124,3 +124,24 @@ test('RIG-03: missing protection counts fail closed instead of assuming zero pho
  assert.throws(()=>planItineraryReconciliation({snapshot:pdf(page(0,'Visita')),
   existing:incomplete}),/versions actuals/);
 });
+
+test('RIG-03: an uncertain Barcelona sixth activity requires an explicit include or skip',()=>{
+ const oldRows=['Visita a la Sagrada Família','Visita a la Casa Batlló','Passeig lliure i descans','Visita al Palau de la Música Catalana','Visita a la Catedral de Barcelona'].map((name,i)=>old(70+i,name));
+ const decisions=oldRows.map((row,i)=>({source_order:i,action:'keep',target_id:row.id}));
+ const included=oldRows.map((row,i)=>page(i,row.title,'2027-04-11','10:00'));
+ const missing=page(5,'Temps lliure pel centre','2027-04-11','15:00',{included:false,source_warnings:['Evidència pendent: sense cita literal']});
+ const snapshot=pdf(...included,missing);
+ const blocked=planItineraryReconciliation({snapshot,existing:oldRows,decisions});
+ assert.equal(blocked.summary.pending,1);
+ assert.equal(blocked.conflicts[0].reason,'excluded_needs_decision');
+ assert.equal(blocked.can_commit,false);
+ const skipped=planItineraryReconciliation({snapshot,existing:oldRows,decisions:[...decisions,{source_order:5,action:'skip'}]});
+ assert.equal(skipped.summary.pending,0);
+ assert.equal(skipped.summary.skipped,1);
+ const accepted=planItineraryReconciliation({snapshot:pdf(...included,{...missing,included:true}),existing:oldRows,decisions:[...decisions,{source_order:5,action:'add'}]});
+ assert.equal(accepted.summary.pending,0);
+ assert.equal(accepted.summary.new,1);
+ assert.equal(accepted.can_commit,true);
+ const optional=planItineraryReconciliation({snapshot:pdf({...missing,source_warnings:['Alternativa opcional: no confirmada']}),existing:oldRows});
+ assert.equal(optional.summary.pending,0);
+});
