@@ -61,6 +61,30 @@ try{
  const husky=requests[0].p_changes.find(row=>row.fields.title.includes('Huskies'));
  assert.equal(husky.fields.timing_kind,'approximate');assert.equal(husky.fields.starts_at,null);assert.equal(husky.fields.is_optional,true);assert.ok(husky.fields.approximate_start_time);
  assert.equal(await page.locator('#itineraryImportPanel').isVisible(),false);
+ // A lost response must never trap the traveller in a non-discardable proposal.
+ await page.evaluate(installFixture);await page.locator('#itineraryImportCompare').tap();await page.locator('[data-reconcile-summary]').waitFor();
+ await page.evaluate(()=>{
+  const r=itineraryImportState.reconciliation;
+  r.decisions=itineraryImportState.review.items.map(i=>({source_order:i.source_order,action:'skip'}));
+  r.decisions[15]={source_order:15,action:'add'};
+  fixture.mode='network';renderItineraryImportPreview();
+  loadDocuments=async()=>{};
+  db.from=table=>{if(table!=='travel_documents')throw Error('Unexpected table '+table);const q={select:()=>q,eq:()=>q,order:async()=>({data:[],error:null})};return q};
+ });
+ await page.locator('#itineraryImportWrite').tap();
+ await page.locator('#itineraryImportConfirmYes').tap();
+ await page.waitForFunction(()=>document.getElementById('itineraryImportSaveStatus').textContent.includes('No s’ha confirmat'));
+ assert.match(await page.locator('#itineraryImportDiscardDraft').innerText(),/Abandona la proposta pendent/);
+ assert.equal(await page.locator('#itineraryImportDiscardDraft').isVisible(),true);
+ const writesBeforeDiscard=await page.evaluate(()=>fixture.writes.length);
+ page.once('dialog',dialog=>dialog.accept());
+ await page.locator('#itineraryImportDiscardDraft').tap();
+ await page.waitForFunction(()=>itineraryImportState?.review===null&&document.getElementById('itineraryImportSource').classList.contains('hidden')===false);
+ assert.equal(await page.evaluate(()=>sessionStorage.getItem(itineraryReconciliationRecoveryKey({userId:session.user.id,tripId:trip.id}))),null);
+ assert.equal(await page.evaluate(()=>fixture.writes.length),writesBeforeDiscard,'discard never submits a write');
+ assert.match(await page.locator('#itineraryImportStatus').innerText(),/recuperació local s’ha abandonat/);
+ assert.equal(await page.locator('#itineraryImportUpload').isEnabled(),true);
+ // The itinerary and reconciliation remain untouched; starting a new import is possible.
  await page.evaluate(installFixture);await page.locator('#itineraryImportCompare').tap();await page.locator('[data-reconcile-summary]').waitFor();
  await page.evaluate(()=>{const r=itineraryImportState.reconciliation;r.decisions=itineraryImportState.review.items.map(i=>({source_order:i.source_order,action:'skip'}));r.decisions[0]={source_order:0,action:'update',target_id:rigId(20)};fixture.mode='stale';renderItineraryImportPreview()});
  await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirmYes').tap();
