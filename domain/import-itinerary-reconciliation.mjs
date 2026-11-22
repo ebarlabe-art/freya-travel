@@ -37,6 +37,9 @@ export function suggestedReconciliationTarget(item,existing,action){
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ACTIONS=new Set(['add','update','skip','keep']);
 const norm=value=>String(value||'').normalize('NFKC').trim();
+const evidenceExcluded=item=>item.included===false&&
+ (item.source_warnings||[]).some(w=>w.startsWith('Evidència pendent:'))&&
+ !(item.source_warnings||[]).some(w=>w.startsWith('Alternativa opcional:'));
 const copy=row=>({...row});
 const raise=message=>{throw new Error(message)};
 function validExisting(row){
@@ -109,7 +112,9 @@ export function planItineraryReconciliation({snapshot,existing,decisions=[],reti
    updated_at:old.updated_at,
    protected:protectedExisting(old)
   }));
-  let action=item.included===false?'skip':decision?.action||'review';
+  // Evidence-pending PDF rows must not disappear from the confirmed payload.
+  const unreviewedExclusion=evidenceExcluded(item)&&decision?.action!=='skip';
+  let action=unreviewedExclusion?'review':item.included===false?'skip':decision?.action||'review';
   let target=null;
   if(item.included===false&&decision?.action!=='skip'&&decision)
    raise('No es pot modificar una activitat exclosa de la proposta.');
@@ -136,7 +141,7 @@ export function planItineraryReconciliation({snapshot,existing,decisions=[],reti
    expected_target_updated_at:target?.updated_at||null
   });
   if(action==='review')conflicts.push({source_order:item.source_order,
-   reason:matches.length?'possible_existing_match':'decision_required'});
+   reason:unreviewedExclusion?'excluded_needs_decision':matches.length?'possible_existing_match':'decision_required'});
  }
  const retirement=new Set();
  for(const id of retireExistingIds){
