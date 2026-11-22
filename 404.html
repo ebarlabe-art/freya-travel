@@ -10596,7 +10596,7 @@ $('itineraryImportFlash').addEventListener('change',event=>{
 });
 function renderItineraryReconciliation(state,snapshot){
  const r=state.reconciliation,host=$('itineraryImportReconciliation'),excludedHost=$('itineraryImportExcludedReview');
- excludedHost.classList.add('hidden');excludedHost.replaceChildren();
+ excludedHost.classList.add('hidden');excludedHost.innerHTML='';
  $('itineraryImportExcludeExisting').classList?.toggle?.('hidden',!!r);
  $('itineraryImportReviewResult').classList?.toggle?.('hidden',!!r);
  $('itineraryImportCompare').classList?.toggle?.('hidden',!!state.unified&&!state.comparisonStale);
