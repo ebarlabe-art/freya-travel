@@ -82,6 +82,7 @@ try{
  await page.waitForFunction(()=>itineraryImportState?.review===null&&document.getElementById('itineraryImportSource').classList.contains('hidden')===false);
  assert.equal(await page.evaluate(()=>sessionStorage.getItem(itineraryReconciliationRecoveryKey({userId:session.user.id,tripId:trip.id}))),null);
  assert.equal(await page.evaluate(()=>fixture.writes.length),writesBeforeDiscard,'discard never submits a write');
+ await page.waitForFunction(()=>document.getElementById('itineraryImportStatus').textContent.includes('recuperació local s’ha abandonat'));
  assert.match(await page.locator('#itineraryImportStatus').innerText(),/recuperació local s’ha abandonat/);
  assert.equal(await page.locator('#itineraryImportUpload').isEnabled(),true);
  // The itinerary and reconciliation remain untouched; starting a new import is possible.
@@ -118,6 +119,29 @@ assert.equal(await page.evaluate(()=>fixture.writes.length),1);
  assert.equal(await page.evaluate(()=>itineraryImportState.reconciliation.plan.summary.new),1);
  assert.equal(await page.locator('#itineraryImportWrite').isDisabled(),false);
  assert.equal(await page.evaluate(()=>fixture.writes.length),0);
+ // A document that is already in the trip ends without another save or 25 review controls.
+ await page.evaluate(installFixture);
+ await page.evaluate(async()=>{
+  const s=itineraryImportState,existing=fixture.existing[0],item=s.review.items[0];
+  s.review.items=[item];item.included=true;
+  Object.assign(item.original,{title:existing.title,local_date:'2030-12-27',
+   start_local_time:'10:00',end_local_time:'',time_zone:'Europe/Riga',
+   location_name:'',city:'',address:'',notes:''});
+  existing.starts_at='2030-12-27T08:00:00Z';existing.ends_at=null;
+  existing.location_name=null;existing.city=null;existing.address=null;existing.notes=null;
+  const api=await loadTravelBookModule('import-itinerary-reconciliation-ui.mjs');
+  s.unified=true;s.reconciliation={api,existing:[existing],
+   decisions:[{source_order:0,action:'keep',target_id:existing.id,automatic:true}],
+   retire:[],pendingRequest:null,unified:true};
+  renderItineraryImportPreview();
+ });
+ assert.equal(await page.locator('#itineraryImportNoChanges').isVisible(),true);
+ assert.match(await page.locator('#itineraryImportNoChangesText').innerText(),/1 ja són a l.agenda/);
+ assert.equal(await page.locator('#itineraryImportReviewWork').isVisible(),false);
+ const beforeFinish=await page.evaluate(()=>fixture.writes.length);
+ await page.locator('#itineraryImportDone').tap();
+ await page.waitForFunction(()=>itineraryImportState===null);
+ assert.equal(await page.evaluate(()=>fixture.writes.length),beforeFinish,'no-change finish never saves activities');
  assert.deepEqual(errors,[]);
  console.log(`PASS RIG-03B ${engine}: real touch 13→25 comparison, explicit choices/retirement, pending guard, cancel, offline, slow RPC, identical retry, return to itinerary, no direct writes.`);
 }finally{await browser.close();server.close()}

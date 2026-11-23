@@ -1,5 +1,16 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## A2.21 · Itinerari i PDF: experiència guiada sense comandaments tècnics — PR, NO PUBLICADA
+
+Petició de producte (23/11/2026): simplificar la pantalla de planning i el procés de càrrega PDF després de validar a iPhone la conciliació de Barcelona. Els tres botons originals («Afegir al planning», «Reprèn la proposta», «Actualitza») i l'apartat separat «Estat de l'app i actualitzacions» exposaven detalls de desenvolupament en lloc d'accions comprensibles.
+
+Canvi acotat de frontend: capçalera amb només «Importa un itinerari» i «Afegir activitat». Si hi ha una revisió local pendent, es mostra una targeta contextual «Tens una importació pendent de revisar» amb «Continua la revisió»; l'entrada genèrica d'importació no competeix visualment amb ella. «Actualitza» es conserva com a «Torna a carregar l'agenda» sota «Més opcions de l'agenda», plegat amb l'estat/diagnòstics. El PDF mostra els tres passos (document, revisió, confirmació). Si la conciliació unificada és completa i no hi ha canvis ni decisions pendents, es veu «Ja ho tens tot al viatge» amb «Torna a l'agenda», que elimina únicament l'esborrany local. Les alternatives opcionals continuen disponibles per seleccionar explícitament.
+
+Sense canvis al parser, reconciliació, permisos, desament, dades ni infraestructura; «Tancar sessió» global queda fora d'abast. Paritat `index.html` i `404.html`. Regressions de navegador per dues portes, opcions plegades, passos, recuperació contextual i final sense escriptures.
+
+**Estat:** PR pendent de CI, no fusionada ni desplegada.
+
+
 ## A2.20 · Duplicats en PDF: classificació real 'activity' i comparador únic — PR, NO PUBLICADA
 
 Validació iPhone 23/11/2026 després de #253: la targeta de Sagrada Família encara diu `Activitat existent, sense canvis` però presenta el flash `Conservar l'existent`. També apareixen temps lliures com a exclusions pendents. A2.18/A2.19 tenien fixtures que forçaven `classification_hint:'manual'` per a visites; l'extractor real classifica els títols que comencen per `Visita` com a `activity`, de manera que la regla automàtica les descartava abans de comparar.

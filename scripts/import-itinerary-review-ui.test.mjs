@@ -146,8 +146,9 @@ test('A2.9: inline iPhone confirmation resolves only from explicit user interact
    scrollIntoView(){}});
   return elements.get(id);
  };
+ const steps=[];
  const confirm=vm.runInNewContext(script.slice(start,end)+'; requestItineraryImportConfirmation',
-  {$,trip:{name:'Riga'}});
+  {$,trip:{name:'Riga'},showItineraryImportStep:step=>steps.push(step)});
  const state={confirmResolver:null};
  let saved=false;
  const accepted=confirm(state,13,2).then(ok=>{saved=ok;return ok});
@@ -164,6 +165,7 @@ test('A2.9: inline iPhone confirmation resolves only from explicit user interact
  assert.equal(await cancelled,false);
  assert.equal(state.confirmResolver,null);
  assert.equal($('itineraryImportConfirm').classList.hidden,true);
+ assert.deepEqual(steps,[3,2,3,2],'confirm and cancel restore the expected progress step');
 });
 
 test('PDF alternatives are visible and recoverable without nested advanced menus',()=>{
@@ -183,7 +185,7 @@ test('import review renders existing evidence and excludes matches only on expli
  const state={api,review:api.createItineraryReview(proposal,{tripId:'trip',userId:'user',documentId:'doc'})};
  const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,{children:[],classList:{toggle(){},add(){},remove(){},contains(){return false}},addEventListener(){},querySelectorAll:()=>[],textContent:'',innerHTML:''});return elements.get(id)};
  const start=script.indexOf('const itineraryImportReviewLabels='),end=script.indexOf("$('openItineraryImport').onclick",start);
- vm.runInNewContext(script.slice(start,end)+';renderItineraryImportPreview();',{$,itineraryImportState:state,itineraryImportContextIsCurrent:()=>true,connectionUnavailable:()=>false,offlineReadOnlySession:false,itinerarySourcesAreReady:()=>true,itineraryProjection:[{title:'Museu',localDate:'2026-12-28',timeLabel:'09:00'}],esc:value=>String(value).replaceAll('<','&lt;')});
+ vm.runInNewContext(script.slice(start,end)+';renderItineraryImportPreview();',{$,itineraryImportState:state,showItineraryImportStep:()=>{},itineraryImportContextIsCurrent:()=>true,connectionUnavailable:()=>false,offlineReadOnlySession:false,itinerarySourcesAreReady:()=>true,itineraryProjection:[{title:'Museu',localDate:'2026-12-28',timeLabel:'09:00'}],esc:value=>String(value).replaceAll('<','&lt;')});
  assert.match($('itineraryImportCandidates').innerHTML,/Activitat existent/);
  assert.equal(state.review.items[0].included,true,'render must not change selection');
  $('itineraryImportExcludeExisting').onclick();

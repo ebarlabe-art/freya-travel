@@ -32,6 +32,14 @@ try{
  };
  for(const mode of ['existing','new','compound','local']){
   await page.evaluate(installFixture,mode);
+  // A previous case can leave a local review. Here each scenario is independent;
+  // resume is exercised by the dedicated draft/flash tests.
+  await page.evaluate(async()=>{
+   const api=await loadTravelBookModule('import-itinerary-draft.mjs');
+   await api.discardImportDraft({userId:session.user.id,tripId:trip.id});
+   await refreshImportDraftButton();
+  });
+  await page.locator('#openItineraryImport').waitFor({state:'visible'});
   await page.locator('#openItineraryImport').tap();
   if(mode==='local'){
    await page.locator('#itineraryImportUploadFile').setInputFiles({name:'synthetic.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4 synthetic itinerary')});
