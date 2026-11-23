@@ -2,6 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {matchingExistingImportItems,equivalentItineraryPlace,createItineraryReview,summarizeItineraryReview} from '../domain/import-itinerary-review.mjs';
 import {automaticEquivalentDecisions,combineImportItinerary,assessCombinedItinerary,proposeItinerarySolutions,acceptItinerarySolution,planningRouteKey,planningSignature,planningRouteInput} from '../domain/import-itinerary-planning.mjs';
 import {initialPlanningDecisions,refreshAutomaticDecisions} from '../domain/import-itinerary-planning-ui.mjs';
+import {planItineraryReconciliation} from '../domain/import-itinerary-reconciliation.mjs';
 import {createRouteHandler} from '../supabase/functions/itinerary-route/handler.mjs';
 const id=n=>'14000000-0000-4000-8000-'+String(n).padStart(12,'0'),now=Date.parse('2030-12-20T10:00Z');
 const convertLocalTime=s=>s+':00Z';
@@ -56,8 +57,9 @@ test('RIG04 Barcelona: five literal duplicates stay unchanged with medium-confid
   'Two identical existing activities require manual review');
  assert.deepEqual(automaticEquivalentDecisions({items:[duplicate,{...duplicate,source_order:1}]},[before]),[],
   'Repeated PDF rows require manual review');
- assert.deepEqual(automaticEquivalentDecisions({items:[{...duplicate,source_warnings:['Evidència pendent: cal revisar']}]},[before]),[],
-  'An evidence-pending proposal cannot be silently preserved');
+ assert.deepEqual(automaticEquivalentDecisions({items:[{...duplicate,source_warnings:['Evidència pendent: cal revisar']}]},[before]),
+  [{source_order:0,action:'keep',target_id:before.id,automatic:true}],
+  'An identical saved activity needs no extra decision even if PDF evidence is uncertain');
 });
 
 test('RIG04 Barcelona reimport: all six unchanged visits are silent despite extraction warnings',()=>{
