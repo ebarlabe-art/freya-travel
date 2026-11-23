@@ -1,5 +1,14 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## A2.20 · Duplicats en PDF: classificació real 'activity' i comparador únic — PR, NO PUBLICADA
+
+Validació iPhone 23/11/2026 després de #253: la targeta de Sagrada Família encara diu `Activitat existent, sense canvis` però presenta el flash `Conservar l'existent`. També apareixen temps lliures com a exclusions pendents. A2.18/A2.19 tenien fixtures que forçaven `classification_hint:'manual'` per a visites; l'extractor real classifica els títols que comencen per `Visita` com a `activity`, de manera que la regla automàtica les descartava abans de comparar.
+
+Correcció concreta en memòria: per a `activity` i `manual` es reutilitza `compareImportActivity` de la mateixa UI; una única activitat `unchanged` genera `keep` automàtic (o `skip` sense escriptura si la proposta ja venia exclosa), sempre que no sigui alternativa opcional o hi hagi duplicats en el PDF. Els canvis reals i coincidències ambigües continuen requerint revisió. Nova prova de classificació `activity` + etiqueta `unchanged` + `flashQueue` buida; el fixture de sis activitats ara representa les categories de l'extractor real. El PDF original no conté notes en «Passeig lliure i descans», mentre que la primera importació va desar la nota literal `:`. El comparador tracta aquest únic signe buit com a no-canvi, però continua detectant notes reals diferents.
+
+**Estat:** branca i PR pendents, cap merge, desplegament, modificació de dades o Supabase. Cal CI i una última prova al mateix iPhone.
+
+
 ## A2.19 · Reimportació de Barcelona: conservació automàtica també amb evidència pendent — PR, NO PUBLICADA
 
 Captures iPhone (23/11/2026): malgrat #252, quatre visites iguals mostren el flash «Conservar l'existent», i dos temps lliures ja desats apareixen com a «excloses pendents de decidir». Comprovació de només lectura a Supabase: les sis activitats consten al viatge «Barcelona prova». Per tant, no falta desar-les; la comparació obliga a decisions redundants.

@@ -169,7 +169,14 @@ export function compareImportActivity(values,existing=[]){
  const generic=/^(?:museu|museum|parc|park|esmorzar|breakfast|dinar|lunch|sopar|dinner|passeig|walk|centre historic)$/i.test(normalizePointName(values.title));
  if(candidates.length!==1||generic)return {kind:'ambiguous',changes:[]};
  const target=candidates[0],before=existingReviewValues(target);
- const changes=[...EDITABLE].filter(key=>text(values[key])!==text(before[key])).map(key=>({key,before:before[key]||'',after:values[key]||''}));
+ // A lone ':' was imported as a note for a Barcelona row with no notes in
+ // the original PDF. It contains no user information and is not a change.
+ const compared=(key,value)=>{
+  const normalized=text(value);
+  return key==='notes'&&/^:+$/.test(normalized)?'':normalized;
+ };
+ const changes=[...EDITABLE].filter(key=>compared(key,values[key])!==compared(key,before[key]))
+  .map(key=>({key,before:before[key]||'',after:values[key]||''}));
  return {kind:changes.length?'modified':'unchanged',targetId:target.id,changes};
 }
 export function excludeExistingImportItems(review,existing=[]){

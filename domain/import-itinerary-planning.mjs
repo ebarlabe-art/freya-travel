@@ -1,7 +1,7 @@
 import {canonicalPlanningFlights} from './flight-journey-identity.mjs';
 // RIG-04: orchestration of existing matching, reconciliation and route contracts.
 // Every result is an in-memory proposal. No persistence or provider calls here.
-import {equivalentItineraryPlace,existingReviewValues,changeItineraryReviewItem} from './import-itinerary-review.mjs';
+import {equivalentItineraryPlace,existingReviewValues,compareImportActivity,changeItineraryReviewItem} from './import-itinerary-review.mjs';
 import {planItineraryReconciliation,classifyReconciliationTiming,proposeUnmatchedReconciliationDecisions} from './import-itinerary-reconciliation.mjs';
 import {routeFeasibility,routeIsVerified} from './itinerary-route.mjs';
 const clean=v=>String(v||'').normalize('NFKC').trim().toLowerCase();
@@ -9,21 +9,20 @@ const stamp=v=>typeof v==='string'&&/(Z|[+-]\d{2}:\d{2})$/.test(v)&&Number.isFin
 // Literal, unique equality is stronger than an AI confidence warning.
 // Reuse the original full-value contract; never infer equality from only a
 // place name, time or partial excerpt.
-const EXACT_KEYS=['title','local_date','start_local_time','end_local_time','time_zone','location_name','city','address','notes'];
-function exactManualDuplicate(item,existing,snapshot,used){
- if(item.classification_hint!=='manual')return null;
- // An unconfirmed optional alternative remains deliberately opt-in.
- // Uncertain AI evidence is not a reason to re-confirm a literal match
- // against the already saved planning: no data will change.
+// Use the SAME comparison that labels a PDF visit "existing, unchanged".
+// PDF landmark visits are classified 'activity', while generic walks can be
+// 'manual'; both are stored as manual itinerary rows.
+function exactPlanningDuplicate(item,existing,snapshot,used){
+ if(!['activity','manual'].includes(item.classification_hint))return null;
  if((item.source_warnings||[]).some(w=>w.startsWith('Alternativa opcional:')))return null;
  const v=item.values;
  if(!v?.title||!v.local_date||!v.start_local_time||!v.time_zone)return null;
- // A repeated entry within the PDF is itself ambiguous, even if both copies
- // individually equal the existing activity.
- if(snapshot.items.filter(other=>EXACT_KEYS.every(key=>clean(other.values?.[key])===clean(v[key]))).length!==1)return null;
- const found=existing.filter(old=>old.status!=='cancelled'&&!used.has(old.id)&&
-  EXACT_KEYS.every(key=>clean(existingReviewValues(old)[key])===clean(v[key])));
- return found.length===1?found[0]:null;
+ const sameSlot=x=>['title','local_date','start_local_time'].every(k=>clean(x.values?.[k])===clean(v[k]));
+ // Ambiguity within the PDF always requires review, even if one row matches.
+ if(snapshot.items.filter(sameSlot).length!==1)return null;
+ const result=compareImportActivity(v,existing.filter(old=>old.status!=='cancelled'));
+ if(result.kind!=='unchanged')return null;
+ return existing.find(old=>old.id===result.targetId&&!used.has(old.id))||null;
 }
 export const planningSignature=value=>JSON.stringify(value);
 const local=(value,zone)=>{try{const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(value)).map(x=>[x.type,x.value]));return {local_date:p.year+'-'+p.month+'-'+p.day,time:p.hour+':'+p.minute}}catch{return null}};
@@ -33,7 +32,7 @@ export function automaticEquivalentDecisions(snapshot,existing,decisions=[]){
  const additions=[];
  for(const item of snapshot.items){
   if(decided.has(item.source_order))continue;
-  const exact=exactManualDuplicate(item,existing,snapshot,used);
+  const exact=exactPlanningDuplicate(item,existing,snapshot,used);
   if(exact){
    // Excluded evidence-pending items must not become pending conflicts when
    // they are already saved verbatim. A skip preserves the stored item and
