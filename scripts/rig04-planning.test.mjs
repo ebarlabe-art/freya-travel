@@ -1,7 +1,8 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {matchingExistingImportItems,equivalentItineraryPlace,createItineraryReview,summarizeItineraryReview} from '../domain/import-itinerary-review.mjs';
+import {matchingExistingImportItems,equivalentItineraryPlace,compareImportActivity,createItineraryReview,summarizeItineraryReview} from '../domain/import-itinerary-review.mjs';
 import {automaticEquivalentDecisions,combineImportItinerary,assessCombinedItinerary,proposeItinerarySolutions,acceptItinerarySolution,planningRouteKey,planningSignature,planningRouteInput} from '../domain/import-itinerary-planning.mjs';
 import {initialPlanningDecisions,refreshAutomaticDecisions} from '../domain/import-itinerary-planning-ui.mjs';
+import {flashQueue,flashHtml} from '../domain/import-itinerary-flash.mjs';
 import {planItineraryReconciliation} from '../domain/import-itinerary-reconciliation.mjs';
 import {createRouteHandler} from '../supabase/functions/itinerary-route/handler.mjs';
 const id=n=>'14000000-0000-4000-8000-'+String(n).padStart(12,'0'),now=Date.parse('2030-12-20T10:00Z');
@@ -62,6 +63,33 @@ test('RIG04 Barcelona: five literal duplicates stay unchanged with medium-confid
   'An identical saved activity needs no extra decision even if PDF evidence is uncertain');
 });
 
+test('RIG04 actual PDF classification: unchanged activity skips flash and only modified rows need review',()=>{
+ const stored={...old,id:id(150),title:'Visita a la Sagrada Família',location_name:'Basílica de la Sagrada Família',
+  city:'Barcelona',address:'Carrer de Mallorca, 401',notes:null,localDate:'2027-04-10',
+  starts_at:'2027-04-10T08:00:00Z',ends_at:'2027-04-10T09:15:00Z',time_zone:'Europe/Madrid'};
+ const row={...item(0,stored.title),classification_hint:'activity',
+  values:{title:stored.title,location_name:stored.location_name,city:stored.city,address:stored.address,
+   notes:'',local_date:'2027-04-10',start_local_time:'10:00',end_local_time:'11:15',time_zone:'Europe/Madrid'},
+  source_warnings:['Confiança mitjana: revisa la informació'],
+  review_flags:['uncertain_extraction','possible_existing_duplicate']};
+ const snapshot={read_only:true,items:[row]},existing=[stored],before=structuredClone({snapshot,existing});
+ assert.equal(compareImportActivity(row.values,existing).kind,'unchanged','the UI comparison labels it unchanged');
+ const decisions=automaticEquivalentDecisions(snapshot,existing);
+ assert.deepEqual(decisions,[{source_order:0,action:'keep',target_id:stored.id,automatic:true}]);
+ const state={existing,decisions,retire:[]};
+ assert.equal(flashQueue(snapshot,state,{projection:[]},{deferred:[],history:[],targets:{}}).length,0);
+ assert.equal(flashHtml(snapshot,state,{projection:[]},{deferred:[],history:[],targets:{}},{combined:{items:[]},assessment:{issues:[]},solutions:[]}), '');
+ assert.equal(planItineraryReconciliation({snapshot,existing,decisions}).can_commit,false);
+ assert.deepEqual({snapshot,existing},before);
+ const changed={...row,values:{...row.values,end_local_time:'11:30'}};
+ assert.equal(compareImportActivity(changed.values,existing).kind,'modified');
+ assert.deepEqual(automaticEquivalentDecisions({items:[changed]},existing),[]);
+ assert.equal(flashQueue({items:[changed]},{existing,decisions:[]},{projection:[]},{deferred:[]}).length,1);
+ const missing={...row,source_order:1,values:{...row.values,title:'Una visita diferent'}};
+ assert.deepEqual(automaticEquivalentDecisions({items:[row,missing]},existing),[...decisions]);
+ assert.deepEqual(automaticEquivalentDecisions({items:[row,{...row,source_order:2}]},existing),[],
+  'Repeated PDF rows must be reviewed');
+});
 test('RIG04 Barcelona reimport: all six unchanged visits are silent despite extraction warnings',()=>{
  const sources=[
   ['Visita a la Sagrada Família','2027-04-10','10:00','11:15','Basílica de la Sagrada Família','Barcelona','Carrer de Mallorca, 401',''],
@@ -78,7 +106,7 @@ test('RIG04 Barcelona reimport: all six unchanged visits are silent despite extr
   time_zone:'Europe/Madrid',timing_kind:'exact',status:'planned',updated_at:'2026-11-23T09:00:00Z',photo_count:0,link_count:0
  }));
  const items=sources.map(([title,local_date,start_local_time,end_local_time,location_name,city,address,notes],i)=>({
-  source_order:i,included:![2,5].includes(i),classification_hint:'manual',
+  source_order:i,included:![2,5].includes(i),classification_hint:[2,5].includes(i)?'manual':'activity',
   review_flags:['uncertain_extraction',...(i===0?['possible_existing_duplicate']:[])],
   source_warnings:[2,5].includes(i)?['Evidència pendent: comprova el document']:['Confiança mitjana: verifica el text'],
   values:{title,local_date,start_local_time,end_local_time,time_zone:'Europe/Madrid',location_name,city,address,notes}
