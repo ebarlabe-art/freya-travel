@@ -162,6 +162,7 @@ try{
  await page.evaluate(async()=>{await loadManualItineraryItems(true);renderGenericItinerary()});
  assert.equal(await editor.isVisible(),true,'Open editor survives planning refresh');
  assert.equal(await editor.getByLabel('Nom del punt 1',{exact:true}).evaluate(node=>document.activeElement===node),true,'Focused name survives reconciliation');
+ await page.locator('#genericItineraryMoreOptions > summary').tap();
  await page.locator('#refreshGenericItinerary').tap();
  await page.waitForFunction(()=>itineraryLoadBatch===0);
  assert.equal(await editor.isVisible(),true,'Editor survives actual refresh button');
