@@ -39,6 +39,14 @@ try{
  const capture=process.env.FLASH_SCREENSHOTS;if(capture)await mkdir(capture,{recursive:true});
  for(const mode of ['existing','new','protected']){
   await page.evaluate(installFixture,mode);
+  // Each scenario starts without a saved import. The resume path is tested
+  // separately within the "existing" scenario.
+  await page.evaluate(async()=>{
+   const api=await loadTravelBookModule('import-itinerary-draft.mjs');
+   await api.discardImportDraft({userId:session.user.id,tripId:trip.id});
+   await refreshImportDraftButton();
+  });
+  await page.locator('#openItineraryImport').waitFor({state:'visible'});
   await page.locator('#openItineraryImport').tap();await page.locator('#itineraryImportUpload').tap();await page.locator('#itineraryImportChooseExisting').tap();
   await page.locator('#itineraryImportExisting').selectOption('14000000-0000-4000-8000-000000000006');await page.locator('#itineraryImportConsent').check();await page.locator('#itineraryImportAnalyze').tap();
   await page.waitForFunction(()=>itineraryImportState?.flashApi&&!itineraryImportState.preparing);
