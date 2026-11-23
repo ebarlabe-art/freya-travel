@@ -2082,6 +2082,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
             </section>
             <div id="itineraryImportReviewResult" class="itinerary-import-result" role="status" aria-live="polite"></div>
             <p id="itineraryImportRemaining" role="status" aria-live="polite"></p>
+            <section id="itineraryImportExcludedReview" class="itinerary-import-warning hidden" role="alert" aria-live="polite"></section>
             <button id="itineraryImportExcludeExisting" type="button">Desmarca les possibles coincidències amb el viatge</button>
             <section id="itineraryConflictFlash" class="hidden" aria-live="polite"></section>
             <section id="itineraryImportFlash" class="hidden" aria-live="polite"></section>
@@ -10451,6 +10452,8 @@ function renderItineraryImportPreview(){
  if(state.planningApi&&state.reconciliation&&!state.reconciliation.pendingRequest)state.reconciliation.decisions=state.planningApi.refreshAutomaticDecisions(result,state.reconciliation);
  renderItineraryReconciliation(state,result);
  renderItineraryPlanning(state,result);
+ if(state.reconciliation?.plan?.conflicts.some(c=>c.reason==='excluded_needs_decision'))
+  $('itineraryImportReviewHelp').textContent='Cal decidir què fer amb les activitats excloses indicades més amunt abans de confirmar.';
 }
 function planningContext(state){
  return {projection:itineraryProjection.filter(x=>x.tripId===state.tripId),convertLocalTime:zonedLocalToIso,startDate:trip.start_date,endDate:trip.end_date,days:genericItineraryTripDates().slice(0,31),sourcesReady:itinerarySourcesAreReady()};
@@ -10592,7 +10595,8 @@ $('itineraryImportFlash').addEventListener('change',event=>{
  if(event.target.dataset.flashTarget!==undefined){s.flash.targets[Number(event.target.dataset.flashTarget)]=event.target.value;renderItineraryImportPreview()}
 });
 function renderItineraryReconciliation(state,snapshot){
- const r=state.reconciliation,host=$('itineraryImportReconciliation');
+ const r=state.reconciliation,host=$('itineraryImportReconciliation'),excludedHost=$('itineraryImportExcludedReview');
+ excludedHost.classList.add('hidden');excludedHost.innerHTML='';
  $('itineraryImportExcludeExisting').classList?.toggle?.('hidden',!!r);
  $('itineraryImportReviewResult').classList?.toggle?.('hidden',!!r);
  $('itineraryImportCompare').classList?.toggle?.('hidden',!!state.unified&&!state.comparisonStale);
@@ -10606,7 +10610,20 @@ function renderItineraryReconciliation(state,snapshot){
  $('itineraryImportExcludeExisting').disabled=true;
  $('itineraryImportReviewHelp').textContent=state.unified?'Revisa les excepcions i les incompatibilitats. Les decisions preparades i les dades originals continuen accessibles.':'Compara cada candidata amb el planning. Les visites existents es conserven per defecte.';
  try{r.plan=r.api.reconciliationPlan(snapshot,r)}catch{r.plan=null}
- $('itineraryImportRemaining').textContent=r.plan?r.plan.summary.new+' visites noves · '+r.plan.summary.updated+' actualitzacions · '+r.plan.summary.retired+' retirades':'Revisa les decisions de conciliació';
+ const excluded=r.plan?.conflicts.filter(c=>c.reason==='excluded_needs_decision')||[];
+ if(excluded.length){
+  excludedHost.classList.remove('hidden');
+  excludedHost.innerHTML='<h4>'+excluded.length+' activitats excloses pendents de decidir</h4>'+
+   '<p>El PDF les ha detectat, però s’han desmarcat per falta d’evidència. Decideix què fer amb cadascuna abans de confirmar.</p>'+
+   excluded.map(row=>{
+    const item=snapshot.items.find(x=>x.source_order===row.source_order);
+    return '<div class="itinerary-reconcile-quick"><p><strong>'+esc(item.values.title)+'</strong> · '+
+     esc(item.values.local_date||'Dia pendent')+' · '+esc(item.values.start_local_time||'Sense hora')+'</p>'+
+     '<button type="button" data-excluded-review-action="include" data-excluded-review-order="'+row.source_order+'" '+(state.busy||r.pendingRequest?'disabled':'')+'>Inclou al viatge</button> '+
+     '<button type="button" class="secondary" data-excluded-review-action="skip" data-excluded-review-order="'+row.source_order+'" '+(state.busy||r.pendingRequest?'disabled':'')+'>No incorporis</button></div>';
+   }).join('');
+ }
+ $('itineraryImportRemaining').textContent=r.plan?r.plan.summary.new+' visites noves · '+r.plan.summary.updated+' actualitzacions · '+r.plan.summary.retired+' retirades'+(excluded.length?' · '+excluded.length+' exclosa pendent de decidir':''):'Revisa les decisions de conciliació';
  if(state.unified&&!state.flashApi)$('itineraryImportDecisionDetails').open=!!r.plan?.summary.pending;
  $('itineraryImportWrite').disabled=state.preparing||state.planningBusy||state.busy||state.saveCompleted||connectionUnavailable()||offlineReadOnlySession||(!r.pendingRequest&&!r.plan?.can_commit);
  $('itineraryImportCandidates').querySelectorAll('input,textarea').forEach(n=>n.disabled=!!state.busy||!!r.pendingRequest);
@@ -10627,6 +10644,25 @@ async function loadItineraryReconciliation(){
  finally{if(itineraryImportContextIsCurrent(state)){state.busy=false;renderItineraryImportPreview()}}
 }
 $('itineraryImportCompare').onclick=()=>{const s=itineraryImportState;if(s?.unified){if(s.busy||s.preparing||s.reconciliation?.pendingRequest)return;s.reconciliation=null;void prepareUnifiedItineraryImport(s)}else void loadItineraryReconciliation()};
+$('itineraryImportExcludedReview').addEventListener('click',event=>{
+ const button=event.target.closest('button[data-excluded-review-action]');
+ const s=itineraryImportState,r=s?.reconciliation;
+ if(!button||!r||s.busy||r.pendingRequest||!itineraryImportContextIsCurrent(s))return;
+ const order=Number(button.dataset.excludedReviewOrder);
+ if(!r.plan?.conflicts.some(c=>c.reason==='excluded_needs_decision'&&c.source_order===order))return;
+ const snapshot=s.api.summarizeItineraryReview(s.review,r.existing);
+ const item=snapshot.items.find(i=>i.source_order===order);
+ if(!item)return;
+ const action=button.dataset.excludedReviewAction;
+ if(action!=='include'&&action!=='skip')return;
+ r.decisions=r.decisions.filter(d=>d.source_order!==order);
+ if(action==='include'){
+  s.api.changeItineraryReviewItem(s.review,item.index,'included',true);
+  if(!item.existing_matches.length)r.decisions.push({source_order:order,action:'add'});
+ }else r.decisions.push({source_order:order,action:'skip'});
+ renderItineraryImportPreview();
+ $('itineraryImportSaveStatus').textContent='Decisió registrada a la proposta. Encara no s’ha desat cap canvi.';
+});
 $('itineraryImportReconciliation').addEventListener('click',event=>{
   if(!event.target.closest('#itineraryReconcileSuggestNew'))return;
   const s=itineraryImportState,r=s?.reconciliation;

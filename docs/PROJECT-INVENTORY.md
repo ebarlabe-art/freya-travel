@@ -1,5 +1,14 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## A2.17 · Revisió explícita de propostes descartades del PDF — BRANCA, NO PUBLICADA
+
+Cas Barcelona, 22/11/2026: el PDF mostra sis propostes, però l'operació atòmica a Supabase va incloure i desar només cinc. La sisena, «Temps lliure pel centre» (11/04/2027 a les 15:00), no consta a la petició. El codi marca automàticament `included=false` les propostes amb avís `Evidència pendent:` i la conciliació les convertia a `skip` sense exigir una decisió de l'usuari. No disposem de la transcripció original del sisè ítem; el mecanisme és un defecte demostrat, però l'atribució d'aquest cas concret encara és una hipòtesi.
+
+Correcció mínima: les exclusions amb `Evidència pendent:` es mantenen pendents (`excluded_needs_decision`), bloquegen la confirmació i s'ofereixen en un avís visible abans de les coincidències, amb botons «Inclou al viatge» / «No incorporis». Les alternatives opcionals es mantenen desmarcades sense bloquejar. La conciliació i el desament existents es reutilitzen; cap nova escriptura o infraestructura. La sortida explícita `Tanca` ja guarda una revisió local; no s'ha alterat la navegació sense reproducció concloent. Regressions unitàries i browser centrades en una exclusió i en mantenir les dades existents. `index.html` i `404.html` sincronitzats.
+
+**Estat:** PR pendent, cap merge ni desplegament; prova real iPhone pendent. Cap dada de viatge tocada.
+
+
 ## A2.16 · Camps Lloc/Adreça/Ciutat entre pàgina i blocs — BRANCA, NO PUBLICADA
 
 Prova real iPhone (22/11/2026): després de #248/#249, el PDF fictici de Barcelona carrega les sis activitats però la fitxa de Sagrada Família mostra Lloc correcte i Adreça/Ciutat buits. El PDF original de dues pàgines, inspeccionat directament, conté els tres camps literals per a quatre visites: Sagrada Família, Casa Batlló, Palau de la Música i Catedral. Les dues activitats de temps lliure no tenen ubicació. La resposta estructurada real del model no és accessible en aquest relleu, així que encara no es pot confirmar en quin pas de la transcripció es perden les etiquetes.

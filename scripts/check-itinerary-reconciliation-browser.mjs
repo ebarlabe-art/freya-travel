@@ -91,6 +91,33 @@ try{
  await page.waitForFunction(()=>document.getElementById('itineraryImportSaveStatus').textContent.includes('planning ha canviat'));
  assert.equal(await page.locator('#itineraryImportWrite').isDisabled(),true);
 assert.equal(await page.evaluate(()=>fixture.writes.length),1);
+ // Evidence-pending Barcelona row: block save until the traveller decides.
+ await page.evaluate(installFixture);
+ await page.evaluate(()=>{
+  const s=itineraryImportState,first=s.review.items[0],missing=s.review.items[24];
+  missing.source_warnings=['Evidència pendent: cal contrastar el document'];
+  missing.included=false;
+  s.review.items=[first,missing];
+ });
+ await page.locator('#itineraryImportCompare').tap();await page.locator('[data-reconcile-summary]').waitFor();
+ await page.evaluate(()=>{
+  itineraryImportState.reconciliation.decisions=[{source_order:0,action:'keep',target_id:rigId(20)}];
+  renderItineraryImportPreview();
+ });
+ assert.match(await page.locator('#itineraryImportExcludedReview').innerText(),/Visita nova 24/);
+ assert.equal(await page.locator('#itineraryImportWrite').isDisabled(),true);
+ await page.locator('[data-excluded-review-action="skip"]').tap();
+ assert.equal(await page.locator('#itineraryImportExcludedReview').isVisible(),false);
+ assert.equal(await page.locator('#itineraryImportWrite').isDisabled(),true);
+ await page.evaluate(()=>{
+  itineraryImportState.reconciliation.decisions=itineraryImportState.reconciliation.decisions.filter(d=>d.source_order!==24);
+  renderItineraryImportPreview();
+ });
+ await page.locator('[data-excluded-review-action="include"]').tap();
+ assert.equal(await page.evaluate(()=>itineraryImportState.review.items[1].included),true);
+ assert.equal(await page.evaluate(()=>itineraryImportState.reconciliation.plan.summary.new),1);
+ assert.equal(await page.locator('#itineraryImportWrite').isDisabled(),false);
+ assert.equal(await page.evaluate(()=>fixture.writes.length),0);
  assert.deepEqual(errors,[]);
  console.log(`PASS RIG-03B ${engine}: real touch 13→25 comparison, explicit choices/retirement, pending guard, cancel, offline, slow RPC, identical retry, return to itinerary, no direct writes.`);
 }finally{await browser.close();server.close()}
