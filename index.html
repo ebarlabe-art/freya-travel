@@ -10806,7 +10806,7 @@ $('itineraryImportDone').onclick=async()=>{
   void refreshImportDraftButton();
   msg('genericItineraryMessage','✅ El document ja està incorporat: no hi ha canvis pendents de desar.');
  }catch(error){
-  if(itineraryImportContextIsCurrent(s))$('itineraryImportSaveStatus').textContent='No s’ha pogut tancar la proposta guardada. Torna-ho a provar.';
+  if(itineraryImportContextIsCurrent(s))$('itineraryImportStatus').textContent='No s’ha pogut tancar la proposta guardada. Torna-ho a provar.';
  }finally{if(itineraryImportContextIsCurrent(s)){s.busy=false;renderItineraryImportPreview()}}
 };
 $('itinerarySavedAlternativesButton').onclick=()=>{void openItineraryImport(true)};
