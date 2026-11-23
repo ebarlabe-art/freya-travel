@@ -8,6 +8,11 @@ try{
  const ctx=await browser.newContext({viewport:process.env.RECONCILE_TABLET?{width:1024,height:768}:{width:390,height:844},isMobile:!process.env.RECONCILE_TABLET,hasTouch:true,serviceWorkers:'block'});
  await ctx.route('**/*',r=>new URL(r.request().url()).origin===new URL(url).origin?r.continue():r.abort());await ctx.routeWebSocket('**/*',s=>s.close());
  const page=await ctx.newPage();page.setDefaultTimeout(15000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(url);await page.locator('#loginCard').waitFor({state:'visible'});
+ assert.deepEqual(await page.evaluate(()=>({
+  actions:[...document.querySelectorAll('.generic-itinerary-hero-actions button')].map(n=>n.textContent.trim()),
+  moreOptions:!document.getElementById('genericItineraryMoreOptions').open,
+  diagnosticsNested:document.getElementById('genericItineraryMoreOptions').contains(document.getElementById('pwaDiagnostic'))
+ })),{actions:['📄 Importa un itinerari','＋ Afegir activitat'],moreOptions:true,diagnosticsNested:true});
  const installFixture=async mode=>{
   const id=n=>'14000000-0000-4000-8000-'+String(n).padStart(12,'0');
   session={user:{id:id(3)}};trip={id:id(1),name:'Riga sintètic RIG04',start_date:'2030-12-26',end_date:'2031-01-02',time_zone:'Europe/Riga'};
@@ -37,6 +42,7 @@ try{
   await page.locator('#openItineraryImport').tap();await page.locator('#itineraryImportUpload').tap();await page.locator('#itineraryImportChooseExisting').tap();
   await page.locator('#itineraryImportExisting').selectOption('14000000-0000-4000-8000-000000000006');await page.locator('#itineraryImportConsent').check();await page.locator('#itineraryImportAnalyze').tap();
   await page.waitForFunction(()=>itineraryImportState?.flashApi&&!itineraryImportState.preparing);
+  assert.equal(await page.locator('#itineraryImportSteps [data-import-step="2"]').getAttribute('aria-current'),'step');
   assert.equal(await page.evaluate(()=>fixture.writes),0);
   assert.equal(await page.locator('#itineraryImportAdvanced').evaluate(n=>n.open),false);
   if(mode!=='new'){
@@ -108,7 +114,9 @@ try{
    await page.locator('[data-conflict-ack]').waitFor({state:'visible'});
    await page.locator('[data-conflict-ack]').tap();
   }else assert.equal(await page.locator('#itineraryConflictFlash').isVisible(),false,'no alarm for uncertainty alone');
-  await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});assert.equal(await page.evaluate(()=>fixture.writes),0);
+  await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
+  assert.equal(await page.locator('#itineraryImportSteps [data-import-step="3"]').getAttribute('aria-current'),'step');
+  assert.equal(await page.evaluate(()=>fixture.writes),0);
   if(mode==='existing'){
    assert.match(await page.locator('#itineraryImportConfirmText').innerText(),/NO resolts/);
    await page.evaluate(()=>{itineraryImportState.reconciliation.existing[0].updated_at='2030-12-03T00:00:00Z'});
@@ -119,6 +127,7 @@ try{
    await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
   }
   await page.locator('#itineraryImportConfirmNo').tap();await page.waitForFunction(()=>!itineraryImportState.busy);
+  assert.equal(await page.locator('#itineraryImportSteps [data-import-step="2"]').getAttribute('aria-current'),'step');
   assert.equal(await page.evaluate(()=>JSON.stringify(fixture.existing)===fixture.before&&JSON.stringify(itineraryProjection)===fixture.agenda),true);
   if(mode==='existing'){
    await page.locator('[data-conflict-open]').tap();
@@ -129,7 +138,9 @@ try{
   await page.locator('#itineraryImportExit').tap();
   await page.waitForFunction(()=>itineraryImportState===null);
   if(mode==='existing'){
-   await page.locator('#openItineraryImport').tap();
+   await page.locator('#itineraryImportResume').waitFor({state:'visible'});
+   assert.equal(await page.locator('#openItineraryImport').isVisible(),false,'saved PDF is resumed contextually');
+   await page.locator('#itineraryImportResume').tap();
    await page.waitForFunction(()=>itineraryImportState?.flashApi&&itineraryImportState?.reconciliation?.existing);
    assert.match(await page.locator('#itineraryImportStatus').innerText(),/Proposta desada · Pendent de confirmar|El planning ha canviat/);
    assert.equal(await page.evaluate(()=>fixture.writes),0,'pause and resume never commit');
@@ -137,6 +148,8 @@ try{
    await page.waitForFunction(()=>itineraryImportState?.review===null);
    await page.locator('#itineraryImportClose').tap();
    await page.waitForFunction(()=>itineraryImportState===null);
+   await page.evaluate(()=>refreshImportDraftButton());
+   await page.locator('#openItineraryImport').waitFor({state:'visible'});
   }else await page.evaluate(async()=>{
    const api=await loadTravelBookModule('import-itinerary-draft.mjs');
    await api.discardImportDraft({userId:session.user.id,tripId:trip.id});
