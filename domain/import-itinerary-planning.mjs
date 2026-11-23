@@ -11,14 +11,16 @@ const stamp=v=>typeof v==='string'&&/(Z|[+-]\d{2}:\d{2})$/.test(v)&&Number.isFin
 // place name, time or partial excerpt.
 const EXACT_KEYS=['title','local_date','start_local_time','end_local_time','time_zone','location_name','city','address','notes'];
 function exactManualDuplicate(item,existing,snapshot,used){
- if(!item.included||item.classification_hint!=='manual')return null;
- if((item.source_warnings||[]).some(w=>/^(?:Evidència pendent:|Alternativa opcional:)/.test(w)))return null;
- if((item.review_flags||[]).some(f=>!['uncertain_extraction','possible_existing_duplicate','possible_overlap_in_review'].includes(f)))return null;
+ if(item.classification_hint!=='manual')return null;
+ // An unconfirmed optional alternative remains deliberately opt-in.
+ // Uncertain AI evidence is not a reason to re-confirm a literal match
+ // against the already saved planning: no data will change.
+ if((item.source_warnings||[]).some(w=>w.startsWith('Alternativa opcional:')))return null;
  const v=item.values;
  if(!v?.title||!v.local_date||!v.start_local_time||!v.time_zone)return null;
  // A repeated entry within the PDF is itself ambiguous, even if both copies
  // individually equal the existing activity.
- if(snapshot.items.filter(other=>other.included&&EXACT_KEYS.every(key=>clean(other.values?.[key])===clean(v[key]))).length!==1)return null;
+ if(snapshot.items.filter(other=>EXACT_KEYS.every(key=>clean(other.values?.[key])===clean(v[key]))).length!==1)return null;
  const found=existing.filter(old=>old.status!=='cancelled'&&!used.has(old.id)&&
   EXACT_KEYS.every(key=>clean(existingReviewValues(old)[key])===clean(v[key])));
  return found.length===1?found[0]:null;
@@ -33,7 +35,12 @@ export function automaticEquivalentDecisions(snapshot,existing,decisions=[]){
   if(decided.has(item.source_order))continue;
   const exact=exactManualDuplicate(item,existing,snapshot,used);
   if(exact){
-   additions.push({source_order:item.source_order,action:'keep',target_id:exact.id,automatic:true});
+   // Excluded evidence-pending items must not become pending conflicts when
+   // they are already saved verbatim. A skip preserves the stored item and
+   // uses the existing reconciliation contract for excluded proposals.
+   additions.push(item.included===false?
+    {source_order:item.source_order,action:'skip',automatic:true}:
+    {source_order:item.source_order,action:'keep',target_id:exact.id,automatic:true});
    used.add(exact.id);
    continue;
   }
