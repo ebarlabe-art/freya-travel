@@ -74,6 +74,10 @@ test('RIG04 actual PDF classification: unchanged activity skips flash and only m
   review_flags:['uncertain_extraction','possible_existing_duplicate']};
  const snapshot={read_only:true,items:[row]},existing=[stored],before=structuredClone({snapshot,existing});
  assert.equal(compareImportActivity(row.values,existing).kind,'unchanged','the UI comparison labels it unchanged');
+ assert.equal(compareImportActivity({...row.values,notes:''},[{...stored,notes:':'}]).kind,'unchanged',
+  'A punctuation-only note imported from an empty PDF note is not an activity change');
+ assert.equal(compareImportActivity({...row.values,notes:'Reserva confirmada'},[{...stored,notes:':'}]).kind,'modified',
+  'Meaningful notes must never be hidden');
  const decisions=automaticEquivalentDecisions(snapshot,existing);
  assert.deepEqual(decisions,[{source_order:0,action:'keep',target_id:stored.id,automatic:true}]);
  const state={existing,decisions,retire:[]};
@@ -109,7 +113,7 @@ test('RIG04 Barcelona reimport: all six unchanged visits are silent despite extr
   source_order:i,included:![2,5].includes(i),classification_hint:[2,5].includes(i)?'manual':'activity',
   review_flags:['uncertain_extraction',...(i===0?['possible_existing_duplicate']:[])],
   source_warnings:[2,5].includes(i)?['Evidència pendent: comprova el document']:['Confiança mitjana: verifica el text'],
-  values:{title,local_date,start_local_time,end_local_time,time_zone:'Europe/Madrid',location_name,city,address,notes}
+  values:{title,local_date,start_local_time,end_local_time,time_zone:'Europe/Madrid',location_name,city,address,notes:i===2?'':notes}
  }));
  const snapshot={read_only:true,items};
  const original=structuredClone({snapshot,existing});
