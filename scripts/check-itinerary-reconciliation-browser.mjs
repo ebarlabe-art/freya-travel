@@ -82,6 +82,7 @@ try{
  await page.waitForFunction(()=>itineraryImportState?.review===null&&document.getElementById('itineraryImportSource').classList.contains('hidden')===false);
  assert.equal(await page.evaluate(()=>sessionStorage.getItem(itineraryReconciliationRecoveryKey({userId:session.user.id,tripId:trip.id}))),null);
  assert.equal(await page.evaluate(()=>fixture.writes.length),writesBeforeDiscard,'discard never submits a write');
+ await page.waitForFunction(()=>document.getElementById('itineraryImportStatus').textContent.includes('recuperació local s’ha abandonat'));
  assert.match(await page.locator('#itineraryImportStatus').innerText(),/recuperació local s’ha abandonat/);
  assert.equal(await page.locator('#itineraryImportUpload').isEnabled(),true);
  // The itinerary and reconciliation remain untouched; starting a new import is possible.
