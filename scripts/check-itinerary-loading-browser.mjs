@@ -38,6 +38,7 @@ try{
  await page.waitForFunction(()=>itineraryProjection.length===13);
  assert.equal(await page.locator('[data-generic-itinerary-day]').count(),8);
  // On-device diagnosis is visible without exposing account IDs or resetting offline data.
+ await page.locator('#genericItineraryMoreOptions > summary').click();
  await page.locator('#pwaDiagnostic summary').click();
  await page.waitForFunction(()=>document.querySelector('#pwaDiagnosticSummary')?.textContent.includes('Planning llegit: 13'));
  const diagnosis=await page.locator('#pwaDiagnosticSummary').innerText();
