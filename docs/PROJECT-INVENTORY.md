@@ -1,5 +1,14 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## A2.18 · Conciliació silenciosa de duplicats literals — BRANCA, NO PUBLICADA
+
+Validació iPhone comunicada (23/11/2026): després de fusionar i desplegar #251, l'usuària ha pogut incorporar «Temps lliure pel centre», i les sis activitats consten a la interfície. Millora de producte: no tornar a preguntar «Conservar» per activitats **literalment idèntiques** al planning; mostrar exclusivament noves, modificades i dubtoses.
+
+Canvi mínim al comparador existent `domain/import-itinerary-planning.mjs`: abans dels criteris aproximats, detectar coincidència **única i exacta** del contracte editable complet (nom, dia, hores, zona horària, lloc, ciutat, adreça i notes), amb activitat manual i hora explícita. Les advertències informatives i confiança mitjana no converteixen una igualtat factual en un conflicte. Es conserva l'element existent amb `keep` automàtic, sense escriptura ni confirmació per fila. Si canvia qualsevol camp, hi ha diversos candidats, activitat repetida al PDF o evidència pendent, es manté la revisió i les proteccions. Es conserva la resta del comportament d'aliases existent. Prova focalitzada de Barcelona i casos negatius. Cap canvi en Supabase, desament, RLS ni dades del viatge.
+
+**Estat:** PR pendent, no fusionada, no desplegada. Abans de donar-ho per resolt cal CI i prova real de reimportació a l'iPhone. No crear un nou viatge ni duplicar infraestructura.
+
+
 ## A2.17 · Revisió explícita de propostes descartades del PDF — BRANCA, NO PUBLICADA
 
 Cas Barcelona, 22/11/2026: el PDF mostra sis propostes, però l'operació atòmica a Supabase va incloure i desar només cinc. La sisena, «Temps lliure pel centre» (11/04/2027 a les 15:00), no consta a la petició. El codi marca automàticament `included=false` les propostes amb avís `Evidència pendent:` i la conciliació les convertia a `skip` sense exigir una decisió de l'usuari. No disposem de la transcripció original del sisè ítem; el mecanisme és un defecte demostrat, però l'atribució d'aquest cas concret encara és una hipòtesi.

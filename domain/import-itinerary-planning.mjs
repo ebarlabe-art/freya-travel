@@ -1,11 +1,28 @@
 import {canonicalPlanningFlights} from './flight-journey-identity.mjs';
 // RIG-04: orchestration of existing matching, reconciliation and route contracts.
 // Every result is an in-memory proposal. No persistence or provider calls here.
-import {equivalentItineraryPlace,changeItineraryReviewItem} from './import-itinerary-review.mjs';
+import {equivalentItineraryPlace,existingReviewValues,changeItineraryReviewItem} from './import-itinerary-review.mjs';
 import {planItineraryReconciliation,classifyReconciliationTiming,proposeUnmatchedReconciliationDecisions} from './import-itinerary-reconciliation.mjs';
 import {routeFeasibility,routeIsVerified} from './itinerary-route.mjs';
 const clean=v=>String(v||'').normalize('NFKC').trim().toLowerCase();
 const stamp=v=>typeof v==='string'&&/(Z|[+-]\d{2}:\d{2})$/.test(v)&&Number.isFinite(Date.parse(v))?Date.parse(v):null;
+// Literal, unique equality is stronger than an AI confidence warning.
+// Reuse the original full-value contract; never infer equality from only a
+// place name, time or partial excerpt.
+const EXACT_KEYS=['title','local_date','start_local_time','end_local_time','time_zone','location_name','city','address','notes'];
+function exactManualDuplicate(item,existing,snapshot,used){
+ if(!item.included||item.classification_hint!=='manual')return null;
+ if((item.source_warnings||[]).some(w=>/^(?:Evidència pendent:|Alternativa opcional:)/.test(w)))return null;
+ if((item.review_flags||[]).some(f=>!['uncertain_extraction','possible_existing_duplicate','possible_overlap_in_review'].includes(f)))return null;
+ const v=item.values;
+ if(!v?.title||!v.local_date||!v.start_local_time||!v.time_zone)return null;
+ // A repeated entry within the PDF is itself ambiguous, even if both copies
+ // individually equal the existing activity.
+ if(snapshot.items.filter(other=>other.included&&EXACT_KEYS.every(key=>clean(other.values?.[key])===clean(v[key]))).length!==1)return null;
+ const found=existing.filter(old=>old.status!=='cancelled'&&!used.has(old.id)&&
+  EXACT_KEYS.every(key=>clean(existingReviewValues(old)[key])===clean(v[key])));
+ return found.length===1?found[0]:null;
+}
 export const planningSignature=value=>JSON.stringify(value);
 const local=(value,zone)=>{try{const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(value)).map(x=>[x.type,x.value]));return {local_date:p.year+'-'+p.month+'-'+p.day,time:p.hour+':'+p.minute}}catch{return null}};
 // An alias alone is NEVER permission to erase a different time, note or address.
@@ -13,7 +30,14 @@ export function automaticEquivalentDecisions(snapshot,existing,decisions=[]){
  const decided=new Set(decisions.map(d=>d.source_order)),used=new Set(decisions.map(d=>d.target_id));
  const additions=[];
  for(const item of snapshot.items){
-  if(decided.has(item.source_order)||!item.included||item.classification_hint!=='manual'||item.review_flags.some(f=>!f.startsWith('possible_existing_')&&f!=='possible_overlap_in_review')||item.source_warnings?.length)continue;
+  if(decided.has(item.source_order))continue;
+  const exact=exactManualDuplicate(item,existing,snapshot,used);
+  if(exact){
+   additions.push({source_order:item.source_order,action:'keep',target_id:exact.id,automatic:true});
+   used.add(exact.id);
+   continue;
+  }
+  if(!item.included||item.classification_hint!=='manual'||item.review_flags.some(f=>!f.startsWith('possible_existing_')&&f!=='possible_overlap_in_review')||item.source_warnings?.length)continue;
   const v=item.values;if(/^(?:museu|museum|parc|park|esmorzar|breakfast|dinar|lunch|sopar|dinner|passeig|walk|centre històric)$/i.test(clean(v.title)))continue;const found=existing.filter(old=>equivalentItineraryPlace(v,old));
   if(found.length!==1)continue;
   const old=found[0],start=old.starts_at&&local(old.starts_at,old.time_zone),end=old.ends_at&&local(old.ends_at,old.time_zone);

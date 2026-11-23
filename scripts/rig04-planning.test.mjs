@@ -27,6 +27,39 @@ test('RIG04 automatic KEEP requires unique identity and all operational values e
  assert.deepEqual(automaticEquivalentDecisions(snapshot,[old,{...old,id:id(2)}]),[]);
  assert.deepEqual(automaticEquivalentDecisions({items:[item(0),item(1)]},[old]),[]);
 });
+test('RIG04 Barcelona: five literal duplicates stay unchanged with medium-confidence evidence',()=>{
+ const before={
+  ...old,id:id(88),title:'Visita a la Sagrada Família',city:'Barcelona',
+  location_name:'Basílica de la Sagrada Família',address:'Carrer de Mallorca, 401',notes:'',
+  localDate:'2027-04-10',starts_at:'2027-04-10T08:00:00Z',ends_at:'2027-04-10T09:15:00Z',
+  time_zone:'Europe/Madrid'
+ };
+ const values={title:before.title,local_date:'2027-04-10',start_local_time:'10:00',
+  end_local_time:'11:15',time_zone:before.time_zone,location_name:before.location_name,
+  city:before.city,address:before.address,notes:''};
+ const existing=structuredClone(before);
+ const duplicate={...item(0,before.title),values,review_flags:['uncertain_extraction','possible_existing_duplicate'],
+  source_warnings:['Any agafat del títol general']};
+ const original=structuredClone(duplicate);
+ const state={read_only:true,items:[duplicate]};
+ assert.deepEqual(automaticEquivalentDecisions(state,[existing]),[{source_order:0,action:'keep',target_id:before.id,automatic:true}]);
+ assert.deepEqual(automaticEquivalentDecisions(state,[existing],[{source_order:0,action:'keep',target_id:before.id,automatic:true}]),[]);
+ assert.deepEqual(duplicate,original);
+ assert.deepEqual(existing,before);
+ for(const diff of [{notes:'Visita guiada'},{address:'Carrer de Mallorca, 402'},
+  {city:'Girona'},{start_local_time:'10:15'},{end_local_time:'11:30'},{local_date:'2027-04-11'},
+  {location_name:'Un altre monument'}]){
+  assert.deepEqual(automaticEquivalentDecisions({items:[{...duplicate,values:{...values,...diff}}]},[existing]),[],
+   'A changed value must remain reviewable: '+Object.keys(diff)[0]);
+ }
+ assert.deepEqual(automaticEquivalentDecisions(state,[before,{...before,id:id(89)}]),[],
+  'Two identical existing activities require manual review');
+ assert.deepEqual(automaticEquivalentDecisions({items:[duplicate,{...duplicate,source_order:1}]},[before]),[],
+  'Repeated PDF rows require manual review');
+ assert.deepEqual(automaticEquivalentDecisions({items:[{...duplicate,source_warnings:['Evidència pendent: cal revisar']}]},[before]),[],
+  'An evidence-pending proposal cannot be silently preserved');
+});
+
 test('RIG04 combination preserves existing identity, protected reservation and source input',()=>{
  const snapshot={read_only:true,items:[item(0),item(1,'Passeig nou',{start_local_time:'12:00',end_local_time:'13:00'})]},r=state();r.decisions=initialPlanningDecisions(snapshot,r);
  const flight=event('flight:1','08:00','09:00',{sourceType:'flight',documents:[{secret:'not needed'}],bookingCode:'private'}),before=structuredClone({snapshot,r,flight});
