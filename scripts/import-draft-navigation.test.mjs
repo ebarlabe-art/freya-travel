@@ -5,9 +5,11 @@ import {readFileSync} from 'node:fs';
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const block=(start,end)=>html.slice(html.indexOf(start),html.indexOf(end,html.indexOf(start)));
 function fixture({found=true}={}){
- const calls=[],button={textContent:''},selected={id:'synthetic-trip'};
+ const calls=[],classes=hidden=>({hidden,toggle(name,value){if(name==='hidden')this.hidden=value;}});
+ const button={textContent:'📄 Importa un itinerari',classList:classes(false)};
+ const notice={classList:classes(true)},selected={id:'synthetic-trip'};
  const c=vm.createContext({calls,session:{user:{id:'synthetic-user'}},trip:selected,trips:[selected],tripLoadGeneration:0,itineraryImportState:null,offlineReadOnlySession:false,view:'tripsHomeView',
-  $:()=>button,isLondonTrip:()=>false,connectionUnavailable:()=>false,
+  $:id=>id==='itineraryImportDraftNotice'?notice:button,isLondonTrip:()=>false,connectionUnavailable:()=>false,
   loadTravelBookModule:async()=>({hasImportDraft:async()=>found}),
   openItineraryImport:async()=>{calls.push('resume');c.itineraryImportState={}},
   readOfflineTripSnapshot:()=>null,tripDashboardId:()=> 'genericDashboardView',
@@ -17,12 +19,14 @@ function fixture({found=true}={}){
  for(const name of ['closeItineraryImport','clearGenericItineraryState','disconnectTripRealtime','clearTripScopedState','rememberSelectedTrip','mergeOfflineTripSnapshot','updateTripPresentation','deactivateBuilderNavigation','initializeGenericChecklistDefaults','loadItems','loadDocuments','ensureTripAgenda','loadParkingSummary','loadCarRentals','subscribe','subscribeDocuments','subscribeAccommodations','subscribeFlights','subscribeActivities','subscribeCarRentals','subscribeManualItineraryItems','subscribeTripDayMetadata','refreshPushUi'])c[name]=()=>{};
  c.applyPendingInitialView=()=>{c.view='documentsView'};
  vm.runInContext(block('async function selectTrip(','async function initializeGenericChecklistDefaults(')+block('async function refreshImportDraftButton(','function importDraftContext('),c);
- return {c,calls,button};
+ return {c,calls,button,notice};
 }
 test('#202 opening a trip automatically resumes its saved proposal; ordinary renders do not reopen it',async()=>{
- const {c,calls,button}=fixture();
+ const {c,calls,button,notice}=fixture();
  await c.selectTrip('synthetic-trip',{open:true});
- assert.equal(c.view,'itineraryView');assert.deepEqual(calls,['resume']);assert.match(button.textContent,/Reprèn/);
+ assert.equal(c.view,'itineraryView');assert.deepEqual(calls,['resume']);
+ assert.equal(button.classList.hidden,true,'unfinished PDF hides generic import');
+ assert.equal(notice.classList.hidden,false,'unfinished PDF shows contextual resume');
  c.itineraryImportState=null;await c.refreshImportDraftButton();assert.equal(calls.length,1);
 });
 test('#202 no proposal, home selection and explicit deep links keep their navigation',async()=>{
