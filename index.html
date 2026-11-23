@@ -10183,9 +10183,8 @@ async function recoverItineraryReconciliation(state){
  $('itineraryImportSaveStatus').textContent='Hi ha un desament pendent de confirmar. Reintenta la mateixa operació per comprovar-ne el resultat sense duplicar-la.';
  renderItineraryImportPreview();return true;
 }
-let itineraryImportDraftUiRequest=0;
 async function refreshImportDraftButton(resumeOnEntry=false){
- const request=++itineraryImportDraftUiRequest;
+ const request=refreshImportDraftButton._request=(refreshImportDraftButton._request||0)+1;
  const entryView=visibleAppView();
  const userId=session?.user?.id,tripId=trip?.id,generation=tripLoadGeneration;
  if(!userId||!tripId)return;
@@ -10193,7 +10192,7 @@ async function refreshImportDraftButton(resumeOnEntry=false){
   const api=await loadTravelBookModule('import-itinerary-draft.mjs');
   const found=await api.hasImportDraft({userId,tripId});
   if(session?.user?.id===userId&&trip?.id===tripId&&tripLoadGeneration===generation){
-   if(request!==itineraryImportDraftUiRequest)return;
+   if(request!==refreshImportDraftButton._request)return;
    $('openItineraryImport').classList.toggle('hidden',found);
    $('itineraryImportDraftNotice').classList.toggle('hidden',!found);
    if(found&&resumeOnEntry&&visibleAppView()===entryView&&[tripDashboardId(),'itineraryView'].includes(entryView)&&!itineraryImportState&&!isLondonTrip()&&!offlineReadOnlySession&&!connectionUnavailable()){
