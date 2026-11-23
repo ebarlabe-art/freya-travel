@@ -1,5 +1,14 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## A2.19 · Reimportació de Barcelona: conservació automàtica també amb evidència pendent — PR, NO PUBLICADA
+
+Captures iPhone (23/11/2026): malgrat #252, quatre visites iguals mostren el flash «Conservar l'existent», i dos temps lliures ja desats apareixen com a «excloses pendents de decidir». Comprovació de només lectura a Supabase: les sis activitats consten al viatge «Barcelona prova». Per tant, no falta desar-les; la comparació obliga a decisions redundants.
+
+Causa concreta al codi: `exactManualDuplicate` (#252) rebutjava qualsevol proposta `included=false`, avisos `Evidència pendent:` i altres flags encara que tots els camps coincidissin literalment; les exclusions resultants obligaven a una elecció explícita. Canvi conservador: coincidència literal, única i completa de títol, data, hores, zona horària, lloc, ciutat, adreça i notes guanya prioritat sobre avisos de confiança. Si l'ítem ja és inclòs, `keep` automàtic; si era una exclusió per evidència pendent, `skip` automàtic (cap escriptura) que conserva l'activitat real. Alternativa opcional continua opt-in. Duplicats dins del PDF, canvis reals, coincidències múltiples i exclusions no coincidents mantenen revisió explícita. Regressió basada en les 6 activitats i els 2 temps lliures del viatge real; cap canvi d'esquema, dades, APIs o pantalla.
+
+**Estat:** branca i PR, no fusionada ni desplegada. CI i prova al mateix iPhone pendents.
+
+
 ## A2.18 · Conciliació silenciosa de duplicats literals — BRANCA, NO PUBLICADA
 
 Validació iPhone comunicada (23/11/2026): després de fusionar i desplegar #251, l'usuària ha pogut incorporar «Temps lliure pel centre», i les sis activitats consten a la interfície. Millora de producte: no tornar a preguntar «Conservar» per activitats **literalment idèntiques** al planning; mostrar exclusivament noves, modificades i dubtoses.

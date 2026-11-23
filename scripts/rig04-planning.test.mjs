@@ -2,6 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {matchingExistingImportItems,equivalentItineraryPlace,createItineraryReview,summarizeItineraryReview} from '../domain/import-itinerary-review.mjs';
 import {automaticEquivalentDecisions,combineImportItinerary,assessCombinedItinerary,proposeItinerarySolutions,acceptItinerarySolution,planningRouteKey,planningSignature,planningRouteInput} from '../domain/import-itinerary-planning.mjs';
 import {initialPlanningDecisions,refreshAutomaticDecisions} from '../domain/import-itinerary-planning-ui.mjs';
+import {planItineraryReconciliation} from '../domain/import-itinerary-reconciliation.mjs';
 import {createRouteHandler} from '../supabase/functions/itinerary-route/handler.mjs';
 const id=n=>'14000000-0000-4000-8000-'+String(n).padStart(12,'0'),now=Date.parse('2030-12-20T10:00Z');
 const convertLocalTime=s=>s+':00Z';
@@ -56,10 +57,55 @@ test('RIG04 Barcelona: five literal duplicates stay unchanged with medium-confid
   'Two identical existing activities require manual review');
  assert.deepEqual(automaticEquivalentDecisions({items:[duplicate,{...duplicate,source_order:1}]},[before]),[],
   'Repeated PDF rows require manual review');
- assert.deepEqual(automaticEquivalentDecisions({items:[{...duplicate,source_warnings:['Evidència pendent: cal revisar']}]},[before]),[],
-  'An evidence-pending proposal cannot be silently preserved');
+ assert.deepEqual(automaticEquivalentDecisions({items:[{...duplicate,source_warnings:['Evidència pendent: cal revisar']}]},[before]),
+  [{source_order:0,action:'keep',target_id:before.id,automatic:true}],
+  'An identical saved activity needs no extra decision even if PDF evidence is uncertain');
 });
 
+test('RIG04 Barcelona reimport: all six unchanged visits are silent despite extraction warnings',()=>{
+ const sources=[
+  ['Visita a la Sagrada Família','2027-04-10','10:00','11:15','Basílica de la Sagrada Família','Barcelona','Carrer de Mallorca, 401',''],
+  ['Visita a la Casa Batlló','2027-04-10','12:00','13:00','Casa Batlló','Barcelona','Passeig de Gràcia, 43',''],
+  ['Passeig lliure i descans','2027-04-10','15:30','16:15','','','',':'],
+  ['Visita al Palau de la Música Catalana','2027-04-11','09:30','10:30','Palau de la Música Catalana','Barcelona','Carrer del Palau de la Música, 4-6',''],
+  ['Visita a la Catedral de Barcelona','2027-04-11','11:30','12:30','Catedral de Barcelona','Barcelona','Pla de la Seu, s/n',''],
+  ['Temps lliure pel centre','2027-04-11','15:00','16:00','','','','']
+ ];
+ const when=(date,time)=>new Date(Date.parse(date+'T'+time+':00Z')-2*3600e3).toISOString();
+ const existing=sources.map(([title,date,start,end,location_name,city,address,notes],i)=>({
+  id:id(120+i),title,location_name:location_name||null,city:city||null,address:address||null,notes:notes||null,
+  localDate:date,starts_at:when(date,start),ends_at:when(date,end),
+  time_zone:'Europe/Madrid',timing_kind:'exact',status:'planned',updated_at:'2026-11-23T09:00:00Z',photo_count:0,link_count:0
+ }));
+ const items=sources.map(([title,local_date,start_local_time,end_local_time,location_name,city,address,notes],i)=>({
+  source_order:i,included:![2,5].includes(i),classification_hint:'manual',
+  review_flags:['uncertain_extraction',...(i===0?['possible_existing_duplicate']:[])],
+  source_warnings:[2,5].includes(i)?['Evidència pendent: comprova el document']:['Confiança mitjana: verifica el text'],
+  values:{title,local_date,start_local_time,end_local_time,time_zone:'Europe/Madrid',location_name,city,address,notes}
+ }));
+ const snapshot={read_only:true,items};
+ const original=structuredClone({snapshot,existing});
+ const decisions=automaticEquivalentDecisions(snapshot,existing);
+ assert.deepEqual(decisions.map(d=>[d.source_order,d.action]),[[0,'keep'],[1,'keep'],[2,'skip'],[3,'keep'],[4,'keep'],[5,'skip']]);
+ const reconciled=planItineraryReconciliation({snapshot,existing,decisions});
+ assert.equal(reconciled.summary.pending,0);
+ assert.equal(reconciled.summary.new,0);
+ assert.equal(reconciled.summary.updated,0);
+ assert.equal(reconciled.summary.preserved,6);
+ assert.equal(reconciled.can_commit,false);
+ assert.deepEqual({snapshot,existing},original);
+ const unknown={...items[5],source_order:6,values:{...items[5].values,title:'Una nova activitat de temps lliure'}};
+ const more={read_only:true,items:[...items,unknown]};
+ const partial=automaticEquivalentDecisions(more,existing);
+ assert.equal(partial.length,6);
+ const pending=planItineraryReconciliation({snapshot:more,existing,decisions:partial});
+ assert.equal(pending.summary.pending,1,'A new uncertain activity still requires a choice');
+ assert.equal(pending.conflicts[0].reason,'excluded_needs_decision');
+ const changed={read_only:true,items:items.map((entry,i)=>i===0?{...entry,values:{...entry.values,address:'Carrer de Mallorca, 402'}}:entry)};
+ assert.equal(automaticEquivalentDecisions(changed,existing).some(d=>d.source_order===0),false);
+ const duplicated={read_only:true,items:[...items,{...items[0],source_order:7}]};
+ assert.equal(automaticEquivalentDecisions(duplicated,existing).some(d=>d.source_order===0),false);
+});
 test('RIG04 combination preserves existing identity, protected reservation and source input',()=>{
  const snapshot={read_only:true,items:[item(0),item(1,'Passeig nou',{start_local_time:'12:00',end_local_time:'13:00'})]},r=state();r.decisions=initialPlanningDecisions(snapshot,r);
  const flight=event('flight:1','08:00','09:00',{sourceType:'flight',documents:[{secret:'not needed'}],bookingCode:'private'}),before=structuredClone({snapshot,r,flight});
