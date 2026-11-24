@@ -8499,7 +8499,7 @@ function handleHomeTripPopState(event){
   const view=visibleAppView(),nav=event.state?.builderNav,detail=event.state?.homeTripDetail;
   if(view==='tripCurrencyView'){
     if(!currentCurrencyHistory(event.state?.tripCurrency??null)){closeTripCurrency();return true}
-  }else if(view===tripDashboardId()&&currentCurrencyHistory(event.state?.tripCurrency??null)){
+  }else if(event.state?.tripCurrency&&view===tripDashboardId()&&currentCurrencyHistory(event.state.tripCurrency)){
     setAppView('tripCurrencyView');return true;
   }
   const operational=['dashboardView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView'].includes(view);
