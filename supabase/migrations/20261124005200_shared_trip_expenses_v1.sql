@@ -6,21 +6,27 @@ alter table public.travel_expenses
   add column payer_user_id uuid,
   add column split_shares jsonb;
 
--- The historical production table restricts GBP/EUR and Eva/Xesc/Compte comú.
--- Discover those specific named CHECK constraints rather than guessing names.
+-- Confirmed read-only against the canonical production schema on 2026-11-24:
+-- these are the two exact historical CHECK constraints. Drop nothing else.
+-- Abort rather than removing unrelated constraints if production has drifted.
 do $$
-declare c record; expr text;
 begin
-  for c in select conname, oid from pg_constraint
-    where conrelid = 'public.travel_expenses'::regclass and contype = 'c'
-  loop
-    expr := pg_get_constraintdef(c.oid);
-    if (expr ilike '%currency%' and expr ilike '%GBP%' and expr ilike '%EUR%')
-       or (expr ilike '%paid_by%' and expr ilike '%Compte comú%') then
-      execute format('alter table public.travel_expenses drop constraint %I', c.conname);
-    end if;
-  end loop;
+  if not exists (
+    select 1 from pg_constraint where conrelid='public.travel_expenses'::regclass
+    and conname='travel_expenses_currency_check' and contype='c'
+    and pg_get_constraintdef(oid) ilike '%GBP%' and pg_get_constraintdef(oid) ilike '%EUR%'
+  ) or not exists (
+    select 1 from pg_constraint where conrelid='public.travel_expenses'::regclass
+    and conname='travel_expenses_paid_by_check' and contype='c'
+    and pg_get_constraintdef(oid) ilike '%Compte comú%'
+  ) then
+    raise exception 'Unexpected legacy travel_expenses constraints; review before changing schema';
+  end if;
 end $$;
+
+alter table public.travel_expenses
+  drop constraint travel_expenses_currency_check,
+  drop constraint travel_expenses_paid_by_check;
 
 alter table public.travel_expenses
   add constraint travel_expenses_currency_iso_v1
