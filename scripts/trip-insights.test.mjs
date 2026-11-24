@@ -55,3 +55,20 @@ test('A4 universal: UI automatically invokes authorized research and keeps the e
  assert.match(html,/readInsightCache/);
  assert.doesNotMatch(html,/GUIDES\[code\]/);
 });
+
+test('A4.1 UX: a recognizable openable card, dedicated page and readable search status',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(html,/id="genericInsightsOpen"[^>]*data-open="insightsView"/);
+ assert.match(html,/id="insightsView" class="hidden"/);
+ assert.match(html,/id="insightsStatus"[^>]*role="status" aria-live="polite"/);
+ assert.match(html,/id="insightsRefresh"/);
+ assert.match(html,/setAppView\(b\.dataset\.open\)/);
+ assert.match(html,/if\(id==='insightsView'\)void renderTripInsights\(\)/);
+ assert.match(html,/insightsRefresh'\)\.onclick=\(\)=>void renderTripInsights\(\{force:true\}\)/);
+ assert.match(html,/La primera cerca pot durar aproximadament un minut/);
+ assert.match(html,/setInsightStatus\('success'/);
+ assert.match(html,/setInsightStatus\('error'/);
+ assert.match(html,/controller\.abort\(\),90000/);
+ assert.match(html,/insightRequests\.get\(requestKey\)/);
+ assert.doesNotMatch(html,/id="genericInsightsContent"/);
+});

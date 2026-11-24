@@ -65,7 +65,26 @@
     .generic-insights-item strong{display:block}
     .generic-insights-item p{margin:5px 0 7px;line-height:1.4}
     .generic-insights-item a{font-weight:700;color:#4f378b;overflow-wrap:anywhere}
-    .generic-insights-note{font-size:.88rem;color:var(--muted);margin:10px 0}
+    .generic-insights-note{font-size:.88rem;color:var(--muted);margin:12px 0;line-height:1.5}
+    .generic-insights-entry{width:100%;display:grid;grid-template-columns:52px minmax(0,1fr) 22px;align-items:center;gap:14px;text-align:left;padding:18px;border-radius:22px;border:1px solid #c9b4de;background:linear-gradient(115deg,#f4ebff,#fff 75%);color:#302339;box-shadow:0 12px 28px rgba(79,55,139,.12);min-height:102px}
+    .generic-insights-entry:hover,.generic-insights-entry:focus-visible{border-color:#7654ae;box-shadow:0 15px 30px rgba(79,55,139,.17)}
+    .generic-insights-emblem{width:52px;height:52px;display:grid;place-items:center;border-radius:17px;background:#e3d5f2;font-size:1.65rem}
+    .generic-insights-copy{min-width:0}.generic-insights-copy strong{display:block;font-size:1.15rem}.generic-insights-copy small{display:block;color:#665771;font-size:.88rem;font-weight:500;line-height:1.4;margin-top:5px}
+    .generic-insights-arrow{color:#72539f;font-size:1.7rem}
+    .insights-hero{background:linear-gradient(135deg,#52348c,#8562b5);color:#fff;border-radius:24px;padding:23px;margin:14px 0;box-shadow:0 14px 32px rgba(79,55,139,.15)}
+    .insights-hero h1{margin:9px 0;font-size:1.6rem}.insights-hero p{margin:0;line-height:1.5;color:#f8f0ff}
+    .insights-hero-kicker{font-size:.72rem;letter-spacing:.12em;font-weight:800;color:#e8ddf6}
+    .insights-status{margin:14px 0;background:#f2eaf8;color:#493765;border:1px solid #d8c8e9;padding:15px;border-radius:16px;line-height:1.5}
+    .insights-status.is-loading{display:flex;align-items:center;gap:11px}
+    .insights-status.is-loading::before{content:'';width:17px;height:17px;flex:none;border:3px solid #b8a6ce;border-top-color:#684b9d;border-radius:50%;animation:insights-spin .9s linear infinite}
+    .insights-status.is-error{background:#fff0ec;color:#803622;border-color:#e9c0b5}
+    .insights-status.is-success{background:#edf8f0;color:#285d3c;border-color:#cee5d3}
+    .insights-actions{margin:18px 0}.insights-actions button:disabled{opacity:.5}
+    .insights-loading-topics{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+    .insights-loading-topics span{border-radius:999px;background:#eee6f6;color:#56426e;padding:9px 12px;font-size:.83rem;font-weight:600}
+    .generic-insights-item p{line-height:1.55}.generic-insights-group h3{font-size:1.14rem}
+    @keyframes insights-spin{to{transform:rotate(360deg)}}
+    @media(prefers-reduced-motion:reduce){.insights-status.is-loading::before{animation:none}}
     .generic-invite-card #genericInviteCode{max-width:100%;overflow-wrap:anywhere;white-space:normal;letter-spacing:.08em}.tb-cost-panel{grid-column:1/-1;background:#faf7fc;border:1px solid #dfd4ea;border-radius:18px;padding:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tb-cost-panel.hidden{display:none}.tb-cost-panel h4,.tb-cost-panel p{grid-column:1/-1;margin:0}.tb-cost-panel p{color:var(--muted);font-size:.86rem;line-height:1.4}.tb-cost-panel .wide{grid-column:1/-1}.budget-hero{background:linear-gradient(135deg,#4f378b,#8d6bc2);color:#fff;border-radius:26px;padding:24px;margin:12px 0 16px}.budget-hero h2{margin:5px 0}.budget-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.budget-summary-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px}.budget-summary-card strong{display:block;font-size:1.2rem;margin-top:5px}.budget-currency-list{display:grid;gap:10px}.budget-currency-row{display:flex;justify-content:space-between;gap:12px;background:#f8f4fb;border-radius:14px;padding:12px}.budget-provisional{color:#8a5a00;font-weight:700}
     .trip-build-entry{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 16px;padding:17px 18px;border-radius:21px;border:1px solid #cbb9df;background:linear-gradient(135deg,#f8f3fc,#eee5f7);color:#352a40;text-align:left;box-shadow:0 10px 26px rgba(79,55,139,.08)}
     .trip-build-entry strong{display:block;font-size:1.05rem}.trip-build-entry small{display:block;color:#675c70;margin-top:4px;line-height:1.35}.trip-build-entry span:last-child{font-size:1.35rem;color:#6750a4}.generic-trip-section{margin:20px 0 0}.generic-trip-section-head{margin:0 2px 12px}.generic-trip-section-head h2{margin:0 0 5px;font-size:1.25rem}.generic-trip-section-head p{margin:0;color:var(--muted);line-height:1.45}.generic-trip-tools{margin-top:26px}.generic-past-records{margin-top:18px;padding:20px;border:1px solid #d8c9e8;border-radius:26px;background:linear-gradient(145deg,#fbf8ff,#f1e9f8);box-shadow:0 16px 42px rgba(79,55,139,.09)}.generic-past-records .generic-trip-section-head h2{font-size:1.55rem}.generic-module-card-future{opacity:.72;cursor:default}.generic-module-card-future .generic-module-icon{background:#f3eef9}
@@ -831,9 +850,12 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         <div id="tripHomeContent"></div>
         <p id="tripHomeMessage" class="message hidden" role="status"></p>
       </section>
-      <section id="genericTripInsights" class="generic-trip-section generic-insights hidden" aria-label="Freya Insights" aria-labelledby="genericInsightsHeading">
-        <div class="generic-trip-section-head"><h2 id="genericInsightsHeading">✨ Freya Insights</h2><p id="genericInsightsSummary">Preparant informació pràctica per a les destinacions del viatge.</p></div>
-        <div id="genericInsightsContent" aria-live="polite"></div>
+      <section id="genericTripInsights" class="generic-trip-section generic-insights hidden" aria-label="Freya Insights">
+        <button id="genericInsightsOpen" class="generic-insights-entry" type="button" data-open="insightsView" aria-describedby="genericInsightsSummary">
+          <span class="generic-insights-emblem" aria-hidden="true">✨</span>
+          <span class="generic-insights-copy"><strong>Freya Insights</strong><small id="genericInsightsSummary">Preparant consells per al viatge…</small></span>
+          <span class="generic-insights-arrow" aria-hidden="true">›</span>
+        </button>
       </section>
       <section id="genericConfirmedSection" class="generic-trip-section" aria-label="Peces del viatge">
         <div class="generic-trip-section-head"><h2 id="genericConfirmedTitle">Peces del viatge</h2><p id="genericConfirmedCopy">Afegeix el que ja tens reservat i completa el que et falta. Totes les peces són sempre aquí.</p></div>
@@ -895,6 +917,19 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         <p id="genericAppMsg" class="message hidden"></p>
         <p class="muted">Retirar un participant revoca l'accés i invalida el codi antic. Les despeses històriques es conserven.</p>
       </div>
+    </div>
+
+    <div id="insightsView" class="hidden">
+      <button type="button" class="ghost back" data-back>← Torna al viatge</button>
+      <header class="insights-hero">
+        <span class="insights-hero-kicker">LA TEVA GUIA PRÀCTICA</span>
+        <h1>✨ Freya Insights</h1>
+        <p>Informació per preparar el viatge: entrada, diners, transport, tecnologia, clima i cultura, amb fonts consultables.</p>
+      </header>
+      <div id="insightsStatus" class="insights-status" role="status" aria-live="polite">Preparant les recomanacions…</div>
+      <div id="insightsContent" aria-live="polite"></div>
+      <div class="insights-actions"><button id="insightsRefresh" type="button" class="secondary">↻ Actualitza la recerca</button></div>
+      <p class="generic-insights-note">Els consells són orientatius: comprova sempre els requisits legals amb la font oficial. Freya no modifica les teves reserves ni despeses.</p>
     </div>
 
     <div id="buildView" class="hidden">
@@ -5355,9 +5390,9 @@ function loadSharedExpenseScreen(){
     root.textContent='No hem pogut obrir les despeses compartides: '+(error?.message||'Error inesperat.');
   });
 }
-const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','travelBookView','documentsView','expensesView','sharedExpensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','travelBookView','itineraryView','parkingView','weatherView','sharedExpensesView']);
-const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','sharedExpensesView'].includes(id)));
+const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','insightsView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','travelBookView','documentsView','expensesView','sharedExpensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','insightsView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','travelBookView','itineraryView','parkingView','weatherView','sharedExpensesView']);
+const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','insightsView','genericModuleView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','sharedExpensesView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
   if(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(view))return true;
   if(!value)return false;
@@ -5399,7 +5434,7 @@ function setAppView(id){
   persistNavigationState(id);
   updateTripHomeClock();updateHomeClock();
   if(id==='documentsView')updateDocumentsBack();if(id==='budgetView')loadBudgetView();if(id==='tripReviewView')loadTripReview();
-  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView'){setActivityViewMode('activity');loadActivityViewData()}if(id==='localTransportView')loadLocalTransportViewData();if(id==='carRentalView')loadCarRentals();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='travelBookView')loadTravelBookView();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='sharedExpensesView')loadSharedExpenseScreen();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
+  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView'){setActivityViewMode('activity');loadActivityViewData()}if(id==='localTransportView')loadLocalTransportViewData();if(id==='carRentalView')loadCarRentals();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='travelBookView')loadTravelBookView();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='sharedExpensesView')loadSharedExpenseScreen();if(id==='insightsView')void renderTripInsights();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
 }
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
 function stopLondonFlightTimer(){
@@ -8207,76 +8242,107 @@ function updateTripPresentation(){
   }
 }
 
- // A4.1: curated official entry points based on existing country codes.
- // No requests to third parties, no nationality inference or trip writes.
+ // A4.1 UX: automatic search with an obvious entry card and a dedicated reader.
+ // The original backend, user-scoped cache, and immutable trip data are unchanged.
  const insightRequests=new Map();
- async function renderTripInsights(){
-   const panel=$('genericTripInsights'),container=$('genericInsightsContent');
-   if(!panel||!container)return;
-   if(!trip||isLondonTrip()){panel.classList.add('hidden');container.replaceChildren();return}
+ function setInsightStatus(kind,summary,description){
+   const small=$('genericInsightsSummary'),status=$('insightsStatus');
+   if(small)small.textContent=summary;
+   if(status){status.className='insights-status is-'+kind;status.textContent=description}
+ }
+ function setInsightLoadingPreview(){
+   const content=$('insightsContent');
+   if(!content)return;
+   const wrapper=document.createElement('div');wrapper.className='insights-loading-topics';
+   for(const label of ['🛂 Entrada i documents','💶 Diners','🚇 Transport','📱 Tecnologia','🌦️ Clima','🌍 Cultura']){
+     const chip=document.createElement('span');chip.textContent=label;wrapper.append(chip);
+   }
+   content.replaceChildren(wrapper);
+ }
+ async function renderTripInsights({force=false}={}){
+   const panel=$('genericTripInsights'),container=$('insightsContent'),refresh=$('insightsRefresh');
+   if(!panel||!container||!refresh)return;
+   if(!trip||isLondonTrip()){
+     panel.classList.add('hidden');container.replaceChildren();return;
+   }
    const tripId=trip.id,generation=tripLoadGeneration,userId=session?.user?.id;
    const current=()=>tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId;
    panel.classList.remove('hidden');
-   container.textContent='Preparant la informació de les teves destinacions…';
    try{
      const api=await loadTravelBookModule('trip-insights.mjs');
      if(!current())return;
-     if(api.insightPhase(trip)==='past'){panel.classList.add('hidden');container.replaceChildren();return}
+     if(api.insightPhase(trip)==='past'){
+       panel.classList.add('hidden');container.replaceChildren();return;
+     }
      const scope=api.insightScope({trip,stops:tripStopRows});
      if(!scope)return;
-     $('genericInsightsSummary').textContent=api.insightPhase(trip)==='during'?'Informació pràctica actualitzable durant el viatge.':'Freya investiga els preparatius quan obres un viatge.';
      if(!scope.destinations.length){
-       container.textContent='Afegeix una destinació al viatge perquè Freya pugui investigar tràmits, pagaments, transport i altres preparatius.';
-       return;
+       refresh.disabled=true;
+       setInsightStatus('error','Falta una destinació','Afegeix una destinació al viatge perquè Freya pugui investigar els preparatius.');
+       container.replaceChildren();return;
      }
      const cacheKey=api.insightCacheKey(userId,tripId);
-     let report=api.readInsightCache(localStorage,cacheKey,scope);
+     const requestKey=cacheKey+':'+api.insightCacheSignature(scope);
+     let report=force?null:api.readInsightCache(localStorage,cacheKey,scope);
      if(!report){
        if(connectionUnavailable()){
-         container.textContent='Connecta’t a Internet perquè Freya pugui cercar informació actual per a aquest viatge.';
-         return;
+         refresh.disabled=false;
+         setInsightStatus('error','Cal connexió a Internet','Connecta’t per cercar informació actual. Si ja havies consultat aquest viatge, els consells recuperats tornaran a aparèixer quan hi hagi connexió.');
+         container.replaceChildren();return;
        }
-       const requestKey=cacheKey+':'+api.insightCacheSignature(scope);
+       refresh.disabled=true;
+       setInsightStatus('loading','⏳ Investigant el viatge…','Freya busca fonts sobre '+scope.destinations.map(x=>x.name).join(', ')+'. La primera cerca pot durar aproximadament un minut. Pots entrar en aquesta pantalla i continuar fent servir la resta de Freya.');
+       setInsightLoadingPreview();
        let pending=insightRequests.get(requestKey);
        if(!pending){
-         pending=db.functions.invoke('trip-insights',{body:{trip_id:tripId}}).then(({data,error})=>{
+         const controller=new AbortController();
+         const timeout=setTimeout(()=>controller.abort(),90000);
+         pending=db.functions.invoke('trip-insights',{body:{trip_id:tripId},signal:controller.signal}).then(({data,error})=>{
+           if(controller.signal.aborted)throw Error('timeout');
            if(error||data?.error)throw Error(data?.error||'research_unavailable');
            const verified=api.validateInsightReport(data);
            api.saveInsightCache(localStorage,cacheKey,scope,verified);
            return verified;
-         }).finally(()=>insightRequests.delete(requestKey));
+         }).finally(()=>{clearTimeout(timeout);insightRequests.delete(requestKey)});
          insightRequests.set(requestKey,pending);
        }
-       container.textContent='Freya està buscant fonts actuals per a '+scope.destinations.map(x=>x.name).join(', ')+'.';
        report=await pending;
        if(!current())return;
      }
      const fragment=document.createDocumentFragment(),grid=document.createElement('div');
      grid.className='generic-insights-grid';
-     const labels=api.INSIGHT_TOPICS;
      const groups=new Map();
      for(const item of report.items){
        let group=groups.get(item.destination);
        if(!group){
          group=document.createElement('section');group.className='generic-insights-group';
-         const heading=document.createElement('h3');heading.textContent=item.destination;group.append(heading);
+         const heading=document.createElement('h3');heading.textContent='📍 '+item.destination;group.append(heading);
          groups.set(item.destination,group);grid.append(group);
        }
        const card=document.createElement('div');card.className='generic-insights-item';
-       const title=document.createElement('strong');title.textContent=labels[item.topic]+' · '+item.title;
+       const title=document.createElement('strong');title.textContent=api.INSIGHT_TOPICS[item.topic]+' · '+item.title;
        const detail=document.createElement('p');detail.textContent=item.detail;
        const link=document.createElement('a');link.href=item.source_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Consulta la font · '+item.source_title;
        card.append(title,detail,link);group.append(card);
      }
      fragment.append(grid);
      const note=document.createElement('p');note.className='generic-insights-note';
-     note.textContent='Darrera cerca: '+report.checked_at+'. Informació orientativa basada en fonts web, no en la nacionalitat de cada viatger. Contrasta els requisits legals i les tarifes amb els organismes oficials abans de sortir. Freya actualitza la cerca periòdicament en obrir el viatge.';
+     note.textContent='Darrera consulta: '+report.checked_at+'. Revisa sempre els requisits legals i les tarifes amb l’organisme oficial abans de viatjar.';
      fragment.append(note);
      container.replaceChildren(fragment);
+     setInsightStatus('success','✓ '+report.items.length+' consells disponibles · Obre Freya Insights','Hem trobat '+report.items.length+' consells per preparar aquest viatge. Fonts i data de la cerca disponibles a cada apartat.');
+     refresh.disabled=false;
    }catch(error){
      if(!current())return;
+     refresh.disabled=false;
      const reason=error?.message;
-     container.textContent=reason==='rate_limited'?'Ja s’ha arribat al límit de consultes d’avui. Torna-ho a provar més endavant.':reason==='source_unavailable'||reason==='invalid_response'?'No hem trobat prou fonts verificables. No mostrarem recomanacions sense referència.':'Ara no podem completar la recerca. Revisa la connexió i torna a obrir el viatge.';
+     const message=reason==='rate_limited'?'S’ha arribat al límit de consultes d’avui. Podràs tornar a consultar-ho més endavant.':
+       reason==='source_unavailable'||reason==='invalid_response'?'No s’han pogut verificar prou fonts. No mostrarem dades no contrastades.':
+       reason==='timeout'||reason?.includes('Abort')?'La consulta ha trigat massa. Pots repetir-la amb el botó «Actualitza la recerca».':
+       reason==='not_configured'?'La recerca d’IA no està configurada. Cal revisar el servei.':
+       'No s’ha pogut completar la recerca ara. Comprova la connexió i torna a provar-la.';
+     setInsightStatus('error','No s’ha completat la recerca · Obre Freya Insights',message);
+     container.replaceChildren();
    }
  }
 
@@ -8528,7 +8594,8 @@ document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
   updateItinerarySourceBack();setAppView(b.dataset.open)
 });
 $('travelBookBack').onclick=()=>setAppView(travelBookReturnView||tripDashboardId());
-$('tripReviewBack').onclick=()=>setAppView('buildView');$('backToTrips').onclick=returnFromHomeTrip;document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=returnFromHomeTrip);document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-generic-module]').forEach(b=>b.onclick=()=>openGenericModule(b.dataset.genericModule));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(visibleAppView()==='itineraryView'&&validOperationalReturnRoute('itineraryView')?.parentView==='activitiesView'){if(history.state?.activityPlanning?.view==='itineraryView'){history.back();return}clearOperationalReturnRoute('itineraryView');setAppView('activitiesView');return}setAppView(tripDashboardId())});document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
+$('insightsRefresh').onclick=()=>void renderTripInsights({force:true});
+ $('tripReviewBack').onclick=()=>setAppView('buildView');$('backToTrips').onclick=returnFromHomeTrip;document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=returnFromHomeTrip);document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-generic-module]').forEach(b=>b.onclick=()=>openGenericModule(b.dataset.genericModule));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(visibleAppView()==='itineraryView'&&validOperationalReturnRoute('itineraryView')?.parentView==='activitiesView'){if(history.state?.activityPlanning?.view==='itineraryView'){history.back();return}clearOperationalReturnRoute('itineraryView');setAppView('activitiesView');return}setAppView(tripDashboardId())});document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
 document.querySelectorAll('[data-source-back]').forEach(button=>button.onclick=handleItinerarySourceBack);
 $('refreshGenericItinerary').onclick=()=>loadGenericItinerary(true);
 $('addManualItineraryItem').onclick=()=>openManualItineraryForm();

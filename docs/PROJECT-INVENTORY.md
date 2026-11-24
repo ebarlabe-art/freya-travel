@@ -1,5 +1,14 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## A4.1 · Correcció de visibilitat i lectura a iPhone · EN BRANCA (24/11/2026)
+
+**Evidència real:** captura de Riga/Tallinn on Freya Insights mostrava únicament «Freya està buscant fonts actuals» com a text pla, sense entrada clicable ni pantalla de resultats. Els registres de la funció `trip-insights` mostren una sol·licitud autenticada amb resposta HTTP 200, cos JSON i durada d'uns 54 segons; això **no acredita que el text fos visible al mòbil**. La recerca d'IA és llarga però el problema visual és propi del frontend.
+
+**Correcció mínima:** PR de la branca `fix/a4-insights-ux-loading-20261124`: targeta destacada «✨ Freya Insights» que obre la vista `insightsView`; estats ben diferenciats de càrrega (amb temes i avís de durada), èxit amb nombre de consells, error amb motiu i reintent, i botó manual per actualitzar. El resultat queda agrupat per destinació, amb fonts i data. El procés manté la recerca automàtica, la memòria cau de 72 h, el control de generació/usuari, els límits de consultes i la funció `trip-insights` actual. Temps màxim de càrrega de client 90 s; no es canvia el servidor, les dades ni Supabase. PWA v78 **només en branca**, pendent CI i publicació autoritzada.
+
+**Següent acció:** superar CI, demanar autorització per publicar la correcció i comprovar-la en el mateix viatge Riga/Tallinn, esperant el resultat de la cerca i obrint la targeta. No tornar a investigar permisos ni altres mòduls si funciona.
+
+
 ## A4.1 · Freya Insights amb recerca IA per qualsevol destinació · PR #259, NO PUBLICAT (24/11/2026)
 
 A petició de l'usuària, eliminat el catàleg tancat GB/JP/LK. Branca `feat/a4-freya-insights-contextual-20261124`, sempre dins de `ebarlabe-art/freya-travel`. El nou mòdul `domain/trip-insights.mjs` calcula l'abast utilitzant únicament `trip_stops` i les dates del viatge, amb deduplicació de destinacions i memòria cau temporal local per compte, viatge i abast (72 h). La vista del viatge activa automàticament `renderTripInsights()` en preparar-lo, i mostra avisos útils per cada destinació, la font i la data de la cerca. No es pressuposa nacionalitat, ETA o visat concret; no s'inventen tarifes.

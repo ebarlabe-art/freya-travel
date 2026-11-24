@@ -201,7 +201,7 @@ Completar la capa de producte sobre la infraestructura existent:
 ---
 
 ### A4. Preparació intel·ligent · Freya Insights
-**Prioritat: P1 · EN CURS · A4.1 preparat en branca, NO publicat**
+**Prioritat: P1 · A4.1 publicat (PR #259, v77); UX correctiva en branca, NO publicada**
 
 Capa d'ajuda contextual abans i durant el viatge, **no** un calaix genèric de «Recomanacions» ni la IA predictiva futura. S'activa segons país/destinació, dates, etapa del viatge i activitat, amb font i data de verificació; no presenta informació legal o tarifària obsoleta com a actual.
 
@@ -215,9 +215,9 @@ Capa d'ajuda contextual abans i durant el viatge, **no** un calaix genèric de �
 
 **Exemples de referència:** Japó (Visit Japan Web/QR, Suica); Londres (ETA, contactless i topall de transport). Són casos a verificar per dates, no dades permanents.
 
-**A4.1 (en PR #259, desenvolupament, NO publicat):** la IA cerca informació actual per **qualsevol destinació**, sense catàleg fix de països. S'activa automàticament en preparar o obrir el viatge, llegeix només les destinacions i dates ja registrades amb permisos de membre, cerca fonts web, i proposa avisos contextuals sobre entrada/documentació, pagaments, transports, connectivitat, equipatge i hàbits. Cada avís ha de contenir una font recuperada realment a la cerca, un enllaç HTTPS i la data de l'última consulta; si no hi ha evidència suficient, no inventa informació. Resultats temporals amb memòria cau per usuari/viatge (72 h) per limitar costos. El backend nou `trip-insights` és una Edge Function dins del Supabase original, amb les claus i l'arquitectura d'IA ja existents, sense modificar cap taula. Pendent CI i desplegament previ de la funció amb autorització. A4.2 aprofundirà en recomanacions per activitat; després A5 divises.
+**A4.1 (publicat amb PR #259, v77):** la IA cerca informació actual per **qualsevol destinació**, sense catàleg fix de països. S'activa automàticament en preparar o obrir el viatge, llegeix només les destinacions i dates ja registrades amb permisos de membre, cerca fonts web, i proposa avisos contextuals sobre entrada/documentació, pagaments, transports, connectivitat, equipatge i hàbits. Cada avís ha de contenir una font recuperada realment a la cerca, un enllaç HTTPS i la data de l'última consulta; si no hi ha evidència suficient, no inventa informació. Resultats temporals amb memòria cau per usuari/viatge (72 h) per limitar costos. El backend nou `trip-insights` és una Edge Function dins del Supabase original, amb les claus i l'arquitectura d'IA ja existents, sense modificar cap taula. Pendent CI i desplegament previ de la funció amb autorització. A4.2 aprofundirà en recomanacions per activitat; després A5 divises.
 
-**CLOSED quan:** un viatger rep avisos pràctics i rellevants amb informació verificable, data de vigència i una manera clara de consultar la font oficial, sense haver de buscar-los en una pantalla buida.
+**Correcció en branca (v78, pendent):** una targeta destacada obre una pantalla pròpia de Freya Insights, mostra el progrés d'una cerca real que pot superar els 50 s, avisa d'errors, ofereix reintent i presenta resultats amb fonts i data. No es modifica la recerca automàtica ni el backend; el 24/11 una captura real a Riga/Tallinn va acreditar que l'experiència v77 era insuficient.\n\n**CLOSED quan:** un viatger rep avisos pràctics i rellevants amb informació verificable, data de vigència i una manera clara de consultar la font oficial, sense haver de buscar-los en una pantalla buida.
 
 ### A5. Moneda i canvi de divisa
 **Prioritat: P1 · RECUPERAT DEL ROADMAP D'AGOST, PENDENT**
