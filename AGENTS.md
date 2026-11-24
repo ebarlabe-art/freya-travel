@@ -39,6 +39,7 @@ Tota implementació ha de respectar aquests principis:
 - Les funcionalitats s’han de pensar primer per a ús real durant un viatge, no només per funcionar en una demo.
 - Cal prioritzar iPhone/PWA i experiència mòbil sense impedir una bona experiència en iPad i escriptori.
 - No s’ha de duplicar funcionalitat ni crear sistemes paral·lels quan ja existeix un contracte reutilitzable.
+- Tots els noms de funcionalitats i textos visibles de l’aplicació han de respectar l’idioma seleccionat. Les marques i els títols originals de fonts externes es mantenen en la seva forma original.
 
 ## 3. Regla principal abans de modificar codi
 

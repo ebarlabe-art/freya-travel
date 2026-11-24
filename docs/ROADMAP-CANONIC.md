@@ -200,8 +200,8 @@ Completar la capa de producte sobre la infraestructura existent:
 
 ---
 
-### A4. Preparació intel·ligent · Freya Insights
-**Prioritat: P1 · A4.1 publicat (PR #259, v77); UX correctiva en branca, NO publicada**
+### A4. Preparació intel·ligent · Consells de Freya
+**Prioritat: P1 · A4.1 validada a l’iPhone (v78, PR #260) · A4.2 en esborrany (v79)**
 
 Capa d'ajuda contextual abans i durant el viatge, **no** un calaix genèric de «Recomanacions» ni la IA predictiva futura. S'activa segons país/destinació, dates, etapa del viatge i activitat, amb font i data de verificació; no presenta informació legal o tarifària obsoleta com a actual.
 
@@ -215,9 +215,13 @@ Capa d'ajuda contextual abans i durant el viatge, **no** un calaix genèric de �
 
 **Exemples de referència:** Japó (Visit Japan Web/QR, Suica); Londres (ETA, contactless i topall de transport). Són casos a verificar per dates, no dades permanents.
 
-**A4.1 (publicat amb PR #259, v77):** la IA cerca informació actual per **qualsevol destinació**, sense catàleg fix de països. S'activa automàticament en preparar o obrir el viatge, llegeix només les destinacions i dates ja registrades amb permisos de membre, cerca fonts web, i proposa avisos contextuals sobre entrada/documentació, pagaments, transports, connectivitat, equipatge i hàbits. Cada avís ha de contenir una font recuperada realment a la cerca, un enllaç HTTPS i la data de l'última consulta; si no hi ha evidència suficient, no inventa informació. Resultats temporals amb memòria cau per usuari/viatge (72 h) per limitar costos. El backend nou `trip-insights` és una Edge Function dins del Supabase original, amb les claus i l'arquitectura d'IA ja existents, sense modificar cap taula. Pendent CI i desplegament previ de la funció amb autorització. A4.2 aprofundirà en recomanacions per activitat; després A5 divises.
+**A4.1 (publicat amb PR #259, v77):** la IA cerca informació actual per **qualsevol destinació**, sense catàleg fix de països. S'activa automàticament en preparar o obrir el viatge, llegeix només les destinacions i dates ja registrades amb permisos de membre, cerca fonts web, i proposa avisos contextuals sobre entrada/documentació, pagaments, transports, connectivitat, equipatge i hàbits. Cada avís ha de contenir una font recuperada realment a la cerca, un enllaç HTTPS i la data de l'última consulta; si no hi ha evidència suficient, no inventa informació. Resultats temporals amb memòria cau per usuari/viatge (72 h) per limitar costos. El backend nou `trip-insights` és una Edge Function dins del Supabase original, amb les claus i l'arquitectura d'IA ja existents, sense modificar cap taula.
 
-**Correcció en branca (v78, pendent):** una targeta destacada obre una pantalla pròpia de Freya Insights, mostra el progrés d'una cerca real que pot superar els 50 s, avisa d'errors, ofereix reintent i presenta resultats amb fonts i data. No es modifica la recerca automàtica ni el backend; el 24/11 una captura real a Riga/Tallinn va acreditar que l'experiència v77 era insuficient.\n\n**CLOSED quan:** un viatger rep avisos pràctics i rellevants amb informació verificable, data de vigència i una manera clara de consultar la font oficial, sense haver de buscar-los en una pantalla buida.
+**A4.1 (v78, PR #260):** una targeta destacada obre una pantalla pròpia amb el progrés de la cerca, estats d’error i reintent, resultats, fonts i data. Validació física a l’iPhone confirmada per l’usuària.
+
+**A4.2 (v79):** localització del nom i dels textos de la interfície dels Consells de Freya. Publicació pendent d’autorització. Les recomanacions per activitat continuen pendents.
+
+**CLOSED quan:** un viatger rep avisos pràctics i rellevants amb informació verificable, data de vigència i una manera clara de consultar la font oficial, sense haver de buscar-los en una pantalla buida.
 
 ### A5. Moneda i canvi de divisa
 **Prioritat: P1 · RECUPERAT DEL ROADMAP D'AGOST, PENDENT**
@@ -517,4 +521,4 @@ No es crea un roadmap paral·lel.
 
 > **A3 · Participants.** El 24/11/2026, la prova física d'un PDF idèntic al de Barcelona ha comparat 6 activitats amb 6 existents, sense canvis pendents ni escriptures. Això valida la reimportació sense duplicats en aquest cas, però no acredita per si sol totes les variants d'A2.
 
-**A3 tancat i publicat** (PR #258; prova real de dos participants). **Pròxima entrega A4.1 Freya Insights**, fitxes oficials contextuals per país, en branca separada sense publicació. A4.2 continuarà la cobertura i després A5 moneda/divises, mantenint un sol roadmap i una sola aplicació.
+**A3 tancat i publicat** (PR #258; prova real de dos participants). **A4.1 validada a l’iPhone.** La propera entrega és A4.2 (v79), amb el nom i la interfície dels Consells de Freya localitzats i la publicació pendent d’autorització. A5 moneda/divises continua pendent.
