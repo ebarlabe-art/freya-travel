@@ -1,5 +1,23 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## A3.1 · Participants visibles i nom propi · EN BRANCA, NO PUBLICAT (24/11/2026)
+
+Branca `feat/a3-participants-roster-20261124`, després de la PR #257 fusionada i desplegada. Es reutilitzen `trip_members` (pertinença al viatge i data) i `trip_expense_member_labels` (nom autogestionat, compartit amb Despeses). El mòdul `domain/trip-participants.mjs` llegeix els membres amb el RLS existent, diferencia propietari i participant, evita mostrar correus personals i permet que cada persona editi **només el seu nom** (1–60 caràcters), validat també per la BD. El panell existent «Viatgers» mostra una llista actualitzable amb recompte; conserva invitació amb codi, copiar i compartir. Sense migració ni escriptures de dades de producció. Londres continua separat.
+
+**Porta pendent A3.2:** la propietària encara no pot retirar accessos amb garantia, perquè `join_trip_v2` accepta codis ja compartits: expulsar una persona sense invalidar-ne el codi no seria revocació. S'ha de definir revocació efectiva i el tractament de les despeses/liquidacions històriques abans de programar-la; no s'ha inventat rol nou ni donat fals control de seguretat.
+
+**Estat:** codi i documentació només a la branca, PR en preparació. Pendent CI, comprovació física a iPhone amb dos participants i autorització expressa abans de fusionar/desplegar. Prova de dades reals no executada.
+
+## Roadmap recuperat d'agost · Freya Insights i moneda/divises (24/11/2026)
+
+La revisió de `docs/ROADMAP-CANONIC.md` incorpora **A4 Freya Insights** (ETA/visat, moneda/pagaments, transport local, endolls/eSIM, clima/equipatge, cultura, consells per activitat) amb informació contextual, font i data de vigència. Incorpora **A5 Moneda i canvi de divisa** (moneda local, tipus verificable i marca temporal, conversor dins del viatge, sense alterar imports del pressupost o repartiments). Aquests dos blocs no figuraven explícitament al roadmap canònic v1.3, i ara es restitueixen a v1.4. El pressupost TB-06 i les Despeses compartides existeixen, però **no equivalen** a un conversor de canvi live. A4/A5 segueixen pendents d'implementació i no han d'endarrerir els gates P0 DURANT.
+
+## Importació PDF A2 · Comprovació real 24/11/2026
+
+La persona usuària ha presentat captura d'iPhone amb el missatge: «Ja ho tens tot al viatge», «Hem comparat 6 activitats del document. 6 ja són a l'agenda i no hi ha cap canvi pendent. No cal tornar a desar-les.» És una validació física de la **reimportació idèntica sense duplicacions ni confirmacions repetides** amb el PDF Barcelona. La captura no mostra encara el recompte posterior a «Torna a l'agenda», ni prova variants de PDFs nous. No reobrir A2 indiscriminadament.
+
+---
+
 ## EXP-01 · Despeses compartides i liquidacions entre membres — EN BRANCA, NO PUBLICAT
 
 Petició (24/11/2026): incorporar una experiència tipus Settle Up a **l'única** aplicació, reutilitzant els participants de \`trip_members\`, el registre de despesa real \`travel_expenses\` i la navegació dels viatges genèrics. Londres manté la pantalla de despeses llegat amb els seus tiquets i CSV.
