@@ -80,6 +80,21 @@ export function summarizeSharedExpenses(expenses, settlements, memberIds) {
   });
 }
 
+export function needsSharedExpenseReview(expense, participants) {
+  if (!expense?.payer_user_id || !Array.isArray(expense.split_shares) || !expense.created_at) return false;
+  const recordedAt = Date.parse(expense.created_at);
+  if (!Number.isFinite(recordedAt)) return false;
+  const originalMembers = new Set(expense.split_shares.map(part => part.user_id));
+  return participants.some(member => !originalMembers.has(member.user_id) &&
+    Number.isFinite(Date.parse(member.created_at)) && Date.parse(member.created_at) > recordedAt);
+}
+
+export function sameSharedAllocation(a, b) {
+  return Array.isArray(a) && Array.isArray(b) && a.length === b.length &&
+    a.every(part => b.some(other => part.user_id === other.user_id &&
+      Number(part.amount_cents) === Number(other.amount_cents)));
+}
+
 export function formatSharedMoney(cents, currency) {
   return new Intl.NumberFormat('ca-ES', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
 }
@@ -92,6 +107,7 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
   let members = [];
   let labels = [];
   let mode = 'equal';
+  let editingExpenseId = null;
   let currency = 'EUR';
   let request = 0;
   const active = () => alive && current();
