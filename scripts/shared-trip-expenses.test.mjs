@@ -69,7 +69,7 @@ test('generic navigation, build packaging, offline cache and RLS contract are wi
 });
 
 test('new member joining after an expense gets a review notice, never a retroactive auto-split',()=>{
-  const expense={payer_user_id:eva,created_at:'2026-11-24T09:29:33Z',split_shares:[{user_id:eva,amount_cents:15000}]};
+  const expense={payer_user_id:eva,amount:'150.00',currency:'EUR',created_at:'2026-11-24T09:29:33Z',split_shares:[{user_id:eva,amount_cents:15000}]};
   const members=[
     {user_id:eva,created_at:'2026-11-15T20:43:06Z'},
     {user_id:xesc,created_at:'2026-11-24T09:44:53Z'}
