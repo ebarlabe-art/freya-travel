@@ -80,6 +80,21 @@ export function summarizeSharedExpenses(expenses, settlements, memberIds) {
   });
 }
 
+export function needsSharedExpenseReview(expense, participants) {
+  if (!expense?.payer_user_id || !Array.isArray(expense.split_shares) || !expense.created_at) return false;
+  const recordedAt = Date.parse(expense.created_at);
+  if (!Number.isFinite(recordedAt)) return false;
+  const originalMembers = new Set(expense.split_shares.map(part => part.user_id));
+  return participants.some(member => !originalMembers.has(member.user_id) &&
+    Number.isFinite(Date.parse(member.created_at)) && Date.parse(member.created_at) > recordedAt);
+}
+
+export function sameSharedAllocation(a, b) {
+  return Array.isArray(a) && Array.isArray(b) && a.length === b.length &&
+    a.every(part => b.some(other => part.user_id === other.user_id &&
+      Number(part.amount_cents) === Number(other.amount_cents)));
+}
+
 export function formatSharedMoney(cents, currency) {
   return new Intl.NumberFormat('ca-ES', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
 }
@@ -92,6 +107,7 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
   let members = [];
   let labels = [];
   let mode = 'equal';
+  let editingExpenseId = null;
   let currency = 'EUR';
   let request = 0;
   const active = () => alive && current();
@@ -119,33 +135,123 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
     update();
   }
 
+
+  function editSplitMarkup(row) {
+    const former = row.split_shares.some(part => !members.some(member => member.user_id === part.user_id));
+    if (former) return '<p class="muted">Aquest repartiment inclou antics participants. No es pot editar des d’aquesta pantalla.</p>';
+    const selectedIds = row.split_shares.map(part => part.user_id);
+    const total = amountToCents(String(row.amount));
+    const equal = sameSharedAllocation(row.split_shares, equalShares(total,selectedIds));
+    return '<form class="shared-expense-form shared-expense-editor" data-edit-split="' + escapeHtml(row.id) + '">' +
+      '<h4>Revisa el repartiment de ' + escapeHtml(row.description) + '</h4>' +
+      '<p class="muted">Només canviarem qui assumeix els ' + money(total,row.currency) + '. La despesa, el pagador i la moneda es conservaran.</p>' +
+      '<fieldset><legend>Nou repartiment</legend><label><input type="radio" name="edit-mode" value="equal"' + (equal?' checked':'') + '> A parts iguals</label> ' +
+      '<label><input type="radio" name="edit-mode" value="custom"' + (!equal?' checked':'') + '> Imports personalitzats</label><div data-edit-participants>' +
+      members.map(member => {
+        const part = row.split_shares.find(s => s.user_id === member.user_id);
+        return '<label class="shared-expense-participant"><span><input type="checkbox" data-edit-member="' + escapeHtml(member.user_id) + '"' + (part?' checked':'') + '> ' +
+          escapeHtml(name(member.user_id)) + '</span><input type="number" inputmode="decimal" step="0.01" min="0.01" data-edit-amount="' +
+          escapeHtml(member.user_id) + '" aria-label="Part de ' + escapeHtml(name(member.user_id)) + '"' +
+          (equal||!part?' disabled':'') + ' value="' + (part?(Number(part.amount_cents)/100).toFixed(2):'') + '"></label>';
+      }).join('') + '</div></fieldset>' +
+      '<p class="muted" data-edit-preview aria-live="polite"></p>' +
+      '<div class="shared-expense-inline"><button type="submit">Desa el nou repartiment</button><button type="button" class="secondary" data-cancel-edit>Cancel·la</button></div></form>';
+  }
+
+  function updateSplitPreview(form, editedRow = null) {
+    if (!form) return;
+    const out = form.querySelector(editedRow?'[data-edit-preview]':'[data-new-preview]');
+    if (!out) return;
+    const prefix = editedRow?'edit':'split';
+    const inputs = [...form.querySelectorAll(editedRow?'[data-edit-member]':'[data-split-member]')];
+    const selected = inputs.filter(x=>x.checked).map(x=>editedRow?x.dataset.editMember:x.dataset.splitMember);
+    const selectionMode = form.querySelector('input[name="' + (editedRow?'edit-mode':'mode') + '"]:checked')?.value;
+    for (const input of form.querySelectorAll(editedRow?'[data-edit-amount]':'[data-split-amount]')) {
+      const memberId = editedRow ? input.dataset.editAmount : input.dataset.splitAmount;
+      input.disabled = selectionMode !== 'custom' || !selected.includes(memberId);
+    }
+    try {
+      const cents = editedRow ? amountToCents(String(editedRow.amount)) : amountToCents(form.elements.amount.value);
+      const parts = selectionMode === 'custom' ? customShares(cents,selected.map(user_id=>({
+        user_id, amount: form.querySelector('[data-' + prefix + '-amount="' + user_id + '"]').value
+      }))) : equalShares(cents,selected);
+      const iso = editedRow?.currency || form.elements.currency.value.trim().toUpperCase();
+      if (!isoCurrency(iso)) throw Error('Indica una moneda ISO vàlida.');
+      out.textContent = 'Repartiment: ' + parts.map(part=>name(part.user_id)+' '+money(part.amount_cents,iso)).join(' · ');
+    } catch (error) {
+      out.textContent = error?.message || 'Revisa el repartiment abans de desar.';
+    }
+  }
+
+  async function requireCurrentMembers() {
+    const {data,error} = await db.from('trip_members').select('user_id').eq('trip_id',tripId);
+    if (error) throw error;
+    const same = data?.length === members.length && data.every(member=>members.some(m=>m.user_id===member.user_id));
+    if (!same) throw Error('Han canviat els participants del viatge. Prem «Actualitza» abans de desar per revisar el repartiment.');
+  }
+
   function render() {
     if (!active()) return;
     const accountingIds = [...new Set([...members.map(x => x.user_id), ...rows.flatMap(x => [x.payer_user_id,...(x.split_shares||[]).map(part => part.user_id)]), ...settlements.flatMap(x => [x.payer_user_id,x.receiver_user_id])].filter(id => uuidPattern.test(id||'')))];
     const summaries = summarizeSharedExpenses(rows, settlements, accountingIds);
     const legacyCount = rows.filter(x => !x.payer_user_id || !x.split_shares).length;
+    const needsReview = rows.filter(row => needsSharedExpenseReview(row,members));
+    mode = 'equal';
     root.innerHTML = '<section class="card"><h2>💸 Despeses compartides</h2><p class="muted">Cada persona apunta el que ha pagat. Freya calcula els saldos del grup, per moneda, sense barrejar pressupost i pagaments.</p><p class="message" data-shared-status role="status" aria-live="polite"></p><button type="button" class="secondary" data-shared-refresh>↻ Actualitza</button> <button type="button" class="secondary" data-shared-csv>📤 Exporta CSV</button></section>' +
+      (needsReview.length ? '<section class="card"><h3>Revisa les despeses anteriors</h3><p>Des que es van registrar ' + needsReview.length + ' despesa(es), s’han incorporat nous participants. <strong>No hem canviat cap repartiment automàticament.</strong> Pots revisar-los a «Moviments».</p></section>' : '') +
       '<section class="card"><h3>👥 Participants (' + members.length + ')</h3><p class="muted">Es reutilitzen els membres d’aquest viatge. Cadascú pot posar el seu nom visible al grup.</p><form data-shared-label class="shared-expense-inline"><label>El meu nom<input data-shared-my-name type="text" maxlength="60" placeholder="Nom visible" value="' + escapeHtml(labels.find(l => l.user_id === userId)?.display_name || '') + '" required></label><button type="submit">Desa el nom</button></form><p class="muted">Si falta algú, convida’l des de «Viatgers» al tauler.</p></section>' +
       '<section class="card"><h3>📊 Com van els comptes?</h3>' + (summaries.length ? summaries.map(g => '<section class="shared-expense-currency"><h4>' + escapeHtml(g.currency) + ' · ' + money(g.expenseCents, g.currency) + ' gastats</h4>' +
         [...g.balances].map(([id, cents]) => '<p><strong>' + escapeHtml(name(id)) + '</strong>: ' + (cents > 0 ? 'li deuen ' : cents < 0 ? 'deu ' : 'al dia ') + money(Math.abs(cents), g.currency) + '</p>').join('') +
         '<h4>Per saldar els comptes</h4>' + (g.suggestions.length ? g.suggestions.map(s => '<div class="shared-expense-settle"><span>' + escapeHtml(name(s.from)) + ' → ' + escapeHtml(name(s.to)) + ': <strong>' + money(s.amount_cents, s.currency) + '</strong></span>' + ((s.from === userId || s.to === userId) && members.some(m => m.user_id === s.from) && members.some(m => m.user_id === s.to) ? '<button type="button" class="secondary" data-propose-payment="' + escapeHtml(s.from + '|' + s.to + '|' + s.amount_cents + '|' + s.currency) + '">Registra el pagament</button>' : '<small>Participant antic: liquidació manual pendent</small>') + '</div>').join('') : '<p>Tot saldat en aquesta moneda. ✅</p>') + '</section>').join('') : '<p class="muted">Quan afegiu la primera despesa, aquí veureu què deu cadascú.</p>') +
       (legacyCount ? '<p class="muted">Hi ha ' + legacyCount + ' despeses antigues sense repartiment: es conserven i no es compten com a deutes.</p>' : '') + '</section>' +
-      '<section class="card"><h3>＋ Afegir una despesa</h3><form data-shared-expense class="shared-expense-form">' +
+      '<section class="card"><h3>＋ Afegir una despesa</h3>' +
+      (members.length === 1 ? '<p class="message" role="note">Només hi ha un participant. Aquesta despesa quedarà assignada íntegrament a tu. Si més tard se n’incorporen d’altres, podràs revisar el repartiment.</p>' : '') +
+      '<form data-shared-expense class="shared-expense-form">' +
       '<label>Concepte<input name="description" maxlength="200" placeholder="Sopar, taxi, entrades..." required></label>' +
       '<div class="shared-expense-inline"><label>Import<input name="amount" type="number" inputmode="decimal" min="0.01" max="999999999.99" step="0.01" required></label><label>Moneda ISO<input name="currency" maxlength="3" pattern="[A-Z]{3}" value="' + escapeHtml(currency) + '" required></label></div>' +
       '<div class="shared-expense-inline"><label>Ha pagat<select name="payer" required>' + memberOptions(userId) + '</select></label><label>Data<input name="date" type="date" value="' + new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10) + '"></label></div>' +
       '<label>Categoria<select name="category"><option>Menjar</option><option>Transport</option><option>Entrades</option><option>Allotjament</option><option>Compres</option><option>Altres</option></select></label>' +
       '<fieldset><legend>Entre qui repartim la despesa?</legend><label><input type="radio" name="mode" value="equal" checked> A parts iguals</label> <label><input type="radio" name="mode" value="custom"> Imports personalitzats</label><div data-shared-participants></div></fieldset>' +
-      '<button type="submit" data-shared-save>Desa la despesa</button></form></section>' +
+      '<p class="muted" data-new-preview aria-live="polite"></p><button type="submit" data-shared-save>Desa la despesa</button></form></section>' +
       '<section class="card"><h3>💸 Registrar un pagament ja fet</h3><p class="muted">Només registra un Bizum, transferència o pagament en efectiu que ja s’ha realitzat. Freya no mou diners.</p>' +
       '<form data-shared-payment class="shared-expense-form"><div class="shared-expense-inline"><label>Qui ha pagat<select name="payer" required>' + memberOptions(userId) + '</select></label><label>Qui ha rebut<select name="receiver" required>' + memberOptions(members.find(m => m.user_id !== userId)?.user_id) + '</select></label></div>' +
       '<div class="shared-expense-inline"><label>Import<input name="amount" type="number" min="0.01" max="999999999.99" inputmode="decimal" step="0.01" required></label><label>Moneda ISO<input name="currency" maxlength="3" pattern="[A-Z]{3}" value="' + escapeHtml(currency) + '" required></label></div><button type="submit" data-shared-pay>Registra la liquidació</button></form></section>' +
       '<section class="card"><h3>🧾 Moviments</h3>' + ([...rows.filter(r => r.payer_user_id && r.split_shares).map(r => ({ kind:'expense',...r })), ...settlements.map(r => ({ kind:'settlement',...r }))].sort((a,b) => (b.created_at || '').localeCompare(a.created_at || '')).map(r => {
         const cents = amountToCents(String(r.amount));
         const description = r.kind === 'expense' ? r.description : 'Liquidació · ' + name(r.payer_user_id) + ' → ' + name(r.receiver_user_id);
-        return '<div class="shared-expense-movement"><div><strong>' + escapeHtml(description) + '</strong><small>' + escapeHtml(name(r.payer_user_id)) + ' · ' + escapeHtml(r.expense_date || r.created_at?.slice(0,10) || '') + '</small></div><strong>' + money(cents,r.currency) + '</strong>' + (r.created_by === userId ? '<button type="button" class="secondary" data-shared-remove="' + escapeHtml(r.kind + '|' + r.id) + '">Elimina</button>' : '') + '</div>';
+        const isExpense = r.kind === 'expense';
+        const canEdit = isExpense && r.created_by === userId;
+        const oldSplit = isExpense && needsSharedExpenseReview(r,members);
+        const parts = isExpense ? r.split_shares.map(part=>name(part.user_id)+' '+money(Number(part.amount_cents),r.currency)).join(' · ') : '';
+        return '<div class="shared-expense-entry"><div class="shared-expense-movement"><div><strong>' + escapeHtml(description) + '</strong><small>' + escapeHtml(name(r.payer_user_id)) + ' · ' + escapeHtml(r.expense_date || r.created_at?.slice(0,10) || '') + '</small></div><strong>' + money(cents,r.currency) + '</strong>' +
+          (canEdit ? '<button type="button" class="secondary" data-open-edit="' + escapeHtml(r.id) + '">Edita repartiment</button>' : '') +
+          (r.created_by === userId ? '<button type="button" class="secondary" data-shared-remove="' + escapeHtml(r.kind + '|' + r.id) + '">Elimina</button>' : '') + '</div>' +
+          (isExpense ? '<p class="muted">Repartiment: ' + escapeHtml(parts) + '</p>' : '') +
+          (oldSplit ? '<p class="muted">Una persona s’ha incorporat després d’aquesta despesa. Revisa si cal incloure-la.</p>' : '') +
+          (isExpense && editingExpenseId === r.id ? editSplitMarkup(r) : '') +
+          '</div>';
       }).join('') || '<p class="muted">Encara no hi ha moviments.</p>') + '</section>';
     renderParticipantChoices();
+    const newExpenseForm = root.querySelector('[data-shared-expense]');
+    newExpenseForm.addEventListener('input',()=>updateSplitPreview(newExpenseForm));
+    newExpenseForm.addEventListener('change',()=>updateSplitPreview(newExpenseForm));
+    updateSplitPreview(newExpenseForm);
+    root.querySelectorAll('[data-open-edit]').forEach(button=>button.onclick=()=>{
+      editingExpenseId = button.dataset.openEdit;
+      render();
+      root.querySelector('[data-edit-split]')?.scrollIntoView({behavior:'smooth',block:'center'});
+    });
+    const editForm = root.querySelector('[data-edit-split]');
+    if (editForm) {
+      const row = rows.find(r=>r.id===editForm.dataset.editSplit);
+      if (row) {
+        editForm.addEventListener('input',()=>updateSplitPreview(editForm,row));
+        editForm.addEventListener('change',()=>updateSplitPreview(editForm,row));
+        editForm.onsubmit = saveSplitEdit;
+        editForm.querySelector('[data-cancel-edit]').onclick=()=>{editingExpenseId=null;render();};
+        updateSplitPreview(editForm,row);
+      }
+    }
     root.querySelector('[data-shared-refresh]').onclick = () => void load();
     root.querySelector('[data-shared-csv]').onclick = exportCSV;
     root.querySelectorAll('input[name="mode"]').forEach(input => input.onchange = () => {
@@ -178,7 +284,7 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
     const queries = await Promise.all([
       db.from('trip_members').select('user_id,created_at').eq('trip_id',tripId).order('created_at'),
       db.from('trip_expense_member_labels').select('user_id,display_name').eq('trip_id',tripId),
-      db.from('travel_expenses').select('id,description,amount,currency,paid_by,payer_user_id,split_shares,expense_date,created_at,created_by').eq('trip_id',tripId).order('created_at',{ascending:false}),
+      db.from('travel_expenses').select('id,description,amount,currency,paid_by,payer_user_id,split_shares,split_revision,expense_date,created_at,created_by').eq('trip_id',tripId).order('created_at',{ascending:false}),
       db.from('trip_expense_settlements').select('id,trip_id,payer_user_id,receiver_user_id,amount,currency,created_by,created_at').eq('trip_id',tripId).order('created_at',{ascending:false})
     ]);
     if (!active() || serial !== request) return;
@@ -235,10 +341,12 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
       if (!description || description.length > 200 || !isoCurrency(iso) || !members.some(m => m.user_id === payer)) throw Error('Revisa el concepte, la moneda i qui ha pagat.');
       shares = mode === 'equal' ? equalShares(cents,included) : customShares(cents,included.map(user_id => ({user_id,amount:root.querySelector('[data-split-amount="' + user_id + '"]').value})));
     } catch (error) { status(error.message,true); return; }
+    if(members.length===1 && !globalThis.confirm('Ara només hi ha un participant. Aquesta despesa quedarà íntegrament al teu càrrec. Vols desar-la igualment?')) return;
     currency = iso;
     const operationId = form.dataset.pendingId || crypto.randomUUID();
     form.dataset.pendingId = operationId;
     void action(async () => {
+      await requireCurrentMembers();
       const payload = {id:operationId,trip_id:tripId,description,amount:(cents/100).toFixed(2),currency:iso,paid_by:name(payer),payer_user_id:payer,split_shares:shares,category:form.elements.category.value,expense_date:form.elements.date.value||null,created_by:userId};
       const {error} = await db.from('travel_expenses').insert(payload);
       if (error?.code === '23505') {
@@ -247,6 +355,34 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
       }
       if (error) throw error;
     }, 'Despesa desada i repartida.');
+  }
+
+
+  function saveSplitEdit(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const row = rows.find(r=>r.id===form.dataset.editSplit);
+    if (!row || row.created_by !== userId) return;
+    const chosen = [...form.querySelectorAll('[data-edit-member]')].filter(el=>el.checked).map(el=>el.dataset.editMember);
+    let shares;
+    try {
+      const cents = amountToCents(String(row.amount));
+      const custom = form.querySelector('input[name="edit-mode"]:checked')?.value==='custom';
+      shares = custom ? customShares(cents,chosen.map(user_id=>({user_id,amount:form.querySelector('[data-edit-amount="'+user_id+'"]').value}))) : equalShares(cents,chosen);
+    } catch (error) {status(error.message,true);return;}
+    if (sameSharedAllocation(row.split_shares,shares)) {status('El repartiment ja és aquest. No hi ha canvis.');return;}
+    if (!globalThis.confirm('Vols canviar el repartiment d’aquesta despesa? Es recalcularan els saldos del grup, però no es modificarà l’import pagat ni cap liquidació anterior.')) return;
+    void action(async () => {
+      await requireCurrentMembers();
+      const result = await db.from('travel_expenses')
+        .update({split_shares:shares})
+        .eq('trip_id',tripId).eq('id',row.id).eq('created_by',userId)
+        .eq('split_revision',row.split_revision)
+        .select('id,split_revision');
+      if (result.error) throw result.error;
+      if (result.data?.length !== 1) throw Error('Aquest repartiment ha canviat des de l’última actualització. Prem «Actualitza» i revisa’l abans de tornar a desar.');
+      editingExpenseId = null;
+    }, 'Repartiment actualitzat. Els saldos s’han recalculat.');
   }
 
   function savePayment(event) {

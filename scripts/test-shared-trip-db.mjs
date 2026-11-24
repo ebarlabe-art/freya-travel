@@ -56,6 +56,18 @@ try{
  check(friend,`exists(select 1 from public.trip_expense_member_labels where trip_id='${a.id}' and display_name='Owner')`);
  assert.match(as(friend,`update public.trip_expense_member_labels set display_name='Hijack' where trip_id='${a.id}' and user_id='${owner}'`),/UPDATE 0/);
  check(owner,`(select display_name='Owner' from public.trip_expense_member_labels where trip_id='${a.id}' and user_id='${owner}')`);
+ const updatedSplit=JSON.stringify([{user_id:owner,amount_cents:3000},{user_id:friend,amount_cents:2000}]);
+ assert.match(as(friend,`update public.travel_expenses set split_shares='${updatedSplit}'::jsonb where id='${expenseId}'`),/UPDATE 0/);
+ check(owner,`(select split_revision=0 from public.travel_expenses where id='${expenseId}')`);
+ assert.match(as(owner,`update public.travel_expenses set split_shares='${updatedSplit}'::jsonb where id='${expenseId}' and split_revision=0`),/UPDATE 1/);
+ check(friend,`(select split_revision=1 from public.travel_expenses where id='${expenseId}')`);
+ assert.match(as(owner,`update public.travel_expenses set split_shares='${split}'::jsonb where id='${expenseId}' and split_revision=0`),/UPDATE 0/);
+ assert.throws(()=>as(owner,`update public.travel_expenses set amount=51 where id='${expenseId}'`),/Only the original creator/);
+ check(owner,`(select amount=50 and split_revision=1 from public.travel_expenses where id='${expenseId}')`);
+ const invalidSplit=JSON.stringify([{user_id:owner,amount_cents:4900}]);
+ assert.throws(()=>as(owner,`update public.travel_expenses set split_shares='${invalidSplit}'::jsonb where id='${expenseId}'`),/Split total/);
+ check(owner,`(select split_revision=1 from public.travel_expenses where id='${expenseId}')`);
+ console.log('PASS author-only split edit, locked amount/payer, exact validation and stale-revision rejection');
  assert.match(as(owner,`delete from public.travel_expenses where id='${expenseId}'`),/DELETE 1/);
  console.log('PASS shared expense: USD split validation, read scope, restrictive deletion, settlement, and member label isolation');
 
