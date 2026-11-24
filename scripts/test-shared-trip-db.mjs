@@ -13,6 +13,7 @@ let created=false;
 try{
  sql(`create database ${database}`,'postgres');created=true;
  for(const p of ['supabase/tests/local_progress_baseline.sql','supabase.sql','supabase/tests/local_progress_travel_baseline.sql'])file(p);
+ file('supabase/tests/local_shared_expenses_baseline.sql');
  for(const name of readdirSync('supabase/migrations').filter(n=>n.endsWith('.sql')).sort()){
   if(name==='20260901144811_schedule_itinerary_notifications.sql')continue;
   if(name==='20260903172118_identify_london_2026_experience.sql')sql("insert into auth.users(id) values ('00000000-0000-4000-8000-000000000001'); insert into public.trips(id,name,owner_id) values ('9035e47f-f16c-4fa3-83fd-873bd98dc221','Historical local fixture','00000000-0000-4000-8000-000000000001');");
