@@ -195,26 +195,41 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
     const accountingIds = [...new Set([...members.map(x => x.user_id), ...rows.flatMap(x => [x.payer_user_id,...(x.split_shares||[]).map(part => part.user_id)]), ...settlements.flatMap(x => [x.payer_user_id,x.receiver_user_id])].filter(id => uuidPattern.test(id||'')))];
     const summaries = summarizeSharedExpenses(rows, settlements, accountingIds);
     const legacyCount = rows.filter(x => !x.payer_user_id || !x.split_shares).length;
+    const needsReview = rows.filter(row => needsSharedExpenseReview(row,members));
+    mode = 'equal';
     root.innerHTML = '<section class="card"><h2>💸 Despeses compartides</h2><p class="muted">Cada persona apunta el que ha pagat. Freya calcula els saldos del grup, per moneda, sense barrejar pressupost i pagaments.</p><p class="message" data-shared-status role="status" aria-live="polite"></p><button type="button" class="secondary" data-shared-refresh>↻ Actualitza</button> <button type="button" class="secondary" data-shared-csv>📤 Exporta CSV</button></section>' +
+      (needsReview.length ? '<section class="card"><h3>Revisa les despeses anteriors</h3><p>Des que es van registrar ' + needsReview.length + ' despesa(es), s’han incorporat nous participants. <strong>No hem canviat cap repartiment automàticament.</strong> Pots revisar-los a «Moviments».</p></section>' : '') +
       '<section class="card"><h3>👥 Participants (' + members.length + ')</h3><p class="muted">Es reutilitzen els membres d’aquest viatge. Cadascú pot posar el seu nom visible al grup.</p><form data-shared-label class="shared-expense-inline"><label>El meu nom<input data-shared-my-name type="text" maxlength="60" placeholder="Nom visible" value="' + escapeHtml(labels.find(l => l.user_id === userId)?.display_name || '') + '" required></label><button type="submit">Desa el nom</button></form><p class="muted">Si falta algú, convida’l des de «Viatgers» al tauler.</p></section>' +
       '<section class="card"><h3>📊 Com van els comptes?</h3>' + (summaries.length ? summaries.map(g => '<section class="shared-expense-currency"><h4>' + escapeHtml(g.currency) + ' · ' + money(g.expenseCents, g.currency) + ' gastats</h4>' +
         [...g.balances].map(([id, cents]) => '<p><strong>' + escapeHtml(name(id)) + '</strong>: ' + (cents > 0 ? 'li deuen ' : cents < 0 ? 'deu ' : 'al dia ') + money(Math.abs(cents), g.currency) + '</p>').join('') +
         '<h4>Per saldar els comptes</h4>' + (g.suggestions.length ? g.suggestions.map(s => '<div class="shared-expense-settle"><span>' + escapeHtml(name(s.from)) + ' → ' + escapeHtml(name(s.to)) + ': <strong>' + money(s.amount_cents, s.currency) + '</strong></span>' + ((s.from === userId || s.to === userId) && members.some(m => m.user_id === s.from) && members.some(m => m.user_id === s.to) ? '<button type="button" class="secondary" data-propose-payment="' + escapeHtml(s.from + '|' + s.to + '|' + s.amount_cents + '|' + s.currency) + '">Registra el pagament</button>' : '<small>Participant antic: liquidació manual pendent</small>') + '</div>').join('') : '<p>Tot saldat en aquesta moneda. ✅</p>') + '</section>').join('') : '<p class="muted">Quan afegiu la primera despesa, aquí veureu què deu cadascú.</p>') +
       (legacyCount ? '<p class="muted">Hi ha ' + legacyCount + ' despeses antigues sense repartiment: es conserven i no es compten com a deutes.</p>' : '') + '</section>' +
-      '<section class="card"><h3>＋ Afegir una despesa</h3><form data-shared-expense class="shared-expense-form">' +
+      '<section class="card"><h3>＋ Afegir una despesa</h3>' +
+      (members.length === 1 ? '<p class="message" role="note">Només hi ha un participant. Aquesta despesa quedarà assignada íntegrament a tu. Si més tard se n’incorporen d’altres, podràs revisar el repartiment.</p>' : '') +
+      '<form data-shared-expense class="shared-expense-form">' +
       '<label>Concepte<input name="description" maxlength="200" placeholder="Sopar, taxi, entrades..." required></label>' +
       '<div class="shared-expense-inline"><label>Import<input name="amount" type="number" inputmode="decimal" min="0.01" max="999999999.99" step="0.01" required></label><label>Moneda ISO<input name="currency" maxlength="3" pattern="[A-Z]{3}" value="' + escapeHtml(currency) + '" required></label></div>' +
       '<div class="shared-expense-inline"><label>Ha pagat<select name="payer" required>' + memberOptions(userId) + '</select></label><label>Data<input name="date" type="date" value="' + new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10) + '"></label></div>' +
       '<label>Categoria<select name="category"><option>Menjar</option><option>Transport</option><option>Entrades</option><option>Allotjament</option><option>Compres</option><option>Altres</option></select></label>' +
       '<fieldset><legend>Entre qui repartim la despesa?</legend><label><input type="radio" name="mode" value="equal" checked> A parts iguals</label> <label><input type="radio" name="mode" value="custom"> Imports personalitzats</label><div data-shared-participants></div></fieldset>' +
-      '<button type="submit" data-shared-save>Desa la despesa</button></form></section>' +
+      '<p class="muted" data-new-preview aria-live="polite"></p><button type="submit" data-shared-save>Desa la despesa</button></form></section>' +
       '<section class="card"><h3>💸 Registrar un pagament ja fet</h3><p class="muted">Només registra un Bizum, transferència o pagament en efectiu que ja s’ha realitzat. Freya no mou diners.</p>' +
       '<form data-shared-payment class="shared-expense-form"><div class="shared-expense-inline"><label>Qui ha pagat<select name="payer" required>' + memberOptions(userId) + '</select></label><label>Qui ha rebut<select name="receiver" required>' + memberOptions(members.find(m => m.user_id !== userId)?.user_id) + '</select></label></div>' +
       '<div class="shared-expense-inline"><label>Import<input name="amount" type="number" min="0.01" max="999999999.99" inputmode="decimal" step="0.01" required></label><label>Moneda ISO<input name="currency" maxlength="3" pattern="[A-Z]{3}" value="' + escapeHtml(currency) + '" required></label></div><button type="submit" data-shared-pay>Registra la liquidació</button></form></section>' +
       '<section class="card"><h3>🧾 Moviments</h3>' + ([...rows.filter(r => r.payer_user_id && r.split_shares).map(r => ({ kind:'expense',...r })), ...settlements.map(r => ({ kind:'settlement',...r }))].sort((a,b) => (b.created_at || '').localeCompare(a.created_at || '')).map(r => {
         const cents = amountToCents(String(r.amount));
         const description = r.kind === 'expense' ? r.description : 'Liquidació · ' + name(r.payer_user_id) + ' → ' + name(r.receiver_user_id);
-        return '<div class="shared-expense-movement"><div><strong>' + escapeHtml(description) + '</strong><small>' + escapeHtml(name(r.payer_user_id)) + ' · ' + escapeHtml(r.expense_date || r.created_at?.slice(0,10) || '') + '</small></div><strong>' + money(cents,r.currency) + '</strong>' + (r.created_by === userId ? '<button type="button" class="secondary" data-shared-remove="' + escapeHtml(r.kind + '|' + r.id) + '">Elimina</button>' : '') + '</div>';
+        const isExpense = r.kind === 'expense';
+        const canEdit = isExpense && r.created_by === userId;
+        const oldSplit = isExpense && needsSharedExpenseReview(r,members);
+        const parts = isExpense ? r.split_shares.map(part=>name(part.user_id)+' '+money(Number(part.amount_cents),r.currency)).join(' · ') : '';
+        return '<div class="shared-expense-entry"><div class="shared-expense-movement"><div><strong>' + escapeHtml(description) + '</strong><small>' + escapeHtml(name(r.payer_user_id)) + ' · ' + escapeHtml(r.expense_date || r.created_at?.slice(0,10) || '') + '</small></div><strong>' + money(cents,r.currency) + '</strong>' +
+          (canEdit ? '<button type="button" class="secondary" data-open-edit="' + escapeHtml(r.id) + '">Edita repartiment</button>' : '') +
+          (r.created_by === userId ? '<button type="button" class="secondary" data-shared-remove="' + escapeHtml(r.kind + '|' + r.id) + '">Elimina</button>' : '') + '</div>' +
+          (isExpense ? '<p class="muted">Repartiment: ' + escapeHtml(parts) + '</p>' : '') +
+          (oldSplit ? '<p class="muted">Una persona s’ha incorporat després d’aquesta despesa. Revisa si cal incloure-la.</p>' : '') +
+          (isExpense && editingExpenseId === r.id ? editSplitMarkup(r) : '') +
+          '</div>';
       }).join('') || '<p class="muted">Encara no hi ha moviments.</p>') + '</section>';
     renderParticipantChoices();
     root.querySelector('[data-shared-refresh]').onclick = () => void load();
