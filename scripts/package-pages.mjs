@@ -41,6 +41,7 @@ const runtimeDomain=[
   'travel-book-editor-state.mjs',
   'travel-book-composition.mjs',
   'shared-trip-expenses.mjs',
+  'trip-participants.mjs',
 ];
 
 await mkdir(new URL('domain/',dist),{recursive:true});
