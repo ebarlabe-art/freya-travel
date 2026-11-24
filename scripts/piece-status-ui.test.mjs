@@ -24,9 +24,11 @@ test('all booking-like travel pieces expose the same prominent four-state lifecy
 test('all operational piece entry points stay visible even before a reservation exists',()=>{
   assert.match(html,/id="genericConfirmedSection" class="generic-trip-section"/);
   for(const id of ['genericFlightsModuleCard','genericAccommodationModuleCard','genericActivitiesModuleCard','genericLocalTransportModuleCard','genericCarRentalModuleCard']){
-    const at=html.indexOf('id="'+id+'"');
-    assert.ok(at>=0,'missing '+id);
-    assert.doesNotMatch(html.slice(at,at+180),/\bhidden\b/);
+    const [card]=html.match(new RegExp(`<button\\b[^>]*\\sid="${id}"[^>]*>`))||[];
+    assert.ok(card,'missing '+id);
+    const classes=card.match(/\sclass="([^"]*)"/)?.[1].split(/\s+/)||[];
+    assert.ok(!classes.includes('hidden'),id+' has the hidden class');
+    assert.doesNotMatch(card.replace(/"[^"]*"|'[^']*'/g,''),/\shidden(?=[\s=>])/i,id+' has the hidden attribute');
   }
   assert.match(html,/Afegeix vols/);assert.match(html,/Afegeix allotjament/);assert.match(html,/Afegeix activitats/);assert.match(html,/Afegeix transport/);assert.match(html,/Afegeix cotxe/);
 });

@@ -224,7 +224,7 @@ Capa d'ajuda contextual abans i durant el viatge, **no** un calaix genèric de �
 **CLOSED quan:** un viatger rep avisos pràctics i rellevants amb informació verificable, data de vigència i una manera clara de consultar la font oficial, sense haver de buscar-los en una pantalla buida.
 
 ### A5. Moneda i canvi de divisa
-**Prioritat: P1 · PWA v80 preparada en esborrany, publicació pendent d’autorització**
+**Prioritat: P1 · TANCADA · PWA v80 publicada i validada físicament a l’iPhone (PR #262)**
 
 - Conversor al tauler de cada viatge, accessible durant la preparació i durant el viatge. Detecta les divises de les parades i ofereix selecció manual en viatges amb una o més monedes.
 - Converteix entre moneda habitual i moneda local, amb inversió en un toc. Quan els codis coincideixen, mostra l’import directament.
@@ -233,6 +233,18 @@ Capa d'ajuda contextual abans i durant el viatge, **no** un calaix genèric de �
 - El futur centre de despeses vinculat amb TB-06 i el mòdul de Despeses compartides queda fora de l’A5.
 
 **CLOSED quan** es pot convertir una quantitat amb tipus i data coneguts i queda clar que el resultat és una estimació del canvi.
+
+---
+
+### UX-01. Convergència visual dels viatges
+
+**Estat** · PWA v81 preparada en esborrany. Fusió i publicació pendents d’autorització.
+
+El mosaic de Londres és el patró visual del tauler dels viatges. Es comparteixen les targetes amb icona, títol, subtítol i indicadors existents. Els taulers genèrics mostren dues columnes en mòbil quan hi ha espai i fins a tres a l’escriptori en les seccions amb més targetes. El contingut i els accessos continuen responent al tipus de viatge i a la fase. Els textos del mosaic segueixen els cinc idiomes d’A4.2.
+
+En PREPARAR destaquen les entrades de preparació disponibles. En VIURE, el bloc Ara i Següent precedeix la preparació i les eines. En RECORDAR, l’àlbum i les fotos són les primeres entrades, amb les peces i l’arxiu disponibles a sota. El Londres llegat conserva el seu itinerari, la guia i els accessos propis.
+
+Validació de Londres, Riga i Tallinn i Eivissa a 390 i 1280 px, amb comprovació addicional a 320 px. Després de validar UX-01, reprendre directament B1.
 
 ---
 
@@ -522,4 +534,4 @@ No es crea un roadmap paral·lel.
 
 > **A3 · Participants.** El 24/11/2026, la prova física d'un PDF idèntic al de Barcelona ha comparat 6 activitats amb 6 existents, sense canvis pendents ni escriptures. Això valida la reimportació sense duplicats en aquest cas, però no acredita per si sol totes les variants d'A2.
 
-**A3 tancat i publicat** (PR #258; prova real de dos participants). **A4.1 validada a l’iPhone.** L’A4.2 (v79) és a `main` amb el nom i la interfície dels Consells de Freya localitzats. L’A5 (v80) està preparada en esborrany, pendent d’autorització per publicar.
+**A3 tancat i publicat** (PR #258; prova real de dos participants). **A4.1 validada a l’iPhone.** L’A4.2 (v79) és a `main` amb el nom i la interfície dels Consells de Freya localitzats. L’A5 (v80, PR #262) està publicada, validada físicament a l’iPhone i tancada. La següent entrega és UX-01 (v81). Després de validar-la, reprendre B1.

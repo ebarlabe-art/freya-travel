@@ -9,6 +9,8 @@ function harness(){
  let n=0;const s=vm.createContext({console,setTimeout,clearTimeout,confirm:()=>true,history:{state:null,pushState(state){this.state=state},go(){}},window:{requestAnimationFrame:fn=>fn(),addEventListener(){},scrollY:2400,innerHeight:700,scrollTo(x,y){this.scrollY=y}},URL:{createObjectURL:()=>`blob:${++n}`,revokeObjectURL:()=>{}},crypto:{randomUUID:()=>`id-${++n}`},$:element,trip:{id:'a'},session:{user:{id:'u'}},tripLoadGeneration:1,isLondonTrip:()=>false,activityRows:[],manualItineraryRows:[],photoRows:[],esc:v=>String(v??''),setAppView:view=>s.view=view});
  s.tripRequestIsCurrent=(id,generation)=>s.trip?.id===id&&s.tripLoadGeneration===generation;
  s.DOC_BUCKET='trip-documents';s.Blob=Blob;
+ const labels=html.split('<script id="freyaDashboardTranslations">')[1].split('for(const node')[0];
+ vm.runInContext("const insightsLanguage='ca';"+labels,s);
  vm.runInContext(code,s);s.photoStore=async()=>({save:async()=>{},load:async()=>[],remove:async()=>{},exclusive:async(scope,fn)=>fn()});s.verifyPhotoJob=async(job,current,phase)=>phase==='after';s.photoObjectExists=async()=>true;const renderQueue=s.renderPhotoQueue;s.renderPhotoQueue=()=>{};
  return {s,nodes,element,renderQueue,get:expression=>vm.runInContext(expression,s)};
 }

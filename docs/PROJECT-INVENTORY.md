@@ -1,6 +1,16 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
-## A5 · Moneda i canvi de divisa · v80 preparada en branca (24/11/2026)
+## UX-01 · Convergència visual dels viatges · v81 preparada en branca (25/11/2026)
+
+Els taulers genèrics adopten el mosaic de Londres. Tots dos utilitzen els mateixos estils de targeta, amb icona, títol i subtítol. Es mantenen els comptadors i els estats que ja calcula cada mòdul. A 390 px hi ha dues columnes. A 320 px, el tauler genèric passa a una columna. En escriptori, les peces i eines genèriques poden mostrar-ne tres. Londres conserva la seva distribució i els seus accessos.
+
+La preparació agrupa el Builder i els Consells de Freya quan estan disponibles. En curs, Ara i Següent té prioritat. En viatges passats, Records precedeix les peces i l’arxiu. Es reutilitza l’idioma d’A4.2 per a les targetes, encapçalaments del mosaic, estats i comptadors. La decisió visual queda limitada als taulers. Dates, accessos, permisos i dades continuen amb els contractes existents.
+
+**Verificació**. Captures revisades en Chromium a 390 i 1280 px amb Londres, Riga i Tallinn en preparació i Eivissa en curs i passat. S’han comprovat la versió de 320 px i els accessos i retorns des d’itinerari, llista de tasques i Travel Book. S’ha verificat l’accés a viatgers i configuració, i l’ocultació de configuració per als participants. Les proves de navegador fan servir viatges de prova en el paquet de Pages local. L’A5 ja té la seva validació física independent.
+
+**Relleu**. PR en esborrany des de `feat/ux-01-trip-dashboard-v81`. Revisar la CI i validar UX-01. La fusió i la publicació de v81 requereixen autorització expressa. Després, continuar amb B1, temps per arribar i logística immediata.
+
+## A5 · Moneda i canvi de divisa · v80 publicada i validada físicament a l’iPhone (25/11/2026)
 
 El conversor és accessible des del tauler genèric i el de Londres. Mostra les divises de les parades del viatge a partir del seu codi de país i del mapa de curs legal de Unicode CLDR 48.2.0. Fa servir la zona horària registrada quan falta el país i hi ha una correspondència coneguda. Detecta GBP per al Londres llegat. Permet seleccionar una divisa manualment, conservar la moneda habitual per compte i dispositiu, i invertir la conversió amb un toc. La interfície segueix A4.2 en català, castellà, anglès, francès i italià.
 
@@ -8,9 +18,7 @@ El navegador consulta directament ExchangeRate-API Open Access. Una taula amb ba
 
 **Proveïdor i límits**. Accés gratuït sense clau, atribució visible, actualització diària, límits per IP i disponibilitat condicionada al servei. El proveïdor documenta 165 monedes, incloent GBP, JPY, LKR i MVR. Les cotitzacions de referència poden diferir del tipus i de les comissions bancàries. La primera conversió entre dues divises diferents requereix connexió si el dispositiu encara no té cap cotització. [ExchangeRate-API Open Access](https://www.exchangerate-api.com/docs/free) · [Cobertura](https://www.exchangerate-api.com/docs/supported-currencies)
 
-**Verificació**. 188 proves locals seleccionades, compilació de Pages, paritat d’entrades i comprovació del paquet v80. La prova amb Chromium mòbil (390 px) ha verificat els quatre casos, la inversió, enrere i endavant, l’aïllament entre comptes i la reobertura en fred amb la cotització fora de línia. La prova ha utilitzat respostes de cotització controlades. La xarxa d’execució ha denegat la consulta directa al proveïdor i la descàrrega de WebKit. La prova física a l’iPhone queda pendent.
-
-**Relleu**. Branca `feat/a5-currency-converter-v80` al repositori original, amb PR en esborrany. Revisar la CI i l’abast de la PR. La fusió i el desplegament requereixen autorització expressa.
+**Verificació**. 188 proves locals seleccionades, compilació de Pages, paritat d’entrades i comprovació del paquet v80. La prova amb Chromium mòbil (390 px) ha verificat els quatre casos, la inversió, enrere i endavant, l’aïllament entre comptes i la reobertura en fred amb la cotització fora de línia. La prova ha utilitzat respostes de cotització controlades. La xarxa d’execució ha denegat la consulta directa al proveïdor i la descàrrega de WebKit. La Product Owner ha confirmat la validació física posterior a l’iPhone. L’A5 queda tancada. La PR #262 es va fusionar a `main` (`d6e0cff`) i GitHub Pages va confirmar la publicació de la v80. [Desplegament](https://github.com/ebarlabe-art/freya-travel/actions/runs/45504818170)
 
 ## A4.2 · Nom i interfície dels Consells de Freya · PR #261 fusionada a main, v79 (24/11/2026)
 
@@ -62,7 +70,7 @@ Branca `feat/a3-participants-roster-20261124`, després de la PR #257 fusionada 
 
 ## Roadmap recuperat d'agost · Freya Insights i moneda/divises (24/11/2026)
 
-La revisió de `docs/ROADMAP-CANONIC.md` incorpora **A4 Freya Insights** (ETA/visat, moneda/pagaments, transport local, endolls/eSIM, clima/equipatge, cultura, consells per activitat) amb informació contextual, font i data de vigència. Incorpora **A5 Moneda i canvi de divisa** (moneda local, tipus verificable i marca temporal, conversor dins del viatge, sense alterar imports del pressupost o repartiments). Aquests dos blocs no figuraven explícitament al roadmap canònic v1.3, i ara es restitueixen a v1.4. El pressupost TB-06 i les Despeses compartides existeixen, però **no equivalen** a un conversor de canvi live. A4/A5 segueixen pendents d'implementació i no han d'endarrerir els gates P0 DURANT.
+La revisió de `docs/ROADMAP-CANONIC.md` incorpora **A4 Freya Insights** (ETA/visat, moneda/pagaments, transport local, endolls/eSIM, clima/equipatge, cultura, consells per activitat) amb informació contextual, font i data de vigència. Incorpora **A5 Moneda i canvi de divisa** (moneda local, tipus verificable i marca temporal, conversor dins del viatge, sense alterar imports del pressupost o repartiments). Aquests dos blocs no figuraven explícitament al roadmap canònic v1.3, i ara es restitueixen a v1.4. El pressupost TB-06 i les Despeses compartides existeixen, però **no equivalen** a un conversor de canvi live. En el moment d'aquesta recuperació, A4/A5 encara estaven pendents. L’estat vigent es recull al començament de l’inventari.
 
 ## Importació PDF A2 · Comprovació real 24/11/2026
 
