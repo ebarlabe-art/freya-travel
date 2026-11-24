@@ -243,7 +243,7 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
       const {error} = await db.from('travel_expenses').insert(payload);
       if (error?.code === '23505') {
         const found = await db.from('travel_expenses').select('id,description,amount,currency,payer_user_id,split_shares').eq('trip_id',tripId).eq('id',operationId).maybeSingle();
-        if (!found.error && found.data?.id === operationId && found.data.description === description && found.data.currency === iso && found.data.payer_user_id === payer && amountToCents(String(found.data.amount)) === cents && JSON.stringify(found.data.split_shares) === JSON.stringify(shares)) return;
+        if (!found.error && found.data?.id === operationId && found.data.description === description && found.data.currency === iso && found.data.payer_user_id === payer && amountToCents(String(found.data.amount)) === cents && Array.isArray(found.data.split_shares) && found.data.split_shares.length === shares.length && found.data.split_shares.every((part,i) => part.user_id === shares[i].user_id && Number(part.amount_cents) === shares[i].amount_cents)) return;
       }
       if (error) throw error;
     }, 'Despesa desada i repartida.');
