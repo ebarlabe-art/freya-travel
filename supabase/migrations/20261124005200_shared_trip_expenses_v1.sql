@@ -163,15 +163,10 @@ on public.trip_expense_member_labels for update to authenticated
 using (user_id=(select auth.uid()) and public.is_trip_member(trip_id))
 with check (user_id=(select auth.uid()) and public.is_trip_member(trip_id));
 
--- Preserve legacy London deletion while protecting shared records from other members.
-create or replace function public.guard_shared_expense_delete_v1()
-returns trigger language plpgsql security invoker set search_path='' as $$
-begin
-  if old.payer_user_id is not null and old.created_by is distinct from auth.uid() then
-    raise exception 'Only the author may delete a shared expense' using errcode='42501';
-  end if;
-  return old;
-end $$;
-create trigger guard_shared_expense_delete_v1
-before delete on public.travel_expenses
-for each row execute function public.guard_shared_expense_delete_v1();
+-- Restrict shared-expense deletes to the original recorder while retaining
+-- the historical London DELETE policy for rows without a split.
+-- A restrictive RLS policy does not block FK ON DELETE CASCADE when a trip
+-- itself is removed (unlike a BEFORE DELETE trigger on child rows).
+create policy "shared expense author can delete"
+on public.travel_expenses as restrictive for delete to authenticated
+using (payer_user_id is null or created_by=(select auth.uid()));
