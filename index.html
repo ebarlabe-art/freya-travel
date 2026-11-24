@@ -5311,7 +5311,9 @@ function loadSharedExpenseScreen(){
   if(!trip||!session||isLondonTrip())return;
   const tripId=trip.id, generation=tripLoadGeneration, userId=session.user.id;
   const current=()=>tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId&&!offlineReadOnlySession&&navigator.onLine!==false;
-  const root=$('sharedExpensesRoot');root.textContent='Carregant despeses compartides…';
+  const root=$('sharedExpensesRoot');
+  if(offlineReadOnlySession||navigator.onLine===false){root.textContent='Per consultar o registrar despeses compartides, connecta’t a Internet i inicia sessió.';return;}
+  root.textContent='Carregant despeses compartides…';
   void loadTravelBookModule('shared-trip-expenses.mjs').then(api=>{
     if(!current()||visibleAppView()!=='sharedExpensesView')return;
     sharedExpensesController?.dispose();
