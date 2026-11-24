@@ -1,6 +1,18 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
-## A4.2 · Nom i interfície dels Consells de Freya · PR en esborrany, v79 (24/11/2026)
+## A5 · Moneda i canvi de divisa · v80 preparada en branca (24/11/2026)
+
+El conversor és accessible des del tauler genèric i el de Londres. Mostra les divises de les parades del viatge a partir del seu codi de país i del mapa de curs legal de Unicode CLDR 48.2.0. Fa servir la zona horària registrada quan falta el país i hi ha una correspondència coneguda. Detecta GBP per al Londres llegat. Permet seleccionar una divisa manualment, conservar la moneda habitual per compte i dispositiu, i invertir la conversió amb un toc. La interfície segueix A4.2 en català, castellà, anglès, francès i italià.
+
+El navegador consulta directament ExchangeRate-API Open Access. Una taula amb base EUR serveix per a conversions creuades. Es conserva l’última resposta vàlida al dispositiu, amb l’hora de la font en UTC i estat explícit fora de línia o si no s’ha pogut actualitzar. EUR/EUR funciona sense petició. La consulta només envia la petició pública de tipus de canvi. Imports i destinacions es processen al dispositiu. L’eina és orientativa i preserva els imports, pressupostos, despeses i liquidacions. No necessita canvis de Supabase.
+
+**Proveïdor i límits**. Accés gratuït sense clau, atribució visible, actualització diària, límits per IP i disponibilitat condicionada al servei. El proveïdor documenta 165 monedes, incloent GBP, JPY, LKR i MVR. Les cotitzacions de referència poden diferir del tipus i de les comissions bancàries. La primera conversió entre dues divises diferents requereix connexió si el dispositiu encara no té cap cotització. [ExchangeRate-API Open Access](https://www.exchangerate-api.com/docs/free) · [Cobertura](https://www.exchangerate-api.com/docs/supported-currencies)
+
+**Verificació**. 188 proves locals seleccionades, compilació de Pages, paritat d’entrades i comprovació del paquet v80. La prova amb Chromium mòbil (390 px) ha verificat els quatre casos, la inversió, enrere i endavant, l’aïllament entre comptes i la reobertura en fred amb la cotització fora de línia. La prova ha utilitzat respostes de cotització controlades. La xarxa d’execució ha denegat la consulta directa al proveïdor i la descàrrega de WebKit. La prova física a l’iPhone queda pendent.
+
+**Relleu**. Branca `feat/a5-currency-converter-v80` al repositori original, amb PR en esborrany. Revisar la CI i l’abast de la PR. La fusió i el desplegament requereixen autorització expressa.
+
+## A4.2 · Nom i interfície dels Consells de Freya · PR #261 fusionada a main, v79 (24/11/2026)
 
 El nom de la targeta i de la pantalla, el nom accessible de la secció i les referències dels estats es tradueixen amb la mateixa entrada de catàleg. Català «Consells de Freya», castellà «Consejos de Freya», anglès «Freya Insights», francès «Conseils de Freya» i italià «Consigli di Freya». També es tradueixen els controls, els temes i els missatges propis de la pantalla.
 
@@ -8,7 +20,7 @@ El `main` de partida (`c2f844d`) incorpora la PR #260. L’A4.1 queda validada f
 
 Criteri de producte incorporat a `AGENTS.md`: els noms de funcionalitats i els textos visibles han de seguir l’idioma seleccionat, amb l’excepció de marques i títols originals de fonts externes.
 
-**Proves:** contracte de localització en cinc idiomes i reserva en català, paritat d’entrades i comprovacions d’empaquetat de la PWA v79. **Relleu:** revisar la PR en esborrany de la branca `fix/a4-2-localize-freya-insights-v79`, a l’espera d’autorització per publicar.
+**Proves:** contracte de localització en cinc idiomes i reserva en català, paritat d’entrades i comprovacions d’empaquetat de la PWA v79. La PR #261 consta fusionada a `main` (`ca98961`), la base de l’A5.
 
 ## A4.1 · Correcció de visibilitat i lectura a iPhone · PR #260 fusionada i validada (24/11/2026)
 

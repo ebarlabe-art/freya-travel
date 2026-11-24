@@ -74,6 +74,17 @@
     .insights-hero{background:linear-gradient(135deg,#52348c,#8562b5);color:#fff;border-radius:24px;padding:23px;margin:14px 0;box-shadow:0 14px 32px rgba(79,55,139,.15)}
     .insights-hero h1{margin:9px 0;font-size:1.6rem}.insights-hero p{margin:0;line-height:1.5;color:#f8f0ff}
     .insights-hero-kicker{text-transform:uppercase;font-size:.72rem;letter-spacing:.12em;font-weight:800;color:#e8ddf6}
+    .currency-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .currency-controls label,.currency-input label{display:block;font-weight:700;min-width:0}
+    #tripCurrencyView input,#tripCurrencyView select,#tripCurrencyView button{min-height:44px;font-size:16px}
+    #tripCurrencyView select{width:100%;text-overflow:ellipsis}
+    .currency-conversion{display:grid;grid-template-columns:minmax(0,1fr) 48px;align-items:end;gap:10px;margin-top:12px}
+    .currency-input{min-width:0}
+    .currency-input input{width:100%}
+    .currency-result{display:block;font-size:clamp(1.5rem,8vw,2.25rem);font-weight:750;overflow-wrap:anywhere}
+    .currency-destinations{padding-inline-start:20px;overflow-wrap:anywhere}
+    .currency-quote{border-top:1px solid var(--line);padding-top:12px;overflow-wrap:anywhere}
+    .currency-quote p{margin:0 0 6px}
     .insights-status{margin:14px 0;background:#f2eaf8;color:#493765;border:1px solid #d8c8e9;padding:15px;border-radius:16px;line-height:1.5}
     .insights-status.is-loading{display:flex;align-items:center;gap:11px}
     .insights-status.is-loading::before{content:'';width:17px;height:17px;flex:none;border:3px solid #b8a6ce;border-top-color:#684b9d;border-radius:50%;animation:insights-spin .9s linear infinite}
@@ -877,7 +888,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
           <button class="generic-module-card" type="button" data-open="sharedExpensesView"><span class="generic-module-icon">💸</span><span class="generic-module-copy"><strong>Despeses compartides</strong><small>Pagaments, repartiment i saldos del grup</small></span><span class="generic-module-arrow">›</span></button>
           <button class="generic-module-card is-ready" type="button" data-open="parkingView"><span class="generic-module-icon">🚗</span><span class="generic-module-copy"><strong>Aparcament</strong><small id="genericParkingModuleStatus">A punt per utilitzar</small></span><span class="generic-module-arrow">›</span></button>
           <button class="generic-module-card is-ready" type="button" data-open="weatherView"><span class="generic-module-icon">🌦️</span><span class="generic-module-copy"><strong>Temps</strong><small>Previsió del viatge</small></span><span class="generic-module-arrow">›</span></button>
-          <button class="generic-module-card" type="button" data-generic-module="currency"><span class="generic-module-icon">💱</span><span class="generic-module-copy"><strong>Moneda</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
+          <button class="generic-module-card is-ready" type="button" data-currency-ui data-open="tripCurrencyView"><span class="generic-module-icon" aria-hidden="true">💱</span><span class="generic-module-copy"><strong data-currency-text="title"></strong><small data-currency-text="entry"></small></span><span class="generic-module-arrow" aria-hidden="true">›</span></button>
           <button id="genericPhotosModuleCard" class="generic-module-card is-ready" type="button" data-open="photosView"><span class="generic-module-icon">📸</span><span class="generic-module-copy"><strong>Fotos</strong><small id="genericPhotosModuleStatus">Galeria compartida del viatge</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericTravelersToggle" class="generic-module-card is-ready" type="button"><span class="generic-module-icon">👥</span><span class="generic-module-copy"><strong>Viatgers</strong><small id="genericTravelersModuleStatus">Invitacions del viatge</small></span><span class="generic-module-arrow">›</span></button>
           <button id="genericTripSettingsToggle" class="generic-module-card is-ready hidden" type="button"><span class="generic-module-icon">⚙️</span><span class="generic-module-copy"><strong>Configuració</strong><small>Nom i dates</small></span><span class="generic-module-arrow">›</span></button>
@@ -919,6 +930,41 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
       </div>
     </div>
 
+    <div id="tripCurrencyView" class="hidden" data-currency-ui>
+      <button id="currencyBack" type="button" class="ghost back"><span aria-hidden="true">←</span> <span data-currency-text="back"></span></button>
+      <h1 id="currencyTitle" tabindex="-1" data-currency-text="title"></h1>
+      <p id="currencyOpening" role="status" data-currency-text="opening"></p>
+      <div id="currencyBody" class="hidden">
+        <section class="card" aria-labelledby="currencyDestinationsHeading">
+          <h2 id="currencyDestinationsHeading" data-currency-text="destinations"></h2>
+          <ul id="currencyDestinations" class="currency-destinations"></ul>
+          <p id="currencyNoDestinations" class="muted" data-currency-text="noDestinations"></p>
+        </section>
+        <section class="card" aria-labelledby="currencyResultLabel">
+          <div class="currency-controls">
+            <label><span data-currency-text="usual"></span><select id="currencyUsual"></select></label>
+            <label><span data-currency-text="local"></span><select id="currencyLocal"></select></label>
+          </div>
+          <div class="currency-conversion">
+            <div class="currency-input">
+              <label for="currencyAmount"><span data-currency-text="amount"></span> <span id="currencyFromCode"></span></label>
+              <input id="currencyAmount" type="text" inputmode="decimal" autocomplete="off" maxlength="28" aria-describedby="currencyAmountError">
+            </div>
+            <button id="currencySwap" class="secondary" type="button"><span aria-hidden="true">⇄</span></button>
+          </div>
+          <p id="currencyAmountError" class="message error hidden" data-currency-text="invalid"></p>
+          <p><span id="currencyResultLabel" data-currency-text="result"></span><output id="currencyResult" class="currency-result" for="currencyAmount currencyUsual currencyLocal">—</output></p>
+          <p id="currencyStatus" class="muted hidden" role="status"></p>
+          <div id="currencyQuote" class="currency-quote hidden">
+            <p id="currencyRate"></p>
+            <p><span data-currency-text="updated"></span> <time id="currencyRateTime"></time></p>
+            <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener noreferrer">Rates By Exchange Rate API</a>
+          </div>
+          <p class="muted" data-currency-text="bank"></p>
+          <button id="currencyRefresh" type="button" class="secondary hidden" data-currency-text="refresh"></button>
+        </section>
+      </div>
+    </div>
     <div id="insightsView" class="hidden">
       <button type="button" class="ghost back" data-back><span aria-hidden="true">←</span> <span data-insight-text="back"></span></button>
       <header class="insights-hero">
@@ -1523,6 +1569,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         <button class="menu-card" data-open="ticketsView"><span class="icon">🎟️</span><strong>Entrades</strong><small>Cartera digital del viatge</small></button>
         <button class="menu-card" data-open="favoritesView"><span class="icon">⭐</span><strong>Preferits <span id="favoriteCount" class="favorite-count">0</span></strong><small>Els vostres imprescindibles</small></button>
         <button class="menu-card" data-open="documentsView"><span class="icon">📄</span><strong>Documents <span id="documentCount" class="doc-count">0</span></strong><small>PDF, captures i QR privats</small></button>
+        <button class="menu-card" type="button" data-currency-ui data-open="tripCurrencyView"><span class="icon" aria-hidden="true">💱</span><strong data-currency-text="title"></strong><small data-currency-text="entry"></small></button>
         <button class="menu-card" data-open="expensesView"><span class="icon">💶</span><strong>Despeses <span id="expenseCount" class="expense-count">0</span></strong><small>Registre del compte comú</small></button>
         <button class="menu-card" data-open="transportView"><span class="icon">🚇</span><strong>Transport</strong><small>Guia pràctica de Londres</small></button>
         <button class="menu-card" data-open="restaurantsView"><span class="icon">🍽️</span><strong>Restaurants</strong><small>Menja bé per cada zona</small></button>
@@ -2532,9 +2579,80 @@ for(const root of document.querySelectorAll('#genericTripInsights, #insightsView
   }
 }
 </script>
+<script id="freyaCurrencyTranslations">
+const currencyCopy={
+  ca:{
+    opening:'Carregant el conversor…',openError:'El conversor no s’ha pogut carregar. Tanca’l i torna’l a obrir.',
+    title:'Moneda i canvi de divisa',entry:'Moneda local i conversió orientativa',back:'Torna al viatge',
+    destinations:'Moneda a les destinacions',unknown:'Moneda per identificar',noDestinations:'Selecciona la moneda local si el viatge encara no té una destinació identificada.',
+    usual:'Moneda habitual',local:'Moneda local',choose:'Selecciona una moneda',other:'Altres monedes',
+    amount:'Import',result:'Resultat orientatiu',swap:'Inverteix les monedes',invalid:'Introdueix un import vàlid, sense separadors de milers.',
+    same:'Les dues monedes són iguals. No cal fer cap conversió.',loading:'Consultant la cotització…',
+    offline:'Sense connexió. S’utilitza l’última cotització desada.',offlineEmpty:'Sense connexió i sense cotització desada per a aquestes monedes.',
+    stale:'S’utilitza l’última cotització desada. No s’ha pogut actualitzar.',unavailable:'Ara mateix no hi ha cap cotització disponible per a aquestes monedes.',
+    updated:'Cotització de',refresh:'Actualitza la cotització',
+    bank:'Canvi orientatiu. El teu banc o la teva targeta poden aplicar un tipus diferent i comissions.'
+  },
+  es:{
+    opening:'Cargando el conversor…',openError:'No se ha podido cargar el conversor. Ciérralo y vuelve a abrirlo.',
+    title:'Moneda y cambio de divisas',entry:'Moneda local y conversión orientativa',back:'Volver al viaje',
+    destinations:'Moneda en los destinos',unknown:'Moneda sin identificar',noDestinations:'Selecciona la moneda local si el viaje aún no tiene un destino identificado.',
+    usual:'Moneda habitual',local:'Moneda local',choose:'Selecciona una moneda',other:'Otras monedas',
+    amount:'Importe',result:'Resultado orientativo',swap:'Invertir las monedas',invalid:'Introduce un importe válido, sin separadores de miles.',
+    same:'Las dos monedas son iguales. No hace falta convertir.',loading:'Consultando la cotización…',
+    offline:'Sin conexión. Se usa la última cotización guardada.',offlineEmpty:'Sin conexión y sin cotización guardada para estas monedas.',
+    stale:'Se usa la última cotización guardada. No se ha podido actualizar.',unavailable:'Ahora mismo no hay cotización disponible para estas monedas.',
+    updated:'Cotización del',refresh:'Actualizar la cotización',
+    bank:'Cambio orientativo. Tu banco o tu tarjeta pueden aplicar otro tipo de cambio y comisiones.'
+  },
+  en:{
+    opening:'Loading the converter…',openError:'The converter could not load. Close it and open it again.',
+    title:'Currency and exchange rates',entry:'Local currency and estimated conversions',back:'Back to trip',
+    destinations:'Currencies at your destinations',unknown:'Currency not identified',noDestinations:'Choose a local currency if your trip does not yet have an identified destination.',
+    usual:'Home currency',local:'Local currency',choose:'Choose a currency',other:'Other currencies',
+    amount:'Amount',result:'Estimated result',swap:'Swap currencies',invalid:'Enter a valid amount without thousands separators.',
+    same:'Both currencies are the same. No conversion is needed.',loading:'Checking the exchange rate…',
+    offline:'Offline. Using the last saved rate.',offlineEmpty:'Offline. There is no saved rate for these currencies.',
+    stale:'Using the last saved rate. The rate could not be refreshed.',unavailable:'No exchange rate is currently available for these currencies.',
+    updated:'Rate as of',refresh:'Refresh exchange rate',
+    bank:'Indicative rate. Your bank or card provider may use a different rate and charge fees.'
+  },
+  fr:{
+    opening:'Chargement du convertisseur…',openError:'Le convertisseur n’a pas pu se charger. Fermez-le puis rouvrez-le.',
+    title:'Devises et taux de change',entry:'Devise locale et conversion indicative',back:'Retour au voyage',
+    destinations:'Devises des destinations',unknown:'Devise non identifiée',noDestinations:'Choisissez la devise locale si votre voyage n’a pas encore de destination identifiée.',
+    usual:'Devise habituelle',local:'Devise locale',choose:'Choisissez une devise',other:'Autres devises',
+    amount:'Montant',result:'Résultat indicatif',swap:'Inverser les devises',invalid:'Saisissez un montant valide, sans séparateurs de milliers.',
+    same:'Les deux devises sont identiques. Aucune conversion nécessaire.',loading:'Consultation du taux de change…',
+    offline:'Hors connexion. Le dernier taux enregistré est utilisé.',offlineEmpty:'Hors connexion. Aucun taux enregistré pour ces devises.',
+    stale:'Le dernier taux enregistré est utilisé. La mise à jour a échoué.',unavailable:'Aucun taux de change n’est actuellement disponible pour ces devises.',
+    updated:'Taux du',refresh:'Actualiser le taux de change',
+    bank:'Taux indicatif. Votre banque ou votre carte peut appliquer un autre taux et des frais.'
+  },
+  it:{
+    opening:'Caricamento del convertitore…',openError:'Impossibile caricare il convertitore. Chiudilo e riaprilo.',
+    title:'Valute e tassi di cambio',entry:'Valuta locale e conversione indicativa',back:'Torna al viaggio',
+    destinations:'Valute delle destinazioni',unknown:'Valuta non identificata',noDestinations:'Seleziona la valuta locale se il viaggio non ha ancora una destinazione identificata.',
+    usual:'Valuta abituale',local:'Valuta locale',choose:'Seleziona una valuta',other:'Altre valute',
+    amount:'Importo',result:'Risultato indicativo',swap:'Inverti le valute',invalid:'Immetti un importo valido, senza separatori delle migliaia.',
+    same:'Le due valute coincidono. Non serve alcuna conversione.',loading:'Consultazione del tasso di cambio…',
+    offline:'Sei offline. Viene usato l’ultimo tasso salvato.',offlineEmpty:'Sei offline. Non c’è un tasso salvato per queste valute.',
+    stale:'Viene usato l’ultimo tasso salvato. Non è stato possibile aggiornarlo.',unavailable:'Al momento non è disponibile un tasso di cambio per queste valute.',
+    updated:'Tasso del',refresh:'Aggiorna il tasso di cambio',
+    bank:'Tasso indicativo. La tua banca o la tua carta può applicare un tasso diverso e commissioni.'
+  }
+}[insightsLanguage];
+for(const root of document.querySelectorAll('[data-currency-ui]')){
+  root.lang=insightsLanguage;
+  for(const node of root.querySelectorAll('[data-currency-text]')){
+    node.textContent=currencyCopy[node.dataset.currencyText];
+  }
+}
+document.getElementById('currencySwap').setAttribute('aria-label',currencyCopy.swap);
+</script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-a4-2-insights-v79';
+const FREYA_FRONTEND_RELEASE='pwa-a5-currency-v80';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -4391,7 +4509,6 @@ const GENERIC_MODULES={
   expenses:{icon:'🧾',title:'Despeses reals',copy:'Aquí registraràs el que vas gastant durant el viatge. És diferent del pressupost, que serveix per planificar i controlar el cost previst.'},
   parking:{icon:'🚗',title:'Aparcament',copy:'Encara no has configurat cap aparcament per aquest viatge.'},
   weather:{icon:'🌦️',title:'Temps',copy:'La previsió meteorològica d’aquest viatge encara no està configurada.'},
-  currency:{icon:'💱',title:'Moneda',copy:'La informació de moneda i canvi d’aquest viatge encara no està configurada.'},
   travelers:{icon:'👥',title:'Viatgers',copy:'Pots convidar altres persones amb el codi d’invitació disponible al tauler del viatge.',state:'Invitacions disponibles'}
 };
 function openGenericModule(key){
@@ -4745,8 +4862,8 @@ const CURRENCY_OPTIONS=[
   ['AED','Dírham dels Emirats Àrabs Units'],['AFN','Afghani afganès'],['ALL','Lek albanès'],['AMD','Dram armeni'],['ANG','Florí de les Antilles Neerlandeses'],['AOA','Kwanza angolès'],['ARS','Peso argentí'],['AWG','Florí d’Aruba'],['AZN','Manat azerbaidjanès'],['BAM','Marc convertible de Bòsnia i Hercegovina'],['BBD','Dòlar de Barbados'],['BDT','Taka de Bangla Desh'],['BHD','Dinar de Bahrain'],['BIF','Franc de Burundi'],['BMD','Dòlar de Bermudes'],['BND','Dòlar de Brunei'],['BOB','Boliviano'],['BRL','Real brasiler'],['BSD','Dòlar de les Bahames'],['BTN','Ngultrum de Bhutan'],['BWP','Pula de Botswana'],['BYN','Ruble belarús'],['BZD','Dòlar de Belize'],['CDF','Franc congolès'],['CLP','Peso xilè'],['CNY','Iuan renminbi'],['COP','Peso colombià'],['CRC','Colón costa-riqueny'],['CUP','Peso cubà'],['CVE','Escut capverdià'],['DJF','Franc de Djibouti'],['DOP','Peso dominicà'],['DZD','Dinar algerià'],['EGP','Lliura egípcia'],['ERN','Nakfa eritreu'],['ETB','Birr etíop'],['FJD','Dòlar de Fiji'],['FKP','Lliura de les Malvines'],['GEL','Lari georgià'],['GHS','Cedi ghanès'],['GIP','Lliura de Gibraltar'],['GMD','Dalasi gambià'],['GNF','Franc guineà'],['GTQ','Quetzal guatemalenc'],['GYD','Dòlar de Guyana'],['HKD','Dòlar de Hong Kong'],['HNL','Lempira hondurenya'],['HTG','Gourde haitià'],['IDR','Rupia indonèsia'],['ILS','Nou xéquel israelià'],['INR','Rupia índia'],['IQD','Dinar iraquià'],['IRR','Rial iranià'],['ISK','Corona islandesa'],['JMD','Dòlar jamaicà'],['JOD','Dinar jordà'],['KES','Xíling kenyà'],['KGS','Som kirguís'],['KHR','Riel cambodjà'],['KMF','Franc comorià'],['KPW','Won nord-coreà'],['KRW','Won sud-coreà'],['KWD','Dinar kuwaitià'],['KYD','Dòlar de les Illes Caiman'],['KZT','Tenge kazakh'],['LAK','Kip laosià'],['LBP','Lliura libanesa'],['LKR','Rupia de Sri Lanka'],['LRD','Dòlar liberià'],['LSL','Loti de Lesotho'],['LYD','Dinar libi'],['MAD','Dírham marroquí'],['MDL','Leu moldau'],['MGA','Ariary malgaix'],['MKD','Denar macedoni'],['MMK','Kyat de Myanmar'],['MNT','Tögrög mongol'],['MOP','Pataca de Macau'],['MRU','Ouguiya maurità'],['MUR','Rupia mauriciana'],['MVR','Rufiyaa de les Maldives'],['MWK','Kwacha malawià'],['MXN','Peso mexicà'],['MYR','Ringgit malaisi'],['MZN','Metical moçambiquès'],['NAD','Dòlar namibià'],['NGN','Naira nigeriana'],['NIO','Córdoba nicaragüenc'],['NPR','Rupia nepalesa'],['NZD','Dòlar neozelandès'],['OMR','Rial omanita'],['PAB','Balboa panameny'],['PEN','Sol peruà'],['PGK','Kina de Papua Nova Guinea'],['PHP','Peso filipí'],['PKR','Rupia pakistanesa'],['PYG','Guaraní paraguaià'],['QAR','Rial qatarià'],['RON','Leu romanès'],['RSD','Dinar serbi'],['RUB','Ruble rus'],['RWF','Franc ruandès'],['SAR','Rial saudita'],['SBD','Dòlar de les Illes Salomó'],['SCR','Rupia de les Seychelles'],['SDG','Lliura sudanesa'],['SGD','Dòlar de Singapur'],['SHP','Lliura de Santa Helena'],['SLE','Leone de Sierra Leone'],['SOS','Xíling somali'],['SRD','Dòlar de Surinam'],['SSP','Lliura del Sudan del Sud'],['STN','Dobra de São Tomé i Príncipe'],['SYP','Lliura siriana'],['SZL','Lilangeni d’Eswatini'],['THB','Baht tailandès'],['TJS','Somoni tadjik'],['TMT','Manat turcman'],['TND','Dinar tunisià'],['TOP','Paʻanga tongalès'],['TRY','Lira turca'],['TTD','Dòlar de Trinitat i Tobago'],['TWD','Nou dòlar taiwanès'],['TZS','Xíling tanzà'],['UAH','Hrívnia ucraïnesa'],['UGX','Xíling ugandès'],['UYU','Peso uruguaià'],['UZS','Som uzbek'],['VES','Bolívar veneçolà'],['VND','Dong vietnamita'],['VUV','Vatu de Vanuatu'],['WST','Tala samoà'],['XAF','Franc CFA d’Àfrica Central'],['XCD','Dòlar del Carib Oriental'],['XOF','Franc CFA d’Àfrica Occidental'],['XPF','Franc CFP'],['YER','Rial iemenita'],['ZAR','Rand sud-africà'],['ZMW','Kwacha zambià']
 ];
 const COMMON_CURRENCIES=new Set(['EUR','GBP','USD','CHF','JPY','CAD','AUD','SEK','NOK','DKK','PLN','CZK','HUF']);
-function tripDefaultCurrency(){
-  const tz=trip?.time_zone||'';
+function tripDefaultCurrency(value=trip){
+  const tz=value?.time_zone||'';
   const map={
     'Europe/Madrid':'EUR','Europe/Paris':'EUR','Europe/Rome':'EUR','Europe/Berlin':'EUR','Europe/Amsterdam':'EUR','Europe/Brussels':'EUR','Europe/Vienna':'EUR','Europe/Lisbon':'EUR','Europe/Helsinki':'EUR','Europe/Tallinn':'EUR','Europe/Riga':'EUR','Europe/Vilnius':'EUR','Europe/Dublin':'EUR','Europe/Athens':'EUR','Europe/Luxembourg':'EUR','Europe/Bratislava':'EUR','Europe/Ljubljana':'EUR','Europe/Zagreb':'EUR',
     'Europe/London':'GBP','Europe/Zurich':'CHF','Europe/Stockholm':'SEK','Europe/Oslo':'NOK','Europe/Copenhagen':'DKK','Europe/Warsaw':'PLN','Europe/Prague':'CZK','Europe/Budapest':'HUF','Europe/Bucharest':'RON','Europe/Reykjavik':'ISK','Europe/Istanbul':'TRY',
@@ -5569,8 +5686,39 @@ function loadSharedExpenseScreen(){
     root.textContent='No hem pogut obrir les despeses compartides: '+(error?.message||'Error inesperat.');
   });
 }
-const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','insightsView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','travelBookView','documentsView','expensesView','sharedExpensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','insightsView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','travelBookView','itineraryView','parkingView','weatherView','sharedExpensesView']);
+let tripCurrencyController=null;
+function renderTripCurrency(){
+  const selected=trip,userId=session?.user?.id,generation=tripLoadGeneration;
+  if(!selected||!userId)return;
+  const current=()=>visibleAppView()==='tripCurrencyView'&&tripRequestIsCurrent(selected.id,generation)&&session?.user?.id===userId;
+  const open=()=>{
+    tripCurrencyController.open({trip:selected,stops:tripStopRows,userId,current});
+    hide('currencyOpening');show('currencyBody');
+  };
+  if(tripCurrencyController){open();return}
+  $('currencyOpening').textContent=currencyCopy.opening;
+  show('currencyOpening');
+  void loadTravelBookModule('trip-currency-ui.mjs').then(({mountTripCurrency})=>{
+    if(!current())return;
+    tripCurrencyController??=mountTripCurrency($('tripCurrencyView'),{
+      copy:currencyCopy,language:insightsLanguage,preferredLocale:navigator.language,
+      existing:CURRENCY_OPTIONS.map(([code])=>code),common:COMMON_CURRENCIES,
+      zoneCurrency:tripDefaultCurrency,getStorage:()=>localStorage
+    });
+    open();
+  }).catch(()=>{if(current())$('currencyOpening').textContent=currencyCopy.openError});
+}
+function currentCurrencyHistory(marker=history.state?.tripCurrency){
+  return !!marker&&marker.owner===session?.user?.id&&marker.id===trip?.id;
+}
+function closeTripCurrency(){
+  const dashboard=tripDashboardId();
+  setAppView(dashboard);
+  $(dashboard).querySelector('[data-open="tripCurrencyView"]')?.focus();
+}
+
+const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','tripCurrencyView','insightsView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','travelBookView','documentsView','expensesView','sharedExpensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','tripCurrencyView','insightsView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','travelBookView','itineraryView','parkingView','weatherView','sharedExpensesView']);
 const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','insightsView','genericModuleView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','sharedExpensesView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
   if(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(view))return true;
@@ -5612,6 +5760,7 @@ function setAppView(id){
   if(id!=='builderView'&&typeof coldStartNavigationPending!=='undefined'&&!coldStartNavigationPending)leaveBuilderPointer();
   persistNavigationState(id);
   updateTripHomeClock();updateHomeClock();
+  if(id==='tripCurrencyView'){renderTripCurrency();$('currencyTitle').focus({preventScroll:true})}
   if(id==='documentsView')updateDocumentsBack();if(id==='budgetView')loadBudgetView();if(id==='tripReviewView')loadTripReview();
   if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView'){setActivityViewMode('activity');loadActivityViewData()}if(id==='localTransportView')loadLocalTransportViewData();if(id==='carRentalView')loadCarRentals();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='travelBookView')loadTravelBookView();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='sharedExpensesView')loadSharedExpenseScreen();if(id==='insightsView')void renderTripInsights();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
 }
@@ -8221,6 +8370,7 @@ function clearTripScopedState(){
   closeDocumentViewer();
   offlineSnapshotActive=false;offlineSnapshotSavedAt=null;updateConnectivityBanner();
   resetPhotoV2();
+  tripCurrencyController?.reset();hide('currencyBody');show('currencyOpening');
   clearDocumentsReturnContext();
   clearAccommodationVoucherFocus();
   clearGenericItineraryState();
@@ -8347,6 +8497,11 @@ function handleHomeTripPopState(event){
   if(handleCulturalGuideHistory(event))return true;
   if(handleActivityPlanningHistory(event))return true;
   const view=visibleAppView(),nav=event.state?.builderNav,detail=event.state?.homeTripDetail;
+  if(view==='tripCurrencyView'){
+    if(!currentCurrencyHistory(event.state?.tripCurrency??null)){closeTripCurrency();return true}
+  }else if(view===tripDashboardId()&&currentCurrencyHistory(event.state?.tripCurrency??null)){
+    setAppView('tripCurrencyView');return true;
+  }
   const operational=['dashboardView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','itineraryView','parkingView','weatherView'].includes(view);
   if(operational&&nav?.view==='builderView')return true; // Stale Builder history can never resurrect over an operational trip.
   if(homeTripReturn?.owner===session?.user?.id&&['dashboardView','genericDashboardView'].includes(view)&&nav?.owner===session?.user?.id&&nav.view===homeTripReturn.parent){navigateBuilder(nav.view,false);return true}
@@ -8770,9 +8925,13 @@ document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
   if(b.dataset.open==='activitiesView'&&b.dataset.activityMode)setActivityViewMode(b.dataset.activityMode);
   if(['genericFlightsView','accommodationView','activitiesView','localTransportView','carRentalView','itineraryView'].includes(b.dataset.open))clearItinerarySourceContext();
   if(b.dataset.open==='localTransportView'&&!validItinerarySourceContext())resetLocalTransportForm();
+  if(b.dataset.open==='tripCurrencyView'&&trip&&session?.user?.id){
+    history.pushState({...history.state,tripCurrency:{owner:session.user.id,id:trip.id}},'');
+  }
   updateItinerarySourceBack();setAppView(b.dataset.open)
 });
 $('travelBookBack').onclick=()=>setAppView(travelBookReturnView||tripDashboardId());
+$('currencyBack').onclick=()=>{if(currentCurrencyHistory())history.back();else closeTripCurrency()};
 $('insightsRefresh').onclick=()=>void renderTripInsights({force:true});
  $('tripReviewBack').onclick=()=>setAppView('buildView');$('backToTrips').onclick=returnFromHomeTrip;document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=returnFromHomeTrip);document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-generic-module]').forEach(b=>b.onclick=()=>openGenericModule(b.dataset.genericModule));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(visibleAppView()==='itineraryView'&&validOperationalReturnRoute('itineraryView')?.parentView==='activitiesView'){if(history.state?.activityPlanning?.view==='itineraryView'){history.back();return}clearOperationalReturnRoute('itineraryView');setAppView('activitiesView');return}setAppView(tripDashboardId())});document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
 document.querySelectorAll('[data-source-back]').forEach(button=>button.onclick=handleItinerarySourceBack);

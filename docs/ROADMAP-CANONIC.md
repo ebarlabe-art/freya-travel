@@ -201,7 +201,7 @@ Completar la capa de producte sobre la infraestructura existent:
 ---
 
 ### A4. Preparació intel·ligent · Consells de Freya
-**Prioritat: P1 · A4.1 validada a l’iPhone (v78, PR #260) · A4.2 en esborrany (v79)**
+**Prioritat: P1 · A4.1 validada a l’iPhone (v78, PR #260) · A4.2 a `main` (v79, PR #261)**
 
 Capa d'ajuda contextual abans i durant el viatge, **no** un calaix genèric de «Recomanacions» ni la IA predictiva futura. S'activa segons país/destinació, dates, etapa del viatge i activitat, amb font i data de verificació; no presenta informació legal o tarifària obsoleta com a actual.
 
@@ -219,19 +219,20 @@ Capa d'ajuda contextual abans i durant el viatge, **no** un calaix genèric de �
 
 **A4.1 (v78, PR #260):** una targeta destacada obre una pantalla pròpia amb el progrés de la cerca, estats d’error i reintent, resultats, fonts i data. Validació física a l’iPhone confirmada per l’usuària.
 
-**A4.2 (v79):** localització del nom i dels textos de la interfície dels Consells de Freya. Publicació pendent d’autorització. Les recomanacions per activitat continuen pendents.
+**A4.2 (v79, PR #261):** localització del nom i dels textos de la interfície dels Consells de Freya, incorporada a `main`. Les recomanacions per activitat continuen pendents.
 
 **CLOSED quan:** un viatger rep avisos pràctics i rellevants amb informació verificable, data de vigència i una manera clara de consultar la font oficial, sense haver de buscar-los en una pantalla buida.
 
 ### A5. Moneda i canvi de divisa
-**Prioritat: P1 · RECUPERAT DEL ROADMAP D'AGOST, PENDENT**
+**Prioritat: P1 · PWA v80 preparada en esborrany, publicació pendent d’autorització**
 
-- Mostrar moneda local de la destinació, distingint-la de la moneda del pressupost/despeses ja registrades.
-- Consultar un tipus de canvi real amb proveïdor i marca temporal visible; si no es pot actualitzar, mostrar-ne la data o indicar que no hi ha cotització fiable.
-- Calculadora ràpida de conversió dins del viatge, amb import/moneda d'origen i destí, sense modificar saldos ni registres històrics.
-- Futur: centre de despeses connectat amb el pressupost; reutilitzar TB-06 i el mòdul de Despeses compartides actual. No inventar una segona comptabilitat.
+- Conversor al tauler de cada viatge, accessible durant la preparació i durant el viatge. Detecta les divises de les parades i ofereix selecció manual en viatges amb una o més monedes.
+- Converteix entre moneda habitual i moneda local, amb inversió en un toc. Quan els codis coincideixen, mostra l’import directament.
+- Cotitzacions orientatives diàries d’ExchangeRate-API, amb font i hora de la publicació en UTC. L’última cotització vàlida es conserva al dispositiu per a ús fora de línia.
+- La conversió i l’avís sobre comissions es mostren a l’eina de moneda. El pressupost i els registres de despeses i liquidacions mantenen les monedes i imports originals.
+- El futur centre de despeses vinculat amb TB-06 i el mòdul de Despeses compartides queda fora de l’A5.
 
-**CLOSED quan:** es pot convertir una quantitat amb tipus i data coneguts, sense presentar un import estimat com a càrrec o saldo real.
+**CLOSED quan** es pot convertir una quantitat amb tipus i data coneguts i queda clar que el resultat és una estimació del canvi.
 
 ---
 
@@ -521,4 +522,4 @@ No es crea un roadmap paral·lel.
 
 > **A3 · Participants.** El 24/11/2026, la prova física d'un PDF idèntic al de Barcelona ha comparat 6 activitats amb 6 existents, sense canvis pendents ni escriptures. Això valida la reimportació sense duplicats en aquest cas, però no acredita per si sol totes les variants d'A2.
 
-**A3 tancat i publicat** (PR #258; prova real de dos participants). **A4.1 validada a l’iPhone.** La propera entrega és A4.2 (v79), amb el nom i la interfície dels Consells de Freya localitzats i la publicació pendent d’autorització. A5 moneda/divises continua pendent.
+**A3 tancat i publicat** (PR #258; prova real de dos participants). **A4.1 validada a l’iPhone.** L’A4.2 (v79) és a `main` amb el nom i la interfície dels Consells de Freya localitzats. L’A5 (v80) està preparada en esborrany, pendent d’autorització per publicar.
