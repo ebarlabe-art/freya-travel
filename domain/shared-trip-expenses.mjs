@@ -135,6 +135,61 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
     update();
   }
 
+
+  function editSplitMarkup(row) {
+    const former = row.split_shares.some(part => !members.some(member => member.user_id === part.user_id));
+    if (former) return '<p class="muted">Aquest repartiment inclou antics participants. No es pot editar des d’aquesta pantalla.</p>';
+    const selectedIds = row.split_shares.map(part => part.user_id);
+    const total = amountToCents(String(row.amount));
+    const equal = sameSharedAllocation(row.split_shares, equalShares(total,selectedIds));
+    return '<form class="shared-expense-form shared-expense-editor" data-edit-split="' + escapeHtml(row.id) + '">' +
+      '<h4>Revisa el repartiment de ' + escapeHtml(row.description) + '</h4>' +
+      '<p class="muted">Només canviarem qui assumeix els ' + money(total,row.currency) + '. La despesa, el pagador i la moneda es conservaran.</p>' +
+      '<fieldset><legend>Nou repartiment</legend><label><input type="radio" name="edit-mode" value="equal"' + (equal?' checked':'') + '> A parts iguals</label> ' +
+      '<label><input type="radio" name="edit-mode" value="custom"' + (!equal?' checked':'') + '> Imports personalitzats</label>' +
+      members.map(member => {
+        const part = row.split_shares.find(s => s.user_id === member.user_id);
+        return '<label class="shared-expense-participant"><span><input type="checkbox" data-edit-member="' + escapeHtml(member.user_id) + '"' + (part?' checked':'') + '> ' +
+          escapeHtml(name(member.user_id)) + '</span><input type="number" inputmode="decimal" step="0.01" min="0.01" data-edit-amount="' +
+          escapeHtml(member.user_id) + '" aria-label="Part de ' + escapeHtml(name(member.user_id)) + '"' +
+          (equal||!part?' disabled':'') + ' value="' + (part?(Number(part.amount_cents)/100).toFixed(2):'') + '"></label>';
+      }).join('') + '</fieldset>' +
+      '<p class="muted" data-edit-preview aria-live="polite"></p>' +
+      '<div class="shared-expense-inline"><button type="submit">Desa el nou repartiment</button><button type="button" class="secondary" data-cancel-edit>Cancel·la</button></div></form>';
+  }
+
+  function updateSplitPreview(form, editedRow = null) {
+    if (!form) return;
+    const out = form.querySelector(editedRow?'[data-edit-preview]':'[data-new-preview]');
+    if (!out) return;
+    const prefix = editedRow?'edit':'split';
+    const inputs = [...form.querySelectorAll(editedRow?'[data-edit-member]':'[data-split-member]')];
+    const selected = inputs.filter(x=>x.checked).map(x=>editedRow?x.dataset.editMember:x.dataset.splitMember);
+    const selectionMode = form.querySelector('input[name="' + (editedRow?'edit-mode':'mode') + '"]:checked')?.value;
+    for (const input of form.querySelectorAll(editedRow?'[data-edit-amount]':'[data-split-amount]')) {
+      const memberId = editedRow ? input.dataset.editAmount : input.dataset.splitAmount;
+      input.disabled = selectionMode !== 'custom' || !selected.includes(memberId);
+    }
+    try {
+      const cents = editedRow ? amountToCents(String(editedRow.amount)) : amountToCents(form.elements.amount.value);
+      const parts = selectionMode === 'custom' ? customShares(cents,selected.map(user_id=>({
+        user_id, amount: form.querySelector('[data-' + prefix + '-amount="' + user_id + '"]').value
+      }))) : equalShares(cents,selected);
+      const iso = editedRow?.currency || form.elements.currency.value.trim().toUpperCase();
+      if (!isoCurrency(iso)) throw Error('Indica una moneda ISO vàlida.');
+      out.textContent = 'Repartiment: ' + parts.map(part=>name(part.user_id)+' '+money(part.amount_cents,iso)).join(' · ');
+    } catch (error) {
+      out.textContent = error?.message || 'Revisa el repartiment abans de desar.';
+    }
+  }
+
+  async function requireCurrentMembers() {
+    const {data,error} = await db.from('trip_members').select('user_id').eq('trip_id',tripId);
+    if (error) throw error;
+    const same = data?.length === members.length && data.every(member=>members.some(m=>m.user_id===member.user_id));
+    if (!same) throw Error('Han canviat els participants del viatge. Prem «Actualitza» abans de desar per revisar el repartiment.');
+  }
+
   function render() {
     if (!active()) return;
     const accountingIds = [...new Set([...members.map(x => x.user_id), ...rows.flatMap(x => [x.payer_user_id,...(x.split_shares||[]).map(part => part.user_id)]), ...settlements.flatMap(x => [x.payer_user_id,x.receiver_user_id])].filter(id => uuidPattern.test(id||'')))];
