@@ -40,7 +40,12 @@ declare
   total_cents numeric := 0;
   seen uuid[] := '{}'::uuid[];
 begin
-  if new.payer_user_id is null and new.split_shares is null then return new; end if;
+  if new.payer_user_id is null and new.split_shares is null then
+    if tg_op = 'INSERT' and exists(select 1 from public.trips where id=new.trip_id and experience_key is distinct from 'london-2026') then
+      raise exception 'Shared split required for generic trips' using errcode='23514';
+    end if;
+    return new;
+  end if;
   if new.payer_user_id is null or new.split_shares is null
      or jsonb_typeof(new.split_shares) is distinct from 'array'
      or jsonb_array_length(new.split_shares) not between 1 and 100 then
@@ -151,3 +156,16 @@ create policy "members rename themselves"
 on public.trip_expense_member_labels for update to authenticated
 using (user_id=(select auth.uid()) and public.is_trip_member(trip_id))
 with check (user_id=(select auth.uid()) and public.is_trip_member(trip_id));
+
+-- Preserve legacy London deletion while protecting shared records from other members.
+create or replace function public.guard_shared_expense_delete_v1()
+returns trigger language plpgsql security invoker set search_path='' as $$
+begin
+  if old.payer_user_id is not null and old.created_by is distinct from auth.uid() then
+    raise exception 'Only the author may delete a shared expense' using errcode='42501';
+  end if;
+  return old;
+end $$;
+create trigger guard_shared_expense_delete_v1
+before delete on public.travel_expenses
+for each row execute function public.guard_shared_expense_delete_v1();
