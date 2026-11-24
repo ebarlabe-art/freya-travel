@@ -1,7 +1,7 @@
 # Freya Travel · Roadmap canònic
 
-**Versió:** 1.3
-**Data de tall:** 8 d'octubre de 2026  
+**Versió:** 1.4
+**Data de tall:** 24 de novembre de 2026  
 **Versió publicada documentada al tall anterior (7 oct.):** 6.4.19  
 **Estat del document:** CANÒNIC
 
@@ -182,17 +182,50 @@ Freya ha d'extreure una proposta de dades i **demanar confirmació abans d'escri
 **CLOSED quan:** una reserva o un itinerari en PDF es pot convertir en peces operatives de Freya sense reintroduir manualment la mateixa informació.
 
 ### A3. Participants
-**Prioritat: P1**
+**Prioritat: P1 · EN CURS (24/11/2026)**
 
 Completar la capa de producte sobre la infraestructura existent:
-- llista de membres del viatge;
-- convidar/compartir;
-- veure qui hi té accés;
-- retirar accés;
-- rol de propietari;
+- llista de membres del viatge i rol de propietari;
+- convidar/compartir amb el codi existent;
+- nom visible autogestionat per cadascú, compartit amb Despeses sense duplicar dades;
+- retirar accés de manera efectiva, inclosa la impossibilitat de tornar a entrar amb el mateix codi;
+- determinar què passa amb despeses/liquidacions històriques i permisos quan un membre abandona el viatge;
 - comportament clar quan s'acaba el viatge.
 
-**CLOSED quan:** la propietària pot gestionar tot l'equip del viatge des de Freya sense dependre d'eines externes.
+**A3.1 (en PR, NO publicat):** llista de participants i identificació de propietari, nom propi editable reutilitzant `trip_members` i `trip_expense_member_labels`. Sense noves taules, rols inventats ni contacte o correu privat exposat.
+
+**A3.2 (implementada en PR, no publicada):** revocació transaccional al servidor amb rotació del codi d'invitació i bloqueig dels dos mecanismes d'entrada (actual i llegat), preservant l'històric de despeses. El botó «Retira accés» s'activa amb la nova versió de l'app només un cop aplicada la migració amb autorització. Pendent de CI, validació física amb dos comptes i comprovació de límits offline.
+
+**CLOSED quan:** la propietària pot gestionar tot l'equip del viatge des de Freya sense dependre d'eines externes, amb els permisos revocats i revalidats.
+
+---
+
+### A4. Preparació intel·ligent · Freya Insights
+**Prioritat: P1 · RECUPERAT DEL ROADMAP D'AGOST, PENDENT**
+
+Capa d'ajuda contextual abans i durant el viatge, **no** un calaix genèric de «Recomanacions» ni la IA predictiva futura. S'activa segons país/destinació, dates, etapa del viatge i activitat, amb font i data de verificació; no presenta informació legal o tarifària obsoleta com a actual.
+
+- **Documentació:** passaport, ETA/visat, permisos, QR/registre d'entrada i requisits del país.
+- **Diners:** moneda, pagaments, efectiu, targetes i consells contextuals.
+- **Transport:** targetes locals, contactless, abonaments, apps, límits/topalls i funcionament.
+- **Tecnologia:** endolls, eSIM, internet i apps útils.
+- **Clima/equipatge:** previsió actualitzada i consells pràctics.
+- **Cultura:** propines, normes, hàbits, festius i qüestions pràctiques.
+- **Activitats:** durada, horaris, cues, punts imprescindibles i consells vinculats a la visita, sense alterar reserves.
+
+**Exemples de referència:** Japó (Visit Japan Web/QR, Suica); Londres (ETA, contactless i topall de transport). Són casos a verificar per dates, no dades permanents.
+
+**CLOSED quan:** un viatger rep avisos pràctics i rellevants amb informació verificable, data de vigència i una manera clara de consultar la font oficial, sense haver de buscar-los en una pantalla buida.
+
+### A5. Moneda i canvi de divisa
+**Prioritat: P1 · RECUPERAT DEL ROADMAP D'AGOST, PENDENT**
+
+- Mostrar moneda local de la destinació, distingint-la de la moneda del pressupost/despeses ja registrades.
+- Consultar un tipus de canvi real amb proveïdor i marca temporal visible; si no es pot actualitzar, mostrar-ne la data o indicar que no hi ha cotització fiable.
+- Calculadora ràpida de conversió dins del viatge, amb import/moneda d'origen i destí, sense modificar saldos ni registres històrics.
+- Futur: centre de despeses connectat amb el pressupost; reutilitzar TB-06 i el mòdul de Despeses compartides actual. No inventar una segona comptabilitat.
+
+**CLOSED quan:** es pot convertir una quantitat amb tipus i data coneguts, sense presentar un import estimat com a càrrec o saldo real.
 
 ---
 
@@ -426,14 +459,15 @@ A partir d'aquest document, l'ordre per defecte és:
 
 1. **TB-09 · Ajustos assistits**
 2. **Importació intel·ligent**
-3. **Participants**
-4. **Tancar DURANT / temps per arribar + E2E**
-5. **Crear àlbum**
-6. **Diari**
-7. **Travel Book**
-8. **Proveïdors hotels/cotxes i ampliacions comercials**
-9. **Prepublicació i Release Candidate**
-10. **IA personalitzada**, ja com a evolució posterior
+3. **Participants (A3)**
+4. **Freya Insights (A4) i divises (A5), lliurament progressiu sense desplaçar gates P0 DURANT**
+5. **Tancar DURANT / temps per arribar + E2E**
+6. **Crear àlbum**
+7. **Diari**
+8. **Travel Book**
+9. **Proveïdors hotels/cotxes i ampliacions comercials**
+10. **Prepublicació i Release Candidate**
+11. **IA personalitzada**, ja com a evolució posterior
 
 Una nova idea només altera aquest ordre si:
 - resol un P0 real;
@@ -479,6 +513,6 @@ No es crea un roadmap paral·lel.
 
 ## Pròxim pas
 
-> **A2 · Importació intel·ligent**
+> **A3 · Participants.** El 24/11/2026, la prova física d'un PDF idèntic al de Barcelona ha comparat 6 activitats amb 6 existents, sense canvis pendents ni escriptures. Això valida la reimportació sense duplicats en aquest cas, però no acredita per si sol totes les variants d'A2.
 
-TB-09 queda CLOSED. El següent bloc canònic és convertir PDF, captures, correus i documents de reserva en propostes de dades operatives que l’usuari confirma abans d’escriure.
+La següent entrega és A3.1 (llista de membres i nom propi), en PR sense publicació. A3.2 (revocar accés de manera efectiva) queda pendent. Els dos objectius del roadmap d'agost, Freya Insights i conversió de divises, es recuperen com A4/A5, sense crear un altre roadmap.
