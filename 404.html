@@ -73,7 +73,7 @@
     .generic-insights-arrow{color:#72539f;font-size:1.7rem}
     .insights-hero{background:linear-gradient(135deg,#52348c,#8562b5);color:#fff;border-radius:24px;padding:23px;margin:14px 0;box-shadow:0 14px 32px rgba(79,55,139,.15)}
     .insights-hero h1{margin:9px 0;font-size:1.6rem}.insights-hero p{margin:0;line-height:1.5;color:#f8f0ff}
-    .insights-hero-kicker{font-size:.72rem;letter-spacing:.12em;font-weight:800;color:#e8ddf6}
+    .insights-hero-kicker{text-transform:uppercase;font-size:.72rem;letter-spacing:.12em;font-weight:800;color:#e8ddf6}
     .insights-status{margin:14px 0;background:#f2eaf8;color:#493765;border:1px solid #d8c8e9;padding:15px;border-radius:16px;line-height:1.5}
     .insights-status.is-loading{display:flex;align-items:center;gap:11px}
     .insights-status.is-loading::before{content:'';width:17px;height:17px;flex:none;border:3px solid #b8a6ce;border-top-color:#684b9d;border-radius:50%;animation:insights-spin .9s linear infinite}
@@ -850,10 +850,10 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         <div id="tripHomeContent"></div>
         <p id="tripHomeMessage" class="message hidden" role="status"></p>
       </section>
-      <section id="genericTripInsights" class="generic-trip-section generic-insights hidden" aria-label="Freya Insights">
+      <section id="genericTripInsights" class="generic-trip-section generic-insights hidden" aria-labelledby="genericInsightsTitle">
         <button id="genericInsightsOpen" class="generic-insights-entry" type="button" data-open="insightsView" aria-describedby="genericInsightsSummary">
           <span class="generic-insights-emblem" aria-hidden="true">✨</span>
-          <span class="generic-insights-copy"><strong>Freya Insights</strong><small id="genericInsightsSummary">Preparant consells per al viatge…</small></span>
+          <span class="generic-insights-copy"><strong id="genericInsightsTitle" data-insight-text="name"></strong><small id="genericInsightsSummary" data-insight-text="preparingSummary"></small></span>
           <span class="generic-insights-arrow" aria-hidden="true">›</span>
         </button>
       </section>
@@ -920,16 +920,16 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
     </div>
 
     <div id="insightsView" class="hidden">
-      <button type="button" class="ghost back" data-back>← Torna al viatge</button>
+      <button type="button" class="ghost back" data-back><span aria-hidden="true">←</span> <span data-insight-text="back"></span></button>
       <header class="insights-hero">
-        <span class="insights-hero-kicker">LA TEVA GUIA PRÀCTICA</span>
-        <h1>✨ Freya Insights</h1>
-        <p>Informació per preparar el viatge: entrada, diners, transport, tecnologia, clima i cultura, amb fonts consultables.</p>
+        <span class="insights-hero-kicker" data-insight-text="kicker"></span>
+        <h1><span aria-hidden="true">✨</span> <span data-insight-text="name"></span></h1>
+        <p data-insight-text="introduction"></p>
       </header>
-      <div id="insightsStatus" class="insights-status" role="status" aria-live="polite">Preparant les recomanacions…</div>
+      <div id="insightsStatus" class="insights-status" role="status" aria-live="polite" data-insight-text="preparing"></div>
       <div id="insightsContent" aria-live="polite"></div>
-      <div class="insights-actions"><button id="insightsRefresh" type="button" class="secondary">↻ Actualitza la recerca</button></div>
-      <p class="generic-insights-note">Els consells són orientatius: comprova sempre els requisits legals amb la font oficial. Freya no modifica les teves reserves ni despeses.</p>
+      <div class="insights-actions"><button id="insightsRefresh" type="button" class="secondary"><span aria-hidden="true">↻</span> <span data-insight-text="refresh"></span></button></div>
+      <p class="generic-insights-note" data-insight-text="disclaimer"></p>
     </div>
 
     <div id="buildView" class="hidden">
@@ -2353,9 +2353,188 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
   }
 })();
 </script>
+<script id="freyaInsightsTranslations">
+const insightsTranslations={
+  ca:{
+    name:'Consells de Freya',
+    back:'Torna al viatge',
+    kicker:'La teva guia pràctica',
+    introduction:'Informació per preparar el viatge: entrada, diners, transport, tecnologia, clima i cultura, amb fonts consultables.',
+    preparingSummary:'Preparant consells per al viatge…',
+    preparing:'Preparant les recomanacions…',
+    refresh:'Actualitza la recerca',
+    disclaimer:'Els consells són orientatius: comprova sempre els requisits legals amb la font oficial. Freya no modifica les teves reserves ni despeses.',
+    entry:'Documents i entrada',
+    money:'Diners i pagaments',
+    transport:'Transport',
+    connectivity:'Tecnologia i connexió',
+    climate:'Clima i equipatge',
+    culture:'Cultura i hàbits',
+    noDestinationSummary:'Falta una destinació',
+    noDestination:'Afegeix una destinació al viatge perquè Freya pugui investigar els preparatius.',
+    offlineSummary:'Cal connexió a Internet',
+    offline:'Connecta’t per cercar informació actual. Si ja havies consultat aquest viatge, els consells recuperats tornaran a aparèixer quan hi hagi connexió.',
+    loadingSummary:'Investigant el viatge…',
+    loading:'Freya busca fonts sobre {destinations}. La primera cerca pot durar aproximadament un minut. Pots entrar en aquesta pantalla i continuar fent servir la resta de Freya.',
+    source:'Consulta la font',
+    checked:'Darrera consulta: {date}. Revisa sempre els requisits legals i les tarifes amb l’organisme oficial abans de viatjar.',
+    successSummary:{one:'{count} consell disponible · Obre {name}',other:'{count} consells disponibles · Obre {name}'},
+    success:{one:'Hem trobat {count} consell per preparar aquest viatge. Fonts i data de la cerca disponibles a cada apartat.',other:'Hem trobat {count} consells per preparar aquest viatge. Fonts i data de la cerca disponibles a cada apartat.'},
+    errorSummary:'No s’ha completat la recerca · Obre {name}',
+    rateLimited:'S’ha arribat al límit de consultes d’avui. Podràs tornar a consultar-ho més endavant.',
+    sourceUnavailable:'No s’han pogut verificar prou fonts. No mostrarem dades no contrastades.',
+    timeout:'La consulta ha trigat massa. Pots repetir-la amb el botó «{refresh}».',
+    notConfigured:'La recerca d’IA no està configurada. Cal revisar el servei.',
+    failed:'No s’ha pogut completar la recerca ara. Comprova la connexió i torna a provar-la.'
+  },
+  es:{
+    name:'Consejos de Freya',
+    back:'Volver al viaje',
+    kicker:'Tu guía práctica',
+    introduction:'Información para preparar el viaje: entrada, dinero, transporte, tecnología, clima y cultura, con enlaces a las fuentes.',
+    preparingSummary:'Preparando consejos para el viaje…',
+    preparing:'Preparando las recomendaciones…',
+    refresh:'Actualizar la búsqueda',
+    disclaimer:'Los consejos son orientativos. Comprueba siempre los requisitos legales en la fuente oficial. Freya no modifica tus reservas ni tus gastos.',
+    entry:'Documentación y entrada',
+    money:'Dinero y pagos',
+    transport:'Transporte',
+    connectivity:'Tecnología y conectividad',
+    climate:'Clima y equipaje',
+    culture:'Cultura y costumbres',
+    noDestinationSummary:'Falta un destino',
+    noDestination:'Añade un destino al viaje para que Freya pueda buscar información para prepararlo.',
+    offlineSummary:'Se necesita conexión a Internet',
+    offline:'Conéctate para buscar información actualizada. Si ya habías consultado este viaje, los consejos volverán a aparecer cuando recuperes la conexión.',
+    loadingSummary:'Buscando información para el viaje…',
+    loading:'Freya está buscando fuentes sobre {destinations}. La primera búsqueda puede tardar aproximadamente un minuto. Puedes abrir esta pantalla y seguir utilizando el resto de Freya.',
+    source:'Consultar la fuente',
+    checked:'Última consulta: {date}. Comprueba siempre los requisitos legales y las tarifas con el organismo oficial antes de viajar.',
+    successSummary:{one:'{count} consejo disponible · Abre {name}',other:'{count} consejos disponibles · Abre {name}'},
+    success:{one:'Hemos encontrado {count} consejo para preparar el viaje. Consulta las fuentes y la fecha de búsqueda en cada apartado.',other:'Hemos encontrado {count} consejos para preparar el viaje. Consulta las fuentes y la fecha de búsqueda en cada apartado.'},
+    errorSummary:'La búsqueda no se ha completado · Abre {name}',
+    rateLimited:'Se ha alcanzado el límite de búsquedas de hoy. Podrás volver a intentarlo más adelante.',
+    sourceUnavailable:'No se han podido verificar suficientes fuentes. Solo mostramos información contrastada.',
+    timeout:'La búsqueda ha tardado demasiado. Puedes repetirla con el botón «{refresh}».',
+    notConfigured:'La búsqueda con IA está pendiente de configuración.',
+    failed:'No se ha podido completar la búsqueda. Comprueba la conexión y vuelve a intentarlo.'
+  },
+  en:{
+    name:'Freya Insights',
+    back:'Back to trip',
+    kicker:'Your practical guide',
+    introduction:'Get ready for your trip with information on entry requirements, money, transport, technology, weather and culture, with links to sources.',
+    preparingSummary:'Preparing travel tips…',
+    preparing:'Preparing recommendations…',
+    refresh:'Refresh research',
+    disclaimer:'These tips are for guidance. Always check legal requirements with the official source. Freya does not change your bookings or expenses.',
+    entry:'Documents and entry requirements',
+    money:'Money and payments',
+    transport:'Transport',
+    connectivity:'Technology and connectivity',
+    climate:'Weather and packing',
+    culture:'Culture and customs',
+    noDestinationSummary:'Destination missing',
+    noDestination:'Add a destination to the trip so Freya can research what you need to prepare.',
+    offlineSummary:'Internet connection required',
+    offline:'Connect to the internet to look up current information. If you’ve viewed tips for this trip before, they will reappear when you’re back online.',
+    loadingSummary:'Researching your trip…',
+    loading:'Freya is looking for sources on {destinations}. The first search can take about a minute. You can open this screen and continue using the rest of Freya.',
+    source:'View source',
+    checked:'Last checked: {date}. Always confirm legal requirements and fees with the relevant authority before travelling.',
+    successSummary:{one:'{count} tip available · Open {name}',other:'{count} tips available · Open {name}'},
+    success:{one:'We found {count} tip to help you prepare. Each section includes sources and the research date.',other:'We found {count} tips to help you prepare. Each section includes sources and the research date.'},
+    errorSummary:'Research incomplete · Open {name}',
+    rateLimited:'You’ve reached today’s search limit. Try again later.',
+    sourceUnavailable:'We couldn’t verify enough sources. We only show information we can verify.',
+    timeout:'The search took too long. Select “{refresh}” to try again.',
+    notConfigured:'AI research is awaiting setup.',
+    failed:'We couldn’t finish the search. Check your connection and try again.'
+  },
+  fr:{
+    name:'Conseils de Freya',
+    back:'Retour au voyage',
+    kicker:'Votre guide pratique',
+    introduction:'Préparez votre voyage avec des informations sur les formalités d’entrée, l’argent, les transports, la technologie, le climat et la culture, avec des liens vers les sources.',
+    preparingSummary:'Préparation des conseils de voyage…',
+    preparing:'Préparation des recommandations…',
+    refresh:'Relancer la recherche',
+    disclaimer:'Ces conseils sont donnés à titre indicatif. Vérifiez toujours les formalités auprès de la source officielle. Freya ne modifie ni vos réservations ni vos dépenses.',
+    entry:'Documents et formalités d’entrée',
+    money:'Argent et paiements',
+    transport:'Transports',
+    connectivity:'Technologie et connexion',
+    climate:'Climat et bagages',
+    culture:'Culture et coutumes',
+    noDestinationSummary:'Destination manquante',
+    noDestination:'Ajoutez une destination à votre voyage pour que Freya puisse vous aider à le préparer.',
+    offlineSummary:'Connexion Internet nécessaire',
+    offline:'Connectez-vous pour rechercher des informations à jour. Si vous avez déjà consulté les conseils pour ce voyage, ils réapparaîtront à votre reconnexion.',
+    loadingSummary:'Recherche en cours pour votre voyage…',
+    loading:'Freya recherche des sources sur {destinations}. La première recherche peut prendre environ une minute. Vous pouvez ouvrir cet écran et continuer à utiliser les autres fonctions de Freya.',
+    source:'Consulter la source',
+    checked:'Dernière consultation : {date}. Vérifiez toujours les formalités et les tarifs auprès de l’organisme officiel avant de voyager.',
+    successSummary:{one:'{count} conseil disponible · Ouvrir « {name} »',other:'{count} conseils disponibles · Ouvrir « {name} »'},
+    success:{one:'Nous avons trouvé {count} conseil pour préparer ce voyage. Consultez les sources et la date de recherche dans chaque rubrique.',other:'Nous avons trouvé {count} conseils pour préparer ce voyage. Consultez les sources et la date de recherche dans chaque rubrique.'},
+    errorSummary:'Recherche incomplète · Ouvrir « {name} »',
+    rateLimited:'La limite quotidienne de recherches est atteinte. Réessayez plus tard.',
+    sourceUnavailable:'Nous n’avons pas pu vérifier suffisamment de sources. Seules les informations vérifiées sont affichées.',
+    timeout:'La recherche a pris trop de temps. Sélectionnez « {refresh} » pour réessayer.',
+    notConfigured:'La recherche par IA est en attente de configuration.',
+    failed:'La recherche n’a pas pu aboutir. Vérifiez votre connexion et réessayez.'
+  },
+  it:{
+    name:'Consigli di Freya',
+    back:'Torna al viaggio',
+    kicker:'La tua guida pratica',
+    introduction:'Prepara il viaggio con informazioni su ingresso, denaro, trasporti, tecnologia, clima e cultura, con collegamenti alle fonti.',
+    preparingSummary:'Preparazione dei consigli di viaggio…',
+    preparing:'Preparazione dei suggerimenti…',
+    refresh:'Aggiorna la ricerca',
+    disclaimer:'I consigli sono indicativi. Verifica sempre i requisiti legali presso la fonte ufficiale. Freya non modifica le tue prenotazioni né le tue spese.',
+    entry:'Documenti e requisiti di ingresso',
+    money:'Denaro e pagamenti',
+    transport:'Trasporti',
+    connectivity:'Tecnologia e connessione',
+    climate:'Clima e bagaglio',
+    culture:'Cultura e abitudini',
+    noDestinationSummary:'Manca una destinazione',
+    noDestination:'Aggiungi una destinazione al viaggio, così Freya potrà cercare informazioni per aiutarti a prepararlo.',
+    offlineSummary:'Serve una connessione a Internet',
+    offline:'Connettiti per cercare informazioni aggiornate. Se hai già consultato i consigli per questo viaggio, li rivedrai quando tornerai online.',
+    loadingSummary:'Ricerca in corso per il tuo viaggio…',
+    loading:'Freya sta cercando fonti su {destinations}. La prima ricerca può richiedere circa un minuto. Puoi aprire questa schermata e continuare a usare le altre funzioni di Freya.',
+    source:'Consulta la fonte',
+    checked:'Ultima consultazione: {date}. Prima di partire, verifica sempre i requisiti legali e le tariffe presso l’ente ufficiale.',
+    successSummary:{one:'{count} consiglio disponibile · Apri «{name}»',other:'{count} consigli disponibili · Apri «{name}»'},
+    success:{one:'Abbiamo trovato {count} consiglio per preparare il viaggio. In ogni sezione trovi le fonti e la data della ricerca.',other:'Abbiamo trovato {count} consigli per preparare il viaggio. In ogni sezione trovi le fonti e la data della ricerca.'},
+    errorSummary:'Ricerca incompleta · Apri «{name}»',
+    rateLimited:'Hai raggiunto il limite di ricerche per oggi. Riprova più tardi.',
+    sourceUnavailable:'Non abbiamo potuto verificare un numero sufficiente di fonti. Mostriamo solo informazioni verificate.',
+    timeout:'La ricerca ha richiesto troppo tempo. Seleziona «{refresh}» per riprovare.',
+    notConfigured:'La ricerca con IA è in attesa di configurazione.',
+    failed:'Non è stato possibile completare la ricerca. Controlla la connessione e riprova.'
+  }
+};
+const insightsPreferredLanguage=navigator.language?.split('-')[0].toLowerCase();
+const insightsLanguage=Object.hasOwn(insightsTranslations,insightsPreferredLanguage)?insightsPreferredLanguage:'ca';
+const insightsCopy=insightsTranslations[insightsLanguage];
+function insightText(key,values={}){
+  const message=insightsCopy[key];
+  const text=typeof message==='string'?message:message[values.count===1?'one':'other'];
+  const variables={name:insightsCopy.name,refresh:insightsCopy.refresh,...values};
+  return text.replace(/\{(\w+)\}/g,(_,name)=>variables[name]);
+}
+for(const root of document.querySelectorAll('#genericTripInsights, #insightsView')){
+  root.lang=insightsLanguage;
+  for(const node of root.querySelectorAll('[data-insight-text]')){
+    node.textContent=insightText(node.dataset.insightText);
+  }
+}
+</script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-geography-identity-228';
+const FREYA_FRONTEND_RELEASE='pwa-a4-2-insights-v79';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -8254,8 +8433,8 @@ function updateTripPresentation(){
    const content=$('insightsContent');
    if(!content)return;
    const wrapper=document.createElement('div');wrapper.className='insights-loading-topics';
-   for(const label of ['🛂 Entrada i documents','💶 Diners','🚇 Transport','📱 Tecnologia','🌦️ Clima','🌍 Cultura']){
-     const chip=document.createElement('span');chip.textContent=label;wrapper.append(chip);
+   for(const [topic,icon] of Object.entries({entry:'🛂',money:'💶',transport:'🚇',connectivity:'📱',climate:'🌦️',culture:'🌍'})){
+     const chip=document.createElement('span');chip.textContent=icon+' '+insightText(topic);wrapper.append(chip);
    }
    content.replaceChildren(wrapper);
  }
@@ -8278,7 +8457,7 @@ function updateTripPresentation(){
      if(!scope)return;
      if(!scope.destinations.length){
        refresh.disabled=true;
-       setInsightStatus('error','Falta una destinació','Afegeix una destinació al viatge perquè Freya pugui investigar els preparatius.');
+       setInsightStatus('error',insightText('noDestinationSummary'),insightText('noDestination'));
        container.replaceChildren();return;
      }
      const cacheKey=api.insightCacheKey(userId,tripId);
@@ -8287,11 +8466,11 @@ function updateTripPresentation(){
      if(!report){
        if(connectionUnavailable()){
          refresh.disabled=false;
-         setInsightStatus('error','Cal connexió a Internet','Connecta’t per cercar informació actual. Si ja havies consultat aquest viatge, els consells recuperats tornaran a aparèixer quan hi hagi connexió.');
+         setInsightStatus('error',insightText('offlineSummary'),insightText('offline'));
          container.replaceChildren();return;
        }
        refresh.disabled=true;
-       setInsightStatus('loading','⏳ Investigant el viatge…','Freya busca fonts sobre '+scope.destinations.map(x=>x.name).join(', ')+'. La primera cerca pot durar aproximadament un minut. Pots entrar en aquesta pantalla i continuar fent servir la resta de Freya.');
+       setInsightStatus('loading','⏳ '+insightText('loadingSummary'),insightText('loading',{destinations:scope.destinations.map(x=>x.name).join(', ')}));
        setInsightLoadingPreview();
        let pending=insightRequests.get(requestKey);
        if(!pending){
@@ -8320,28 +8499,28 @@ function updateTripPresentation(){
          groups.set(item.destination,group);grid.append(group);
        }
        const card=document.createElement('div');card.className='generic-insights-item';
-       const title=document.createElement('strong');title.textContent=api.INSIGHT_TOPICS[item.topic]+' · '+item.title;
+       const title=document.createElement('strong');title.textContent=insightText(item.topic)+' · '+item.title;
        const detail=document.createElement('p');detail.textContent=item.detail;
-       const link=document.createElement('a');link.href=item.source_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Consulta la font · '+item.source_title;
+       const link=document.createElement('a');link.href=item.source_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent=insightText('source')+' · '+item.source_title;
        card.append(title,detail,link);group.append(card);
      }
      fragment.append(grid);
      const note=document.createElement('p');note.className='generic-insights-note';
-     note.textContent='Darrera consulta: '+report.checked_at+'. Revisa sempre els requisits legals i les tarifes amb l’organisme oficial abans de viatjar.';
+     note.textContent=insightText('checked',{date:report.checked_at});
      fragment.append(note);
      container.replaceChildren(fragment);
-     setInsightStatus('success','✓ '+report.items.length+' consells disponibles · Obre Freya Insights','Hem trobat '+report.items.length+' consells per preparar aquest viatge. Fonts i data de la cerca disponibles a cada apartat.');
+     const count=report.items.length;
+     setInsightStatus('success','✓ '+insightText('successSummary',{count}),insightText('success',{count}));
      refresh.disabled=false;
    }catch(error){
      if(!current())return;
      refresh.disabled=false;
      const reason=error?.message;
-     const message=reason==='rate_limited'?'S’ha arribat al límit de consultes d’avui. Podràs tornar a consultar-ho més endavant.':
-       reason==='source_unavailable'||reason==='invalid_response'?'No s’han pogut verificar prou fonts. No mostrarem dades no contrastades.':
-       reason==='timeout'||reason?.includes('Abort')?'La consulta ha trigat massa. Pots repetir-la amb el botó «Actualitza la recerca».':
-       reason==='not_configured'?'La recerca d’IA no està configurada. Cal revisar el servei.':
-       'No s’ha pogut completar la recerca ara. Comprova la connexió i torna a provar-la.';
-     setInsightStatus('error','No s’ha completat la recerca · Obre Freya Insights',message);
+     const message=reason==='rate_limited'?'rateLimited':
+       reason==='source_unavailable'||reason==='invalid_response'?'sourceUnavailable':
+       reason==='timeout'||reason?.includes('Abort')?'timeout':
+       reason==='not_configured'?'notConfigured':'failed';
+     setInsightStatus('error',insightText('errorSummary'),insightText(message));
      container.replaceChildren();
    }
  }

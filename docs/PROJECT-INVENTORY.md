@@ -1,21 +1,31 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
-## A4.1 · Correcció de visibilitat i lectura a iPhone · EN BRANCA (24/11/2026)
+## A4.2 · Nom i interfície dels Consells de Freya · PR en esborrany, v79 (24/11/2026)
+
+El nom de la targeta i de la pantalla, el nom accessible de la secció i les referències dels estats es tradueixen amb la mateixa entrada de catàleg. Català «Consells de Freya», castellà «Consejos de Freya», anglès «Freya Insights», francès «Conseils de Freya» i italià «Consigli di Freya». També es tradueixen els controls, els temes i els missatges propis de la pantalla.
+
+El `main` de partida (`c2f844d`) incorpora la PR #260. L’A4.1 queda validada físicament a l’iPhone segons la confirmació de l’usuària. El codi de partida no té un selector ni un catàleg d’idiomes per a la interfície. L’A4.2 reutilitza la preferència del navegador i aplica el català per defecte. Els consells generats continuen arribant en català i els títols de fonts es mostren tal com arriben.
+
+Criteri de producte incorporat a `AGENTS.md`: els noms de funcionalitats i els textos visibles han de seguir l’idioma seleccionat, amb l’excepció de marques i títols originals de fonts externes.
+
+**Proves:** contracte de localització en cinc idiomes i reserva en català, paritat d’entrades i comprovacions d’empaquetat de la PWA v79. **Relleu:** revisar la PR en esborrany de la branca `fix/a4-2-localize-freya-insights-v79`, a l’espera d’autorització per publicar.
+
+## A4.1 · Correcció de visibilitat i lectura a iPhone · PR #260 fusionada i validada (24/11/2026)
 
 **Evidència real:** captura de Riga/Tallinn on Freya Insights mostrava únicament «Freya està buscant fonts actuals» com a text pla, sense entrada clicable ni pantalla de resultats. Els registres de la funció `trip-insights` mostren una sol·licitud autenticada amb resposta HTTP 200, cos JSON i durada d'uns 54 segons; això **no acredita que el text fos visible al mòbil**. La recerca d'IA és llarga però el problema visual és propi del frontend.
 
-**Correcció mínima:** PR de la branca `fix/a4-insights-ux-loading-20261124`: targeta destacada «✨ Freya Insights» que obre la vista `insightsView`; estats ben diferenciats de càrrega (amb temes i avís de durada), èxit amb nombre de consells, error amb motiu i reintent, i botó manual per actualitzar. El resultat queda agrupat per destinació, amb fonts i data. El procés manté la recerca automàtica, la memòria cau de 72 h, el control de generació/usuari, els límits de consultes i la funció `trip-insights` actual. Temps màxim de càrrega de client 90 s; no es canvia el servidor, les dades ni Supabase. PWA v78 **només en branca**, pendent CI i publicació autoritzada.
+**Correcció mínima:** PR de la branca `fix/a4-insights-ux-loading-20261124`: targeta destacada «✨ Freya Insights» que obre la vista `insightsView`; estats ben diferenciats de càrrega (amb temes i avís de durada), èxit amb nombre de consells, error amb motiu i reintent, i botó manual per actualitzar. El resultat queda agrupat per destinació, amb fonts i data. El procés manté la recerca automàtica, la memòria cau de 72 h, el control de generació/usuari, els límits de consultes i la funció `trip-insights` actual. Temps màxim de càrrega de client 90 s; no es canvia el servidor, les dades ni Supabase. La PR #260 incorpora la PWA v78 a `main`.
 
-**Següent acció:** superar CI, demanar autorització per publicar la correcció i comprovar-la en el mateix viatge Riga/Tallinn, esperant el resultat de la cerca i obrint la targeta. No tornar a investigar permisos ni altres mòduls si funciona.
+**Validació:** l’usuària confirma la prova física a l’iPhone.
 
 
-## A4.1 · Freya Insights amb recerca IA per qualsevol destinació · PR #259, NO PUBLICAT (24/11/2026)
+## A4.1 · Freya Insights amb recerca IA per qualsevol destinació · antecedent de la v78 (24/11/2026)
 
 A petició de l'usuària, eliminat el catàleg tancat GB/JP/LK. Branca `feat/a4-freya-insights-contextual-20261124`, sempre dins de `ebarlabe-art/freya-travel`. El nou mòdul `domain/trip-insights.mjs` calcula l'abast utilitzant únicament `trip_stops` i les dates del viatge, amb deduplicació de destinacions i memòria cau temporal local per compte, viatge i abast (72 h). La vista del viatge activa automàticament `renderTripInsights()` en preparar-lo, i mostra avisos útils per cada destinació, la font i la data de la cerca. No es pressuposa nacionalitat, ETA o visat concret; no s'inventen tarifes.
 
 **Backend:** `supabase/functions/trip-insights` reutilitza l'autenticació amb JWT, els permisos RLS del projecte original, la clau OpenAI i el patró de les Edge Functions actuals; valida la pertinença, llegeix destins del servidor (no del navegador), genera una sola resposta per consulta amb `web_search`, demana fins a 24 avisos en sis categories i descarta els enllaços que no consten entre les fonts realment recuperades. Límits simples per usuari i missatges d'error sense dades sensibles. No modifica itineraris, despeses, documents ni cap taula. Funciona independentment del país; si falten parades o fonts, ho indica sense inventar consells.
 
-**Ordre obligatori de desplegament:** 1) revisar CI i cost/compatibilitat del model amb `web_search`; 2) amb autorització, desplegar `trip-insights` al Supabase original i provar un viatge sense escriptures; 3) després publicar el frontend PWA v77 amb la PR #259; 4) prova real iPhone, incloent destins sense fitxa prèvia i compte d'un participant. Sense desplegament ara, sense entorns duplicats. A4.2 aprofundirà les recomanacions per activitat, A5 moneda/divises pendent.
+La PR #259 precedeix la correcció de la v78. La cobertura de recomanacions per activitat continua pendent, així com A5 moneda/divises.
 
 ## A3 · Participants · PUBLICAT I VALIDAT (24/11/2026)
 

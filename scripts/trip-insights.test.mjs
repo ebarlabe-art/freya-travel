@@ -1,5 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
-import {insightScope,insightPhase,validateInsightReport,insightCacheKey,insightCacheSignature,readInsightCache,saveInsightCache} from '../domain/trip-insights.mjs';
+import {runInNewContext} from 'node:vm';
+import {INSIGHT_TOPICS,insightScope,insightPhase,validateInsightReport,insightCacheKey,insightCacheSignature,readInsightCache,saveInsightCache} from '../domain/trip-insights.mjs';
 import {createTripInsightsHandler} from '../supabase/functions/trip-insights/handler.mjs';
 const trip={id:'11111111-1111-4111-8111-111111111111',start_date:'2027-08-14',end_date:'2027-08-30'};
 const stop=(name,country_code)=>({canonical_name:name,country_code});
@@ -71,4 +72,49 @@ test('A4.1 UX: a recognizable openable card, dedicated page and readable search 
  assert.match(html,/controller\.abort\(\),90000/);
  assert.match(html,/insightRequests\.get\(requestKey\)/);
  assert.doesNotMatch(html,/id="genericInsightsContent"/);
+});
+
+test('A4.2: headings, accessible names and status references share the selected language',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ const catalog=html.match(/<script id="freyaInsightsTranslations">([\s\S]*?)<\/script>/)[1];
+ const card=html.match(/<section id="genericTripInsights"[^>]*>[\s\S]*?<\/section>/)[0];
+ const view=html.slice(html.indexOf('<div id="insightsView"'),html.indexOf('<div id="buildView"'));
+ assert.match(card,/aria-labelledby="genericInsightsTitle"/);
+ assert.match(card,/id="genericInsightsTitle" data-insight-text="name"/);
+ assert.match(view,/<h1>.*data-insight-text="name"/);
+
+ const locales=[
+  ['ca-ES','ca','Consells de Freya'],
+  ['es-MX','es','Consejos de Freya'],
+  ['en-GB','en','Freya Insights'],
+  ['fr-CA','fr','Conseils de Freya'],
+  ['it-IT','it','Consigli di Freya'],
+  ['de-DE','ca','Consells de Freya'],
+  [undefined,'ca','Consells de Freya']
+ ];
+ for(const [language,expectedLanguage,name] of locales){
+  const roots=[card,view].map(markup=>{
+   const nodes=Array.from(markup.matchAll(/data-insight-text="(\w+)"/g),([,key])=>({dataset:{insightText:key}}));
+   return {nodes,querySelectorAll:()=>nodes};
+  });
+  const context={navigator:{language},document:{querySelectorAll:()=>roots}};
+  runInNewContext(catalog,context);
+  const t=context.insightText;
+  for(const root of roots){
+   assert.equal(root.lang,expectedLanguage);
+   assert.equal(root.nodes.find(node=>node.dataset.insightText==='name').textContent,name);
+   for(const node of root.nodes)assert.ok(node.textContent);
+  }
+  assert.ok(t('errorSummary').includes(name));
+  for(const count of [1,2]){
+   const summary=t('successSummary',{count});
+   assert.ok(summary.includes(name));
+   assert.ok(summary.includes(String(count)));
+   assert.doesNotMatch(summary,/\{/);
+  }
+  assert.ok(t('loading',{destinations:'Tallinn'}).includes('Tallinn'));
+  assert.ok(t('checked',{date:'2026-11-24'}).includes('2026-11-24'));
+  assert.ok(t('timeout').includes(t('refresh')));
+  for(const topic of Object.keys(INSIGHT_TOPICS))assert.ok(t(topic));
+ }
 });
