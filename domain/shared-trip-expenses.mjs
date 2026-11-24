@@ -96,7 +96,7 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
   let request = 0;
   const active = () => alive && current();
   const name = id => id === userId ? (labels.find(l => l.user_id === id)?.display_name || 'Tu') :
-    (labels.find(l => l.user_id === id)?.display_name || ('Viatger ' + (members.findIndex(m => m.user_id === id) + 1)));
+    (labels.find(l => l.user_id === id)?.display_name || ('Viatger ' + (members.findIndex(m => m.user_id === id) + 1 || id.slice(0,6))));
   const option = (id, selected = false) => '<option value="' + escapeHtml(id) + '"' + (selected ? ' selected' : '') + '>' + escapeHtml(name(id)) + '</option>';
   const money = (cents, iso) => formatSharedMoney(cents, iso);
   const status = (message, error = false) => {
@@ -121,13 +121,14 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
 
   function render() {
     if (!active()) return;
-    const summaries = summarizeSharedExpenses(rows, settlements, members.map(x => x.user_id));
+    const accountingIds = [...new Set([...members.map(x => x.user_id), ...rows.flatMap(x => [x.payer_user_id,...(x.split_shares||[]).map(part => part.user_id)]), ...settlements.flatMap(x => [x.payer_user_id,x.receiver_user_id])].filter(id => uuidPattern.test(id||'')))];
+    const summaries = summarizeSharedExpenses(rows, settlements, accountingIds);
     const legacyCount = rows.filter(x => !x.payer_user_id || !x.split_shares).length;
-    root.innerHTML = '<section class="card"><h2>💸 Despeses compartides</h2><p class="muted">Cada persona apunta el que ha pagat. Freya calcula els saldos del grup, per moneda, sense barrejar pressupost i pagaments.</p><p class="message hidden" data-shared-status role="status" aria-live="polite"></p><button type="button" class="secondary" data-shared-refresh>↻ Actualitza</button> <button type="button" class="secondary" data-shared-csv>📤 Exporta CSV</button></section>' +
+    root.innerHTML = '<section class="card"><h2>💸 Despeses compartides</h2><p class="muted">Cada persona apunta el que ha pagat. Freya calcula els saldos del grup, per moneda, sense barrejar pressupost i pagaments.</p><p class="message" data-shared-status role="status" aria-live="polite"></p><button type="button" class="secondary" data-shared-refresh>↻ Actualitza</button> <button type="button" class="secondary" data-shared-csv>📤 Exporta CSV</button></section>' +
       '<section class="card"><h3>👥 Participants (' + members.length + ')</h3><p class="muted">Es reutilitzen els membres d’aquest viatge. Cadascú pot posar el seu nom visible al grup.</p><form data-shared-label class="shared-expense-inline"><label>El meu nom<input data-shared-my-name type="text" maxlength="60" placeholder="Nom visible" value="' + escapeHtml(labels.find(l => l.user_id === userId)?.display_name || '') + '" required></label><button type="submit">Desa el nom</button></form><p class="muted">Si falta algú, convida’l des de «Viatgers» al tauler.</p></section>' +
       '<section class="card"><h3>📊 Com van els comptes?</h3>' + (summaries.length ? summaries.map(g => '<section class="shared-expense-currency"><h4>' + escapeHtml(g.currency) + ' · ' + money(g.expenseCents, g.currency) + ' gastats</h4>' +
         [...g.balances].map(([id, cents]) => '<p><strong>' + escapeHtml(name(id)) + '</strong>: ' + (cents > 0 ? 'li deuen ' : cents < 0 ? 'deu ' : 'al dia ') + money(Math.abs(cents), g.currency) + '</p>').join('') +
-        '<h4>Per saldar els comptes</h4>' + (g.suggestions.length ? g.suggestions.map(s => '<div class="shared-expense-settle"><span>' + escapeHtml(name(s.from)) + ' → ' + escapeHtml(name(s.to)) + ': <strong>' + money(s.amount_cents, s.currency) + '</strong></span><button type="button" class="secondary" data-propose-payment="' + escapeHtml(s.from + '|' + s.to + '|' + s.amount_cents + '|' + s.currency) + '">Registra el pagament</button></div>').join('') : '<p>Tot saldat en aquesta moneda. ✅</p>') + '</section>').join('') : '<p class="muted">Quan afegiu la primera despesa, aquí veureu què deu cadascú.</p>') +
+        '<h4>Per saldar els comptes</h4>' + (g.suggestions.length ? g.suggestions.map(s => '<div class="shared-expense-settle"><span>' + escapeHtml(name(s.from)) + ' → ' + escapeHtml(name(s.to)) + ': <strong>' + money(s.amount_cents, s.currency) + '</strong></span>' + (members.some(m => m.user_id === s.from) && members.some(m => m.user_id === s.to) ? '<button type="button" class="secondary" data-propose-payment="' + escapeHtml(s.from + '|' + s.to + '|' + s.amount_cents + '|' + s.currency) + '">Registra el pagament</button>' : '<small>Participant antic: liquidació manual pendent</small>') + '</div>').join('') : '<p>Tot saldat en aquesta moneda. ✅</p>') + '</section>').join('') : '<p class="muted">Quan afegiu la primera despesa, aquí veureu què deu cadascú.</p>') +
       (legacyCount ? '<p class="muted">Hi ha ' + legacyCount + ' despeses antigues sense repartiment: es conserven i no es compten com a deutes.</p>' : '') + '</section>' +
       '<section class="card"><h3>＋ Afegir una despesa</h3><form data-shared-expense class="shared-expense-form">' +
       '<label>Concepte<input name="description" maxlength="200" placeholder="Sopar, taxi, entrades..." required></label>' +
