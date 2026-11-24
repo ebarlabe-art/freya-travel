@@ -133,7 +133,7 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
       '<section class="card"><h3>＋ Afegir una despesa</h3><form data-shared-expense class="shared-expense-form">' +
       '<label>Concepte<input name="description" maxlength="200" placeholder="Sopar, taxi, entrades..." required></label>' +
       '<div class="shared-expense-inline"><label>Import<input name="amount" type="number" inputmode="decimal" min="0.01" max="999999999.99" step="0.01" required></label><label>Moneda ISO<input name="currency" maxlength="3" pattern="[A-Z]{3}" value="' + escapeHtml(currency) + '" required></label></div>' +
-      '<div class="shared-expense-inline"><label>Ha pagat<select name="payer" required>' + memberOptions(userId) + '</select></label><label>Data<input name="date" type="date" value="' + new Date().toISOString().slice(0, 10) + '"></label></div>' +
+      '<div class="shared-expense-inline"><label>Ha pagat<select name="payer" required>' + memberOptions(userId) + '</select></label><label>Data<input name="date" type="date" value="' + new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10) + '"></label></div>' +
       '<label>Categoria<select name="category"><option>Menjar</option><option>Transport</option><option>Entrades</option><option>Allotjament</option><option>Compres</option><option>Altres</option></select></label>' +
       '<fieldset><legend>Entre qui repartim la despesa?</legend><label><input type="radio" name="mode" value="equal" checked> A parts iguals</label> <label><input type="radio" name="mode" value="custom"> Imports personalitzats</label><div data-shared-participants></div></fieldset>' +
       '<button type="submit" data-shared-save>Desa la despesa</button></form></section>' +
