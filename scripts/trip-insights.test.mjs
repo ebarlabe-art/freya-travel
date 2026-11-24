@@ -40,7 +40,7 @@ test('A4 universal: endpoint does not call AI for unauthorized or trips not read
 });
 test('A4 universal: server decides dates and destinations; caller cannot forge an itinerary or destination',async()=>{
  const h=make();
- assert.equal((await h(req({...body,destinations:[{name:'Injected',country_code:'XX'}]})).status,400);
+ assert.equal((await h(req({...body,destinations:[{name:'Injected',country_code:'XX'}]}))).status,400);
  const resp=await h(req());assert.equal(resp.status,200);
  const obj=await resp.json();assert.equal(obj.checked_at,'2026-11-24');assert.equal(obj.items[0].destination,'Mongòlia');
 });
