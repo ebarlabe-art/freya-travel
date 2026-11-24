@@ -75,8 +75,8 @@ begin
   end if;
 
   select * into v_trip
-  from public.trips
-  where invite_code = upper(trim(p_invite_code))
+  from public.trips as trip
+  where trip.invite_code = upper(trim(p_invite_code))
   for update;
 
   if v_trip.id is null then
