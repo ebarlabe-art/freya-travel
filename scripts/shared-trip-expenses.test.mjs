@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {amountToCents,equalShares,customShares,summarizeSharedExpenses,formatSharedMoney} from '../domain/shared-trip-expenses.mjs';
+import {amountToCents,equalShares,customShares,summarizeSharedExpenses,formatSharedMoney,needsSharedExpenseReview,sameSharedAllocation} from '../domain/shared-trip-expenses.mjs';
 
 const eva='11111111-1111-4111-8111-111111111111';
 const xesc='22222222-2222-4222-8222-222222222222';
@@ -66,4 +66,37 @@ test('generic navigation, build packaging, offline cache and RLS contract are wi
   assert.match(sql,/split_shares jsonb/);
   assert.match(sql,/public\.is_trip_member\(trip_id\)/);
   assert.match(sql,/created_by in \(payer_user_id, receiver_user_id\)/);
+});
+
+test('new member joining after an expense gets a review notice, never a retroactive auto-split',()=>{
+  const expense={payer_user_id:eva,created_at:'2026-11-24T09:29:33Z',split_shares:[{user_id:eva,amount_cents:15000}]};
+  const members=[
+    {user_id:eva,created_at:'2026-11-15T20:43:06Z'},
+    {user_id:xesc,created_at:'2026-11-24T09:44:53Z'}
+  ];
+  assert.equal(needsSharedExpenseReview(expense,members),true);
+  assert.deepEqual(expense.split_shares,[{user_id:eva,amount_cents:15000}],'Joining must not mutate an old allocation');
+  const revised={...expense,split_shares:equalShares(15000,[eva,xesc])};
+  assert.equal(needsSharedExpenseReview(revised,members),false);
+  assert.equal(needsSharedExpenseReview({...expense,created_at:'2026-11-24T10:00:00Z'},members),false);
+  assert.equal(needsSharedExpenseReview({...expense,payer_user_id:null},members),false);
+  assert.equal(sameSharedAllocation(revised.split_shares,[{user_id:xesc,amount_cents:7500},{user_id:eva,amount_cents:7500}]),true);
+  const ledger=summarizeSharedExpenses([revised,{payer_user_id:xesc,amount:'100',currency:'EUR',split_shares:equalShares(10000,[eva,xesc])}],[],[eva,xesc]);
+  assert.equal(ledger[0].balances.get(eva),2500);
+  assert.equal(ledger[0].balances.get(xesc),-2500);
+});
+
+test('solo save warning, explicit review editor and stale revision guard are present',async()=>{
+  const [module,sql]=await Promise.all([
+    readFile(new URL('../domain/shared-trip-expenses.mjs',import.meta.url),'utf8'),
+    readFile(new URL('../supabase/migrations/20261124114500_shared_expense_split_review_v2.sql',import.meta.url),'utf8')
+  ]);
+  assert.match(module,/members\.length===1 && !globalThis\.confirm/);
+  assert.match(module,/requireCurrentMembers\(\)/);
+  assert.match(module,/data-open-edit/);
+  assert.match(module,/data-edit-split/);
+  assert.match(module,/eq\('split_revision',row\.split_revision\)/);
+  assert.match(sql,/create policy "shared expense creator revises split"/);
+  assert.match(sql,/Only the original creator can revise a shared allocation/);
+  assert.match(sql,/new\.split_revision := old\.split_revision \+ 1/);
 });
