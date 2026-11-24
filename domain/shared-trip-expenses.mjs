@@ -155,6 +155,10 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
     root.querySelector('[data-shared-label]').onsubmit = saveLabel;
     root.querySelector('[data-shared-expense]').onsubmit = saveExpense;
     root.querySelector('[data-shared-payment]').onsubmit = savePayment;
+    for (const form of [root.querySelector('[data-shared-expense]'),root.querySelector('[data-shared-payment]')]) {
+      form.addEventListener('input', () => { delete form.dataset.pendingId; });
+      form.addEventListener('change', () => { delete form.dataset.pendingId; });
+    }
     root.querySelectorAll('[data-propose-payment]').forEach(button => button.onclick = () => {
       const [from, to, cents, iso] = button.dataset.proposePayment.split('|');
       const form = root.querySelector('[data-shared-payment]');
@@ -232,9 +236,15 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
       shares = mode === 'equal' ? equalShares(cents,included) : customShares(cents,included.map(user_id => ({user_id,amount:root.querySelector('[data-split-amount="' + user_id + '"]').value})));
     } catch (error) { status(error.message,true); return; }
     currency = iso;
+    const operationId = form.dataset.pendingId || crypto.randomUUID();
+    form.dataset.pendingId = operationId;
     void action(async () => {
-      const payload = {trip_id:tripId,description,amount:(cents/100).toFixed(2),currency:iso,paid_by:name(payer),payer_user_id:payer,split_shares:shares,category:form.elements.category.value,expense_date:form.elements.date.value||null,created_by:userId};
+      const payload = {id:operationId,trip_id:tripId,description,amount:(cents/100).toFixed(2),currency:iso,paid_by:name(payer),payer_user_id:payer,split_shares:shares,category:form.elements.category.value,expense_date:form.elements.date.value||null,created_by:userId};
       const {error} = await db.from('travel_expenses').insert(payload);
+      if (error?.code === '23505') {
+        const found = await db.from('travel_expenses').select('id,description,amount,currency,payer_user_id,split_shares').eq('trip_id',tripId).eq('id',operationId).maybeSingle();
+        if (!found.error && found.data?.id === operationId && found.data.description === description && found.data.currency === iso && found.data.payer_user_id === payer && amountToCents(String(found.data.amount)) === cents && JSON.stringify(found.data.split_shares) === JSON.stringify(shares)) return;
+      }
       if (error) throw error;
     }, 'Despesa desada i repartida.');
   }
@@ -253,8 +263,14 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
     } catch (error) { status(error.message,true); return; }
     if (!globalThis.confirm('Confirma que el pagament ja s’ha fet realment?')) return;
     currency = iso;
+    const operationId = form.dataset.pendingId || crypto.randomUUID();
+    form.dataset.pendingId = operationId;
     void action(async () => {
-      const {error} = await db.from('trip_expense_settlements').insert({trip_id:tripId,payer_user_id:payer,receiver_user_id:receiver,amount:(cents/100).toFixed(2),currency:iso,created_by:userId});
+      const {error} = await db.from('trip_expense_settlements').insert({id:operationId,trip_id:tripId,payer_user_id:payer,receiver_user_id:receiver,amount:(cents/100).toFixed(2),currency:iso,created_by:userId});
+      if (error?.code === '23505') {
+        const found = await db.from('trip_expense_settlements').select('id,amount,currency,payer_user_id,receiver_user_id').eq('trip_id',tripId).eq('id',operationId).maybeSingle();
+        if (!found.error && found.data?.id === operationId && found.data.currency === iso && found.data.payer_user_id === payer && found.data.receiver_user_id === receiver && amountToCents(String(found.data.amount)) === cents) return;
+      }
       if (error) throw error;
     }, 'Liquidació registrada.');
   }
