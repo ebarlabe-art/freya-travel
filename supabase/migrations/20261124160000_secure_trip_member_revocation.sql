@@ -70,23 +70,34 @@ begin
   if auth.uid() is null then
     raise exception 'Cal iniciar sessió';
   end if;
-  if exists(select 1 from public.trip_members where user_id = auth.uid()) then
+
+  -- Preserve the validation already used by the live legacy RPC.
+  if trim(coalesce(p_invite_code, '')) = '' then
+    raise exception 'Escriu el codi d’invitació';
+  end if;
+
+  if exists (
+    select 1 from public.trip_members m
+    where m.user_id = auth.uid()
+  ) then
     raise exception 'Ja formes part d’un viatge';
   end if;
 
-  select * into v_trip
-  from public.trips as trip
-  where trip.invite_code = upper(trim(p_invite_code))
+  select t.*
+  into v_trip
+  from public.trips t
+  where t.invite_code = upper(trim(p_invite_code))
   for update;
 
   if v_trip.id is null then
     raise exception 'Codi incorrecte';
   end if;
 
-  insert into public.trip_members(trip_id, user_id)
+  insert into public.trip_members (trip_id, user_id)
   values (v_trip.id, auth.uid());
 
-  return query select v_trip.id, v_trip.name, v_trip.invite_code;
+  return query
+  select v_trip.id, v_trip.name, v_trip.invite_code;
 end;
 $$;
 
