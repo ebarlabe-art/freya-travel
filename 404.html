@@ -862,7 +862,25 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         <p id="genericTripSettingsMsg" class="message hidden" role="status" aria-live="polite"></p>
       </div>
 
-      <div id="genericTravelersCard" class="card generic-invite-card hidden"><h2>👥 Viatgers</h2><p>Comparteix aquest codi per convidar algú al viatge:</p><div id="genericInviteCode" class="code"></div><p><button id="shareGenericTrip" type="button">Compartir invitació</button> <button id="copyGenericCode" type="button" class="secondary">Copiar codi</button></p><p id="genericAppMsg" class="message hidden"></p></div>
+      <div id="genericTravelersCard" class="card generic-invite-card hidden">
+        <h2>👥 Viatgers del viatge</h2>
+        <p class="muted">Tothom que forma part del viatge pot veure els altres participants. La persona propietària s'identifica com a organitzadora.</p>
+        <div id="genericParticipantsRoster" role="status" aria-live="polite">Obre aquest apartat per veure els participants.</div>
+        <p><button id="refreshGenericParticipants" type="button" class="secondary">Actualitza els participants</button></p>
+        <form id="genericParticipantNameForm">
+          <label>Com vols que et vegin els altres viatgers?
+            <input id="genericParticipantName" maxlength="60" autocomplete="nickname" placeholder="El teu nom al viatge" required>
+          </label>
+          <button id="saveGenericParticipantName" type="submit">Desa el meu nom</button>
+        </form>
+        <p id="genericParticipantMessage" class="message hidden" role="status"></p>
+        <hr>
+        <p>Convida algú amb el codi del viatge:</p>
+        <div id="genericInviteCode" class="code"></div>
+        <p><button id="shareGenericTrip" type="button">Compartir invitació</button> <button id="copyGenericCode" type="button" class="secondary">Copiar codi</button></p>
+        <p id="genericAppMsg" class="message hidden"></p>
+        <p class="muted">La retirada d'accés encara no està disponible. No comparteixis el codi amb persones que no vulguis incorporar al viatge.</p>
+      </div>
     </div>
 
     <div id="buildView" class="hidden">
@@ -8469,11 +8487,71 @@ $('genericTripSettingsToggle').onclick=()=>{
   card.classList.toggle('hidden',!opening);
   if(opening){$('genericTravelersCard')?.classList.add('hidden');card.scrollIntoView({behavior:'smooth',block:'start'})}
 };
+// A3.1: reuse the existing member table and shared expense nicknames.
+async function refreshTripParticipants(){
+  const root=$('genericParticipantsRoster');
+  if(!root||!trip||!session||isLondonTrip())return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
+  const current=()=>tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId;
+  root.textContent='Carregant participants…';
+  $('genericParticipantNameForm').classList.add('hidden');
+  try{
+    if(connectionUnavailable())throw new Error('Cal connexió per consultar i actualitzar els participants.');
+    const api=await loadTravelBookModule('trip-participants.mjs');
+    if(!current())return;
+    const rows=await api.fetchTripParticipants({db,tripId,viewerId:userId,ownerId:trip.owner_id});
+    if(!current())return;
+    const list=document.createElement('ul');
+    list.style.paddingLeft='1.4rem';
+    for(const person of rows){
+      const item=document.createElement('li');
+      const name=document.createElement('strong');
+      name.textContent=person.name;
+      item.append(name);
+      const role=document.createElement('span');
+      role.textContent=(person.isOwner?' · Organitza el viatge':' · Participant')+(person.isYou?' · Tu':'');
+      item.append(role);
+      list.append(item);
+      if(person.isYou){
+        $('genericParticipantName').value=person.customName;
+        $('genericParticipantNameForm').classList.remove('hidden');
+      }
+    }
+    root.replaceChildren(list);
+    $('genericTravelersModuleStatus').textContent=rows.length+' '+(rows.length===1?'participant':'participants');
+  }catch(error){
+    if(current())root.textContent=error?.message||'No s’han pogut carregar els participants.';
+  }
+}
 $('genericTravelersToggle').onclick=()=>{
-  const card=$('genericTravelersCard');if(!card)return;
+  const card=$('genericTravelersCard');if(!card||!trip||isLondonTrip())return;
   const opening=card.classList.contains('hidden');
   card.classList.toggle('hidden',!opening);
-  if(opening){$('genericTripSettingsCard')?.classList.add('hidden');card.scrollIntoView({behavior:'smooth',block:'start'})}
+  if(opening){
+    $('genericTripSettingsCard')?.classList.add('hidden');
+    card.scrollIntoView({behavior:'smooth',block:'start'});
+    void refreshTripParticipants();
+  }
+};
+$('refreshGenericParticipants').onclick=()=>void refreshTripParticipants();
+$('genericParticipantNameForm').onsubmit=async event=>{
+  event.preventDefault();
+  if(!trip||!session||isLondonTrip())return;
+  const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id;
+  const current=()=>tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId;
+  const button=$('saveGenericParticipantName');
+  button.disabled=true;
+  try{
+    if(connectionUnavailable())throw new Error('Cal connexió per desar el nom.');
+    const api=await loadTravelBookModule('trip-participants.mjs');
+    if(!current())return;
+    await api.saveOwnParticipantName({db,tripId,viewerId:userId,name:$('genericParticipantName').value});
+    if(!current())return;
+    msg('genericParticipantMessage','Nom desat i compartit amb els participants.');
+    await refreshTripParticipants();
+  }catch(error){
+    if(current())msg('genericParticipantMessage',error?.message||'No s’ha pogut desar el nom.',true);
+  }finally{button.disabled=false}
 };
 $('addCarRental').onclick=()=>openCarRentalForm();$('addFirstCarRental').onclick=()=>openCarRentalForm();$('cancelCarRental').onclick=closeCarRentalForm;
 $('carRentalSearchInfo').onclick=()=>msg('carRentalSearchMessage','La cerca queda preparada per integrar proveïdors, però encara no n’activem cap.',false);
