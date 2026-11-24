@@ -284,7 +284,7 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
     const queries = await Promise.all([
       db.from('trip_members').select('user_id,created_at').eq('trip_id',tripId).order('created_at'),
       db.from('trip_expense_member_labels').select('user_id,display_name').eq('trip_id',tripId),
-      db.from('travel_expenses').select('id,description,amount,currency,paid_by,payer_user_id,split_shares,expense_date,created_at,created_by').eq('trip_id',tripId).order('created_at',{ascending:false}),
+      db.from('travel_expenses').select('id,description,amount,currency,paid_by,payer_user_id,split_shares,split_revision,expense_date,created_at,created_by').eq('trip_id',tripId).order('created_at',{ascending:false}),
       db.from('trip_expense_settlements').select('id,trip_id,payer_user_id,receiver_user_id,amount,currency,created_by,created_at').eq('trip_id',tripId).order('created_at',{ascending:false})
     ]);
     if (!active() || serial !== request) return;
