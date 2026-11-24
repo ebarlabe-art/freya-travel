@@ -225,6 +225,10 @@ jobs:
         if: matrix.engine == 'chromium'
         timeout-minutes: 5
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-shared-trip-browser.mjs
+      - name: Trip dashboard on mobile and desktop
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 2
+        run: node scripts/check-trip-dashboard-browser.mjs
       - name: Currency converter mobile and offline
         if: matrix.engine == 'chromium'
         timeout-minutes: 2
