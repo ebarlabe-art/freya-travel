@@ -64,7 +64,7 @@ try{
  assert.match(as(owner,`update public.travel_expenses set split_shares='${split}'::jsonb where id='${expenseId}' and split_revision=0`),/UPDATE 0/);
  assert.throws(()=>as(owner,`update public.travel_expenses set amount=51 where id='${expenseId}'`),/Only the original creator/);
  check(owner,`(select amount=50 and split_revision=1 from public.travel_expenses where id='${expenseId}')`);
- const invalidSplit=JSON.stringify([{user_id:owner,amount_cents:5000}]);
+ const invalidSplit=JSON.stringify([{user_id:owner,amount_cents:4900}]);
  assert.throws(()=>as(owner,`update public.travel_expenses set split_shares='${invalidSplit}'::jsonb where id='${expenseId}'`),/Split total/);
  check(owner,`(select split_revision=1 from public.travel_expenses where id='${expenseId}')`);
  console.log('PASS author-only split edit, locked amount/payer, exact validation and stale-revision rejection');
