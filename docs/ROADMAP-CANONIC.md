@@ -194,7 +194,7 @@ Completar la capa de producte sobre la infraestructura existent:
 
 **A3.1 (en PR, NO publicat):** llista de participants i identificació de propietari, nom propi editable reutilitzant `trip_members` i `trip_expense_member_labels`. Sense noves taules, rols inventats ni contacte o correu privat exposat.
 
-**A3.2 (pendent):** revocació i renovació del codi/invitacions amb seguretat real, sense destruir les despeses històriques. No exposar el botó «Retira accés» mentre l'antic codi continuï permetent reentrar.
+**A3.2 (implementada en PR, no publicada):** revocació transaccional al servidor amb rotació del codi d'invitació i bloqueig dels dos mecanismes d'entrada (actual i llegat), preservant l'històric de despeses. El botó «Retira accés» s'activa amb la nova versió de l'app només un cop aplicada la migració amb autorització. Pendent de CI, validació física amb dos comptes i comprovació de límits offline.
 
 **CLOSED quan:** la propietària pot gestionar tot l'equip del viatge des de Freya sense dependre d'eines externes, amb els permisos revocats i revalidats.
 

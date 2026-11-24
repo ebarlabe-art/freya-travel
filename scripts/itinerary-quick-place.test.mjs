@@ -60,7 +60,7 @@ test('v25: find-place opens direct picker, never the full editor; existing rows 
  assert.match(html,/data\?\(place\.coordinate_role==='representative_point'/);
  assert.match(packageScript,/'itinerary-quick-place\.mjs'/);
  assert.match(worker,/'\.\/domain\/itinerary-quick-place\.mjs'/);
- assert.match(worker,/freya-travel-release-6444-v75/);
+ assert.match(worker,/freya-travel-release-6444-v76/);
  assert.match(html,/pwa-geography-identity-228/);
 });
 

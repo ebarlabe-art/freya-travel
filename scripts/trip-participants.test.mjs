@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {buildTripParticipantRoster,fetchTripParticipants,saveOwnParticipantName} from '../domain/trip-participants.mjs';
+import {buildTripParticipantRoster,fetchTripParticipants,saveOwnParticipantName,revokeTripParticipant} from '../domain/trip-participants.mjs';
 
 test('A3: owner is first; only existing member nicknames are displayed',()=>{
   const members=[{user_id:'visitor',created_at:'2026-11-24'}, {user_id:'owner',created_at:'2026-11-23'}];
@@ -48,4 +48,24 @@ test('A3 wiring: original travelers card; single source of membership; no revoke
   assert.match(pack,/'trip-participants\.mjs'/);
   assert.match(worker,/'\.\/domain\/trip-participants\.mjs'/);
   assert.doesNotMatch(html,/id="removeGenericParticipant"/);
+});
+
+test('A3.2: only owner may revoke; server must confirm fresh invitation',async()=>{
+  let received;
+  const db={rpc:async(name,params)=>{assert.equal(name,'revoke_trip_member_v1');received=params;return {data:'A'.repeat(32),error:null}}};
+  const args={db,tripId:'trip',viewerId:'owner',ownerId:'owner',participantId:'guest'};
+  assert.equal(await revokeTripParticipant(args),'A'.repeat(32));
+  assert.deepEqual(received,{p_trip_id:'trip',p_user_id:'guest'});
+  await assert.rejects(revokeTripParticipant({...args,viewerId:'guest'}),/organitzador/);
+  await assert.rejects(revokeTripParticipant({...args,participantId:'owner'}),/organitzador/);
+  await assert.rejects(revokeTripParticipant({...args,db:{rpc:async()=>({error:{message:'Revocació rebutjada'}})}}),/Revocació rebutjada/);
+});
+
+test('A3.2: both join RPCs use row locking; historical accounting never deleted',()=>{
+  const sql=readFileSync(new URL('../supabase/migrations/20261124160000_secure_trip_member_revocation.sql',import.meta.url),'utf8');
+  assert.equal((sql.match(/for update;/g)||[]).length,3);
+  assert.match(sql,/locked_trip.owner_id <> actor/);
+  assert.match(sql,/delete from public.trip_members/);
+  assert.match(sql,/update public.trips set invite_code/);
+  assert.doesNotMatch(sql,/delete from public.travel_expenses|delete from public.trip_expense_settlements/i);
 });

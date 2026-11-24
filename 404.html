@@ -879,7 +879,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         <div id="genericInviteCode" class="code"></div>
         <p><button id="shareGenericTrip" type="button">Compartir invitació</button> <button id="copyGenericCode" type="button" class="secondary">Copiar codi</button></p>
         <p id="genericAppMsg" class="message hidden"></p>
-        <p class="muted">La retirada d'accés encara no està disponible. No comparteixis el codi amb persones que no vulguis incorporar al viatge.</p>
+        <p class="muted">Retirar un participant revoca l'accés i invalida el codi antic. Les despeses històriques es conserven.</p>
       </div>
     </div>
 
@@ -8511,6 +8511,31 @@ async function refreshTripParticipants(){
       const role=document.createElement('span');
       role.textContent=(person.isOwner?' · Organitza el viatge':' · Participant')+(person.isYou?' · Tu':'');
       item.append(role);
+      if(trip.owner_id===userId&&!person.isOwner){
+        const remove=document.createElement('button');
+        remove.type='button';
+        remove.className='secondary';
+        remove.textContent='Retira accés';
+        remove.style.marginLeft='.6rem';
+        remove.onclick=async()=>{
+          if(!confirm('Vols retirar '+person.name+' del viatge? El codi antic deixarà de funcionar, i les despeses anteriors es conservaran.'))return;
+          remove.disabled=true;
+          try{
+            if(connectionUnavailable())throw new Error('Cal connexió per retirar un participant.');
+            const newCode=await api.revokeTripParticipant({db,tripId,viewerId:userId,ownerId:trip.owner_id,participantId:person.userId});
+            if(!current())return;
+            trip.invite_code=newCode;
+            const stored=trips.find(value=>value.id===tripId);
+            if(stored)stored.invite_code=newCode;
+            $('genericInviteCode').textContent=newCode;
+            msg('genericParticipantMessage','Accés retirat. Codi renovat. Les despeses anteriors es mantenen.');
+            await refreshTripParticipants();
+          }catch(error){
+            if(current())msg('genericParticipantMessage',error?.message||'No s’ha pogut retirar l’accés.',true);
+          }finally{remove.disabled=false}
+        };
+        item.append(' ',remove);
+      }
       list.append(item);
       if(person.isYou){
         $('genericParticipantName').value=person.customName;

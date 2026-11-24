@@ -1,12 +1,20 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## A3.2 · Revocació segura dels participants · EN BRANCA, NO PUBLICAT (24/11/2026)
+
+A la mateixa PR #258, `revoke_trip_member_v1` comprova al servidor que qui demana la baixa és la persona propietària i elimina la pertinença del participant; en la mateixa transacció renova el codi d'invitació amb 122 bits aleatoris. `join_trip_v2` i l'antic `join_trip` bloquegen la fila del viatge mentre comproven el codi, impedint la reincorporació amb codis antics fins i tot en curses concurrents. Interfície de confirmació només per a la persona organitzadora. Sense noves taules, nous rols ni destrucció d'històrics de despeses, repartiments, liquidacions o etiquetes de nom. La vista de Despeses ja permet saldos d'antics participants i bloqueja l'edició de repartiments amb membres retirats.
+
+**Estat de desplegament:** no s'ha aplicat la migració, fusionat la PR ni publicat res. Cal validar CI i contracte de seguretat, després autorització específica de migració Supabase abans de la nova PWA; prova física de dos comptes amb un viatge autoritzat. La revocació actua al servidor, però no pot esborrar còpies ja descarregades en dispositius offline. A3.1 havia passat 7/7 jobs; la CI dels canvis d'A3.2 encara s'ha de verificar.
+
+---
+
 ## A3.1 · Participants visibles i nom propi · EN BRANCA, NO PUBLICAT (24/11/2026)
 
 Branca `feat/a3-participants-roster-20261124`, després de la PR #257 fusionada i desplegada. Es reutilitzen `trip_members` (pertinença al viatge i data) i `trip_expense_member_labels` (nom autogestionat, compartit amb Despeses). El mòdul `domain/trip-participants.mjs` llegeix els membres amb el RLS existent, diferencia propietari i participant, evita mostrar correus personals i permet que cada persona editi **només el seu nom** (1–60 caràcters), validat també per la BD. El panell existent «Viatgers» mostra una llista actualitzable amb recompte; conserva invitació amb codi, copiar i compartir. Sense migració ni escriptures de dades de producció. Londres continua separat.
 
 **Porta pendent A3.2:** la propietària encara no pot retirar accessos amb garantia, perquè `join_trip_v2` accepta codis ja compartits: expulsar una persona sense invalidar-ne el codi no seria revocació. S'ha de definir revocació efectiva i el tractament de les despeses/liquidacions històriques abans de programar-la; no s'ha inventat rol nou ni donat fals control de seguretat.
 
-**Estat:** codi i documentació només a la branca, PR en preparació. Pendent CI, comprovació física a iPhone amb dos participants i autorització expressa abans de fusionar/desplegar. Prova de dades reals no executada.
+**Estat:** codi i documentació només a la PR #258, no publicats. A3.1 ha superat 7/7 jobs de CI; A3.2 necessita nova CI i validació amb dos comptes. Cal autorització expressa abans de migrar, fusionar o desplegar. Prova de dades reals no executada.
 
 ## Roadmap recuperat d'agost · Freya Insights i moneda/divises (24/11/2026)
 

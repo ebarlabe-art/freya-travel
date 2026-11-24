@@ -99,4 +99,25 @@ try{
  check(owner,`(select count(*) from public.trip_itinerary_items)=2`);
  check(owner,`exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and tablename='trip_itinerary_items')`);
  console.log('PASS two concurrent authenticated clients: stale CAS rejected, fresh retry observed by both, no duplicate agenda items; Realtime publication present');
+
+ // A3.2: revocation invalidates both current/legacy invites without rewriting historic expenses.
+ const historicalSplit=JSON.stringify([{user_id:owner,amount_cents:1200},{user_id:friend,amount_cents:1200}]);
+ const historicalExpense=as(owner,`insert into public.travel_expenses(trip_id,description,amount,currency,paid_by,created_by,payer_user_id,split_shares)
+   values ('${a.id}','Historical dinner',24.00,'EUR','Owner','${owner}','${owner}','${historicalSplit}'::jsonb) returning id`).split('\n')[0];
+ const historicalSettlement=as(friend,`insert into public.trip_expense_settlements(trip_id,payer_user_id,receiver_user_id,amount,currency,created_by)
+   values ('${a.id}','${friend}','${owner}',12.00,'EUR','${friend}') returning id`).split('\n')[0];
+ assert.throws(()=>as(friend,`select public.revoke_trip_member_v1('${a.id}','${owner}')`),/organitzador/);
+ assert.throws(()=>as(owner,`select public.revoke_trip_member_v1('${a.id}','${owner}')`),/organitzadora/);
+ const newInvite=as(owner,`select public.revoke_trip_member_v1('${a.id}','${friend}')`);
+ assert.match(newInvite,/^[A-F0-9]{32}$/);
+ assert.notEqual(newInvite,a.invite_code);
+ check(owner,`(select invite_code='${newInvite}' from public.trips where id='${a.id}')`);
+ check(owner,`not exists(select 1 from public.trip_members where trip_id='${a.id}' and user_id='${friend}')`);
+ check(owner,`exists(select 1 from public.travel_expenses where id='${historicalExpense}' and split_shares='${historicalSplit}'::jsonb)`);
+ check(owner,`exists(select 1 from public.trip_expense_settlements where id='${historicalSettlement}')`);
+ check(friend,`not public.is_trip_member('${a.id}') and not exists(select 1 from public.travel_expenses where trip_id='${a.id}') and not exists(select 1 from public.trip_expense_member_labels where trip_id='${a.id}')`);
+ assert.throws(()=>as(friend,`select * from public.join_trip_v2('${a.invite_code}')`),/Codi incorrecte/);
+ assert.throws(()=>as(friend,`select * from public.join_trip('${a.invite_code}')`),/Codi incorrecte/);
+ assert.throws(()=>as(owner,`select public.revoke_trip_member_v1('${a.id}','${friend}')`),/ja no forma part/);
+ console.log('PASS A3.2: owner-only revocation, rotated code, both join paths blocked, RLS isolation, historical expense preservation');
 }finally{if(created){sql(`drop database ${database}`,'postgres');console.log('Removed disposable shared-trip database')}}

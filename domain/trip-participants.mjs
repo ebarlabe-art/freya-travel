@@ -46,3 +46,14 @@ export async function saveOwnParticipantName({ db, tripId, viewerId, name }) {
   if (!saved.data) throw new Error('No s’ha pogut confirmar el nom desat.');
   return saved.data.display_name;
 }
+
+// A3.2: only the server revokes membership and rotates the invitation.
+export async function revokeTripParticipant({db,tripId,viewerId,ownerId,participantId}) {
+  if (!db || !tripId || !viewerId || !participantId) throw new Error('No es pot identificar el viatge i el participant.');
+  if (viewerId !== ownerId || participantId === ownerId) throw new Error('Només l’organitzador pot retirar altres participants.');
+  const result = await db.rpc('revoke_trip_member_v1', {p_trip_id: tripId, p_user_id: participantId});
+  if (result.error) throw result.error;
+  if (typeof result.data !== 'string' || !/^[A-F0-9]{32}$/.test(result.data))
+    throw new Error('No s’ha pogut confirmar la renovació del codi. Actualitza el viatge.');
+  return result.data;
+}
