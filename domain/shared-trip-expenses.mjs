@@ -232,6 +232,26 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
           '</div>';
       }).join('') || '<p class="muted">Encara no hi ha moviments.</p>') + '</section>';
     renderParticipantChoices();
+    const newExpenseForm = root.querySelector('[data-shared-expense]');
+    newExpenseForm.addEventListener('input',()=>updateSplitPreview(newExpenseForm));
+    newExpenseForm.addEventListener('change',()=>updateSplitPreview(newExpenseForm));
+    updateSplitPreview(newExpenseForm);
+    root.querySelectorAll('[data-open-edit]').forEach(button=>button.onclick=()=>{
+      editingExpenseId = button.dataset.openEdit;
+      render();
+      root.querySelector('[data-edit-split]')?.scrollIntoView({behavior:'smooth',block:'center'});
+    });
+    const editForm = root.querySelector('[data-edit-split]');
+    if (editForm) {
+      const row = rows.find(r=>r.id===editForm.dataset.editSplit);
+      if (row) {
+        editForm.addEventListener('input',()=>updateSplitPreview(editForm,row));
+        editForm.addEventListener('change',()=>updateSplitPreview(editForm,row));
+        editForm.onsubmit = saveSplitEdit;
+        editForm.querySelector('[data-cancel-edit]').onclick=()=>{editingExpenseId=null;render();};
+        updateSplitPreview(editForm,row);
+      }
+    }
     root.querySelector('[data-shared-refresh]').onclick = () => void load();
     root.querySelector('[data-shared-csv]').onclick = exportCSV;
     root.querySelectorAll('input[name="mode"]').forEach(input => input.onchange = () => {
@@ -321,10 +341,12 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
       if (!description || description.length > 200 || !isoCurrency(iso) || !members.some(m => m.user_id === payer)) throw Error('Revisa el concepte, la moneda i qui ha pagat.');
       shares = mode === 'equal' ? equalShares(cents,included) : customShares(cents,included.map(user_id => ({user_id,amount:root.querySelector('[data-split-amount="' + user_id + '"]').value})));
     } catch (error) { status(error.message,true); return; }
+    if(members.length===1 && !globalThis.confirm('Ara només hi ha un participant. Aquesta despesa quedarà íntegrament al teu càrrec. Vols desar-la igualment?')) return;
     currency = iso;
     const operationId = form.dataset.pendingId || crypto.randomUUID();
     form.dataset.pendingId = operationId;
     void action(async () => {
+      await requireCurrentMembers();
       const payload = {id:operationId,trip_id:tripId,description,amount:(cents/100).toFixed(2),currency:iso,paid_by:name(payer),payer_user_id:payer,split_shares:shares,category:form.elements.category.value,expense_date:form.elements.date.value||null,created_by:userId};
       const {error} = await db.from('travel_expenses').insert(payload);
       if (error?.code === '23505') {
@@ -333,6 +355,34 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
       }
       if (error) throw error;
     }, 'Despesa desada i repartida.');
+  }
+
+
+  function saveSplitEdit(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const row = rows.find(r=>r.id===form.dataset.editSplit);
+    if (!row || row.created_by !== userId) return;
+    const chosen = [...form.querySelectorAll('[data-edit-member]')].filter(el=>el.checked).map(el=>el.dataset.editMember);
+    let shares;
+    try {
+      const cents = amountToCents(String(row.amount));
+      const custom = form.querySelector('input[name="edit-mode"]:checked')?.value==='custom';
+      shares = custom ? customShares(cents,chosen.map(user_id=>({user_id,amount:form.querySelector('[data-edit-amount="'+user_id+'"]').value}))) : equalShares(cents,chosen);
+    } catch (error) {status(error.message,true);return;}
+    if (sameSharedAllocation(row.split_shares,shares)) {status('El repartiment ja és aquest. No hi ha canvis.');return;}
+    if (!globalThis.confirm('Vols canviar el repartiment d’aquesta despesa? Es recalcularan els saldos del grup, però no es modificarà l’import pagat ni cap liquidació anterior.')) return;
+    void action(async () => {
+      await requireCurrentMembers();
+      const result = await db.from('travel_expenses')
+        .update({split_shares:shares})
+        .eq('trip_id',tripId).eq('id',row.id).eq('created_by',userId)
+        .eq('split_revision',row.split_revision)
+        .select('id,split_revision');
+      if (result.error) throw result.error;
+      if (result.data?.length !== 1) throw Error('Aquest repartiment ha canviat des de l’última actualització. Prem «Actualitza» i revisa’l abans de tornar a desar.');
+      editingExpenseId = null;
+    }, 'Repartiment actualitzat. Els saldos s’han recalculat.');
   }
 
   function savePayment(event) {
