@@ -182,7 +182,7 @@ Freya ha d'extreure una proposta de dades i **demanar confirmació abans d'escri
 **CLOSED quan:** una reserva o un itinerari en PDF es pot convertir en peces operatives de Freya sense reintroduir manualment la mateixa informació.
 
 ### A3. Participants
-**Prioritat: P1 · EN CURS (24/11/2026)**
+**Prioritat: ✅ CLOSED · 24/11/2026 · PR #258, PWA v76**
 
 Completar la capa de producte sobre la infraestructura existent:
 - llista de membres del viatge i rol de propietari;
@@ -192,16 +192,16 @@ Completar la capa de producte sobre la infraestructura existent:
 - determinar què passa amb despeses/liquidacions històriques i permisos quan un membre abandona el viatge;
 - comportament clar quan s'acaba el viatge.
 
-**A3.1 (en PR, NO publicat):** llista de participants i identificació de propietari, nom propi editable reutilitzant `trip_members` i `trip_expense_member_labels`. Sense noves taules, rols inventats ni contacte o correu privat exposat.
+**A3.1 (publicat):** llista de participants i identificació de propietari, nom propi editable reutilitzant `trip_members` i `trip_expense_member_labels`. Prova física confirmada amb dos comptes; cap correu privat exposat.
 
-**A3.2 (implementada en PR, no publicada):** revocació transaccional al servidor amb rotació del codi d'invitació i bloqueig dels dos mecanismes d'entrada (actual i llegat), preservant l'històric de despeses. El botó «Retira accés» s'activa amb la nova versió de l'app només un cop aplicada la migració amb autorització. Pendent de CI, validació física amb dos comptes i comprovació de límits offline.
+**A3.2 (publicat):** revocació transaccional al servidor, rotació del codi d'invitació i bloqueig dels dos mecanismes d'entrada (actual i llegat). Despeses històriques preservades. Migració `20261124191045` aplicada i verificada, 7/7 CI i desplegament GitHub Pages correcte. Només la persona propietària pot retirar membres; comprovat per la usuària que els dos membres es veuen i que el botó correspon a l'organitzadora. Cap prova de revocació de participants reals, per evitar canviar accessos sense necessitat. Còpies offline preexistents fora de l'abast de revocació remota.
 
 **CLOSED quan:** la propietària pot gestionar tot l'equip del viatge des de Freya sense dependre d'eines externes, amb els permisos revocats i revalidats.
 
 ---
 
 ### A4. Preparació intel·ligent · Freya Insights
-**Prioritat: P1 · RECUPERAT DEL ROADMAP D'AGOST, PENDENT**
+**Prioritat: P1 · EN CURS · A4.1 preparat en branca, NO publicat**
 
 Capa d'ajuda contextual abans i durant el viatge, **no** un calaix genèric de «Recomanacions» ni la IA predictiva futura. S'activa segons país/destinació, dates, etapa del viatge i activitat, amb font i data de verificació; no presenta informació legal o tarifària obsoleta com a actual.
 
@@ -214,6 +214,8 @@ Capa d'ajuda contextual abans i durant el viatge, **no** un calaix genèric de �
 - **Activitats:** durada, horaris, cues, punts imprescindibles i consells vinculats a la visita, sense alterar reserves.
 
 **Exemples de referència:** Japó (Visit Japan Web/QR, Suica); Londres (ETA, contactless i topall de transport). Són casos a verificar per dates, no dades permanents.
+
+**A4.1 (en PR #259, desenvolupament, NO publicat):** la IA cerca informació actual per **qualsevol destinació**, sense catàleg fix de països. S'activa automàticament en preparar o obrir el viatge, llegeix només les destinacions i dates ja registrades amb permisos de membre, cerca fonts web, i proposa avisos contextuals sobre entrada/documentació, pagaments, transports, connectivitat, equipatge i hàbits. Cada avís ha de contenir una font recuperada realment a la cerca, un enllaç HTTPS i la data de l'última consulta; si no hi ha evidència suficient, no inventa informació. Resultats temporals amb memòria cau per usuari/viatge (72 h) per limitar costos. El backend nou `trip-insights` és una Edge Function dins del Supabase original, amb les claus i l'arquitectura d'IA ja existents, sense modificar cap taula. Pendent CI i desplegament previ de la funció amb autorització. A4.2 aprofundirà en recomanacions per activitat; després A5 divises.
 
 **CLOSED quan:** un viatger rep avisos pràctics i rellevants amb informació verificable, data de vigència i una manera clara de consultar la font oficial, sense haver de buscar-los en una pantalla buida.
 
@@ -515,4 +517,4 @@ No es crea un roadmap paral·lel.
 
 > **A3 · Participants.** El 24/11/2026, la prova física d'un PDF idèntic al de Barcelona ha comparat 6 activitats amb 6 existents, sense canvis pendents ni escriptures. Això valida la reimportació sense duplicats en aquest cas, però no acredita per si sol totes les variants d'A2.
 
-La següent entrega és A3.1 (llista de membres i nom propi), en PR sense publicació. A3.2 (revocar accés de manera efectiva) queda pendent. Els dos objectius del roadmap d'agost, Freya Insights i conversió de divises, es recuperen com A4/A5, sense crear un altre roadmap.
+**A3 tancat i publicat** (PR #258; prova real de dos participants). **Pròxima entrega A4.1 Freya Insights**, fitxes oficials contextuals per país, en branca separada sense publicació. A4.2 continuarà la cobertura i després A5 moneda/divises, mantenint un sol roadmap i una sola aplicació.

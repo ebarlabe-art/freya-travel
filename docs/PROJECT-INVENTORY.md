@@ -1,5 +1,18 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## A4.1 · Freya Insights amb recerca IA per qualsevol destinació · PR #259, NO PUBLICAT (24/11/2026)
+
+A petició de l'usuària, eliminat el catàleg tancat GB/JP/LK. Branca `feat/a4-freya-insights-contextual-20261124`, sempre dins de `ebarlabe-art/freya-travel`. El nou mòdul `domain/trip-insights.mjs` calcula l'abast utilitzant únicament `trip_stops` i les dates del viatge, amb deduplicació de destinacions i memòria cau temporal local per compte, viatge i abast (72 h). La vista del viatge activa automàticament `renderTripInsights()` en preparar-lo, i mostra avisos útils per cada destinació, la font i la data de la cerca. No es pressuposa nacionalitat, ETA o visat concret; no s'inventen tarifes.
+
+**Backend:** `supabase/functions/trip-insights` reutilitza l'autenticació amb JWT, els permisos RLS del projecte original, la clau OpenAI i el patró de les Edge Functions actuals; valida la pertinença, llegeix destins del servidor (no del navegador), genera una sola resposta per consulta amb `web_search`, demana fins a 24 avisos en sis categories i descarta els enllaços que no consten entre les fonts realment recuperades. Límits simples per usuari i missatges d'error sense dades sensibles. No modifica itineraris, despeses, documents ni cap taula. Funciona independentment del país; si falten parades o fonts, ho indica sense inventar consells.
+
+**Ordre obligatori de desplegament:** 1) revisar CI i cost/compatibilitat del model amb `web_search`; 2) amb autorització, desplegar `trip-insights` al Supabase original i provar un viatge sense escriptures; 3) després publicar el frontend PWA v77 amb la PR #259; 4) prova real iPhone, incloent destins sense fitxa prèvia i compte d'un participant. Sense desplegament ara, sense entorns duplicats. A4.2 aprofundirà les recomanacions per activitat, A5 moneda/divises pendent.
+
+## A3 · Participants · PUBLICAT I VALIDAT (24/11/2026)
+
+La PR #258 ha quedat fusionada al repositori original; PWA v76 publicada per GitHub Pages. La migració `20261124191045_secure_trip_member_revocation.sql` consta aplicada a Supabase i verificada amb permisos per autenticats, no anònims, i serialització de les dues vies d'invitació. CI 7/7. L'usuària confirma que dues persones es veuen i que la propietària pot retirar l'accés. S'ha decidit mantenir la retirada reservada al propietari, fins i tot quan un altre participant ha convidat una tercera persona. Despeses històriques preservades. No es fa cap prova de retirada real ni es modifica cap viatge de producció.
+
+
 ## A3.2 · Revocació segura dels participants · EN BRANCA, NO PUBLICAT (24/11/2026)
 
 A la mateixa PR #258, `revoke_trip_member_v1` comprova al servidor que qui demana la baixa és la persona propietària i elimina la pertinença del participant; en la mateixa transacció renova el codi d'invitació amb 122 bits aleatoris. `join_trip_v2` i l'antic `join_trip` bloquegen la fila del viatge mentre comproven el codi, impedint la reincorporació amb codis antics fins i tot en curses concurrents. Interfície de confirmació només per a la persona organitzadora. Sense noves taules, nous rols ni destrucció d'històrics de despeses, repartiments, liquidacions o etiquetes de nom. La vista de Despeses ja permet saldos d'antics participants i bloqueja l'edició de repartiments amb membres retirats.

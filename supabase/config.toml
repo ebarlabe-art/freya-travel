@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.cultural-guide]
 verify_jwt = true
+
+[functions.trip-insights]
+verify_jwt = true
