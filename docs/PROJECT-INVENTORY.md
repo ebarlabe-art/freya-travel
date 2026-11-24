@@ -1,10 +1,12 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
-## A4.1 · Freya Insights contextuals · EN BRANCA, NO PUBLICAT (24/11/2026)
+## A4.1 · Freya Insights amb recerca IA per qualsevol destinació · PR #259, NO PUBLICAT (24/11/2026)
 
-Branca `feat/a4-freya-insights-contextual-20261124` sobre `main` de Freya Travel. Primer lliurament de fitxes contextuals de Regne Unit, Japó i Sri Lanka, només amb `trip_stops.country_code`, dates del viatge i fonts institucionals consultades el 24/11/2026. Cap requisit de visat individual inferit, ni tipus de canvi suposat, ni dades modificades, ni noves taules, credencials o serveis paral·lels. El país sense fitxa mostra un avís honest. La fitxa desapareix als viatges passats i ofereix context previ o durant el viatge; les URLs s'obren en una altra pestanya i cada targeta identifica l'organisme oficial. PWA v77 en branca i proves unitàries de dades, fonts, països no coberts i fase temporal.
+A petició de l'usuària, eliminat el catàleg tancat GB/JP/LK. Branca `feat/a4-freya-insights-contextual-20261124`, sempre dins de `ebarlabe-art/freya-travel`. El nou mòdul `domain/trip-insights.mjs` calcula l'abast utilitzant únicament `trip_stops` i les dates del viatge, amb deduplicació de destinacions i memòria cau temporal local per compte, viatge i abast (72 h). La vista del viatge activa automàticament `renderTripInsights()` en preparar-lo, i mostra avisos útils per cada destinació, la font i la data de la cerca. No es pressuposa nacionalitat, ETA o visat concret; no s'inventen tarifes.
 
-**Estat:** codi preparat, pendent de CI i validació física iPhone. Sense migració ni publicació; cal autorització explícita abans de fusionar. **Següent:** validar PR, després ampliar A4.2 amb equipatge, cultura, transport i recomanacions d'activitat, sense dades obsoletes disfressades d'actualitat. A5 divises continua pendent.
+**Backend:** `supabase/functions/trip-insights` reutilitza l'autenticació amb JWT, els permisos RLS del projecte original, la clau OpenAI i el patró de les Edge Functions actuals; valida la pertinença, llegeix destins del servidor (no del navegador), genera una sola resposta per consulta amb `web_search`, demana fins a 24 avisos en sis categories i descarta els enllaços que no consten entre les fonts realment recuperades. Límits simples per usuari i missatges d'error sense dades sensibles. No modifica itineraris, despeses, documents ni cap taula. Funciona independentment del país; si falten parades o fonts, ho indica sense inventar consells.
+
+**Ordre obligatori de desplegament:** 1) revisar CI i cost/compatibilitat del model amb `web_search`; 2) amb autorització, desplegar `trip-insights` al Supabase original i provar un viatge sense escriptures; 3) després publicar el frontend PWA v77 amb la PR #259; 4) prova real iPhone, incloent destins sense fitxa prèvia i compte d'un participant. Sense desplegament ara, sense entorns duplicats. A4.2 aprofundirà les recomanacions per activitat, A5 moneda/divises pendent.
 
 ## A3 · Participants · PUBLICAT I VALIDAT (24/11/2026)
 
