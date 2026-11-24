@@ -146,14 +146,14 @@ export function mountSharedExpenses({root, db, tripId, userId, current}) {
       '<h4>Revisa el repartiment de ' + escapeHtml(row.description) + '</h4>' +
       '<p class="muted">Només canviarem qui assumeix els ' + money(total,row.currency) + '. La despesa, el pagador i la moneda es conservaran.</p>' +
       '<fieldset><legend>Nou repartiment</legend><label><input type="radio" name="edit-mode" value="equal"' + (equal?' checked':'') + '> A parts iguals</label> ' +
-      '<label><input type="radio" name="edit-mode" value="custom"' + (!equal?' checked':'') + '> Imports personalitzats</label>' +
+      '<label><input type="radio" name="edit-mode" value="custom"' + (!equal?' checked':'') + '> Imports personalitzats</label><div data-edit-participants>' +
       members.map(member => {
         const part = row.split_shares.find(s => s.user_id === member.user_id);
         return '<label class="shared-expense-participant"><span><input type="checkbox" data-edit-member="' + escapeHtml(member.user_id) + '"' + (part?' checked':'') + '> ' +
           escapeHtml(name(member.user_id)) + '</span><input type="number" inputmode="decimal" step="0.01" min="0.01" data-edit-amount="' +
           escapeHtml(member.user_id) + '" aria-label="Part de ' + escapeHtml(name(member.user_id)) + '"' +
           (equal||!part?' disabled':'') + ' value="' + (part?(Number(part.amount_cents)/100).toFixed(2):'') + '"></label>';
-      }).join('') + '</fieldset>' +
+      }).join('') + '</div></fieldset>' +
       '<p class="muted" data-edit-preview aria-live="polite"></p>' +
       '<div class="shared-expense-inline"><button type="submit">Desa el nou repartiment</button><button type="button" class="secondary" data-cancel-edit>Cancel·la</button></div></form>';
   }
