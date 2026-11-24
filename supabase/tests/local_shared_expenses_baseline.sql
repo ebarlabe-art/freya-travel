@@ -14,8 +14,8 @@ create table public.travel_expenses (
   created_by uuid not null references auth.users(id),
   created_at timestamptz not null default now(),
   receipt_path text,
-  constraint local_expenses_currency_legacy_check check(currency in ('GBP','EUR')),
-  constraint local_expenses_payer_legacy_check check(paid_by in ('Eva','Xesc','Compte comú'))
+  constraint travel_expenses_currency_check check(currency in ('GBP','EUR')),
+  constraint travel_expenses_paid_by_check check(paid_by in ('Eva','Xesc','Compte comú'))
 );
 alter table public.travel_expenses enable row level security;
 grant select, insert, delete on public.travel_expenses to authenticated;
