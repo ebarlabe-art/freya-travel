@@ -58,7 +58,7 @@ test('A3.2: only owner may revoke; server must confirm fresh invitation',async()
   assert.deepEqual(received,{p_trip_id:'trip',p_user_id:'guest'});
   await assert.rejects(revokeTripParticipant({...args,viewerId:'guest'}),/organitzador/);
   await assert.rejects(revokeTripParticipant({...args,participantId:'owner'}),/organitzador/);
-  await assert.rejects(revokeTripParticipant({...args,db:{rpc:async()=>({error:{message:'Revocació rebutjada'}})}}),/Revocació rebutjada/);
+  await assert.rejects(revokeTripParticipant({...args,db:{rpc:async()=>({error:new Error('Revocació rebutjada')})}}),/Revocació rebutjada/);
 });
 
 test('A3.2: both join RPCs use row locking; historical accounting never deleted',()=>{
