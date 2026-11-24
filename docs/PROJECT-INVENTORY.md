@@ -1,5 +1,16 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## A4.1 · Freya Insights contextuals · EN BRANCA, NO PUBLICAT (24/11/2026)
+
+Branca `feat/a4-freya-insights-contextual-20261124` sobre `main` de Freya Travel. Primer lliurament de fitxes contextuals de Regne Unit, Japó i Sri Lanka, només amb `trip_stops.country_code`, dates del viatge i fonts institucionals consultades el 24/11/2026. Cap requisit de visat individual inferit, ni tipus de canvi suposat, ni dades modificades, ni noves taules, credencials o serveis paral·lels. El país sense fitxa mostra un avís honest. La fitxa desapareix als viatges passats i ofereix context previ o durant el viatge; les URLs s'obren en una altra pestanya i cada targeta identifica l'organisme oficial. PWA v77 en branca i proves unitàries de dades, fonts, països no coberts i fase temporal.
+
+**Estat:** codi preparat, pendent de CI i validació física iPhone. Sense migració ni publicació; cal autorització explícita abans de fusionar. **Següent:** validar PR, després ampliar A4.2 amb equipatge, cultura, transport i recomanacions d'activitat, sense dades obsoletes disfressades d'actualitat. A5 divises continua pendent.
+
+## A3 · Participants · PUBLICAT I VALIDAT (24/11/2026)
+
+La PR #258 ha quedat fusionada al repositori original; PWA v76 publicada per GitHub Pages. La migració `20261124191045_secure_trip_member_revocation.sql` consta aplicada a Supabase i verificada amb permisos per autenticats, no anònims, i serialització de les dues vies d'invitació. CI 7/7. L'usuària confirma que dues persones es veuen i que la propietària pot retirar l'accés. S'ha decidit mantenir la retirada reservada al propietari, fins i tot quan un altre participant ha convidat una tercera persona. Despeses històriques preservades. No es fa cap prova de retirada real ni es modifica cap viatge de producció.
+
+
 ## A3.2 · Revocació segura dels participants · EN BRANCA, NO PUBLICAT (24/11/2026)
 
 A la mateixa PR #258, `revoke_trip_member_v1` comprova al servidor que qui demana la baixa és la persona propietària i elimina la pertinença del participant; en la mateixa transacció renova el codi d'invitació amb 122 bits aleatoris. `join_trip_v2` i l'antic `join_trip` bloquegen la fila del viatge mentre comproven el codi, impedint la reincorporació amb codis antics fins i tot en curses concurrents. Interfície de confirmació només per a la persona organitzadora. Sense noves taules, nous rols ni destrucció d'històrics de despeses, repartiments, liquidacions o etiquetes de nom. La vista de Despeses ja permet saldos d'antics participants i bloqueja l'edició de repartiments amb membres retirats.
