@@ -669,6 +669,26 @@
 body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
 .itinerary-conflict-summary,.conflict-flash{border:2px solid #a24b22!important;background:#fff6ed!important;padding:16px;border-radius:16px;margin:12px 0}.itinerary-conflict-summary button,.conflict-flash button{min-height:44px;white-space:normal}.itinerary-conflict-badge{display:block;color:#8a3214;background:#fff0df;padding:10px;border-radius:10px}.conflict-flash .flash-option strong{font-size:1rem}.conflict-flash .flash-advice button{margin-top:10px}
 .import-flash{background:#fffdf8;border:1px solid #e0d6c6;border-radius:20px;padding:20px;box-shadow:0 12px 32px #20382c14;max-width:720px;margin:12px auto}.import-flash h3{font-size:1.35rem;margin:8px 0}.flash-progress{font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:#526958}.flash-options,.flash-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.flash-option{background:#f2f4ee;border-radius:12px;padding:12px;min-width:0;overflow-wrap:anywhere}.flash-option small,.flash-option strong,.flash-option b{display:block}.flash-option strong{font-size:1.2rem;margin:8px 0}.flash-option details{font-size:.8rem;margin-top:10px}.flash-option ul{padding-left:14px}.flash-advice{background:#e7efe5;border-left:3px solid #4b6a54;padding:12px;border-radius:8px;line-height:1.5}.flash-actions button,.flash-footer button{min-height:44px;padding:10px;font-size:.9rem;width:auto;white-space:normal}.flash-recommended{background:#365b45!important;color:white!important}.flash-footer{display:flex;justify-content:space-between;gap:8px;margin-top:12px}.flash-overview>section{border:1px solid #d8e2d4;border-radius:16px;padding:16px;margin:16px 0;background:#fcfdf9}.flash-overview>[data-flash-conflicts]{border-color:#e7c8aa;background:#fffbf6}.flash-overview h3{margin-top:0}.flash-plan-list{list-style:none;padding:0;margin:0}.flash-plan-row{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #e6e9e0}.flash-plan-row time{min-width:52px;font-variant-numeric:tabular-nums;color:#546551}.flash-plan-row small{display:block;color:#667466;margin-top:4px}.flash-solution{background:#fff;padding:12px;border-radius:10px;margin:10px 0}#itineraryImportAdvanced>summary{padding:14px 0;color:#586455}#itineraryImportAdvanced[open]{margin:16px 0}#itineraryImportFlash:focus{outline:2px solid #647d62}@media(max-width:430px){.import-flash{padding:14px}.flash-option{padding:10px}.flash-overview>section{padding:12px}}
+
+/* Shared expenses: compact, mobile-first group ledger. */
+.shared-expense-form{display:grid;gap:14px}
+.shared-expense-form label,.shared-expense-inline label{display:grid;gap:6px;min-width:0;font-weight:650}
+.shared-expense-form input,.shared-expense-form select,.shared-expense-inline input{width:100%;min-height:44px;border:1px solid #cac4d0;border-radius:12px;padding:10px;background:#fff;color:#211a29;font:inherit;font-weight:400}
+.shared-expense-form input[type="radio"],.shared-expense-form input[type="checkbox"]{width:20px;min-height:20px;accent-color:#6750a4}
+.shared-expense-form fieldset{min-width:0;border:1px solid #dbd2e6;border-radius:16px;padding:12px}
+.shared-expense-form fieldset>label{display:inline-flex;align-items:center;gap:7px;margin:8px 10px 8px 0}
+.shared-expense-inline{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}
+.shared-expense-participant{display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,135px);gap:10px;align-items:center;margin:8px 0}
+.shared-expense-participant span{display:flex;gap:8px;align-items:center}
+.shared-expense-currency{padding:12px 0;border-bottom:1px solid #e5dff0}
+.shared-expense-currency:last-child{border-bottom:0}
+.shared-expense-settle,.shared-expense-movement{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid #ede8f3}
+.shared-expense-movement small{display:block;color:#625b6b;margin-top:4px}
+.shared-expense-movement strong{overflow-wrap:anywhere}
+#sharedExpensesView>.back{margin-bottom:14px}
+#sharedExpensesView .card{margin-bottom:14px}
+#sharedExpensesView button{min-height:44px}
+@media(max-width:620px){.shared-expense-inline{grid-template-columns:1fr}.shared-expense-participant{grid-template-columns:minmax(0,1fr) 100px}}
 </style>
 </head>
 <body>
@@ -818,7 +838,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
           <button class="generic-module-card is-ready" type="button" data-open="documentsView"><span class="generic-module-icon">📄</span><span class="generic-module-copy"><strong>Documents</strong><small id="genericDocumentsModuleStatus">Documents del viatge</small></span><span class="generic-module-arrow">›</span></button>
           <button class="generic-module-card is-ready" type="button" data-open="checklistView"><span class="generic-module-icon">✅</span><span class="generic-module-copy"><strong>Checklist</strong><small id="genericChecklistModuleStatus">Preparatius compartits</small></span><span class="generic-module-arrow">›</span></button>
           <button class="generic-module-card is-ready" type="button" data-open="budgetView"><span class="generic-module-icon">💶</span><span class="generic-module-copy"><strong>Pressupost</strong><small id="genericBudgetModuleStatus">Previsió i cost del viatge</small></span><span class="generic-module-arrow">›</span></button>
-          <button class="generic-module-card" type="button" data-generic-module="expenses"><span class="generic-module-icon">🧾</span><span class="generic-module-copy"><strong>Despeses reals</strong><small>El que vas gastant durant el viatge · pendent</small></span><span class="generic-module-arrow">›</span></button>
+          <button class="generic-module-card" type="button" data-open="sharedExpensesView"><span class="generic-module-icon">💸</span><span class="generic-module-copy"><strong>Despeses compartides</strong><small>Pagaments, repartiment i saldos del grup</small></span><span class="generic-module-arrow">›</span></button>
           <button class="generic-module-card is-ready" type="button" data-open="parkingView"><span class="generic-module-icon">🚗</span><span class="generic-module-copy"><strong>Aparcament</strong><small id="genericParkingModuleStatus">A punt per utilitzar</small></span><span class="generic-module-arrow">›</span></button>
           <button class="generic-module-card is-ready" type="button" data-open="weatherView"><span class="generic-module-icon">🌦️</span><span class="generic-module-copy"><strong>Temps</strong><small>Previsió del viatge</small></span><span class="generic-module-arrow">›</span></button>
           <button class="generic-module-card" type="button" data-generic-module="currency"><span class="generic-module-icon">💱</span><span class="generic-module-copy"><strong>Moneda</strong><small>Pendent de configurar</small></span><span class="generic-module-arrow">›</span></button>
@@ -1848,6 +1868,11 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         <strong id="documentViewerTitle">Document</strong>
       </div>
       <div id="documentViewerBody" class="document-viewer-body"></div>
+    </div>
+
+    <div id="sharedExpensesView" class="hidden">
+      <button class="ghost back" data-back>← Torna al tauler</button>
+      <div id="sharedExpensesRoot" aria-live="off"></div>
     </div>
 
     <div id="expensesView" class="hidden">
@@ -5281,9 +5306,26 @@ async function loadBuildView(){
 
 $('budgetSettingsForm').onsubmit=async event=>{event.preventDefault();if(!trip||isLondonTrip())return;const target=$('budgetTarget').value.trim(),maximum=$('budgetMaximum').value.trim(),currency=$('budgetCurrency').value.trim().toUpperCase();if((target||maximum)&&!/^[A-Z]{3}$/.test(currency)){msg('budgetMsg','Indica una moneda de tres lletres, per exemple EUR.',true);return}try{const api=await tbBudgetApi();await api.saveBudgetSettings(db,{tripId:trip.id,expectedRevision:Number($('budgetSettingsForm').dataset.revision||0),targetAmount:target===''?null:Number(target),maximumAmount:maximum===''?null:Number(maximum),currency:(target||maximum)?currency:null});await loadBudgetView();msg('budgetMsg','Pressupost actualitzat.')}catch(error){msg('budgetMsg',error?.message||'No s’ha pogut desar el pressupost.',true)}};
 
-const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','travelBookView','documentsView','expensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','travelBookView','itineraryView','parkingView','weatherView']);
-const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView'].includes(id)));
+let sharedExpensesController=null;
+function loadSharedExpenseScreen(){
+  if(!trip||!session||isLondonTrip())return;
+  const tripId=trip.id, generation=tripLoadGeneration, userId=session.user.id;
+  const current=()=>tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId&&!offlineReadOnlySession&&navigator.onLine!==false;
+  const root=$('sharedExpensesRoot');
+  if(offlineReadOnlySession||navigator.onLine===false){root.textContent='Per consultar o registrar despeses compartides, connecta’t a Internet i inicia sessió.';return;}
+  root.textContent='Carregant despeses compartides…';
+  void loadTravelBookModule('shared-trip-expenses.mjs').then(api=>{
+    if(!current()||visibleAppView()!=='sharedExpensesView')return;
+    sharedExpensesController?.dispose();
+    sharedExpensesController=api.mountSharedExpenses({root,db,tripId,userId,current});
+  }).catch(error=>{
+    if(!current()||visibleAppView()!=='sharedExpensesView')return;
+    root.textContent='No hem pogut obrir les despeses compartides: '+(error?.message||'Error inesperat.');
+  });
+}
+const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','travelBookView','documentsView','expensesView','sharedExpensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','travelBookView','itineraryView','parkingView','weatherView','sharedExpensesView']);
+const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','genericModuleView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','sharedExpensesView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
   if(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(view))return true;
   if(!value)return false;
@@ -5303,6 +5345,9 @@ function persistNavigationState(view){
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
 function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent='';}
 function setAppView(id){
+  if(visibleAppView()==='sharedExpensesView'&&id!=='sharedExpensesView'){
+    sharedExpensesController?.dispose();sharedExpensesController=null;
+  }
   if(id!=='travelBookView'&&$('travelBookReader')?.open)$('travelBookReader').close();
   if(id!=='travelBookView'&&visibleAppView()==='travelBookView')void flushTravelBookEdits();
   if(id!==visibleAppView()){stopCatalanNarration();resetCulturalGuide()}
@@ -5322,7 +5367,7 @@ function setAppView(id){
   persistNavigationState(id);
   updateTripHomeClock();updateHomeClock();
   if(id==='documentsView')updateDocumentsBack();if(id==='budgetView')loadBudgetView();if(id==='tripReviewView')loadTripReview();
-  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView'){setActivityViewMode('activity');loadActivityViewData()}if(id==='localTransportView')loadLocalTransportViewData();if(id==='carRentalView')loadCarRentals();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='travelBookView')loadTravelBookView();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
+  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView'){setActivityViewMode('activity');loadActivityViewData()}if(id==='localTransportView')loadLocalTransportViewData();if(id==='carRentalView')loadCarRentals();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='travelBookView')loadTravelBookView();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='sharedExpensesView')loadSharedExpenseScreen();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
 }
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
 function stopLondonFlightTimer(){

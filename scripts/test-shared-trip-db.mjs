@@ -13,6 +13,7 @@ let created=false;
 try{
  sql(`create database ${database}`,'postgres');created=true;
  for(const p of ['supabase/tests/local_progress_baseline.sql','supabase.sql','supabase/tests/local_progress_travel_baseline.sql'])file(p);
+ file('supabase/tests/local_shared_expenses_baseline.sql');
  for(const name of readdirSync('supabase/migrations').filter(n=>n.endsWith('.sql')).sort()){
   if(name==='20260901144811_schedule_itinerary_notifications.sql')continue;
   if(name==='20260903172118_identify_london_2026_experience.sql')sql("insert into auth.users(id) values ('00000000-0000-4000-8000-000000000001'); insert into public.trips(id,name,owner_id) values ('9035e47f-f16c-4fa3-83fd-873bd98dc221','Historical local fixture','00000000-0000-4000-8000-000000000001');");
@@ -32,6 +33,32 @@ try{
  const insert=(t,title)=>`insert into public.trip_itinerary_items(trip_id,title,timing_kind,created_by) values ('${t}','${title}','unscheduled','${owner}') returning id`;
  const item=as(owner,insert(a.id,'Shared agenda')).split('\n')[0];as(owner,insert(b.id,'Private agenda'));
  check(friend,`(select count(*) from public.trip_itinerary_items)=1`);
+
+ // Real RLS and validation contract for the same two trip members, in disposable DB.
+ const split=JSON.stringify([{user_id:owner,amount_cents:2500},{user_id:friend,amount_cents:2500}]);
+ const expenseId=as(owner,`insert into public.travel_expenses(trip_id,description,amount,currency,paid_by,created_by,payer_user_id,split_shares)
+   values ('${a.id}','Shared dinner',50.00,'USD','Owner','${owner}','${owner}','${split}'::jsonb) returning id`).split('\n')[0];
+ assert.match(expenseId,/^[0-9a-f-]{36}$/);
+ check(friend,`(select count(*) from public.travel_expenses where id='${expenseId}')=1`);
+ check(outsider,`not exists(select 1 from public.travel_expenses where id='${expenseId}')`);
+ assert.match(as(friend,`delete from public.travel_expenses where id='${expenseId}'`),/DELETE 0/);
+ check(owner,`(select count(*) from public.travel_expenses where id='${expenseId}')=1`);
+ assert.throws(()=>as(owner,`insert into public.travel_expenses(trip_id,description,amount,currency,paid_by,created_by,payer_user_id,split_shares)
+   values ('${a.id}','Invalid split',50,'USD','Owner','${owner}','${owner}','[{"user_id":"${owner}","amount_cents":4999}]'::jsonb)`),/Split total/);
+ assert.throws(()=>as(owner,`insert into public.travel_expenses(trip_id,description,amount,currency,paid_by,created_by)
+   values ('${a.id}','No split',50,'EUR','Compte comú','${owner}')`),/Shared split required/);
+ const settlementId=as(friend,`insert into public.trip_expense_settlements(trip_id,payer_user_id,receiver_user_id,amount,currency,created_by)
+   values ('${a.id}','${friend}','${owner}',25.00,'USD','${friend}') returning id`).split('\n')[0];
+ check(owner,`exists(select 1 from public.trip_expense_settlements where id='${settlementId}')`);
+ assert.match(as(owner,`delete from public.trip_expense_settlements where id='${settlementId}'`),/DELETE 0/);
+ assert.match(as(friend,`delete from public.trip_expense_settlements where id='${settlementId}'`),/DELETE 1/);
+ as(owner,`insert into public.trip_expense_member_labels(trip_id,user_id,display_name) values ('${a.id}','${owner}','Owner')`);
+ check(friend,`exists(select 1 from public.trip_expense_member_labels where trip_id='${a.id}' and display_name='Owner')`);
+ assert.match(as(friend,`update public.trip_expense_member_labels set display_name='Hijack' where trip_id='${a.id}' and user_id='${owner}'`),/UPDATE 0/);
+ check(owner,`(select display_name='Owner' from public.trip_expense_member_labels where trip_id='${a.id}' and user_id='${owner}')`);
+ assert.match(as(owner,`delete from public.travel_expenses where id='${expenseId}'`),/DELETE 1/);
+ console.log('PASS shared expense: USD split validation, read scope, restrictive deletion, settlement, and member label isolation');
+
  check(outsider,`not exists(select 1 from public.trips) and not exists(select 1 from public.trip_stops) and not exists(select 1 from public.trip_itinerary_items) and not exists(select 1 from public.get_my_trips())`);
  for(const user of [friend,outsider]){
   assert.match(as(user,`update public.trip_itinerary_items set title='Intrusion' where trip_id='${b.id}'`),/UPDATE 0/);

@@ -1,5 +1,20 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## EXP-01 · Despeses compartides i liquidacions entre membres — EN BRANCA, NO PUBLICAT
+
+Petició (24/11/2026): incorporar una experiència tipus Settle Up a **l'única** aplicació, reutilitzant els participants de \`trip_members\`, el registre de despesa real \`travel_expenses\` i la navegació dels viatges genèrics. Londres manté la pantalla de despeses llegat amb els seus tiquets i CSV.
+
+La proposta afegeix a \`travel_expenses\` \`payer_user_id\` i un repartiment atòmic \`split_shares\` per identificador d'usuari i cèntims; **no** crea un segon llibre de despeses. Admet repartiment igualitari amb arrodoniment exacte, subconjunts i imports personals validats per la BD; cada despesa és d'una sola moneda ISO. Una nova taula \`trip_expense_settlements\` guarda únicament liquidacions **ja realitzades**, introduïdes per un dels dos implicats. La taula \`trip_expense_member_labels\` permet que cadascú esculli el nom visible per a aquest viatge. Saldos per divisa, propostes de pagament, històric i CSV, sense conversió automàtica ni transferència real. Les despeses antigues de Londres (sense \`split_shares\`) es preserven i no es converteixen en deutes.
+
+**Abast de seguretat:** una migració nova, a revisar abans d'aplicar, activa RLS de les dues taules noves, valida que els implicats siguin membres del viatge, les sumes exactes i la unicitat de parts, i limita el registre de liquidacions als participants afectats. Conserva les polítiques de lectura/inserció del registre existent i introdueix protecció de supressió de despeses compartides per autor; el comportament llegat de Londres es manté. La migració flexibilitza els CHECK històrics GBP/EUR i Eva/Xesc/compte comú perquè puguin operar els viatges nous; cal revisar aquesta modificació abans d'aplicar-la. No modifica dades de producció.
+
+**Fitxers:** \`domain/shared-trip-expenses.mjs\`, \`index.html\` (navegació nova), \`404.html\` generat, \`scripts/package-pages.mjs\`, \`sw.js\` (cache), \`scripts/shared-trip-expenses.test.mjs\`, \`supabase/migrations/20261124005200_shared_trip_expenses_v1.sql\`.
+
+**Estat:** preparat a la branca \`feat/shared-trip-expenses-v1-20261124\`; pendent de CI i revisió de la PR, no fusionat, no desplegat, **migració no aplicada**, dades reals intactes. La pantalla mostra un avís d'error si s'obre abans d'aplicar la migració. Gate abans de publicar: revisar SQL contra l'esquema remot actual i aprovar/aplicar migració, verificar a iPhone i amb dos participants reals amb despeses fictícies abans d'acceptar ús operatiu. No executar tests de dades reals sense permís.
+
+**Límits conscients de V1:** participants només membres autenticats, sense convidats externs; els diners i deutes s'agrupen per moneda sense FX; no hi ha verificació bancària de liquidacions, ni importació de tiquets al mòdul nou, ni migració automàtica de les despeses de Londres. El nom visible és optatiu i autogestionat. El pressupost TB-06 continua separat.
+
+
 ## A2.21 · Itinerari i PDF: experiència guiada sense comandaments tècnics — PR, NO PUBLICADA
 
 Petició de producte (23/11/2026): simplificar la pantalla de planning i el procés de càrrega PDF després de validar a iPhone la conciliació de Barcelona. Els tres botons originals («Afegir al planning», «Reprèn la proposta», «Actualitza») i l'apartat separat «Estat de l'app i actualitzacions» exposaven detalls de desenvolupament en lloc d'accions comprensibles.
