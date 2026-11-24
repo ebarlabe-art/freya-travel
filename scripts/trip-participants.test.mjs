@@ -62,7 +62,7 @@ test('A3.2: only owner may revoke; server must confirm fresh invitation',async()
 });
 
 test('A3.2: both join RPCs use row locking; historical accounting never deleted',()=>{
-  const sql=readFileSync(new URL('../supabase/migrations/20261124160000_secure_trip_member_revocation.sql',import.meta.url),'utf8');
+  const sql=readFileSync(new URL('../supabase/migrations/20261124191045_secure_trip_member_revocation.sql',import.meta.url),'utf8');
   assert.equal((sql.match(/for update;/g)||[]).length,3);
   assert.match(sql,/locked_trip.owner_id <> actor/);
   assert.match(sql,/delete from public.trip_members/);
