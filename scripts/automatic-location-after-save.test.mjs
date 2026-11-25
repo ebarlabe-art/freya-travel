@@ -5,14 +5,15 @@ import {readFileSync} from 'node:fs';
 import * as api from '../domain/itinerary-place-points.mjs';
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const code=html.slice(html.indexOf('async function proposeActivityPoints(){'),html.indexOf('async function openActivityPointEditor('));
+const destinationCode=html.slice(html.indexOf('function itineraryPointDestination('),html.indexOf('function itineraryAutoPlaceVerified('));
 const place={provider:'geoapify',provider_place_id:'synthetic-luchon',canonical_name:'Bagnères-de-Luchon',country_code:'FR',locality:'Bagnères-de-Luchon',kind:'city',latitude:42.79,longitude:0.59,coordinate_role:'representative_point',attribution:'Synthetic fixture'};
 const row=id=>({id,trip_id:'synthetic-trip',title:'Visit',location_name:place.canonical_name,city:place.locality,address:null,location_points:null,resolved_location:null,local_date:null,updated_at:'v1'});
 function setup(rows,find){
  const writes=[],context={scope:'s',api,seen:new Set(),running:false,queue:{count:0,blocked:false,find:async(...args)=>{context.queue.count++;return find(...args)}}};
- const c=vm.createContext({structuredClone,trip:{id:'synthetic-trip'},session:{},manualItineraryRows:rows,activityRows:[],isLocalTransportActivity:()=>false,isLondonTrip:()=>false,connectionUnavailable:()=>false,itineraryPointContext:async()=>context,itineraryAutoPlaceScope:()=> 's',itineraryAutoPlaceRecordKey:r=>r.id+':'+r.updated_at,itineraryAutoPlaceDestination:()=>({canonical_name:place.locality,country_code:'FR'}),loadActivities:async()=>{},loadManualItineraryItems:async()=>{},saveActivityPoints:async(r,snapshot)=>{
+ const c=vm.createContext({structuredClone,trip:{id:'synthetic-trip'},session:{},manualItineraryRows:rows,activityRows:[],tripStopRows:[],isLocalTransportActivity:()=>false,isLondonTrip:()=>false,connectionUnavailable:()=>false,itineraryPointContext:async()=>context,itineraryAutoPlaceScope:()=> 's',itineraryAutoPlaceRecordKey:r=>r.id+':'+r.updated_at,itineraryAutoPlaceDestination:()=>({canonical_name:place.locality,country_code:'FR'}),loadActivities:async()=>{},loadManualItineraryItems:async()=>{},saveActivityPoints:async(r,snapshot)=>{
   const current=rows.find(x=>x.id===r.id);assert.equal(current.updated_at,r.updated_at,'CAS');
   writes.push(structuredClone(snapshot));current.location_points=structuredClone(snapshot);current.updated_at='v2';
- }});vm.runInContext(code,c);return {run:()=>c.proposeActivityPoints(),writes,context,c};
+ }});vm.runInContext(destinationCode+code,c);return {run:()=>c.proposeActivityPoints(),writes,context,c};
 }
 test('unambiguous location resolves undated manual and imported activity without selecting a day',async()=>{
  const rows=[row('manual')],h=setup(rows,async()=>[place]);
