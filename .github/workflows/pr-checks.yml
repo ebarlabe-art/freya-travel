@@ -116,10 +116,6 @@ jobs:
       - name: Download and verify browser
         timeout-minutes: 5
         run: bash scripts/ci-browser-install.sh browser "${{ matrix.engine }}"
-      - name: Ordered activity points WebKit mobile
-        if: matrix.engine == 'webkit'
-        timeout-minutes: 5
-        run: ROUTE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-points-browser.mjs
       - name: Travel Book real Pages build browser regression
         if: matrix.engine == 'chromium'
         timeout-minutes: 5
@@ -209,6 +205,10 @@ jobs:
         if: matrix.engine == 'chromium'
         timeout-minutes: 5
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-points-browser.mjs
+      - name: Ordered activity points WebKit mobile
+        if: matrix.engine == 'webkit'
+        timeout-minutes: 5
+        run: ROUTE_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-itinerary-points-browser.mjs
       - name: Import exclusion real mobile click Chromium
         if: matrix.engine == 'chromium'
         timeout-minutes: 5

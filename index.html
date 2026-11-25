@@ -578,8 +578,9 @@
     .trip-home-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.trip-home-actions a,.trip-home-actions button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;max-width:100%;padding:11px 14px;border-radius:12px;font:inherit;font-weight:700;text-decoration:none;background:#eee8f4;color:#4f378b;white-space:normal;overflow-wrap:anywhere}
     .trip-departure{background:#faf7fd}
     .departure-controls,.departure-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .departure-controls label,.departure-ready{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;align-content:end;font-weight:700;font-size:.9rem;min-width:0}
-    .departure-origin{grid-column:1/-1}
+    .departure-controls label,.departure-ready{display:grid;gap:5px;align-content:end;font-weight:700;font-size:.9rem;min-width:0}
+    .departure-controls .departure-origin{display:block;grid-column:1/-1}
+    .departure-origin select{display:block;margin-top:5px}
     .departure-ready{margin-top:10px}
     .departure-controls input,.departure-controls select,.departure-ready input{font-size:16px;width:100%;min-width:0;min-height:44px;padding:8px;border:1px solid #cbb9df;border-radius:12px;background:#fff;color:inherit}
     .trip-departure button{min-height:44px}
