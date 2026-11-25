@@ -1,5 +1,11 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## P0 · Ubicacions automàtiques dels itineraris · PWA v85 en esborrany (25/11/2026)
+
+La validació física amb Brussel·les i Riga/Tallinn ha trobat activitats desades amb ubicacions pendents i sense punts exactes per a B1.1. En el cas reproduït, la cerca automàtica enviava l’adreça a Geoapify, però la validava com si fos el nom de l’edifici. Les files sense ciutat també es podien marcar com a comprovades abans que es construís l’agenda. Ara es compara el carrer i el número amb l’adreça retornada. El codi postal, el municipi i el país aporten la verificació geogràfica. Un fus horari registrat permet recuperar el context d’una única parada quan falta la ciutat. Es revisen els punts pendents extrets automàticament quan s’obre el viatge, amb la memòria cau i el desament amb control de versió existents.
+
+**Verificació i relleu**. Proves sintètiques d’adreces belgues, punts pendents en un viatge de dues ciutats, B1 i B1.1, amb rebuig de números diferents, centroides i coincidències distants. Es mantenen les seleccions manuals i només es persisteixen ubicacions recuperades. No s’ha executat cap escriptura sobre dades reals. PR de frontend en esborrany, pendent d’autorització. Després de publicar, obrir Brussel·les i Riga/Tallinn a l’iPhone i comprovar que les activitats inequívoces es verifiquen sense reimportar ni seleccionar ubicacions i que es poden calcular els trajectes.
+
 ## P0 · Importació d’itineraris de dues taules · PWA v84 en esborrany (25/11/2026)
 
 Sobre la base pública v83, un PDF analitzat a l’iPhone mostrava 17 propostes noves, cap visita incorporable i l’agenda buida. En el programa sintètic de dues taules, el lector no acceptava la barra entre l’hora i el títol i el filtre geogràfic descartava la grafia «Brussel·les». Es valida el vincle hora–títol només en cel·les contigües de la mateixa fila. L’enriquiment existent pot confirmar el fus de Brussel·les. Les adreces, notes i enllaços amb evidència es mantenen. Quan manca una dada necessària, la previsualització indica l’activitat concreta i permet editar-la o excloure-la explícitament.

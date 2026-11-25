@@ -2802,7 +2802,7 @@ document.getElementById('tripHome').setAttribute('aria-label',dashboardText('now
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-itinerary-import-p0-v84';
+const FREYA_FRONTEND_RELEASE='pwa-itinerary-verified-addresses-v85';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -7017,25 +7017,28 @@ async function proposeActivityPoints(){
  // Read persisted sources directly: no selected day, projection or date required.
  const rows=[...manualItineraryRows.map(row=>({...row,_placeSource:'manual'})),...activityRows.filter(row=>!isLocalTransportActivity(row)).map(row=>({...row,_placeSource:'activity'}))]
   .filter(row=>row.trip_id===trip.id&&row.status!=='cancelled'&&row.reservation_status!=='cancelled'&&row.latitude==null&&row.longitude==null&&
-   !context.api.confirmedLegacyPlace(row)&&!(context.api.savedActivityPoints(row)||[]).some(p=>p.place)&&
+   !context.api.confirmedLegacyPlace(row)&&
    (row.location_points===null||context.api.autoPendingPoints(row)));
  context.running=true;context.rescan=false;let manual=false,activity=false;
  try{
   for(const row of rows){
    if(context.scope!==itineraryAutoPlaceScope()||connectionUnavailable()||context.queue.count>=30)break;
-   const key=itineraryAutoPlaceRecordKey(row);
+   const destination=itineraryPointDestination(row);
+   // The day projection can provide context after a source loads. Leave
+   // these rows eligible for the next agenda rebuild.
+   if(!destination?.canonical_name&&!context.api.hasSelfContainedPostalAddress(row.address))continue;
+   const key=JSON.stringify([itineraryAutoPlaceRecordKey(row),destination?.canonical_name,destination?.country_code]);
    if(context.seen.has(key))continue;
-   // Trip stops are a hint, not a prerequisite. Never borrow their country for another city.
-   const destination=itineraryAutoPlaceDestination(row)||{canonical_name:String(row.city||'').trim()};
    context.seen.add(key);
    try{
     const points=structuredClone(row.location_points===null?context.api.extractActivityPoints(row):context.api.autoPendingPoints(row));
     if(!points?.length)continue;
     let changed=row.location_points===null;
     for(const point of points){
+     if(point.place)continue;
      const options=await context.queue.find(point.query,destination);
      if(context.scope!==itineraryAutoPlaceScope()||connectionUnavailable())return;
-     const resolved=context.api.chooseAutomaticPoint(point.query,options,destination);
+     const resolved=context.api.chooseAutomaticPoint(point.query,options,destination,{address:!!row.address});
      if(resolved){point.place=resolved;changed=true}
     }
     if(!changed)continue;
@@ -7118,6 +7121,15 @@ function itineraryAutoPlaceDestination(row){
  const matches=city?stops.filter(stop=>itineraryAutoPlaceText(stop.canonical_name)===itineraryAutoPlaceText(city)):stops;
  const unique=[...new Map(matches.map(stop=>[itineraryAutoPlaceText(stop.canonical_name)+':'+stop.country_code,stop])).values()];
  return unique.length===1&&/^[A-Z]{2}$/.test(unique[0].country_code||'')?unique[0]:null;
+}
+function itineraryPointDestination(row){
+ const place=itineraryAutoPlaceDestination(row);
+ if(place)return place;
+ if(row.city?.trim())return {canonical_name:row.city.trim()};
+ // A recorded IANA zone can identify one stop on a multi-city itinerary.
+ // Shared zones leave the context unresolved.
+ const matches=tripStopRows.filter(stop=>stop.time_zone&&stop.time_zone===row.time_zone);
+ return matches.length===1&&/^[A-Z]{2}$/.test(matches[0].country_code||'')?matches[0]:null;
 }
 function itineraryAutoPlaceVerified(row,options){
  const context=itineraryAutoPlaceDestination(row);

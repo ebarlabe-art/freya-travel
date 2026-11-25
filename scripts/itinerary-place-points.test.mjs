@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {extractActivityPoints,chooseAutomaticPoint,autoPendingPoints,samePointName,matchingPointCandidate,pointSnapshot,savedActivityPoints,ActivityPointQueue} from '../domain/itinerary-place-points.mjs';
 import {normalizeGeoapify} from '../supabase/functions/place-resolution/providers/geoapify.mjs';
 import {routeProvider} from '../supabase/functions/itinerary-route/provider.mjs';
+import {departurePlan,plannedDepartureChoices} from '../domain/trip-departure.mjs';
 const context={canonical_name:'Bologna',country_code:'IT'};
 const place=(name,kind='amenity',extra={})=>normalizeGeoapify({name,result_type:kind,place_id:name,city:'Bologna',country_code:'it',lat:44.49,lon:11.34,formatted:name+', Bologna',timezone:{name:'Europe/Rome'},datasource:{sourcename:'fixture',attribution:'Synthetic'},...extra});
 test('ordered points: one activity, every named place, no invented meal venues',()=>{
@@ -118,4 +119,45 @@ test('candidate display matches named landmark aliases without mixing saints or 
  assert.equal(matchingPointCandidate('Archiginnasio',place('Palazzo dell Archiginnasio','amenity',{city:'Roma'}),{city:'Bologna'}),false);
  assert.equal(matchingPointCandidate('Via',place('Via del Pratello')),false);
  assert.equal(matchingPointCandidate('Archiginnasio',place('Palazzo dell Archiginnasio','amenity',{country_code:'fr'}),{country_code:'IT'}),false);
+});
+
+test('postal evidence identifies a venue even when the provider name and municipality spelling differ',async()=>{
+ const context={canonical_name:'Brussel·les',country_code:'BE'};
+ const row={title:'Visita al Parlamentarium',location_name:'Parlamentarium',address:'Rue Wiertz 60, 1047 Brussel·les'};
+ const result=place('Parlamentarium','amenity',{country_code:'be',city:'Bruxelles',formatted:'Parlamentarium, 60 Rue Wiertz, 1047 Bruxelles, Belgique'});
+ const find=options=>chooseAutomaticPoint(row.address,options,context,{address:true});
+ assert.equal(chooseAutomaticPoint(row.address,[result],context),null,'name matching alone cannot verify a street address');
+ const resolved=find([result]);
+ assert.equal(resolved?.canonical_name,'Parlamentarium');
+ assert.equal(chooseAutomaticPoint('Rue Wiertz, 60, 1047 Bruxelles',[result],context,{address:true})?.provider_place_id,result.provider_place_id);
+ assert.equal(chooseAutomaticPoint('Rue Wiertz 60 1047 Bruxelles',[result],context,{address:true})?.provider_place_id,result.provider_place_id);
+ assert.equal(chooseAutomaticPoint('60 Rue Wiertz 1047 Bruxelles',[result],context,{address:true})?.provider_place_id,result.provider_place_id);
+ assert.equal(find([{...result,formatted_address:'Rue Wiertz 6, 1047 Bruxelles'}]),null);
+ assert.equal(find([{...result,formatted_address:'Rue Wiertz 60, 1050 Bruxelles'}]),null);
+ assert.equal(find([{...result,formatted_address:'Rue Wiertz 60, Bruxelles'}]),null);
+ assert.equal(find([{...result,formatted_address:'Rue Wiertz 60B, 1047 Bruxelles'}]),null);
+ assert.equal(find([{...result,country_code:'FR'}]),null);
+ assert.equal(find([{...result,coordinate_role:'representative_point'}]),null);
+ assert.equal(find([result,{...result,provider_place_id:'distinct-address',latitude:result.latitude+.02}]),null);
+ const rowWithTime={...row,updated_at:'2026-11-25T08:00:00Z'};
+ const item={key:'manual:fixture',sourceType:'manual',sourceId:'fixture',sourceUpdatedAt:rowWithTime.updated_at,
+  tripId:'trip',localDate:'2026-12-01',timingKind:'exact',startsAt:'2026-12-01T08:00:00Z'};
+ rowWithTime.location_points=pointSnapshot(rowWithTime,extractActivityPoints(rowWithTime));
+ const now=Date.parse('2026-12-01T07:00:00Z');
+ assert.equal(departurePlan([item],()=>rowWithTime,now),null);
+ assert.deepEqual(plannedDepartureChoices([item],[],()=>rowWithTime,'trip',item.localDate),[]);
+ rowWithTime.location_points=pointSnapshot(rowWithTime,[{...extractActivityPoints(rowWithTime)[0],place:resolved}]);
+ assert.equal(departurePlan([item],()=>rowWithTime,now).destination,item);
+ assert.equal(plannedDepartureChoices([item],[],()=>rowWithTime,'trip',item.localDate)[0].destination,item);
+ const provider=routeProvider({key:'synthetic',fetcher:()=>{throw Error('Exact saved endpoints must not be geocoded again')}});
+ assert.equal((await provider.resolve(rowWithTime,null)).point.id,result.provider_place_id);
+});
+
+test('a complete same-city address lookup does not append or re-query the locality',async()=>{
+ const context={canonical_name:'Riga',country_code:'LV'};
+ const calls=[];
+ const queue=new ActivityPointQueue(async(text,country)=>{calls.push([text,country]);return []});
+ await queue.find('Brīvības iela 1, LV-1050 Riga',context);
+ await queue.find('Brīvības iela 1, LV-1050 Riga',context);
+ assert.deepEqual(calls,[['Brīvības iela 1, LV-1050 Riga','LV']]);
 });
