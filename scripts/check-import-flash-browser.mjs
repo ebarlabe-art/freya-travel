@@ -100,7 +100,7 @@ try{
    const saved=await page.evaluate(()=>({review:itineraryImportState.review,decisions:itineraryImportState.reconciliation.decisions,flash:itineraryImportState.flash}));
    assert.equal(saved.review.items.length,8);
    if(!await page.locator('#itineraryImportAdvanced').evaluate(node=>node.open))await page.locator('#itineraryImportAdvanced > summary').tap();
-  await page.locator('#itineraryImportExit').tap();await page.waitForFunction(()=>itineraryImportState===null);
+   await page.locator('#itineraryImportExit').tap();await page.waitForFunction(()=>itineraryImportState===null);
    await page.reload();await page.locator('#loginCard').waitFor({state:'visible'});
    await page.evaluate(installFixture,mode);
    await page.evaluate(async()=>{closeItineraryImport();await refreshImportDraftButton(true)});
@@ -118,6 +118,7 @@ try{
    if(capture)await page.locator('#itineraryImportPreview').screenshot({path:capture+'/'+engine+'-saved-proposal-resumed.png'});
    await page.locator('[data-conflict-ack]').tap();
    await page.waitForFunction(()=>itineraryImportState.reviewedConflicts?.length>0);
+   await page.locator('#itineraryImportPlanTitle').tap();
    assert.match(await page.locator('.itinerary-conflict-summary').innerText(),/Revisat, no resolt/);
    // Changed source evidence must invalidate acknowledgement, including at final confirmation.
    await page.evaluate(()=>{itineraryImportState.reconciliation.existing[0].updated_at='2030-12-02T00:00:00Z';renderItineraryImportPreview()});
