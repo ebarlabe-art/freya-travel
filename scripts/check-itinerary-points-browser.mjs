@@ -156,7 +156,16 @@ try{
  assert.equal(await basilicaButtons.filter({hasText:'Santo Stefano'}).count(),1,'a different place is clearly labelled, never silently assigned');
  const queriesBeforeToggle=searches.length;await selectPoint(2);await selectPoint(1);
  assert.equal(await basilicaButtons.count(),2);assert.equal(searches.length,queriesBeforeToggle);
- assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no sideways mobile scrolling');
+ const layout=await page.evaluate(()=>{
+  const width=innerWidth,scrollWidth=document.documentElement.scrollWidth;
+  if(scrollWidth<=width)return {width,scrollWidth};
+  const overflowing=[...document.querySelectorAll('body *')].flatMap(node=>{
+   const {right,width:elementWidth}=node.getBoundingClientRect();
+   return elementWidth&&right>width?[{tag:node.tagName,id:node.id,className:node.getAttribute('class'),right}]:[];
+  });
+  return {width,scrollWidth,overflowing:overflowing.slice(0,20)};
+ });
+ assert.ok(layout.scrollWidth<=layout.width,`no sideways mobile scrolling: ${JSON.stringify(layout)}`);
  assert.equal(writes.length,8,'searching and grouping candidates never writes');
  await firstInput.fill('Piazza Maggiore provisional');
  await page.evaluate(async()=>{await loadManualItineraryItems(true);renderGenericItinerary()});
