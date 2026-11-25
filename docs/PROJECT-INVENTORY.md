@@ -12,13 +12,15 @@ La validació física amb Brussel·les i Riga/Tallinn ha trobat activitats desad
 
 **Verificació i relleu**. Proves sintètiques d’adreces belgues, punts pendents en un viatge de dues ciutats, B1 i B1.1, amb rebuig de números diferents, centroides i coincidències distants. Es mantenen les seleccions manuals i només es persisteixen ubicacions recuperades. No s’ha executat cap escriptura sobre dades reals. PR de frontend en esborrany, pendent d’autorització. Després de publicar, obrir Brussel·les i Riga/Tallinn a l’iPhone i comprovar que les activitats inequívoces es verifiquen sense reimportar ni seleccionar ubicacions i que es poden calcular els trajectes.
 
-## P0 · Importació d’itineraris de dues taules · PWA v84 en esborrany (25/11/2026)
+## P0 · Importació d’itineraris de dues taules · PWA v84 (PR #266) (25/11/2026)
 
 Sobre la base pública v83, un PDF analitzat a l’iPhone mostrava 17 propostes noves, cap visita incorporable i l’agenda buida. En el programa sintètic de dues taules, el lector no acceptava la barra entre l’hora i el títol i el filtre geogràfic descartava la grafia «Brussel·les». Es valida el vincle hora–títol només en cel·les contigües de la mateixa fila. L’enriquiment existent pot confirmar el fus de Brussel·les. Les adreces, notes i enllaços amb evidència es mantenen. Quan manca una dada necessària, la previsualització indica l’activitat concreta i permet editar-la o excloure-la explícitament.
 
 El flux obre el selector de fitxers des del botó de l’agenda i demana consentiment abans d’enviar el fitxer al lector. La revisió mostra els dies i tres accions principals. Es mantenen la conciliació, les proteccions, la detecció de duplicats, les alternatives i la recuperació. La incorporació encara demana confirmació explícita i reutilitza l’RPC atòmica existent.
 
-**Verificació i relleu**. Cas sintètic amb 17 files, repartides 9 i 8. Proves dirigides del lector i de la conciliació, comprovació Deno, build de Pages i flux mòbil a Chromium. PR en esborrany. Validació física amb el PDF privat i publicació pendents d’autorització. En un desplegament autoritzat cal actualitzar la funció `import-itinerary` abans del frontend v84. Cap migració ni canvi de dades reals.
+**Verificació de la PR #266**. Cas sintètic inicial amb 17 files, repartides 9 i 8. Proves dirigides del lector i de la conciliació, comprovació Deno, build de Pages i flux mòbil en CI. Cap migració ni canvi de dades reals.
+
+**Seguiment del PDF privat**. La interfície simplificada s’ha comprovat físicament a l’iPhone. En aquesta prova les 17 activitats quedaven a «Dia pendent». El resolutor de dates ara interpreta el període de la capçalera general i el contrasta amb el dia de la setmana de cada taula. El cas sintètic reprodueix l’any només a la capçalera general i comprova 10 activitats l’1 de desembre i 7 el dia 2, amb hores, adreces, notes i confirmació conservades. També es comproven els cinc idiomes i el rebuig dels dies contradictoris. La Product Owner ha confirmat la validació física. La correcció de la PR #267 s’integra a la branca v86 i queda pendent d’autorització per publicar.
 
 ## B1 · Temps per arribar i logística immediata · v82 a `main` (PR #264) (25/11/2026)
 

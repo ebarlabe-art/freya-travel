@@ -80,7 +80,8 @@ try{
  await page.waitForFunction(()=>itineraryImportState?.reconciliation?.plan&&!itineraryImportState.preparing&&!itineraryImportState.planningBusy);
  const preview=page.locator('#itineraryImportDayPreview');
  assert.equal(await preview.locator('section').count(),2);
- assert.equal(await preview.locator('li').count(),17);
+ assert.equal(await preview.locator('[data-import-preview-day="2026-12-01"] li').count(),10);
+ assert.equal(await preview.locator('[data-import-preview-day="2026-12-02"] li').count(),7);
  assert.match(await preview.innerText(),/10 Carrer de Mostra/);
  assert.match(await preview.innerText(),/https:\/\/example.org\/programa/);
  assert.equal(await page.locator('#itineraryImportActions button:visible').count(),3);
