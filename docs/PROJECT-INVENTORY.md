@@ -1,5 +1,13 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## P0 · Importació d’itineraris de dues taules · PWA v84 en esborrany (25/11/2026)
+
+Sobre la base pública v83, un PDF analitzat a l’iPhone mostrava 17 propostes noves, cap visita incorporable i l’agenda buida. En el programa sintètic de dues taules, el lector no acceptava la barra entre l’hora i el títol i el filtre geogràfic descartava la grafia «Brussel·les». Es valida el vincle hora–títol només en cel·les contigües de la mateixa fila. L’enriquiment existent pot confirmar el fus de Brussel·les. Les adreces, notes i enllaços amb evidència es mantenen. Quan manca una dada necessària, la previsualització indica l’activitat concreta i permet editar-la o excloure-la explícitament.
+
+El flux obre el selector de fitxers des del botó de l’agenda i demana consentiment abans d’enviar el fitxer al lector. La revisió mostra els dies i tres accions principals. Es mantenen la conciliació, les proteccions, la detecció de duplicats, les alternatives i la recuperació. La incorporació encara demana confirmació explícita i reutilitza l’RPC atòmica existent.
+
+**Verificació i relleu**. Cas sintètic amb 17 files, repartides 9 i 8. Proves dirigides del lector i de la conciliació, comprovació Deno, build de Pages i flux mòbil a Chromium. PR en esborrany. Validació física amb el PDF privat i publicació pendents d’autorització. En un desplegament autoritzat cal actualitzar la funció `import-itinerary` abans del frontend v84. Cap migració ni canvi de dades reals.
+
 ## B1 · Temps per arribar i logística immediata · v82 a `main` (PR #264) (25/11/2026)
 
 El bloc del tauler Ara i Següent selecciona una visita amb hora exacta i punt d’arribada verificable. Calcula per petició des de la ubicació puntual del dispositiu, de l’activitat anterior, d’un lloc desat o d’una adreça seleccionada mitjançant la cerca existent. Indica quan l’origen és una hipòtesi. Si s’escull l’activitat anterior, compta el marge a partir del seu final programat quan encara no ha acabat. Mostra la durada estimada, la sortida recomanada amb la zona horària local, el marge restant i els avisos. El marge de 10 minuts per defecte és l’única preferència que es desa al dispositiu. Les dades dels resultats viuen en memòria mentre la targeta és activa. La ubicació del dispositiu i els punts cercats puntualment no es desen a la memòria cau de rutes del servidor.
@@ -8,7 +16,7 @@ El bloc del tauler Ara i Següent selecciona una visita amb hora exacta i punt d
 
 **Verificació**. Proves enfocades de càlcul, canvi d’hora, permisos, registres del mateix viatge i respostes insuficients. Comprovació de l’Edge Function amb Deno i compilació i paritat de Pages. A Chromium mòbil de 390 px, amb respostes controlades, s’han validat la selecció de la visita, l’entrada vinculada, GPS denegat i concedit, origen desat i cercat, modes, marge i falta de connexió. La prova física i una consulta real al proveïdor queden pendents. El tauler històric de Londres conserva la seva experiència estàtica.
 
-## B1.1 · Planificació de trajectes · PWA v83 en esborrany (25/11/2026)
+## B1.1 · Planificació de trajectes · PWA v83 a `main` (PR #265) (25/11/2026)
 
 A Itinerari, la targeta de B1 s’adapta al dia futur seleccionat. L’origen pot ser una activitat consecutiva, un allotjament, un altre lloc desat o un resultat de cerca verificat. La durada, la sortida recomanada en hora local i el marge es basen en els horaris previstos. Un origen triat manualment admet indicar l’hora a partir de la qual es pot sortir. Si falta una hora fiable, el marge queda indeterminat. Es manté el marge de seguretat configurable de B1 i s’identifiquen els trajectes que no hi caben.
 

@@ -5,7 +5,7 @@ const server=createServer(async(req,res)=>{const path=resolve(dist,new URL(req.u
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${server.address().port}/freya-travel/`;
 const browser=await pw[engine].launch({headless:true});
 try{
- const ctx=await browser.newContext({viewport:process.env.RECONCILE_TABLET?{width:1024,height:768}:{width:390,height:844},isMobile:!process.env.RECONCILE_TABLET,hasTouch:true,serviceWorkers:'block'});
+ const ctx=await browser.newContext({viewport:process.env.RECONCILE_TABLET?{width:1024,height:768}:{width:390,height:844},isMobile:!process.env.RECONCILE_TABLET,hasTouch:true,locale:'ca-ES',serviceWorkers:'block'});
  await ctx.route('**/*',r=>new URL(r.request().url()).origin===new URL(url).origin?r.continue():r.abort());await ctx.routeWebSocket('**/*',s=>s.close());
  const page=await ctx.newPage();page.setDefaultTimeout(15000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(url);await page.locator('#loginCard').waitFor({state:'visible'});
  const seed=async()=>{
@@ -49,7 +49,7 @@ try{
   assert.equal(await page.evaluate(()=>fixture.writes.length),0);assert.equal(await page.evaluate(()=>JSON.stringify(fixture.existing)===fixture.before&&JSON.stringify(flightRows)===fixture.flights),true);
   await page.locator('#itineraryImportWrite').tap();await page.locator('#itineraryImportConfirm').waitFor({state:'visible'});
   if(choice==='keep'){await page.locator('#itineraryImportConfirmNo').tap();await page.waitForFunction(()=>!itineraryImportState.busy);assert.equal(await page.evaluate(()=>fixture.writes.length),0)}
-  else {assert.match(await page.locator('#itineraryImportConfirmText').innerText(),/1 actualitzades/);await page.locator('#itineraryImportConfirmYes').tap();await page.waitForFunction(()=>itineraryImportState===null&&document.getElementById('genericItineraryMessage').textContent.includes('Planning desat'));const request=await page.evaluate(()=>fixture.writes);assert.equal(request.length,1);assert.equal(request[0].p_document_id,'20800000-0000-4000-8000-000000000006');assert.match(JSON.stringify(request[0].p_changes),/20800000-0000-4000-8000-000000000020/);}
+  else {assert.match(await page.locator('#itineraryImportConfirmText').innerText(),/Actualitzades: 1/);await page.locator('#itineraryImportConfirmYes').tap();await page.waitForFunction(()=>itineraryImportState===null&&document.getElementById('genericItineraryMessage').textContent.includes('Planning desat'));const request=await page.evaluate(()=>fixture.writes);assert.equal(request.length,1);assert.equal(request[0].p_document_id,'20800000-0000-4000-8000-000000000006');assert.match(JSON.stringify(request[0].p_changes),/20800000-0000-4000-8000-000000000020/);}
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  }
 

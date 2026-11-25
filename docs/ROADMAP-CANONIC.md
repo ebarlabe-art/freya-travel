@@ -148,6 +148,8 @@ Ha d'arribar a poder detectar/proposar, entre altres:
 
 ### A2. Importació intel·ligent
 
+**P0 · Programa de Brussel·les (25/11/2026, v84 preparada).** Sobre la v83, cal convertir les propostes de taules horàries amb evidència vàlida en activitats incorporables. El selector de fitxers s’obre directament. Es revisen les activitats agrupades per dia, amb correccions al costat de les files afectades i conciliació avançada disponible. Confirmació expressa i desament atòmic existents. Cas sintètic de dos dies i 17 activitats. Validació física privada i publicació pendents d’autorització.
+
 **P0 · Vall d’Aran (3/11/2026, branca no publicada).** Bloqueig de lectura de PDF llegible: associació visual hora/títol, dates contextuals del període global i alternatives opt-in. Reutilitzar extractor i RIG, amb cites verificables, confirmació humana i prova del PDF original. Branca `codex/p0-aran-pdf-import`; preval sobre noves funcionalitats. Tests anotats no acrediten lectura IA real ni validació física: aquestes dues proves són gates pendents. Es mantenen tots els pendents A2/A3 següents.
 
 **Correcció física #210 (3/11/2026, branca no publicada).** Agrupar trajectes compartits també a l’agenda, conservant bitllets individuals, i retirar preferències concloents de la comparació PDF quan falta durada o el solapament només implica un àpat flexible. Reutilitza #207/#209; verificació museu/parc preservada. Cap publicació sense autorització; els pendents següents es mantenen.

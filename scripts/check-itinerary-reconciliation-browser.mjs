@@ -54,7 +54,8 @@ try{
  await page.waitForFunction(()=>document.getElementById('itineraryImportSaveStatus').textContent.includes('No s’ha confirmat'));assert.equal(await page.evaluate(()=>fixture.writes.length),1);
  assert.equal(await page.locator('[data-reconcile-action]').first().isDisabled(),true,'uncertain payload cannot be edited before retry');
  const firstRequests=await page.evaluate(()=>fixture.writes);
- await page.locator('#itineraryImportExit').tap();await page.reload();await page.locator('#loginCard').waitFor({state:'visible'});await page.evaluate(installFixture);await page.evaluate(()=>openItineraryImport());
+ if(!await page.locator('#itineraryImportAdvanced').evaluate(node=>node.open))await page.locator('#itineraryImportAdvanced > summary').tap();
+  await page.locator('#itineraryImportExit').tap();await page.reload();await page.locator('#loginCard').waitFor({state:'visible'});await page.evaluate(installFixture);await page.evaluate(()=>openItineraryImport());
  assert.equal(await page.locator('[data-reconcile-action]').first().isDisabled(),true,'confirmed payload recovers after closing/reopening');
  await page.evaluate(()=>fixture.mode='ok');await page.locator('#itineraryImportWrite').tap();await page.waitForFunction(()=>fixture.loads===1);
  const requests=firstRequests.concat(await page.evaluate(()=>fixture.writes));assert.equal(requests.length,2);assert.deepEqual(requests[0],requests[1],'same operation and payload after lost response');assert.equal(requests[0].p_expected_existing.length,13);assert.equal(requests[0].p_changes.length,24);

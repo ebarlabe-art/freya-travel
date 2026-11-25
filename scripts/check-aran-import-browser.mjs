@@ -40,8 +40,9 @@ try{
  assert.equal(items.filter(i=>i.original.local_date==='2026-11-09').length,2);
  assert.equal(await page.evaluate(()=>fixture.writes.length),0);
  assert.doesNotMatch(await page.locator('#itineraryPlanningReport').innerText(),/00:00/);
- // Alternatives are visible without navigating three nested details panels.
+ // Alternatives remain available under a single optional disclosure.
  assert.equal(await page.locator('#itineraryImportAlternatives').isVisible(),true);
+ await page.locator('#itineraryImportAlternatives > summary').tap();
  assert.equal(await page.locator('[data-import-alternative]').count(),4);
  assert.equal(await page.locator('[data-alternative-day="2026-11-09"] [data-import-alternative]').count(),2);
  const alternative=page.locator('[data-import-alternative="14"]');

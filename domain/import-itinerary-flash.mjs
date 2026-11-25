@@ -2,7 +2,7 @@ import {matchingPlanningFlight,canonicalPlanningFlights} from './flight-journey-
 // Presentation/decision adapter for RIG-03B/RIG-04. No IO or second planning engine.
 import {matchingExistingImportItems,compareImportActivity,existingReviewValues} from './import-itinerary-review.mjs';
 import {analyzePlanning} from './import-itinerary-planning-ui.mjs';
-import {proposeUnmatchedReconciliationDecisions} from './import-itinerary-reconciliation.mjs';
+import {proposeUnmatchedReconciliationDecisions,importScheduleIssue} from './import-itinerary-reconciliation.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const protectedRow=r=>r.reservation||r.is_fixed||r.status!=='planned'||r.photo_count>0||r.link_count>0;
 export const flashDay=d=>/^\d{4}-\d{2}-\d{2}$/.test(d||'')?new Intl.DateTimeFormat('ca',{day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(d+'T12:00Z')):'Dia pendent';
@@ -20,7 +20,7 @@ export function flashMatches(item,state,context){
 export function prepareFlashDecisions(snapshot,state,context){
  // Low extraction confidence is an uncertainty, not a mandatory per-row choice.
  // Required field validation and duplicate guards are still the existing writer's.
- const draft={...snapshot,items:snapshot.items.filter(i=>!flashMatches(i,state,context).length).map(i=>({...i,review_flags:i.review_flags.filter(f=>f!=='possible_overlap_in_review')}))};
+ const draft={...snapshot,items:snapshot.items.filter(i=>!importScheduleIssue(i,context)&&!flashMatches(i,state,context).length).map(i=>({...i,review_flags:i.review_flags.filter(f=>f!=='possible_overlap_in_review')}))};
  return proposeUnmatchedReconciliationDecisions(draft,state);
 }
 export function flashQueue(snapshot,state,context,flash){

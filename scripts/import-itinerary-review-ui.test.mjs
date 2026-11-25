@@ -90,7 +90,7 @@ test('A2.7: Pages includes the same module graph as PWA cache',()=>{
  assert.match(worker,/\.\/domain\/import-itinerary-proposal\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-review\.mjs/);
  assert.match(worker,/\.\/domain\/import-itinerary-write\.mjs/);
- assert.match(worker,/freya-travel-release-6444-v83/);
+ assert.match(worker,/freya-travel-release-6444-v84/);
 });
 
 test('A2.9: real async completion re-enables the imported itinerary save button',async()=>{
@@ -109,7 +109,7 @@ test('A2.9: real async completion re-enables the imported itinerary save button'
  const renders=[];
  const scope={
   itineraryImportState:state,itineraryImportEpoch:0,$,
-  itineraryImportStillCurrent:current=>current===state,
+  itineraryImportStillCurrent:current=>current===state,itineraryImportContextIsCurrent:current=>current===state,
   itineraryImportMimeAllowed:()=>true,
   updateItineraryImportConsent:()=>{},
   renderItineraryImportPreview:()=>{
@@ -125,7 +125,7 @@ test('A2.9: real async completion re-enables the imported itinerary save button'
    assert.equal(current,state);assert.equal(state.busy,false);
    state.busy=true;scope.renderItineraryImportPreview();state.busy=false;
   },
-  itineraryImportErrorMessage:()=>'' 
+  itineraryImportErrorMessage:()=>'',itineraryImportText:key=>key
  };
  const fn=vm.runInNewContext(source+'; processItineraryImportDocument',scope);
  await fn({id:'doc-1',mime_type:'application/pdf'});

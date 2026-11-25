@@ -11,7 +11,8 @@ export async function pause(s,c){
   s.busy=true;c.status('Guardant la revisió xifrada en aquest dispositiu…');
   await saveImportDraft(scope(s),{
    documentId:s.documentId,review:s.review,
-   reconciliation:{existing:s.reconciliation.existing,decisions:s.reconciliation.decisions,retire:s.reconciliation.retire},
+   reconciliation:{existing:s.reconciliation.existing,decisions:s.reconciliation.decisions,retire:s.reconciliation.retire,
+    manualReview:[...(s.reconciliation.manualReview||[])]},
    flash:s.flash||{deferred:[],history:[],targets:{}},
    fileMeta:s.file?{name:s.file.name,type:s.file.type,size:s.file.size,lastModified:s.file.lastModified}:null
   },s.file,{current:()=>c.current(s)});
@@ -34,14 +35,15 @@ export async function resume(s,c){
  const existing=rows.map(c.decorateRow);
  Object.assign(s,{
   api:reviewApi,saveApi,documentId:d.documentId,review:d.review,file:saved.file,
-  reconciliation:{api:reconcileApi,existing,decisions:stale?[]:d.reconciliation.decisions||[],retire:stale?[]:d.reconciliation.retire||[],pendingRequest:null,unified:true},
+  reconciliation:{api:reconcileApi,existing,decisions:stale?[]:d.reconciliation.decisions||[],retire:stale?[]:d.reconciliation.retire||[],
+   manualReview:new Set(!stale&&Array.isArray(d.reconciliation.manualReview)?d.reconciliation.manualReview:[]),pendingRequest:null,unified:true},
   planningApi,flashApi,flash:stale?{deferred:[],history:[],targets:{}}:d.flash||{deferred:[],history:[],targets:{}},
   reviewedConflicts:[],selectedConflict:null,planning:null,unified:true
  });
  if(stale){
   const snapshot=reviewApi.summarizeItineraryReview(s.review,existing);
   s.reconciliation.decisions.push(...planningApi.automaticEquivalentDecisions(snapshot,existing,[]));
-  s.reconciliation.decisions.push(...flashApi.prepareFlashDecisions(snapshot,s.reconciliation,c.planningContext(s)));
+  s.reconciliation.decisions.push(...flashApi.prepareFlashDecisions(snapshot,s.reconciliation,c.planningContext(s)).map(d=>({...d,suggested:true})));
  }
  c.showReview();
  c.resumeMessage(stale);

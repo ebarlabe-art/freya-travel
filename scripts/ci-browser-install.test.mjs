@@ -31,6 +31,7 @@ test('workflow retains every existing browser invocation on an independent requi
  expected.push('RECONCILE_TABLET=1 PLANNING_ENGINE=webkit PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-rig04-planning-browser.mjs');
  expected.push('PLANNING_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-pdf-reconciliation-208-browser.mjs');
  expected.push('PLANNING_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-aran-import-browser.mjs');
+ expected.push('PLANNING_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-brussels-import-browser.mjs');
  expected.push('PHOTO_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-photos-upload-browser.mjs');
  expected.push('PHOTO_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-photos-viewer-browser.mjs');
  expected.push('PGLITE_MODULE="$RUNNER_TEMP/geography-db/node_modules/@electric-sql/pglite/dist/index.js" CULTURE_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-aran-cultural-flow-browser.mjs');
