@@ -5,9 +5,10 @@ export const normalizePointName=value=>String(value||'').normalize('NFD').replac
 const anchor='(?:Piazza|Plaça|Plaza|Square|Fontana|Font|Fountain|Via|Viale|Carrer|Street|Museu|Museum|Museo|Catedral|Cathedral|Castell|Castle|Basílica|Basilica|Torre|Tower|Mercat|Market|Parc|Park|Palau|Palazzo|Finestrella|Archiginnasio|Teatro|Theatre|Theater|Quadrilatero|Due Torri|centre històric|centro storico|historic centre|B[oò]sc|Fageda)';
 export function extractActivityPoints(row){
  // Explicit addresses/venues take precedence over prose; never infer a restaurant from a meal.
- if(row.address)return [{id:'point-0',query:String(row.address).trim(),status:'pending',place:null}];
- const explicit=String(row.address||row.location_name||row.venue_name||'').trim();
- const raw=(row.resolved_location&&!row.address?String(row.title||''):explicit)||String(row.title||'');
+ const address=String(row.address||'').trim();
+ if(address)return [{id:'point-0',query:address,status:'pending',place:null}];
+ const explicit=String(row.location_name||row.venue_name||'').trim();
+ const raw=(row.resolved_location?String(row.title||''):explicit)||String(row.title||'');
  // Walks to a named natural landmark are visits too. Keep the distinctive
  // destination (not the generic word 'passeig') for safe geocoding.
  const walkingDestination=!explicit?raw.match(/^(?:passeig|caminada|excursió|ruta|visita)\s+(?:(?:a|al|a la|pel|per|per la|fins a|fins al|fins a la)\s+)?((?:bosc|fageda|parc|jardins|llac|estany|cascada|castell|església|monestir)\s+(?:de|del|dels|de la|d\u2019|d')\s*[\p{L}\p{M}\p{N}\s\u2019'-]+?)(?=\s*[,;.(]|$)/iu):null;
@@ -79,10 +80,56 @@ export function autoPendingPoints(row){
     saved[0].query===original.map(p=>p.query).join(' i '))return original;
  return null;
 }
-export function chooseAutomaticPoint(query,options,context){
- if(!context?.canonical_name||(context.country_code&&!/^[A-Z]{2}$/.test(context.country_code)))return null;
- const candidates=options.filter(validPointPlace).filter(p=>(!context.country_code||p.country_code===context.country_code)&&
-   normalizePointName(p.locality)===normalizePointName(context.canonical_name)&&samePointName(query,p.canonical_name));
+// Geography supplies a formatted address and may give the building a venue
+// name. Compare street, house number and postal evidence separately.
+function streetAddress(value){
+ const last=value.match(/^(.+?) (\d{1,5}[a-z]?)$/);
+ const first=value.match(/^(\d{1,5}[a-z]?) (.+)$/);
+ const identity=last?[last[1],last[2]]:first?[first[2],first[1]]:null;
+ return identity&&/[a-z]/.test(identity[0])?{street:identity[0],number:identity[1]}:null;
+}
+function postalAddress(value){
+ const parts=String(value||'').split(/[,;\n]/).map(normalizePointName).filter(Boolean);
+ const zip=/^(?:[a-z]{2} )?(\d{4,5})(?: (.+))?$/;
+ const postalAreas=parts.map(part=>part.match(zip)).filter(Boolean);
+ if(new Set(postalAreas.map(area=>area[1])).size>1)return null;
+ const postal=postalAreas[0];
+ for(const [index,part] of parts.entries()){
+  const inline=part.match(/^(.+?) ((?:[a-z]{2} )?\d{4,5}(?: .+)?)$/);
+  const inlineAddress=inline&&streetAddress(inline[1]);
+  const address=inlineAddress||streetAddress(part)||
+   (/^\d{1,3}[a-z]?$/.test(part)&&(
+    streetAddress((parts[index-1]||'')+' '+part)||streetAddress(part+' '+(parts[index+1]||''))));
+  if(address){
+   const inlinePostal=inlineAddress?inline[2].match(zip):null;
+   if(postal&&inlinePostal&&postal[1]!==inlinePostal[1])return null;
+   const postalArea=postal||inlinePostal;
+   return {...address,postcode:postalArea?.[1],locality:postalArea?.[2]};
+  }
+ }
+ return null;
+}
+export function hasSelfContainedPostalAddress(value){
+ return !!postalAddress(value)?.locality;
+}
+function matchesPostalAddress(address,place,context){
+ if(place.coordinate_role!=='exact_location')return false;
+ const formatted=postalAddress(place.formatted_address);
+ const label=postalAddress(place.canonical_name);
+ const matching=[formatted,label].some(candidate=>candidate?.street===address.street&&candidate.number===address.number);
+ if(!matching||(address.postcode&&address.postcode!==(formatted?.postcode||label?.postcode)))return false;
+ const sameCity=[context?.canonical_name,address.locality].some(city=>samePointName(city,place.locality));
+ // A verified country and matching postcode identify the same postal area
+ // even when the provider uses a different language for the municipality.
+ return sameCity||!!(context?.country_code&&address.postcode);
+}
+export function chooseAutomaticPoint(query,options,context,{address=false}={}){
+ if(context?.country_code&&!/^[A-Z]{2}$/.test(context.country_code))return null;
+ const postal=address?postalAddress(query):null;
+ if(!postal&&!context?.canonical_name)return null;
+ const candidates=options.filter(validPointPlace).filter(p=>(!context?.country_code||p.country_code===context.country_code)&&
+  (postal?matchesPostalAddress(postal,p,context):
+   samePointName(p.locality,context.canonical_name)&&samePointName(query,p.canonical_name)));
  if(!candidates.length)return null;
  const unique=[...new Map(candidates.map(p=>[p.provider_place_id,p])).values()];
  // Genuine distant homonyms remain ambiguous; multiple records of the same nearby landmark do not.
@@ -90,7 +137,7 @@ export function chooseAutomaticPoint(query,options,context){
  const exact=unique.filter(p=>p.coordinate_role==='exact_location');
  // Outside known trip stops require an explicit matching city and an exact place.
  // Never derive a country from the first result or accept distant homonyms.
- if(!context.country_code&&!exact.length)return null;
+ if(!context?.country_code&&!exact.length)return null;
  const allowed=exact.length?exact:unique.filter(p=>(['street','suburb','district','neighbourhood','quarter','city_block','square','natural.forest','forest','park','nature_reserve','national_park'].includes(p.kind)||(['city','town','village','hamlet'].includes(p.kind)&&samePointName(p.canonical_name,context.canonical_name))));
  if(!allowed.length)return null;
  return pointPlace(allowed[0]);
@@ -126,7 +173,8 @@ export function pointMapUrl(place){return validPointPlace(place)?'https://www.go
 export class ActivityPointQueue{
  constructor(search,{timeoutMs=20000}={}){this.search=search;this.timeoutMs=timeoutMs;this.cache=new Map();this.count=0;this.blocked=false}
  async find(query,context){
-  const text=query+(context?.canonical_name?', '+context.canonical_name:'');
+  const city=context?.canonical_name;
+  const text=query+(city&&!postalAddress(query)?.locality&&!(' '+normalizePointName(query)+' ').includes(' '+normalizePointName(city)+' ')?', '+city:'');
   const key=JSON.stringify([text.normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase(),context?.country_code]);
   if(this.cache.has(key))return this.cache.get(key);
   if(this.blocked)throw Error('La cerca està aturada perquè el servei no respon. Torna-ho a provar més tard.');

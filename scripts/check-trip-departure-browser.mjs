@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import {createServer} from 'node:http';
 import {extname,resolve,sep} from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {extractActivityPoints,pointSnapshot} from '../domain/itinerary-place-points.mjs';
 
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE
   ?pathToFileURL(process.env.PLAYWRIGHT_MODULE).href:'playwright');
@@ -40,12 +41,23 @@ const plannedActivities=[
  ...activities[0],id:id(21+i),trip_id:plannedTrip.id,title,
  start_at:day+'T'+start+':00Z',end_at:day+'T'+end+':00Z'
 }));
+// One newly imported address and three untouched pending rows in a multistop trip.
+const liveAddressActivity=activities[2];
+Object.assign(liveAddressActivity,{latitude:null,longitude:null,address:'Carrer de Mostra 12, 07800 Eivissa',location_points:null});
+const stops=[
+ {trip_id:plannedTrip.id,country_code:'LV',canonical_name:'Riga',time_zone:'Europe/Riga',position:0},
+ {trip_id:plannedTrip.id,country_code:'EE',canonical_name:'Tallinn',time_zone:'Europe/Tallinn',position:1}
+];
+for(const [i,row] of plannedActivities.entries()){
+ Object.assign(row,{latitude:null,longitude:null,city:null,venue_name:row.title,time_zone:stops[i===2?1:0].time_zone});
+ row.location_points=pointSnapshot(row,extractActivityPoints(row));
+}
 const hotel={id:id(24),trip_id:plannedTrip.id,name:'Riga hotel',address:'Riga hotel',reservation_status:'confirmed',
  latitude:56.95,longitude:24.11,time_zone:zone};
 const ticketId=id(7);
 const link={trip_id:trip.id,activity_id:activities[2].id,document_id:ticketId,document_role:'ticket'};
 const ticket={id:ticketId,trip_id:trip.id,title:'Exhibition ticket',file_path:'fixture.png',mime_type:'image/png',category:'Entrades'};
-const calls=[],searches=[];
+const calls=[],searches=[],automaticSearches=[];
 const context=await browser.newContext({viewport:{width:390,height:844},locale:'en-GB',hasTouch:true,isMobile:true,reducedMotion:'reduce'});
 await context.addInitScript(()=>{
  window.b1PositionCalls=0;
@@ -61,7 +73,19 @@ await context.route('**/*',async route=>{
  const target=new URL(route.request().url());
  if(target.origin===new URL(url).origin)return route.continue();
  if(target.hostname.endsWith('.supabase.co')&&target.pathname.endsWith('/place-resolution')){
-  const body=route.request().postDataJSON();searches.push(body);
+  const body=route.request().postDataJSON();
+  if(body.language==='ca'){
+   automaticSearches.push(body);
+   const rows=[liveAddressActivity,...plannedActivities];
+   const chosen=rows.find(row=>body.text.startsWith(row.address||row.venue_name));
+   if(!chosen)return route.fulfill({json:{candidates:[]}});
+   const district=chosen===liveAddressActivity?{country_code:'ES',canonical_name:'Eivissa'}:stops.find(stop=>stop.time_zone===chosen.time_zone);
+   return route.fulfill({json:{candidates:[{place:{provider:'geoapify',provider_place_id:chosen.id,canonical_name:chosen.title,
+    formatted_address:chosen===liveAddressActivity?'Sala d’exposicions, 12 Carrer de Mostra, 07800 Eivissa':chosen.title+', '+district.canonical_name,
+    locality:district.canonical_name,country_code:district.country_code,latitude:38.91,longitude:1.438,
+    attribution:'Synthetic',coordinate_role:'exact_location'}}]}});
+  }
+  searches.push(body);
   return route.fulfill({json:{candidates:[{place:{provider:'geoapify',provider_place_id:'station',canonical_name:'Station entrance',
     formatted_address:'Station entrance, Eivissa',country_code:'ES',latitude:38.91,longitude:1.438,source:'test',
     attribution:'test',coordinate_role:'exact_location',timezone_status:'verified',timezone:zone}}]}});
@@ -87,12 +111,22 @@ async function expectText(locator,pattern){
 }
 try{
  await page.goto(url);await page.waitForFunction(()=>typeof renderSession==='function'&&authInitializationResolved);
- await page.evaluate(async({trip,activities,plannedTrip,plannedActivities,hotel,link,ticket,uid})=>{
+ await page.evaluate(async({trip,activities,plannedTrip,plannedActivities,stops,hotel,link,ticket,uid})=>{
   db.rpc=async name=>({data:name==='get_my_trips'?[trip,plannedTrip]:[],error:null});
+  window.b1GeoWrites=[];
   db.from=table=>{
-   let data={trip_activities:[...activities,...plannedActivities],trip_accommodations:[hotel],
+   let patch;
+   let data={trip_stops:stops,trip_activities:[...activities,...plannedActivities],trip_accommodations:[hotel],
     trip_activity_documents:[link],travel_documents:[ticket]}[table]||[];
    const query=new Proxy({}, {get(_,key){
+    if(key==='update')return value=>{patch=value;return query};
+    if(key==='maybeSingle')return async()=>{
+     if(table!=='trip_activities'||data.length!==1||Object.keys(patch).join()!=='location_points')throw Error('Unexpected geography write');
+     const row=data[0];
+     Object.assign(row,patch,{updated_at:new Date().toISOString()});
+     window.b1GeoWrites.push(row.id);
+     return {data:structuredClone(row),error:null};
+    };
     if(key==='eq')return (field,value)=>{data=data.filter(row=>row[field]===value);return query};
     if(key==='then')return (resolve,reject)=>Promise.resolve({data,error:null}).then(resolve,reject);
     return ()=>query;
@@ -103,9 +137,10 @@ try{
   db.removeChannel=async()=>{};
   openDocument=async id=>{window.b1OpenedTicket=id};
   await renderSession({user:{id:uid,email:'fixture@example.invalid'}});
- },{trip,activities,plannedTrip,plannedActivities,hotel,link,ticket,uid:id(9)});
+ },{trip,activities,plannedTrip,plannedActivities,stops,hotel,link,ticket,uid:id(9)});
  await page.locator(`[data-select-trip="${trip.id}"]:visible`).click();
  await page.locator('#departureTitle').waitFor({state:'visible'});
+ await page.waitForFunction(id=>activityRows.some(row=>row.id===id&&row.location_points?.points?.[0]?.status==='resolved'),liveAddressActivity.id);
  await expectText(field('target'),/Next exhibition/);
  assert.equal(await field('margin').inputValue(),'10');
  assert.equal(await page.evaluate(()=>window.b1PositionCalls),0);
@@ -157,6 +192,10 @@ try{
  await page.locator('#genericItineraryModuleCard').tap();
  const planner=page.locator('#plannedDepartureSlot');
  await expectText(planner.getByRole('heading'),/Plan your journeys/);
+ await page.waitForFunction(ids=>ids.every(id=>activityRows.some(row=>row.id===id&&row.location_points?.points?.[0]?.status==='resolved')),plannedActivities.map(row=>row.id));
+ await expectText(field('destination'),/Riga gallery/);
+ assert.deepEqual(automaticSearches.map(search=>search.country_code),[undefined,'LV','LV','EE']);
+ assert.deepEqual(await page.evaluate(()=>window.b1GeoWrites),[liveAddressActivity.id,...plannedActivities.map(row=>row.id)]);
  assert.equal(calls.length,4,'Future agenda must not fetch any routes automatically');
  assert.equal(await field('origin').inputValue(),'previous');
  assert.equal(await field('origin').locator('option[value="device"]').count(),0);
@@ -193,8 +232,9 @@ try{
  assert.equal(calls.length,7);
  assert.equal(await page.evaluate(()=>window.b1PositionCalls),2);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ assert.equal(automaticSearches.length,4,'Saved points are reused after refresh and when changing itinerary day');
  assert.deepEqual(errors,[]);
- console.log('PASS B1 390px: next verified visit, ticket link, explicit GPS denied/accepted, saved origins, all modes, margin, and offline. B1.1: future days, on-demand routes, schedule conflict, lodging, and custom origin.');
+ console.log('PASS B1 390px: next verified visit, ticket link, explicit GPS denied/accepted, new postal address, saved origins, all modes, margin, and offline. Multistop pending places recovered without manual verification. B1.1: future days, on-demand routes, schedule conflict, lodging, and custom origin.');
 }finally{
  await browser.close();await new Promise(resolve=>server.close(resolve));
 }
