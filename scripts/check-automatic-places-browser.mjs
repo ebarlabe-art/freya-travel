@@ -51,6 +51,8 @@ try{
  await ctx.route('**/*',route=>new URL(route.request().url()).origin===new URL(url).origin?route.continue():route.abort());
  await ctx.routeWebSocket('**/*',s=>s.close());
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(20000);
+ // Keep the fixture on its travel day. Future days calculate routes only on request.
+ await page.clock.setFixedTime(new Date(`${tripRow.start_date}T08:00:00Z`));
  await page.exposeFunction('fixtureRead',table=>structuredClone(table==='trip_activities'?[activity]:rows));
  await page.exposeFunction('fixtureUpdate',({patch,filters})=>{
   const row=allRows.find(row=>filters.every(([key,value])=>(row[key]??null)===value));
