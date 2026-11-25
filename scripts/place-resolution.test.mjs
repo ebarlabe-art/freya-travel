@@ -40,3 +40,31 @@ test('v27 cache upgrade keeps legacy candidates intact and fetches locality once
  assert.equal(provider,1);assert.equal(claims,2);assert.equal(cache.size,2);
  assert.deepEqual(cache.get(oldKey),[old]);assert.equal(Object.hasOwn(old,'locality'),false);
 });
+
+test('Maps links are expanded only within Google Maps and verified against exact Geoapify pins',async()=>{
+ const {geoapifyAdapter}=await import('../supabase/functions/place-resolution/providers/geoapify.mjs');
+ const calls=[];
+ let redirect='https://www.google.com/maps/place/Museum/@1,2,15z/data=!3d50.83!4d4.37';
+ const result={name:'Museum',city:'Bruxelles',country_code:'be',place_id:'candidate',result_type:'amenity',
+  lat:50.83002,lon:4.37001,datasource:{sourcename:'fixture',attribution:'Synthetic'}};
+ const adapter=geoapifyAdapter({key:'fixture',config:{maxResults:5,timeoutMs:1000},
+  mapFetcher:async(url,options)=>{calls.push([url.hostname,options.redirect]);return new Response(null,{status:302,headers:{location:redirect}})},
+  fetcher:async url=>{calls.push([url.pathname,url.searchParams.get('text')]);return Response.json({results:[result,{...result,place_id:'far',lat:51}]})}
+ });
+ const short='https://maps.app.goo.gl/AbCdE';
+ const input={text:short,language:'ca',country_code:'BE'};
+ const [verified]=await adapter.search(input);
+ assert.equal(verified?.map_reference,short);
+ assert.deepEqual(calls,[['maps.app.goo.gl','manual'],['/v1/geocode/search','Museum']]);
+ redirect='https://unrelated.example/maps/place/Museum';
+ calls.length=0;
+ assert.deepEqual(await adapter.search(input),[]);
+ assert.deepEqual(calls,[['maps.app.goo.gl','manual']]);
+ calls.length=0;
+ const pin='https://www.google.com/maps/search/?api=1&query=50.83%2C4.37';
+ assert.equal((await adapter.search({...input,text:pin}))[0]?.map_reference,pin);
+ assert.deepEqual(calls,[['/v1/geocode/reverse',null]]);
+ calls.length=0;
+ assert.deepEqual(await adapter.search({...input,text:'https://www.google.com/maps/@50.83,4.37,15z'}),[]);
+ assert.deepEqual(calls,[]);
+});

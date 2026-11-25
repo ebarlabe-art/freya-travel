@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {extractActivityPoints,chooseAutomaticPoint,autoPendingPoints,samePointName,matchingPointCandidate,pointSnapshot,savedActivityPoints,ActivityPointQueue} from '../domain/itinerary-place-points.mjs';
+import {extractActivityPoints,alternativeGeographicQuery,activityPointAddress,activityPointVenue,chooseAutomaticPoint,autoPendingPoints,samePointName,matchingPointCandidate,pointSnapshot,savedActivityPoints,ActivityPointQueue} from '../domain/itinerary-place-points.mjs';
 import {normalizeGeoapify} from '../supabase/functions/place-resolution/providers/geoapify.mjs';
 import {routeProvider} from '../supabase/functions/itinerary-route/provider.mjs';
 import {departurePlan,plannedDepartureChoices} from '../domain/trip-departure.mjs';
@@ -160,4 +160,59 @@ test('a complete same-city address lookup does not append or re-query the locali
  await queue.find('Brīvības iela 1, LV-1050 Riga',context);
  await queue.find('Brīvības iela 1, LV-1050 Riga',context);
  assert.deepEqual(calls,[['Brīvības iela 1, LV-1050 Riga','LV']]);
+});
+
+test('explicit geographic evidence replaces only old automatic pending points',()=>{
+ const context={canonical_name:'Brussel·les',country_code:'BE',time_zone:'Europe/Brussels'};
+ const sample=(name,formatted,extra={})=>place(name,'amenity',{country_code:'be',city:'Ixelles - Elsene',
+  formatted,state:'Brussel·les-Capital',timezone:{name:'Europe/Brussels'},...extra});
+ const cases=[
+  [{title:'Visita al Parlamentarium'},'Parlamentarium',sample('Parlamentarium','Parlamentarium, 1050 Ixelles')],
+  [{title:'Visita oficial al Parlament Europeu. Place Luxembourg'},'Parlament Europeu',sample('Parlement européen','Parlement européen, 1047 Bruxelles')],
+  [{title:'Check in a l’Hotel VAN BELLE',notes:'Bergensesteenweg 39 Anderlecht, 1070 Brussel, Belgium'},
+   'Bergensesteenweg 39 Anderlecht, 1070 Brussel, Belgium',sample('Hotel Van Belle','Hotel Van Belle, 39 Chaussée de Mons, 1070 Anderlecht',{city:'Anderlecht'})],
+  [{title:'Sopar amb el grup',notes:'Al Restaurant Le Cercle des Voyageurs\nRue des Grands Carmes, 18'},
+   'Rue des Grands Carmes, 18',sample('Le Cercle des Voyageurs','Le Cercle des Voyageurs, 18 Rue des Grands Carmes, 1000 Bruxelles',{city:'Bruxelles'})]
+ ];
+ for(const [row,query,provider] of cases){
+  const before=structuredClone(row);
+  const [evidence]=extractActivityPoints(row);
+  assert.equal(evidence.query,query);
+  const choice=chooseAutomaticPoint(query,[provider],context,{address:activityPointAddress(row,query),venue:activityPointVenue(row)});
+  assert.equal(choice?.canonical_name,provider.canonical_name,query);
+  assert.deepEqual(row,before);
+  const old=pointSnapshot(row,[{id:'point-0',query:row.title,place:null}]);
+  if(row.title.startsWith('Check in')||row.title.includes('Place Luxembourg')){
+   assert.equal(autoPendingPoints({...row,location_points:old})?.[0].query,query);
+   old.points[0].query='My custom entrance';
+   assert.equal(autoPendingPoints({...row,location_points:old}),null);
+  }
+  if(row.notes){
+   const saved=pointSnapshot(row,[{...evidence,place:choice}],{automatic:true});
+   assert.equal(savedActivityPoints({...row,location_points:saved})[0].place.provider_place_id,provider.provider_place_id);
+   assert.equal(savedActivityPoints({...row,notes:'Other address',location_points:saved}),null);
+  }
+ }
+ const abroad=sample('Parlamentarium','Parlamentarium, 9000 Gent',{city:'Gent',state:'Oost-Vlaanderen'});
+ assert.equal(chooseAutomaticPoint('Parlamentarium',[abroad],context),null);
+ assert.equal(chooseAutomaticPoint('Parlamentarium',[cases[0][2],{...cases[0][2],provider_place_id:'far',latitude:45}],context),null);
+ assert.equal(chooseAutomaticPoint('Parlamentarium',[{...cases[0][2],timezone:'Europe/Riga'}],context),null);
+ assert.equal(alternativeGeographicQuery('Catedral de Riga'),'riga cathedral');
+ assert.equal(alternativeGeographicQuery('Museu Nacional'),'national museum');
+ assert.equal(alternativeGeographicQuery('Hotel VAN BELLE'),'');
+ const riga={canonical_name:'Riga',country_code:'LV',time_zone:'Europe/Riga'};
+ const dome=place('Rīgas Doms','amenity',{country_code:'lv',city:'Rīga',timezone:{name:'Europe/Riga'}});
+ assert.equal(chooseAutomaticPoint('Catedral de Riga',[dome],riga)?.canonical_name,'Rīgas Doms');
+ assert.equal(chooseAutomaticPoint('Catedral de Riga',[{...dome,canonical_name:'Catedral de Sant Pere'}],riga),null);
+});
+
+test('only provider-confirmed map link candidates matching the trip context can become route points',()=>{
+ const link='https://maps.app.goo.gl/CaseSensitive';
+ const row={title:'Punt de trobada',notes:'Enllaç: '+link};
+ const [evidence]=extractActivityPoints(row);
+ assert.equal(evidence.query,link);
+ const result=place('Selected entrance');
+ assert.equal(chooseAutomaticPoint(link,[result],context),null);
+ assert.ok(chooseAutomaticPoint(link,[{...result,map_reference:link}],context));
+ assert.equal(chooseAutomaticPoint(link,[{...result,map_reference:link,locality:'Roma'}],context),null);
 });

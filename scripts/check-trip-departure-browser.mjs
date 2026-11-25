@@ -32,7 +32,9 @@ const activities=[['Previous museum',-45,5,38.909,1.435],['Appointment without a
   id:id(i+2),trip_id:trip.id,title,activity_type:'visit',reservation_status:'confirmed',
   start_at:stamp(start),end_at:stamp(end),time_zone:zone,updated_at:stamp(-120),city:'Eivissa',latitude,longitude
  }));
-const firstDay=stamp(1440).slice(0,10), secondDay=stamp(2880).slice(0,10);
+const tripDate=new Intl.DateTimeFormat('sv-SE',{timeZone:zone,dateStyle:'short'});
+const firstDay=tripDate.format(new Date(stamp(1440)));
+const secondDay=tripDate.format(new Date(stamp(2880)));
 const plannedTrip={...trip,id:id(20),name:'Riga and Tallinn fixture',start_date:firstDay,end_date:secondDay};
 const plannedActivities=[
  [firstDay,'Riga museum','07:00','08:00'],[firstDay,'Riga gallery','08:20','09:30'],

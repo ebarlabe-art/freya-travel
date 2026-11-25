@@ -1,18 +1,26 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## P0 · Evidència geogràfica a B1 i B1.1 · branca v86 (25/11/2026)
+
+Sobre la v85 de la PR #268. Es recuperen les evidències literals de les notes i els noms de lloc identificables del títol. Els noms i les notes originals es conserven. L’enriquiment automàtic existent pot revisar punts pendents que coincideixen amb l’extracció anterior, amb la memòria cau i el control de versió existents. Una coincidència de nom o adreça queda limitada al país i a una àrea corroborada pel proveïdor. Els enllaços de Google Maps es resolen al mateix servei de llocs amb salts acotats i una llista de dominis tancada. Només s’aplica un punt exacte confirmat per Geoapify. El flux d’importació amb IA conserva les evidències geogràfiques literals de cada fila.
+
+**Verificació i relleu**. La resposta real de Geoapify per a Parlamentarium a Ixelles - Elsene és acceptada i la seva identitat exacta arriba a B1, B1.1 i al resolutor de rutes en una reproducció en memòria. Les respostes reals antigues per a la catedral de Riga corresponen a altres llocs i es rebutgen. Parlament Europeu, Hotel Van Belle, Le Cercle des Voyageurs i la catedral de Riga continuen pendents de confirmació positiva amb Geoapify. La Product Owner ha autoritzat fins a 12 consultes reals, limitades als quatre llocs pendents. El proxy de l’entorn ha bloquejat l’accés al banc de proves oficial de Geoapify i la configuració publicada ha denegat el permís de xarxa. S’han consumit 0 de les 12 consultes. PR #269 en esborrany, pendent de verificació real i d’autorització per publicar. L’ordre de publicació autoritzat serà actualitzar `place-resolution` i `import-itinerary` i després el frontend v86. Cap migració.
+
 ## P0 · Ubicacions automàtiques dels itineraris · PWA v85 en esborrany (25/11/2026)
 
 La validació física amb Brussel·les i Riga/Tallinn ha trobat activitats desades amb ubicacions pendents i sense punts exactes per a B1.1. En el cas reproduït, la cerca automàtica enviava l’adreça a Geoapify, però la validava com si fos el nom de l’edifici. Les files sense ciutat també es podien marcar com a comprovades abans que es construís l’agenda. Ara es compara el carrer i el número amb l’adreça retornada. El codi postal, el municipi i el país aporten la verificació geogràfica. Un fus horari registrat permet recuperar el context d’una única parada quan falta la ciutat. Es revisen els punts pendents extrets automàticament quan s’obre el viatge, amb la memòria cau i el desament amb control de versió existents.
 
 **Verificació i relleu**. Proves sintètiques d’adreces belgues, punts pendents en un viatge de dues ciutats, B1 i B1.1, amb rebuig de números diferents, centroides i coincidències distants. Es mantenen les seleccions manuals i només es persisteixen ubicacions recuperades. No s’ha executat cap escriptura sobre dades reals. PR de frontend en esborrany, pendent d’autorització. Després de publicar, obrir Brussel·les i Riga/Tallinn a l’iPhone i comprovar que les activitats inequívoces es verifiquen sense reimportar ni seleccionar ubicacions i que es poden calcular els trajectes.
 
-## P0 · Importació d’itineraris de dues taules · PWA v84 en esborrany (25/11/2026)
+## P0 · Importació d’itineraris de dues taules · PWA v84 (PR #266) (25/11/2026)
 
 Sobre la base pública v83, un PDF analitzat a l’iPhone mostrava 17 propostes noves, cap visita incorporable i l’agenda buida. En el programa sintètic de dues taules, el lector no acceptava la barra entre l’hora i el títol i el filtre geogràfic descartava la grafia «Brussel·les». Es valida el vincle hora–títol només en cel·les contigües de la mateixa fila. L’enriquiment existent pot confirmar el fus de Brussel·les. Les adreces, notes i enllaços amb evidència es mantenen. Quan manca una dada necessària, la previsualització indica l’activitat concreta i permet editar-la o excloure-la explícitament.
 
 El flux obre el selector de fitxers des del botó de l’agenda i demana consentiment abans d’enviar el fitxer al lector. La revisió mostra els dies i tres accions principals. Es mantenen la conciliació, les proteccions, la detecció de duplicats, les alternatives i la recuperació. La incorporació encara demana confirmació explícita i reutilitza l’RPC atòmica existent.
 
-**Verificació i relleu**. Cas sintètic amb 17 files, repartides 9 i 8. Proves dirigides del lector i de la conciliació, comprovació Deno, build de Pages i flux mòbil a Chromium. PR en esborrany. Validació física amb el PDF privat i publicació pendents d’autorització. En un desplegament autoritzat cal actualitzar la funció `import-itinerary` abans del frontend v84. Cap migració ni canvi de dades reals.
+**Verificació de la PR #266**. Cas sintètic inicial amb 17 files, repartides 9 i 8. Proves dirigides del lector i de la conciliació, comprovació Deno, build de Pages i flux mòbil en CI. Cap migració ni canvi de dades reals.
+
+**Seguiment del PDF privat**. La interfície simplificada s’ha comprovat físicament a l’iPhone. En aquesta prova les 17 activitats quedaven a «Dia pendent». El resolutor de dates ara interpreta el període de la capçalera general i el contrasta amb el dia de la setmana de cada taula. El cas sintètic reprodueix l’any només a la capçalera general i comprova 10 activitats l’1 de desembre i 7 el dia 2, amb hores, adreces, notes i confirmació conservades. També es comproven els cinc idiomes i el rebuig dels dies contradictoris. La Product Owner ha confirmat la validació física. La correcció de la PR #267 s’integra a la branca v86 i queda pendent d’autorització per publicar.
 
 ## B1 · Temps per arribar i logística immediata · v82 a `main` (PR #264) (25/11/2026)
 
