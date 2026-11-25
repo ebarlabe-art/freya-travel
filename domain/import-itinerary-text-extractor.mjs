@@ -3,11 +3,24 @@ import {normalizeItineraryImportProposal} from './import-itinerary-proposal.mjs'
 // A2.6: deterministic text-to-proposal extractor, no storage or network access.
 // Input pages must already contain extracted text with trustworthy page numbers.
 const CALENDAR=/^(?:dia|día|day)\s*\d{1,3}\s*(?:[-:·.–—]\s*|\s+)?/i;
-const WEEKDAY=/^(?:(?:dilluns|dimarts|dimecres|dijous|divendres|dissabte|diumenge|lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*,?\s+)/i;
+const WEEKDAYS=[
+ 'diumenge domingo sunday dimanche domenica','dilluns lunes monday lundi lunedì',
+ 'dimarts martes tuesday mardi martedì','dimecres miércoles miercoles wednesday mercredi mercoledì',
+ 'dijous jueves thursday jeudi giovedì','divendres viernes friday vendredi venerdì',
+ 'dissabte sábado sabado saturday samedi sabato'
+].map(group=>group.split(' '));
+const WEEKDAY=new RegExp('^('+WEEKDAYS.flat().join('|')+'),?\\s+','i');
+const DAY_FIRST_WEEKDAY=new RegExp('^(\\d{1,2})\\s+('+WEEKDAYS.flat().join('|')+')$','i');
+const DAY_NUMBER='(\\d{1,2})(?:er|[º°]|st|nd|rd|th)?';
 const DATE_PREFIX=/^(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{4})(?!\d)/;
 const PARTIAL_DATE=/^\d{1,2}[/.]\d{1,2}(?![/.]\d)/;
-const MONTH_DATE=/^(\d{1,2})\s+(?:(?:de\s+)|d['’])?([a-zà-ÿ]+)\s+(?:de\s+)?(\d{4})(?!\d)/i;
-const DAY_MONTH=/^(\d{1,2})\s+(?:(?:de\s+)|d['’])?([a-zà-ÿ]+)\b/i;
+const DAY_MONTH=new RegExp('^'+DAY_NUMBER+"\\s+(?:(?:de\\s+)|d['’])?([a-zà-ÿ]+)\\b",'i');
+const MONTH_DAY=new RegExp('^([a-zà-ÿ]+)\\s+'+DAY_NUMBER+'(?![\\d.:/])','i');
+const NAMED_YEAR=/^,?\s+(?:de\s+)?(\d{4})(?!\d)/i;
+const PERIOD_JOIN='([-–—]|\\s+(?:al|a|to|au|i|y|and|et|e)\\s+)';
+const LIST_JOIN=/^(?:i|y|and|et|e)$/i;
+const SHARED_MONTH_PERIOD=new RegExp('(?:^|[\\s,])'+DAY_NUMBER+'\\s*'+PERIOD_JOIN+'\\s*'+DAY_NUMBER+"\\s+(?:(?:de\\s+)|d['’])?([a-zà-ÿ]+)\\s+(?:de\\s+)?((?:19|20)\\d{2})\\b",'i');
+const MONTH_FIRST_PERIOD=new RegExp('(?:^|[\\s,])([a-zà-ÿ]+)\\s+'+DAY_NUMBER+'\\s*'+PERIOD_JOIN+'\\s*'+DAY_NUMBER+',?\\s+((?:19|20)\\d{2})\\b','i');
 const TZ_RE=/(?:\bTZ\b|\btime\s*zone\b|\btimezone\b|\bzona\s+hor[aà]ria\b|\bhora\s+local\b|\blocal\s+time\b)\s*[:=]?\s*([A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?)/i;
 const TIME='((?:[01]?\\d|2[0-3])[:.h][0-5]\\d)';
 const CLOCK=new RegExp('^'+TIME+'(?:\\s*h\\b)?(?:\\s*(?:-|–|—|a|to)\\s*'+TIME+'(?:\\s*h\\b)?)?\\s*(?:[-–—:·|｜]\\s*)?(.+)$','i');
@@ -18,18 +31,18 @@ const ADMIN=/^(?:(?:reserva|booking|reference|refer[eè]ncia|localitzador|confir
 const HEADER=/^(?:(?:itinerari|itinerary|programa|planning|pla de viatge|ruta|destinaci[oó])(?:\s+.{0,80})?)$/i;
 const EXPLICIT_PLACE=/^(lloc|ubicaci[oó]|localitzaci[oó]|place|location|venue|adre[cç]a|address|ciutat|city)\s*[:：]\s*(.*)$/i;
 const MONTHS={
- gener:1,enero:1,january:1,jan:1,
- febrer:2,febrero:2,february:2,feb:2,
- març:3,marc:3,marzo:3,march:3,mar:3,
- abril:4,april:4,abr:4,apr:4,
- maig:5,mayo:5,may:5,
- juny:6,junio:6,june:6,jun:6,
- juliol:7,julio:7,july:7,jul:7,
- agost:8,agosto:8,august:8,ago:8,aug:8,
- setembre:9,septiembre:9,september:9,sept:9,sep:9,
- octubre:10,october:10,oct:10,
+ gener:1,enero:1,january:1,jan:1,janvier:1,gennaio:1,
+ febrer:2,febrero:2,february:2,feb:2,fevrier:2,febbraio:2,
+ març:3,marc:3,marzo:3,march:3,mar:3,mars:3,
+ abril:4,april:4,abr:4,apr:4,avril:4,aprile:4,
+ maig:5,mayo:5,may:5,mai:5,maggio:5,
+ juny:6,junio:6,june:6,jun:6,juin:6,giugno:6,
+ juliol:7,julio:7,july:7,jul:7,juillet:7,luglio:7,
+ agost:8,agosto:8,august:8,ago:8,aug:8,aout:8,
+ setembre:9,septiembre:9,september:9,sept:9,sep:9,septembre:9,settembre:9,
+ octubre:10,october:10,oct:10,octobre:10,ottobre:10,
  novembre:11,noviembre:11,november:11,nov:11,
- desembre:12,diciembre:12,december:12,des:12,dec:12,dic:12
+ desembre:12,diciembre:12,december:12,des:12,dec:12,dic:12,decembre:12,dicembre:12
 };
 
 function fail(message,code='invalid_itinerary_text'){
@@ -38,7 +51,7 @@ function fail(message,code='invalid_itinerary_text'){
 const stripAccents=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 function calendarDate(year,month,day){
  const y=Number(year),m=Number(month),d=Number(day);
- if(!Number.isInteger(y)||y<1900||y>2100||m<1||m>12||d<1||d>31)return null;
+ if(![y,m,d].every(Number.isInteger)||y<1900||y>2100||m<1||m>12||d<1||d>31)return null;
  if(new Date(Date.UTC(y,m,0)).getUTCDate()<d)return null;
  return String(y).padStart(4,'0')+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
 }
@@ -52,19 +65,17 @@ function readDatePrefix(input,yearHint=null){
    :calendarDate(parts[2],parts[1],parts[0]);
   return {date,token,rest:clean.slice(numeric[0].length).trim()};
  }
- const word=clean.match(MONTH_DATE);
- if(word){
-  const month=MONTHS[stripAccents(word[2])];
-  if(month){
-   return {date:calendarDate(word[3],month,word[1]),token:word[0],
-    rest:clean.slice(word[0].length).trim()};
-  }
- }
- const short=clean.match(DAY_MONTH);
- if(short&&yearHint?.year){
-  const month=MONTHS[stripAccents(short[2])];
-  if(month)return {date:calendarDate(yearHint.year,month,short[1]),token:short[0],
-   rest:clean.slice(short[0].length).trim(),confidence:'medium',yearEvidence:yearHint.evidence};
+ const dayFirst=clean.match(DAY_MONTH),monthFirst=dayFirst?null:clean.match(MONTH_DAY);
+ const named=dayFirst||monthFirst;
+ if(named){
+  const month=MONTHS[stripAccents(named[dayFirst?2:1])];
+  const day=named[dayFirst?1:2];
+  const right=clean.slice(named[0].length);
+  const explicit=right.match(NAMED_YEAR);
+  if(month&&explicit) return {date:calendarDate(explicit[1],month,day),
+   rest:right.slice(explicit[0].length).trim()};
+  if(month&&yearHint?.year)return {date:calendarDate(yearHint.year,month,day),
+   rest:right.trim(),confidence:'medium',yearEvidence:yearHint.evidence};
  }
  return null;
 }
@@ -72,36 +83,53 @@ function readDatePrefix(input,yearHint=null){
 export function itineraryDocumentPeriod(pages){
  const found=new Map();
  for(const {page,text} of pages)for(const line of text.split('\n')){
-  const same=line.match(/(?:^|\s)(\d{1,2})\s*(?:-|–|—|al|a|to)\s*(\d{1,2})\s+(?:de\s+)?([a-zà-ÿ]+)\s+(?:de\s+)?(20\d{2}|19\d{2})\b/i);
+  const same=line.match(SHARED_MONTH_PERIOD),monthFirst=line.match(MONTH_FIRST_PERIOD);
   const numeric=line.match(/(\d{1,2}[./]\d{1,2}[./]\d{4})\s*[-–—]\s*(\d{1,2}[./]\d{1,2}[./]\d{4})/);
   const words=line.match(/(\d{1,2}\s+(?:de\s+)?[a-zà-ÿ]+\s+(?:de\s+)?\d{4})\s*[-–—]\s*(\d{1,2}\s+(?:de\s+)?[a-zà-ÿ]+\s+(?:de\s+)?\d{4})/i);
-  let start,end;
+  let start,end,join;
   if(numeric||words){const m=numeric||words;start=readDatePrefix(m[1])?.date;end=readDatePrefix(m[2])?.date;}
-  else if(same){const month=MONTHS[stripAccents(same[3])];start=calendarDate(same[4],month,same[1]);end=calendarDate(same[4],month,same[2]);}
-  if(start&&end&&start<=end&&Date.parse(end)-Date.parse(start)<=366*86400000)
-   found.set(start+'|'+end,{start,end,year:start.slice(0,4)===end.slice(0,4)?start.slice(0,4):null,evidence:line,page});
+  else if(same||monthFirst){
+   const [,first,connector,last,month,year]=same||[null,monthFirst[2],monthFirst[3],monthFirst[4],monthFirst[1],monthFirst[5]];
+   const number=MONTHS[stripAccents(month)];
+   start=calendarDate(year,number,first);end=calendarDate(year,number,last);join=connector.trim();
+  }
+  if(start&&end&&start<=end&&Date.parse(end)-Date.parse(start)<=366*86400000){
+   const days=LIST_JOIN.test(join||'')?[start,end]:null,key=start+'|'+end;
+   if(days||!found.has(key))found.set(key,{start,end,days,year:start.slice(0,4)===end.slice(0,4)?start.slice(0,4):null,evidence:line,page});
+  }
  }
  return found.size===1?[...found.values()][0]:null;
 }
+function matchesWeekday(date,weekday){
+ return !weekday||WEEKDAYS[new Date(date+'T00:00:00Z').getUTCDay()]?.includes(weekday.toLowerCase());
+}
+function inDocumentPeriod(date,period){
+ return !period||(date>=period.start&&date<=period.end&&(!period.days||period.days.includes(date)));
+}
 export function resolveItineraryDateHeading(heading,pages){
- const period=itineraryDocumentPeriod(pages),yearHint=documentYearHint(pages)||period;
- const label=heading.trim().split(/\s*[|]\s*/)[0];
- const clean=label.replace(CALENDAR,'').replace(WEEKDAY,'');
+ const period=itineraryDocumentPeriod(pages),yearHint=period||documentYearHint(pages);
+ const label=heading.trim().split(/\s*[|]\s*/)[0].replace(CALENDAR,'');
+ const leadingWeekday=label.match(WEEKDAY)?.[1];
+ const clean=label.replace(WEEKDAY,'');
  const full=readDatePrefix(clean,yearHint);
- if(full?.date)return {date:full.date,evidence:heading,page:null,context:full.yearEvidence?yearHint:null};
+ if(full){
+  if(!full.date||!matchesWeekday(full.date,leadingWeekday)||
+   (full.yearEvidence&&!inDocumentPeriod(full.date,period)))return null;
+  return {date:full.date,evidence:heading,page:null,context:full.yearEvidence?yearHint:null};
+ }
  if(!period)return null;
- const weekdays=['diumenge domingo sunday','dilluns lunes monday','dimarts martes tuesday','dimecres miercoles wednesday','dijous jueves thursday','divendres viernes friday','dissabte sabado saturday'];
- const normalized=stripAccents(label).replace(/[,·]/g,' ').trim();
- const dayFirst=normalized.match(/^(\d{1,2})\s+([a-z]+)$/),weekdayFirst=normalized.match(/^([a-z]+)\s+(\d{1,2})$/);
- const short=dayFirst||weekdayFirst?null:clean.match(DAY_MONTH);
- const weekday=dayFirst?.[2]||weekdayFirst?.[1]||stripAccents(label.match(WEEKDAY)?.[0]||'').trim();
- const day=Number(dayFirst?.[1]||weekdayFirst?.[2]||short?.[1]);
- const month=short?MONTHS[stripAccents(short[2])]:null;
- if(!day||!weekdays.some(w=>w.split(' ').includes(weekday))||(short&&!month))return null;
+ const dayFirst=label.match(DAY_FIRST_WEEKDAY);
+ const short=dayFirst?null:clean.match(DAY_MONTH),monthFirst=clean.match(MONTH_DAY);
+ const weekday=dayFirst?.[2]||leadingWeekday;
+ const day=Number(dayFirst?.[1]||short?.[1]||monthFirst?.[2]||(/^\d{1,2}$/.test(clean)?clean:null));
+ const monthToken=short?.[2]||monthFirst?.[1];
+ const month=monthToken?MONTHS[stripAccents(monthToken)]:null;
+ if(!day||!weekday||(monthToken&&!month))return null;
  const matches=[];
  for(let ms=Date.parse(period.start);ms<=Date.parse(period.end);ms+=86400000){
-  const date=new Date(ms);
-  if(date.getUTCDate()===day&&(!month||date.getUTCMonth()+1===month)&&weekdays[date.getUTCDay()].split(' ').includes(weekday))matches.push(date.toISOString().slice(0,10));
+  const date=new Date(ms),iso=date.toISOString().slice(0,10);
+  if(date.getUTCDate()===day&&(!month||date.getUTCMonth()+1===month)&&
+   matchesWeekday(iso,weekday)&&inDocumentPeriod(iso,period))matches.push(iso);
  }
  return matches.length===1?{date:matches[0],evidence:heading,page:null,context:period}:null;
 }
@@ -238,7 +266,7 @@ function joinWrappedActivityRows(records){
     const previous=record.raw.trim();
     const following=records[i+1].raw.trim();
     if(!following||following.length>300||
-      CLOCK.test(following)||DATE_PREFIX.test(following)||MONTH_DATE.test(following)||
+      CLOCK.test(following)||readDatePrefix(following)||
       WEEKDAY.test(following)||CALENDAR.test(following)||
       /^(?:NO\s|ATENCI[OÓ]|IMPORTANT|NOTA\b|La pista\b|Els hotels\b|Planificar\b)/i.test(following)||
       ADMIN.test(following))break;
@@ -260,7 +288,8 @@ function joinWrappedActivityRows(records){
  return result;
 }
 export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'}){
- const pages=normalizePages(rawPages),candidates=[],warnings=new Set(),yearHint=documentYearHint(pages)||itineraryDocumentPeriod(pages);
+ const pages=normalizePages(rawPages),candidates=[],warnings=new Set();
+ const period=itineraryDocumentPeriod(pages),yearHint=period||documentYearHint(pages);
  let current=null,documentZone=null,pendingDaypart=null,unparsed=0,invalidDate=false;
  for(const {page,text} of pages){
   // A field belongs only to the immediately preceding activity on this page.
@@ -292,7 +321,9 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
    // Day labels often precede a weekday: "DIA 1 · Diumenge 27/12/2026".
    if(dayMarker)work=work.replace(CALENDAR,'').replace(WEEKDAY,'').trim();
    const contextual=resolveItineraryDateHeading(line,pages);
-   const datePart=readDatePrefix(work,yearHint)||(contextual?{date:contextual.date,rest:'',context:contextual.context}:null);
+   const prefix=readDatePrefix(work,yearHint);
+   const weekday=line.replace(CALENDAR,'').match(WEEKDAY)?.[1];
+   const datePart=prefix||(contextual?{date:contextual.date,rest:'',context:contextual.context}:null);
    const tz=explicitZone(line,page);
    if(tz?.invalid){
     documentZone=null;
@@ -305,16 +336,17 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     continue;
    }
    if(datePart){
-    if(!datePart.date){
+    if(!datePart.date||!matchesWeekday(datePart.date,weekday)||
+      (datePart.yearEvidence&&!inDocumentPeriod(datePart.date,period))){
      current=null;pendingDaypart=null;
      invalidDate=true;
-     warnings.add('Hi ha una data impossible: no s’ha assignat a cap activitat.');
+     warnings.add('Hi ha una data impossible o contradictòria: no s’ha assignat a cap activitat.');
      continue;
     }
     // Keep the explicit date as the active day for subsequent entries, even if
     // the heading also includes the first activity of that day.
     pendingDaypart=null;
-    current={context:datePart.context,date:datePart.date,evidence:datePart.yearEvidence?line+' | Any explícit al document: '+datePart.yearEvidence:line,page,confidence:datePart.confidence||'high',zone:tz&&!tz.invalid?tz:documentZone};
+    current={context:datePart.context||(datePart.yearEvidence?yearHint:null),date:datePart.date,evidence:datePart.yearEvidence?line+' | Any explícit al document: '+datePart.yearEvidence:line,page,confidence:datePart.confidence||'high',zone:tz&&!tz.invalid?tz:documentZone};
     const tail=datePart.rest.replace(/^(?:[-–—·|]\s*)/,'');
     const inline=readItem(tail,false);
     if(inline){
@@ -326,7 +358,7 @@ export function extractItineraryProposalFromPages(rawPages,source={kind:'manual'
     if(candidates.length>200)fail('Massa activitats al document.','itinerary_import_too_many_items');
     continue;
    }
-   if(/^(?:\d{1,2}\s+(?:dilluns|dimarts|dimecres|dijous|divendres|dissabte|diumenge|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|monday|tuesday|wednesday|thursday|friday|saturday|sunday))$/i.test(line)||(WEEKDAY.test(line)&&/^\d{1,2}(?:\s|$)/.test(work))){
+   if(DAY_FIRST_WEEKDAY.test(line)||(weekday&&(/^[0-9]/.test(work)||MONTH_DAY.test(work)))){
     current=null;pendingDaypart=null;warnings.add('Capçalera de dia ambigua: no s’ha reutilitzat la data anterior.');continue;
    }
    if((!CLOCK.test(line)&&PARTIAL_DATE.test(work))||/^(?:dia|día|day)\s*\d{1,3}\s*$/.test(line)){
