@@ -1,6 +1,16 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
-## UX-01 · Convergència visual dels viatges · v81 preparada en branca (25/11/2026)
+## B1 · Temps per arribar i logística immediata · v82 preparada en branca (25/11/2026)
+
+El bloc del tauler Ara i Següent selecciona una visita amb hora exacta i punt d’arribada verificable. Calcula per petició des de la ubicació puntual del dispositiu, de l’activitat anterior, d’un lloc desat o d’una adreça seleccionada mitjançant la cerca existent. Indica quan l’origen és una hipòtesi. Si s’escull l’activitat anterior, compta el marge a partir del seu final programat quan encara no ha acabat. Mostra la durada estimada, la sortida recomanada amb la zona horària local, el marge restant i els avisos. El marge de 10 minuts per defecte és l’única preferència que es desa al dispositiu. Les dades dels resultats viuen en memòria mentre la targeta és activa. La ubicació del dispositiu i els punts cercats puntualment no es desen a la memòria cau de rutes del servidor.
+
+**Serveis i límits**. Geolocalització web amb permís puntual, Geoapify Routing i OpenStreetMap a través de la funció existent `itinerary-route`, més la cerca d’adreces de `place-resolution` i l’enllaç existent de Google Maps. A peu, en vehicle i en transport públic quan el proveïdor hi troba ruta. El servei no proporciona trànsit, esperes ni horaris en viu en aquest flux. Cap contracte de pagament nou. Cada càlcul explícit consumeix quota del projecte existent. Geoapify anuncia 3.000 crèdits diaris al pla gratuït i indica que una petició simple acostuma a costar un crèdit. La quota real del projecte no s’ha comprovat. [Geoapify Routing](https://apidocs.geoapify.com/docs/routing/) · [Tarifes](https://www.geoapify.com/pricing/)
+
+**Verificació**. Proves enfocades de càlcul, canvi d’hora, permisos, registres del mateix viatge i respostes insuficients. Comprovació de l’Edge Function amb Deno i compilació i paritat de Pages. A Chromium mòbil de 390 px, amb respostes controlades, s’han validat la selecció de la visita, l’entrada vinculada, GPS denegat i concedit, origen desat i cercat, modes, marge i falta de connexió. La prova física i una consulta real al proveïdor queden pendents. El tauler històric de Londres conserva la seva experiència estàtica.
+
+**Relleu**. Branca `feat/b1-trip-departure-v82` i PR en esborrany al repositori original. Amb autorització expressa, publicar primer l’actualització compatible de l’Edge Function `itinerary-route` i després fusionar la PR del frontend, que activa GitHub Pages. Cap migració ni canvi de dades. Verificar una ruta real i el flux a l’iPhone després de publicar.
+
+## UX-01 · Convergència visual dels viatges · CLOSED (25/11/2026)
 
 Els taulers genèrics adopten el mosaic de Londres. Tots dos utilitzen els mateixos estils de targeta, amb icona, títol i subtítol. Es mantenen els comptadors i els estats que ja calcula cada mòdul. A 390 px hi ha dues columnes. A 320 px, el tauler genèric passa a una columna. En escriptori, les peces i eines genèriques poden mostrar-ne tres. Londres conserva la seva distribució i els seus accessos.
 
@@ -8,7 +18,7 @@ La preparació agrupa el Builder i els Consells de Freya quan estan disponibles.
 
 **Verificació**. Captures revisades en Chromium a 390 i 1280 px amb Londres, Riga i Tallinn en preparació i Eivissa en curs i passat. S’han comprovat la versió de 320 px i els accessos i retorns des d’itinerari, llista de tasques i Travel Book. S’ha verificat l’accés a viatgers i configuració, i l’ocultació de configuració per als participants. Les proves de navegador fan servir viatges de prova en el paquet de Pages local. L’A5 ja té la seva validació física independent.
 
-**Relleu**. PR en esborrany des de `feat/ux-01-trip-dashboard-v81`. Revisar la CI i validar UX-01. La fusió i la publicació de v81 requereixen autorització expressa. Després, continuar amb B1, temps per arribar i logística immediata.
+**Tancament**. La PR #263 consta fusionada a `main` (`b654f52`). GitHub Pages va confirmar la publicació de la v81. La Product Owner confirma la validació física a l’iPhone i l’aprovació. [Desplegament](https://github.com/ebarlabe-art/freya-travel/actions/runs/45513696363)
 
 ## A5 · Moneda i canvi de divisa · v80 publicada i validada físicament a l’iPhone (25/11/2026)
 

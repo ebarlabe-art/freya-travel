@@ -37,6 +37,7 @@ test('workflow retains every existing browser invocation on an independent requi
  expected.push('TRAVEL_BOOK_ENGINE=webkit TRAVEL_BOOK_SAVE_ONLY=1 node scripts/check-travel-book-runtime-browser.mjs');
  expected.push('node scripts/check-trip-currency-browser.mjs');
  expected.push('node scripts/check-trip-dashboard-browser.mjs');
+ expected.push('node scripts/check-trip-departure-browser.mjs');
  assert.deepEqual(commands(current),expected.sort());
  const browser=current.split('  browser-tests:')[1].split('  legacy-suite:')[0];
  assert.match(browser,/fail-fast: false/);assert.match(browser,/engine: \[chromium, webkit\]/);assert.doesNotMatch(browser,/continue-on-error:|needs:/);

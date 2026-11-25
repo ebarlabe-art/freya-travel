@@ -5,6 +5,8 @@ const ref=r=>r&&['manual','activity'].includes(r.type)&&uuid.test(r.id)&&typeof 
 const draftRef=r=>r&&Object.keys(r).length===1&&r.draft&&typeof r.draft==='object'&&!Array.isArray(r.draft)&&
  Object.keys(r.draft).every(k=>['title','location_name','address','city'].includes(k))&&
  ['title','location_name','address','city'].every(k=>typeof r.draft[k]==='string'&&r.draft[k].length<=(k==='address'?500:200))&&r.draft.title.trim().length>0;
+const coordinateOrigin=r=>['device','selected'].includes(r?.type)&&Object.keys(r).length===3&&
+ Number.isFinite(r.latitude)&&Math.abs(r.latitude)<=90&&Number.isFinite(r.longitude)&&Math.abs(r.longitude)<=180;
 export function createRouteHandler({authenticate,readTrip,readItem,readStops,provider,now=Date.now,maxPerMinute=20}){
  const budgets=new Map();
  const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info'}});
@@ -15,16 +17,25 @@ export function createRouteHandler({authenticate,readTrip,readItem,readStops,pro
    const text=await req.text();if(text.length>4096)return reply({error:'invalid_request'},400);
    let input;try{input=JSON.parse(text)}catch{return reply({error:'invalid_request'},400)}
    const internal=input?.kind==='internal',draft=input?.kind==='draft';
+   const departure=input?.kind==='departure';
+   const useCoordinates=departure&&coordinateOrigin(input.origin);
    const endpoint=r=>ref(r)||(draft&&draftRef(r));
    if(!uuid.test(input?.trip_id)||!['walk','drive','transit'].includes(input.mode)||
       (internal?(!ref(input.item)||!Number.isInteger(input.from_index)||input.from_index<0||input.from_index>=11||input.to_index!==input.from_index+1):
-       (!endpoint(input.origin)||!endpoint(input.destination))))return reply({error:'invalid_request'},400);
+       ((!useCoordinates&&!endpoint(input.origin))||!endpoint(input.destination))))return reply({error:'invalid_request'},400);
    // Revalidate membership even on cached routes. All reads use the caller's JWT/RLS.
    if(!await readTrip(auth,input.trip_id))return reply({error:'unavailable'},403);
    const read=r=>draft&&draftRef(r)?Promise.resolve({...r.draft,trip_id:input.trip_id}):readItem(auth,input.trip_id,r);
-   const [a,b,stops]=await Promise.all([read(internal?input.item:input.origin),internal?Promise.resolve(null):read(input.destination),internal?Promise.resolve([]):readStops(auth,input.trip_id)]);
-   if(!a||(!internal&&!b)||[a,b].filter(Boolean).some(r=>r.trip_id!==input.trip_id||r.status==='cancelled'||r.reservation_status==='cancelled'||['transport','transport_activity'].includes(r.activity_type)))return reply({error:'unavailable'},403);
-   if((!draftRef(internal?input.item:input.origin)&&a.updated_at!==(internal?input.item.updated_at:input.origin.updated_at))||(!internal&&!draftRef(input.destination)&&b.updated_at!==input.destination.updated_at))return reply({error:'stale_record'},409);
+   const originRef=internal?input.item:input.origin;
+   const [a,b,stops]=await Promise.all([
+    useCoordinates?null:read(originRef),
+    internal?null:read(input.destination),
+    internal?[]:readStops(auth,input.trip_id)
+   ]);
+   if((!useCoordinates&&!a)||(!internal&&!b)||[a,b].filter(Boolean).some(r=>r.trip_id!==input.trip_id||r.status==='cancelled'||r.reservation_status==='cancelled'||['transport','transport_activity'].includes(r.activity_type)))return reply({error:'unavailable'},403);
+   const stale=(row,record)=>!draftRef(record)&&row.updated_at!==record.updated_at;
+   if((!useCoordinates&&stale(a,originRef))||(!internal&&stale(b,input.destination)))return reply({error:'stale_record'},409);
+   if(departure&&b.status==='completed')return reply({error:'stale_record'},409);
    for(const choice of Object.values(input.choices||{}))if(typeof choice!=='string'||choice.length>500)return reply({error:'invalid_request'},400);
    const minute=Math.floor(now()/60000),budget=budgets.get(user);const used=budget?.minute===minute?budget.used:0;
    if(used>=maxPerMinute)return reply({error:'rate_limited'},429);
@@ -43,12 +54,17 @@ export function createRouteHandler({authenticate,readTrip,readItem,readStops,pro
     origin=makeEndpoint(input.from_index);
     destination=makeEndpoint(input.to_index);
    }else{
-    origin=await provider.resolve(a,destinationContext(a,stops),input.choices?.origin,'last');
+    origin=useCoordinates?{point:{id:input.origin.type,label:'',lat:input.origin.latitude,lon:input.origin.longitude}}:
+     await provider.resolve(a,destinationContext(a,stops),input.choices?.origin,'last');
     destination=await provider.resolve(b,destinationContext(b,stops),input.choices?.destination,'first');
+   }
+   if(departure){
+    if(origin.point?.approximate)origin={error:'approximate_place'};
+    if(destination.point?.approximate)destination={error:'approximate_place'};
    }
    const safe=result=>result.point?{label:result.point.label,...(result.point.approximate?{approximate:true}:{})}:result;
    if(!origin.point||!destination.point)return reply({status:'insufficient',origin:safe(origin),destination:safe(destination)});
-   const route=await provider.route(origin.point,destination.point,input.mode);
+   const route=await provider.route(origin.point,destination.point,input.mode,{cache:!useCoordinates});
    if(origin.point.approximate||destination.point.approximate)route.quality=(route.quality||'Ruta calculada.')+' El punt de la població és aproximat: comprova el punt d’arribada abans de sortir.';
    return reply({status:'ready',origin:safe(origin),destination:safe(destination),route});
   }catch(e){

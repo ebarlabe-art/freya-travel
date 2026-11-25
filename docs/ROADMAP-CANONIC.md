@@ -238,7 +238,7 @@ Capa d'ajuda contextual abans i durant el viatge, **no** un calaix genèric de �
 
 ### UX-01. Convergència visual dels viatges
 
-**Estat** · PWA v81 preparada en esborrany. Fusió i publicació pendents d’autorització.
+**Estat** · CLOSED. PWA v81 publicada (PR #263), validada físicament a l’iPhone i aprovada per la Product Owner.
 
 El mosaic de Londres és el patró visual del tauler dels viatges. Es comparteixen les targetes amb icona, títol, subtítol i indicadors existents. Els taulers genèrics mostren dues columnes en mòbil quan hi ha espai i fins a tres a l’escriptori en les seccions amb més targetes. El contingut i els accessos continuen responent al tipus de viatge i a la fase. Els textos del mosaic segueixen els cinc idiomes d’A4.2.
 
@@ -253,15 +253,13 @@ Validació de Londres, Riga i Tallinn i Eivissa a 390 i 1280 px, amb comprovaci�
 La base DURANT ja és funcional. Aquesta fase és de completar, no de reconstruir.
 
 ### B1. Temps per arribar / logística immediata
-**Prioritat: P1**
+**Prioritat: P1 · PWA v82 en esborrany, publicació pendent d’autorització**
 
-Completar el concepte original del Mode Viatge:
-- “surts en X minuts”;
-- temps estimat fins al següent punt;
-- accés directe a la ruta;
-- advertiment si el marge és insuficient.
+Ara i Següent mostra una estimació per a la propera visita amb hora concreta i punt d’arribada verificable. L’origen pot ser la ubicació puntual del dispositiu, l’activitat anterior, un lloc desat o una adreça triada explícitament. El marge de seguretat és de 10 minuts per defecte. Freya mostra la durada, l’hora local recomanada de sortida, el marge restant, un avís i els accessos a la ruta i als documents vinculats.
 
-No convertir Freya en Google Maps: integrar/derivar només la informació necessària.
+Es reutilitzen les funcions `itinerary-route` i `place-resolution` i Geoapify. Hi ha opcions a peu, en vehicle o en transport públic segons cobertura. Els temps són estimacions, amb el trànsit i els horaris en directe fora de l’abast. El bloc conserva l’agenda visible quan un punt és ambigu, la ubicació es denega o la connexió falla. La ubicació puntual es consulta només a petició de l’usuari.
+
+**Seqüència pendent d’autorització**. Publicar primer la versió compatible de la funció `itinerary-route` i després el frontend v82. Validar el resultat amb el servei real i a l’iPhone. Cap migració ni pla de pagament nou.
 
 ### B2. Revisió E2E DURANT
 **Prioritat: P0 abans de publicació**
@@ -534,4 +532,4 @@ No es crea un roadmap paral·lel.
 
 > **A3 · Participants.** El 24/11/2026, la prova física d'un PDF idèntic al de Barcelona ha comparat 6 activitats amb 6 existents, sense canvis pendents ni escriptures. Això valida la reimportació sense duplicats en aquest cas, però no acredita per si sol totes les variants d'A2.
 
-**A3 tancat i publicat** (PR #258; prova real de dos participants). **A4.1 validada a l’iPhone.** L’A4.2 (v79) és a `main` amb el nom i la interfície dels Consells de Freya localitzats. L’A5 (v80, PR #262) està publicada, validada físicament a l’iPhone i tancada. La següent entrega és UX-01 (v81). Després de validar-la, reprendre B1.
+**A3 tancat i publicat** (PR #258; prova real de dos participants). **A4.1 validada a l’iPhone.** L’A4.2 (v79) és a `main` amb el nom i la interfície dels Consells de Freya localitzats. L’A5 (v80, PR #262) està publicada, validada físicament a l’iPhone i tancada. UX-01 (v81, PR #263) està publicada, aprovada i tancada després de la prova física. B1 (v82) és la següent entrega i està preparada en esborrany.

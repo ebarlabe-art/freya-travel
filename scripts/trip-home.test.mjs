@@ -158,7 +158,7 @@ function renderHarness(items,options={}){
   const sandbox=vm.createContext({
     Intl,Date:Clock,URL,Map,console,
     trip:options.trip||trip,session:{user:{id:'u1'}},tripLoadGeneration:1,
-    $:element,isLondonTrip:()=>options.london||false,
+    $:id=>id==='tripDepartureSlot'?null:element(id),isLondonTrip:()=>options.london||false,
     connectionUnavailable:()=>false,
     itinerarySourcesAreReady:()=>options.ready!==false,
     normalizedItineraryProjection:()=>items,
