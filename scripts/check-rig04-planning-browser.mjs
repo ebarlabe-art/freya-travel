@@ -105,7 +105,8 @@ try{
   const counts=await page.evaluate(()=>({keep:itineraryImportState.reconciliation.decisions.filter(x=>x.action==='keep').length,add:itineraryImportState.reconciliation.decisions.filter(x=>x.action==='add').length}));
   assert.deepEqual(counts,mode==='existing'?{keep:1,add:2}:{keep:0,add:3});
   assert.match(await page.locator('[data-planning-summary]').textContent(),/incompatibilitats/);
-  await page.locator('[data-planning-accept]').first().tap();
+  await page.locator('#itineraryImportPlanTitle').tap();
+  await page.locator('#itineraryPlanningReport [data-planning-accept]').first().tap();
   assert.notEqual(await page.evaluate(()=>JSON.stringify(itineraryImportState.review)),before);
   assert.equal(await page.evaluate(()=>JSON.stringify(fixture.existing)===fixture.before&&JSON.stringify(itineraryProjection)===fixture.agenda),true);
   assert.equal(await page.evaluate(()=>fixture.writes),0);assert.match(await page.locator('#itineraryImportSaveStatus').innerText(),/només a l’esborrany/);

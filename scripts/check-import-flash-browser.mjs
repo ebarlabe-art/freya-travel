@@ -66,6 +66,7 @@ try{
    await page.locator('[data-flash-action="keep"]').tap();
    await page.locator('[data-flash-action="later"]').tap();assert.equal(await page.locator('#itineraryImportFlash').isVisible(),false);
    assert.equal(await page.locator('#itineraryImportWrite').isDisabled(),true);
+   await page.locator('#itineraryImportPlanTitle').tap();
    await page.locator('[data-flash-resume]').tap();assert.equal(await page.locator('[data-flash-order]').getAttribute('data-flash-order'),'1');
    await page.locator('[data-flash-action="keep"]').tap();
    if(mode==='existing'){

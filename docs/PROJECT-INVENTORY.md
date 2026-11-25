@@ -24,7 +24,7 @@ A Itinerari, la targeta de B1 s’adapta al dia futur seleccionat. L’origen po
 
 **Verificació**. Càlcul d’horaris i canvi d’hora verificats amb proves unitàries. A Chromium de 390 px, amb dades simulades, s’han comprovat el canvi de dia sense peticions automàtiques, el conflicte d’horaris, l’ajust del marge, l’allotjament, l’origen cercat i la continuïtat de B1.
 
-**Relleu**. Única PR v83, pendent d’autorització. Validació física amb el viatge real de Riga i Tallinn amb les seves dates actuals. Després de validar, reprendre B2.
+**Relleu**. PWA v83 publicada. Validació física amb el viatge real de Riga i Tallinn amb les seves dates actuals. Després de validar, reprendre B2.
 
 ## UX-01 · Convergència visual dels viatges · CLOSED (25/11/2026)
 

@@ -264,7 +264,7 @@ Es reutilitzen les funcions `itinerary-route` i `place-resolution` i Geoapify. H
 La v82 va introduir el contracte compatible de `itinerary-route` que reutilitza B1.1. Cap migració ni pla de pagament nou.
 
 ### B1.1. Planificació de trajectes abans del viatge
-**Prioritat: P1 · PWA v83 en esborrany, publicació pendent d’autorització**
+**Prioritat: P1 · PWA v83 publicada (PR #265)**
 
 A Itinerari, selecciona un dia futur i calcula el trajecte fins a una activitat amb hora i ubicació conegudes. Es pot sortir de l’activitat immediatament anterior, de l’allotjament, d’un lloc desat o d’una adreça cercada explícitament. El càlcul reutilitza la targeta de B1, el servei de rutes i la comprovació de conflictes horaris. El marge es calcula des del final previst de l’activitat anterior o des de l’hora de sortida indicada. Quan falta aquesta dada, es mostren la durada i l’hora recomanada de sortida. Els trajectes de dies futurs es demanen individualment i es presenten com a estimacions. Ara i Següent manté la logística immediata de B1.
 
@@ -541,4 +541,4 @@ No es crea un roadmap paral·lel.
 
 > **A3 · Participants.** El 24/11/2026, la prova física d'un PDF idèntic al de Barcelona ha comparat 6 activitats amb 6 existents, sense canvis pendents ni escriptures. Això valida la reimportació sense duplicats en aquest cas, però no acredita per si sol totes les variants d'A2.
 
-**A3 tancat i publicat** (PR #258; prova real de dos participants). **A4.1 validada a l’iPhone.** L’A4.2 (v79) és a `main` amb el nom i la interfície dels Consells de Freya localitzats. L’A5 (v80, PR #262) està publicada, validada físicament a l’iPhone i tancada. UX-01 (v81, PR #263) està publicada, aprovada i tancada després de la prova física. B1 (v82, PR #264) és a `main`. B1.1 (v83) està preparada en esborrany, pendent d’autorització i de validació física.
+**A3 tancat i publicat** (PR #258; prova real de dos participants). **A4.1 validada a l’iPhone.** L’A4.2 (v79) és a `main` amb el nom i la interfície dels Consells de Freya localitzats. L’A5 (v80, PR #262) està publicada, validada físicament a l’iPhone i tancada. UX-01 (v81, PR #263) està publicada, aprovada i tancada després de la prova física. B1 (v82, PR #264) és a `main`. B1.1 (v83, PR #265) està publicada. La validació física de B1.1 queda pendent.

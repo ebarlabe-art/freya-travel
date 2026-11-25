@@ -85,6 +85,7 @@ try{
  assert.match(await preview.innerText(),/https:\/\/example.org\/programa/);
  assert.equal(await page.locator('#itineraryImportActions button:visible').count(),3);
  assert.equal(await page.locator('#itineraryImportAdvanced').evaluate(node=>node.open),false);
+ assert.equal(await page.locator('#itineraryPlanningReport').isVisible(),false,'ordinary preview lists each activity once');
  assert.equal(await page.locator('#itineraryImportWrite').isDisabled(),true);
  const first=preview.locator('li').first();
  assert.match(await first.innerText(),/Confirma el fus horari/);

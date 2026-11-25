@@ -2277,6 +2277,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
               <div id="itineraryImportAlternativesByDay"></div>
             </details>
             <div id="itineraryImportReviewWork">
+            <p id="itineraryImportRemaining" role="status" aria-live="polite"></p>
             <div id="itineraryImportActions" class="trip-home-actions">
               <button type="button" id="itineraryImportWrite" disabled>Incorpora l’itinerari</button>
               <button type="button" id="itineraryImportEdit" class="secondary">Edita</button>
@@ -2284,12 +2285,14 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
             </div>
             <div id="itineraryImportDayPreview" class="stack"></div>
             <div id="itineraryImportReviewResult" class="itinerary-import-result" role="status" aria-live="polite"></div>
-            <p id="itineraryImportRemaining" role="status" aria-live="polite"></p>
-            <section id="itineraryImportExcludedReview" class="itinerary-import-warning hidden" role="alert" aria-live="polite"></section>
             <section id="itineraryConflictFlash" class="hidden" aria-live="polite"></section>
             <section id="itineraryImportFlash" class="hidden" aria-live="polite"></section>
-            <section id="itineraryPlanningReport" class="hidden stack" aria-label="Viabilitat de l’esborrany"></section>
+            <details id="itineraryImportPlanDetails" class="hidden">
+              <summary id="itineraryImportPlanTitle">Comparació i conflictes</summary>
+              <section id="itineraryPlanningReport" class="hidden stack" aria-labelledby="itineraryImportPlanTitle"></section>
+            </details>
             <details id="itineraryImportAdvanced" open><summary>Detalls avançats</summary><div id="itineraryPlanningDiagnostics"></div>
+            <section id="itineraryImportExcludedReview" class="itinerary-import-warning hidden" role="alert" aria-live="polite"></section>
             <button id="itineraryImportExcludeExisting" type="button">Desmarca les possibles coincidències amb el viatge</button>
             <details id="itineraryImportDecisionDetails" open><summary>Revisar decisions i visites existents</summary>
             <button id="itineraryImportCompare" type="button">Compara amb el planning existent</button><section id="itineraryImportReconciliation" class="hidden stack" aria-label="Conciliació del planning"></section></details>
@@ -11124,6 +11127,7 @@ function closeItineraryImport(){
  $('itineraryImportAlternativesByDay').replaceChildren();
  $('itineraryImportAlternatives').classList.add('hidden');$('itineraryImportAlternatives').open=false;
  $('itineraryImportDecisionDetails').open=true;
+ $('itineraryImportPlanDetails').open=false;$('itineraryImportPlanDetails').classList.add('hidden');
  $('itineraryPlanningReport').replaceChildren();$('itineraryPlanningReport').classList.add('hidden');
  $('itineraryImportReconciliation').replaceChildren();$('itineraryImportReconciliation').classList.add('hidden');
  $('itineraryImportWarnings').replaceChildren();
@@ -11183,6 +11187,7 @@ const itineraryImportCopy={
  matchIssue:['Pot coincidir amb una activitat de l’agenda. Revisa la coincidència.','Puede coincidir con una actividad de la agenda. Revisa la coincidencia.','This may match an existing activity. Review the match.','Cette activité correspond peut-être à une activité existante. Vérifiez la correspondance.','Potrebbe coincidere con un’attività esistente. Controlla la corrispondenza.'],
  advanced:['Detalls avançats','Detalles avanzados','Advanced details','Détails avancés','Dettagli avanzati'],
  details:['Dades del document','Datos del documento','Document details','Détails du document','Dati del documento'],
+ comparison:['Comparació i conflictes','Comparación y conflictos','Comparison and conflicts','Comparaison et conflits','Confronto e conflitti'],
  other:['Plans alternatius','Planes alternativos','Alternative plans','Autres possibilités','Piani alternativi'],
  include:['Inclou aquesta activitat','Incluye esta actividad','Include this activity','Inclure cette activité','Includi questa attività'],
  titleField:['Títol','Título','Title','Titre','Titolo'],
@@ -11208,7 +11213,7 @@ function localizeItineraryImport(){
  const labels={itineraryImportTitle:'title',itineraryImportPreviewTitle:'preview',itineraryImportClose:'close',
   itineraryImportUpload:'sources',itineraryImportChoosePdf:'device',itineraryImportChoosePhoto:'photo',itineraryImportChooseExisting:'existing',
   itineraryImportExistingLabel:'existingLabel',itineraryImportFormats:'formats',itineraryImportConsentText:'consent',itineraryImportAnalyze:'analyze',itineraryImportEdit:'edit',itineraryImportCancel:'cancel',
-  itineraryImportAlternativesTitle:'other',itineraryImportConfirmNo:'cancel'};
+  itineraryImportPlanTitle:'comparison',itineraryImportAlternativesTitle:'other',itineraryImportConfirmNo:'cancel'};
  Object.entries(labels).forEach(([id,key])=>{$(id).textContent=itineraryImportText(key)});
  for(const [id,key] of [['itineraryImportAdvanced','advanced'],['itineraryImportPdfDetails','details']])
   $(id).querySelector('summary').textContent=itineraryImportText(key);
@@ -11502,15 +11507,15 @@ function openItineraryImportEditor(index){
  heading?.scrollIntoView({block:'start'});
 }
 function renderItineraryImportDays(state,snapshot){
- const host=$('itineraryImportDayPreview'),plan=state.reconciliation?.plan;
+ const host=$('itineraryImportDayPreview'),plan=state.reconciliation?.plan,context=planningContext(state);
  const conflicts=new Map(plan?.conflicts.map(conflict=>[conflict.source_order,conflict.reason]));
  const zones=[...new Set(tripStopRows.map(stop=>stop.time_zone).filter(Boolean))];
  const suggestedZone=zones.length===1?zones[0]:'';
  const days=new Map();
  for(const item of snapshot.items){
   let issue=conflicts.get(item.source_order);
-  if(!plan&&state.reconciliation&&item.included&&state.reconciliation.api.importScheduleIssue(item,planningContext(state)))issue='decision_required';
-  if(issue==='decision_required'&&state.flashApi?.flashMatches(item,state.reconciliation,planningContext(state)).length)issue='possible_existing_match';
+  if(!plan&&state.reconciliation&&item.included&&state.reconciliation.api.importScheduleIssue(item,context))issue='decision_required';
+  if(issue==='decision_required'&&state.flashApi?.flashMatches(item,state.reconciliation,context).length)issue='possible_existing_match';
   if(!item.included&&!issue)continue;
   const day=item.values.local_date||'';
   if(!days.has(day))days.set(day,[]);
@@ -11523,7 +11528,7 @@ function renderItineraryImportDays(state,snapshot){
   const label=Number.isFinite(date.getTime())?formatDay.format(date):itineraryImportText('pendingDay');
   return '<section class="itinerary-import-day-preview" data-import-preview-day="'+esc(day)+'"><h4>'+esc(label)+'</h4><ul>'+
    rows.map(({item,issue})=>{
-    const v=item.values,problem=itineraryImportProblem(item,issue,state);
+    const v=item.values,problem=itineraryImportProblem(item,issue,state,context);
     const useZone=problem&&suggestedZone&&item.included&&issue==='decision_required'&&
      item.review_flags.includes('timezone_needs_confirmation');
     const time=[v.start_local_time,v.end_local_time].filter(Boolean).join('–');
@@ -11537,11 +11542,10 @@ function renderItineraryImportDays(state,snapshot){
    }).join('')+'</ul></section>';
  }).join('');
 }
-function itineraryImportProblem(item,issue,state){
+function itineraryImportProblem(item,issue,state,context){
  if(issue==='possible_existing_match')return itineraryImportText('matchIssue');
  if(issue==='excluded_needs_decision')return itineraryImportText('evidenceIssue');
  if(!issue)return '';
- const context=planningContext(state);
  const flag=state.reconciliation.api.importScheduleIssue(item,context);
  return itineraryImportText(Object.hasOwn(itineraryImportCopy,flag)?flag:'reviewIssue');
 }
@@ -11551,12 +11555,13 @@ function planningContext(state){
 function renderItineraryPlanning(state,snapshot){
  $('itineraryImportPlanning').disabled=!!state.busy||!!state.reconciliation?.pendingRequest||connectionUnavailable();
  if(!state.planningApi||!state.reconciliation)return;
- const host=$('itineraryPlanningReport');host.classList.remove('hidden');
+ const details=$('itineraryImportPlanDetails'),host=$('itineraryPlanningReport');
+ details.classList.remove('hidden');host.classList.remove('hidden');
  try{state.planning=state.planningApi.analyzePlanning(snapshot,state.reconciliation,planningContext(state),state.planning||{});if(state.flashApi){
  const flash=$('itineraryImportFlash'),context=planningContext(state),busy=state.busy||!!state.reconciliation.pendingRequest;
  const card=state.flashApi.flashHtml(snapshot,state.reconciliation,context,state.flash,state.planning,{busy});
  const previous=flash.querySelector('[data-flash-order]')?.dataset.flashOrder;
- flash.innerHTML=card;flash.classList.toggle('hidden',!card);host.classList.toggle('hidden',!!card);
+ flash.innerHTML=card;flash.classList.toggle('hidden',!card);details.classList.toggle('hidden',!!card);
  host.innerHTML=state.planningApi.conflictSummaryHtml(state.planning,state.reviewedConflicts)+state.flashApi.flashPlanningHtml(state.planning,snapshot,state.reconciliation,context,state.flash,{busy});
  renderImportConflictFlash(state,!!card,busy);
  $('itineraryPlanningDiagnostics').innerHTML=state.planningApi.planningHtml(state.planning,{busy:state.planningBusy||busy});
