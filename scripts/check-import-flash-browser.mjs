@@ -5,7 +5,7 @@ const server=createServer(async(req,res)=>{const path=resolve(dist,new URL(req.u
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${server.address().port}/freya-travel/`;
 const browser=await pw[engine].launch({headless:true});
 try{
- const ctx=await browser.newContext({viewport:process.env.RECONCILE_TABLET?{width:1024,height:768}:{width:390,height:844},isMobile:!process.env.RECONCILE_TABLET,hasTouch:true,serviceWorkers:'block'});
+ const ctx=await browser.newContext({viewport:process.env.RECONCILE_TABLET?{width:1024,height:768}:{width:390,height:844},isMobile:!process.env.RECONCILE_TABLET,hasTouch:true,locale:'ca-ES',serviceWorkers:'block'});
  await ctx.route('**/*',r=>new URL(r.request().url()).origin===new URL(url).origin?r.continue():r.abort());await ctx.routeWebSocket('**/*',s=>s.close());
  const page=await ctx.newPage();page.setDefaultTimeout(15000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(url);await page.locator('#loginCard').waitFor({state:'visible'});
  assert.deepEqual(await page.evaluate(()=>({
@@ -66,6 +66,7 @@ try{
    await page.locator('[data-flash-action="keep"]').tap();
    await page.locator('[data-flash-action="later"]').tap();assert.equal(await page.locator('#itineraryImportFlash').isVisible(),false);
    assert.equal(await page.locator('#itineraryImportWrite').isDisabled(),true);
+   await page.locator('#itineraryImportPlanTitle').tap();
    await page.locator('[data-flash-resume]').tap();assert.equal(await page.locator('[data-flash-order]').getAttribute('data-flash-order'),'1');
    await page.locator('[data-flash-action="keep"]').tap();
    if(mode==='existing'){
@@ -98,6 +99,7 @@ try{
    // #202: real encrypted IndexedDB survives loss of all page state; entry resumes without re-import.
    const saved=await page.evaluate(()=>({review:itineraryImportState.review,decisions:itineraryImportState.reconciliation.decisions,flash:itineraryImportState.flash}));
    assert.equal(saved.review.items.length,8);
+   if(!await page.locator('#itineraryImportAdvanced').evaluate(node=>node.open))await page.locator('#itineraryImportAdvanced > summary').tap();
    await page.locator('#itineraryImportExit').tap();await page.waitForFunction(()=>itineraryImportState===null);
    await page.reload();await page.locator('#loginCard').waitFor({state:'visible'});
    await page.evaluate(installFixture,mode);
@@ -116,6 +118,7 @@ try{
    if(capture)await page.locator('#itineraryImportPreview').screenshot({path:capture+'/'+engine+'-saved-proposal-resumed.png'});
    await page.locator('[data-conflict-ack]').tap();
    await page.waitForFunction(()=>itineraryImportState.reviewedConflicts?.length>0);
+   await page.locator('#itineraryImportPlanTitle').tap();
    assert.match(await page.locator('.itinerary-conflict-summary').innerText(),/Revisat, no resolt/);
    // Changed source evidence must invalidate acknowledgement, including at final confirmation.
    await page.evaluate(()=>{itineraryImportState.reconciliation.existing[0].updated_at='2030-12-02T00:00:00Z';renderItineraryImportPreview()});
@@ -143,6 +146,7 @@ try{
    assert.equal(await page.locator('#itineraryConflictFlash').isVisible(),false,'safe proposal resolves overlap in draft');
    assert.equal(await page.evaluate(()=>fixture.writes),0);
   }
+  if(!await page.locator('#itineraryImportAdvanced').evaluate(node=>node.open))await page.locator('#itineraryImportAdvanced > summary').tap();
   await page.locator('#itineraryImportExit').tap();
   await page.waitForFunction(()=>itineraryImportState===null);
   if(mode==='existing'){
@@ -152,6 +156,7 @@ try{
    await page.waitForFunction(()=>itineraryImportState?.flashApi&&itineraryImportState?.reconciliation?.existing);
    assert.match(await page.locator('#itineraryImportStatus').innerText(),/Proposta desada · Pendent de confirmar|El planning ha canviat/);
    assert.equal(await page.evaluate(()=>fixture.writes),0,'pause and resume never commit');
+   await page.locator('#itineraryImportAdvanced > summary').tap();
    await page.locator('#itineraryImportDiscardDraft').tap();
    await page.waitForFunction(()=>itineraryImportState?.review===null);
    await page.locator('#itineraryImportClose').tap();

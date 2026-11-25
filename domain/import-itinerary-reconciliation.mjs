@@ -11,6 +11,25 @@ export function classifyReconciliationTiming(values={}){
  return {is_optional:optional,is_tentative:optional||tentative.test(text)};
 }
 
+const requiredScheduleFlags=['missing_title','invalid_title','invalid_date','invalid_start_time','invalid_end_time',
+ 'invalid_time_zone','end_without_start','timezone_needs_confirmation','date_required_for_time','time_order_needs_review',
+ 'possible_duplicate_in_review'];
+export function importScheduleIssue(item,{startDate,endDate,convertLocalTime}={}){
+ const {title,local_date:day,start_local_time:start,end_local_time:end,time_zone:zone}=item.values;
+ if(!title?.trim())return 'missingTitle';
+ const invalid=requiredScheduleFlags.find(flag=>item.review_flags?.includes(flag));
+ if(invalid)return invalid;
+ if(!day)return 'missingDate';
+ if((startDate&&day<startDate)||(endDate&&day>endDate))return 'outsideTrip';
+ if(start&&convertLocalTime){
+  try{
+   const departure=Date.parse(convertLocalTime(day+'T'+start,zone));
+   const finish=end?Date.parse(convertLocalTime(day+'T'+end,zone)):null;
+   if(!Number.isFinite(departure)||(end&&(!Number.isFinite(finish)||finish<=departure)))return 'invalidLocalTime';
+  }catch{return 'invalidLocalTime'}
+ }
+ return null;
+}
 const safeForBulk=item=>item.included!==false&&
  !!item.values.title?.trim()&&!!item.values.local_date&&
  !['invalid_title','invalid_date','invalid_start_time','invalid_end_time','invalid_time_zone','timezone_needs_confirmation','date_required_for_time','time_order_needs_review','possible_duplicate_in_review','possible_overlap_in_review'].some(flag=>(item.review_flags||[]).includes(flag));

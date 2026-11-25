@@ -100,8 +100,18 @@ function blockEvidence(block,pages,blocks){
  const endsHour=s=>s.endsWith(hour)&&!/[\d.:]/.test(s.slice(0,-hour.length).slice(-1));
  const startsHour=s=>s.startsWith(hour)&&!/[\d.:]/.test(s.slice(hour.length, hour.length+1));
  const adjacent=at=>{const before=text.slice(0,at).trimEnd(),after=text.slice(at+title.length).trimStart();return endsHour(before)||endsHour(left(at))||startsHour(after)};
+ // A pipe between neighbouring cells is literal table formatting. Do not
+ // match across rows or across an intervening cell.
+ const pageLines=String(page?.text||'').split('\n');
+ const tableRows=hour?pageLines.flatMap((line,index)=>{
+  const cells=line.split(/[|｜]/).map(literal);
+  return cells.some((cell,i)=>cell===title&&(cells[i-1]===hour||cells[i+1]===hour))?[index]:[];
+ }):[];
+ const tableMatch=tableRows.length===1;
  const matches=hour?positions.filter(adjacent):positions;
- const titleAt=matches.length===1?matches[0]:positions[0]??-1,issues=[];
+ const tableTitleAt=tableMatch?literal(pageLines.slice(0,tableRows[0]).join('\n')).length+
+  (tableRows[0]===0?0:1)+literal(pageLines[tableRows[0]]).indexOf(title):-1;
+ const titleAt=tableMatch?tableTitleAt:matches.length===1?matches[0]:positions[0]??-1,issues=[];
  const titleOK=!!title&&titleAt>=0;
  if(!titleOK)issues.push('títol no localitzat a la pàgina indicada');
  const headingPage=[...pages].reverse().find(p=>p.page<=block.page&&heading&&literal(p.text).includes(heading));
@@ -121,8 +131,8 @@ function blockEvidence(block,pages,blocks){
   // Accept only adjacent cells/lines, in either reading order. Mere presence
   // elsewhere on the page is insufficient (e.g. the next visit's time).
   const before=text.slice(0,titleAt).trimEnd(),after=text.slice(titleAt+title.length).trimStart();
-  timeOK=matches.length===1&&adjacent(titleAt);
-  if(timeOK){
+  timeOK=tableMatch||(matches.length===1&&adjacent(titleAt));
+  if(timeOK&&!tableMatch){
    const beforeAt=before.endsWith(hour)?before.length-hour.length:-1;
    const afterAt=after.startsWith(hour)?titleAt+title.length+(text.slice(titleAt+title.length).length-after.length):-1;
    // Time shared by two different rows is ambiguous, not automatically assigned.
@@ -136,7 +146,6 @@ function blockEvidence(block,pages,blocks){
  }
  if(hour&&!timeOK)issues.push('hora absent o associació amb el títol no demostrada');
  const excerptOK=!!literal(block.excerpt)&&text.includes(literal(block.excerpt));
- if(!excerptOK)issues.push('descripció complementària no literal');
  return {titleOK,timeOK,headingOK,headingPage,excerptOK,issues};
 }
 function resolveBlockDate(heading,pages){
@@ -161,21 +170,22 @@ function validateSemanticBlocks(raw,pages){
 // The model may preserve labelled PDF fields inside a semantic block's
 // excerpt instead of separate page rows. Promote only a fully labelled,
 // literally evidenced excerpt; do not reinterpret free-form travel notes.
-const BLOCK_PLACE_LABEL=/(?:^|\s)(lloc|ubicaci[oó]|localitzaci[oó]|place|location|venue|adre[cç]a|address|ciutat|city)\s*:/giu;
+const BLOCK_PLACE_LABEL=/(?:^|\s)(lloc|ubicaci[oó]|localitzaci[oó]|place|location|venue|adre[cç]a|address|ciutat|city|notes?|observacions?|remarks?|enlla[cç]|link)\s*:/giu;
 function labelledBlockPlaceFields(excerpt){
- const source=String(excerpt||'').trim();
+ const source=String(excerpt||'').trim().replace(/\s*[|｜]\s*/g,' ');
  const labels=[...source.matchAll(BLOCK_PLACE_LABEL)];
  if(!labels.length||labels[0].index!==0)return null;
  const values={};
  for(let i=0;i<labels.length;i++){
   const label=labels[i],raw=label[1].normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  const key=['adreca','address'].includes(raw)?'address':['ciutat','city'].includes(raw)?'city':'location_name';
+  const key=['adreca','address'].includes(raw)?'address':['ciutat','city'].includes(raw)?'city':
+   /^(?:note|observacio|remark|enllac|link)/.test(raw)?'notes':'location_name';
   const value=source.slice(label.index+label[0].length,i+1<labels.length?labels[i+1].index:undefined).trim();
-  const limit=key==='address'?500:200;
+  const limit=key==='notes'?4000:key==='address'?500:200;
   // New prose lines or duplicate/empty labels are ambiguous; keep Notes
   // intact for human review instead of silently moving or dropping text.
-  if(!value||value.includes('\n')||[...value].length>limit||Object.hasOwn(values,key))return null;
-  values[key]=value;
+  if(!value||value.includes('\n')||[...value].length>limit||(key!=='notes'&&Object.hasOwn(values,key)))return null;
+  values[key]=key==='notes'&&values.notes?values.notes+'\n'+value:value;
  }
  return values;
 }
@@ -238,9 +248,9 @@ function semanticBlocksToProposal(transcript,source){
      (other.start_local_time?.value||null)===(fields.start_local_time?.value||null);
    });
    if(matches.length===1){
-    for(const key of ['location_name','address','city']){
+    for(const key of ['location_name','address','city','time_zone']){
      const field=matches[0].fields[key];
-     if(!fields[key]&&field?.evidence?.some(ref=>ref.kind==='text'&&ref.page===block.page))
+     if(!fields[key]&&field?.evidence?.some(ref=>ref.kind==='text'&&(ref.page===block.page||key==='time_zone')))
       fields[key]={...field,confidence:'medium'};
     }
    }
@@ -251,6 +261,7 @@ function semanticBlocksToProposal(transcript,source){
    if(date.context)fields.local_date.evidence.push({kind:'text',page:date.context.page,excerpt:date.context.evidence});
   }
   const notices=evidence.issues.length?['Evidència pendent: '+evidence.issues.join('; ')+'. Revisa el PDF abans de seleccionar aquesta activitat.']:[];
+  if(!evidence.excerptOK)notices.push('Informació complementària no verificada: no s’ha incorporat.');
   if(!date)notices.push('Data ambigua: confirma el dia de l’activitat amb el document.');
   if(block.time&&!exact)notices.push('Franja orientativa: '+block.time+'. No s’ha inventat una hora exacta.');
   if(block.role==='alternative')notices.push('Alternativa opcional: exclosa inicialment; selecciona-la només si la vols incorporar.');
@@ -305,7 +316,7 @@ export function itineraryPdfPreferRetry(primaryTranscript,primaryProposal,retryT
 // A geographically verified IANA zone is an automatic technical default,
 // not a request for the traveller to fill in another field. Preserve PDF zones.
 const normalizeCity=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-const validCity=value=>typeof value==='string'&&value.length<=64&&/^[\p{L}][\p{L} '’.-]+$/u.test(value);
+const validCity=value=>typeof value==='string'&&value.length<=64&&/^[\p{L}][\p{L} '’.·-]+$/u.test(value);
 // Exact IATA airport identifiers are a bounded, reviewed fallback if the
 // place resolver is unavailable or cannot recognize a localized city spelling.
 // Do not generalize a country's zone: countries can have multiple time zones.
@@ -370,7 +381,7 @@ function itemExplicitCity(item){
  const fields=item?.fields||{};
  if(validCity(fields.city?.value))return fields.city.value.trim();
  const location=String(fields.location_name?.value||'');
- const last=location.match(/,\s*([\p{L}][\p{L} '’-]{2,42})\s*$/u)?.[1]?.trim();
+ const last=location.match(/,\s*([\p{L}][\p{L} '’·-]{2,42})\s*$/u)?.[1]?.trim();
  return validCity(last)?last:null;
 }
 /**

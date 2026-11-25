@@ -94,7 +94,8 @@ try{
    assert.equal(await page.evaluate(()=>fixture.writes),0);await page.locator('#itineraryImportConfirmNo').tap();
    await page.waitForFunction(()=>!itineraryImportState.busy);
    assert.equal(await page.evaluate(()=>fixture.writes),0);
-   await page.locator('#itineraryImportExit').tap();await page.waitForFunction(()=>itineraryImportState===null);
+   if(!await page.locator('#itineraryImportAdvanced').evaluate(node=>node.open))await page.locator('#itineraryImportAdvanced > summary').tap();
+  await page.locator('#itineraryImportExit').tap();await page.waitForFunction(()=>itineraryImportState===null);
    await page.evaluate(async()=>{const m=await loadTravelBookModule('import-itinerary-draft.mjs');await m.discardImportDraft({userId:session.user.id,tripId:trip.id})});continue;
   }
   assert.equal(await page.locator('#itineraryImportDecisionDetails').evaluate(n=>n.open),false);
@@ -104,7 +105,8 @@ try{
   const counts=await page.evaluate(()=>({keep:itineraryImportState.reconciliation.decisions.filter(x=>x.action==='keep').length,add:itineraryImportState.reconciliation.decisions.filter(x=>x.action==='add').length}));
   assert.deepEqual(counts,mode==='existing'?{keep:1,add:2}:{keep:0,add:3});
   assert.match(await page.locator('[data-planning-summary]').textContent(),/incompatibilitats/);
-  await page.locator('[data-planning-accept]').first().tap();
+  await page.locator('#itineraryImportPlanTitle').tap();
+  await page.locator('#itineraryPlanningReport [data-planning-accept]').first().tap();
   assert.notEqual(await page.evaluate(()=>JSON.stringify(itineraryImportState.review)),before);
   assert.equal(await page.evaluate(()=>JSON.stringify(fixture.existing)===fixture.before&&JSON.stringify(itineraryProjection)===fixture.agenda),true);
   assert.equal(await page.evaluate(()=>fixture.writes),0);assert.match(await page.locator('#itineraryImportSaveStatus').innerText(),/només a l’esborrany/);
@@ -142,6 +144,7 @@ try{
    assert.equal(await page.evaluate(()=>itineraryImportState.reconciliation.decisions.some(d=>d.source_order===0&&d.automatic)),false,'changed PDF hours invalidate automatic equivalence');
   }
   assert.notEqual(await page.locator('[data-planning-summary]').textContent(),'Compatible amb les dades verificades; els trajectes són estimacions','missing openings cannot certify the itinerary');
+  if(!await page.locator('#itineraryImportAdvanced').evaluate(node=>node.open))await page.locator('#itineraryImportAdvanced > summary').tap();
   await page.locator('#itineraryImportExit').tap();await page.waitForFunction(()=>itineraryImportState===null);
    await page.evaluate(async()=>{const m=await loadTravelBookModule('import-itinerary-draft.mjs');await m.discardImportDraft({userId:session.user.id,tripId:trip.id})});
  }

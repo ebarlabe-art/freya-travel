@@ -2,7 +2,7 @@ import {planItineraryReconciliation,classifyReconciliationTiming,proposeUnmatche
 import {prepareItineraryImportRows} from './import-itinerary-write.mjs';
 import {matchingExistingImportItems} from './import-itinerary-review.mjs';
 // Preserve the existing public export for callers and cached frontend versions.
-export {classifyReconciliationTiming,proposeUnmatchedReconciliationDecisions,suggestedReconciliationTarget} from './import-itinerary-reconciliation.mjs';
+export {importScheduleIssue,classifyReconciliationTiming,proposeUnmatchedReconciliationDecisions,suggestedReconciliationTarget} from './import-itinerary-reconciliation.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function reconciliationPlan(snapshot,state){return planItineraryReconciliation({snapshot,existing:state.existing,decisions:state.decisions,retireExistingIds:state.retire})}
 
