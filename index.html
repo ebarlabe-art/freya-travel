@@ -2802,7 +2802,7 @@ document.getElementById('tripHome').setAttribute('aria-label',dashboardText('now
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-itinerary-verified-addresses-v85';
+const FREYA_FRONTEND_RELEASE='pwa-itinerary-geographic-evidence-v86';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -7024,28 +7024,31 @@ async function proposeActivityPoints(){
   for(const row of rows){
    if(context.scope!==itineraryAutoPlaceScope()||connectionUnavailable()||context.queue.count>=30)break;
    const destination=itineraryPointDestination(row);
-   // The day projection can provide context after a source loads. Leave
-   // these rows eligible for the next agenda rebuild.
-   if(!destination?.canonical_name&&!context.api.hasSelfContainedPostalAddress(row.address))continue;
    const key=JSON.stringify([itineraryAutoPlaceRecordKey(row),destination?.canonical_name,destination?.country_code]);
    if(context.seen.has(key))continue;
-   context.seen.add(key);
    try{
     const points=structuredClone(row.location_points===null?context.api.extractActivityPoints(row):context.api.autoPendingPoints(row));
     if(!points?.length)continue;
+    // Leave rows without enough geographic context eligible for a later rebuild.
+    if(!destination?.canonical_name&&!points.some(p=>context.api.hasSelfContainedPostalAddress(p.query)))continue;
+    context.seen.add(key);
     let changed=row.location_points===null;
     for(const point of points){
      if(point.place)continue;
-     const options=await context.queue.find(point.query,destination);
+     const address=context.api.activityPointAddress(row,point.query);
+     let options=await context.queue.find(point.query,destination);
      if(context.scope!==itineraryAutoPlaceScope()||connectionUnavailable())return;
-     const resolved=context.api.chooseAutomaticPoint(point.query,options,destination,{address:!!row.address});
+     const alternate=!address&&!options.length&&context.api.alternativeGeographicQuery(point.query);
+     if(alternate&&destination?.country_code&&context.queue.count<30)options=await context.queue.find(alternate,destination);
+     if(context.scope!==itineraryAutoPlaceScope()||connectionUnavailable())return;
+     const resolved=context.api.chooseAutomaticPoint(point.query,options,destination,{address,venue:context.api.activityPointVenue(row)});
      if(resolved){point.place=resolved;changed=true}
     }
     if(!changed)continue;
     // A manual edit while the provider was responding always wins, including removal.
     const latest=(row._placeSource==='activity'?activityRows:manualItineraryRows).find(value=>value.id===row.id);
     if(!latest||latest.updated_at!==row.updated_at)continue;
-    await saveActivityPoints(row,context.api.pointSnapshot(row,points),context.scope);
+    await saveActivityPoints(row,context.api.pointSnapshot(row,points,{automatic:true}),context.scope);
     if(row._placeSource==='activity')activity=true;else manual=true;
    }catch(_){
     // Keep the activity usable. One failed lookup/save must not abort other rows.
