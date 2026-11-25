@@ -36,6 +36,7 @@ try{
   const response=await handler(new Request('https://synthetic/route',{method:'POST',headers:{authorization:'Bearer '+user},body:JSON.stringify(body)}));return response.json();
  });
  async function boot(target=page,pwa=true){
+  await target.clock.setFixedTime(new Date('2030-03-31T08:00:00Z'));
   await target.goto(url);await target.waitForFunction(pwa=>typeof renderSession==='function'&&(!pwa||(navigator.serviceWorker.controller)),pwa);await target.locator('#loginCard').waitFor({state:'visible'});
   await target.evaluate(async({tripRow,rows,stops,rentals})=>{
    window.testRows=rows;

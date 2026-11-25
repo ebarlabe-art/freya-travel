@@ -253,13 +253,20 @@ Validació de Londres, Riga i Tallinn i Eivissa a 390 i 1280 px, amb comprovaci�
 La base DURANT ja és funcional. Aquesta fase és de completar, no de reconstruir.
 
 ### B1. Temps per arribar / logística immediata
-**Prioritat: P1 · PWA v82 en esborrany, publicació pendent d’autorització**
+**Prioritat: P1 · PWA v82 a `main` (PR #264)**
 
 Ara i Següent mostra una estimació per a la propera visita amb hora concreta i punt d’arribada verificable. L’origen pot ser la ubicació puntual del dispositiu, l’activitat anterior, un lloc desat o una adreça triada explícitament. El marge de seguretat és de 10 minuts per defecte. Freya mostra la durada, l’hora local recomanada de sortida, el marge restant, un avís i els accessos a la ruta i als documents vinculats.
 
 Es reutilitzen les funcions `itinerary-route` i `place-resolution` i Geoapify. Hi ha opcions a peu, en vehicle o en transport públic segons cobertura. Els temps són estimacions, amb el trànsit i els horaris en directe fora de l’abast. El bloc conserva l’agenda visible quan un punt és ambigu, la ubicació es denega o la connexió falla. La ubicació puntual es consulta només a petició de l’usuari.
 
-**Seqüència pendent d’autorització**. Publicar primer la versió compatible de la funció `itinerary-route` i després el frontend v82. Validar el resultat amb el servei real i a l’iPhone. Cap migració ni pla de pagament nou.
+La v82 va introduir el contracte compatible de `itinerary-route` que reutilitza B1.1. Cap migració ni pla de pagament nou.
+
+### B1.1. Planificació de trajectes abans del viatge
+**Prioritat: P1 · PWA v83 en esborrany, publicació pendent d’autorització**
+
+A Itinerari, selecciona un dia futur i calcula el trajecte fins a una activitat amb hora i ubicació conegudes. Es pot sortir de l’activitat immediatament anterior, de l’allotjament, d’un lloc desat o d’una adreça cercada explícitament. El càlcul reutilitza la targeta de B1, el servei de rutes i la comprovació de conflictes horaris. El marge es calcula des del final previst de l’activitat anterior o des de l’hora de sortida indicada. Quan falta aquesta dada, es mostren la durada i l’hora recomanada de sortida. Els trajectes de dies futurs es demanen individualment i es presenten com a estimacions. Ara i Següent manté la logística immediata de B1.
+
+Validació física pendent amb el viatge real de Riga i Tallinn, amb les seves dates actuals. Després de validar B1.1, reprendre B2.
 
 ### B2. Revisió E2E DURANT
 **Prioritat: P0 abans de publicació**
@@ -532,4 +539,4 @@ No es crea un roadmap paral·lel.
 
 > **A3 · Participants.** El 24/11/2026, la prova física d'un PDF idèntic al de Barcelona ha comparat 6 activitats amb 6 existents, sense canvis pendents ni escriptures. Això valida la reimportació sense duplicats en aquest cas, però no acredita per si sol totes les variants d'A2.
 
-**A3 tancat i publicat** (PR #258; prova real de dos participants). **A4.1 validada a l’iPhone.** L’A4.2 (v79) és a `main` amb el nom i la interfície dels Consells de Freya localitzats. L’A5 (v80, PR #262) està publicada, validada físicament a l’iPhone i tancada. UX-01 (v81, PR #263) està publicada, aprovada i tancada després de la prova física. B1 (v82) és la següent entrega i està preparada en esborrany.
+**A3 tancat i publicat** (PR #258; prova real de dos participants). **A4.1 validada a l’iPhone.** L’A4.2 (v79) és a `main` amb el nom i la interfície dels Consells de Freya localitzats. L’A5 (v80, PR #262) està publicada, validada físicament a l’iPhone i tancada. UX-01 (v81, PR #263) està publicada, aprovada i tancada després de la prova física. B1 (v82, PR #264) és a `main`. B1.1 (v83) està preparada en esborrany, pendent d’autorització i de validació física.

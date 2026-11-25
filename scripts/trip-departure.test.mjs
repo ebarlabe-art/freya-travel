@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {departurePlan,departureEstimate,deviceRouteOrigin,DEFAULT_MARGIN} from '../domain/trip-departure.mjs';
+import {departurePlan,departureEstimate,plannedDepartureChoices,plannedDepartureEstimate,deviceRouteOrigin,DEFAULT_MARGIN} from '../domain/trip-departure.mjs';
 import {createRouteHandler} from '../supabase/functions/itinerary-route/handler.mjs';
 import {routeProvider} from '../supabase/functions/itinerary-route/provider.mjs';
 
@@ -47,6 +47,43 @@ test('departure, usable slack and the three alerts account for the buffer, previ
  for(const bad of [null,route('drive'),route('walk',{calculated_at:date(-6)}),route('walk',{duration_seconds:null}),
   route('walk',{origin:{latitude:null,longitude:0}})])assert.equal(departureEstimate(item,bad,'walk',10,now),null);
  assert.equal(departureEstimate(item,route(),'walk',181,now),null);
+});
+
+test('planned destinations stay in the selected day and preserve barriers between visits',()=>{
+ const day='2030-03-31';
+ const item=(key,start,extra={})=>visit(key,start,{tripId:trip,localDate:day,...extra});
+ const previous=item('previous',15,{endsAt:date(25)});
+ const cancelled=item('cancelled',26,{isCancelled:true});
+ const target=item('target',40);
+ const bus=item('bus',50,{isTransport:true});
+ const afterBus=item('afterBus',70);
+ const hotel={id:a,trip_id:trip,name:'Hotel',...point};
+ const hotelAddress={id:b,trip_id:trip,name:'Inn',address:'1 Main Street'};
+ const choices=plannedDepartureChoices([previous,cancelled,target,bus,afterBus,item('tomorrow',100,{localDate:'2030-04-01'})],
+  [hotel,hotelAddress,{...hotel,trip_id:a},{...hotel,reservation_status:'cancelled'}],item=>row(item),trip,day);
+ assert.deepEqual(choices.map(plan=>[plan.destination.key,plan.previous?.key]),[
+  ['previous',undefined],['target','previous'],['afterBus',undefined]
+ ]);
+ assert.deepEqual(choices[0].lodging.map(room=>[room.coordinates,room.query]),[
+  [{type:'selected',...point},'Hotel'],[null,'Inn, 1 Main Street']
+ ]);
+});
+
+test('planned slack stays relative to the schedule across the DST transition, independent of quote time',()=>{
+ const target=visit('target',45);
+ const origin=visit('origin',-5,{endsAt:date(30)});
+ const first=plannedDepartureEstimate(target,route(),'walk',10,now,origin);
+ const later=plannedDepartureEstimate(target,route('walk',{calculated_at:date(15)}),'walk',10,now+15*60000,origin);
+ assert.deepEqual(first,later);
+ assert.equal(first.minutes,-5);
+ assert.equal(first.status,'plannedConflict');
+ assert.equal(new Date(first.leaveBy).toISOString(),'2030-03-31T01:15:10.000Z');
+ assert.equal(plannedDepartureEstimate(target,route(),'walk',0,now,origin).minutes,5);
+ assert.equal(plannedDepartureEstimate(target,route(),'walk',0,now,origin).status,'plannedFits');
+ const unknown=plannedDepartureEstimate(target,route(),'walk',10,now,{...origin,endsAt:null});
+ assert.equal(unknown.minutes,null);
+ assert.equal(unknown.status,'unknownGap');
+ assert.equal(plannedDepartureEstimate(target,route('drive'),'walk',10,now,origin),null);
 });
 
 test('one-time location requests fail closed on denied, stale and inaccurate positions',async()=>{
