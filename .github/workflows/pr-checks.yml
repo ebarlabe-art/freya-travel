@@ -225,6 +225,10 @@ jobs:
         if: matrix.engine == 'chromium'
         timeout-minutes: 5
         run: PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-shared-trip-browser.mjs
+      - name: Departure logistics on mobile
+        if: matrix.engine == 'chromium'
+        timeout-minutes: 2
+        run: node scripts/check-trip-departure-browser.mjs
       - name: Trip dashboard on mobile and desktop
         if: matrix.engine == 'chromium'
         timeout-minutes: 2
@@ -275,7 +279,7 @@ jobs:
           deno check supabase/functions/import-itinerary/index.ts
           deno check --config supabase/functions/place-resolution/deno.json supabase/functions/place-resolution/index.ts
       - name: Itinerary routing domain and HTTP contracts
-        run: node --test scripts/itinerary-route.test.mjs
+        run: node --test scripts/itinerary-route.test.mjs scripts/trip-departure.test.mjs
       - name: Itinerary route Edge Function typecheck
         run: deno check --config supabase/functions/itinerary-route/deno.json supabase/functions/itinerary-route/index.ts
       - run: npm run test:alb03

@@ -9,6 +9,7 @@ const runtimeDomain=[
   'flight-journey-identity.mjs','cultural-guide.mjs',
   'cultural-guide-ui.mjs',
   'itinerary-route.mjs',
+  'trip-departure.mjs','trip-departure-ui.mjs',
   'itinerary-route-ui.mjs',
   'itinerary-visit-advice.mjs',
   'itinerary-quick-place.mjs',

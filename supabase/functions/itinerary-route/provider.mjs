@@ -70,15 +70,16 @@ export function routeProvider({key,fetcher=fetch,timeoutMs=8000,now=Date.now,spa
    if(!selected)return {error:'ambiguous',candidates:candidates.map(({id,label})=>({id,label}))};
    return {point:selected};
   },
-  async route(a,b,mode){
-   return memo(JSON.stringify(['route',a.id,b.id,a.lat,a.lon,b.lat,b.lon,mode]),async()=>{
+  async route(a,b,mode,{cache=true}={}){
+   const calculate=async()=>{
     const url=new URL('https://api.geoapify.com/v1/routing');url.search=new URLSearchParams({waypoints:`${a.lat},${a.lon}|${b.lat},${b.lon}`,mode,units:'metric',format:'geojson'}).toString();
     const data=await query(url),feature=data.features?.[0],p=feature?.properties;
     if(Array.isArray(data.features)&&!data.features.length)throw Error('no_route');
     const lines=feature?.geometry?.coordinates;
     if(!p||p.mode!==mode||String(p.distance_units).toLowerCase()!=='meters'||!Number.isFinite(p.distance)||p.distance<0||!Number.isFinite(p.time)||p.time<0||feature.geometry.type!=='MultiLineString'||!Array.isArray(lines)||!lines.length||!lines.every(line=>Array.isArray(line)&&line.length>=2&&line.every(pt=>Array.isArray(pt)&&pt.length>=2&&Number.isFinite(pt[0])&&Math.abs(pt[0])<=180&&Number.isFinite(pt[1])&&Math.abs(pt[1])<=90)))throw Error('invalid_response');
     return {method:'routing',mode,origin:{latitude:a.lat,longitude:a.lon},destination:{latitude:b.lat,longitude:b.lon},distance_m:p.distance,duration_seconds:p.time,source:'Geoapify Routing / OpenStreetMap',quality:mode==='transit'?'Aproximació de transport públic; sense horaris en viu ni garantia de servei.':'Ruta calculada; temps aproximat, sense trànsit en viu.',calculated_at:new Date(now()).toISOString()};
-   });
+   };
+   return cache?memo(JSON.stringify(['route',a.id,b.id,a.lat,a.lon,b.lat,b.lon,mode]),calculate):calculate();
   }
  };
 }
