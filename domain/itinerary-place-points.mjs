@@ -127,6 +127,11 @@ const nearSamePoint=(a,b)=>{
 };
 export function autoPendingPoints(row){
  const saved=savedActivityPoints(row),original=extractActivityPoints(row);
+ const snapshot=row.location_points,evidence=snapshot?.geographic_evidence||snapshot?.input?.geographic_evidence;
+ // A changed explicit note can invalidate an automatically extracted point, never a manual choice.
+ if(!saved&&evidence&&snapshot?.version===1&&Object.entries(pointInput(row)).every(([k,v])=>snapshot.input?.[k]===v)&&
+  snapshot.points?.length===1&&snapshot.points[0].id==='point-0'&&snapshot.points[0].query===evidence&&
+  original.length===1&&explicitNotesPlace(row)?.query===original[0].query)return original;
  // Only retry unchanged automatically extracted points, never a user-customized set.
  if(!saved?.length||!saved.some(p=>p.status==='pending'&&!p.place))return null;
  if(saved.length===original.length&&saved.every((p,i)=>p.id===original[i].id&&p.query===original[i].query))return saved;
@@ -248,14 +253,16 @@ export function pointSnapshot(row,points,{automatic=false}={}){
  if(!Array.isArray(points)||points.length>MAX_POINTS||new Set(points.map(p=>p.id)).size!==points.length)throw Error('Llista de punts no vàlida.');
  const evidence=explicitNotesPlace(row)?.query;
  const usesNotes=automatic&&evidence&&points.some(p=>p.query===evidence)&&!extractLegacyActivityPoints(row).some(p=>p.query===evidence);
- return {version:1,input:{...pointInput(row),...(usesNotes?{geographic_evidence:evidence}:{})},points:points.map(p=>{
+ // Keep input identical to the PostgreSQL v1 fingerprint; evidence is optional snapshot metadata.
+ return {version:1,input:pointInput(row),...(usesNotes?{geographic_evidence:evidence}:{}),points:points.map(p=>{
   if(typeof p.id!=='string'||!p.id||p.id.length>100||typeof p.query!=='string'||!p.query.trim()||p.query.length>500)throw Error('Cal un nom de lloc.');
   return {id:p.id,query:p.query.trim(),status:p.place?(p.place.coordinate_role==='exact_location'?'resolved':'approximate'):'pending',place:p.place?pointPlace(p.place):null};
  })};
 }
 export function savedActivityPoints(row){
  const s=row.location_points;
- if(Object.hasOwn(row,'notes')&&s?.input?.geographic_evidence&&s.input.geographic_evidence!==explicitNotesPlace(row)?.query)return null;
+ const evidence=s?.geographic_evidence||s?.input?.geographic_evidence;
+ if(Object.hasOwn(row,'notes')&&evidence&&evidence!==explicitNotesPlace(row)?.query)return null;
  return s?.version===1&&Object.entries(pointInput(row)).every(([k,v])=>s.input?.[k]===v)&&Array.isArray(s.points)?s.points:null;
 }
 // A confirmed legacy choice and ordered points share one read contract.

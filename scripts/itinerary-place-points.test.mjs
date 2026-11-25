@@ -189,6 +189,8 @@ test('explicit geographic evidence replaces only old automatic pending points',(
   }
   if(row.notes){
    const saved=pointSnapshot(row,[{...evidence,place:choice}],{automatic:true});
+   assert.deepEqual(saved.input,{title:row.title,location_name:null,address:null,city:null},'input must exactly match PostgreSQL fingerprint');
+   assert.equal(saved.geographic_evidence,query);
    assert.equal(savedActivityPoints({...row,location_points:saved})[0].place.provider_place_id,provider.provider_place_id);
    assert.equal(savedActivityPoints({...row,notes:'Other address',location_points:saved}),null);
   }
@@ -216,3 +218,15 @@ test('only provider-confirmed map link candidates matching the trip context can 
  assert.ok(chooseAutomaticPoint(link,[{...result,map_reference:link}],context));
  assert.equal(chooseAutomaticPoint(link,[{...result,map_reference:link,locality:'Roma'}],context),null);
 });
+
+ test('note-derived snapshot becomes stale on a changed address and can recover without overriding a manual choice',()=>{
+ const row={title:'Dinner',notes:'Rue Example, 18'};
+ const p={...place('Example'),formatted_address:'Rue Example, 18'};
+ const snapshot=pointSnapshot(row,[{...extractActivityPoints(row)[0],place:p}],{automatic:true});
+ assert.equal(snapshot.geographic_evidence,'Rue Example, 18');
+ const changed={...row,notes:'Rue Example, 20',location_points:snapshot};
+ assert.equal(savedActivityPoints(changed),null);
+ assert.equal(autoPendingPoints(changed)?.[0].query,'Rue Example, 20');
+ const manual=pointSnapshot(row,[{...extractActivityPoints(row)[0],place:p}]);
+ assert.equal(autoPendingPoints({...changed,location_points:manual}),null);
+ });

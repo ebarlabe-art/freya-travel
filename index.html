@@ -2802,7 +2802,7 @@ document.getElementById('tripHome').setAttribute('aria-label',dashboardText('now
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-itinerary-geographic-evidence-v86';
+const FREYA_FRONTEND_RELEASE='pwa-itinerary-geographic-persistence-v87';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -6841,7 +6841,7 @@ async function deleteActivity(id,button){
   if(!trip||isLondonTrip())return;const row=activityRows.find(item=>item.id===id);if(!row||!confirm(`Eliminar «${row.title}»? Els documents es conservaran.`))return;const tripId=trip.id,generation=tripLoadGeneration,wasBeingEdited=$('activityForm').dataset.editId===id;button.disabled=true;msg('activityMsg','Eliminant activitat…');try{const {error}=await db.from('trip_activities').delete().eq('id',id).eq('trip_id',tripId);if(!tripRequestIsCurrent(tripId,generation)||isLondonTrip())return;if(error)throw error;if(wasBeingEdited){clearActivityDraft(tripId);resetActivityFormUi()}msg('activityMsg','Activitat eliminada.');await loadActivities(true)}catch(error){if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip()){button.disabled=false;msg('activityMsg',error?.code==='23503'&&error?.message?.includes('trip_proposal_component_links')?'Aquesta peça conserva l’origen del viatge. Pots cancel·lar-la des d’Editar, però no eliminar-la.':(error?.message||'No s’ha pogut eliminar l’activitat.'),true)}}
 }
 function subscribeActivities(){
-  if(!trip||isLondonTrip())return;if(activityChannel)db.removeChannel(activityChannel);const tripId=trip.id,generation=tripLoadGeneration,reconcile=()=>{if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip())loadActivities(true)};activityChannel=db.channel('activities-'+tripId).on('postgres_changes',{event:'*',schema:'public',table:'trip_activities',filter:`trip_id=eq.${tripId}`},reconcile).on('postgres_changes',{event:'*',schema:'public',table:'trip_activity_documents',filter:`trip_id=eq.${tripId}`},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
+  if(!trip||isLondonTrip())return;if(activityChannel)db.removeChannel(activityChannel);const tripId=trip.id,generation=tripLoadGeneration,reconcile=()=>{if(tripRequestIsCurrent(tripId,generation)&&!isLondonTrip()){const geo=itineraryPointScope;if(geo?.running&&geo.scope===itineraryAutoPlaceScope()){geo.refreshActivity=true;return}loadActivities(true)}};activityChannel=db.channel('activities-'+tripId).on('postgres_changes',{event:'*',schema:'public',table:'trip_activities',filter:`trip_id=eq.${tripId}`},reconcile).on('postgres_changes',{event:'*',schema:'public',table:'trip_activity_documents',filter:`trip_id=eq.${tripId}`},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
 }
 
 function manualItineraryDraftKey(tripId=trip?.id,userId=session?.user?.id){return tripId&&userId?`freya-manual-itinerary-draft-v1-${userId}-${tripId}`:''}
@@ -7024,7 +7024,8 @@ async function proposeActivityPoints(){
   for(const row of rows){
    if(context.scope!==itineraryAutoPlaceScope()||connectionUnavailable()||context.queue.count>=30)break;
    const destination=itineraryPointDestination(row);
-   const key=JSON.stringify([itineraryAutoPlaceRecordKey(row),destination?.canonical_name,destination?.country_code]);
+   // Stable across our own writes, including a rejected snapshot that only bumps updated_at.
+   const key=JSON.stringify([row._placeSource,row.id,context.api.pointInput(row),row.notes||'',destination?.canonical_name,destination?.country_code]);
    if(context.seen.has(key))continue;
    try{
     const points=structuredClone(row.location_points===null?context.api.extractActivityPoints(row):context.api.autoPendingPoints(row));
@@ -7048,7 +7049,11 @@ async function proposeActivityPoints(){
     // A manual edit while the provider was responding always wins, including removal.
     const latest=(row._placeSource==='activity'?activityRows:manualItineraryRows).find(value=>value.id===row.id);
     if(!latest||latest.updated_at!==row.updated_at)continue;
-    await saveActivityPoints(row,context.api.pointSnapshot(row,points,{automatic:true}),context.scope);
+    const snapshot=context.api.pointSnapshot(row,points,{automatic:true});
+    if(context.api.samePointSnapshot(row.location_points,snapshot))continue;
+    await saveActivityPoints(row,snapshot,context.scope);
+    // A fully persisted result no longer qualifies. Allow recovery if another client later clears it.
+    if(snapshot.points.every(p=>p.place))context.seen.delete(key);
     if(row._placeSource==='activity')activity=true;else manual=true;
    }catch(_){
     // Keep the activity usable. One failed lookup/save must not abort other rows.
@@ -7059,11 +7064,18 @@ async function proposeActivityPoints(){
  }finally{
   try{
    if(context.scope===itineraryAutoPlaceScope()){
-    if(activity)await loadActivities(true);if(manual)await loadManualItineraryItems(true);
+    const refreshActivity=activity||context.refreshActivity,refreshManual=manual||context.refreshManual;
+    context.refreshActivity=false;context.refreshManual=false;
+    if(refreshActivity)await loadActivities(true);if(refreshManual)await loadManualItineraryItems(true);
    }
   }finally{
    context.running=false;
-   if(context.scope===itineraryAutoPlaceScope()&&context.rescan)void proposeActivityPoints().catch(()=>{});
+   if(context.scope===itineraryAutoPlaceScope()){
+    const refreshActivity=context.refreshActivity,refreshManual=context.refreshManual;
+    context.refreshActivity=false;context.refreshManual=false;
+    if(refreshActivity)void loadActivities(true);if(refreshManual)void loadManualItineraryItems(true);
+    if(context.rescan)void proposeActivityPoints().catch(()=>{});
+   }
   }
  }
 }
@@ -7371,7 +7383,7 @@ async function deleteManualItineraryItem(id,button){
   if(!trip||!session||isLondonTrip())return;const row=manualItineraryRows.find(item=>item.id===id);if(!row||!confirm(`Eliminar «${row.title}» de l’itinerari?`))return;const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,wasEditing=$('manualItineraryForm').dataset.editId===id;button.disabled=true;msg('genericItineraryMessage','Eliminant element…');try{const {error}=await db.from('trip_itinerary_items').delete().eq('trip_id',tripId).eq('id',id);if(!itineraryRequestIsCurrent(tripId,generation,userId)||isLondonTrip())return;if(error)throw error;if(wasEditing){clearManualItineraryDraft(tripId,userId);resetManualItineraryFormUi()}await loadManualItineraryItems(true);if(!itineraryRequestIsCurrent(tripId,generation,userId))return;msg('genericItineraryMessage','Element eliminat.')}catch(error){if(itineraryRequestIsCurrent(tripId,generation,userId)&&!isLondonTrip()){button.disabled=false;msg('genericItineraryMessage',error?.message||'No s’ha pogut eliminar l’element.',true)}}
 }
 function subscribeManualItineraryItems(){
-  if(!trip||!session||isLondonTrip())return;if(manualItineraryChannel)db.removeChannel(manualItineraryChannel);const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,reconcile=()=>{if(itineraryRequestIsCurrent(tripId,generation,userId)&&!isLondonTrip())loadManualItineraryItems(true)};manualItineraryChannel=db.channel('manual-itinerary-'+tripId).on('postgres_changes',{event:'*',schema:'public',table:'trip_itinerary_items',filter:`trip_id=eq.${tripId}`},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
+  if(!trip||!session||isLondonTrip())return;if(manualItineraryChannel)db.removeChannel(manualItineraryChannel);const tripId=trip.id,generation=tripLoadGeneration,userId=session.user.id,reconcile=()=>{if(itineraryRequestIsCurrent(tripId,generation,userId)&&!isLondonTrip()){const geo=itineraryPointScope;if(geo?.running&&geo.scope===itineraryAutoPlaceScope()){geo.refreshManual=true;return}loadManualItineraryItems(true)}};manualItineraryChannel=db.channel('manual-itinerary-'+tripId).on('postgres_changes',{event:'*',schema:'public',table:'trip_itinerary_items',filter:`trip_id=eq.${tripId}`},reconcile).subscribe(status=>{if(status==='SUBSCRIBED')reconcile()});
 }
 
 // TRIP_PROGRESS_START — shared generic Home / Itinerary controls.
