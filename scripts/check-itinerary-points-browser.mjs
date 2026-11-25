@@ -156,28 +156,7 @@ try{
  assert.equal(await basilicaButtons.filter({hasText:'Santo Stefano'}).count(),1,'a different place is clearly labelled, never silently assigned');
  const queriesBeforeToggle=searches.length;await selectPoint(2);await selectPoint(1);
  assert.equal(await basilicaButtons.count(),2);assert.equal(searches.length,queriesBeforeToggle);
- const layout=await page.evaluate(()=>{
-  const width=innerWidth,scrollWidth=document.documentElement.scrollWidth;
-  if(scrollWidth<=width)return {width,scrollWidth};
-  const nodes=[...document.querySelectorAll('body *')];
-  const overflowing=nodes.flatMap(node=>{
-   const {left,right,width:elementWidth}=node.getBoundingClientRect();
-   if(!elementWidth||right+scrollX<=width&&left+scrollX+node.scrollWidth<=width)return [];
-   const {overflowX}=getComputedStyle(node);
-   return [{tag:node.tagName,id:node.id,className:node.getAttribute('class'),left,right,clientWidth:node.clientWidth,scrollWidth:node.scrollWidth,overflowX}];
-  });
-  const viewport={scrollX,scale:visualViewport?.scale,visualWidth:visualViewport?.width};
-  const isolated={};
-  for(const selector of ['#plannedDepartureSlot','.activity-point-editor','.generic-itinerary-day-tabs','.agenda-route-card']){
-   const targets=[...document.querySelectorAll(selector)];
-   const previous=targets.map(node=>node.getAttribute('style'));
-   targets.forEach(node=>node.style.setProperty('display','none','important'));
-   isolated[selector]=document.documentElement.scrollWidth;
-   targets.forEach((node,i)=>previous[i]===null?node.removeAttribute('style'):node.setAttribute('style',previous[i]));
-  }
-  return {width,scrollWidth,viewport,overflowing:overflowing.slice(0,20),isolated};
- });
- assert.ok(layout.scrollWidth<=layout.width,`no sideways mobile scrolling: ${JSON.stringify(layout)}`);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no sideways mobile scrolling');
  assert.equal(writes.length,8,'searching and grouping candidates never writes');
  await firstInput.fill('Piazza Maggiore provisional');
  await page.evaluate(async()=>{await loadManualItineraryItems(true);renderGenericItinerary()});
