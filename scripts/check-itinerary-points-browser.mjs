@@ -156,7 +156,38 @@ try{
  assert.equal(await basilicaButtons.filter({hasText:'Santo Stefano'}).count(),1,'a different place is clearly labelled, never silently assigned');
  const queriesBeforeToggle=searches.length;await selectPoint(2);await selectPoint(1);
  assert.equal(await basilicaButtons.count(),2);assert.equal(searches.length,queriesBeforeToggle);
- assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no sideways mobile scrolling');
+ const layout=await page.evaluate(()=>{
+  const root=()=>document.documentElement.scrollWidth;
+  const width=innerWidth,scrollWidth=root();
+  if(scrollWidth<=width)return {width,scrollWidth};
+  const cards=[...document.querySelectorAll('#plannedDepartureSlot label')].map(node=>({
+   control:node.querySelector('input,select')?.dataset.b1,scrollWidth:node.scrollWidth,selected:node.querySelector('select')?.selectedOptions[0]?.textContent
+  }));
+  const styles={
+   flex:'.departure-controls label{display:flex;flex-direction:column;justify-content:flex-end}',
+   block:'.departure-controls label{display:block}',
+   appearance:'.departure-controls select{appearance:none}',
+   maxWidth:'.departure-controls select{max-width:100%}',
+   zeroWidth:'.departure-controls select{width:0;min-width:100%}',
+   contain:'.departure-controls select{contain:inline-size}',
+   clipSelect:'.departure-controls select{text-overflow:ellipsis;overflow:hidden}',
+   noDestination:'.departure-controls select[data-b1=destination]{display:none}',
+   noOrigin:'.departure-controls select[data-b1=origin]{display:none}',
+   noSelect:'.departure-controls select{display:none}',
+   flexAndAppearance:'.departure-controls label{display:flex;flex-direction:column}.departure-controls select{appearance:none}'
+  };
+  const widths={};
+  for(const [key,css] of Object.entries(styles)){
+   const style=document.createElement('style');
+   style.textContent=css;
+   document.head.append(style);
+   widths[key]=root();
+   style.remove();
+   root();
+  }
+  return {width,scrollWidth,cards,widths};
+ });
+ assert.ok(layout.scrollWidth<=layout.width,`no sideways mobile scrolling: ${JSON.stringify(layout)}`);
  assert.equal(writes.length,8,'searching and grouping candidates never writes');
  await firstInput.fill('Piazza Maggiore provisional');
  await page.evaluate(async()=>{await loadManualItineraryItems(true);renderGenericItinerary()});
