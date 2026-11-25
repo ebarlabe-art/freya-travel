@@ -200,6 +200,6 @@ test('backend reads notes only to validate a note-derived snapshot, with caller 
  const calls=[];const row={id:aId,updated_at:'2026-12-01T00:00:00Z',location_points:{geographic_evidence:'Rue Example, 18'}};
  const b=routeBackend({url:'https://local',anon:'anon',fetcher:async(url,options)=>{calls.push({url,options});return Response.json(calls.length===1?[row]:[{notes:'Rue Example, 18'}])}});
  assert.equal((await b.readItem('Bearer user',tid,{type:'manual',id:aId})).notes,'Rue Example, 18');
- assert.equal(calls.length,2);assert.doesNotMatch(calls[0].url.searchParams.get('select'),/notes|booking|contact|payment|\\*/);
+ assert.equal(calls.length,2);assert.doesNotMatch(calls[0].url.searchParams.get('select'),/notes|booking|contact|payment|\*/);
  assert.equal(calls[1].url.searchParams.get('select'),'notes');assert.equal(calls[1].url.searchParams.get('trip_id'),'eq.'+tid);assert.equal(calls[1].url.searchParams.get('id'),'eq.'+aId);assert.equal(calls[1].url.searchParams.get('updated_at'),'eq.'+row.updated_at);assert.equal(calls[1].options.headers.Authorization,'Bearer user');
 });
