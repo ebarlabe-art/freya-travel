@@ -7052,6 +7052,8 @@ async function proposeActivityPoints(){
     const snapshot=context.api.pointSnapshot(row,points,{automatic:true});
     if(context.api.samePointSnapshot(row.location_points,snapshot))continue;
     await saveActivityPoints(row,snapshot,context.scope);
+    // A fully persisted result no longer qualifies. Allow recovery if another client later clears it.
+    if(snapshot.points.every(p=>p.place))context.seen.delete(key);
     if(row._placeSource==='activity')activity=true;else manual=true;
    }catch(_){
     // Keep the activity usable. One failed lookup/save must not abort other rows.
