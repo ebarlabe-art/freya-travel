@@ -1,6 +1,6 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
-## B1 · Temps per arribar i logística immediata · v82 preparada en branca (25/11/2026)
+## B1 · Temps per arribar i logística immediata · v82 a `main` (PR #264) (25/11/2026)
 
 El bloc del tauler Ara i Següent selecciona una visita amb hora exacta i punt d’arribada verificable. Calcula per petició des de la ubicació puntual del dispositiu, de l’activitat anterior, d’un lloc desat o d’una adreça seleccionada mitjançant la cerca existent. Indica quan l’origen és una hipòtesi. Si s’escull l’activitat anterior, compta el marge a partir del seu final programat quan encara no ha acabat. Mostra la durada estimada, la sortida recomanada amb la zona horària local, el marge restant i els avisos. El marge de 10 minuts per defecte és l’única preferència que es desa al dispositiu. Les dades dels resultats viuen en memòria mentre la targeta és activa. La ubicació del dispositiu i els punts cercats puntualment no es desen a la memòria cau de rutes del servidor.
 
@@ -8,7 +8,15 @@ El bloc del tauler Ara i Següent selecciona una visita amb hora exacta i punt d
 
 **Verificació**. Proves enfocades de càlcul, canvi d’hora, permisos, registres del mateix viatge i respostes insuficients. Comprovació de l’Edge Function amb Deno i compilació i paritat de Pages. A Chromium mòbil de 390 px, amb respostes controlades, s’han validat la selecció de la visita, l’entrada vinculada, GPS denegat i concedit, origen desat i cercat, modes, marge i falta de connexió. La prova física i una consulta real al proveïdor queden pendents. El tauler històric de Londres conserva la seva experiència estàtica.
 
-**Relleu**. Branca `feat/b1-trip-departure-v82` i PR en esborrany al repositori original. Amb autorització expressa, publicar primer l’actualització compatible de l’Edge Function `itinerary-route` i després fusionar la PR del frontend, que activa GitHub Pages. Cap migració ni canvi de dades. Verificar una ruta real i el flux a l’iPhone després de publicar.
+## B1.1 · Planificació de trajectes · PWA v83 en esborrany (25/11/2026)
+
+A Itinerari, la targeta de B1 s’adapta al dia futur seleccionat. L’origen pot ser una activitat consecutiva, un allotjament, un altre lloc desat o un resultat de cerca verificat. La durada, la sortida recomanada en hora local i el marge es basen en els horaris previstos. Un origen triat manualment admet indicar l’hora a partir de la qual es pot sortir. Si falta una hora fiable, el marge queda indeterminat. Es manté el marge de seguretat configurable de B1 i s’identifiquen els trajectes que no hi caben.
+
+**Serveis i límits**. Reutilitza Geoapify per `itinerary-route` i la cerca de `place-resolution`, amb la cobertura i quota de B1. En dies futurs es calcula cada trajecte a petició. Les estimacions no incorporen trànsit, sortides ni esperes en directe. Cap migració, canvi d’itinerari ni contracte nou. El càlcul amb GPS puntual i els avisos d’Ara i Següent continuen disponibles durant el viatge.
+
+**Verificació**. Càlcul d’horaris i canvi d’hora verificats amb proves unitàries. A Chromium de 390 px, amb dades simulades, s’han comprovat el canvi de dia sense peticions automàtiques, el conflicte d’horaris, l’ajust del marge, l’allotjament, l’origen cercat i la continuïtat de B1.
+
+**Relleu**. Única PR v83, pendent d’autorització. Validació física amb el viatge real de Riga i Tallinn amb les seves dates actuals. Després de validar, reprendre B2.
 
 ## UX-01 · Convergència visual dels viatges · CLOSED (25/11/2026)
 

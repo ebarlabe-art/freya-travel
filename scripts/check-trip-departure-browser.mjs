@@ -31,6 +31,17 @@ const activities=[['Previous museum',-45,5,38.909,1.435],['Appointment without a
   id:id(i+2),trip_id:trip.id,title,activity_type:'visit',reservation_status:'confirmed',
   start_at:stamp(start),end_at:stamp(end),time_zone:zone,updated_at:stamp(-120),city:'Eivissa',latitude,longitude
  }));
+const firstDay=stamp(1440).slice(0,10), secondDay=stamp(2880).slice(0,10);
+const plannedTrip={...trip,id:id(20),name:'Riga and Tallinn fixture',start_date:firstDay,end_date:secondDay};
+const plannedActivities=[
+ [firstDay,'Riga museum','07:00','08:00'],[firstDay,'Riga gallery','08:20','09:30'],
+ [secondDay,'Tallinn museum','09:00','10:00']
+].map(([day,title,start,end],i)=>({
+ ...activities[0],id:id(21+i),trip_id:plannedTrip.id,title,
+ start_at:day+'T'+start+':00Z',end_at:day+'T'+end+':00Z'
+}));
+const hotel={id:id(24),trip_id:plannedTrip.id,name:'Riga hotel',address:'Riga hotel',reservation_status:'confirmed',
+ latitude:56.95,longitude:24.11,time_zone:zone};
 const ticketId=id(7);
 const link={trip_id:trip.id,activity_id:activities[2].id,document_id:ticketId,document_role:'ticket'};
 const ticket={id:ticketId,trip_id:trip.id,title:'Exhibition ticket',file_path:'fixture.png',mime_type:'image/png',category:'Entrades'};
@@ -76,11 +87,13 @@ async function expectText(locator,pattern){
 }
 try{
  await page.goto(url);await page.waitForFunction(()=>typeof renderSession==='function'&&authInitializationResolved);
- await page.evaluate(async({trip,activities,link,ticket,uid})=>{
-  db.rpc=async name=>({data:name==='get_my_trips'?[trip]:[],error:null});
+ await page.evaluate(async({trip,activities,plannedTrip,plannedActivities,hotel,link,ticket,uid})=>{
+  db.rpc=async name=>({data:name==='get_my_trips'?[trip,plannedTrip]:[],error:null});
   db.from=table=>{
-   const data={trip_activities:activities,trip_activity_documents:[link],travel_documents:[ticket]}[table]||[];
+   let data={trip_activities:[...activities,...plannedActivities],trip_accommodations:[hotel],
+    trip_activity_documents:[link],travel_documents:[ticket]}[table]||[];
    const query=new Proxy({}, {get(_,key){
+    if(key==='eq')return (field,value)=>{data=data.filter(row=>row[field]===value);return query};
     if(key==='then')return (resolve,reject)=>Promise.resolve({data,error:null}).then(resolve,reject);
     return ()=>query;
    }});
@@ -90,7 +103,7 @@ try{
   db.removeChannel=async()=>{};
   openDocument=async id=>{window.b1OpenedTicket=id};
   await renderSession({user:{id:uid,email:'fixture@example.invalid'}});
- },{trip,activities,link,ticket,uid:id(9)});
+ },{trip,activities,plannedTrip,plannedActivities,hotel,link,ticket,uid:id(9)});
  await page.locator(`[data-select-trip="${trip.id}"]:visible`).click();
  await page.locator('#departureTitle').waitFor({state:'visible'});
  await expectText(field('target'),/Next exhibition/);
@@ -139,8 +152,49 @@ try{
  assert.equal(await field('calculate').isDisabled(),true);
  assert.equal(await field('route').isVisible(),false);
  assert.equal(calls.length,4);
+ await context.setOffline(false);
+ await page.evaluate(id=>selectTrip(id,{open:true}),plannedTrip.id);
+ await page.locator('#genericItineraryModuleCard').tap();
+ const planner=page.locator('#plannedDepartureSlot');
+ await expectText(planner.getByRole('heading'),/Plan your journeys/);
+ assert.equal(calls.length,4,'Future agenda must not fetch any routes automatically');
+ assert.equal(await field('origin').inputValue(),'previous');
+ assert.equal(await field('origin').locator('option[value="device"]').count(),0);
+ await field('margin').fill('10');await field('margin').blur();
+ await field('calculate').tap();
+ await expectText(status,/Not enough time in the planned schedule/);
+ await expectText(field('available'),/-5 min/);
+ await expectText(field('duration'),/15 min/);
+ await expectText(field('quality'),/Planning estimate/);
+ assert.equal(calls[4].origin.id,plannedActivities[0].id);
+ assert.equal(calls[4].destination.id,plannedActivities[1].id);
+ await field('margin').fill('0');await field('margin').blur();
+ await expectText(status,/fits with the planned buffer/);
+ await expectText(field('available'),/5 min/);
+ assert.equal(calls.length,5,'Changing the buffer must reuse the current estimate');
+ await field('destination').selectOption({label:await field('destination').locator('option').first().textContent()});
+ await field('origin').selectOption('lodging:'+hotel.id);
+ await field('calculate').tap();
+ await expectText(status,/needed to check the gap/);
+ await expectText(field('available'),/—/);
+ assert.deepEqual(calls[5].origin,{type:'selected',latitude:hotel.latitude,longitude:hotel.longitude});
+ await field('ready').fill('06:00');
+ await expectText(status,/fits with the planned buffer/);
+ await field('origin').selectOption('selected');
+ await field('query').fill('Station entrance, Riga');
+ await field('search').tap();
+ await page.getByRole('button',{name:'Station entrance, Eivissa',exact:true}).tap();
+ await field('mode').selectOption('drive');await field('calculate').tap();
+ await field('result').waitFor({state:'visible'});
+ assert.equal(calls[6].origin.type,'selected');assert.equal(calls[6].mode,'drive');
+ await page.locator('[data-generic-itinerary-day="'+secondDay+'"]').tap();
+ await expectText(field('destination'),/Tallinn museum/);
+ assert.equal(await field('result').isVisible(),false);
+ assert.equal(calls.length,7);
+ assert.equal(await page.evaluate(()=>window.b1PositionCalls),2);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  assert.deepEqual(errors,[]);
- console.log('PASS B1 390px: next verified visit, ticket link, explicit GPS denied/accepted, saved origins, all modes, margin, and offline.');
+ console.log('PASS B1 390px: next verified visit, ticket link, explicit GPS denied/accepted, saved origins, all modes, margin, and offline. B1.1: future days, on-demand routes, schedule conflict, lodging, and custom origin.');
 }finally{
  await browser.close();await new Promise(resolve=>server.close(resolve));
 }

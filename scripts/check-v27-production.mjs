@@ -24,5 +24,5 @@ async function scan(dir){
  }
 }
 await scan(root);
-assert.match(await readFile(new URL('sw.js',root),'utf8'),/freya-travel-release-6444-v82/);
-console.log('PASS public artifact: intended project only, public client key, entry parity, v82 worker, no independent-environment files.');
+assert.match(await readFile(new URL('sw.js',root),'utf8'),/freya-travel-release-6444-v83/);
+console.log('PASS public artifact: intended project only, public client key, entry parity, v83 worker, no independent-environment files.');

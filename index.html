@@ -578,9 +578,10 @@
     .trip-home-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.trip-home-actions a,.trip-home-actions button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;max-width:100%;padding:11px 14px;border-radius:12px;font:inherit;font-weight:700;text-decoration:none;background:#eee8f4;color:#4f378b;white-space:normal;overflow-wrap:anywhere}
     .trip-departure{background:#faf7fd}
     .departure-controls,.departure-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .departure-controls label{display:grid;gap:5px;align-content:end;font-weight:700;font-size:.9rem;min-width:0}
+    .departure-controls label,.departure-ready{display:grid;gap:5px;align-content:end;font-weight:700;font-size:.9rem;min-width:0}
     .departure-origin{grid-column:1/-1}
-    .departure-controls input,.departure-controls select{font-size:16px;width:100%;min-width:0;min-height:44px;padding:8px;border:1px solid #cbb9df;border-radius:12px;background:#fff;color:inherit}
+    .departure-ready{margin-top:10px}
+    .departure-controls input,.departure-controls select,.departure-ready input{font-size:16px;width:100%;min-width:0;min-height:44px;padding:8px;border:1px solid #cbb9df;border-radius:12px;background:#fff;color:inherit}
     .trip-departure button{min-height:44px}
     .departure-search{margin-top:10px}
     .departure-search input{display:block;margin:5px 0 8px;font-size:16px}
@@ -589,9 +590,9 @@
     .departure-summary dt{color:var(--muted);font-size:.83rem}
     .departure-summary dd{margin:4px 0 0;color:#4f378b;font-weight:800;font-variant-numeric:tabular-nums}
     .trip-departure [role=status]:empty,.departure-actions:has(>a.hidden):has(>.departure-documents:empty){display:none}
-    .trip-departure [data-departure-status=onTime]{color:#245435;font-weight:800}
+    .trip-departure [data-departure-status=onTime],.trip-departure [data-departure-status=plannedFits]{color:#245435;font-weight:800}
     .trip-departure [data-departure-status=soon]{color:#6e4900;font-weight:800}
-    .trip-departure [data-departure-status=late]{color:#8c1d18;font-weight:800}
+    .trip-departure [data-departure-status=late],.trip-departure [data-departure-status=plannedConflict]{color:#8c1d18;font-weight:800}
     .departure-documents{display:contents}
     .trip-home summary{cursor:pointer;padding:14px 0;min-height:44px;font-weight:700}.trip-home li{margin:8px 0;overflow-wrap:anywhere}.trip-home ul{padding-left:22px}
     @media(max-width:420px){.trip-home-card{padding:14px}.trip-home-actions>*{flex:1 1 135px}}
@@ -2335,6 +2336,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         </section>
         <div id="genericItineraryBrowse">
           <div id="genericItineraryDayTabs" class="generic-itinerary-day-tabs" role="tablist" aria-label="Dies del viatge"></div>
+          <div id="plannedDepartureSlot"></div>
           <section id="itinerarySavedAlternatives" class="itinerary-import-alternatives hidden" aria-labelledby="itinerarySavedAlternativesTitle">
             <h4 id="itinerarySavedAlternativesTitle">🌿 Tens plans alternatius al PDF?</h4>
             <p>Si ja has desat el planning, les opcions que no vas seleccionar no apareixen a l’agenda. Pots recuperar-les del document original guardat al viatge, sense tornar a desar les activitats que ja tens.</p>
@@ -2785,7 +2787,7 @@ document.getElementById('tripHome').setAttribute('aria-label',dashboardText('now
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-b1-departure-v82';
+const FREYA_FRONTEND_RELEASE='pwa-b1-1-planned-routes-v83';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -5884,7 +5886,7 @@ function setAppView(id){
   if(isLondonTrip()&&['genericDashboardView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','carRentalView'].includes(id))id='dashboardView';
   if(!isLondonTrip()&&!GENERIC_ALLOWED_VIEWS.has(id))id='genericDashboardView';
   if(id==='buildView'&&!trip?.tb_handoff)id='genericDashboardView';
-  if(id==='itineraryView')configureItineraryContent();
+  if(id==='itineraryView')configureItineraryContent();else clearPlannedDeparture();
   APP_VIEWS.forEach(v=>$(v)?.classList.toggle('hidden',v!==id));
   document.querySelectorAll('[data-home-view]').forEach(button=>button.setAttribute('aria-current',button.dataset.homeView===id?'page':'false'));
   if(['dashboardView','genericDashboardView'].includes(id)){
@@ -7531,20 +7533,54 @@ function syncTripDeparture(slot,items,next){
     tripDepartureMount=mounted;
     const current=()=>tripDepartureMount===mounted&&slot.isConnected&&itineraryRequestIsCurrent(tripId,generation,userId)&&
       visibleAppView()==='genericDashboardView'&&!document.hidden;
-    void Promise.all([loadTravelBookModule('trip-departure-ui.mjs'),loadTravelBookModule('place-resolution.mjs')])
-    .then(([{mountTripDeparture},{PlaceClient}])=>{
-      if(!current())return;
-      const root=document.createElement('section'),places=new PlaceClient(db);
-      mounted.controller=mountTripDeparture(root,{language:insightsLanguage,tripId,userId,current,
-        online:()=>!connectionUnavailable(),invoke:invokeItineraryRoute,geolocation:()=>navigator.geolocation,
-        getStorage:()=>localStorage,readRow:tripHomeSourceRow,getDocuments:tripHomeDocuments,openDocument:openTripHomeDocument,
-        searchPlaces:async input=>(await places.searchPlaces(input)).candidates||[]});
-      slot.append(root);mounted.controller.show(mounted.items,mounted.next);
+    void buildDepartureController(slot,{tripId,userId,current},controller=>{
+      mounted.controller=controller;
+      controller.show(mounted.items,mounted.next);
     }).catch(()=>{if(current())clearTripDeparture()});
   }else{
     Object.assign(tripDepartureMount,{items,next});
     tripDepartureMount.controller?.show(items,next);
   }
+}
+async function buildDepartureController(slot,{tripId,userId,current,planningDay},bind){
+ const [{mountTripDeparture},{PlaceClient}]=await Promise.all([
+  loadTravelBookModule('trip-departure-ui.mjs'),loadTravelBookModule('place-resolution.mjs')
+ ]);
+ if(!current())return;
+ const root=document.createElement('section'),places=new PlaceClient(db);
+ const controller=mountTripDeparture(root,{language:insightsLanguage,tripId,userId,current,
+  online:()=>!connectionUnavailable(),invoke:invokeItineraryRoute,geolocation:()=>navigator.geolocation,
+  getStorage:()=>localStorage,readRow:tripHomeSourceRow,getDocuments:tripHomeDocuments,openDocument:openTripHomeDocument,
+  searchPlaces:async input=>(await places.searchPlaces(input)).candidates||[],planningDay,localToIso:zonedLocalToIso});
+ slot.append(root);bind(controller);
+}
+
+let plannedDepartureMount=null;
+function clearPlannedDeparture(){
+ plannedDepartureMount?.controller?.dispose();
+ plannedDepartureMount=null;
+}
+function syncPlannedDeparture(day,today,items){
+ const slot=$('plannedDepartureSlot');
+ if(!slot||!day||day==='pending'||!today||day<=today||!itinerarySourcesAreReady()||visibleAppView()!=='itineraryView'){
+  clearPlannedDeparture();return;
+ }
+ const accommodations=accommodationRows.filter(row=>!isProposalPlaceholderAccommodation(row));
+ const tripId=trip.id,userId=session.user.id,generation=tripLoadGeneration;
+ const key=JSON.stringify([tripId,userId,generation,day]);
+ if(plannedDepartureMount?.key===key&&plannedDepartureMount.slot===slot){
+  Object.assign(plannedDepartureMount,{items,accommodations});
+  plannedDepartureMount.controller?.showPlanned(items,accommodations);return;
+ }
+ clearPlannedDeparture();
+ const mounted={key,slot,items,accommodations,controller:null};
+ plannedDepartureMount=mounted;
+ const current=()=>plannedDepartureMount===mounted&&slot.isConnected&&genericItinerarySelectedDay===day&&
+  itineraryRequestIsCurrent(tripId,generation,userId)&&visibleAppView()==='itineraryView'&&itinerarySourcesAreReady();
+ void buildDepartureController(slot,{tripId,userId,current,planningDay:day},controller=>{
+  mounted.controller=controller;
+  controller.showPlanned(mounted.items,mounted.accommodations);
+ }).catch(()=>{if(current())clearPlannedDeparture()});
 }
 function renderTripHome(){
   if(!trip||!session||isLondonTrip()||!$('tripHomeContent'))return;
@@ -7623,6 +7659,7 @@ document.addEventListener('visibilitychange',updateTripHomeClock);
 window.addEventListener('pageshow',updateTripHomeClock);
 function clearTripHomeState(){
   clearTripDeparture();
+  clearPlannedDeparture();
   tripProgressRequests.clear();
   if(tripHomeTimer)clearInterval(tripHomeTimer);tripHomeTimer=null;tripHomeChecklist=null;tripHomeChecklistSequence+=1;tripHomeItineraryFocus=null;agendaBatch=null;tripHomeAgendaAttempted=false;agendaRequests.clear();
   if($('tripHomeContent')){$('tripHomeContent').innerHTML='';$('tripHomeContent')._homeHtml=null}
@@ -8233,7 +8270,7 @@ async function renderAgendaRoutes(items,day){
   const pointsApi=await loadTravelBookModule('itinerary-place-points.mjs');if(!current())return;
   const projected=items.map(item=>{const row=tripHomeSourceRow(item);return {...item,isTransport:(item.sourceType==='activity'&&isLocalTransportActivity(row))||(item.sourceType==='manual'&&/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(String(row?.title||''))),hasRoutePlace:!!(row?.location_points||row?.location_name||row?.venue_name||row?.address||(Number.isFinite(row?.latitude)&&Number.isFinite(row?.longitude))),locationPoints:row?pointsApi.activityGeographicPoints(row):null}});
   agendaRouteModule.mountAgendaRoutes({root:$('genericItineraryDays'),items:projected,tripId,userId,generation,day,current,contextKey:JSON.stringify(tripStopRows),online:()=>!connectionUnavailable(),preserveViewport:preserveActivityPointViewport,
-   invoke:invokeItineraryRoute,
+   invoke:invokeItineraryRoute,autoLoad:!(day>genericItineraryToday()),language:insightsLanguage,
    rentals,timeZone:trip.time_zone||'UTC',
    visitPlans:(dayVisitPlans.get(JSON.stringify([userId,tripId,day]))?.signature===dayPlanSignature(items.filter(x=>x.tripId===tripId&&x.localDate===day&&!x.isCancelled&&['manual','activity'].includes(x.sourceType)&&!(x.sourceType==='activity'&&isLocalTransportActivity(tripHomeSourceRow(x)))&&!(x.sourceType==='manual'&&/^(?:sortida|arribada|trasllat|transfer|vol|flight|taxi|tren|metro|bus)\b/i.test(String(x.title||'')))).slice(0,20))?dayVisitPlans.get(JSON.stringify([userId,tripId,day])).plans:new Map()),
    onEdit:item=>{const button=itineraryPointRow(item)&&document.querySelector('[data-activity-points="'+CSS.escape(item.key)+'"]');if(button)void openActivityPointEditor(button);else if(item.sourceType==='manual')openManualItineraryForm(item.sourceId);else openItinerarySource(item.sourceType,item.sourceId)}});
@@ -8366,6 +8403,7 @@ function renderGenericItinerary(){
   restorePointEditor();
   proposeItineraryAutoPlaces(selected);
   void proposeActivityPoints(selected).catch(()=>{});
+  syncPlannedDeparture(selected,today,groups.get(selected)||[]);
   if(typeof renderAgendaRoutes==='function'&&itinerarySourcesAreReady())renderAgendaRoutes(activeItems,selected);
   if(selected&&selected!=='pending'&&activeItems.length&&itinerarySourcesAreReady()&&!dayMetadataEditor)
    void generateItineraryDayContext(selected,true);
