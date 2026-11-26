@@ -104,7 +104,12 @@ try{
  }
  await page.reload();await page.locator('#loginCard').waitFor({state:'visible'});await page.evaluate(install,{tripId:id(1),userId:id(2)});
  const restored=page.locator(`[data-itinerary-key="manual:${lunch.id}"]`);
- await restored.locator('a[href*="maps/search"]').first().waitFor({state:'visible'});
+ const directions=restored.locator('a[href*="maps/dir/"]').first();
+ await directions.waitFor({state:'visible'});
+ const target=new URL(await directions.getAttribute('href')),savedPlace=rows.find(r=>r.id===lunch.id).location_points.points[0].place;
+ assert.equal(target.hostname,'www.google.com');
+ assert.equal(target.searchParams.get('api'),'1');
+ assert.equal(target.searchParams.get('destination'),savedPlace.latitude+','+savedPlace.longitude,'London-style directions reuse the persisted coordinates after reload');
  await restored.locator('[data-cultural-guide]').tap();await page.locator('[data-guide-text="history"]').waitFor();
  assert.ok((await page.locator('[data-guide-text="history"]').innerText()).includes('Bagnères-de-Luchon'));
  assert.deepEqual(errors,[]);
