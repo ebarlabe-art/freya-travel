@@ -2803,7 +2803,7 @@ document.getElementById('tripHome').setAttribute('aria-label',dashboardText('now
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-travel-book-portable-v91';
+const FREYA_FRONTEND_RELEASE='pwa-travel-book-portable-v92';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -3591,31 +3591,85 @@ function clearTravelBookPortable(){
 function travelBookPortableCurrent(job){
  return travelBookPortableJob===job&&job.state===travelBookProposalState&&travelBookEditScope(job.state)&&!$('travelBookView').classList.contains('hidden')&&!job.state.saving&&!job.state.persistence?.records?.some(r=>r.dirty||r.pending||r.error)&&job.signature===JSON.stringify(job.state.proposal);
 }
-async function travelBookPortableImage(url,job,budget){
+async function readTravelBookPortableImage(url,signal){
  if(!url)throw Error('Falta una fotografia de l’àlbum. Torna a obrir-lo.');
  const parsed=new URL(url,location.href);
  if(!['https:','http:','blob:','data:'].includes(parsed.protocol))throw Error('Fotografia no compatible.');
- const controller=new AbortController(),abort=()=>controller.abort();job.controller.signal.addEventListener('abort',abort,{once:true});
- if(job.controller.signal.aborted)abort();
+ const controller=new AbortController(),abort=()=>controller.abort();signal.addEventListener('abort',abort,{once:true});
+ if(signal.aborted)abort();
  const timer=setTimeout(abort,30000);
  try{
   const response=await fetch(url,{signal:controller.signal,credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer'});
-  if(!response.ok)throw Error('No s’ha pogut carregar una fotografia. Torna a obrir l’àlbum i reintenta-ho.');
   const type=(response.headers.get('content-type')||'').split(';')[0].toLowerCase();
-  if(!/^image\/(jpeg|png|webp|gif|avif)$/.test(type))throw Error('Format de fotografia no compatible.');
-  const limit=Math.min(TB_PORTABLE_MAX_PHOTO,budget),parts=[];let size=0;
+  const supported=/^image\/(jpeg|png|webp|gif|avif)$/.test(type);
+  if(!response.ok||!supported){
+   await response.body?.cancel().catch(()=>{});
+   throw Error(response.ok?'Format de fotografia no compatible.':'No s’ha pogut carregar una fotografia. Torna a obrir l’àlbum i reintenta-ho.');
+  }
+  const parts=[];let size=0;
   const reader=response.body?.getReader();
   if(!reader)throw Error('Aquest navegador no permet preparar les fotografies de manera segura.');
-  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>limit)throw Error('L’àlbum supera el límit de mida de l’edició portable.');parts.push(value);}}
+  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>TB_PORTABLE_MAX_PHOTO)throw Error('La variant de la fotografia supera el límit de lectura.');parts.push(value);}}
   catch(error){await reader.cancel().catch(()=>{});throw error;}
   finally{reader.releaseLock();}
   if(!size)throw Error('Hi ha una fotografia buida.');
-  const blob=new Blob(parts,{type});
-  // Decode one photo at a time. No whole-book DOM or canvas allocation.
-  const temp=URL.createObjectURL(blob);try{const img=new Image();img.src=temp;await img.decode();if(!img.naturalWidth)throw Error('Fotografia buida.');}catch{throw Error('No s’ha pogut llegir una fotografia. Torna a obrir l’àlbum i reintenta-ho.');}finally{URL.revokeObjectURL(temp);}
-  const data=await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=()=>reject(Error('No s’ha pogut incorporar una fotografia.'));fr.readAsDataURL(blob);});
-  return {data,size};
- }finally{clearTimeout(timer);job.controller.signal.removeEventListener('abort',abort);}
+  return new Blob(parts,{type});
+ }finally{clearTimeout(timer);signal.removeEventListener('abort',abort);}
+}
+async function travelBookPortableImage(visual,signal,budget){
+ const preview=typeof visual==='string'?visual:visual?.preview;
+ const thumbnail=typeof visual==='string'?'':visual?.thumbnail;
+ let source;
+ try{source=await readTravelBookPortableImage(preview||thumbnail,signal);}
+ catch(error){
+  signal.throwIfAborted();
+  if(!preview||!thumbnail||preview===thumbnail)throw error;
+  source=await readTravelBookPortableImage(thumbnail,signal);
+ }
+ const url=URL.createObjectURL(source),img=new Image();
+ let canvas;
+ try{
+  img.src=url;
+  try{await img.decode();}catch{throw Error('No s’ha pogut llegir una fotografia. Torna a obrir l’àlbum i reintenta-ho.');}
+  signal.throwIfAborted();
+  const longest=Math.max(img.naturalWidth,img.naturalHeight);
+  if(!longest)throw Error('Hi ha una fotografia buida.');
+  const maxBlobBytes=Math.floor((budget-32)/4)*3;
+  let result=source;
+  if(longest>1600||source.size>maxBlobBytes){
+   canvas=document.createElement('canvas');
+   const context=canvas.getContext('2d',{alpha:false});
+   if(!context)throw Error('Aquest navegador no permet optimitzar les fotografies.');
+   const minEdge=Math.min(640,longest);
+   let edge=Math.min(1600,longest);
+   for(;;){
+    canvas.width=Math.max(1,Math.round(img.naturalWidth*edge/longest));
+    canvas.height=Math.max(1,Math.round(img.naturalHeight*edge/longest));
+    context.fillStyle='#fff';
+    context.fillRect(0,0,canvas.width,canvas.height);
+    context.drawImage(img,0,0,canvas.width,canvas.height);
+    for(const quality of [0.9,0.79,0.67]){
+     result=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));
+     signal.throwIfAborted();
+     if(!result)throw Error('No s’ha pogut optimitzar una fotografia.');
+     if(result.size<=maxBlobBytes)break;
+    }
+    if(result.size<=maxBlobBytes)break;
+    if(edge===minEdge)throw Error('L’àlbum supera el límit de mida de l’edició portable.');
+    edge=Math.max(minEdge,Math.floor(edge*0.82));
+   }
+  }
+  return await new Promise((resolve,reject)=>{
+   const reader=new FileReader();
+   reader.onload=()=>resolve(reader.result);
+   reader.onerror=()=>reject(Error('No s’ha pogut incorporar una fotografia.'));
+   reader.readAsDataURL(result);
+  });
+ }finally{
+  if(canvas)canvas.width=canvas.height=0;
+  img.removeAttribute('src');
+  URL.revokeObjectURL(url);
+ }
 }
 async function prepareTravelBookPortable(){
  const state=travelBookProposalState,entries=travelBookReaderEntries(),status=$('travelBookPortableStatus'),button=$('travelBookPortable');
@@ -3626,26 +3680,33 @@ async function prepareTravelBookPortable(){
  }
  clearTravelBookPortable();
  const job={state,signature:JSON.stringify(state.proposal),controller:new AbortController()};travelBookPortableJob=job;button.disabled=true;
- const pages=[],images=[],seen=new Map();let bytes=0;
  try{
-  const models=entries.map(e=>travelBookReaderPageModel(state,e));
-  for(const [i,model] of models.entries()){
+  const assets=new Map(),images=[];
+  const pages=entries.map((entry,pageIndex)=>{
+   const model=travelBookReaderPageModel(state,entry);
+   const items=entry.type==='cover'?[state.proposal.cover]:entry.page.items;
+   const photos=items.map(({asset_id},index)=>{
+    if(!assets.has(asset_id))assets.set(asset_id,{index:assets.size,pageIndex});
+    return {image:assets.get(asset_id).index,caption:model.photos[index].caption};
+   });
+   return {...model,photos};
+  });
+  const title=state.proposal.title;
+  // Base64 is ASCII. Reserve the actual HTML overhead plus JSON separators and
+  // divide the space left among the remaining assets, carrying savings forward.
+  let remaining=TB_PORTABLE_MAX_BYTES-travelBookPortableFile(title,pages,[]).size-3*assets.size;
+  for(const [assetId,{index,pageIndex}] of assets){
    if(!travelBookPortableCurrent(job))throw Error('L’àlbum ha canviat. Torna a exportar.');
-   status.textContent='Preparant pàgina '+(i+1)+' / '+models.length+'…';
-   const photos=[];
-   for(const photo of model.photos){
-    const url=photo.zoom||photo.url;
-    if(!seen.has(url)){
-     const result=await travelBookPortableImage(url,job,TB_PORTABLE_MAX_BYTES-bytes);
-     if(!travelBookPortableCurrent(job))throw Error('L’àlbum ha canviat. Torna a exportar.');
-     bytes+=result.size;seen.set(url,images.length);images.push(result.data);
-    }
-    photos.push({image:seen.get(url),caption:photo.caption});
-   }
-   pages.push({...model,photos});
+   status.textContent='Preparant pàgina '+(pageIndex+1)+' / '+pages.length+'…';
+   const budget=Math.floor(remaining/(assets.size-index));
+   if(budget<=32)throw Error('L’àlbum supera el límit de mida de l’edició portable.');
+   const data=await travelBookPortableImage(state.visuals.get(assetId),job.controller.signal,budget);
+   remaining-=data.length;
+   images.push(data);
   }
   if(!travelBookPortableCurrent(job))throw Error('L’àlbum ha canviat. Torna a exportar.');
-  const file=travelBookPortableFile(state.proposal.title,pages,images);
+  const file=travelBookPortableFile(title,pages,images);
+  if(file.size>TB_PORTABLE_MAX_BYTES)throw Error('L’àlbum supera el límit de mida de l’edició portable.');
   job.name='Travel Book - '+String(state.proposal.title).replace(/[\\/:*?"<>|\x00-\x1f]/g,'_').slice(0,100)+'.html';
   job.url=URL.createObjectURL(file);button.textContent='Desa el fitxer HTML';status.textContent='Llibre preparat · '+(file.size/1024/1024).toFixed(1)+' MB. Toca el botó per desar-lo.';
  }catch(error){if(travelBookPortableJob===job){clearTravelBookPortable();status.textContent=error?.name==='AbortError'?'La preparació s’ha interromput. Torna-ho a provar.':error?.message||'No s’ha pogut preparar el llibre.';}}

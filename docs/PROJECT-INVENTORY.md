@@ -1,5 +1,11 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## C1 · Mida del Travel Book Portable · branca PWA v92 (26/11/2026)
+
+La prova física de la v91 a l’iPhone amb l’àlbum d’Eivissa (106 fotos preparades i 21 pàgines més portada) va superar el límit. L’exportació HTML v92 prioritza les variants digitals ja disponibles. Optimitza una foto cada vegada, ajusta la qualitat i la resolució segons l’espai restant i allibera els recursos temporals. El límit de 24 MiB inclou l’HTML, els textos i la codificació de les imatges. L’edició desada i les fotos originals es conserven.
+
+**Verificació i relleu**. Amb 108 fotos i 22 pàgines sintètiques, Chromium ha desat un HTML de menys de 24 MiB a partir de 99,4 MiB de variants. Es comproven el contingut i l’ordre de totes les pàgines, la lectura offline i l’ampliació. Proves focalitzades, paritat de les entrades i compilació superades. L’entrega queda pendent d’autorització i de validació física amb l’àlbum d’Eivissa.
+
 ## C1 · Travel Book Portable · branca PWA v91 (26/11/2026)
 
 El patch rebut encaixa amb la v90 (`8757bad`). L’àlbum es pot desar com un fitxer HTML autònom amb fotos incrustades, navegació per pàgines i ampliació de fotos. La preparació es fa al navegador a partir del lector i de la proposta desada. El fitxer conté records i fotografies privades i es pot obrir sense connexió. La preparació s’atura si falta una fotografia o se supera el límit de mida. El canvi no incorpora dependències ni migracions.
