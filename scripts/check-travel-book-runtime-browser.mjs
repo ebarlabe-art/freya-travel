@@ -84,6 +84,43 @@ try{
   assert.equal(requests.length,readerRequests);
   assert.deepEqual(saved,readerSaved);
   console.log('PASS digital Travel Book: cover, reader, page navigation, full photo, close, zero writes');
+  // Portable book: actual app export handler, raster fixtures only, no real user data.
+  const portableOriginalVisuals=await savePage.evaluate(()=>{
+    const state=travelBookProposalState,original=[...state.visuals];
+    const canvas=document.createElement('canvas');canvas.width=96;canvas.height=64;
+    const ctx=canvas.getContext('2d');let i=0;
+    for(const key of state.visuals.keys()){
+      ctx.fillStyle=['#6750a4','#b6c9a3','#e2bf95'][i++%3];ctx.fillRect(0,0,96,64);
+      state.visuals.set(key,canvas.toDataURL('image/png'));
+    }
+    return original;
+  });
+  await savePage.locator('#travelBookPortable').click();
+  await savePage.waitForFunction(()=>document.getElementById('travelBookPortable').textContent==='Desa el fitxer HTML');
+  const portableHTML=await savePage.evaluate(()=>fetch(travelBookPortableJob.url).then(r=>r.text()));
+  assert.doesNotMatch(portableHTML,/https?:\/\//);
+  const portableCtx=await browser.newContext({offline:true,serviceWorkers:'block',viewport:{width:390,height:844}});
+  try{
+    const book=await portableCtx.newPage(),external=[];book.on('request',r=>{if(/^https?:/.test(r.url()))external.push(r.url())});
+    await book.setContent(portableHTML);
+    assert.equal(await book.locator('#count').textContent(),'1 / 2');
+    await book.waitForFunction(()=>{const image=document.querySelector('#content img');return image?.complete&&image.naturalWidth>0});
+    await book.locator('#next').click();assert.equal(await book.locator('#count').textContent(),'2 / 2');
+    await book.locator('[data-tb-reader-photo]').first().click();
+    await book.waitForFunction(()=>{const image=document.getElementById('zoomImage');return image.complete&&image.naturalWidth>0});
+    await book.locator('#zoomClose').click();await book.locator('#prev').click();
+    assert.equal(await book.locator('#count').textContent(),'1 / 2');assert.deepEqual(external,[]);
+  }finally{await portableCtx.close()}
+  await savePage.evaluate(()=>{
+    clearTravelBookPortable();const state=travelBookProposalState;
+    state.visuals.delete(state.proposal.cover.asset_id);
+  });
+  await savePage.locator('#travelBookPortable').click();
+  await savePage.waitForFunction(()=>document.getElementById('travelBookPortableStatus').textContent.includes('Falta una fotografia'));
+  assert.equal(await savePage.evaluate(()=>travelBookPortableJob),null);
+  await savePage.evaluate(original=>{travelBookProposalState.visuals=new Map(original);clearTravelBookPortable()},portableOriginalVisuals);
+  assert.equal(requests.length,readerRequests);assert.deepEqual(saved,readerSaved);
+  console.log('PASS portable Travel Book: offline reader, embedded photos, navigation, zoom, missing-image guard, zero writes');
   for(const [selector,value] of [['[data-tb-edit="title"]','Títol desat'],['[data-tb-edit="subtitle"]','Comentari desat'],['[data-tb-photo-edit]','Text de fotografia']]){
    await savePage.locator(selector).first().fill(value);await savePage.locator(selector).first().press('Tab');
    await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent==='✓ Canvis desats.');
