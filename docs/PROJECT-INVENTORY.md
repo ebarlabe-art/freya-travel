@@ -1,5 +1,11 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## C1 · Travel Book Portable · branca PWA v91 (26/11/2026)
+
+El patch rebut encaixa amb la v90 (`8757bad`). L’àlbum es pot desar com un fitxer HTML autònom amb fotos incrustades, navegació per pàgines i ampliació de fotos. La preparació es fa al navegador a partir del lector i de la proposta desada. El fitxer conté records i fotografies privades i es pot obrir sense connexió. La preparació s’atura si falta una fotografia o se supera el límit de mida. El canvi no incorpora dependències ni migracions.
+
+**Verificació i relleu**. Paritat de les entrades, build de Pages i 147 proves focalitzades superades. La comprovació sintètica prèvia de la Product Owner cobreix un llibre de 22 pàgines. L’entrega queda pendent d’autorització per fusionar i publicar.
+
 ## P0 · Evidència geogràfica a B1 i B1.1 · branca v86 (25/11/2026)
 
 Sobre la v85 de la PR #268. Es recuperen les evidències literals de les notes i els noms de lloc identificables del títol. Els noms i les notes originals es conserven. L’enriquiment automàtic existent pot revisar punts pendents que coincideixen amb l’extracció anterior, amb la memòria cau i el control de versió existents. Una coincidència de nom o adreça queda limitada al país i a una àrea corroborada pel proveïdor. Els enllaços de Google Maps es resolen al mateix servei de llocs amb salts acotats i una llista de dominis tancada. Només s’aplica un punt exacte confirmat per Geoapify. El flux d’importació amb IA conserva les evidències geogràfiques literals de cada fila.

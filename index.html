@@ -1827,7 +1827,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
 
         <section class="tb-digital-invite" aria-label="Àlbum digital">
           <div><small>✨ EDICIÓ DIGITAL</small><h3>Reviu el viatge, pàgina a pàgina</h3><p>Fotografies protagonistes, records i històries per descobrir a pantalla completa. La impressió professional queda per a més endavant.</p></div>
-          <button id="travelBookOpenReader" type="button" disabled>▶ Veure l'àlbum</button>
+          <div><button id="travelBookOpenReader" type="button" disabled>▶ Veure l'àlbum</button> <button id="travelBookPortable" type="button" disabled>Descarrega el teu llibre</button><p>El fitxer inclou els teus records i fotografies privades.</p><p id="travelBookPortableStatus" role="status" aria-live="polite"></p></div>
         </section>
         <div id="travelBookSummary" class="travel-book-summary"></div>
         <section class="travel-book-entry" aria-label="Format de tot l'àlbum"><div><h3>📖 Format de tot l'àlbum</h3><p>Previsualitza totes les pàgines en horitzontal. No es canviarà res fins que ho confirmis.</p></div><div class="travel-book-summary"><button type="button" id="travelBookFormatAllPreview">Previsualitza tot en horitzontal</button><button type="button" id="travelBookFormatAllSave" hidden>Confirma i desa tot l'àlbum</button><button type="button" id="travelBookFormatAllCancel" hidden>Descarta la previsualització</button></div><p id="travelBookFormatAllStatus" role="status" aria-live="polite"></p></section>
@@ -2803,7 +2803,7 @@ document.getElementById('tripHome').setAttribute('aria-label',dashboardText('now
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-flight-import-timezone-v90';
+const FREYA_FRONTEND_RELEASE='pwa-travel-book-portable-v91';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -3402,6 +3402,7 @@ function renderTravelBookProposal(proposal,visuals,totalGallery=proposal.stats.r
   $('travelBookTitle').textContent=proposal.title;
   const totalPages=proposal.sections.reduce((sum,section)=>sum+(section.pages?.length||0),0);
   $('travelBookOpenReader').disabled=!totalPages&&!proposal.cover;
+  clearTravelBookPortable();
   $('travelBookSummary').innerHTML=`<span class="travel-book-chip">${proposal.stats.ready_photos} de ${totalGallery} fotos preparades</span><span class="travel-book-chip">${proposal.sections.length} dies/blocs</span><span class="travel-book-chip">${totalPages} pàgines proposades</span>`;
   const cover=$('travelBookCover'),coverUrl=proposal.cover?travelBookVisual(visuals,proposal.cover.asset_id,true):'';
   cover.classList.toggle('hidden',!proposal.cover);
@@ -3544,36 +3545,124 @@ function closeTravelBookReaderZoom(){
  $('travelBookReaderZoomImage').removeAttribute('src');
  $('travelBookReaderZoomCaption').textContent='';
 }
+function travelBookReaderPageModel(state,entry){
+ if(entry.type==='cover')return {type:'cover',title:state.proposal.title,photos:[{url:travelBookVisual(state.visuals,state.proposal.cover.asset_id,true),caption:''}]};
+ const {section,page}=entry;
+ return {type:'page',date:section.local_date?formatTravelBookDate(section.local_date):'Records del viatge',title:page.title||'Moments del viatge',subtitle:page.subtitle||'',style:['scrapbook','narrative','hero_editorial'].includes(page.creative_style)?page.creative_style:'hero_editorial',photos:page.items.map((item,i)=>({url:travelBookVisual(state.visuals,item.asset_id,i===0),zoom:travelBookVisual(state.visuals,item.asset_id,true),caption:item.overlay_text||''}))};
+}
+function travelBookReaderMarkup(model,index,total){
+ if(model.type==='cover'){
+  const photo=model.photos[0]?.url;
+  return '<article class="tb-reader-cover">'+(photo?'<img src="'+esc(photo)+'" alt="Fotografia de portada" decoding="async">':'')+'<div class="tb-reader-cover-copy"><small>Un viatge per recordar</small><h2>'+esc(model.title)+'</h2><p>Els moments que mereixen tornar a ser viscuts. Passa a la pàgina següent per començar.</p></div></article>';
+ }
+ const photos=model.photos.map((photo,i)=>'<figure class="tb-reader-tile"><button type="button" data-tb-reader-photo="'+i+'" aria-label="Amplia la fotografia '+(i+1)+'">'+(photo.url?'<img src="'+esc(photo.url)+'" decoding="async" alt="Fotografia '+(i+1)+' de '+model.photos.length+'">':'<span>Foto no disponible</span>')+'</button>'+(photo.caption?'<figcaption>'+esc(photo.caption)+'</figcaption>':'')+'</figure>').join('');
+ return '<article class="tb-reader-paper" data-creative="'+esc(model.style)+'"><header class="tb-reader-paper-head"><small>'+esc(model.date)+'</small><h2>'+esc(model.title)+'</h2>'+(model.subtitle?'<p>'+esc(model.subtitle)+'</p>':'')+'</header><div class="tb-reader-mosaic" data-creative="'+esc(model.style)+'">'+photos+'</div><p class="tb-reader-paper-foot">'+model.photos.length+' fotografies · '+(index+1)+' / '+total+'</p></article>';
+}
+function travelBookPortableRuntime(){
+ const el=id=>document.getElementById(id),data=JSON.parse(el('bookData').textContent);let index=0,touch=null;
+ function closeZoom(){el('zoom').classList.add('hidden');el('zoomImage').removeAttribute('src');el('zoomCaption').textContent='';}
+ function page(){const model=data.pages[index];return {...model,photos:model.photos.map(p=>({url:data.images[p.image],caption:p.caption}))};}
+ function show(){closeZoom();el('content').innerHTML=travelBookReaderMarkup(page(),index,data.pages.length);el('count').textContent=(index+1)+' / '+data.pages.length;el('prev').disabled=index===0;el('next').disabled=index===data.pages.length-1;el('scroll').scrollTop=0;}
+ function move(delta){const n=index+delta;if(n>=0&&n<data.pages.length) {index=n;show();}}
+ el('heading').textContent=data.title;el('prev').onclick=()=>move(-1);el('next').onclick=()=>move(1);el('zoomClose').onclick=closeZoom;
+ el('content').onclick=e=>{const b=e.target.closest('[data-tb-reader-photo]');if(!b)return;const p=page().photos[Number(b.dataset.tbReaderPhoto)];if(!p?.url)return;el('zoomImage').src=p.url;el('zoomCaption').textContent=p.caption;el('zoom').classList.remove('hidden');el('zoomClose').focus();};
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeZoom();return;}if(!el('zoom').classList.contains('hidden'))return;if(e.key==='ArrowRight')move(1);if(e.key==='ArrowLeft')move(-1);});
+ el('scroll').addEventListener('touchstart',e=>{const t=e.touches[0];touch=t?[t.clientX,t.clientY]:null;},{passive:true});
+ el('scroll').addEventListener('touchend',e=>{if(!touch)return;const t=e.changedTouches[0],dx=t.clientX-touch[0],dy=t.clientY-touch[1];touch=null;if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.5)move(dx<0?1:-1);},{passive:true});
+ show();
+}
+const TRAVEL_BOOK_PORTABLE_CSS="\n    .tb-digital-invite{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 22px;border-radius:24px;background:linear-gradient(125deg,#1d2538,#3c2d51 70%,#654c76);color:#fff;box-shadow:0 16px 30px #251c3733}\n    .tb-digital-invite small{display:block;font-size:.7rem;font-weight:800;letter-spacing:.18em;color:#e2cefa}\n    .tb-digital-invite h3{margin:6px 0 5px;font-size:clamp(1.25rem,2vw,1.6rem);font-family:Georgia,serif}\n    .tb-digital-invite p{margin:0;color:#e4ddeb;line-height:1.5;max-width:56ch}\n    .tb-digital-invite button{min-height:48px;min-width:160px;border:0;border-radius:999px;background:#fff;color:#372446;font-weight:850;padding:12px 19px;box-shadow:0 6px 22px #0003}\n    .tb-digital-invite button:disabled{opacity:.48}\n    @media(max-width:640px){.tb-digital-invite{flex-direction:column;align-items:stretch}.tb-digital-invite button{width:100%}}\n    #travelBookPortableReader{position:fixed;inset:0;margin:0;padding:0;width:100%;height:100dvh;max-width:none;max-height:none;border:0;border-radius:0;background:#15111d;color:#fff;overflow:hidden;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif}\n    \n    \n    .tb-reader-shell{height:100%;display:flex;flex-direction:column;min-height:0}\n    .tb-reader-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:calc(12px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left));border-bottom:1px solid #ffffff24;background:#1c1626}\n    .tb-reader-bar small{display:block;color:#d2bce9;text-transform:uppercase;letter-spacing:.15em;font-size:.67rem;font-weight:800}\n    .tb-reader-bar strong{font-size:.95rem;line-height:1.3;display:block;margin-top:3px;max-width:68vw;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}\n    .tb-reader-bar button,.tb-reader-actions button,.tb-reader-zoom-close{min-height:44px;border-radius:999px;border:1px solid #ffffff40;background:#ffffff19;color:#fff;font:inherit;font-weight:750;padding:10px 16px}\n    .tb-reader-bar button{min-width:44px;padding:7px}\n    .tb-reader-actions button:disabled{opacity:.35}\n    .tb-reader-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;padding:18px 14px 24px}\n    .tb-reader-paper,.tb-reader-cover{width:min(900px,100%);margin:0 auto;border-radius:24px;overflow:hidden;box-shadow:0 24px 55px #08050b77}\n    .tb-reader-paper{background:#fcf8f2;color:#312639;padding:clamp(18px,4vw,40px)}\n    .tb-reader-paper[data-creative=\"scrapbook\"]{background:#f9f1e4}\n    .tb-reader-paper[data-creative=\"narrative\"]{background:#f0edf4}\n    .tb-reader-paper-head small{color:#745879;font-size:.72rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase}\n    .tb-reader-paper-head h2{font-family:Georgia,\"Times New Roman\",serif;font-size:clamp(1.8rem,5vw,3rem);line-height:1.12;margin:9px 0 12px;color:#3d2c4a}\n    .tb-reader-paper-head p{font-size:clamp(1rem,2.7vw,1.18rem);line-height:1.55;color:#655771;margin:0 0 24px}\n    .tb-reader-mosaic{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:clamp(116px,22dvh,240px);gap:11px}\n    .tb-reader-tile{grid-column:span 3;min-width:0;min-height:0;position:relative;margin:0;border-radius:14px;overflow:hidden;background:#312a39}\n    .tb-reader-tile:first-child{grid-column:span 6;grid-row:span 2}\n    .tb-reader-mosaic[data-creative=\"scrapbook\"] .tb-reader-tile{border:5px solid #fff;box-shadow:0 5px 14px #3d28412b;border-radius:3px}\n    .tb-reader-mosaic[data-creative=\"narrative\"] .tb-reader-tile:first-child{grid-row:span 2}\n    .tb-reader-tile button{display:block;width:100%;height:100%;border:0;padding:0;background:#2b2432;cursor:zoom-in}\n    .tb-reader-tile img{display:block;width:100%;height:100%;object-fit:cover}\n    .tb-reader-tile figcaption{pointer-events:none;position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,#16101dc9);color:#fff;padding:26px 12px 12px;font-size:.86rem;line-height:1.35}\n    .tb-reader-tile button:focus-visible,.tb-reader-actions button:focus-visible,.tb-reader-bar button:focus-visible{outline:3px solid #f1c47d;outline-offset:2px}\n    .tb-reader-paper-foot{margin:18px 0 0;font-size:.79rem;letter-spacing:.05em;color:#7a6f80;text-align:right}\n    .tb-reader-cover{position:relative;height:min(68dvh,650px);min-height:330px;background:linear-gradient(140deg,#49325a,#1d1826);display:flex;align-items:end}\n    .tb-reader-cover>img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover}\n    .tb-reader-cover:after{content:\"\";position:absolute;inset:0;background:linear-gradient(180deg,#1a142700 20%,#160f1bea 100%)}\n    .tb-reader-cover-copy{position:relative;z-index:1;width:100%;padding:clamp(24px,6vw,65px);text-shadow:0 2px 20px #0009}\n    .tb-reader-cover-copy small{font-size:.75rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#f9d9f6}\n    .tb-reader-cover-copy h2{font-family:Georgia,serif;font-size:clamp(2.3rem,7vw,4.7rem);line-height:1.06;margin:12px 0}\n    .tb-reader-cover-copy p{color:#eee5f1;margin:0;max-width:38ch;line-height:1.5}\n    .tb-reader-actions{padding:12px max(16px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));border-top:1px solid #ffffff24;background:#1c1626;display:flex;align-items:center;justify-content:space-between;gap:10px}\n    .tb-reader-actions span{color:#e6d8ed;font-size:.84rem;font-variant-numeric:tabular-nums;text-align:center;white-space:nowrap}\n    .tb-reader-zoom{position:absolute;inset:0;z-index:12;background:#100d17f7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:calc(24px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}\n    .tb-reader-zoom.hidden{display:none!important}\n    .tb-reader-zoom img{min-height:0;max-width:100%;max-height:77dvh;object-fit:contain;border-radius:8px}\n    .tb-reader-zoom p{margin:0;color:#efe6f0;text-align:center;max-width:50ch}\n    .tb-reader-zoom-close{position:absolute;top:calc(12px + env(safe-area-inset-top));right:16px}\n    @media(min-width:680px){.tb-reader-mosaic{grid-auto-rows:minmax(155px,19dvh)}.tb-reader-mosaic .tb-reader-tile{grid-column:span 2}.tb-reader-mosaic .tb-reader-tile:first-child{grid-column:span 4;grid-row:span 2}}\n    @media(max-width:420px){.tb-reader-mosaic{grid-auto-rows:clamp(100px,19dvh,150px);gap:8px}.tb-reader-paper{border-radius:19px}.tb-reader-actions button{padding:10px 12px}.tb-reader-actions span{font-size:.77rem}}\n\n";
+function travelBookPortableFile(title,pages,images){
+ // Only editorial data and embedded images; no session, private URLs, or app runtime.
+ const json=JSON.stringify({title,pages,images}).replace(/</g,'\\u003c');
+ const start='<!doctype html><html lang="ca"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; connect-src \'none\'; base-uri \'none\'; form-action \'none\'"><title>'+esc(title)+' · Travel Book</title><style>*{box-sizing:border-box}body{margin:0}button{cursor:pointer}.hidden{display:none!important}'+TRAVEL_BOOK_PORTABLE_CSS+'.tb-reader-tile figcaption{overflow-wrap:anywhere;max-height:100%;overflow:auto;pointer-events:auto}.tb-reader-paper-head p{white-space:pre-wrap}</style></head><body><main id="travelBookPortableReader" open><div class="tb-reader-shell"><header class="tb-reader-bar"><div><small>Vola Vola · Travel Book</small><strong id="heading"></strong></div></header><div class="tb-reader-scroll" id="scroll"><div id="content" aria-live="polite"></div></div><nav class="tb-reader-actions" aria-label="Navegació"><button id="prev">← Anterior</button><span id="count" role="status"></span><button id="next">Següent →</button></nav><div id="zoom" class="tb-reader-zoom hidden" role="dialog" aria-label="Fotografia ampliada"><button class="tb-reader-zoom-close" id="zoomClose">Tanca</button><img id="zoomImage" alt="Fotografia ampliada"><p id="zoomCaption"></p></div></div></main><noscript>Obre el llibre en un navegador amb JavaScript activat.</noscript>';
+ // Split closing tags so the enclosing application script is not terminated by the HTML parser.
+ return new Blob([start,'<script type="application/json" id="bookData">',json,'</scr'+'ipt><script>',esc.toString(),'\n',travelBookReaderMarkup.toString(),'\n(',travelBookPortableRuntime.toString(),')();</scr'+'ipt></body></html>'],{type:'text/html;charset=utf-8'});
+}
+const TB_PORTABLE_MAX_BYTES=24*1024*1024,TB_PORTABLE_MAX_PHOTO=5*1024*1024;
+let travelBookPortableJob=null;
+function clearTravelBookPortable(){
+ const job=travelBookPortableJob;travelBookPortableJob=null;
+ if(job){job.controller.abort();if(job.url)URL.revokeObjectURL(job.url);}
+ const button=$('travelBookPortable'),status=$('travelBookPortableStatus');
+ if(button){button.textContent='Descarrega el teu llibre';button.disabled=$('travelBookOpenReader').disabled;}
+ if(status)status.textContent='';
+}
+function travelBookPortableCurrent(job){
+ return travelBookPortableJob===job&&job.state===travelBookProposalState&&travelBookEditScope(job.state)&&!$('travelBookView').classList.contains('hidden')&&!job.state.saving&&!job.state.persistence?.records?.some(r=>r.dirty||r.pending||r.error)&&job.signature===JSON.stringify(job.state.proposal);
+}
+async function travelBookPortableImage(url,job,budget){
+ if(!url)throw Error('Falta una fotografia de l’àlbum. Torna a obrir-lo.');
+ const parsed=new URL(url,location.href);
+ if(!['https:','http:','blob:','data:'].includes(parsed.protocol))throw Error('Fotografia no compatible.');
+ const controller=new AbortController(),abort=()=>controller.abort();job.controller.signal.addEventListener('abort',abort,{once:true});
+ if(job.controller.signal.aborted)abort();
+ const timer=setTimeout(abort,30000);
+ try{
+  const response=await fetch(url,{signal:controller.signal,credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer'});
+  if(!response.ok)throw Error('No s’ha pogut carregar una fotografia. Torna a obrir l’àlbum i reintenta-ho.');
+  const type=(response.headers.get('content-type')||'').split(';')[0].toLowerCase();
+  if(!/^image\/(jpeg|png|webp|gif|avif)$/.test(type))throw Error('Format de fotografia no compatible.');
+  const limit=Math.min(TB_PORTABLE_MAX_PHOTO,budget),parts=[];let size=0;
+  const reader=response.body?.getReader();
+  if(!reader)throw Error('Aquest navegador no permet preparar les fotografies de manera segura.');
+  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>limit)throw Error('L’àlbum supera el límit de mida de l’edició portable.');parts.push(value);}}
+  catch(error){await reader.cancel().catch(()=>{});throw error;}
+  finally{reader.releaseLock();}
+  if(!size)throw Error('Hi ha una fotografia buida.');
+  const blob=new Blob(parts,{type});
+  // Decode one photo at a time. No whole-book DOM or canvas allocation.
+  const temp=URL.createObjectURL(blob);try{const img=new Image();img.src=temp;await img.decode();if(!img.naturalWidth)throw Error('Fotografia buida.');}catch{throw Error('No s’ha pogut llegir una fotografia. Torna a obrir l’àlbum i reintenta-ho.');}finally{URL.revokeObjectURL(temp);}
+  const data=await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=()=>reject(Error('No s’ha pogut incorporar una fotografia.'));fr.readAsDataURL(blob);});
+  return {data,size};
+ }finally{clearTimeout(timer);job.controller.signal.removeEventListener('abort',abort);}
+}
+async function prepareTravelBookPortable(){
+ const state=travelBookProposalState,entries=travelBookReaderEntries(),status=$('travelBookPortableStatus'),button=$('travelBookPortable');
+ if(!state||!entries.length||!travelBookEditScope(state)||$('travelBookView').classList.contains('hidden'))return;
+ if(state.saving||state.persistence?.records?.some(r=>r.dirty||r.pending||r.error)){status.textContent='Espera que tots els canvis estiguin desats.';return;}
+ if(travelBookPortableJob?.url&&travelBookPortableCurrent(travelBookPortableJob)){
+  const job=travelBookPortableJob,a=document.createElement('a');a.href=job.url;a.download=job.name;document.body.append(a);a.click();a.remove();status.textContent='Descàrrega iniciada. El fitxer conté fotos privades; comparteix-lo només amb qui vulguis.';return;
+ }
+ clearTravelBookPortable();
+ const job={state,signature:JSON.stringify(state.proposal),controller:new AbortController()};travelBookPortableJob=job;button.disabled=true;
+ const pages=[],images=[],seen=new Map();let bytes=0;
+ try{
+  const models=entries.map(e=>travelBookReaderPageModel(state,e));
+  for(const [i,model] of models.entries()){
+   if(!travelBookPortableCurrent(job))throw Error('L’àlbum ha canviat. Torna a exportar.');
+   status.textContent='Preparant pàgina '+(i+1)+' / '+models.length+'…';
+   const photos=[];
+   for(const photo of model.photos){
+    const url=photo.zoom||photo.url;
+    if(!seen.has(url)){
+     const result=await travelBookPortableImage(url,job,TB_PORTABLE_MAX_BYTES-bytes);
+     if(!travelBookPortableCurrent(job))throw Error('L’àlbum ha canviat. Torna a exportar.');
+     bytes+=result.size;seen.set(url,images.length);images.push(result.data);
+    }
+    photos.push({image:seen.get(url),caption:photo.caption});
+   }
+   pages.push({...model,photos});
+  }
+  if(!travelBookPortableCurrent(job))throw Error('L’àlbum ha canviat. Torna a exportar.');
+  const file=travelBookPortableFile(state.proposal.title,pages,images);
+  job.name='Travel Book - '+String(state.proposal.title).replace(/[\\/:*?"<>|\x00-\x1f]/g,'_').slice(0,100)+'.html';
+  job.url=URL.createObjectURL(file);button.textContent='Desa el fitxer HTML';status.textContent='Llibre preparat · '+(file.size/1024/1024).toFixed(1)+' MB. Toca el botó per desar-lo.';
+ }catch(error){if(travelBookPortableJob===job){clearTravelBookPortable();status.textContent=error?.name==='AbortError'?'La preparació s’ha interromput. Torna-ho a provar.':error?.message||'No s’ha pogut preparar el llibre.';}}
+ finally{if(travelBookPortableJob===job)button.disabled=false;}
+}
+$('travelBookPortable').onclick=prepareTravelBookPortable;
+
 function showTravelBookReaderPage(index){
  const state=travelBookProposalState,entries=travelBookReaderEntries(),entry=entries[index];
  if(!entry){$('travelBookReader').close();return}
- closeTravelBookReaderZoom();
- travelBookReaderIndex=index;travelBookReaderPhotos=[];
- const total=entries.length;
+ closeTravelBookReaderZoom();travelBookReaderIndex=index;
+ const total=entries.length,model=travelBookReaderPageModel(state,entry);
+ travelBookReaderPhotos=model.type==='cover'?[]:model.photos.map(p=>({url:p.zoom||p.url,caption:p.caption}));
  $('travelBookReaderHeading').textContent=state.proposal.title;
  $('travelBookReaderCounter').textContent=(index+1)+' / '+total;
- $('travelBookReaderPrev').disabled=index===0;
- $('travelBookReaderNext').disabled=index===total-1;
- if(entry.type==='cover'){
-  const photo=travelBookVisual(state.visuals,state.proposal.cover.asset_id,true);
-  $('travelBookReaderContent').innerHTML='<article class="tb-reader-cover">'+(photo?'<img src="'+esc(photo)+'" alt="Fotografia de portada" decoding="async">':'')+
-   '<div class="tb-reader-cover-copy"><small>Un viatge per recordar</small><h2>'+esc(state.proposal.title)+'</h2><p>Els moments que mereixen tornar a ser viscuts. Passa a la pàgina següent per començar.</p></div></article>';
- }else{
-  const {section,page}=entry;
-  const date=section.local_date?formatTravelBookDate(section.local_date):'Records del viatge';
-  const style=['scrapbook','narrative','hero_editorial'].includes(page.creative_style)?page.creative_style:'hero_editorial';
-  const photos=page.items.map((item,i)=>{
-   const url=travelBookVisual(state.visuals,item.asset_id,i===0);
-   travelBookReaderPhotos.push({url:travelBookVisual(state.visuals,item.asset_id,true)||url,caption:item.overlay_text||''});
-   return '<figure class="tb-reader-tile"><button type="button" data-tb-reader-photo="'+i+'" aria-label="Amplia la fotografia '+(i+1)+'">'+
-    (url?'<img src="'+esc(url)+'" loading="eager" decoding="async" alt="Fotografia '+(i+1)+' de '+page.items.length+'">':'<span>Foto no disponible</span>')+
-    '</button>'+(item.overlay_text?'<figcaption>'+esc(item.overlay_text)+'</figcaption>':'')+'</figure>';
-  }).join('');
-  $('travelBookReaderContent').innerHTML='<article class="tb-reader-paper" data-creative="'+style+'"><header class="tb-reader-paper-head"><small>'+esc(date)+'</small>'+
-   '<h2>'+esc(page.title||'Moments del viatge')+'</h2>'+(page.subtitle?'<p>'+esc(page.subtitle)+'</p>':'')+'</header>'+
-   '<div class="tb-reader-mosaic" data-creative="'+style+'">'+photos+'</div><p class="tb-reader-paper-foot">'+page.items.length+
-   ' fotografies · '+(index+1)+' / '+total+'</p></article>';
- }
+ $('travelBookReaderPrev').disabled=index===0;$('travelBookReaderNext').disabled=index===total-1;
+ $('travelBookReaderContent').innerHTML=travelBookReaderMarkup(model,index,total);
  $('travelBookReaderScroll').scrollTop=0;
 }
 function openTravelBookReader(){
@@ -5890,6 +5979,7 @@ function persistNavigationState(view){
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
 function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent='';}
 function setAppView(id){
+  if(id!=='travelBookView'&&visibleAppView()==='travelBookView')clearTravelBookPortable();
   if(visibleAppView()==='sharedExpensesView'&&id!=='sharedExpensesView'){
     sharedExpensesController?.dispose();sharedExpensesController=null;
   }
@@ -8639,6 +8729,7 @@ function clearGenericItineraryState(){
   document.querySelectorAll('.generic-itinerary-source-focus').forEach(card=>card.classList.remove('generic-itinerary-source-focus'));
 }
 function clearTripScopedState(){
+  clearTravelBookPortable();
   closeDocumentViewer();
   offlineSnapshotActive=false;offlineSnapshotSavedAt=null;updateConnectivityBanner();
   resetPhotoV2();
@@ -12577,6 +12668,7 @@ $('requestAnotherRecovery').onclick=async()=>{
 };
 $('purgeOfflineDocuments').onclick=purgeOfflineDocumentCopies;
 document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{
+  clearTravelBookPortable();
   const password=$('password');
   if(password)password.value='';
   msg('authMsg','');
