@@ -37,6 +37,13 @@ export function pointSaveMessage(snapshot){
 }
 
 // Search text is a draft; only selecting a candidate replaces confirmed identity.
+// The same provider identity and coordinates are already confirmed; searching
+// them again must not require selecting the same result or clearing that place.
+export function alreadySavedSearch(point,query,candidates,baseline){
+ const saved=activityGeographicPoints(baseline)?.find(p=>p.id===point.id);
+ const same=(a,b)=>validPointPlace(a)&&validPointPlace(b)&&a.provider===b.provider&&a.provider_place_id===b.provider_place_id&&a.latitude===b.latitude&&a.longitude===b.longitude&&a.coordinate_role===b.coordinate_role;
+ return !!saved&&query.trim()===point.query&&point.query===saved.query&&same(point.place,saved.place)&&candidates.length===1&&same(candidates[0],saved.place);
+}
 export function editPointSearch(point,state,value){
  state.searchQuery=value;
  if(!point.place)point.query=value;
@@ -89,6 +96,7 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
  root.append(el('style',candidateStyles),heading,help,conflict,list,status,footer);host.append(root);let busy=false,saving=false,serial=0,latest=row,conflictVersion=null;
  let selectedId=points[0]?.id||null;
  const pointStates=new Map();
+ const isSaved=point=>{const old=activityGeographicPoints(row)?.find(p=>p.id===point.id);return !!old?.place&&JSON.stringify(pointPlace(old.place))===JSON.stringify(pointPlace(point.place||old.place))&&!!point.place&&old.query===point.query};
  const stateFor=point=>{if(!pointStates.has(point.id))pointStates.set(point.id,{message:'',candidates:[],error:false});return pointStates.get(point.id)};
  root.dispose=()=>{serial++;root.remove()};
  root.syncRow=value=>{
@@ -117,7 +125,7 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
    const state=stateFor(point),box=el('fieldset'),legend=el('legend');
    const toggle=el('button');toggle.type='button';toggle.className='point-toggle';toggle.dataset.pointToggle='';toggle.setAttribute('aria-label','Edita el punt '+(i+1));toggle.setAttribute('aria-expanded',String(selectedId===point.id));toggle.disabled=saving;
    const title=el('strong'),badge=el('small');
-   const updateSummary=()=>{title.textContent=(i+1)+'. '+(point.place?.canonical_name||point.query||'Punt nou');badge.textContent=state.loading?'Cercant…':state.error?'Cerca no disponible':state.empty?'Sense coincidències':state.candidates.length?'Tria una coincidència':point.place?(point.status==='approximate'?'Zona aproximada seleccionada':'Ubicació seleccionada'):'Pendent de verificar'};
+   const updateSummary=()=>{title.textContent=(i+1)+'. '+(point.place?.canonical_name||point.query||'Punt nou');badge.textContent=state.loading?'Cercant…':state.error?'Cerca no disponible':state.empty?'Sense coincidències':state.candidates.length?'Tria una coincidència':point.place?(isSaved(point)?(point.status==='approximate'?'Zona aproximada desada':'Ubicació localitzada i desada'):(point.status==='approximate'?'Zona aproximada seleccionada':'Ubicació seleccionada')):'Pendent de verificar'};
    updateSummary();toggle.append(title,badge);legend.append(toggle);box.append(legend);
    toggle.onclick=()=>{if(!active()||saving)return;selectedId=selectedId===point.id?null:point.id;render()};
    const body=el('div');body.dataset.pointBody='';body.hidden=selectedId!==point.id;box.append(body);
@@ -138,7 +146,11 @@ export function mountActivityPointEditor({host,row,search,save,readRow=()=>row,c
      // a translation or a typo (Sant Bertrand / Saint-Bertrand). Rank exact
      // names first, but require the traveller to inspect and confirm the choice.
      const ranked=[...options].sort((a,b)=>Number(matchingPointCandidate(query,b))-Number(matchingPointCandidate(query,a)));
-     state.candidates=visiblePointCandidates(ranked).map(pointPlace);state.empty=state.candidates.length===0;
+     state.candidates=visiblePointCandidates(ranked).map(pointPlace);
+     if(alreadySavedSearch(point,query,state.candidates,row)){
+      state.candidates=[];state.empty=false;state.message='Aquesta ubicació ja està localitzada i desada. No cal tornar-la a confirmar.';return;
+     }
+     state.empty=state.candidates.length===0;
      state.message=state.candidates.length?'Tria el lloc correcte i comprova la població i el país. Encara no s’ha desat.'+(ranked.length>state.candidates.length?' Coincidències repetides agrupades.':''):'Cap coincidència verificable. Prova el nom local o una altra variant; el punt continua pendent.';
     }catch(e){if(active()&&request===serial){state.error=true;state.message=e.message||'La cerca no està disponible. Torna-ho a provar.'}}
     finally{if(active()&&request===serial){busy=false;state.loading=false;render()}}
