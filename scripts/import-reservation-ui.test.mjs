@@ -114,3 +114,9 @@ test('A2 shows the real Edge Function error code instead of the generic non-2xx 
   assert.match(html,/provider_invalid_response:'La lectura intel·ligent ha retornat una resposta no vàlida\.'/);
   assert.match(html,/invalid_model_output:'La lectura ha retornat dades amb un format inesperat\.'/);
 });
+
+test('airport code takes precedence over an ambiguous city in reservation import',()=>{
+ assert.match(html,/BCN:'Europe\/Madrid',BRU:'Europe\/Brussels'/);
+ assert.match(html,/resolveImportedFlightTimeZone\(segment.departure_airport_code,segment.departure_city/);
+ assert.match(html,/reservationApplyFeedback\(message,true\)/);
+});
