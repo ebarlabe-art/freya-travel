@@ -63,5 +63,23 @@ try{
  assert.deepEqual(await page.evaluate(()=>[flightFixture.rows.length,flightFixture.links.length,flightFixture.writes]),[6,8,4]);
  assert.equal(await page.evaluate(()=>JSON.stringify(flightFixture.rows.slice(0,2))===flightFixture.original),true);
  assert.ok(await page.evaluate(()=>flightFixture.assignments.every(a=>a.p_names.length===1&&flightFixture.rows.find(r=>r.id===a.p_flight_ids[0]).passengers===a.p_names[0])));
+ // Airport IATA codes disambiguate cities without an external place lookup.
+ await page.evaluate(()=>{
+  const field=value=>({value,confidence:'high',evidence:[{kind:'text',excerpt:value,page:1}]});
+  flightFixture.proposal.fields={flight_number:field('VY9001'),passengers:field('Synthetic passenger')};
+  flightFixture.proposal.flight_segments=[
+   {flight_number:'VY9001',departure_airport_code:'BCN',arrival_airport_code:'BRU',departure_city:'BARCELONA',arrival_city:'BRUSELAS',departure_at:'2027-01-02T07:00',arrival_at:'2027-01-02T09:15',passengers:'Synthetic passenger'},
+   {flight_number:'VY9002',departure_airport_code:'BRU',arrival_airport_code:'BCN',departure_city:'BRUSELAS',arrival_city:'BARCELONA',departure_at:'2027-01-03T21:55',arrival_at:'2027-01-03T23:59',passengers:'Synthetic passenger'}
+  ];
+ });
+ await importPdf();await page.locator('#reservationImportOverlay').waitFor({state:'hidden'});
+ assert.deepEqual(await page.evaluate(()=>flightFixture.rows.filter(r=>r.flight_number.startsWith('VY')).map(r=>[r.departure_time_zone,r.arrival_time_zone,r.departure_at,r.arrival_at])),[['Europe/Madrid','Europe/Brussels','2027-01-02T06:00:00.000Z','2027-01-02T08:15:00.000Z'],['Europe/Brussels','Europe/Madrid','2027-01-03T20:55:00.000Z','2027-01-03T22:59:00.000Z']]);
+ await importPdf();await page.locator('#reservationImportOverlay').waitFor({state:'hidden'});
+ assert.equal(await page.evaluate(()=>flightFixture.rows.filter(r=>r.flight_number.startsWith('VY')).length),2);
+ // A real unresolved zone must still block the whole batch and give visible feedback at the button.
+ await page.evaluate(()=>{flightFixture.proposal.flight_segments[0].departure_airport_code='ZZZ';flightFixture.proposal.flight_segments[0].departure_city='Unknown city'});
+ const beforeInvalid=await page.evaluate(()=>flightFixture.writes);
+ await importPdf();await page.locator('#reservationImportApplyStatus').filter({hasText:'Falta hora o zona horària segura'}).waitFor({state:'visible'});
+ assert.equal(await page.evaluate(()=>flightFixture.writes),beforeInvalid);
  assert.deepEqual(errors,[]);console.log('PASS #207 '+engine+': real PDF review/apply, missing airports, two cards, separate passengers/documents, repeat import and partial retry without duplicates.');
 }finally{await browser.close();server.close()}

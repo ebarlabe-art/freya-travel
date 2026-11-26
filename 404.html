@@ -1964,6 +1964,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         </div>
         <div id="reservationImportWarnings" class="import-reservation-warnings hidden"></div>
         <div id="reservationImportFields" class="import-reservation-fields"></div>
+        <p id="reservationImportApplyStatus" class="message hidden" role="status" aria-live="polite"></p>
         <div class="import-reservation-actions">
           <button id="reservationImportApply" type="button" class="hidden">Omple el formulari</button>
           <button id="reservationImportCancel" type="button" class="secondary">Tanca</button>
@@ -2802,7 +2803,7 @@ document.getElementById('tripHome').setAttribute('aria-label',dashboardText('now
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-itinerary-simple-navigation-v89';
+const FREYA_FRONTEND_RELEASE='pwa-flight-import-timezone-v90';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -10859,8 +10860,10 @@ function renderReservationImportSources(){
   select.innerHTML='<option value="">Tria un document ja pujat…</option>'+docs.map(document=>`<option value="${esc(document.id)}">${esc(document.title||document.file_name||'Document')}</option>`).join('');
   $('reservationImportUseDocument').disabled=!docs.length;
 }
-function closeReservationImport(){reservationImportState={target:null,document:null,proposal:null};$('reservationImportOverlay').classList.add('hidden');$('reservationImportFields').innerHTML='';$('reservationImportWarnings').innerHTML='';$('reservationImportWarnings').classList.add('hidden');$('reservationImportApply').classList.add('hidden');$('reservationImportSource').classList.remove('hidden');$('reservationImportFile').value=''}
+function reservationApplyFeedback(message='',error=false){const node=$('reservationImportApplyStatus');node.textContent=message;node.classList.toggle('hidden',!message);node.classList.toggle('error',error)}
+function closeReservationImport(){reservationApplyFeedback();reservationImportState={target:null,document:null,proposal:null};$('reservationImportOverlay').classList.add('hidden');$('reservationImportFields').innerHTML='';$('reservationImportWarnings').innerHTML='';$('reservationImportWarnings').classList.add('hidden');$('reservationImportApply').classList.add('hidden');$('reservationImportSource').classList.remove('hidden');$('reservationImportFile').value=''}
 async function showReservationImport(target,status){
+  reservationApplyFeedback();
   $('reservationImportTitle').textContent='Importa '+(reservationImportTypeLabels[target]||'reserva').toLowerCase();
   $('reservationImportStatus').textContent=status||'Carregant els documents del viatge…';
   $('reservationImportFields').innerHTML='';
@@ -10888,7 +10891,8 @@ function renderReservationImportProposal(proposal){
   const segmentNotice=proposal.target_type==='flight'&&proposal.flight_segments?.length>1?`He detectat ${proposal.flight_segments.length} trams de vol. En aplicar la reserva es crearan com a vols separats i quedaran vinculats al mateix document.`:'';
   const notices=[segmentNotice,...(proposal.missing_required||[]).map(v=>'Falta: '+v),...(proposal.warnings||[])].filter(Boolean);
   if(notices.length){$('reservationImportWarnings').innerHTML='<strong>Revisa també:</strong><br>'+notices.map(v=>esc(v)).join('<br>');$('reservationImportWarnings').classList.remove('hidden')}
-  $('reservationImportApply').classList.remove('hidden');
+  const button=$('reservationImportApply');button.textContent=segmentNotice?'Desa els '+proposal.flight_segments.length+' vols':'Omple el formulari';button.classList.remove('hidden');
+  reservationApplyFeedback();
 }
 function selectedReservationImportFields(){
   const p=reservationImportState.proposal;if(!p)return {};
@@ -10909,6 +10913,13 @@ async function resolveImportedTimeZone(place){
     const exact=candidates.filter(candidate=>importNormalizePlace(candidate.place.canonical_name)===key);
     return exact.length===1?exact[0].place.timezone:null;
   }catch{return null}
+}
+// IATA identifiers are more specific than an ambiguous city name. Use known
+// airport zones, then retain the existing verified place lookup for other codes.
+const IMPORT_AIRPORT_ZONES=Object.freeze({BCN:'Europe/Madrid',BRU:'Europe/Brussels',MAD:'Europe/Madrid',GRO:'Europe/Madrid',LHR:'Europe/London',LGW:'Europe/London',STN:'Europe/London',TLL:'Europe/Tallinn',RIX:'Europe/Riga',HEL:'Europe/Helsinki',DOH:'Asia/Qatar',CMB:'Asia/Colombo',MLE:'Indian/Maldives'});
+async function resolveImportedFlightTimeZone(code,city,airport){
+  const iata=String(code||'').trim().toUpperCase();
+  return Object.hasOwn(IMPORT_AIRPORT_ZONES,iata)?IMPORT_AIRPORT_ZONES[iata]:resolveImportedTimeZone(city||airport||iata);
 }
 async function saveFlightDocumentRows(rows,documentId,tripId,generation,userId){
   const current=()=>tripRequestIsCurrent(tripId,generation)&&session?.user?.id===userId;
@@ -10933,10 +10944,11 @@ async function createImportedFlightSegments(proposal,document,selectedFields){
   const common=name=>importValue(selectedFields,name)||null;
   const rows=[];
   for(const segment of segments){
-    const departureZone=await resolveImportedTimeZone(segment.departure_city||segment.departure_airport_name||segment.departure_airport_code);
-    const arrivalZone=await resolveImportedTimeZone(segment.arrival_city||segment.arrival_airport_name||segment.arrival_airport_code);
+    const departureZone=await resolveImportedFlightTimeZone(segment.departure_airport_code,segment.departure_city,segment.departure_airport_name);
+    const arrivalZone=await resolveImportedFlightTimeZone(segment.arrival_airport_code,segment.arrival_city,segment.arrival_airport_name);
     const departureLocal=importDateTime(segment.departure_at),arrivalLocal=importDateTime(segment.arrival_at);
     if(!departureLocal||!departureZone)throw new Error(`Falta hora o zona horària segura per al tram ${segment.flight_number}. Revisa la reserva abans de crear-lo.`);
+    if(arrivalLocal&&!arrivalZone)throw new Error(`Falta la zona horària d’arribada del tram ${segment.flight_number}. Revisa la reserva abans de crear-lo.`);
     const payload={
       trip_id:tripId,created_by:userId,airline:segment.airline||common('airline'),flight_number:segment.flight_number,
       departure_airport_code:segment.departure_airport_code?.toUpperCase()||null,departure_airport_name:segment.departure_airport_name||null,departure_city:segment.departure_city||null,
@@ -10966,7 +10978,7 @@ async function applyReservationImport(){
   const fields=selectedReservationImportFields(),v=name=>importValue(fields,name);
   let dateOnlySkipped=false;
   const dateValue=name=>{const raw=v(name),out=importDateTime(raw);if(raw&&!out)dateOnlySkipped=true;return out};
-  $('reservationImportApply').disabled=true;$('reservationImportStatus').textContent='Omplint el formulari…';
+  $('reservationImportApply').disabled=true;$('reservationImportStatus').textContent='Omplint el formulari…';reservationApplyFeedback(target==='flight'&&proposal.flight_segments?.length>1?'Desant els vols…':'Omplint el formulari…');
   try{
     renderDocuments(documentRows);
     if(target==='flight'&&proposal.flight_segments?.length>1){
@@ -10980,8 +10992,8 @@ async function applyReservationImport(){
       for(const [name,id] of Object.entries(map))if(fields[name])$(id).value=v(name);
       if(fields.departure_at){const value=dateValue('departure_at');if(value)$('flightDepartureAt').value=value}
       if(fields.arrival_at){const value=dateValue('arrival_at');if(value)$('flightArrivalAt').value=value}
-      const departureZone=await resolveImportedTimeZone(v('departure_city')||v('departure_airport_name'));if(departureZone)$('flightDepartureTimeZone').value=departureZone;
-      const arrivalZone=await resolveImportedTimeZone(v('arrival_city')||v('arrival_airport_name'));if(arrivalZone)$('flightArrivalTimeZone').value=arrivalZone;
+      const departureZone=await resolveImportedFlightTimeZone(v('departure_airport_code'),v('departure_city'),v('departure_airport_name'));if(departureZone)$('flightDepartureTimeZone').value=departureZone;
+      const arrivalZone=await resolveImportedFlightTimeZone(v('arrival_airport_code'),v('arrival_city'),v('arrival_airport_name'));if(arrivalZone)$('flightArrivalTimeZone').value=arrivalZone;
       renderFlightDocumentOptions(document.id,[],[]);$('flightBookingDocument').value=document.id;$('flightStatus').value='reserved';syncPieceStatus('flightStatus');saveFlightDraft();
     }else if(target==='accommodation'){
       openAccommodationForm();
@@ -11027,7 +11039,7 @@ async function applyReservationImport(){
     closeReservationImport();
     const messageId={flight:'flightMsg',accommodation:'accommodationMsg',activity:'activityMsg',local_transport:'localTransportMsg',car_rental:'carRentalMsg'}[target];
     msg(messageId,dateOnlySkipped?'Reserva llegida. He omplert els camps segurs; alguna data sense hora ha quedat pendent de revisar. Revisa-ho i desa quan vulguis.':'Reserva llegida i formulari omplert. Revisa-ho i desa quan vulguis.');
-  }catch(error){$('reservationImportStatus').textContent=error?.message||'No s’ha pogut omplir el formulari.'}
+  }catch(error){const message=error?.message||'No s’ha pogut omplir el formulari.';$('reservationImportStatus').textContent=message;reservationApplyFeedback(message,true)}
   finally{$('reservationImportApply').disabled=false}
 }
 async function processReservationImportDocument(document){
