@@ -85,6 +85,11 @@ try{
   assert.deepEqual(saved,readerSaved);
   console.log('PASS digital Travel Book: cover, reader, page navigation, full photo, close, zero writes');
   // Portable book: actual app export handler, raster fixtures only, no real user data.
+  let unavailablePreviewRequests=0;
+  await saveCtx.route('**/unavailable-portable-preview',route=>{
+    unavailablePreviewRequests++;
+    return route.fulfill({status:404,body:''});
+  });
   const portableOriginalVisuals=await savePage.evaluate(()=>{
     const state=travelBookProposalState,original=[...state.visuals];
     const canvas=document.createElement('canvas');canvas.width=96;canvas.height=64;
@@ -93,10 +98,13 @@ try{
       ctx.fillStyle=['#6750a4','#b6c9a3','#e2bf95'][i++%3];ctx.fillRect(0,0,96,64);
       state.visuals.set(key,canvas.toDataURL('image/png'));
     }
+    const cover=state.proposal.cover.asset_id;
+    state.visuals.set(cover,{preview:'/unavailable-portable-preview',thumbnail:state.visuals.get(cover)});
     return original;
   });
   await savePage.locator('#travelBookPortable').click();
   await savePage.waitForFunction(()=>document.getElementById('travelBookPortable').textContent==='Desa el fitxer HTML');
+  assert.equal(unavailablePreviewRequests,1);
   const portableHTML=await savePage.evaluate(()=>fetch(travelBookPortableJob.url).then(r=>r.text()));
   assert.doesNotMatch(portableHTML,/https?:\/\//);
   const portableCtx=await browser.newContext({offline:true,serviceWorkers:'block',viewport:{width:390,height:844}});
@@ -121,6 +129,85 @@ try{
   await savePage.evaluate(original=>{travelBookProposalState.visuals=new Map(original);clearTravelBookPortable()},portableOriginalVisuals);
   assert.equal(requests.length,readerRequests);assert.deepEqual(saved,readerSaved);
   console.log('PASS portable Travel Book: offline reader, embedded photos, navigation, zoom, missing-image guard, zero writes');
+  // Full-size Portable regression also runs in the WebKit save-only suite.
+  {
+    const fixture=await savePage.evaluate(()=>{
+      const canvas=document.createElement('canvas');
+      canvas.width=1800;canvas.height=1200;
+      const ctx=canvas.getContext('2d'),pixels=ctx.createImageData(canvas.width,canvas.height);
+      let seed=12345;
+      for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++){
+        const offset=4*(y*canvas.width+x);
+        seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+        const detail=(x+y)%400<120?seed>>>24:Math.floor(35+145*x/canvas.width);
+        pixels.data.set([detail,Math.round(detail*0.65+65*y/canvas.height),230-detail,255],offset);
+      }
+      ctx.putImageData(pixels,0,0);
+      return canvas.toDataURL('image/jpeg',0.98).split(',')[1];
+    });
+    const preview=Buffer.from(fixture,'base64'),limit=24*1024*1024;
+    assert.ok(preview.length*108>limit,'The previews must exceed the old binary budget before compression');
+    const fetched=[];
+    await saveCtx.route('**/portable-fixture/**',route=>{
+      const path=new URL(route.request().url()).pathname;
+      fetched.push(path);
+      return route.fulfill({status:200,contentType:'image/jpeg',body:preview});
+    });
+    await savePage.evaluate(()=>{
+      const state=travelBookProposalState;
+      window.originalPortableFixture={proposal:state.proposal,visuals:state.visuals};
+      const item=i=>({asset_id:'photo-'+i,overlay_text:'Text de la foto '+i});
+      const pages=Array.from({length:21},(_,index)=>({
+        title:'Pàgina '+(index+1),subtitle:'Subtítol '+(index+1),creative_style:'hero_editorial',
+        items:Array.from({length:index===20?8:5},(_,offset)=>item(index*5+offset+1))
+      }));
+      state.proposal={...state.proposal,title:'Àlbum de 108 fotos',cover:item(1),sections:[{local_date:'2026-11-26',pages}]};
+      state.visuals=new Map(Array.from({length:108},(_,index)=>{
+        const id='photo-'+(index+1);
+        return [id,{preview:'/portable-fixture/preview/'+id,thumbnail:'/portable-fixture/thumbnail/'+id}];
+      }));
+      clearTravelBookPortable();
+    });
+    await savePage.locator('#travelBookPortable').click();
+    await savePage.waitForFunction(()=>document.getElementById('travelBookPortable').textContent==='Desa el fitxer HTML',null,{timeout:120000});
+    assert.deepEqual(fetched,Array.from({length:108},(_,index)=>'/portable-fixture/preview/photo-'+(index+1)));
+    const [download]=await Promise.all([savePage.waitForEvent('download'),savePage.locator('#travelBookPortable').click()]);
+    const path=await download.path();
+    const html=await readFile(path,'utf8');
+    assert.ok(Buffer.byteLength(html)<=limit,'Budget applies to the entire HTML file');
+    assert.doesNotMatch(html,/https?:\/\/|portable-fixture/);
+    const model=JSON.parse(html.match(/<script type="application\/json" id="bookData">([^<]+)<\/script>/)[1]);
+    assert.equal(model.images.length,108);
+    assert.equal(model.pages.length,22);
+    assert.equal(model.pages[0].photos[0].image,0);
+    assert.deepEqual(model.pages.slice(1).flatMap(page=>page.photos.map(photo=>photo.image)),Array.from({length:108},(_,i)=>i));
+    assert.deepEqual(model.pages.slice(1).flatMap(page=>page.photos.map(photo=>photo.caption)),Array.from({length:108},(_,i)=>'Text de la foto '+(i+1)));
+    assert.deepEqual(model.pages.slice(1).map(page=>[page.title,page.subtitle]),Array.from({length:21},(_,i)=>['Pàgina '+(i+1),'Subtítol '+(i+1)]));
+    const largeOfflineCtx=await browser.newContext({offline:true,serviceWorkers:'block',viewport:{width:390,height:844}});
+    try{
+      const book=await largeOfflineCtx.newPage(),external=[];
+      book.on('request',request=>{if(/^https?:/.test(request.url()))external.push(request.url())});
+      await book.setContent(html);
+      assert.equal(await book.locator('#count').textContent(),'1 / 22');
+      for(let i=0;i<21;i++)await book.locator('#next').click();
+      assert.equal(await book.locator('#count').textContent(),'22 / 22');
+      await book.locator('[data-tb-reader-photo]').last().click();
+      const zoom=await book.locator('#zoomImage').evaluate(async image=>{await image.decode();return [image.naturalWidth,image.naturalHeight]});
+      assert.ok(Math.max(...zoom)>=640&&Math.max(...zoom)<=1600,'The resized photo remains suitable for zoom');
+      assert.equal(await book.locator('#zoomCaption').textContent(),'Text de la foto 108');
+      assert.deepEqual(external,[]);
+      console.log('PASS portable large album: 108 photos, 22 pages, '+(preview.length*108/1048576).toFixed(1)+' MiB previews → '+(Buffer.byteLength(html)/1048576).toFixed(1)+' MiB HTML, offline zoom '+zoom.join('×'));
+    }finally{
+      await largeOfflineCtx.close();
+      await download.delete();
+    }
+    await savePage.evaluate(()=>{
+      Object.assign(travelBookProposalState,window.originalPortableFixture);
+      delete window.originalPortableFixture;
+      clearTravelBookPortable();
+    });
+    assert.equal(requests.length,readerRequests);assert.deepEqual(saved,readerSaved);
+  }
   for(const [selector,value] of [['[data-tb-edit="title"]','Títol desat'],['[data-tb-edit="subtitle"]','Comentari desat'],['[data-tb-photo-edit]','Text de fotografia']]){
    await savePage.locator(selector).first().fill(value);await savePage.locator(selector).first().press('Tab');
    await savePage.waitForFunction(()=>document.getElementById('travelBookMessage').textContent==='✓ Canvis desats.');
