@@ -8729,10 +8729,10 @@ function clearGenericItineraryState(){
   document.querySelectorAll('.generic-itinerary-source-focus').forEach(card=>card.classList.remove('generic-itinerary-source-focus'));
 }
 function clearTripScopedState(){
-  clearTravelBookPortable();
   closeDocumentViewer();
   offlineSnapshotActive=false;offlineSnapshotSavedAt=null;updateConnectivityBanner();
   resetPhotoV2();
+  clearTravelBookPortable();
   tripCurrencyController?.reset();hide('currencyBody');show('currencyOpening');
   clearDocumentsReturnContext();
   clearAccommodationVoucherFocus();
