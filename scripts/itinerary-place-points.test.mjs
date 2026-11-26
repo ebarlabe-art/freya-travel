@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {extractActivityPoints,alternativeGeographicQuery,activityPointAddress,activityPointVenue,chooseAutomaticPoint,autoPendingPoints,samePointName,matchingPointCandidate,pointSnapshot,savedActivityPoints,ActivityPointQueue} from '../domain/itinerary-place-points.mjs';
+import {extractActivityPoints,alternativeGeographicQuery,activityPointAddress,activityPointVenue,chooseAutomaticPoint,autoPendingPoints,samePointName,matchingPointCandidate,pointSnapshot,savedActivityPoints,ActivityPointQueue,activityNavigationUrl} from '../domain/itinerary-place-points.mjs';
 import {normalizeGeoapify} from '../supabase/functions/place-resolution/providers/geoapify.mjs';
 import {routeProvider} from '../supabase/functions/itinerary-route/provider.mjs';
 import {departurePlan,plannedDepartureChoices} from '../domain/trip-departure.mjs';
@@ -230,3 +230,55 @@ test('only provider-confirmed map link candidates matching the trip context can 
  const manual=pointSnapshot(row,[{...extractActivityPoints(row)[0],place:p}]);
  assert.equal(autoPendingPoints({...changed,location_points:manual}),null);
  });
+
+
+test('actual bilingual Geoapify address responses previously rejected in Brussels',async()=>{
+ const context={canonical_name:'Brussel·les',country_code:'BE',time_zone:'Europe/Brussels'};
+ // Public address fields from the actual Geoapify response, not invented venue labels.
+ const cases=[
+  ['Bergensesteenweg 39 Anderlecht, 1070 Brussel, Belgium','Chaussée de Mons - Bergense Steenweg 39','Chaussée de Mons - Bergense Steenweg 39, 1070 Anderlecht, Bèlgica','Anderlecht',50.8442149,4.3362738],
+  ['Rue des Grands Carmes, 18','Rue des Grands Carmes - Lievevrouwbroersstraat 18','Rue des Grands Carmes - Lievevrouwbroersstraat 18, 1000 Brussel·les, Bèlgica','Brussel·les',50.8451992,4.3493664]
+ ];
+ const provider=routeProvider({key:'synthetic',fetcher:()=>{throw Error('Must reuse the saved verified location')}});
+ for(const [address,name,formatted,city,lat,lon] of cases){
+  const row={title:'Named visit',notes:address},p=place(name,'building',{formatted,city,lat,lon,country_code:'be',state:'Brussel·les-Capital',timezone:{name:'Europe/Brussels'}});
+  assert.equal(chooseAutomaticPoint(address,[p],context,{address:true})?.provider_place_id,p.provider_place_id);
+  assert.equal(chooseAutomaticPoint(address,[{...p,country_code:'FR'}],context,{address:true}),null);
+  const wrong={...p,canonical_name:name.replace(/\d+$/,'99'),formatted_address:formatted.replace(/\d+(?=,)/,'99')};
+  assert.equal(chooseAutomaticPoint(address,[wrong],context,{address:true}),null);
+  const selected=chooseAutomaticPoint(address,[p],context,{address:true});
+  row.location_points=pointSnapshot(row,[{...extractActivityPoints(row)[0],place:selected}],{automatic:true});
+  assert.equal(savedActivityPoints(row)[0].status,'resolved');
+  assert.equal((await provider.resolve(row,null)).point.id,p.provider_place_id);
+ }
+ const event=place('Rue Wiertz 60','building',{formatted:'Rue Wiertz 60, 1050 Brussel·les, Bèlgica',city:'Brussel·les',country_code:'be',state:'Regió de Brussel·les-Capital',timezone:{name:'Europe/Brussels'}});
+ assert.equal(chooseAutomaticPoint('Rue Wiertz 60, 1047 Bruxelles, Belgium',[event],context,{address:true}),null,'postal-code conflict is not silently ignored');
+ const row={title:'Lunch',notes:'Rue du Marché aux Poulets 57 (Kiekenmarkt 57)'};
+ assert.equal(extractActivityPoints(row)[0].query,'Rue du Marché aux Poulets 57');
+});
+
+test('London-style map navigation retains explicit links and addresses without pretending they are verified',()=>{
+ const context={canonical_name:'Brussel·les',country_code:'BE'};
+ const link='https://maps.app.goo.gl/ExampleMeetingPoint';
+ const row={title:'Meeting',notes:'Punt de trobada: '+link};
+ assert.equal(activityNavigationUrl(row,context),link);
+ assert.equal(activityNavigationUrl({...row,location_points:pointSnapshot(row,[])},context),null);
+ const address={title:'Dinner',notes:'Rue Example, 18'};
+ const url=new URL(activityNavigationUrl(address,context));
+ assert.equal(url.hostname,'www.google.com');
+ assert.equal(url.searchParams.get('query'),'Rue Example, 18, Brussel·les');
+ assert.equal(savedActivityPoints(address),null);
+ const free={title:'Temps lliure',notes:'Recomanem dinar a prop del Parlament Europeu'};
+ assert.deepEqual(extractActivityPoints(free),[]);
+ assert.equal(activityNavigationUrl(free,context),null);
+ const stale={...free,location_points:{version:1,input:{title:free.title,address:null,city:null,location_name:null},geographic_evidence:'Parlament Europeu',points:[{id:'point-0',query:'Parlament Europeu',status:'resolved',place:place('Parlament Europeu')}]}};
+ assert.equal(savedActivityPoints(stale),null,'recommendation is not the location of free time');
+});
+
+test('a translated square prefix is not part of the native square name',()=>{
+ const context={canonical_name:'Riga',country_code:'LV'};
+ const p=place('Doma laukums','street',{city:'Riga',country_code:'lv',state:'Riga'});
+ assert.equal(alternativeGeographicQuery('plaça Doma laukums'),'doma laukums');
+ assert.equal(chooseAutomaticPoint('plaça Doma laukums',[p],context)?.provider_place_id,p.provider_place_id);
+ assert.equal(chooseAutomaticPoint('plaça Doma laukums',[{...p,canonical_name:'Doma iela'}],context),null);
+});

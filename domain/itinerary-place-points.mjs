@@ -53,11 +53,22 @@ function explicitNotesVenue(lines){
  const venues=[...new Set(lines.map(line=>line.match(venueCue)?.[0]?.replace(/^[\s’']+/, '').trim()).filter(name=>name&&name.length<=200))];
  return venues.length===1?venues[0]:'';
 }
+const freeTimeTitle=title=>/^(?:temps lliure|free time|tiempo libre|temps libre|tempo libero)(?:\s|$)/iu.test(String(title||'').trim());
+function primaryPostalEvidence(line){
+ // An explicit second-language spelling with the same house number is not part of the primary street name.
+ const alternative=line.match(/^(.*?)\s+\(([^()]*)\)\s*$/);
+ if(alternative){
+  const first=postalAddress(alternative[1]),second=postalAddress(alternative[2]);
+  if(first&&second&&first.number===second.number)return alternative[1].trim();
+ }
+ return line;
+}
 function explicitNotesPlace(row){
+ if(freeTimeTitle(row.title))return null;
  const lines=noteLines(row);
  const links=[...new Set(lines.flatMap(line=>line.match(/https:\/\/[^\s<>"']+/gi)||[]).map(value=>value.replace(/[.)]+$/,'')))].filter(googleMapsUrl);
  const addresses=[...new Set(lines.filter(line=>addressLabel.test(line)||streetCue.test(line))
-  .map(line=>line.replace(addressLabel,'')).filter(line=>line.length<=500&&postalAddress(line)))];
+  .map(line=>primaryPostalEvidence(line.replace(addressLabel,''))).filter(line=>line.length<=500&&postalAddress(line)))];
  if(addresses.length===1)return {query:addresses[0],address:true};
  if(links.length===1)return {query:links[0],address:false};
  const venue=explicitNotesVenue(lines);
@@ -76,6 +87,7 @@ export function extractActivityPoints(row){
  const notes=explicitNotesPlace(row);
  if(notes&&(notes.address||googleMapsUrl(notes.query)))return [point(notes.query)];
  if(row.location_name?.trim()||row.venue_name?.trim())return extractLegacyActivityPoints(row);
+ if(freeTimeTitle(row.title))return [];
  if(notes)return [point(notes.query)];
  const legacy=extractLegacyActivityPoints(row);
  if(legacy.length>1)return legacy;
@@ -201,6 +213,7 @@ export function sameGeographicName(wanted,found,city){
 const genericLandmarks=new Set(['parliament','cathedral','airport','museum']);
 export function alternativeGeographicQuery(query){
  const parts=normalizePointName(query).split(' ');
+ if(['placa','plaza','piazza','square','place'].includes(parts[0])&&parts.slice(1).join(' ').length>=5)return parts.slice(1).join(' ');
  const [type,...rest]=parts.map(token=>geographicTerms[token]||token);
  if(parts[0]===type||!genericLandmarks.has(type)||!rest.length)return '';
  return [...rest,type].join(' ');
@@ -212,15 +225,33 @@ function placeInContext(place,context){
  // The provider must independently supply the enclosing administration.
  // Strip only administrative qualifiers, then require the full area name.
  if(!context.country_code||place.country_code!==context.country_code||place.coordinate_role!=='exact_location')return false;
- const area=normalizePointName(place.administrative_area).replace(/\b(?:capital|region|regionale|metropole|metropolitan|metropolitana|district|county|province|provincia|gewest|hoofdstedelijk)\b/g,' ').replace(/\s+/g,' ').trim();
+ const area=normalizePointName(place.administrative_area).replace(/\b(?:capital|regio|region|regionale|metropole|metropolitan|metropolitana|district|county|province|provincia|gewest|hoofdstedelijk)\b/g,' ').replace(/\s+/g,' ').trim();
  return samePointName(area,context.canonical_name);
+}
+// A provider can publish two official street names separated by a spaced dash.
+// Preserve full alias identity and the house number; ignore only spacing/accents,
+// not missing or substituted words. Never fuzzy-match a different street.
+function postalStreetMatches(wanted,candidate,raw){
+ if(!candidate||candidate.number!==wanted.number)return false;
+ const compact=value=>String(value||'').replace(/\s+/g,'');
+ if(compact(candidate.street)===compact(wanted.street))return true;
+ return String(raw||'').split(/[,;\n]/).some(part=>{
+  const complete=streetAddress(normalizePointName(part));
+  if(!complete||complete.number!==candidate.number||complete.street!==candidate.street)return false;
+  const aliases=part.split(/\s+[-–—/]\s+/);
+  return aliases.length>1&&aliases.some(alias=>{
+   const normalized=normalizePointName(alias);
+   const withoutNumber=normalized.replace(/^\d{1,5}[a-z]?\s+|\s+\d{1,5}[a-z]?$/g,'');
+   return compact(withoutNumber)===compact(wanted.street);
+  });
+ });
 }
 function matchesPostalAddress(address,place,context,venue){
  if(place.coordinate_role!=='exact_location')return false;
  const formatted=postalAddress(place.formatted_address);
  const label=postalAddress(place.canonical_name);
  const samePortal=candidate=>candidate?.number===address.number;
- const matching=[formatted,label].some(candidate=>samePortal(candidate)&&candidate.street===address.street)||
+ const matching=postalStreetMatches(address,formatted,place.formatted_address)||postalStreetMatches(address,label,place.canonical_name)||
   !!(context?.country_code&&address.postcode&&samePortal(formatted)&&
    sameGeographicName(venue,place.canonical_name,context.canonical_name));
  if(!matching||(address.postcode&&address.postcode!==(formatted?.postcode||label?.postcode)))return false;
@@ -236,7 +267,8 @@ export function chooseAutomaticPoint(query,options,context,{address=false,venue=
  const candidates=options.filter(validPointPlace).filter(p=>(!context?.country_code||p.country_code===context.country_code)&&
   (googleMapsUrl(query)?p.coordinate_role==='exact_location'&&p.map_reference===query&&!!context?.country_code&&placeInContext(p,context):
    postal?matchesPostalAddress(postal,p,context,venue):
-   placeInContext(p,context)&&sameGeographicName(query,p.canonical_name,context.canonical_name)));
+   placeInContext(p,context)&&(sameGeographicName(query,p.canonical_name,context.canonical_name)||
+    (['street','square'].includes(p.kind)&&/^(?:placa|plaza|piazza|square|place) /.test(normalizePointName(query))&&samePointName(normalizePointName(query).replace(/^[^ ]+ /,''),p.canonical_name)))));
  if(!candidates.length)return null;
  const unique=[...new Map(candidates.map(p=>[p.provider_place_id,p])).values()];
  // Genuine distant homonyms remain ambiguous; multiple records of the same nearby landmark do not.
@@ -282,6 +314,19 @@ export function samePointSnapshot(a,b){
  return !!a&&!!b&&canonical(a)===canonical(b);
 }
 export function pointMapUrl(place){return validPointPlace(place)?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place.latitude+','+place.longitude):null}
+// London-style navigation uses the evidence the traveller already supplied, even
+// when coordinate verification is unavailable. A map search is NOT a verified point.
+export function activityNavigationUrl(row,context){
+ if(savedActivityPoints(row)?.length===0)return null;
+ const verified=pointMapUrl(activityGeographicPoints(row)?.[0]?.place);if(verified)return verified;
+ const evidence=explicitNotesPlace(row);
+ if(!row.address&&evidence&&googleMapsUrl(evidence.query))return evidence.query;
+ const query=row.address|| (evidence?.address?evidence.query:null) || row.location_name||row.venue_name||null;
+ if(!query)return null;
+ const city=row.city||context?.canonical_name;
+ const text=query+(city&&!postalAddress(query)?.locality&&!(' '+normalizePointName(query)+' ').includes(' '+normalizePointName(city)+' ')?', '+city:'');
+ return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(text);
+}
 export class ActivityPointQueue{
  constructor(search,{timeoutMs=20000}={}){this.search=search;this.timeoutMs=timeoutMs;this.cache=new Map();this.count=0;this.blocked=false}
  async find(query,context){
