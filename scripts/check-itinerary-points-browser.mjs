@@ -114,8 +114,25 @@ try{
  assert.equal(await editor.locator('[data-point-body]:visible').count(),1,'Only selected point expanded');
  assert.equal(await editor.getByRole('button',{name:'Puja el punt 2',exact:true}).isVisible(),false,'Secondary controls tucked away');
  await editor.screenshot({path:resolve(tmpdir(),'freya-compact-editor-'+engine+'.png')});
+ // Already confirmed exact matches remain saved and need no repeated selection.
+ assert.match(await editor.locator('fieldset').first().locator('[data-point-toggle]').innerText(),/Ubicació localitzada i desada/);
+ for(const [n,query]of [[1,'Piazza Maggiore'],[2,'Fontana del Nettuno']]){
+  await selectPoint(n);await editor.getByLabel('Nom del punt '+n,{exact:true}).fill(query);
+  const box=editor.locator('fieldset').nth(n-1);
+  await box.getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();
+  await box.locator('[data-point-feedback]').filter({hasText:'No cal tornar-la a confirmar'}).waitFor();
+  assert.equal(await box.locator('[data-point-results] button').count(),0);
+  assert.match(await box.locator('[data-point-toggle]').innerText(),/Ubicació localitzada i desada/);
+  assert.equal(writes.length,8,'Rechecking the same saved point does not write');
+ }
+ const savedCard=page.locator('[data-itinerary-key="manual:'+rows[0].id+'"]');
+ assert.match(await savedCard.locator('.activity-point-list').innerText(),/Ubicació localitzada i desada/);
+ assert.match(await savedCard.locator('.activity-point-list a').first().getAttribute('href'),/maps\/dir\/\?api=1&destination=/);
+ assert.equal(await savedCard.locator('.activity-point-list details[open]').count(),0);
+ const singleCard=page.locator('[data-itinerary-key="manual:'+rows[4].id+'"]');
+ assert.doesNotMatch(await singleCard.innerText(),/Els trams dins/);
  // Native names and linguistic variants are user queries, never invented coordinates or automatic choices.
- for(const [n,query]of [[1,'Piazza Maggiore'],[2,'Fontana del Nettuno'],[3,'Basilica di San Petronio'],[3,'Basilica de San Petronio']]){
+ for(const [n,query]of [[3,'Basilica di San Petronio'],[3,'Basilica de San Petronio']]){
   await selectPoint(n);await editor.getByLabel('Nom del punt '+n,{exact:true}).fill(query);
   const box=editor.locator('fieldset').nth(n-1);
   await box.getByRole('button',{name:'Cerca aquest punt',exact:true}).tap();

@@ -2802,7 +2802,7 @@ document.getElementById('tripHome').setAttribute('aria-label',dashboardText('now
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-itinerary-london-geography-v88';
+const FREYA_FRONTEND_RELEASE='pwa-itinerary-simple-navigation-v89';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -6983,9 +6983,9 @@ function itineraryPointHtml(item){
  if(!points.length)return '<p class="muted">Sense punts geogràfics seleccionats</p>';
  return '<ol class="activity-point-list">'+points.map(point=>{
   const p=point.place,valid=p&&Number.isFinite(p.latitude)&&Number.isFinite(p.longitude)&&Math.abs(p.latitude)<=90&&Math.abs(p.longitude)<=180;
-  return '<li><strong>'+esc(p?.canonical_name||point.query)+'</strong><span>'+esc(valid?(p.coordinate_role==='exact_location'?'Lloc exacte':(p.kind==='street'?'Carrer · ':['suburb','district','neighbourhood','quarter'].includes(p.kind)?'Barri · ':'')+'Zona aproximada identificada'):'Pendent de verificar')+'</span>'+
-   (valid?'<span>'+esc(p.formatted_address||'')+'</span><a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;query='+encodeURIComponent(p.latitude+','+p.longitude)+'">Veure al mapa</a><small>'+esc(p.attribution)+' · Geoapify</small><small>Coordenades: '+p.latitude.toFixed(5)+', '+p.longitude.toFixed(5)+'</small>':'')+'</li>';
- }).join('')+'</ol><p class="muted">Els trams dins d’aquesta activitat encara no estan calculats.</p>';
+  return '<li><strong>'+esc(p?.canonical_name||point.query)+'</strong><span>'+esc(valid?(p.coordinate_role==='exact_location'?'✓ Ubicació localitzada i desada':(p.kind==='street'?'Carrer · ':['suburb','district','neighbourhood','quarter'].includes(p.kind)?'Barri · ':'')+'Zona aproximada identificada'):'Pendent de verificar')+'</span>'+
+   (valid?'<span>'+esc(p.formatted_address||'')+'</span><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination='+encodeURIComponent(p.latitude+','+p.longitude)+'">📍 Com arribar-hi</a><details><summary>Detalls de la ubicació</summary><small>'+esc(p.attribution)+' · Geoapify</small><small>Coordenades: '+p.latitude.toFixed(5)+', '+p.longitude.toFixed(5)+'</small></details>':'')+'</li>';
+ }).join('')+'</ol>'+(points.length>1?'<p class="muted">Els trams dins d’aquesta activitat encara no estan calculats.</p>':'');
 }
 async function itineraryPointContext(){
  const scope=itineraryAutoPlaceScope();

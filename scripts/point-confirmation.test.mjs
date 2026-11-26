@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-import {editPointSearch,selectPointCandidate,pointSaveMessage} from '../domain/itinerary-place-points-ui.mjs';
+import {editPointSearch,selectPointCandidate,pointSaveMessage,alreadySavedSearch} from '../domain/itinerary-place-points-ui.mjs';
 import {pointSnapshot,samePointSnapshot} from '../domain/itinerary-place-points.mjs';
 const place={provider:'geoapify',provider_place_id:'synthetic-luchon-confirmation',canonical_name:'Bagnères-de-Luchon',country_code:'FR',locality:'Bagnères-de-Luchon',kind:'city',latitude:42.79,longitude:0.59,coordinate_role:'representative_point',attribution:'Synthetic fixture'};
 test('selection survives subsequent search text and snapshot serialization',()=>{
@@ -33,4 +33,16 @@ test('actual save rejects a server response that loses the chosen place',async()
   if(losePlace)await assert.rejects(promise,/no ha quedat desada/);else assert.deepEqual(await promise,snapshot);
   assert.equal(sent.location_points.points[0].place.provider_place_id,place.provider_place_id);
  }
+});
+
+test('a sole identical verified search result does not require confirmation again',()=>{
+ const row={title:'Synthetic',notes:'Rue Example, 18'};
+ const p={id:'point-0',query:'Rue Example, 18',place:{...place,coordinate_role:'exact_location'},status:'resolved'};
+ row.location_points=pointSnapshot(row,[p],{automatic:true});
+ assert.equal(alreadySavedSearch(p,p.query,[p.place],row),true);
+ assert.equal(alreadySavedSearch(p,'Different search',[p.place],row),false);
+ assert.equal(alreadySavedSearch(p,p.query,[{...p.place,provider_place_id:'different'}],row),false);
+ assert.equal(alreadySavedSearch(p,p.query,[{...p.place,latitude:43}],row),false);
+ assert.equal(alreadySavedSearch(p,p.query,[p.place,{...p.place,provider_place_id:'different'}],row),false);
+ assert.equal(alreadySavedSearch(p,p.query,[p.place],{title:'Other'}),false);
 });
