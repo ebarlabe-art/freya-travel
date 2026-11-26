@@ -274,7 +274,7 @@ test('Offline documents require explicit download, encrypted account-scoped Inde
   assert.match(html,/const OFFLINE_DOC_PER_FILE=12\*1024\*1024/);
   assert.match(html,/const OFFLINE_DOC_ACCOUNT_LIMIT=55\*1024\*1024/);
   assert.match(html,/data-offline-save/);
-  assert.match(html,/\.download\(doc.file_path\)/);
+  assert.match(html,/\.download\(doc\.file_path,\{\},\s*\{signal:controller\.signal\}\)/);
   assert.doesNotMatch(html.slice(html.indexOf('async function offlineDocSaveBlob'),html.indexOf('async function offlineDocGetBlob')),/signedUrl|createSignedUrl/);
 });
 test('Offline documents are not served by the service worker, and blob links are revoked',()=>{
@@ -298,7 +298,7 @@ test('Concurrent tabs elect one CryptoKey atomically and enforce quotas in IDB t
   assert.match(source,/if\(request\.result\)output\(request\.result\)/);
   assert.match(source,/store\.add\(generated,userId\)/);
   const atomic=html.slice(html.indexOf('function offlineDocAtomicSave('),html.indexOf('async function offlineDocSaveBlob('));
-  assert.match(atomic,/store\.index\('byUser'\)\.getAll\(scope\.userId\)/);
+  assert.match(atomic,/store\.index\('byUser'\)\.openCursor\(scope\.userId\)/);
   assert.match(atomic,/OFFLINE_DOC_ACCOUNT_LIMIT/);
   assert.match(atomic,/OFFLINE_DOC_TRIP_LIMIT/);
   assert.match(atomic,/offlineDocPruneTrip/);
@@ -408,7 +408,7 @@ test('An SDK/bootstrap failure cannot keep an infinite splash on the iPhone',()=
   assert.ok(fallbackIndex>0&&fallbackIndex<sdkIndex);
   assert.match(html.slice(fallbackIndex,sdkIndex),/setTimeout\(/);
   assert.match(html.slice(fallbackIndex,sdkIndex),/No cal esborrar l’app ni les còpies offline/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v92'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v93'/);
 });
 
 test('Parking offline leaves read-only Veure reserva enabled while disabling edits',()=>{
@@ -431,7 +431,7 @@ test('Parking offline leaves read-only Veure reserva enabled while disabling edi
   assert.ok(edits.every(e=>!e.disabled));
   assert.equal(selectors.length,2);
   assert.match(html,/button\.classList\.remove\('hidden'\);button\.disabled=false;\s*button\.onclick=\(\)=>openDocument\(doc\.id,documentRows,'parkingMsg'\)/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v92'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v93'/);
 });
 
 test('Automatic encrypted document rules include useful screenshots and exclude travel photos',()=>{
@@ -439,19 +439,24 @@ test('Automatic encrypted document rules include useful screenshots and exclude 
   const b=html.indexOf('function offlineAutoExclusionKey(',a);
   assert.ok(a>0&&b>a);
   const ctx=vmModule.createContext({});
-  vmModule.runInContext(html.slice(a,b),ctx);
+  const typeStart=html.indexOf('function offlineDocMediaType(');
+  const typeEnd=html.indexOf('async function offlineDocValidBytes',typeStart);
+  vmModule.runInContext(html.slice(typeStart,typeEnd)+html.slice(a,b),ctx);
   const pdf={id:'1',file_path:'a/pdf',file_name:'ticket.pdf',category:'Entrada',mime_type:'application/pdf'};
   const screenshot={id:'2',file_path:'a/img',file_name:'reserva.png',category:'Reserva',mime_type:'image/png'};
   assert.equal(ctx.offlineAutoEligible(pdf),true);
   assert.equal(ctx.offlineAutoEligible(screenshot),true);
+  assert.equal(ctx.offlineDocType(pdf,{type:'application/pdf; charset=binary'}),'application/pdf');
+  assert.equal(ctx.offlineDocType(screenshot,{type:'application/octet-stream; name=reserva.png'}),'image/png');
+  assert.equal(ctx.offlineDocType(pdf,{type:'text/html; charset=utf-8'}),null);
   assert.equal(ctx.offlineAutoEligible({...screenshot,category:'Foto'}),false);
   assert.equal(ctx.offlineAutoEligible({...pdf,mime_type:'application/zip',file_name:'trip.zip'}),false);
 });
 test('Automatic saves skip already encrypted files, never request ordinary photos, and honor account exclusions',async()=>{
-  const start=html.indexOf('async function autoPrepareOfflineDocuments(');
-  const end=html.indexOf("$('offlineAutoDocuments').onchange=",start);
+  const start=html.indexOf('async function offlineDocPrepareCopy(');
+  const end=html.indexOf('async function prepareOfflineDocument(',start);
   assert.ok(start>=0&&end>start);
-  const paths=[],written=[],records=new Map(),errors=new Map(),busy=new Set();
+  const paths=[],written=[],records=new Map(),errors=new Map(),busy=new Map();
   const docs=[
     {id:'pdf',file_path:'trip/a.pdf',mime_type:'application/pdf',category:'Reserva'},
     {id:'photo',file_path:'trip/photo.jpg',mime_type:'image/jpeg',category:'Foto'},
@@ -465,6 +470,9 @@ test('Automatic saves skip already encrypted files, never request ordinary photo
     offlineAutoErrors:errors,offlineAutoBusy:busy,offlineDocStatus:async()=>{},
     offlineDocDatabase:async()=>({}),offlineDocId:(_u,_t,id)=>id,
     offlineDocRead:async(_db,_store,key)=>records.get(key)||null,
+    offlineDocKey:async()=>({}),offlineDocHasCopy:async(_scope,doc,row)=>row?.filePath===doc.file_path,
+    offlineDocEnqueue:job=>job(),offlineDocRememberCard(){},offlineDocErrorMessage:error=>{throw error},
+    documentRows:docs,AbortController,setTimeout,clearTimeout,parkingDocumentScore:()=>0,dashboardText:key=>key,
     DOC_BUCKET:'trip-documents',
     db:{storage:{from:()=>({download:async path=>{paths.push(path);return {data:{size:10},error:null}}})}},
     offlineDocSaveBlob:async(_scope,doc)=>{written.push(doc.id);records.set(doc.id,{filePath:doc.file_path})}
@@ -479,7 +487,7 @@ test('Offline auto-save is opt-out per account and removes no cloud originals',(
   assert.match(html,/offlineAutoEnabled\(\)/);
   assert.match(html,/OFFLINE_AUTO_DOCS_PREF\+session\.user\.id/);
   assert.match(html,/offlineAutoSetIgnored\(scope,id,true\)/);
-  assert.match(html,/offlineDocEnqueue\(async\(\)=>\{\s*await offlineDocPruneTrip\(vaultScope,serverDocs\);\s*await autoPrepareOfflineDocuments\(vaultScope,serverDocs\)/);
+  assert.match(html,/offlineDocEnqueue\(\(\)=>offlineDocPruneTrip\(vaultScope,serverDocs\)\)/);
   assert.match(html,/offlineDocSaveBlob\(vaultScope,visibleInserted,file\)/);
   assert.match(html,/id="parkingSaveReservationOffline"/);
   assert.match(html,/save\.onclick=\(\)=>prepareOfflineDocument\(doc.id,'parkingMsg'\)/);
@@ -488,7 +496,7 @@ test('Offline auto-save is opt-out per account and removes no cloud originals',(
 
 test('Auto-save errors are retried after reconnection and parking refreshes its viewer',()=>{
   assert.match(html,/offlineAutoErrors\.clear\(\); \/\/ Retry pending downloads after reconnection/);
-  assert.match(html,/await offlineDocSaveBlob\(scope,doc,data\);\s*if\(offlineDocScopeCurrent\(scope\)&&parkingDocumentScore\(doc\)>0\)void updateParkingReservationUi/);
+  assert.match(html,/await offlineDocPrepareCopy\(scope,doc\);\s*if\(offlineDocScopeCurrent\(scope\)&&parkingDocumentScore\(doc\)>0\)void updateParkingReservationUi/);
   assert.match(html,/await offlineDocEnqueue\(\(\)=>offlineDocForget\(scope,id\)\)/);
 });
 
