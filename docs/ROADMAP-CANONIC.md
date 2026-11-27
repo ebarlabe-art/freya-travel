@@ -1,13 +1,27 @@
 # Freya Travel · Roadmap canònic
 
-**Versió:** 1.4
-**Data de tall:** 24 de novembre de 2026  
-**Versió publicada documentada al tall anterior (7 oct.):** 6.4.19  
+**Versió:** 1.5
+**Data de tall:** 27 de novembre de 2026  
+**Versió de referència:** PWA v94 (`61f68a6`), ús físic confirmat per la Product Owner.  
 **Estat del document:** CANÒNIC
 
 > Aquest document substitueix els roadmaps anteriors com a guia operativa del projecte. Els documents i roadmaps previs es conserven com a historial de decisions. Qualsevol nova idea s'ha d'ubicar dins d'aquest roadmap o incorporar-se mitjançant una revisió numerada.
 
 ---
+
+## Actualització operativa · 27/11/2026
+
+- ✅ C1 · Travel Book digital i Portable: v92, PR #275, `bd9c233`. Exportació HTML autònoma amb fotos optimitzades i originals preservats; prova real d'un àlbum de 22 pàgines aprovada a l'iPhone. PDF natiu experimental i impressió professional fora del camí crític.
+- ✅ B1.1 · Planificació de trajectes: prova física a l'iPhone de selecció, càlcul, marge, avís de temps insuficient i obertura de Google Maps, després de les correccions v87-v89.
+- ✅ B3 · Consulta offline: reobertura de la PWA en mode avió, viatge, itinerari, vols, allotjament, activitats, checklist, indicador i reconnexió aprovats.
+- ✅ B3 · Documents i gestor offline: v93 (#276) va revelar el topall de 30 documents; v94 (#277, `61f68a6`) elimina el topall i adapta l'espai a l'estimació del navegador, amb control explícit de còpies i protecció per document/viatge. 1.061 proves locals reportades i CI 7/7; Product Owner confirma que funciona a l'iPhone. No s'eliminen còpies per antiguitat o manca d'espai.
+- ✅ B3 · Tancament voluntari de sessió: 6/6 comprovacions físiques reportades, inclosa lectura offline del PDF, bloqueig després de sortir offline i recuperació amb el mateix compte sense nova descàrrega.
+- 🧪 B3 · Pendent caducitat real de token sense xarxa, reobertura i revalidació en reconnectar. No donar per tancat tot el gate P0 fins a verificar-ho. B1/B2 durant un viatge real també pendents.
+- A2: importació real de vols BCN/BRU v90 (#273) aprovada per la Product Owner; no reobrir les incidències resoltes. La resta de variants A2 no es consideren acreditades per aquesta prova.
+- C2 · Següent desenvolupament: Diari de viatge, captura ràpida amb veu i text, amb reutilització del context i dels records. Avançar sense desplaçar els gates P0 pendents.
+- E3/E4 · Preparar un dossier tècnic i funcional de l'aplicació abans de la publicació: inventari de mòduls, arquitectura i mapa del codi, model de dades, integracions, seguretat, proves, desplegament, manteniment i costos. Referències al codi i a la documentació existent; no crear un segon roadmap ni incloure credencials o dades personals.
+
+Les anotacions històriques inferiors es conserven; en cas de discrepància amb estats antics preval aquesta actualització datada. Les validacions físiques es basen en el retorn de la Product Owner, no en una nova auditoria.
 
 ## 1. Nord del producte
 
@@ -45,14 +59,14 @@ Principis que continuen sent obligatoris:
 
 | Bloc | Estat | Situació real |
 | --- | :---: | --- |
-| Login i sessió | 🟡 | Estable en línia; pendent validar la sessió caducada sense Internet i el tancament voluntari |
+| Login i sessió | 🟡 | Tancament voluntari offline i reentrada del mateix compte validats; pendent caducitat real sense Internet |
 | Recuperació de contrasenya | ✅ | Validada també en ús real |
 | PWA / instal·lació | ✅ | Operativa |
 | Múltiples viatges | ✅ | Crear, llistar, seleccionar i reprendre |
 | Navegació i retorn de context | ✅ | Home, viatge, Builder, historial i retorns específics |
 | Checklist universal | ✅ | Compartida dins del viatge |
 | Documents | ✅ | Mòdul operatiu |
-| Offline V1 | ✅ | Lectura de l'última informació bona + estat de connexió + reintent; Offline V2 en validació a la PR #106 |
+| Offline V1/V2 | 🟡 | Consulta principal, documents i gestor v94 validats físicament; gate de caducitat real pendent |
 | Escriure offline | 🔵 | No es fingeix desament; una possible cua offline queda per una V2 si aporta valor |
 
 ### 3.2 Peces operatives del viatge
@@ -77,9 +91,9 @@ Principis que continuen sent obligatoris:
 | --- | :---: | --- |
 | Fotos compartides | ✅ | Operatives |
 | Fotos contextuals | ✅ | Dia/activitat/planning, editor i navegació |
-| Crear àlbum | ⬜ | Pendent |
+| Crear àlbum | ✅ | Editor i lector digital operatius; prova física C1 |
 | Diari | ⬜ | Pendent |
-| Travel Book | ⬜ | Pendent |
+| Travel Book | ✅ | Lector digital i exportació Portable v92 validada físicament; impressió futura |
 
 ### 3.4 Col·laboració
 
@@ -268,7 +282,7 @@ La v82 va introduir el contracte compatible de `itinerary-route` que reutilitza 
 
 A Itinerari, selecciona un dia futur i calcula el trajecte fins a una activitat amb hora i ubicació conegudes. Es pot sortir de l’activitat immediatament anterior, de l’allotjament, d’un lloc desat o d’una adreça cercada explícitament. El càlcul reutilitza la targeta de B1, el servei de rutes i la comprovació de conflictes horaris. El marge es calcula des del final previst de l’activitat anterior o des de l’hora de sortida indicada. Quan falta aquesta dada, es mostren la durada i l’hora recomanada de sortida. Els trajectes de dies futurs es demanen individualment i es presenten com a estimacions. Ara i Següent manté la logística immediata de B1.
 
-Validació física pendent amb el viatge real de Riga i Tallinn, amb les seves dates actuals. Després de validar B1.1, reprendre B2.
+**CLOSED (26/11/2026):** validació física de B1.1 a l'iPhone amb un viatge futur real, inclosos càlcul, marge, conflicte i Google Maps. B1/B2 durant un viatge real continuen pendents.
 
 ### B2. Revisió E2E DURANT
 **Prioritat: P0 abans de publicació**
@@ -343,7 +357,7 @@ Records agrupa, sense duplicar dades:
 Les fotos deixen de presentar-se com una eina independent en els viatges passats i passen a formar part de Records. La mateixa galeria i les mateixes dades es reutilitzen; només canvia la navegació.
 
 ### C1. Crear àlbum / Travel Book
-**Prioritat: P0 dins de DESPRÉS**
+**Prioritat: P0 dins de DESPRÉS · nucli digital CLOSED (v92, 26/11/2026)**
 
 A partir de les fotos contextuals existents:
 - agrupar per viatge/dia/activitat;
@@ -366,7 +380,11 @@ A partir de les fotos contextuals existents:
 **Decisió 21/11/2026:** després de la validació a l'iPhone, l'exportació PDF nativa es considera experimental i no bloquejarà la publicació del producte digital. Es prioritza l'experiència de lectura amb fotografies grans i els records ja desats. El format per a impremta i la connexió amb partners es valoraran després, sense crear una aplicació paral·lela.
 
 ### C2. Diari de viatge, pensat per capturar sense robar temps
-**Prioritat: P1**
+**Prioritat: P1 · pròxim desenvolupament acordat el 27/11/2026**
+
+**Criteris aprovats per la Product Owner (27/11/2026):** records privats per defecte, compartició explícita amb companys de viatge; captura de veu sense cobertura amb conservació local fins a recuperar connexió; redacció assistida opcional, sense inventar vivències ni substituir el text original sense confirmació.
+
+**Lliurament C2.1:** diari per dia, text manual, enregistrament i reproducció, persistència fiable del record i esborrany local protegit, amb estat honest de desament. Entrada des de viatge/Records i context automàtic del dia. C2.2 transcripció editable; C2.3 redacció assistida; C2.4 vinculacions amb fotografies, llocs i activitats; C2.5 integració editorial amb Travel Book. La política de conservació permanent de l'àudio després de transcriure queda pendent de decisió; C2.1 no l'esborra automàticament. Cap enviament a IA sense acció informada de l'usuari.
 
 El diari s'ha de poder alimentar durant el viatge amb el mínim esforç, especialment **amb veu** des del mòbil. L'objectiu no és obligar a escriure mentre es viatja.
 
@@ -539,6 +557,8 @@ No es crea un roadmap paral·lel.
 
 ## Pròxim pas
 
-> **A3 · Participants.** El 24/11/2026, la prova física d'un PDF idèntic al de Barcelona ha comparat 6 activitats amb 6 existents, sense canvis pendents ni escriptures. Això valida la reimportació sense duplicats en aquest cas, però no acredita per si sol totes les variants d'A2.
+**C2 · Diari de viatge amb veu.** Preparar el primer lliurament útil per a un viatge real: captura ràpida, text manual, transcripció editable, context del dia i vinculacions amb dades existents. Privacitat, compartició explícita i captura offline aprovades. La política de conservació permanent de l'àudio després de transcriure queda pendent de decisió. Reutilitzar Travel Book, fotos i notes sense duplicar fonts.
 
-**A3 tancat i publicat** (PR #258; prova real de dos participants). **A4.1 validada a l’iPhone.** L’A4.2 (v79) és a `main` amb el nom i la interfície dels Consells de Freya localitzats. L’A5 (v80, PR #262) està publicada, validada físicament a l’iPhone i tancada. UX-01 (v81, PR #263) està publicada, aprovada i tancada després de la prova física. B1 (v82, PR #264) és a `main`. B1.1 (v83, PR #265) està publicada. La validació física de B1.1 queda pendent.
+En paral·lel, completar quan sigui possible la prova física de caducitat real del token offline (B3) i B1/B2 durant un viatge real. No es reobren Travel Book Portable, B1.1, consulta offline, desament/gestor offline ni tancament voluntari de sessió sense incidència nova. Mantenir la resta de pendents del roadmap.
+
+Dossier tècnic i funcional a E3/E4, basat en l'inventari i en el codi real.
