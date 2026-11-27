@@ -1,5 +1,9 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## C2 · Criteris de producte aprovats · 27/11/2026
+
+Privat per defecte, compartició explícita amb companys de viatge; captura de veu fora de línia i conservació local protegida fins a reconnexió; assistència editorial opcional que preserva els originals i no inventa records. C2.1: diari per dia, veu, reproducció, text i desament verificable; C2.2 transcripció editable; C2.3 redacció assistida; C2.4 vinculacions; C2.5 Travel Book. Pendent política de conservació permanent de l'àudio després de transcriure; no eliminar automàticament en C2.1. No enviar contingut a IA sense acció informada. No hi ha implementació C2 encara. Proper pas: branca funcional C2.1 sobre main, respectant els gates P0 pendents i l'autorització de migració/desplegament.
+
 ## Relleu verificat · PWA v94 · 27/11/2026
 
 Roadmap canònic v1.5. Main de referència `61f68a6` (PR #277). Aquest relleu substitueix els estats de branca/publicació pendents de les entrades històriques següents.
