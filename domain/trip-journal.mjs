@@ -19,7 +19,7 @@ const copies={
  empty:['Encara no hi ha cap record.','Aún no hay recuerdos.','No memories yet.','Aucun souvenir pour le moment.','Non ci sono ancora ricordi.'],
  edit:['Edita el text','Edita el texto','Edit text','Modifier le texte','Modifica il testo'],
  remove:['Elimina el record','Elimina el recuerdo','Delete memory','Supprimer le souvenir','Elimina il ricordo'],
- confirmRemove:['Vols eliminar aquest record escrit?','¿Quieres eliminar este recuerdo escrito?','Delete this written memory?','Supprimer ce souvenir écrit ?','Eliminare questo ricordo scritto?'],
+ confirmRemove:['Vols eliminar aquest record?','¿Quieres eliminar este recuerdo?','Delete this memory?','Supprimer ce souvenir ?','Eliminare questo ricordo?'],
  confirmDiscard:['Vols descartar aquest esborrany?','¿Quieres descartar este borrador?','Discard this draft?','Supprimer ce brouillon ?','Eliminare questa bozza?'],
  listen:['Escolta','Escucha','Listen','Écouter','Ascolta'],
  original:['Descarrega l’àudio original','Descarga el audio original','Download original audio','Télécharger l’audio original','Scarica l’audio originale'],
@@ -51,6 +51,10 @@ export function journalAudioFormat(Recorder){
 }
 export function journalOperation(entry,patch,id){
   const operation={id,base:entry.operation_id??null,body:patch.body,deleted:!!patch.deleted};
+  // Deleting a voice memory must not upload its discarded original. Its
+  // creation ID still identifies any creation already accepted by the server.
+  if(operation.deleted&&entry.audio_mime)
+    return {...entry,...patch,audio_mime:null,duration_ms:null,operation_id:id,pending:[operation]};
   return {...entry,...patch,operation_id:id,pending:[...(entry.pending||[]),operation]};
 }
 function durationText(milliseconds){
@@ -61,11 +65,12 @@ function canonicalMime(mime){return String(mime).split(';')[0].toLowerCase()}
 function encode(value){return encoder.encode(JSON.stringify(value))}
 function decode(bytes){return JSON.parse(decoder.decode(bytes))}
 
-export function mountTripJournal(host,{store,remote,current,connected,language,zone}){
+export function mountTripJournal(host,{store,remote,current,connected,language,zone,deletionChannel}){
   const tr=key=>copies[key][Math.max(0,languageIndex.indexOf(language))];
   const dayFormat=new Intl.DateTimeFormat(language,{dateStyle:'full',timeZone:'UTC'});
   const entries=new Map(),drafts=new Map();
   const abort=new AbortController();
+  const channel=deletionChannel&&typeof BroadcastChannel==='function'?new BroadcastChannel(deletionChannel):null;
   let queue=Promise.resolve(),draft=null,capture=null,requesting=false,disposed=false,ready=false,syncing=false;
   let previewUrl='',entryUrl='',editingBusy=false,localError=false,retryAudio=null;
   host.innerHTML=`<p class="muted">${tr('private')}</p>
@@ -154,11 +159,19 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
   function listButton(label,click){
     const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent=tr(label);button.onclick=click;return button;
   }
+  function clearEntryPlayback(){
+    for(const box of host.querySelectorAll('[data-journal-playback]')){
+      const player=box.querySelector('audio');
+      player.pause();player.removeAttribute('src');player.load();
+      box.remove();
+    }
+    if(entryUrl){URL.revokeObjectURL(entryUrl);entryUrl=''}
+  }
   function renderEntries(){
     if(!live())return;
     const list=find('[data-journal-entries]');
+    clearEntryPlayback();
     list.replaceChildren();
-    if(entryUrl){URL.revokeObjectURL(entryUrl);entryUrl=''}
     const visible=[...entries.values()].filter(entry=>!entry.deleted).sort((one,two)=>
       two.local_day.localeCompare(one.local_day)||Date.parse(two.captured_at)-Date.parse(one.captured_at));
     let day='';
@@ -177,12 +190,15 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
           let bytes=await store.read(audioKey(entry.id));
           if(!bytes&&connected()){
             bytes=await remote.audio(entry.id);
-            if(bytes&&current())await serial(()=>store.write([[audioKey(entry.id),bytes]]));
+            if(bytes)await serial(()=>{
+              if(!entries.get(entry.id)?.deleted)return store.write([[audioKey(entry.id),bytes]]);
+            });
           }
+          if(!live()||!card.isConnected||entries.get(entry.id)?.deleted)return;
           if(!bytes)throw Error('audio unavailable');
-          if(!live()||!card.isConnected)return;
-          for(const prior of list.querySelectorAll('[data-journal-playback]'))prior.remove();
-          if(entryUrl)URL.revokeObjectURL(entryUrl);
+          const saved=await store.read(metadataKey(entry.id));
+          if(!saved||decode(saved).deleted||!live()||!card.isConnected)return;
+          clearEntryPlayback();
           entryUrl=URL.createObjectURL(new Blob([bytes],{type:entry.audio_mime}));
           const player=document.createElement('audio');player.controls=true;player.src=entryUrl;
           const download=document.createElement('a');download.href=entryUrl;
@@ -194,12 +210,17 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
       else actions.append(listButton('edit',()=>{
         if(capture||requesting||editingBusy)return;
         printDraft({...newDraft(),target:entry.id,body:entry.body,local_day:entry.local_day,captured_at:entry.captured_at});
-      }),listButton('remove',()=>{
+      }));
+      actions.append(listButton('remove',()=>{
         if(!confirm(tr('confirmRemove')))return;
         serial(async()=>{
-          const updated=journalOperation(entries.get(entry.id),{body:'',deleted:true},crypto.randomUUID());
-          await store.write([[metadataKey(entry.id),encode(updated)]]);
-          entries.set(entry.id,updated);renderEntries();void synchronize();
+          const prior=entries.get(entry.id);
+          if(!prior||prior.deleted)return;
+          const updated=journalOperation(prior,{body:'',deleted:true},crypto.randomUUID());
+          await store.write([[metadataKey(entry.id),encode(updated)]],prior.audio_mime?[audioKey(entry.id)]:[]);
+          entries.set(entry.id,updated);renderEntries();
+          if(!disposed)channel?.postMessage(entry.id);
+          show(syncStatus,tr('pending'));void synchronize();
         }).catch(localFailure);
       }));
       list.append(card);
@@ -314,10 +335,16 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
           let bytes=null;
           if(!operation.base&&latest.audio_mime){
             bytes=await store.read(audioKey(latest.id));
+            if(entries.get(entry.id)?.pending?.[0]?.id!==operation.id)continue;
             if(!bytes||bytes.byteLength>maxAudio){syncError='long';break}
           }
-          const accepted=await remote.save(latest,operation,bytes);
-          if(accepted!==operation.id)throw Error('journal acknowledgement missing');
+          try{
+            const accepted=await remote.save(latest,operation,bytes);
+            if(accepted!==operation.id)throw Error('journal acknowledgement missing');
+          }catch(error){
+            if(entries.get(entry.id)?.pending?.[0]?.id!==operation.id)continue;
+            throw error;
+          }
           await serial(async()=>{
             const currentEntry=entries.get(entry.id);
             if(currentEntry?.pending?.[0]?.id!==operation.id)return;
@@ -331,8 +358,12 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
         const rows=await remote.list();
         await serial(async()=>{
           const changes=rows.filter(row=>!entries.get(row.id)?.pending?.length&&entries.get(row.id)?.operation_id!==row.operation_id);
-          if(changes.length)await store.write(changes.map(row=>[metadataKey(row.id),encode(row)]));
-          for(const row of changes)entries.set(row.id,row);
+          if(changes.length)await store.write(changes.map(row=>[metadataKey(row.id),encode(row)]),
+            changes.filter(row=>row.deleted).map(row=>audioKey(row.id)));
+          for(const row of changes){
+            entries.set(row.id,row);
+            if(row.deleted&&!disposed)channel?.postMessage(row.id);
+          }
         });
       }
     }catch(error){syncError=error?.code==='40001'?'conflict':'syncFail'}
@@ -357,6 +388,18 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
   window.addEventListener('online',()=>void synchronize(),{signal:abort.signal});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stop(true)},{signal:abort.signal});
   window.addEventListener('pagehide',()=>stop(true),{signal:abort.signal});
+  if(channel)channel.onmessage=event=>{
+    const id=event.data;
+    if(typeof id!=='string'||!live()||!entries.has(id))return;
+    clearEntryPlayback();
+    serial(async()=>{
+      const bytes=await store.read(metadataKey(id));
+      if(!bytes)return;
+      const entry=decode(bytes);
+      if(!entry.deleted)return;
+      entries.set(id,entry);renderEntries();
+    }).catch(localFailure);
+  };
   const initialize=()=>serial(async()=>{
     for(const label of await store.labels()){
       if(label.startsWith('audio:'))continue;
@@ -376,7 +419,7 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
   const initialized=initialize();
   return {initialized,reconnect:synchronize,dispose(){
     stop(true);capture?.stream.getTracks().forEach(track=>track.stop());
-    disposed=true;abort.abort();attachPreview(null);
-    if(entryUrl)URL.revokeObjectURL(entryUrl);
+    disposed=true;abort.abort();channel?.close();attachPreview(null);
+    clearEntryPlayback();
   }};
 }

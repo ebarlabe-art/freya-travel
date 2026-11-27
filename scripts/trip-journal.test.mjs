@@ -6,6 +6,15 @@ test('uses the local trip day at midnight and daylight changes',()=>{
   assert.equal(journalDay(new Date('2026-07-01T02:00:00Z'),'America/Los_Angeles'),'2026-06-30');
   assert.equal(journalDay(new Date('2026-07-01T02:00:00Z'),'Invalid/Zone'),'2026-07-01');
 });
+test('voice deletion replaces an unacknowledged creation without retaining its audio fields',()=>{
+  const voice=journalOperation({id:'voice',audio_mime:'audio/mp4',duration_ms:1000},{body:'Caption',deleted:false},'create-voice');
+  const deletion=journalOperation(voice,{body:'',deleted:true},'delete-voice');
+  assert.equal(deletion.id,'voice');
+  assert.equal(deletion.audio_mime,null);
+  assert.equal(deletion.duration_ms,null);
+  assert.deepEqual(deletion.pending,[{id:'delete-voice',base:'create-voice',body:'',deleted:true}]);
+  assert.equal(voice.audio_mime,'audio/mp4');
+});
 test('prefers native MP4 where supported and falls back to supported voice formats',()=>{
   const Recorder={isTypeSupported:type=>['audio/mp4','audio/webm;codecs=opus'].includes(type)};
   assert.equal(journalAudioFormat(Recorder),'audio/mp4');

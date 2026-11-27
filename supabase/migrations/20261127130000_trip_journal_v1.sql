@@ -12,7 +12,7 @@ create table public.trip_journal_entries (
   duration_ms integer,
   visibility text not null default 'private' check (visibility = 'private'),
   operation_id uuid not null,
-  deleted boolean not null default false,
+  deleted boolean not null default false check (not deleted or body = ''),
   check (
     (audio_base64 is null and audio_mime is null and duration_ms is null and (deleted or btrim(body) <> ''))
     or
@@ -43,6 +43,29 @@ create policy trip_journal_author_update on public.trip_journal_entries
   using (author_id = (select auth.uid()) and public.is_trip_member(trip_id))
   with check (author_id = (select auth.uid()) and public.is_trip_member(trip_id));
 
+-- Keep the original audio columns out of the caller's UPDATE grants. Deleting
+-- a record clears its content in the same write that makes it a tombstone.
+create function public.clear_deleted_trip_journal_content_v1() returns trigger
+language plpgsql security invoker set search_path = ''
+as $$
+begin
+  if old.deleted then
+    raise exception 'journal_conflict' using errcode = '40001';
+  end if;
+  if new.deleted then
+    new.body := '';
+    new.audio_base64 := null;
+    new.audio_mime := null;
+    new.duration_ms := null;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.clear_deleted_trip_journal_content_v1() from public, anon, authenticated;
+create trigger clear_deleted_trip_journal_content
+  before update on public.trip_journal_entries
+  for each row execute function public.clear_deleted_trip_journal_content_v1();
+
 create function public.save_trip_journal_v1(
   p_id uuid, p_trip_id uuid, p_author uuid, p_operation uuid, p_base uuid,
   p_day date, p_captured_at timestamptz, p_body text, p_audio text,
@@ -58,6 +81,15 @@ begin
   if actor is null or actor is distinct from p_author or not public.is_trip_member(p_trip_id) then
     raise exception 'journal_access' using errcode = '42501';
   end if;
+  if p_deleted then
+    -- Claim an unused ID too: a delayed creation must not restore the audio.
+    insert into public.trip_journal_entries
+      (id, trip_id, author_id, local_day, captured_at, body, operation_id, deleted)
+    values (p_id, p_trip_id, actor, p_day, p_captured_at, '', p_operation, true)
+    on conflict (id) do nothing
+    returning operation_id into accepted;
+    if accepted is not null then return accepted; end if;
+  end if;
   if p_base is null and not p_deleted then
     insert into public.trip_journal_entries
       (id, trip_id, author_id, local_day, captured_at, body, audio_base64, audio_mime, duration_ms, operation_id)
@@ -70,8 +102,8 @@ begin
   select * into entry from public.trip_journal_entries
     where id = p_id and trip_id = p_trip_id and author_id = actor for update;
   if not found then raise exception 'journal_conflict' using errcode = '40001'; end if;
-  if entry.operation_id = p_operation then return p_operation; end if;
-  if entry.operation_id is distinct from p_base or entry.deleted or entry.audio_mime is not null then
+  if entry.operation_id = p_operation or (entry.deleted and p_deleted) then return p_operation; end if;
+  if entry.operation_id is distinct from p_base or entry.deleted or (entry.audio_mime is not null and not p_deleted) then
     raise exception 'journal_conflict' using errcode = '40001';
   end if;
   update public.trip_journal_entries

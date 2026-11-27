@@ -4727,14 +4727,24 @@ function tripJournalVault(scope,current){
         check();
         const id=keyFor(label),iv=crypto.getRandomValues(new Uint8Array(12));
         const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:new TextEncoder().encode(id)},key,bytes);
+        const journalDeleted=label.startsWith('entry:')&&JSON.parse(new TextDecoder().decode(bytes)).deleted===true;
         rows.push({key:id,userId:scope.userId,tripId:scope.tripId,documentId:JOURNAL_VAULT_PREFIX+label,
-          size:bytes.byteLength,iv:Array.from(iv),ciphertext,savedAt:Date.now()});
+          size:bytes.byteLength,iv:Array.from(iv),ciphertext,savedAt:Date.now(),journalDeleted});
       }
       check();
       await offlineDocTx(db,['records'],'readwrite',tx=>{
         if(!current()){tx.abort();return}
-        for(const row of rows)tx.objectStore('records').put(row);
-        for(const label of removals)tx.objectStore('records').delete(keyFor(label));
+        const records=tx.objectStore('records');
+        for(const row of rows){
+          const label=row.documentId.slice(JOURNAL_VAULT_PREFIX.length);
+          if(row.journalDeleted||(!label.startsWith('entry:')&&!label.startsWith('audio:'))){records.put(row);continue}
+          const id=label.slice(label.indexOf(':')+1),prior=records.get(keyFor('entry:'+id));
+          prior.onsuccess=()=>{
+            if(!current()||prior.result?.journalDeleted){tx.abort();return}
+            records.put(row);
+          };
+        }
+        for(const label of removals)records.delete(keyFor(label));
       });
     }
   };
@@ -4759,7 +4769,7 @@ function tripJournalRemote(scope,current,connected){
     async audio(id){
       check();
       const {data,error}=await db.from('trip_journal_entries').select('audio_base64').eq('trip_id',scope.tripId)
-        .eq('author_id',scope.userId).eq('id',id).maybeSingle();
+        .eq('author_id',scope.userId).eq('id',id).eq('deleted',false).maybeSingle();
       if(error)throw error;
       return data?.audio_base64?Uint8Array.from(atob(data.audio_base64),character=>character.charCodeAt(0)):null;
     },
@@ -4792,7 +4802,8 @@ async function openTripJournal(){
     const api=await import('./domain/trip-journal.mjs');
     if(!current()||generation!==tripJournalLoad||visibleAppView()!=='journalView')return;
     tripJournalController=api.mountTripJournal(host,{store:tripJournalVault(scope,current),remote:tripJournalRemote(scope,current,connected),
-      current,connected,language:insightsLanguage,zone:itineraryTimeZone(trip.time_zone)});
+      current,connected,language:insightsLanguage,zone:itineraryTimeZone(trip.time_zone),
+      deletionChannel:offlineDocId(scope.userId,scope.tripId,JOURNAL_VAULT_PREFIX+'deletion')});
   }catch(_){if(current()&&generation===tripJournalLoad)host.textContent=dashboardText('journalUnavailable')}
 }
 

@@ -166,12 +166,15 @@ try{
 
   await page.evaluate(()=>{
     const rows=new Map();window.journalFixtureRows=rows;
+    const writes=[];window.journalFixtureWrites=writes;
     let loseAcknowledgement=true;
     db.rpc=(name,args)=>({abortSignal:async()=>{
       if(name!=='save_trip_journal_v1'||args.p_author!==session.user.id)throw Error('Unexpected RPC scope');
+      writes.push(args);
       const prior=rows.get(args.p_id);
+      if(prior?.deleted&&args.p_deleted)return {data:args.p_operation};
       if(prior?.operation_id!==args.p_operation){
-        if((prior?.operation_id??null)!==args.p_base)return {error:{code:'40001'}};
+        if((prior||!args.p_deleted)&&(prior?.operation_id??null)!==args.p_base)return {error:{code:'40001'}};
         rows.set(args.p_id,{id:args.p_id,local_day:args.p_day,captured_at:args.p_captured_at,body:args.p_body,
           audio_mime:args.p_mime,duration_ms:args.p_duration,operation_id:args.p_operation,deleted:args.p_deleted,
           audio_base64:args.p_audio});
@@ -201,6 +204,60 @@ try{
   await page.evaluate(()=>{document.getElementById('genericPastRecordsSection').classList.remove('hidden')});
   await page.locator('#genericPastRecordsSection [data-open="journalView"]').click();
   await records(page).getByRole('button',{name:'Escolta'}).waitFor();
+  const voiceId=await page.evaluate(()=>[...window.journalFixtureRows.values()].find(entry=>entry.audio_base64).id);
+  await records(page).getByRole('button',{name:'Escolta'}).click();
+  const playing=page.locator('[data-journal-playback] audio');
+  await playing.waitFor();
+  const originalUrl=await playing.getAttribute('src');
+  page.once('dialog',dialog=>dialog.dismiss());
+  await records(page).getByRole('button',{name:'Elimina el record'}).click();
+  assert.equal(await playing.count(),1,'Cancelling must preserve the original and its playback');
+  await page.evaluate(()=>{window.journalOnline=false});
+  page.once('dialog',dialog=>dialog.accept());
+  await records(page).getByRole('button',{name:'Elimina el record'}).click();
+  await records(page).waitFor({state:'detached'});
+  assert.equal(await page.evaluate(async({id,url})=>{
+    const scope={userId:session.user.id,tripId:trip.id},vault=tripJournalVault(scope,()=>true);
+    const gone=!(await vault.read('audio:'+id));
+    const canFetch=await fetch(url).then(()=>true,()=>false);
+    const canRestore=await vault.write([['audio:'+id,new Uint8Array([1])]]).then(()=>true,()=>false);
+    return gone&&!canFetch&&!canRestore;
+  },{id:voiceId,url:originalUrl}),true,'The local encrypted copy, playback URL and late cache writes must be unavailable');
+  assert.equal(await page.evaluate(id=>!!window.journalFixtureRows.get(id).audio_base64,voiceId),true,
+    'An offline deletion should report that the server copy is still pending');
+  await sync(page).getByText(/canvis pendents/).waitFor();
+
+  await page.evaluate(fixture=>{window.installJournalFixture(fixture);window.micAllowed=true},native?null:silenceMp4);
+  await editor(page).fill('Veu eliminada abans de sincronitzar');
+  await page.getByRole('button',{name:'Enregistra veu'}).click();
+  await page.getByRole('button',{name:'Atura'}).waitFor();
+  await page.locator('[data-journal-duration]').getByText(/0:01/).waitFor();
+  await page.getByRole('button',{name:'Atura'}).click();
+  await page.locator('[data-journal-preview]').waitFor();
+  await page.getByRole('button',{name:'Desa el record'}).click();
+  const unsent=records(page).filter({hasText:'Veu eliminada abans de sincronitzar'});
+  await unsent.getByRole('button',{name:'Escolta'}).waitFor();
+  const unsentId=await page.evaluate(async()=>{
+    const database=await offlineDocDatabase();
+    const rows=await offlineDocUserRows(database,session.user.id,true);
+    const active=rows.filter(row=>row.documentId.startsWith(JOURNAL_VAULT_PREFIX+'audio:'));
+    if(active.length!==1)throw Error('Expected only the unsent local voice copy');
+    return active[0].documentId.split(':').at(-1);
+  });
+  page.once('dialog',dialog=>dialog.accept());
+  await unsent.getByRole('button',{name:'Elimina el record'}).click();
+  await unsent.waitFor({state:'detached'});
+  await page.getByRole('button',{name:'Torna al viatge'}).click();
+  await page.locator('#genericPastRecordsSection [data-open="journalView"]').click();
+  await sync(page).getByText(/canvis pendents/).waitFor();
+  assert.equal(await records(page).count(),0);
+  await page.evaluate(async()=>{window.journalOnline=true;await tripJournalController.reconnect()});
+  const deletionState=await page.evaluate(({voiceId,unsentId})=>{
+    const rows=window.journalFixtureRows,writes=window.journalFixtureWrites.filter(write=>write.p_id===unsentId);
+    return {removed:[voiceId,unsentId].every(id=>rows.get(id)?.deleted&&rows.get(id).audio_base64===null),
+      onlyTombstone:writes.length===1&&writes[0].p_deleted&&writes[0].p_audio===null};
+  },{voiceId,unsentId});
+  assert.deepEqual(deletionState,{removed:true,onlyTombstone:true},'Deletion must scrub synced audio and never upload an unsent original');
   await page.evaluate(async()=>{
     const owner=session.user.id,tid=trip.id;
     const scope={userId:'other-fixture',tripId:tid};
@@ -209,7 +266,7 @@ try{
     if(labels.length)throw Error('Other account read journal records');
     session={user:{id:owner}};
   });
-  console.log('PASS '+engine+': journal entry points, denied microphone, '+(native?'native recording':'recording-event fixture')+', interruption, encrypted cold recovery, replay, edit/delete, preserved audio and account isolation.');
+  console.log('PASS '+engine+': journal entry points, '+(native?'native recording':'recording-event fixture')+', offline recovery, replay, confirmed voice deletion and account isolation.');
 }finally{
   await ctx?.close();
   await new Promise(resolve=>server.close(resolve));
