@@ -36,6 +36,7 @@ test('workflow retains every existing browser invocation on an independent requi
  expected.push('PHOTO_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-photos-viewer-browser.mjs');
  expected.push('PGLITE_MODULE="$RUNNER_TEMP/geography-db/node_modules/@electric-sql/pglite/dist/index.js" CULTURE_ENGINE=${{ matrix.engine }} PLAYWRIGHT_MODULE="$RUNNER_TEMP/travel-book-browser/node_modules/playwright-core/index.mjs" node scripts/check-aran-cultural-flow-browser.mjs');
  expected.push('TRAVEL_BOOK_ENGINE=webkit TRAVEL_BOOK_SAVE_ONLY=1 node scripts/check-travel-book-runtime-browser.mjs');
+ expected.push('JOURNAL_ENGINE=${{ matrix.engine }} node scripts/check-trip-journal-browser.mjs');
  expected.push('OFFLINE_DOC_ENGINE=${{ matrix.engine }} node scripts/check-offline-documents-browser.mjs');
  expected.push('node scripts/check-trip-currency-browser.mjs');
  expected.push('node scripts/check-trip-dashboard-browser.mjs');

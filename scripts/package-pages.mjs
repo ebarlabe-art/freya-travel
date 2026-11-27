@@ -46,6 +46,7 @@ const runtimeDomain=[
   'trip-insights.mjs',
   'trip-currency.mjs',
   'trip-currency-ui.mjs',
+  'trip-journal.mjs',
 ];
 
 await mkdir(new URL('domain/',dist),{recursive:true});

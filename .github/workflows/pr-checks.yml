@@ -66,6 +66,8 @@ jobs:
         run: npm install --prefix "$RUNNER_TEMP/v27-db" --no-package-lock --ignore-scripts @electric-sql/pglite@0.3.14
       - name: V27 geography migration and permissions
         run: PGLITE_MODULE="$RUNNER_TEMP/v27-db/node_modules/@electric-sql/pglite/dist/index.js" node scripts/test-itinerary-location-db.mjs
+      - name: Private travel journal and replay contracts
+        run: PGLITE_MODULE="$RUNNER_TEMP/v27-db/node_modules/@electric-sql/pglite/dist/index.js" node scripts/test-trip-journal-db.mjs
       - name: Ordered points migration RLS and concurrency
         run: PGLITE_MODULE="$RUNNER_TEMP/v27-db/node_modules/@electric-sql/pglite/dist/index.js" node scripts/test-itinerary-points-db.mjs
       - name: Cultural guide RLS identity and concurrency
@@ -119,6 +121,9 @@ jobs:
       - name: Encrypted offline documents after browser restart
         timeout-minutes: 3
         run: OFFLINE_DOC_ENGINE=${{ matrix.engine }} node scripts/check-offline-documents-browser.mjs
+      - name: Private travel journal capture and offline recovery
+        timeout-minutes: 3
+        run: JOURNAL_ENGINE=${{ matrix.engine }} node scripts/check-trip-journal-browser.mjs
       - name: Travel Book real Pages build browser regression
         if: matrix.engine == 'chromium'
         timeout-minutes: 5

@@ -36,6 +36,7 @@ function harness({coldStart=false,offlineOnly=false,tripVisible=true}={}){
     hide:id=>{calls.push(['hide',id]);hidden.add(id)},
     show:id=>{calls.push(['show',id]);hidden.delete(id)},
     closeItineraryImport:mark('closeItineraryImport'),
+    closeTripJournal:mark('closeTripJournal'),
     closeOfflineDocManager:mark('closeOfflineDocManager'),
     resetBuilderUi:mark('resetBuilderUi'),
     clearParkingReservationPreview:mark('clearParkingReservationPreview'),

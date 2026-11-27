@@ -27,6 +27,16 @@ Des de l’inici o Documents, el gestor agrupa les còpies xifrades i l’espai 
 
 **Verificació i relleu**. Prova sintètica de 37 documents en tres viatges, amb protecció individual i de viatge, manca d’espai, reobertura offline, protecció que sobreviu a la caducitat de la fitxa i retirada explícita. Queda pendent la validació física i l’autorització per publicar.
 
+## C2.1 · Diari de viatge amb veu i text · branca PWA v95 (27/11/2026)
+
+Sobre `61f68a6` (v94) i d’acord amb els criteris de la PR #278. El Diari té accés des del tauler i des de Records. Agrupa les entrades per dia de la zona horària del viatge. Inclou text editable, eliminació confirmada dels records de text i veu, captura de veu amb permís puntual, durada, aturada i escolta abans de confirmar. Prioritza MP4 quan el navegador el suporta, amb WebM i Ogg com a alternatives. Cada enregistrament té un màxim de dos minuts. Els fragments que el navegador emet es desen progressivament i el Diari permet recuperar-los i escoltar-los després d’una interrupció. Les entrades d’àudio confirmades mantenen el fitxer original fins que l’autor en confirma l’eliminació.
+
+Els esborranys, les entrades i l’àudio reutilitzen la caixa forta IndexedDB i la clau AES-GCM no exportable del compte. La neteja de les còpies de Documents conserva el diari. El desament al dispositiu i la sincronització es mostren per separat. La cua desada al dispositiu es reprèn en recuperar connexió amb el Diari obert o quan es torna a obrir. Una operació conserva l’identificador en els reintents, i els conflictes d’edició conserven la còpia local. En eliminar un record de veu es retira la còpia xifrada i es tanca la reproducció local. El servidor retira el contingut en la mateixa operació que registra l’eliminació. Si faltava connexió, la cua conserva l’ordre d’eliminació i descarta la pujada de l’original.
+
+Es prepara una migració incremental per a un magatzem privat de records. L’autor ha de pertànyer al viatge i cada alta d’àudio curt confirma de manera atòmica el record i el fitxer original. El contracte inclou visibilitat privada i queda preparat per a una autorització explícita futura. C2.1 no concedeix accés a participants. No s’ha aplicat la migració ni s’han contractat serveis. Per publicar cal autoritzar primer la migració. La transcripció, l’edició assistida, les vinculacions i la integració editorial continuen als lliuraments C2.2–C2.5.
+
+**Verificació i relleu.** Proves de data local, formats i cua, contracte SQL local d’aïllament, reintents i conflictes, i prova Chromium mòbil de captura, permís denegat, interrupció, reobertura offline, text i escolta. Proves dirigides de confirmació, tancament de la reproducció, retirada local, eliminació en reconnexió i impossibilitat que un reintent torni a afegir l’àudio. Pendent de validació física de micròfon i àudio a la PWA instal·lada a l’iPhone.
+
 ## B3 · Desament de documents offline · branca PWA v93 (27/11/2026)
 
 La validació física de Brussel·les a la v92 ha superat 9 de 10 comprovacions. El desament de documents queda pendent de revalidació física. S’han reproduït dos defectes amb fitxers sintètics: el filtre MIME rebutjava capçaleres vàlides amb paràmetres i l’estat de la targeta donava per bona qualsevol fila amb el mateix camí, fins i tot si no es podia desxifrar.

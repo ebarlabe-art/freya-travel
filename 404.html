@@ -290,6 +290,7 @@
     #offlineDocManager{width:min(670px,calc(100% - 24px));max-height:calc(100dvh - 32px);overflow:auto;border:1px solid var(--line);border-radius:20px;padding:16px;color:var(--ink);background:#fff}
     #offlineDocManager::backdrop{background:#18132688}.offline-manager-header{display:flex;gap:12px;align-items:center;justify-content:space-between}.offline-manager-header h2{margin:0}
     #offlineDocManager button{min-height:44px;max-width:100%;white-space:normal;overflow-wrap:anywhere}.offline-manager-group{width:100%;text-align:left;display:flex;flex-wrap:wrap;gap:6px;justify-content:space-between}.offline-manager-list{list-style:none;padding:0;margin:12px 0 0}.offline-manager-list li{border-top:1px solid var(--line);padding:12px 0;overflow-wrap:anywhere}.offline-manager-list p{margin:4px 0}.offline-manager-keep{display:flex;align-items:center;gap:8px;min-height:44px}.offline-manager-keep input{width:20px;height:20px;flex:none}
+    #tripJournalContent{display:grid;gap:12px}#tripJournalContent textarea{width:100%;font:inherit;resize:vertical;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:12px}#tripJournalContent audio{display:block;width:min(100%,370px);margin-top:8px}#tripJournalContent audio[hidden]{display:none}#tripJournalContent .doc-actions button{min-height:44px}#tripJournalContent .journal-body{white-space:pre-wrap;overflow-wrap:anywhere}#tripJournalContent [data-journal-local]:empty,#tripJournalContent [data-journal-sync]:empty{display:none}
     .document-viewer{position:fixed;inset:0;z-index:10000;background:#fff;display:grid;grid-template-rows:auto 1fr;min-height:100dvh}.document-viewer-bar{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;border-bottom:1px solid var(--line);background:#fff}.document-viewer-bar strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.document-viewer-close{padding:10px 14px}.document-viewer-body{min-height:0;display:grid;place-items:stretch;background:#f7f5fb}.document-viewer-body iframe{width:100%;height:100%;border:0;background:#fff}.document-viewer-body img{display:block;max-width:100%;max-height:100%;margin:auto;object-fit:contain}.document-viewer-open{overflow:hidden}.doc-upload{display:grid;gap:12px}.doc-upload select,.doc-upload input[type=file]{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:12px;background:#fff}.doc-progress{font-size:.9rem;color:var(--muted)}.doc-grid{display:grid;gap:14px}.doc-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px;box-shadow:0 8px 24px rgba(49,42,59,.05)}.doc-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.doc-card h3{margin:0 0 4px}.doc-card p{margin:4px 0;color:var(--muted)}.doc-chip{display:inline-block;background:#ede7f6;color:#4f378b;border-radius:999px;padding:5px 9px;font-size:.75rem;font-weight:800}.doc-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.doc-actions button{padding:10px 12px}.doc-card{min-width:0}.doc-card-head>div{min-width:0;overflow-wrap:anywhere}.doc-actions button,#purgeOfflineDocuments{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}@media(max-width:520px){.doc-actions{display:grid;grid-template-columns:minmax(0,1fr)}.doc-actions button,#purgeOfflineDocuments{width:100%;min-height:44px}}.doc-open{background:var(--purple)}.doc-delete{background:#ffdad6;color:#8c1d18}.doc-empty{text-align:center;padding:26px 14px;color:var(--muted)}.privacy-note{background:#e7f5ec;border:1px solid #b9dfc5;color:#245c36;border-radius:16px;padding:14px;margin-top:12px}.upload-status{margin-top:10px}.doc-count{display:inline-block;min-width:24px;text-align:center;background:#ede7f6;color:#4f378b;border-radius:999px;padding:3px 7px;font-size:.78rem;font-weight:800;margin-left:6px}
 
     .expense-count{display:inline-block;min-width:24px;text-align:center;background:#e7f5ec;color:#247642;border-radius:999px;padding:3px 7px;font-size:.78rem;font-weight:800;margin-left:6px}.expense-form{display:grid;gap:12px}.expense-form select,.expense-form input{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:13px;background:#fff}.expense-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.expense-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.expense-stat{background:#faf8fd;border:1px solid var(--line);border-radius:16px;padding:14px}.expense-stat small{display:block;color:var(--muted)}.expense-stat strong{display:block;font-size:1.2rem;margin-top:5px}.expense-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.expense-toolbar button{flex:1;min-width:155px}.expense-filters{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:14px}.expense-filters input,.expense-filters select{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:12px;background:#fff}.expense-list{display:grid;gap:14px}.expense-day{display:grid;gap:10px}.expense-day-title{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#4f378b;padding:4px 2px}.expense-day-title h3{margin:0;font-size:1rem}.expense-day-total{font-size:.86rem;color:var(--muted);font-weight:700}.expense-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px}.expense-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.expense-head h3{margin:0}.expense-amount{font-size:1.2rem;font-weight:800;color:#4f378b;white-space:nowrap}.expense-meta{margin-top:7px;color:var(--muted);font-size:.9rem}.expense-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.expense-actions button{padding:9px 11px}.expense-receipt{background:#e7f5ec;color:#245c36}.expense-delete{background:#ffdad6;color:#8c1d18}.expense-empty{text-align:center;padding:24px;color:var(--muted)}.expense-chart{display:grid;gap:12px}.chart-row{display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:10px}.chart-label{font-size:.9rem;font-weight:700}.chart-track{height:12px;background:#eee8f4;border-radius:999px;overflow:hidden}.chart-bar{height:100%;background:linear-gradient(90deg,#6750a4,#9b72cf);border-radius:999px}.chart-value{font-size:.86rem;color:var(--muted);white-space:nowrap}.receipt-label{display:grid;gap:6px;color:var(--muted);font-size:.9rem}.receipt-label input{padding:10px}.float-add{position:fixed;right:20px;bottom:22px;width:58px;height:58px;border-radius:50%;font-size:28px;padding:0;box-shadow:0 10px 28px rgba(79,55,139,.35);z-index:20}
@@ -886,7 +887,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         <div class="menu-grid">
           <button class="menu-card" type="button" data-open="travelBookView"><span class="icon" aria-hidden="true">📖</span><strong>Travel Book</strong><small data-trip-text="album">Àlbum del viatge</small></button>
           <button data-open="photosView" class="menu-card" type="button"><span class="icon" aria-hidden="true">📸</span><strong data-trip-text="photos">Fotos</strong><small data-trip-text="photosCopy">Galeria compartida del viatge</small></button>
-          <article class="menu-card menu-card-future" aria-disabled="true"><span class="icon" aria-hidden="true">🎙️</span><strong data-trip-text="journal">Diari</strong><small data-trip-text="journalCopy">Notes de veu · Properament</small></article>
+          <button class="menu-card" type="button" data-open="journalView"><span class="icon" aria-hidden="true">🎙️</span><strong data-trip-text="journal">Diari de viatge</strong><small data-trip-text="journalCopy">Records en veu i text</small></button>
           <article class="menu-card menu-card-future" aria-disabled="true"><span class="icon" aria-hidden="true">🗺️</span><strong data-trip-text="maps">Mapes del record</strong><small data-trip-text="mapsCopy">Recorreguts · Properament</small></article>
         </div>
       </section>
@@ -921,6 +922,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
       <section id="genericTripToolsSection" class="generic-trip-section generic-trip-tools" aria-labelledby="genericToolsTitle">
         <div class="generic-trip-section-head"><h2 id="genericToolsTitle" data-trip-text="tools">Eines del viatge</h2></div>
         <div class="menu-grid">
+          <button id="genericJournalModuleCard" class="menu-card" type="button" data-open="journalView"><span class="icon" aria-hidden="true">🎙️</span><strong data-trip-text="journal">Diari de viatge</strong><small data-trip-text="journalCopy">Records en veu i text</small></button>
           <button data-open="documentsView" class="menu-card" type="button"><span class="icon" aria-hidden="true">📄</span><strong data-trip-text="documents">Documents</strong><small id="genericDocumentsModuleStatus" data-trip-text="documentsCopy">Documents del viatge</small></button>
           <button data-open="checklistView" class="menu-card" type="button"><span class="icon" aria-hidden="true">✅</span><strong data-trip-text="checklist">Llista de tasques</strong><small id="genericChecklistModuleStatus" data-trip-text="checklistCopy">Preparatius compartits</small></button>
           <button data-open="budgetView" class="menu-card" type="button"><span class="icon" aria-hidden="true">💶</span><strong data-trip-text="budget">Pressupost</strong><small id="genericBudgetModuleStatus" data-trip-text="budgetCopy">Previsió i cost del viatge</small></button>
@@ -1608,6 +1610,7 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
         <button class="menu-card" data-open="flightsView"><span class="icon">✈️</span><strong data-trip-text="flights">Vols</strong><small data-trip-text="flightsLondon">Horaris, aeroports i documents</small></button>
         <button class="menu-card" data-open="ticketsView"><span class="icon">🎟️</span><strong data-trip-text="tickets">Entrades</strong><small data-trip-text="ticketsCopy">Cartera digital del viatge</small></button>
         <button class="menu-card" data-open="favoritesView"><span class="icon">⭐</span><strong><span data-trip-text="favorites">Preferits</span> <span id="favoriteCount" class="favorite-count">0</span></strong><small data-trip-text="favoritesCopy">Els vostres imprescindibles</small></button>
+        <button class="menu-card" type="button" data-open="journalView"><span class="icon" aria-hidden="true">🎙️</span><strong data-trip-text="journal">Diari de viatge</strong><small data-trip-text="journalCopy">Records en veu i text</small></button>
         <button class="menu-card" data-open="documentsView"><span class="icon">📄</span><strong><span data-trip-text="documents">Documents</span> <span id="documentCount" class="doc-count">0</span></strong><small data-trip-text="documentsLondon">PDF, captures i QR privats</small></button>
         <button class="menu-card" type="button" data-currency-ui data-open="tripCurrencyView"><span class="icon" aria-hidden="true">💱</span><strong data-currency-text="title"></strong><small data-currency-text="entry"></small></button>
         <button class="menu-card" data-open="expensesView"><span class="icon">💶</span><strong><span data-trip-text="expenses">Despeses</span> <span id="expenseCount" class="expense-count">0</span></strong><small data-trip-text="expensesLondon">Registre del compte comú</small></button>
@@ -1817,6 +1820,11 @@ body:has(#itineraryImportPanel:not(.hidden)) .search-fab{display:none}
       </div>
     </div>
 
+    <div id="journalView" class="hidden">
+      <button id="tripJournalBack" type="button" class="secondary" data-trip-text="journalBack">Torna al viatge</button>
+      <h2 data-trip-text="journal">Diari de viatge</h2>
+      <div id="tripJournalContent" aria-live="off"></div>
+    </div>
     <div id="travelBookView" class="hidden">
       <button id="travelBookBack" class="ghost back" type="button">← Tornar</button>
       <button id="travelBookExport" class="secondary" type="button" title="Versió de prova: la impressió nativa de Safari encara no té qualitat editorial">PDF (experimental)</button>
@@ -2715,8 +2723,10 @@ const tripDashboardCopy={
   album:["Àlbum del viatge","Álbum del viaje","Trip album","Album de voyage","Album di viaggio"],
   photos:["Fotos","Fotos","Photos","Photos","Foto"],
   photosCopy:["Galeria compartida del viatge","Galería compartida del viaje","Shared trip gallery","Galerie partagée du voyage","Galleria condivisa del viaggio"],
-  journal:["Diari","Diario","Journal","Journal","Diario"],
-  journalCopy:["Notes de veu · Properament","Notas de voz · Próximamente","Voice notes · Coming soon","Notes vocales · À venir","Note vocali · In arrivo"],
+  journal:["Diari de viatge","Diario de viaje","Travel journal","Carnet de voyage","Diario di viaggio"],
+  journalCopy:["Records en veu i text","Recuerdos en voz y texto","Voice and written memories","Souvenirs vocaux et écrits","Ricordi vocali e scritti"],
+  journalBack:["Torna al viatge","Volver al viaje","Back to trip","Retour au voyage","Torna al viaggio"],
+  journalUnavailable:["No s’ha pogut obrir el diari.","No se ha podido abrir el diario.","The journal couldn’t open.","Impossible d’ouvrir le carnet.","Impossibile aprire il diario."],
   maps:["Mapes del record","Mapas de recuerdos","Memory maps","Cartes souvenirs","Mappe dei ricordi"],
   mapsCopy:["Recorreguts · Properament","Recorridos · Próximamente","Trip routes · Coming soon","Parcours · À venir","Percorsi · In arrivo"],
   pieces:["Peces del viatge","Detalles del viaje","Trip details","Détails du voyage","Dettagli del viaggio"],
@@ -2858,7 +2868,7 @@ document.getElementById('tripHome').setAttribute('aria-label',dashboardText('now
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-offline-storage-v94';
+const FREYA_FRONTEND_RELEASE='pwa-trip-journal-v95';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -4112,7 +4122,7 @@ function offlineDocSize(bytes){
   return new Intl.NumberFormat(insightsLanguage,{maximumFractionDigits:1}).format(bytes/(unit==='MiB'?1048576:1024))+' '+unit;
 }
 function offlineDocIsTravelDocument(row){
-  return row.documentId!=='freya-parking-photo-v1'&&!row.documentId?.startsWith('freya-travel-book-draft:');
+  return row.documentId!=='freya-parking-photo-v1'&&!row.documentId?.startsWith('freya-travel-book-draft:')&&!row.documentId?.startsWith(JOURNAL_VAULT_PREFIX);
 }
 function offlineAutoTag(scope,doc){return offlineDocId(scope.userId,scope.tripId,doc.id)+':'+doc.file_path}
 let offlineDocDbPromise=null,offlineDocWriteQueue=Promise.resolve(),offlineDocEpoch=0;
@@ -4318,20 +4328,27 @@ async function clearOfflineDocumentUserData(userId){
   const database=await offlineDocDatabase();
   await offlineDocTx(database,['records','keys'],'readwrite',tx=>{
     const records=tx.objectStore('records'),cursor=records.index('byUser').openCursor(userId);
-    cursor.onsuccess=()=>{const entry=cursor.result;if(entry){entry.delete();entry.continue()}};
-    tx.objectStore('keys').delete(userId);
+    let preservedJournal=false;
+    cursor.onsuccess=()=>{
+      const entry=cursor.result;
+      if(entry){
+        if(entry.value.documentId?.startsWith(JOURNAL_VAULT_PREFIX))preservedJournal=true;
+        else entry.delete();
+        entry.continue();
+      }else if(!preservedJournal)tx.objectStore('keys').delete(userId);
+    };
   });
 }
 async function purgeOfflineDocumentCopies(){
   const scope=offlineDocScope();
-  if(!scope||!confirm("Esborrar totes les còpies offline d'aquest compte en aquest dispositiu? Es perdran els fitxers xifrats i la clau local. Els originals al núvol i els documents d'altres comptes es conservaran. Aquesta acció no es pot desfer."))return;
+  if(!scope||!confirm("Esborrar totes les còpies offline d'aquest compte en aquest dispositiu? S’esborraran les còpies de documents d’aquest dispositiu. Els records del diari es conservaran. Els originals al núvol i els documents d'altres comptes es conservaran. Aquesta acció no es pot desfer."))return;
   const userId=scope.userId,button=$('purgeOfflineDocuments');
   button.disabled=true;msg('offlinePurgeMsg','Esborrant les còpies xifrades…');
   offlineDocEpoch++;closeOfflineDocManager();closeDocumentViewer();
   try{
     await offlineDocEnqueue(()=>clearOfflineDocumentUserData(userId));
     if(session?.user?.id===userId){
-      msg('offlinePurgeMsg','S’han esborrat les còpies offline i la clau local d’aquest compte.');
+      msg('offlinePurgeMsg','S’han esborrat les còpies offline de documents d’aquest compte.');
       await offlineDocStatus();
     }
   }catch(error){
@@ -4672,6 +4689,124 @@ async function offlineDocManagerAction(element,action){
     void offlineDocStatus();
   }
 }
+const JOURNAL_VAULT_PREFIX='freya-trip-journal:';
+let tripJournalController=null,tripJournalLoad=0;
+function closeTripJournal(){
+  tripJournalLoad++;
+  tripJournalController?.dispose();
+  tripJournalController=null;
+  $('tripJournalContent').replaceChildren();
+}
+function tripJournalVault(scope,current){
+  const keyFor=label=>offlineDocId(scope.userId,scope.tripId,JOURNAL_VAULT_PREFIX+label);
+  const check=()=>{if(!current())throw Error('Journal account or trip changed')};
+  return {
+    async labels(){
+      check();
+      const db=await offlineDocDatabase(),rows=await offlineDocUserRows(db,scope.userId,true);
+      check();
+      return rows.filter(row=>row.tripId===scope.tripId&&row.documentId.startsWith(JOURNAL_VAULT_PREFIX))
+        .sort((a,b)=>a.savedAt-b.savedAt).map(row=>row.documentId.slice(JOURNAL_VAULT_PREFIX.length));
+    },
+    async read(label){
+      check();
+      const db=await offlineDocDatabase(),record=await offlineDocRead(db,'records',keyFor(label));
+      check();
+      if(!record||record.userId!==scope.userId||record.tripId!==scope.tripId)return null;
+      const key=await offlineDocKey(db,scope.userId);
+      if(!key)throw Error('Journal key unavailable');
+      const bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(record.iv),additionalData:new TextEncoder().encode(record.key)},key,record.ciphertext);
+      check();
+      return new Uint8Array(bytes);
+    },
+    async write(items,removals=[]){
+      check();
+      const db=await offlineDocDatabase(),key=items.length?await offlineDocKey(db,scope.userId,true):null;
+      const rows=[];
+      for(const [label,bytes] of items){
+        check();
+        const id=keyFor(label),iv=crypto.getRandomValues(new Uint8Array(12));
+        const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:new TextEncoder().encode(id)},key,bytes);
+        const journalDeleted=label.startsWith('entry:')&&JSON.parse(new TextDecoder().decode(bytes)).deleted===true;
+        rows.push({key:id,userId:scope.userId,tripId:scope.tripId,documentId:JOURNAL_VAULT_PREFIX+label,
+          size:bytes.byteLength,iv:Array.from(iv),ciphertext,savedAt:Date.now(),journalDeleted});
+      }
+      check();
+      await offlineDocTx(db,['records'],'readwrite',tx=>{
+        if(!current()){tx.abort();return}
+        const records=tx.objectStore('records');
+        for(const row of rows){
+          const label=row.documentId.slice(JOURNAL_VAULT_PREFIX.length);
+          if(row.journalDeleted||(!label.startsWith('entry:')&&!label.startsWith('audio:'))){records.put(row);continue}
+          const id=label.slice(label.indexOf(':')+1),prior=records.get(keyFor('entry:'+id));
+          prior.onsuccess=()=>{
+            if(!current()||prior.result?.journalDeleted){tx.abort();return}
+            records.put(row);
+          };
+        }
+        for(const label of removals)records.delete(keyFor(label));
+      });
+    }
+  };
+}
+function tripJournalRemote(scope,current,connected){
+  const check=()=>{if(!current()||!connected())throw Error('Journal connection unavailable')};
+  function query(){
+    check();
+    return db.from('trip_journal_entries').select('id,local_day,captured_at,body,audio_mime,duration_ms,operation_id,deleted')
+      .eq('trip_id',scope.tripId).eq('author_id',scope.userId);
+  }
+  return {
+    async list(){
+      const rows=[];
+      for(let offset=0;;offset+=200){
+        const {data,error}=await query().order('id').range(offset,offset+199);
+        if(error)throw error;
+        rows.push(...data);
+        if(data.length<200)return rows;
+      }
+    },
+    async audio(id){
+      check();
+      const {data,error}=await db.from('trip_journal_entries').select('audio_base64').eq('trip_id',scope.tripId)
+        .eq('author_id',scope.userId).eq('id',id).eq('deleted',false).maybeSingle();
+      if(error)throw error;
+      return data?.audio_base64?Uint8Array.from(atob(data.audio_base64),character=>character.charCodeAt(0)):null;
+    },
+    async save(entry,operation,bytes){
+      check();
+      let audio=null;
+      if(bytes){
+        const chunks=[];
+        for(let at=0;at<bytes.length;at+=24576)chunks.push(btoa(String.fromCharCode(...bytes.subarray(at,at+24576))));
+        audio=chunks.join('');
+      }
+      const {data,error}=await db.rpc('save_trip_journal_v1',{p_id:entry.id,p_trip_id:scope.tripId,p_author:scope.userId,
+        p_operation:operation.id,p_base:operation.base,p_day:entry.local_day,p_captured_at:entry.captured_at,
+        p_body:operation.body,p_audio:audio,p_mime:entry.audio_mime||null,p_duration:entry.duration_ms||null,p_deleted:operation.deleted})
+        .abortSignal(AbortSignal.timeout(20000));
+      if(error)throw error;
+      return data;
+    }
+  };
+}
+async function openTripJournal(){
+  closeTripJournal();
+  if(!trip?.id||!session?.user?.id||passwordRecoveryMode)return;
+  const scope={userId:session.user.id,tripId:trip.id,generation:tripLoadGeneration,epoch:offlineDocEpoch};
+  const generation=tripJournalLoad,host=$('tripJournalContent');
+  const current=()=>offlineDocScopeCurrent(scope);
+  const connected=()=>!connectionUnavailable()&&!!session?.access_token;
+  host.textContent=dashboardText('offlineDocChecking');
+  try{
+    const api=await import('./domain/trip-journal.mjs');
+    if(!current()||generation!==tripJournalLoad||visibleAppView()!=='journalView')return;
+    tripJournalController=api.mountTripJournal(host,{store:tripJournalVault(scope,current),remote:tripJournalRemote(scope,current,connected),
+      current,connected,language:insightsLanguage,zone:itineraryTimeZone(trip.time_zone),
+      deletionChannel:offlineDocId(scope.userId,scope.tripId,JOURNAL_VAULT_PREFIX+'deletion')});
+  }catch(_){if(current()&&generation===tripJournalLoad)host.textContent=dashboardText('journalUnavailable')}
+}
+
 function rememberOfflineTrips(rows,userId=session?.user?.id){
   if(!userId||!Array.isArray(rows))return false;
   const saved=safeOfflineWrite(offlineTripsKey(userId),{version:OFFLINE_CACHE_VERSION,userId,savedAt:new Date().toISOString(),rows});
@@ -4784,8 +4919,10 @@ async function validateOfflineSessionAfterReconnect(){
     if(checked.error)throw checked.error;
     if(checked.data?.user?.id!==previousId||data.session.user?.id!==previousId)
       throw Error('La identitat del compte ha canviat.');
+    const journalTrip=tripJournalController?trip?.id:null;
     offlineReadOnlySession=false;
     await renderSession(data.session);
+    if(journalTrip&&session?.user?.id===previousId&&trip?.id===journalTrip)setAppView('journalView');
     if(!connectionUnavailable())await refreshAfterReconnect();
   }catch(error){
     if(offlineAuthNetworkError(error)){updateConnectivityBanner();return}
@@ -6376,8 +6513,8 @@ function closeTripCurrency(){
   $(dashboard).querySelector('[data-open="tripCurrencyView"]')?.focus();
 }
 
-const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','tripCurrencyView','insightsView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','travelBookView','documentsView','expensesView','sharedExpensesView','weatherView','itineraryView','discoverView'];
-const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','tripCurrencyView','insightsView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','travelBookView','itineraryView','parkingView','weatherView','sharedExpensesView']);
+const APP_VIEWS=['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','dashboardView','genericDashboardView','tripCurrencyView','insightsView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','searchView','checklistView','flightsView','ticketsView','transportView','restaurantsView','parkingView','favoritesView','photosView','travelBookView','journalView','documentsView','expensesView','sharedExpensesView','weatherView','itineraryView','discoverView'];
+const GENERIC_ALLOWED_VIEWS=new Set(['tripsHomeView','upcomingTripsView','pastTripsView','joinTripView','designTripView','manualTripView','builderView','genericDashboardView','tripCurrencyView','insightsView','genericModuleView','buildView','tripReviewView','budgetView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','checklistView','documentsView','photosView','travelBookView','journalView','itineraryView','parkingView','weatherView','sharedExpensesView']);
 const LONDON_ALLOWED_VIEWS=new Set(APP_VIEWS.filter(id=>!['genericDashboardView','insightsView','genericModuleView','accommodationView','genericFlightsView','activitiesView','localTransportView','carRentalView','sharedExpensesView'].includes(id)));
 function navigationViewIsValid(view,value=trip){
   if(['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(view))return true;
@@ -6398,6 +6535,7 @@ function persistNavigationState(view){
 function visibleAppView(){return APP_VIEWS.find(id=>!$(id)?.classList.contains('hidden'))||'tripsHomeView'}
 function renderContextHeader(id){const home=['tripsHomeView','upcomingTripsView','pastTripsView','constructionView','joinTripView','designTripView','manualTripView','builderView'].includes(id);$('tripTitleTop').textContent=home?'':trip?.name||'';$('userEmail2').textContent='';}
 function setAppView(id){
+  if(id!=='journalView'&&visibleAppView()==='journalView')closeTripJournal();
   if(id!=='travelBookView'&&visibleAppView()==='travelBookView')clearTravelBookPortable();
   if(visibleAppView()==='sharedExpensesView'&&id!=='sharedExpensesView'){
     sharedExpensesController?.dispose();sharedExpensesController=null;
@@ -6427,7 +6565,7 @@ function setAppView(id){
   updateTripHomeClock();updateHomeClock();
   if(id==='tripCurrencyView'){renderTripCurrency();$('currencyTitle').focus({preventScroll:true})}
   if(id==='documentsView')updateDocumentsBack();if(id==='budgetView')loadBudgetView();if(id==='tripReviewView')loadTripReview();
-  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView'){setActivityViewMode('activity');loadActivityViewData()}if(id==='localTransportView')loadLocalTransportViewData();if(id==='carRentalView')loadCarRentals();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='travelBookView')loadTravelBookView();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='sharedExpensesView')loadSharedExpenseScreen();if(id==='insightsView')void renderTripInsights();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
+  if(id==='restaurantsView')renderRestaurants();if(id==='discoverView')renderLondonGuides();if(id==='accommodationView')loadAccommodations();if(id==='genericFlightsView')loadFlights();if(id==='activitiesView'){setActivityViewMode('activity');loadActivityViewData()}if(id==='localTransportView')loadLocalTransportViewData();if(id==='carRentalView')loadCarRentals();if(id==='itineraryView'&&!isLondonTrip())loadGenericItinerary();if(id==='photosView')loadPhotos();if(id==='travelBookView')loadTravelBookView();if(id==='journalView')void openTripJournal();if(id==='parkingView')loadParking();if(id==='documentsView')loadDocuments();if(id==='expensesView')loadExpenses();if(id==='sharedExpensesView')loadSharedExpenseScreen();if(id==='insightsView')void renderTripInsights();if(id==='weatherView')loadWeather(false);window.scrollTo(0,0)
 }
 const FLIGHT_CHECK_KEY='freya-flight-checks-v1';
 function stopLondonFlightTimer(){
@@ -9339,6 +9477,7 @@ function updateTripPresentation(){
     $('genericBuildCard')?.classList.toggle('hidden',pastTrip||!trip.tb_handoff);
     $('genericPastRecordsSection')?.classList.toggle('hidden',!pastTrip);
     $('genericPhotosModuleCard')?.classList.toggle('hidden',pastTrip);
+    $('genericJournalModuleCard')?.classList.toggle('hidden',pastTrip);
     $('genericConfirmedTitle').textContent=dashboardText(pastTrip?'pastPieces':'pieces');
     $('genericToolsTitle').textContent=dashboardText(pastTrip?'pastTools':'tools');
     renderTripHome();
@@ -9571,7 +9710,7 @@ async function renderSession(next){
   }
   if(next?.user?.id!==session?.user?.id)closeItineraryImport();
   const renderGeneration=++sessionRenderGeneration,nextUserId=next?.user?.id||null;
-  if(nextUserId!==session?.user?.id){closeOfflineDocManager();resetBuilderUi();clearParkingReservationPreview()}
+  if(nextUserId!==session?.user?.id){closeTripJournal();closeOfflineDocManager();resetBuilderUi();clearParkingReservationPreview()}
   if(nextUserId&&lastAuthenticatedUserId&&nextUserId!==lastAuthenticatedUserId){clearNavigationState(lastAuthenticatedUserId);clearDocumentsReturnContext();clearAccommodationVoucherFocus();clearGenericItineraryState()}
   if(nextUserId)lastAuthenticatedUserId=nextUserId;session=next;if(passwordRecoveryMode){renderPasswordRecovery();return}hide('loading');hide('auth');hide('noTrip');hide('tripView');
   if(!session){if(lastAuthenticatedUserId)clearNavigationState(lastAuthenticatedUserId);lastAuthenticatedUserId=null;trips=[];trip=null;tripLoadGeneration+=1;stopLondonFlightTimer();if('speechSynthesis' in window)speechSynthesis.cancel();clearGenericItineraryState();await disconnectTripRealtime();clearTripScopedState();resetAccommodationFormUi();show('auth');show('loginCard');hide('passwordRecoveryCard');window.freyaBoot?.ready();return}
@@ -9714,6 +9853,7 @@ document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
   updateItinerarySourceBack();setAppView(b.dataset.open)
 });
 $('travelBookBack').onclick=()=>setAppView(travelBookReturnView||tripDashboardId());
+$('tripJournalBack').onclick=()=>setAppView(tripDashboardId());
 $('currencyBack').onclick=()=>{if(currentCurrencyHistory())history.back();else closeTripCurrency()};
 $('insightsRefresh').onclick=()=>void renderTripInsights({force:true});
  $('tripReviewBack').onclick=()=>setAppView('buildView');$('backToTrips').onclick=returnFromHomeTrip;document.querySelectorAll('[data-trips-home]').forEach(b=>b.onclick=returnFromHomeTrip);document.querySelectorAll('[data-quick-view]').forEach(b=>b.onclick=()=>setAppView(b.dataset.quickView));document.querySelectorAll('[data-generic-module]').forEach(b=>b.onclick=()=>openGenericModule(b.dataset.genericModule));document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{if(visibleAppView()==='itineraryView'&&validOperationalReturnRoute('itineraryView')?.parentView==='activitiesView'){if(history.state?.activityPlanning?.view==='itineraryView'){history.back();return}clearOperationalReturnRoute('itineraryView');setAppView('activitiesView');return}setAppView(tripDashboardId())});document.getElementById('refreshWeather').onclick=()=>loadWeather(true);
