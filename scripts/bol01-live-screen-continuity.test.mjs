@@ -36,6 +36,7 @@ function harness({coldStart=false,offlineOnly=false,tripVisible=true}={}){
     hide:id=>{calls.push(['hide',id]);hidden.add(id)},
     show:id=>{calls.push(['show',id]);hidden.delete(id)},
     closeItineraryImport:mark('closeItineraryImport'),
+    closeOfflineDocManager:mark('closeOfflineDocManager'),
     resetBuilderUi:mark('resetBuilderUi'),
     clearParkingReservationPreview:mark('clearParkingReservationPreview'),
     clearNavigationState:mark('clearNavigationState'),
@@ -87,6 +88,7 @@ test('account change takes the full isolated reinitialization path',async()=>{
   await h.ctx.renderSession({user:{id:'other',email:'other@example.test'}});
   assert.ok(h.calls.some(call=>call[0]==='clearNavigationState'&&call[1]==='eva'));
   assert.ok(h.calls.some(call=>call[0]==='clearGenericItineraryState'));
+  assert.ok(h.calls.some(call=>call[0]==='closeOfflineDocManager'));
   assert.ok(h.calls.some(call=>call[0]==='refreshTrips'));
   assert.equal(h.ctx.session.user.id,'other');
 });

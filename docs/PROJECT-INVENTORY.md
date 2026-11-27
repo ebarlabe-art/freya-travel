@@ -1,5 +1,13 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## B3 · Gestor de còpies i pressupost adaptable · branca PWA v94 (27/11/2026)
+
+La prova física de la v93 ha confirmat el límit de 30 documents per compte. La v94 elimina aquest recompte i els pressupostos fixos de viatge i compte. Utilitza l’estimació d’espai de l’origen del navegador amb una reserva del 10 % de la quota, limitada a 32 MiB. Si l’estimació és absent, la transacció IndexedDB decideix la disponibilitat. El límit per fitxer passa a 15 MB, el mateix que la pujada de documents.
+
+Des de l’inici o Documents, el gestor agrupa les còpies xifrades i l’espai per viatge. Es poden preparar o retirar còpies individuals o del viatge complet. «Conserva sempre offline» es desa per compte i permet excepcions per document. La preferència es pot aplicar a qualsevol data i manté la preparació inclús si l’automàtica general està desactivada. Sense cobertura, les còpies pendents es poden preparar en tornar a obrir els documents del viatge amb connexió. El gestor pot recuperar una còpia antiga encara que la fitxa general hagi caducat. Les eliminacions del gestor només afecten còpies locals. No hi ha eliminació per antiguitat ni per manca d’espai. Es mantenen les còpies actuals, les claus i el format IndexedDB.
+
+**Verificació i relleu**. Prova sintètica de 37 documents en tres viatges, amb protecció individual i de viatge, manca d’espai, reobertura offline, protecció que sobreviu a la caducitat de la fitxa i retirada explícita. Queda pendent la validació física i l’autorització per publicar.
+
 ## B3 · Desament de documents offline · branca PWA v93 (27/11/2026)
 
 La validació física de Brussel·les a la v92 ha superat 9 de 10 comprovacions. El desament de documents queda pendent de revalidació física. S’han reproduït dos defectes amb fitxers sintètics: el filtre MIME rebutjava capçaleres vàlides amb paràmetres i l’estat de la targeta donava per bona qualsevol fila amb el mateix camí, fins i tot si no es podia desxifrar.

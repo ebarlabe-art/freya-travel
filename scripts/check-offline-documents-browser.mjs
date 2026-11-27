@@ -17,6 +17,15 @@ const docs=[
   {id:'ticket',title:'Bitllet PDF',file_name:'bitllet.pdf',mime_type:'application/pdf; charset=binary'},
   {id:'image',title:'Reserva amb imatge',file_name:'reserva.png',mime_type:'image/png'}
 ].map(doc=>({...doc,trip_id:tripId,category:'Reserva',file_path:tripId+'/'+doc.file_name}));
+const pastTrip={...tripRow,id:'past-trip',name:'Viatge passat',start_date:futureDay(-60),end_date:futureDay(-55)};
+const futureTrip={...tripRow,id:'future-trip',name:'Viatge futur',start_date:futureDay(75),end_date:futureDay(80)};
+const tripRows=[tripRow,pastTrip,futureTrip];
+const fixtureDoc=(trip,index)=>({id:trip.id+'-'+index,trip_id:trip.id,title:'Document '+index,
+  file_name:'document-'+index+'.pdf',file_path:trip.id+'/document-'+index+'.pdf',mime_type:'application/pdf',category:'Reserva'});
+const archiveDocs=[...Array.from({length:20},(_,i)=>fixtureDoc(pastTrip,i+1)),
+  ...Array.from({length:15},(_,i)=>fixtureDoc(futureTrip,i+1))];
+const extra=fixtureDoc(futureTrip,16);
+let showExtra=false;
 const shape='0.2 0.4 0.8 rg\n10 10 80 80 re f\n';
 const objects=[
   '<< /Type /Catalog /Pages 2 0 R >>',
@@ -42,13 +51,15 @@ let networkDown=false;
 const failedDownload=new Promise(resolve=>{finishFailedDownload=resolve});
 const server=createServer(async(req,res)=>{
   if(networkDown){res.writeHead(503).end();return}
-  const pathname=new URL(req.url,'http://localhost').pathname;
+  const target=new URL(req.url,'http://localhost'),pathname=target.pathname;
   if(pathname==='/rest/v1/travel_documents'&&req.method==='GET'){
-    res.writeHead(200,{'Content-Type':'application/json'}).end(JSON.stringify(docs));
+    const id=target.searchParams.get('trip_id')?.replace(/^eq\./,'');
+    const catalog=[...docs,...archiveDocs,...(showExtra?[extra]:[])].filter(doc=>doc.trip_id===id);
+    res.writeHead(200,{'Content-Type':'application/json'}).end(JSON.stringify(catalog));
     return;
   }
   if(pathname.startsWith('/storage/v1/object/trip-documents/')&&req.method==='GET'){
-    const doc=docs.find(doc=>pathname.endsWith('/'+doc.file_path));
+    const doc=[...docs,...archiveDocs,extra].find(doc=>pathname.endsWith('/'+doc.file_path));
     if(!doc){res.writeHead(404).end();return}
     downloads.push(doc.id);
     if(doc.id==='ticket'&&failFirstPdf){
@@ -57,8 +68,8 @@ const server=createServer(async(req,res)=>{
       res.writeHead(503,{'Content-Type':'application/json'}).end('{}');
       return;
     }
-    res.writeHead(200,{'Content-Type':doc.id==='ticket'?'application/pdf; charset=binary':'application/octet-stream; name=reserva.png'});
-    res.end(doc.id==='ticket'?pdf:png);
+    res.writeHead(200,{'Content-Type':doc.id==='image'?'application/octet-stream; name=reserva.png':'application/pdf; charset=binary'});
+    res.end(doc.id==='image'?png:pdf);
     return;
   }
   const file=resolve(dist,decodeURIComponent(pathname.replace(/^\/freya-travel\//,''))||'index.html');
@@ -81,7 +92,7 @@ try{
   await online.goto(url);
   await online.waitForFunction(()=>navigator.serviceWorker.controller&&authInitializationResolved);
   await online.locator('#loginCard').waitFor({state:'visible'});
-  await online.evaluate(({userId,tripRow})=>{
+  await online.evaluate(({userId,tripRow,tripRows})=>{
     // Run the real SDK against same-origin fixture responses in both engines.
     const fixtureClient=window.supabase.createClient(location.origin,'fixture-public-key',{
       auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
@@ -90,12 +101,12 @@ try{
     const from=db.from.bind(db);
     db.from=table=>table==='travel_documents'?fixtureClient.from(table):from(table);
     session={user:{id:userId,email:'fixture@example.invalid'},access_token:'fixture-online-token'};
-    trip=tripRow;tripLoadGeneration++;
-    if(!rememberOfflineTrips([tripRow],userId)||readOfflineSessionGrant()?.userId!==userId)
+    trips=tripRows;trip=tripRow;tripLoadGeneration++;
+    if(!rememberOfflineTrips(tripRows,userId)||readOfflineSessionGrant()?.userId!==userId)
       throw Error('Cannot seed local read grant');
     localStorage.setItem(OFFLINE_AUTO_DOCS_PREF+userId,'off');
     hide('auth');show('tripView');setAppView('documentsView');
-  },{userId,tripRow});
+  },{userId,tripRow,tripRows});
   const ticket=online.locator('[data-doc-id="ticket"]'),image=online.locator('[data-doc-id="image"]');
   const state=card=>card.locator('[data-offline-state]');
   await ticket.waitFor({state:'visible'}).catch(async error=>{
@@ -122,6 +133,41 @@ try{
     return {nonExportable:!key.extractable,records:records.map(row=>[row.documentId,row.ciphertext.byteLength-row.size]).sort()};
   }),{nonExportable:true,records:[['image',16],['ticket',16]]});
   console.log(engine+': PDF and PNG persisted and verified before browser shutdown');
+
+  // The same v1 vault must accept more than 30 copies across past/future trips.
+  const manager=online.locator('#offlineDocManager');
+  const group=(page,id)=>page.locator('[data-vault-trip="'+id+'"]');
+  await online.locator('#openOfflineDocManagerTrip').click();
+  const past=group(online,pastTrip.id),future=group(online,futureTrip.id);
+  await past.locator('[data-vault-action="group"]').click();
+  await past.locator('[data-vault-keep=""]').check();
+  await past.locator('[data-vault-action="group"]').getByText(/20 documents/).waitFor();
+  await future.locator('[data-vault-action="group"]').click();
+  await future.locator('[data-vault-keep="future-trip-1"]').check();
+  await future.locator('[data-vault-action="group"]').getByText(/1 document/).waitFor();
+  await future.locator('[data-vault-action="prepare-trip"]').click();
+  await future.locator('[data-vault-action="group"]').getByText(/15 documents/).waitFor();
+  assert.equal(await online.evaluate(async()=>offlineDocUserRows(await offlineDocDatabase(),session.user.id,true).then(rows=>rows.length)),37);
+  await manager.locator('#offlineDocManagerUsage').getByText(/Espai ocupat.*Espai estimat disponible/).waitFor();
+
+  // A browser which reports no usable headroom must leave every existing copy.
+  showExtra=true;
+  await online.evaluate(()=>Object.defineProperty(navigator.storage,'estimate',{
+    configurable:true,value:async()=>({quota:1024*1048576,usage:992*1048576})
+  }));
+  await future.locator('[data-vault-action="group"]').click();
+  await future.locator('[data-vault-action="group"]').click();
+  await future.locator('[data-vault-action="prepare"][data-vault-document="future-trip-16"]').click();
+  await manager.locator('#offlineDocManagerStatus').getByText(/Tria què vols retirar/).waitFor();
+  assert.equal(await online.evaluate(async()=>offlineDocUserRows(await offlineDocDatabase(),session.user.id,true).then(rows=>rows.length)),37);
+  await online.evaluate(({pastTrip,userId})=>{
+    const storageKey=offlineTripKey(pastTrip.id,userId);
+    const previous=JSON.parse(localStorage.getItem(storageKey));
+    previous.savedAt=new Date(Date.now()-100*86400000).toISOString();
+    localStorage.setItem(storageKey,JSON.stringify(previous));
+  },{pastTrip,userId});
+  await online.locator('#closeOfflineDocManager').click();
+  console.log(engine+': 37 local copies across three trips, device capacity enforced without eviction');
 
   // Close the browser process, then reopen the same profile without a network
   // or a seeded JS session. The shell, account grant, cards and vault must survive.
@@ -168,6 +214,29 @@ try{
     console.log(engine+': opened the decrypted '+selector+' from the cold vault');
     await offline.locator('#documentViewerClose').click();
   }
+  await offline.locator('#openOfflineDocManagerTrip').click();
+  const archived=group(offline,pastTrip.id),upcoming=group(offline,futureTrip.id);
+  await archived.locator('[data-vault-action="group"]').getByText(/20 documents/).waitFor();
+  await archived.locator('[data-vault-action="group"]').click();
+  assert.equal(await archived.locator('[data-vault-keep=""]').isChecked(),true);
+  assert.equal(await archived.locator('[data-vault-keep="past-trip-1"]').isChecked(),true);
+  offline.once('dialog',dialog=>dialog.dismiss());
+  await archived.locator('[data-vault-action="remove"][data-vault-document="past-trip-1"]').click();
+  await archived.locator('[data-vault-action="group"]').getByText(/20 documents/).waitFor();
+  await archived.locator('[data-vault-action="open"][data-vault-document="past-trip-1"]').click();
+  await viewer.locator('iframe').waitFor({state:'attached'});
+  assert.match(await viewer.locator('iframe').getAttribute('src'),/^blob:/);
+  await offline.locator('#documentViewerClose').click();
+  await offline.locator('#openOfflineDocManagerTrip').click();
+  await upcoming.locator('[data-vault-action="group"]').click();
+  assert.equal(await upcoming.locator('[data-vault-keep="future-trip-1"]').isChecked(),true);
+  offline.once('dialog',dialog=>dialog.accept());
+  await upcoming.locator('[data-vault-action="remove-trip"]').click();
+  await upcoming.locator('[data-vault-action="group"]').getByText(/0 documents/).waitFor();
+  await archived.locator('[data-vault-action="group"]').getByText(/20 documents/).waitFor();
+  assert.equal(await offline.evaluate(async()=>offlineDocUserRows(await offlineDocDatabase(),session.user.id,true).then(rows=>rows.length)),22);
+  await offline.locator('#closeOfflineDocManager').click();
+
   // A stale/corrupt row must remain stored, but cannot be advertised as ready.
   await offline.evaluate(async()=>{
     const scope=offlineDocScope(),database=await offlineDocDatabase(),id=offlineDocId(scope.userId,scope.tripId,'ticket');

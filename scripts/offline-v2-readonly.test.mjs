@@ -137,7 +137,7 @@ test('Logout preserves encrypted account vault while denying signed-out reads',(
     'Account-wide vault purge stays available for an explicit delete action');
   assert.match(html,/async function offlineDocGetBlob\(scope,doc\)\{\s*if\(!offlineDocScopeCurrent\(scope\)\)return null/);
   assert.match(html,/row\.userId!==scope\.userId\|\|row\.tripId!==scope\.tripId/);
-  assert.match(html,/await offlineDocEnqueue\(\(\)=>offlineDocForget\(scope,id\)\)/);
+  assert.match(html,/await offlineDocEnqueue\(async\(\)=>\{\s*if\(!await offlineDocForget\(scope,id\)\)return/);
   assert.match(html,/const key=await offlineDocKey\(database,scope\.userId\)/);
 });
 
@@ -271,8 +271,8 @@ test('Offline documents require explicit download, encrypted account-scoped Inde
   assert.match(html,/crypto\.subtle\.generateKey\(\{name:'AES-GCM',length:256\},false/);
   assert.match(html,/crypto\.subtle\.encrypt\(\{name:'AES-GCM',iv\},key,bytes\)/);
   assert.match(html,/crypto\.subtle\.decrypt\(\{name:'AES-GCM',iv:new Uint8Array\(row.iv\)\},key,row.ciphertext\)/);
-  assert.match(html,/const OFFLINE_DOC_PER_FILE=12\*1024\*1024/);
-  assert.match(html,/const OFFLINE_DOC_ACCOUNT_LIMIT=55\*1024\*1024/);
+  assert.match(html,/const OFFLINE_DOC_PER_FILE=15\*1024\*1024/);
+  assert.doesNotMatch(html,/const OFFLINE_DOC_(?:ACCOUNT_LIMIT|TRIP_LIMIT|MAX_COUNT)=/);
   assert.match(html,/data-offline-save/);
   assert.match(html,/\.download\(doc\.file_path,\{\},\s*\{signal:controller\.signal\}\)/);
   assert.doesNotMatch(html.slice(html.indexOf('async function offlineDocSaveBlob'),html.indexOf('async function offlineDocGetBlob')),/signedUrl|createSignedUrl/);
@@ -298,16 +298,16 @@ test('Concurrent tabs elect one CryptoKey atomically and enforce quotas in IDB t
   assert.match(source,/if\(request\.result\)output\(request\.result\)/);
   assert.match(source,/store\.add\(generated,userId\)/);
   const atomic=html.slice(html.indexOf('function offlineDocAtomicSave('),html.indexOf('async function offlineDocSaveBlob('));
-  assert.match(atomic,/store\.index\('byUser'\)\.openCursor\(scope\.userId\)/);
-  assert.match(atomic,/OFFLINE_DOC_ACCOUNT_LIMIT/);
-  assert.match(atomic,/OFFLINE_DOC_TRIP_LIMIT/);
+  assert.match(atomic,/store\.get\(row\.key\)/);
+  assert.match(atomic,/extra>available/);
+  assert.match(atomic,/QuotaExceededError/);
   assert.match(atomic,/offlineDocPruneTrip/);
   assert.match(html,/offlineDocPruneTrip\(vaultScope,serverDocs\)/);
   assert.match(html,/id="parkingSavePhotoOffline"/);
   assert.match(html,/offlineDocSaveBlob\(scope,parkingOfflinePhotoDocument\(path\),data\)/);
   assert.match(html,/offlineDocGetBlob\(scope,parkingOfflinePhotoDocument\(path\)\)/);
   assert.match(html,/await renderParkingPhoto\(row\.photo_path,tripId,generation\)/);
-  assert.match(html,/value\.documentId!=='freya-parking-photo-v1'/);
+  assert.match(html,/row\.documentId!=='freya-parking-photo-v1'/);
 });
 
 test('Offline parking loads cached document metadata and restores its reservation action',async()=>{
@@ -367,7 +367,7 @@ test('Encrypted parking reservation preview opens offline without a second downl
   ctx.clearParkingReservationPreview();
   assert.deepEqual(revoked,['blob:local-private']);
   assert.equal($('parkingReservationImage').src,'');
-  assert.match(html,/if\(nextUserId!==session\?\.user\?\.id\)\{resetBuilderUi\(\);clearParkingReservationPreview\(\)\}/);
+  assert.match(html,/if\(nextUserId!==session\?\.user\?\.id\)\{closeOfflineDocManager\(\);resetBuilderUi\(\);clearParkingReservationPreview\(\)\}/);
 });
 
 test('Cold offline without a prior valid grant must show login even if Supabase auth never resolves',async()=>{
@@ -408,7 +408,7 @@ test('An SDK/bootstrap failure cannot keep an infinite splash on the iPhone',()=
   assert.ok(fallbackIndex>0&&fallbackIndex<sdkIndex);
   assert.match(html.slice(fallbackIndex,sdkIndex),/setTimeout\(/);
   assert.match(html.slice(fallbackIndex,sdkIndex),/No cal esborrar l’app ni les còpies offline/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v93'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v94'/);
 });
 
 test('Parking offline leaves read-only Veure reserva enabled while disabling edits',()=>{
@@ -431,7 +431,7 @@ test('Parking offline leaves read-only Veure reserva enabled while disabling edi
   assert.ok(edits.every(e=>!e.disabled));
   assert.equal(selectors.length,2);
   assert.match(html,/button\.classList\.remove\('hidden'\);button\.disabled=false;\s*button\.onclick=\(\)=>openDocument\(doc\.id,documentRows,'parkingMsg'\)/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v93'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v94'/);
 });
 
 test('Automatic encrypted document rules include useful screenshots and exclude travel photos',()=>{
@@ -465,7 +465,7 @@ test('Automatic saves skip already encrypted files, never request ordinary photo
   const scope={userId:'u',tripId:'trip',generation:1,epoch:0};
   const ctx=vmModule.createContext({
     offlineDocScopeCurrent:()=>true,connectionUnavailable:()=>false,offlineAutoEnabled:()=>true,
-    offlineAutoEligible:d=>d.category!=='Foto',offlineAutoIgnored:(_s,id)=>id==='excluded',
+    offlineAutoEligible:d=>d.category!=='Foto',offlineDocMayAutoPrepare:(_s,d)=>d.id!=='excluded',
     offlineAutoTag:(_s,d)=>d.id+':'+d.file_path,
     offlineAutoErrors:errors,offlineAutoBusy:busy,offlineDocStatus:async()=>{},
     offlineDocDatabase:async()=>({}),offlineDocId:(_u,_t,id)=>id,
@@ -497,7 +497,32 @@ test('Offline auto-save is opt-out per account and removes no cloud originals',(
 test('Auto-save errors are retried after reconnection and parking refreshes its viewer',()=>{
   assert.match(html,/offlineAutoErrors\.clear\(\); \/\/ Retry pending downloads after reconnection/);
   assert.match(html,/await offlineDocPrepareCopy\(scope,doc\);\s*if\(offlineDocScopeCurrent\(scope\)&&parkingDocumentScore\(doc\)>0\)void updateParkingReservationUi/);
-  assert.match(html,/await offlineDocEnqueue\(\(\)=>offlineDocForget\(scope,id\)\)/);
+  assert.match(html,/await offlineDocEnqueue\(async\(\)=>\{\s*if\(!await offlineDocForget\(scope,id\)\)return/);
+});
+
+test('Offline storage follows the current browser estimate with headroom and falls back to IndexedDB',async()=>{
+  const start=html.indexOf('async function offlineDocAvailableBytes(');
+  const end=html.indexOf('function offlineDocSize(',start);
+  const storage={estimate:async()=>({quota:100*1048576,usage:40*1048576})};
+  const ctx=vmModule.createContext({navigator:{storage}});
+  vmModule.runInContext(html.slice(start,end),ctx);
+  assert.equal(await ctx.offlineDocAvailableBytes(),50*1048576);
+  storage.estimate=async()=>({quota:100*1048576,usage:99*1048576});
+  assert.equal(await ctx.offlineDocAvailableBytes(),0);
+  storage.estimate=async()=>({quota:1024*1048576,usage:700*1048576});
+  assert.equal(await ctx.offlineDocAvailableBytes(),292*1048576);
+  storage.estimate=async()=>{throw Error('unavailable')};
+  assert.equal(await ctx.offlineDocAvailableBytes(),null);
+});
+test('A document can override the trip protection and protected copies ignore the auto-save preference',()=>{
+  const start=html.indexOf('function offlineDocProtected(');
+  const end=html.indexOf('async function offlineDocAvailableBytes(',start);
+  const ctx=vmModule.createContext({offlineDocPolicy:()=>({always:true,docs:{unprotected:false}}),
+    offlineAutoEnabled:()=>false,offlineAutoIgnored:()=>true});
+  vmModule.runInContext(html.slice(start,end),ctx);
+  assert.equal(ctx.offlineDocMayAutoPrepare({}, {id:'inherited'}),true);
+  assert.equal(ctx.offlineDocMayAutoPrepare({}, {id:'unprotected'}),false);
+  assert.equal(ctx.offlineDocProtected({always:false,docs:{pin:true}},'pin'),true);
 });
 
 test('Reconnection retains read-only mode until getUser confirms the same user',async()=>{
