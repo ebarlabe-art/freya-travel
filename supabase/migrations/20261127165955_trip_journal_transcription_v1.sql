@@ -73,21 +73,28 @@ $$;
 
 -- This RPC is for the backend only. Return a boolean, never the private list.
 create function public.trip_journal_transcription_allowed_v1(p_actor uuid) returns boolean
-language sql stable security invoker set search_path = ''
+language plpgsql stable security invoker set search_path = ''
 as $$
-  with config as (
-    select min(decrypted_secret) as value
-    from vault.decrypted_secrets
-    where name='JOURNAL_TRANSCRIPTION_ALLOWED_USER_IDS'
-    having count(*)=1
-  ), accounts as (
-    select btrim(lower(account), E' \t\n\r') as id
-    from config cross join lateral regexp_split_to_table(value, ',') as account
-  )
-  select coalesce(
-    bool_and(id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
-    and bool_or(id=p_actor::text), false
-  ) from accounts;
+declare
+  allowed boolean;
+begin
+  if to_regclass('vault.decrypted_secrets') is null then return false; end if;
+
+    with config as (
+      select min(decrypted_secret) as value
+      from vault.decrypted_secrets
+      where name='JOURNAL_TRANSCRIPTION_ALLOWED_USER_IDS'
+      having count(*)=1
+    ), accounts as (
+      select btrim(lower(account), E' \t\n\r') as id
+      from config cross join lateral regexp_split_to_table(value, ',') as account
+    )
+    select coalesce(
+      bool_and(id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+      and bool_or(id=p_actor::text), false
+    ) into allowed from accounts;
+  return allowed;
+end;
 $$;
 
 create function public.claim_trip_journal_transcription_v1(

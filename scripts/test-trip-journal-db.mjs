@@ -8,10 +8,6 @@ const author=id(1),participant=id(2),outsider=id(3),trip=id(4);
 try{
   await db.exec(`
     create role anon; create role authenticated; create role service_role bypassrls; create schema auth;
-    create schema vault;
-    create table vault.decrypted_secrets(name text primary key,decrypted_secret text);
-    grant usage on schema vault to service_role;
-    grant select on vault.decrypted_secrets to service_role;
     create table auth.users(id uuid primary key); create table public.trips(id uuid primary key,discarded_at timestamptz);
     create table public.trip_members(trip_id uuid,user_id uuid);
     create function auth.uid() returns uuid language sql stable as $$select current_setting('fixture.user',true)::uuid$$;
@@ -25,6 +21,15 @@ try{
   `);
   await db.exec(await readFile(new URL('../supabase/migrations/20261127130000_trip_journal_v1.sql',import.meta.url),'utf8'));
   await db.exec(await readFile(new URL('../supabase/migrations/20261127165955_trip_journal_transcription_v1.sql',import.meta.url),'utf8'));
+  await db.exec('set role service_role');
+  assert.equal((await db.query('select trip_journal_transcription_allowed_v1($1) as allowed',[author])).rows[0].allowed,false);
+  await db.exec(`
+    reset role;
+    create schema vault;
+    create table vault.decrypted_secrets(name text primary key,decrypted_secret text);
+    grant usage on schema vault to service_role;
+    grant select on vault.decrypted_secrets to service_role;
+  `);
   const as=async user=>db.exec(`reset role;set "fixture.user"='${user}';set role authenticated;`);
   const save=(entry,operation,base,body,{audio=null,deleted=false,actor=author}={})=>db.query(
     'select save_trip_journal_v1($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) as accepted',
