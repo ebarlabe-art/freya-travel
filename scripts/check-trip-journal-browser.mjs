@@ -224,7 +224,13 @@ try{
       const query={
         eq:(field,value)=>{if(field==='id')selected=value;return query},
         order:()=>query,range:async()=>({data:[...rows.values()].map(project)}),
-        maybeSingle:async()=>({data:project(rows.get(selected))})
+        maybeSingle:async()=>{
+          const data=project(rows.get(selected));
+          if(window.journalHoldTranscriptRead&&fields.includes('transcript_original')){
+            await new Promise(resolve=>{window.releaseJournalTranscriptRead=resolve});
+          }
+          return {data};
+        }
       };
       return query;
     }});
@@ -301,15 +307,25 @@ try{
   await transcript.getByText('Vam passejar pel centre de l’Alguer.').waitFor();
   await page.evaluate(async()=>{window.journalOnline=true;await tripJournalController.reconnect()});
   await voice.getByText('Sincronitzat').waitFor();
+  await page.evaluate(()=>{window.journalHoldTranscriptRead=true});
   await voice.getByRole('button',{name:'Torna a transcriure'}).click();
   await consent.getByRole('button',{name:'Confirma i transcriu'}).click();
-  await page.waitForFunction(id=>window.journalFixtureRows.get(id).transcript_original==='Vam visitar l’Alguer.',voiceId);
+  await page.waitForFunction(()=>typeof window.releaseJournalTranscriptRead==='function');
+  await transcript.getByRole('button',{name:'Edita la transcripció'}).click();
+  await transcriptField.fill('Vam passejar pel centre històric de l’Alguer.');
+  await transcript.getByRole('button',{name:'Desa el text'}).click();
+  await transcript.getByText('Vam passejar pel centre històric de l’Alguer.',{exact:true}).waitFor();
+  await voice.getByText('Sincronitzat').waitFor();
+  await page.evaluate(()=>{
+    window.journalOnline=false;window.journalHoldTranscriptRead=false;window.releaseJournalTranscriptRead();
+  });
+  await voice.locator('[data-journal-transcription-status]').waitFor({state:'detached'});
   await transcript.getByText('Vam visitar l’Alguer.',{exact:true}).waitFor({state:'attached'});
   await transcript.locator('summary').click();
   await transcript.getByText('Vam visitar l’Alguer.',{exact:true}).waitFor();
-  await transcript.getByText('Vam passejar pel centre de l’Alguer.',{exact:true}).waitFor();
+  await transcript.getByText('Vam passejar pel centre històric de l’Alguer.',{exact:true}).waitFor();
 
-  await page.evaluate(()=>{window.journalHoldProvider=true;window.releaseJournalTranscription=null});
+  await page.evaluate(()=>{window.journalOnline=true;window.journalHoldProvider=true;window.releaseJournalTranscription=null});
   await voice.getByRole('button',{name:'Torna a transcriure'}).click();
   await consent.getByRole('button',{name:'Confirma i transcriu'}).click();
   await page.waitForFunction(()=>typeof window.releaseJournalTranscription==='function');

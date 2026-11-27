@@ -523,7 +523,9 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
         const expected={jobId:job.id,operationId:prior.operation_id};
         if(status==='done'&&row?.transcript_request_id===job.id&&
             (row.transcript_epoch??null)===job.epoch&&row.audio_mime&&!row.deleted){
-          const next=prior.pending?.length?{
+          // The result read may predate a correction that was acknowledged
+          // while this request was running. Only merge the provider fields.
+          const next=prior.pending?.length||row.operation_id!==prior.operation_id?{
             ...prior,transcript_original:row.transcript_original,transcript_language:row.transcript_language,
             transcript_request_id:row.transcript_request_id
           }:row;
