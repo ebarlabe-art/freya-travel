@@ -23,6 +23,22 @@ const user='journal-fixture-owner';
 const today=new Date().toISOString().slice(0,10);
 const row={id:'journal-fixture-trip',name:'Viatge del diari',time_zone:'Europe/Brussels',start_date:today,
   end_date:new Date(Date.now()+2*86400000).toISOString().slice(0,10),is_owner:true};
+// Short, valid AAC silence to exercise the recorder events when Linux WebKit
+// lacks every supported audio-only encoding. No media from a real device.
+const silenceMp4=[
+  'AAAAHGZ0eXBNNEEgAAACAE00QSBpc29taXNvMgAAAAhmcmVlAAAALW1kYXTeAgBMYXZjNjEuMTkuMTAxAAIwQA4BGCAHARgg',
+  'BwEYIAcBGCAHAAADDm1vb3YAAABsbXZoZAAAAAAAAAAAAAAAAAAAA+gAAAD6AAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAA',
+  'AAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAI5dHJhawAAAFx0a2hkAAAA',
+  'AwAAAAAAAAAAAAAAAQAAAAAAAAD6AAAAAAAAAAAAAAABAQAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAA',
+  'AAAAAAAAAAAAAAAAJGVkdHMAAAAcZWxzdAAAAAAAAAABAAAA+gAABAAAAQAAAAABsW1kaWEAAAAgbWRoZAAAAAAAAAAAAAAA',
+  'AAAAPoAAABOgVcQAAAAAAC1oZGxyAAAAAAAAAABzb3VuAAAAAAAAAAAAAAAAU291bmRIYW5kbGVyAAAAAVxtaW5mAAAAEHNt',
+  'aGQAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAASBzdGJsAAAAanN0c2QAAAAAAAAAAQAA',
+  'AFptcDRhAAAAAAAAAAEAAAAAAAAAAAABABAAAAAAPoAAAAAAADZlc2RzAAAAAAOAgIAlAAEABICAgBdAFQAAAAAAXcAAAAOu',
+  'BYCAgAUUCFblAAaAgIABAgAAACBzdHRzAAAAAAAAAAIAAAAEAAAEAAAAAAEAAAOgAAAAHHN0c2MAAAAAAAAAAQAAAAEAAAAF',
+  'AAAAAQAAAChzdHN6AAAAAAAAAAAAAAAFAAAAFQAAAAQAAAAEAAAABAAAAAQAAAAUc3RjbwAAAAAAAAABAAAALAAAABpzZ3Bk',
+  'AQAAAHJvbGwAAAACAAAAAf//AAAAHHNiZ3AAAAAAcm9sbAAAAAEAAAAFAAAAAQAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhk',
+  'bHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjEuNy4xMDM='
+].join('');
 let ctx;
 async function launch(online){
   ctx=await engines[engine].launchPersistentContext(profile,{headless:true,viewport:{width:390,height:844},
@@ -33,17 +49,39 @@ async function launch(online){
     window.micAllowed=false;
     Object.defineProperty(navigator,'language',{get:()=> 'ca-ES'});
     Object.defineProperty(navigator,'onLine',{get:()=>window.journalOnline});
-    navigator.mediaDevices.getUserMedia=async constraints=>{
-      if(!window.micAllowed)throw new DOMException('Synthetic denied permission','NotAllowedError');
-      if(!constraints.audio||constraints.video)throw Error('Unexpected media request');
-      const Audio=window.AudioContext||window.webkitAudioContext,context=new Audio();
-      const oscillator=context.createOscillator(),destination=context.createMediaStreamDestination();
-      oscillator.connect(destination);oscillator.start();
-      void context.resume();
-      const track=destination.stream.getAudioTracks()[0],stop=track.stop.bind(track);
-      track.stop=()=>{stop();void context.close().catch(()=>{})};
-      window.journalFixtureTrack=track;
-      return destination.stream;
+    window.installJournalFixture=(fixture)=>{
+      const devices=navigator.mediaDevices||{};
+      Object.defineProperty(navigator,'mediaDevices',{get:()=>devices});
+      Object.defineProperty(devices,'getUserMedia',{value:async constraints=>{
+        if(!window.micAllowed)throw new DOMException('Synthetic denied permission','NotAllowedError');
+        if(!constraints.audio||constraints.video)throw Error('Unexpected media request');
+        if(fixture){
+          const track=new EventTarget();track.readyState='live';track.stop=()=>{track.readyState='ended'};
+          window.journalFixtureTrack=track;
+          return {getTracks:()=>[track]};
+        }
+        const Audio=window.AudioContext||window.webkitAudioContext,context=new Audio();
+        const oscillator=context.createOscillator(),destination=context.createMediaStreamDestination();
+        oscillator.connect(destination);oscillator.start();
+        void context.resume();
+        const track=destination.stream.getAudioTracks()[0],stop=track.stop.bind(track);
+        track.stop=()=>{stop();void context.close().catch(()=>{})};
+        window.journalFixtureTrack=track;
+        return destination.stream;
+      }});
+      if(fixture)window.MediaRecorder=class {
+        static isTypeSupported(format){return format==='audio/mp4'}
+        mimeType='audio/mp4';
+        state='inactive';
+        start(){this.state='recording'}
+        stop(){
+          this.state='inactive';
+          queueMicrotask(()=>{
+            this.ondataavailable?.({data:new Blob([Uint8Array.from(atob(fixture),unit=>unit.charCodeAt(0))],{type:this.mimeType})});
+            this.onstop?.();
+          });
+        }
+      };
     };
   },online);
   return ctx.newPage();
@@ -71,6 +109,18 @@ try{
   await page.getByRole('button',{name:'Desa el record'}).click();
   await records(page).getByText('Record privat de prova').waitFor();
   await records(page).getByText(/pendent de sincronitzar/).waitFor();
+  const capabilities=await page.evaluate(async()=>{
+    const {journalAudioFormat}=await import('./domain/trip-journal.mjs');
+    return {format:journalAudioFormat(window.MediaRecorder),microphone:!!navigator.mediaDevices?.getUserMedia};
+  });
+  const native=!!(capabilities.format&&capabilities.microphone);
+  console.log(engine+': recorder capabilities',JSON.stringify(capabilities));
+  if(!native){
+    assert.equal(engine,'webkit','Chromium must exercise the native audio recorder');
+    await page.getByRole('button',{name:'Enregistra veu'}).click();
+    await local(page).getByText(/Aquest navegador no pot enregistrar/).waitFor();
+  }
+  await page.evaluate(fixture=>window.installJournalFixture(fixture),native?null:silenceMp4);
   await page.getByRole('button',{name:'Enregistra veu'}).click();
   await local(page).getByText(/Cal permís/).waitFor();
   await page.evaluate(()=>{window.micAllowed=true});
@@ -159,7 +209,7 @@ try{
     if(labels.length)throw Error('Other account read journal records');
     session={user:{id:owner}};
   });
-  console.log('PASS '+engine+': journal entry points, denied microphone, native recording, interruption, encrypted cold recovery, replay, edit/delete, preserved audio and account isolation.');
+  console.log('PASS '+engine+': journal entry points, denied microphone, '+(native?'native recording':'recording-event fixture')+', interruption, encrypted cold recovery, replay, edit/delete, preserved audio and account isolation.');
 }finally{
   await ctx?.close();
   await new Promise(resolve=>server.close(resolve));
