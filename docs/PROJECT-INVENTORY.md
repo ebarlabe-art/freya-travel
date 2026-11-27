@@ -1,5 +1,13 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## B3 · Desament de documents offline · branca PWA v93 (27/11/2026)
+
+La validació física de Brussel·les a la v92 ha superat 9 de 10 comprovacions. El desament de documents queda pendent de revalidació física. S’han reproduït dos defectes amb fitxers sintètics: el filtre MIME rebutjava capçaleres vàlides amb paràmetres i l’estat de la targeta donava per bona qualsevol fila amb el mateix camí, fins i tot si no es podia desxifrar.
+
+La fase exacta de la incidència al dispositiu queda pendent de confirmar en la revalidació física.
+
+El desament manual i automàtic comparteixen el circuit de descàrrega, validació, xifratge i relectura després de completar la transacció IndexedDB. En reobrir l’app també es verifica la recuperació abans de marcar una còpia com a disponible, i es comprova que la fitxa s’hagi desat per trobar-la sense cobertura. La targeta mostra el progrés, l’error i el reintent. Es mantenen el format d’emmagatzematge, les claus, l’aïllament de comptes i les quotes existents. La correcció no exigeix esborrar les còpies anteriors.
+
 ## C1 · Mida del Travel Book Portable · branca PWA v92 (26/11/2026)
 
 La prova física de la v91 a l’iPhone amb l’àlbum d’Eivissa (106 fotos preparades i 21 pàgines més portada) va superar el límit. L’exportació HTML v92 prioritza les variants digitals ja disponibles. Optimitza una foto cada vegada, ajusta la qualitat i la resolució segons l’espai restant i allibera els recursos temporals. El límit de 24 MiB inclou l’HTML, els textos i la codificació de les imatges. L’edició desada i les fotos originals es conserven.

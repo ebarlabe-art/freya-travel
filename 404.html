@@ -2786,6 +2786,30 @@ const tripDashboardCopy={
   unitDocument:["document|documents","documento|documentos","document|documents","document|documents","documento|documenti"],
   unitTraveler:["participant|participants","participante|participantes","traveler|travelers","voyageur|voyageurs","viaggiatore|viaggiatori"],
   unitPending:["tasca pendent|tasques pendents","tarea pendiente|tareas pendientes","task left|tasks left","tâche restante|tâches restantes","attività da fare|attività da fare"],
+  offlineDocChecking:["Comprovant còpia offline…","Comprobando copia sin conexión…","Checking offline copy…","Vérification de la copie hors ligne…","Verifica della copia offline…"],
+  offlineDocUnsupported:["No apte per a còpia offline","No admite copia sin conexión","Offline copy unavailable for this file type","Copie hors ligne indisponible pour ce type de fichier","Copia offline non disponibile per questo tipo di file"],
+  offlineDocReady:["Disponible offline","Disponible sin conexión","Available offline","Disponible hors ligne","Disponibile offline"],
+  offlineDocIgnored:["No es prepara automàticament","No se prepara automáticamente","Automatic saving is off for this document","Préparation automatique désactivée pour ce document","Salvataggio automatico disattivato per questo documento"],
+  offlineDocNeedsNetwork:["Pendent de connexió","Pendiente de conexión","Waiting for a connection","En attente de connexion","In attesa di connessione"],
+  offlineDocPending:["Pendent de preparar","Pendiente de preparar","Waiting to be prepared","En attente de préparation","In attesa di preparazione"],
+  offlineDocNotSaved:["Còpia offline no preparada","Copia sin conexión sin preparar","Offline copy not prepared","Copie hors ligne non préparée","Copia offline non preparata"],
+  offlineDocRetry:["Reintenta el desament offline","Reintenta el guardado sin conexión","Retry saving offline","Réessayer l’enregistrement hors ligne","Riprova il salvataggio offline"],
+  offlineDocSave:["Desa offline","Guarda sin conexión","Save offline","Enregistrer hors ligne","Salva offline"],
+  offlineDocUnreadable:["La còpia xifrada no es pot recuperar.","No se puede recuperar la copia cifrada.","The encrypted copy cannot be retrieved.","Impossible de récupérer la copie chiffrée.","Impossibile recuperare la copia cifrata."],
+  offlineDocMissingCard:["La fitxa del document no està desada offline.","La ficha del documento no está guardada sin conexión.","The document details have not been saved offline.","La fiche du document n’est pas enregistrée hors ligne.","La scheda del documento non è salvata offline."],
+  offlineDocDiskFull:["El dispositiu no té prou espai disponible per desar la còpia.","El dispositivo no tiene espacio suficiente para guardar la copia.","The device does not have enough space to save the copy.","L’appareil n’a pas assez d’espace pour enregistrer la copie.","Spazio insufficiente sul dispositivo per salvare la copia."],
+  offlineDocInterrupted:["La descàrrega s’ha interromput. Torna-ho a provar amb connexió.","Se ha interrumpido la descarga. Reinténtalo con conexión.","The download was interrupted. Try again when connected.","Le téléchargement a été interrompu. Réessayez avec une connexion.","Download interrotto. Riprova quando sei online."],
+  offlineDocFailed:["No s’ha pogut preparar el document.","No se ha podido preparar el documento.","The document could not be prepared.","Impossible de préparer le document.","Impossibile preparare il documento."],
+  offlineDocChanged:["El document, el compte o el viatge han canviat.","El documento, la cuenta o el viaje han cambiado.","The document, account or trip has changed.","Le document, le compte ou le voyage a changé.","Il documento, l’account o il viaggio è cambiato."],
+  offlineDocDownloading:["Descarregant el document…","Descargando el documento…","Downloading the document…","Téléchargement du document…","Download del documento…"],
+  offlineDocDownloadFailed:["No s’ha pogut descarregar el document. Torna-ho a provar amb connexió.","No se ha podido descargar el documento. Reinténtalo con conexión.","The document could not be downloaded. Try again when connected.","Impossible de télécharger le document. Réessayez avec une connexion.","Impossibile scaricare il documento. Riprova quando sei online."],
+  offlineDocVerifying:["Xifrant i verificant la còpia…","Cifrando y verificando la copia…","Encrypting and verifying the copy…","Chiffrement et vérification de la copie…","Cifratura e verifica della copia…"],
+  offlineDocQueued:["A la cua per desar el document…","En cola para guardar el documento…","Queued to save the document…","En attente d’enregistrement du document…","Documento in coda per il salvataggio…"],
+  offlineDocBadFile:["Aquest fitxer no és vàlid o supera el límit de 12 MB.","El archivo no es válido o supera el límite de 12 MB.","This file is invalid or exceeds the 12 MB limit.","Ce fichier est invalide ou dépasse la limite de 12 Mo.","Il file non è valido o supera il limite di 12 MB."],
+  offlineDocInvalidBytes:["Només es poden desar offline PDF i imatges vàlides.","Solo se pueden guardar sin conexión PDF e imágenes válidos.","Only valid PDFs and images can be saved offline.","Seuls les PDF et les images valides peuvent être enregistrés hors ligne.","È possibile salvare offline solo PDF e immagini validi."],
+  offlineDocCountLimit:["Màxim de 30 documents offline per compte.","Máximo de 30 documentos sin conexión por cuenta.","Up to 30 offline documents per account.","30 documents hors ligne maximum par compte.","Massimo 30 documenti offline per account."],
+  offlineDocTripLimit:["Aquest viatge supera el límit de 35 MB offline.","Este viaje supera el límite de 35 MB sin conexión.","This trip exceeds the 35 MB offline limit.","Ce voyage dépasse la limite hors ligne de 35 Mo.","Il viaggio supera il limite offline di 35 MB."],
+  offlineDocAccountLimit:["Aquest compte supera el límit de 55 MB offline.","Esta cuenta supera el límite de 55 MB sin conexión.","This account exceeds the 55 MB offline limit.","Ce compte dépasse la limite hors ligne de 55 Mo.","L’account supera il limite offline di 55 MB."],
   unitUnpriced:["component sense preu|components sense preu","componente sin precio|componentes sin precio","unpriced item|unpriced items","élément sans prix|éléments sans prix","voce senza prezzo|voci senza prezzo"]
 };
 const dashboardLanguageIndex=['ca','es','en','fr','it'].indexOf(insightsLanguage);
@@ -2803,7 +2827,7 @@ document.getElementById('tripHome').setAttribute('aria-label',dashboardText('now
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-travel-book-portable-v92';
+const FREYA_FRONTEND_RELEASE='pwa-offline-documents-v93';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -3998,15 +4022,14 @@ const OFFLINE_DOC_ACCOUNT_LIMIT=55*1024*1024;
 const OFFLINE_DOC_MAX_COUNT=30;
 const OFFLINE_AUTO_DOCS_PREF='freya-auto-private-documents-v1:';
 const OFFLINE_AUTO_DOCS_IGNORED='freya-auto-private-exclusions-v1:';
-const offlineAutoErrors=new Map(),offlineAutoBusy=new Set();
+const offlineAutoErrors=new Map(),offlineAutoBusy=new Map(),offlineDocVerified=new Map();
 function offlineAutoEnabled(){
   if(!session?.user?.id)return false;
   try{return localStorage.getItem(OFFLINE_AUTO_DOCS_PREF+session.user.id)!=='off'}catch(_){return true}
 }
 function offlineAutoEligible(doc){
   if(!doc?.id||!doc?.file_path||String(doc.category||'').toLowerCase()==='foto')return false;
-  const type=String(doc.mime_type||'').toLowerCase(),name=String(doc.file_name||'').toLowerCase();
-  return type==='application/pdf'||type.startsWith('image/')||/\.(pdf|png|jpe?g|webp|heic|heif|gif)$/.test(name);
+  return !!offlineDocType(doc);
 }
 function offlineAutoExclusionKey(scope){return OFFLINE_AUTO_DOCS_IGNORED+scope.userId+':'+scope.tripId}
 function offlineAutoIgnored(scope,id){
@@ -4065,14 +4088,27 @@ function offlineDocRead(db,store,key){
     request.onsuccess=()=>output(request.result||null);
   });
 }
-function offlineDocUserRows(db,userId){
+function offlineDocUserRows(db,userId,metadataOnly=false){
   return offlineDocTx(db,['records'],'readonly',(tx,output)=>{
-    const request=tx.objectStore('records').index('byUser').getAll(userId);
-    request.onsuccess=()=>output(request.result||[]);
+    const index=tx.objectStore('records').index('byUser');
+    if(!metadataOnly){
+      const request=index.getAll(userId);
+      request.onsuccess=()=>output(request.result||[]);
+      return;
+    }
+    const rows=[],request=index.openCursor(userId);
+    request.onsuccess=()=>{
+      const cursor=request.result;
+      if(!cursor){output(rows);return}
+      const {key,userId,tripId,documentId,filePath,size,mime,iv,savedAt}=cursor.value;
+      rows.push({key,userId,tripId,documentId,filePath,size,mime,iv,savedAt});
+      cursor.continue();
+    };
   });
 }
 async function offlineDocKey(db,userId,create=false){
   const existing=await offlineDocRead(db,'keys',userId);
+  if(!existing)offlineDocVerified.clear();
   if(existing||!create)return existing;
   const generated=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
   // One IDB readwrite transaction elects the key even when two tabs start
@@ -4085,9 +4121,13 @@ async function offlineDocKey(db,userId,create=false){
     };
   });
 }
+function offlineDocMediaType(value){
+  const type=String(value||'').split(';',1)[0].trim().toLowerCase();
+  return type==='image/jpg'?'image/jpeg':type;
+}
 function offlineDocType(doc,blob){
-  const name=String(doc.file_name||'').toLowerCase(),type=String(doc.mime_type||'').toLowerCase();
-  const actual=String(blob?.type||'').toLowerCase();
+  const name=String(doc.file_name||'').toLowerCase(),type=offlineDocMediaType(doc.mime_type);
+  const actual=offlineDocMediaType(blob?.type);
   const mime=type==='application/pdf'||/\.pdf$/.test(name)?'application/pdf':
     /(?:image\/jpe?g|\.jpe?g$)/.test(type+' '+name)?'image/jpeg':
     /(?:image\/png|\.png$)/.test(type+' '+name)?'image/png':
@@ -4113,14 +4153,21 @@ function offlineDocAtomicSave(db,scope,row){
   return new Promise((resolve,reject)=>{
     const tx=db.transaction(['records'],'readwrite'),store=tx.objectStore('records');
     let validationError=null;
-    const request=store.index('byUser').getAll(scope.userId);
+    let count=0,tripBytes=0,accountBytes=0;
+    const request=store.index('byUser').openCursor(scope.userId);
     request.onsuccess=()=>{
-      const other=(request.result||[]).filter(value=>value.key!==row.key);
-      const tripBytes=other.filter(value=>value.tripId===scope.tripId).reduce((sum,value)=>sum+value.size,0);
-      const accountBytes=other.reduce((sum,value)=>sum+value.size,0);
-      if(other.length>=OFFLINE_DOC_MAX_COUNT)validationError=Error('Màxim de 30 documents offline per compte.');
-      else if(tripBytes+row.size>OFFLINE_DOC_TRIP_LIMIT)validationError=Error('Aquest viatge supera el límit de 35 MB offline.');
-      else if(accountBytes+row.size>OFFLINE_DOC_ACCOUNT_LIMIT)validationError=Error('Aquest compte supera el límit de 55 MB offline.');
+      const cursor=request.result;
+      if(cursor){
+        const {key,tripId,size}=cursor.value;
+        if(key!==row.key){
+          count++;accountBytes+=size;
+          if(tripId===scope.tripId)tripBytes+=size;
+        }
+        cursor.continue();return;
+      }
+      if(count>=OFFLINE_DOC_MAX_COUNT)validationError=Error(dashboardText('offlineDocCountLimit'));
+      else if(tripBytes+row.size>OFFLINE_DOC_TRIP_LIMIT)validationError=Error(dashboardText('offlineDocTripLimit'));
+      else if(accountBytes+row.size>OFFLINE_DOC_ACCOUNT_LIMIT)validationError=Error(dashboardText('offlineDocAccountLimit'));
       if(validationError){tx.abort();return}
       if(!offlineDocScopeCurrent(scope)){validationError=Error('El compte ha canviat.');tx.abort();return}
       store.put(row);
@@ -4132,9 +4179,9 @@ function offlineDocAtomicSave(db,scope,row){
 }
 async function offlineDocPruneTrip(scope,serverDocs){
   if(!offlineDocScopeCurrent(scope))return false;
-  const allowed=new Map(serverDocs.map(doc=>[doc.id,doc.file_path]));
-  const database=await offlineDocDatabase(),records=await offlineDocUserRows(database,scope.userId);
+  const database=await offlineDocDatabase(),records=await offlineDocUserRows(database,scope.userId,true);
   if(!offlineDocScopeCurrent(scope))return false;
+  const allowed=new Map([...serverDocs,...pendingDocumentRows].map(doc=>[doc.id,doc.file_path]));
   // Parking photos live outside travel_documents and must survive its sync.
   const discarded=records.filter(value=>value.tripId===scope.tripId&&value.documentId!=='freya-parking-photo-v1'&&!value.documentId?.startsWith('freya-travel-book-draft:')&&allowed.get(value.documentId)!==value.filePath);
   if(discarded.length)await offlineDocTx(database,['records'],'readwrite',tx=>{
@@ -4144,16 +4191,12 @@ async function offlineDocPruneTrip(scope,serverDocs){
 }
 async function offlineDocSaveBlob(scope,doc,blob){
   if(!offlineDocScopeCurrent(scope))throw Error('El compte o el viatge han canviat.');
-  if(!(blob instanceof Blob)||!blob.size||blob.size>OFFLINE_DOC_PER_FILE)throw Error('Aquest fitxer no és vàlid o supera el límit de 12 MB.');
+  if(!(blob instanceof Blob)||!blob.size||blob.size>OFFLINE_DOC_PER_FILE)throw Error(dashboardText('offlineDocBadFile'));
   const mime=offlineDocType(doc,blob);
-  if(!mime||!(await offlineDocValidBytes(blob,mime)))throw Error('Només es poden desar offline PDF i imatges vàlides.');
-  const database=await offlineDocDatabase(),rows=await offlineDocUserRows(database,scope.userId);
+  if(!mime||!(await offlineDocValidBytes(blob,mime)))throw Error(dashboardText('offlineDocInvalidBytes'));
+  const database=await offlineDocDatabase();
   if(!offlineDocScopeCurrent(scope))throw Error('El compte ha canviat.');
   const id=offlineDocId(scope.userId,scope.tripId,doc.id);
-  const other=rows.filter(value=>value.key!==id);
-  if(other.length>=OFFLINE_DOC_MAX_COUNT)throw Error('Màxim de 30 documents offline per compte.');
-  if(other.filter(value=>value.tripId===scope.tripId).reduce((sum,value)=>sum+value.size,0)+blob.size>OFFLINE_DOC_TRIP_LIMIT)throw Error('Aquest viatge supera el límit de 35 MB offline.');
-  if(other.reduce((sum,value)=>sum+value.size,0)+blob.size>OFFLINE_DOC_ACCOUNT_LIMIT)throw Error('Aquest compte supera el límit de 55 MB offline.');
   const key=await offlineDocKey(database,scope.userId,true);
   const iv=crypto.getRandomValues(new Uint8Array(12));
   const bytes=await blob.arrayBuffer();
@@ -4163,20 +4206,38 @@ async function offlineDocSaveBlob(scope,doc,blob){
     key:id,userId:scope.userId,tripId:scope.tripId,documentId:doc.id,
     filePath:doc.file_path,size:blob.size,mime,iv:Array.from(iv),ciphertext,savedAt:Date.now()
   });
-  if(!offlineDocScopeCurrent(scope)){
-    await offlineDocTx(database,['records'],'readwrite',tx=>{tx.objectStore('records').delete(id)});
-    throw Error('El compte ha canviat. S’ha descartat la còpia.');
-  }
+  if(!offlineDocScopeCurrent(scope))throw Error('El compte o el viatge han canviat.');
+  const recovered=await offlineDocGetBlob(scope,doc);
+  if(!recovered||recovered.blob.size!==blob.size||recovered.mime!==mime)
+    throw Error(dashboardText('offlineDocUnreadable'));
   return true;
 }
+function offlineDocFingerprint(row){return JSON.stringify([row.filePath,row.size,row.mime,row.iv,row.savedAt])}
 async function offlineDocGetBlob(scope,doc){
   if(!offlineDocScopeCurrent(scope))return null;
   const database=await offlineDocDatabase(),row=await offlineDocRead(database,'records',offlineDocId(scope.userId,scope.tripId,doc.id));
   if(!row||row.userId!==scope.userId||row.tripId!==scope.tripId||row.filePath!==doc.file_path)return null;
   const key=await offlineDocKey(database,scope.userId);
   if(!key||!offlineDocScopeCurrent(scope))return null;
-  const plaintext=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(row.iv)},key,row.ciphertext);
-  return offlineDocScopeCurrent(scope)?{blob:new Blob([plaintext],{type:row.mime}),mime:row.mime}:null;
+  try{
+    const plaintext=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(row.iv)},key,row.ciphertext);
+    const blob=new Blob([plaintext],{type:row.mime});
+    if(blob.size!==row.size||!await offlineDocValidBytes(blob,row.mime))throw Error(dashboardText('offlineDocUnreadable'));
+    if(!offlineDocScopeCurrent(scope))return null;
+    if(offlineDocVerified.size>=OFFLINE_DOC_MAX_COUNT)offlineDocVerified.delete(offlineDocVerified.keys().next().value);
+    offlineDocVerified.set(row.key,offlineDocFingerprint(row));
+    return {blob,mime:row.mime};
+  }catch(error){offlineDocVerified.delete(row.key);throw error}
+}
+async function offlineDocHasCopy(scope,doc,row){
+  if(row?.filePath!==doc.file_path)return false;
+  if(offlineDocVerified.get(row.key)===offlineDocFingerprint(row))return true;
+  try{return !!await offlineDocGetBlob(scope,doc)}catch(_){return false}
+}
+function offlineDocRememberCard(scope,doc){
+  const hasCard=()=>readOfflineTripSnapshot(scope.tripId,scope.userId)?.documentRows?.some(row=>row.id===doc.id&&row.file_path===doc.file_path);
+  if(!hasCard()&&(!persistOfflineDocuments()||!hasCard()))
+    throw Error(dashboardText('offlineDocMissingCard'));
 }
 async function offlineDocForget(scope,docId){
   if(!offlineDocScopeCurrent(scope))return false;
@@ -4212,93 +4273,141 @@ async function purgeOfflineDocumentCopies(){
 async function offlineDocStatus(){
   const scope=offlineDocScope(),sequence=++offlineDocRenderSequence;
   if(!scope)return;
+  const current=()=>offlineDocScopeCurrent(scope)&&sequence===offlineDocRenderSequence;
+  const eligible=documentRows.filter(offlineAutoEligible);
+  const busy=doc=>offlineAutoBusy.get(offlineAutoTag(scope,doc));
+  const snapshot=new Map((readOfflineTripSnapshot(scope.tripId,scope.userId)?.documentRows||[]).map(doc=>[doc.id,doc.file_path]));
+  const usable=new Set(),unreadable=new Map();
+  let records=[],readError='';
   try{
-    const database=await offlineDocDatabase(),records=await offlineDocUserRows(database,scope.userId);
-    if(!offlineDocScopeCurrent(scope)||sequence!==offlineDocRenderSequence)return;
-    const ready=new Map(records.filter(value=>value.tripId===scope.tripId).map(value=>[value.documentId,value]));
-    const eligible=documentRows.filter(offlineAutoEligible);
-    const usable=eligible.filter(doc=>ready.get(doc.id)?.filePath===doc.file_path);
-    const pending=eligible.filter(doc=>ready.get(doc.id)?.filePath!==doc.file_path);
-    const busy=pending.filter(doc=>offlineAutoBusy.has(offlineAutoTag(scope,doc)));
-    const label=$('offlineDocumentsStatus');
-    if(label)label.textContent=usable.length+' de '+eligible.length+' documents offline · '+pending.length+' pendents'+(busy.length?' · '+busy.length+' preparant-se':'')+' · '+(records.reduce((sum,row)=>sum+row.size,0)/1048576).toFixed(1)+' de 55 MB del compte';
-    const setting=$('offlineAutoDocuments');
-    if(setting)setting.checked=offlineAutoEnabled();
-    document.querySelectorAll('[data-offline-state]').forEach(el=>{
-      const doc=documentRows.find(value=>value.id===el.dataset.offlineState);
-      if(!doc)return;
-      const stored=ready.get(doc.id)?.filePath===doc.file_path,tag=offlineAutoTag(scope,doc);
-      el.textContent=!offlineAutoEligible(doc)?'No apte per a còpia offline':
-        stored?'✅ Disponible offline':
-        offlineAutoBusy.has(tag)?'⏳ Preparant còpia xifrada…':
-        offlineAutoErrors.has(tag)?'⚠️ Pendent: '+offlineAutoErrors.get(tag):
-        offlineAutoIgnored(scope,doc.id)?'No es prepara automàticament':
-        connectionUnavailable()?'📵 Pendent de connexió':
-        offlineAutoEnabled()?'Pendent de preparar':'Còpia offline no preparada';
-    });
-    document.querySelectorAll('[data-offline-save]').forEach(button=>{
-      const doc=documentRows.find(value=>value.id===button.dataset.offlineSave),stored=doc&&ready.get(doc.id)?.filePath===doc.file_path;
-      button.classList.toggle('hidden',!!stored);
-      button.disabled=connectionUnavailable()||!doc||(doc&&offlineAutoBusy.has(offlineAutoTag(scope,doc)));
-    });
-    document.querySelectorAll('[data-offline-forget]').forEach(button=>{
-      const doc=documentRows.find(value=>value.id===button.dataset.offlineForget),stored=doc&&ready.get(doc.id)?.filePath===doc.file_path;
-      button.classList.toggle('hidden',!stored);
-    });
-  }catch(error){
-    if(offlineDocScopeCurrent(scope)&&sequence===offlineDocRenderSequence){
-      const label=$('offlineDocumentsStatus');if(label)label.textContent=error.message||'No es pot accedir a la caixa forta en aquest dispositiu.';
+    const database=await offlineDocDatabase();
+    records=await offlineDocUserRows(database,scope.userId,true);
+    if(!current())return;
+    const candidates=new Map(records.filter(row=>row.tripId===scope.tripId).map(row=>[row.documentId,row]));
+    const key=records.length?await offlineDocKey(database,scope.userId):null;
+    if(!current())return;
+    for(const doc of eligible){
+      const row=candidates.get(doc.id);
+      if(row?.filePath!==doc.file_path||busy(doc))continue;
+      const readable=key&&await offlineDocHasCopy(scope,doc,row);
+      if(!current())return;
+      if(!readable)unreadable.set(doc.id,dashboardText('offlineDocUnreadable'));
+      else if(snapshot.get(doc.id)!==doc.file_path)unreadable.set(doc.id,dashboardText('offlineDocMissingCard'));
+      else usable.add(doc.id);
     }
+  }catch(error){readError=offlineDocErrorMessage(error)}
+  if(!current())return;
+  const label=$('offlineDocumentsStatus'),preparing=eligible.filter(busy).length;
+  if(label)label.textContent=readError||usable.size+' de '+eligible.length+' documents offline · '+(eligible.length-usable.size)+' pendents'+(preparing?' · '+preparing+' preparant-se':'')+' · '+(records.reduce((sum,row)=>sum+row.size,0)/1048576).toFixed(1)+' de 55 MB del compte';
+  const setting=$('offlineAutoDocuments');
+  if(setting)setting.checked=offlineAutoEnabled();
+  const byId=new Map(documentRows.map(doc=>[doc.id,doc]));
+  const errorFor=doc=>offlineAutoErrors.get(offlineAutoTag(scope,doc))||unreadable.get(doc.id)||readError;
+  document.querySelectorAll('[data-offline-state]').forEach(el=>{
+    const doc=byId.get(el.dataset.offlineState);
+    if(!doc)return;
+    const error=errorFor(doc);
+    el.textContent=!offlineAutoEligible(doc)?dashboardText('offlineDocUnsupported'):
+      busy(doc)?'⏳ '+busy(doc):
+      usable.has(doc.id)?'✅ '+dashboardText('offlineDocReady'):
+      error?'⚠️ '+error:
+      offlineAutoIgnored(scope,doc.id)?dashboardText('offlineDocIgnored'):
+      connectionUnavailable()?'📵 '+dashboardText('offlineDocNeedsNetwork'):
+      offlineAutoEnabled()?dashboardText('offlineDocPending'):dashboardText('offlineDocNotSaved');
+  });
+  document.querySelectorAll('[data-offline-save]').forEach(button=>{
+    const doc=byId.get(button.dataset.offlineSave),eligible=offlineAutoEligible(doc);
+    button.classList.toggle('hidden',!eligible||usable.has(doc.id));
+    button.disabled=!eligible||connectionUnavailable()||!!busy(doc);
+    button.textContent=eligible&&errorFor(doc)?dashboardText('offlineDocRetry'):'🔐 '+dashboardText('offlineDocSave');
+  });
+  document.querySelectorAll('[data-offline-forget]').forEach(button=>{
+    button.classList.toggle('hidden',!usable.has(button.dataset.offlineForget));
+  });
+}
+function offlineDocErrorMessage(error){
+  if(error?.name==='QuotaExceededError')return dashboardText('offlineDocDiskFull');
+  if(error?.name==='AbortError')return dashboardText('offlineDocInterrupted');
+  return error?.message||dashboardText('offlineDocFailed');
+}
+async function offlineDocPrepareCopy(scope,doc){
+  if(!offlineDocScopeCurrent(scope)||!documentRows.some(row=>row.id===doc.id&&row.file_path===doc.file_path))
+    throw Error(dashboardText('offlineDocChanged'));
+  const database=await offlineDocDatabase();
+  const existing=await offlineDocRead(database,'records',offlineDocId(scope.userId,scope.tripId,doc.id));
+  const key=existing?.filePath===doc.file_path?await offlineDocKey(database,scope.userId):null;
+  if(!key||!await offlineDocHasCopy(scope,doc,existing)){
+    if(connectionUnavailable())throw Error(dashboardText('offlineDocNeedsNetwork'));
+    const tag=offlineAutoTag(scope,doc);
+    offlineAutoBusy.set(tag,dashboardText('offlineDocDownloading'));void offlineDocStatus();
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
+    let data;
+    try{
+      const result=await db.storage.from(DOC_BUCKET).download(doc.file_path,{}, {signal:controller.signal});
+      if(controller.signal.aborted)throw controller.signal.reason;
+      if(result.error)throw Error(dashboardText('offlineDocDownloadFailed'));
+      data=result.data;
+    }finally{clearTimeout(timer)}
+    if(!offlineDocScopeCurrent(scope)||!documentRows.some(row=>row.id===doc.id&&row.file_path===doc.file_path))
+      throw Error(dashboardText('offlineDocChanged'));
+    offlineAutoBusy.set(tag,dashboardText('offlineDocVerifying'));void offlineDocStatus();
+    await offlineDocSaveBlob(scope,doc,data);
   }
+  if(!offlineDocScopeCurrent(scope))throw Error('El compte o el viatge han canviat.');
+  offlineDocRememberCard(scope,doc);
 }
 async function autoPrepareOfflineDocuments(scope,docs){
-  if(!scope||!offlineDocScopeCurrent(scope)||connectionUnavailable()||!offlineAutoEnabled())return;
-  const database=await offlineDocDatabase();
   for(const doc of docs){
     if(!offlineDocScopeCurrent(scope)||connectionUnavailable()||!offlineAutoEnabled())return;
     if(!offlineAutoEligible(doc)||offlineAutoIgnored(scope,doc.id))continue;
     const tag=offlineAutoTag(scope,doc);
-    if(offlineAutoErrors.has(tag))continue;
-    const previous=await offlineDocRead(database,'records',offlineDocId(scope.userId,scope.tripId,doc.id));
-    if(previous?.filePath===doc.file_path)continue; // Do not download a second copy.
-    if(!offlineDocScopeCurrent(scope)||connectionUnavailable())return;
-    offlineAutoBusy.add(tag);
-    void offlineDocStatus();
-    try{
-      const {data,error}=await db.storage.from(DOC_BUCKET).download(doc.file_path);
-      if(error)throw error;
-      if(!offlineDocScopeCurrent(scope))return;
-      await offlineDocSaveBlob(scope,doc,data);
-      if(offlineDocScopeCurrent(scope)&&parkingDocumentScore(doc)>0)void updateParkingReservationUi(scope.tripId,scope.generation);
-    }catch(error){
-      if(offlineDocScopeCurrent(scope))offlineAutoErrors.set(tag,error?.message||'No s’ha pogut desar. Torna a provar amb connexió.');
-    }finally{
-      offlineAutoBusy.delete(tag);
-      if(offlineDocScopeCurrent(scope))void offlineDocStatus();
-    }
+    if(offlineAutoBusy.has(tag)||offlineAutoErrors.has(tag))continue;
+    await offlineDocEnqueue(async()=>{
+      if(!offlineDocScopeCurrent(scope)||connectionUnavailable()||!offlineAutoEnabled()||
+        offlineAutoIgnored(scope,doc.id)||offlineAutoBusy.has(tag)||offlineAutoErrors.has(tag))return;
+      offlineAutoBusy.set(tag,dashboardText('offlineDocChecking'));
+      try{
+        await offlineDocPrepareCopy(scope,doc);
+        if(offlineDocScopeCurrent(scope)&&parkingDocumentScore(doc)>0)void updateParkingReservationUi(scope.tripId,scope.generation);
+      }catch(error){
+        if(offlineDocScopeCurrent(scope))offlineAutoErrors.set(tag,offlineDocErrorMessage(error));
+      }finally{
+        offlineAutoBusy.delete(tag);
+        if(offlineDocScopeCurrent(scope))void offlineDocStatus();
+      }
+    });
   }
 }
 async function prepareOfflineDocument(id,messageId='documentMsg'){
   const scope=offlineDocScope(),doc=documentRows.find(value=>value.id===id);
-  if(!scope||!doc||connectionUnavailable()){msg(messageId,'Connecta’t a Internet per preparar aquest document.',true);return}
-  offlineAutoErrors.delete(offlineAutoTag(scope,doc));
+  if(!scope||!offlineAutoEligible(doc))return;
+  const tag=offlineAutoTag(scope,doc);
+  if(connectionUnavailable()){
+    offlineAutoErrors.set(tag,dashboardText('offlineDocNeedsNetwork'));
+    if(messageId!=='documentMsg')msg(messageId,dashboardText('offlineDocNeedsNetwork'),true);
+    void offlineDocStatus();return;
+  }
+  if(offlineAutoBusy.has(tag))return;
+  offlineAutoErrors.delete(tag);
   offlineAutoSetIgnored(scope,id,false);
-  msg(messageId,'Desant una còpia xifrada al dispositiu…');
+  offlineAutoBusy.set(tag,dashboardText('offlineDocQueued'));void offlineDocStatus();
+  if(messageId!=='documentMsg')msg(messageId,'Desant una còpia xifrada al dispositiu…');
   try{
-    await offlineDocEnqueue(async()=>{
-      if(!offlineDocScopeCurrent(scope))throw Error('El compte o el viatge han canviat.');
-      const existing=await offlineDocRead(await offlineDocDatabase(),'records',offlineDocId(scope.userId,scope.tripId,id));
-      if(existing?.filePath===doc.file_path)return;
-      const {data,error}=await db.storage.from(DOC_BUCKET).download(doc.file_path);
-      if(error)throw error;
-      await offlineDocSaveBlob(scope,doc,data);
-    });
+    await offlineDocEnqueue(()=>offlineDocPrepareCopy(scope,doc));
     if(offlineDocScopeCurrent(scope)){
-      msg(messageId,'🔐 Document preparat per obrir-lo sense cobertura.');
+      if(messageId!=='documentMsg')msg(messageId,'🔐 Document preparat per obrir-lo sense cobertura.');
       if(parkingDocumentScore(doc)>0)await updateParkingReservationUi(scope.tripId,scope.generation);
     }
-  }catch(error){if(offlineDocScopeCurrent(scope))msg(messageId,error.message||'No s’ha pogut preparar el document.',true)}
-  finally{if(offlineDocScopeCurrent(scope))await offlineDocStatus()}
+  }catch(error){
+    if(offlineDocScopeCurrent(scope)){
+      const message=offlineDocErrorMessage(error);
+      offlineAutoErrors.set(tag,message);
+      if(messageId!=='documentMsg')msg(messageId,message,true);
+    }
+  }finally{
+    offlineAutoBusy.delete(tag);
+    if(offlineDocScopeCurrent(scope))await offlineDocStatus();
+  }
 }
 async function removeOfflineDocument(id){
   const scope=offlineDocScope();
@@ -4328,7 +4437,7 @@ $('offlineAutoDocuments').onchange=()=>{
   if(enabled&&!connectionUnavailable()){
     offlineAutoErrors.clear();
     const docs=[...documentRows];
-    void offlineDocEnqueue(()=>autoPrepareOfflineDocuments(scope,docs)).catch(()=>{}).then(()=>offlineDocStatus());
+    void autoPrepareOfflineDocuments(scope,docs).then(()=>offlineDocStatus());
   }
   void offlineDocStatus();
 };
@@ -12407,15 +12516,12 @@ async function loadDocuments(silent=false){
     // Only a successful authoritative server read can invalidate deleted or
     // replaced downloads. Offline failures never erase the last good copy.
     const vaultScope=offlineDocScope();
-    if(vaultScope)void offlineDocEnqueue(async()=>{
-      await offlineDocPruneTrip(vaultScope,serverDocs);
-      await autoPrepareOfflineDocuments(vaultScope,serverDocs);
-    }).then(()=>offlineDocStatus()).catch(error=>{
+    if(vaultScope)void offlineDocEnqueue(()=>offlineDocPruneTrip(vaultScope,serverDocs)).catch(error=>{
       if(offlineDocScopeCurrent(vaultScope)){
         const el=$('offlineDocumentsStatus');
-        if(el)el.textContent='⚠️ No s’ha pogut preparar la còpia offline: '+(error?.message||'Error local');
+        if(el)el.textContent='⚠️ No s’ha pogut preparar la còpia offline: '+offlineDocErrorMessage(error);
       }
-    });
+    }).then(()=>autoPrepareOfflineDocuments(vaultScope,serverDocs)).then(()=>offlineDocStatus());
   }
   return docs;
 }
@@ -12425,7 +12531,7 @@ function renderDocuments(docs=documentRows){
   if(!isLondonTrip()&&$('genericDocumentsModuleStatus'))$('genericDocumentsModuleStatus').textContent=dashboardCount('unitDocument',documentRows.length);
   const list=$('documentsList'),empty=$('documentsEmpty');if(!list||!empty)return;
   empty.classList.toggle('hidden',documentRows.length>0);
-  list.innerHTML=documentRows.map(d=>`<article class="doc-card" data-doc-id="${esc(d.id)}"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(categoryLabel(d.category))}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p><small class="muted" data-offline-state="${esc(d.id)}">Comprovant còpia offline…</small></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button>${!isLondonTrip()?`<button type="button" class="secondary" data-offline-save="${esc(d.id)}">🔐 Desa offline</button><button type="button" class="secondary hidden" data-offline-forget="${esc(d.id)}">Retira còpia offline</button>`:''}<button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
+  list.innerHTML=documentRows.map(d=>`<article class="doc-card" data-doc-id="${esc(d.id)}"><div class="doc-card-head"><div><span class="doc-chip">${esc(categoryIcon(d.category))} ${esc(categoryLabel(d.category))}</span><h3>${esc(d.title)}</h3><p>${esc(d.file_name||'Fitxer')}</p><small class="muted" data-offline-state="${esc(d.id)}" role="status">${esc(dashboardText('offlineDocChecking'))}</small></div></div><div class="doc-actions"><button class="doc-open" type="button" data-open-doc="${esc(d.id)}">Obrir document</button>${!isLondonTrip()?`<button type="button" class="secondary" data-offline-save="${esc(d.id)}">🔐 ${esc(dashboardText('offlineDocSave'))}</button><button type="button" class="secondary hidden" data-offline-forget="${esc(d.id)}">Retira còpia offline</button>`:''}<button class="doc-delete" type="button" data-delete-doc="${esc(d.id)}">Eliminar</button></div></article>`).join('');
   list.querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>openDocument(b.dataset.openDoc,documentRows));
   list.querySelectorAll('[data-delete-doc]').forEach(b=>b.onclick=()=>deleteDocument(b.dataset.deleteDoc,documentRows));
   list.querySelectorAll('[data-offline-save]').forEach(b=>b.onclick=()=>prepareOfflineDocument(b.dataset.offlineSave));
@@ -12499,7 +12605,11 @@ async function openDocument(id,docs,messageId='documentMsg'){
         documentViewerObjectUrl=objectUrl;
         return;
       }
-    }catch(error){if(connectionUnavailable()&&openSeq===documentViewerOpenSequence){msg(messageId,'La còpia local no es pot llegir. Obre el document amb cobertura per preparar-lo de nou.',true);return}}
+    }catch(error){
+      if(openSeq!==documentViewerOpenSequence||!offlineDocScopeCurrent(scope))return;
+      void offlineDocStatus();
+      if(connectionUnavailable()){msg(messageId,'La còpia local no es pot llegir. Reintenta el desament quan tinguis connexió.',true);return}
+    }
   }
   if(connectionUnavailable()){if(openSeq===documentViewerOpenSequence)msg(messageId,'📵 Aquest document encara no està preparat offline. Desa’l abans de viatjar.',true);return}
   msg(messageId,'Generant accés segur…');
@@ -12555,9 +12665,12 @@ $('documentForm').onsubmit=async e=>{
     const vaultScope=offlineDocScope();
     if(vaultScope&&offlineAutoEnabled()&&offlineAutoEligible(visibleInserted)){
       const tag=offlineAutoTag(vaultScope,visibleInserted);
-      offlineAutoBusy.add(tag);void offlineDocStatus();
-      void offlineDocEnqueue(()=>offlineDocSaveBlob(vaultScope,visibleInserted,file))
-        .catch(error=>{if(offlineDocScopeCurrent(vaultScope))offlineAutoErrors.set(tag,error?.message||'No s’ha pogut desar el document')})
+      offlineAutoBusy.set(tag,dashboardText('offlineDocVerifying'));void offlineDocStatus();
+      void offlineDocEnqueue(async()=>{
+        await offlineDocSaveBlob(vaultScope,visibleInserted,file);
+        if(offlineDocScopeCurrent(vaultScope))offlineDocRememberCard(vaultScope,visibleInserted);
+      })
+        .catch(error=>{if(offlineDocScopeCurrent(vaultScope))offlineAutoErrors.set(tag,offlineDocErrorMessage(error))})
         .finally(()=>{
           offlineAutoBusy.delete(tag);
           if(offlineDocScopeCurrent(vaultScope)){

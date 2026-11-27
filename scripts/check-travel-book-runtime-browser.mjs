@@ -679,6 +679,7 @@ try{
       file_name:'parking.pdf',mime_type:'application/pdf',category:'Reserva'};
     const travelPhoto={id:'album-photo',file_path:'test-auto-document-trip/holiday.jpg',
       file_name:'holiday.jpg',mime_type:'image/jpeg',category:'Foto'};
+    documentRows=[reservation,travelPhoto];
     let downloads=0;const paths=[];
     const originalFrom=db.storage.from;
     db.storage.from=()=>({download:async path=>{

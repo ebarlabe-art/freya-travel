@@ -116,6 +116,9 @@ jobs:
       - name: Download and verify browser
         timeout-minutes: 5
         run: bash scripts/ci-browser-install.sh browser "${{ matrix.engine }}"
+      - name: Encrypted offline documents after browser restart
+        timeout-minutes: 3
+        run: OFFLINE_DOC_ENGINE=${{ matrix.engine }} node scripts/check-offline-documents-browser.mjs
       - name: Travel Book real Pages build browser regression
         if: matrix.engine == 'chromium'
         timeout-minutes: 5
