@@ -1,5 +1,20 @@
 # FREYA TRAVEL — INVENTARI I CONTINUÏTAT DEL PROJECTE
 
+## Relleu verificat · PWA v94 · 27/11/2026
+
+Roadmap canònic v1.5. Main de referència `61f68a6` (PR #277). Aquest relleu substitueix els estats de branca/publicació pendents de les entrades històriques següents.
+
+- C1: PR #274 v91 fusionada; la prova real va revelar el pressupost de mida. PR #275 v92 fusionada (`bd9c233`), optimització seqüencial de fotografies i HTML complet dins del pressupost de 24 MiB. CI 7/7; prova física real d'exportació a l'iPhone aprovada. Nucli Portable tancat, sense tornar a obrir PDF.
+- B1.1: prova física real a l'iPhone aprovada (càlcul de trajecte, hora de sortida, marge insuficient, indicacions externes). Tancat. B1 immediat/B2 integral durant un viatge real queden pendents.
+- B3: prova física de consulta en mode avió després de reobrir l'app, accés al viatge i peces principals, indicador de connexió i reconnexió aprovada. Documents inicialmente pendents.
+- B3: PR #276 v93 fusionada (`00685fd`). Primer desplegament fallit en prova de navegador; segon intent de GitHub Pages verificat build/deploy correcte (run 45977113998). Prova física posterior va identificar el topall de 30 documents.
+- B3: PR #277 v94 fusionada (`61f68a6`), CI 7/7 i 1.061 proves locals reportades; 37 còpies sintètiques en tres viatges. Product Owner confirma ús físic correcte del gestor i desament a l'iPhone. Cap eliminació automàtica per antiguitat o manca d'espai; l'usuari decideix. La protecció no és una garantia contra l'expulsió de dades pel sistema operatiu.
+- B3: tancament voluntari de sessió offline, 6/6 comprovacions físiques confirmades: PDF disponible amb/sense xarxa, bloqueig d'accés després de sortir, reentrada online amb el mateix compte i recuperació del PDF sense nova descàrrega. Pendent caducitat real de token offline i revalidació; no considerar complet el gate B3.
+- Següent: C2 Diari de viatge amb veu, text manual, transcripció editable i reutilització contextual del dia i del Travel Book. Definir explícitament privacitat i política d'àudio. B1/B2 i gate B3 pendents es preserven.
+- E3/E4: dossier tècnic i funcional amb mapa de mòduls i codi, arquitectura, dades, integracions, permisos, costos, proves i manteniment; referències al repositori, sense secrets ni informació privada.
+
+Validació física segons el retorn de la Product Owner; no s'ha inspeccionat cap document privat ni s'han modificat dades reals. Canvi documental exclusiu, sense proves ni desplegament.
+
 ## B3 · Gestor de còpies i pressupost adaptable · branca PWA v94 (27/11/2026)
 
 La prova física de la v93 ha confirmat el límit de 30 documents per compte. La v94 elimina aquest recompte i els pressupostos fixos de viatge i compte. Utilitza l’estimació d’espai de l’origen del navegador amb una reserva del 10 % de la quota, limitada a 32 MiB. Si l’estimació és absent, la transacció IndexedDB decideix la disponibilitat. El límit per fitxer passa a 15 MB, el mateix que la pujada de documents.
