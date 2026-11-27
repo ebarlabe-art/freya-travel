@@ -382,6 +382,10 @@ A partir de les fotos contextuals existents:
 ### C2. Diari de viatge, pensat per capturar sense robar temps
 **Prioritat: P1 · pròxim desenvolupament acordat el 27/11/2026**
 
+**Criteris aprovats per la Product Owner (27/11/2026):** records privats per defecte, compartició explícita amb companys de viatge; captura de veu sense cobertura amb conservació local fins a recuperar connexió; redacció assistida opcional, sense inventar vivències ni substituir el text original sense confirmació.
+
+**Lliurament C2.1:** diari per dia, text manual, enregistrament i reproducció, persistència fiable del record i esborrany local protegit, amb estat honest de desament. Entrada des de viatge/Records i context automàtic del dia. C2.2 transcripció editable; C2.3 redacció assistida; C2.4 vinculacions amb fotografies, llocs i activitats; C2.5 integració editorial amb Travel Book. La política de conservació permanent de l'àudio després de transcriure queda pendent de decisió; C2.1 no l'esborra automàticament. Cap enviament a IA sense acció informada de l'usuari.
+
 El diari s'ha de poder alimentar durant el viatge amb el mínim esforç, especialment **amb veu** des del mòbil. L'objectiu no és obligar a escriure mentre es viatja.
 
 Per dia:
@@ -553,7 +557,7 @@ No es crea un roadmap paral·lel.
 
 ## Pròxim pas
 
-**C2 · Diari de viatge amb veu.** Preparar el primer lliurament útil per a un viatge real: captura ràpida, text manual, transcripció editable, context del dia i vinculacions amb dades existents. La decisió sobre privacitat/compartició, enregistrament i conservació d'àudio s'ha d'explicitar abans d'implementar. Reutilitzar Travel Book, fotos i notes sense duplicar fonts.
+**C2 · Diari de viatge amb veu.** Preparar el primer lliurament útil per a un viatge real: captura ràpida, text manual, transcripció editable, context del dia i vinculacions amb dades existents. Privacitat, compartició explícita i captura offline aprovades. La política de conservació permanent de l'àudio després de transcriure queda pendent de decisió. Reutilitzar Travel Book, fotos i notes sense duplicar fonts.
 
 En paral·lel, completar quan sigui possible la prova física de caducitat real del token offline (B3) i B1/B2 durant un viatge real. No es reobren Travel Book Portable, B1.1, consulta offline, desament/gestor offline ni tancament voluntari de sessió sense incidència nova. Mantenir la resta de pendents del roadmap.
 
