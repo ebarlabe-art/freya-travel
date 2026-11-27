@@ -4776,6 +4776,7 @@ function tripJournalRemote(scope,current,connected){
     return response.json();
   }
   return {
+    transcriptionAccess:()=>transcriptRequest(null,{action:'availability'},8000),
     transcribe:(id,job)=>transcriptRequest(id,{action:'transcribe',id:job.id,language:job.language,epoch:job.epoch,requestedAt:job.requestedAt},95000),
     async entry(id){
       const {data,error}=await query().eq('id',id).maybeSingle();

@@ -40,7 +40,7 @@ const copies={
  spokenLanguage:['Idioma parlat','Idioma hablado','Spoken language','Langue parlée','Lingua parlata'],
  automatic:['Detecta automàticament','Detectar automáticamente','Detect automatically','Détecter automatiquement','Rileva automaticamente'],
  detected:['Idioma detectat','Idioma detectado','Detected language','Langue détectée','Lingua rilevata'],
- consentOffline:['Cal connexió. Pots autoritzar l’enviament quan es recuperi.','Se necesita conexión. Puedes autorizar el envío al volver a conectarte.','A connection is required. You can authorize sending when you reconnect.','Une connexion est nécessaire. Vous pouvez autoriser l’envoi à la reconnexion.','Serve una connessione. Puoi autorizzare l’invio quando tornerai online.'],
+ consentOffline:['En reconnectar, comprovarem si el teu compte pot enviar l’àudio.','Al volver a conectarte, comprobaremos si tu cuenta puede enviar el audio.','When you reconnect, we’ll check whether your account can send the audio.','À la reconnexion, nous vérifierons si votre compte peut envoyer l’audio.','Quando tornerai online, verificheremo se il tuo account può inviare l’audio.'],
  authorize:['Confirma i transcriu','Confirmar y transcribir','Confirm and transcribe','Confirmer et transcrire','Conferma e trascrivi'],
  authorizeOffline:['Autoritza i deixa pendent','Autorizar y dejar en espera','Authorize and queue','Autoriser et mettre en attente','Autorizza e metti in coda'],
  transcriptQueued:['Transcripció pendent d’enviament.','Transcripción pendiente de envío.','Transcription queued for sending.','Transcription en attente d’envoi.','Trascrizione in attesa di invio.'],
@@ -48,6 +48,7 @@ const copies={
  transcriptFailed:['No s’ha pogut transcriure. Pots tornar-ho a provar.','No se ha podido transcribir. Puedes volver a intentarlo.','Transcription failed. You can try again.','La transcription a échoué. Vous pouvez réessayer.','Trascrizione non riuscita. Puoi riprovare.'],
  transcriptLimit:['S’ha arribat al límit de transcripcions. Prova-ho més tard.','Se ha alcanzado el límite de transcripciones. Inténtalo más tarde.','Transcription limit reached. Try again later.','Limite de transcriptions atteinte. Réessayez plus tard.','Limite di trascrizioni raggiunto. Riprova più tardi.'],
  transcriptUnavailable:['El servei de transcripció no està disponible ara mateix.','El servicio de transcripción no está disponible ahora mismo.','The transcription service is currently unavailable.','Le service de transcription est indisponible pour le moment.','Il servizio di trascrizione al momento non è disponibile.'],
+ transcriptRestricted:['La transcripció nova no està disponible per a aquest compte.','Las nuevas transcripciones no están disponibles para esta cuenta.','New transcriptions are unavailable for this account.','Les nouvelles transcriptions sont indisponibles pour ce compte.','Le nuove trascrizioni non sono disponibili per questo account.'],
  transcriptUncertain:['No s’ha pogut comprovar l’estat de la petició.','No se ha podido comprobar el estado de la solicitud.','Couldn’t check the request status.','Impossible de vérifier l’état de la demande.','Impossibile verificare lo stato della richiesta.'],
  retryStatus:['Comprova la petició','Comprobar la solicitud','Check request','Vérifier la demande','Verifica la richiesta'],
  cancel:['Cancel·la','Cancelar','Cancel','Annuler','Annulla'],
@@ -105,6 +106,7 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
   const transcriptChoices=new Map(),transcriptEditors=new Map();
   const spokenNames=new Intl.DisplayNames([language],{type:'language'});
   let runningTranscript=null,transcriptWorker=false,transcriptTimer=0,syncAgain=false;
+  let transcriptionAvailable=null,checkingTranscriptionAccess=false;
   const abort=new AbortController();
   const channel=deletionChannel&&typeof BroadcastChannel==='function'?new BroadcastChannel(deletionChannel):null;
   let queue=Promise.resolve(),draft=null,capture=null,requesting=false,disposed=false,ready=false,syncing=false;
@@ -279,12 +281,17 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
       }
       card.insertBefore(section,actions);
     }
-    if(entry.audio_mime&&!busy){
+    if(entry.audio_mime&&!busy&&transcriptionAvailable!==false){
       actions.append(listButton(entry.transcript_original?'transcribeAgain':'transcribe',()=>{
         transcriptChoices.set(id,job?.language||'');
         renderEntries();
         host.querySelector(`[data-journal-entry="${id}"] [data-journal-consent] select`)?.focus();
       }));
+    }
+    if(entry.audio_mime&&!busy&&transcriptionAvailable===false&&job?.state!=='restricted'){
+      const notice=document.createElement('p');
+      notice.dataset.journalTranscriptionAccess='';notice.className='muted';
+      notice.textContent=tr('transcriptRestricted');card.append(notice);
     }
     if(entry.audio_mime&&(entry.transcript_original||entry.body.trim())&&!entry.pending?.some(item=>!item.base)){
       actions.append(listButton('removeAudio',()=>{
@@ -300,14 +307,15 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
         if(confirm(tr('confirmCancelTranscript')))changeTranscript(id,'remove_transcript');
       }));
     }
-    if(job){
+    if(job&&(job.state!=='restricted'||transcriptionAvailable!==true)){
       const message=document.createElement('p');message.dataset.journalTranscriptionStatus='';message.setAttribute('role','status');
       const copy={queued:runningTranscript===job.id?'transcriptRunning':'transcriptQueued',
-        processing:'transcriptRunning',uncertain:runningTranscript===job.id?'transcriptRunning':'transcriptUncertain',failed:'transcriptFailed',limit:'transcriptLimit',unavailable:'transcriptUnavailable'};
+        processing:'transcriptRunning',uncertain:runningTranscript===job.id?'transcriptRunning':'transcriptUncertain',
+        failed:'transcriptFailed',limit:'transcriptLimit',unavailable:'transcriptUnavailable',restricted:'transcriptRestricted'};
       message.textContent=tr(copy[job.state]);card.append(message);
       if(job.state==='uncertain'&&runningTranscript!==job.id)card.append(listButton('retryStatus',()=>void processTranscriptions(true,id)));
     }
-    if(transcriptChoices.has(id)&&entry.audio_mime&&!busy){
+    if(transcriptChoices.has(id)&&entry.audio_mime&&!busy&&transcriptionAvailable!==false){
       const consent=document.createElement('form');consent.dataset.journalConsent='';
       const explanation=document.createElement('p');
       explanation.textContent=[tr('consent'),...(!connected()?[tr('consentOffline')]:[]),
@@ -328,7 +336,8 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
         const language=select.value||null;
         serial(async()=>{
           const prior=entries.get(id);
-          if(!prior?.audio_mime||prior.deleted||['queued','processing','uncertain'].includes(prior.transcript_job?.state))return;
+          if(transcriptionAvailable===false||!prior?.audio_mime||prior.deleted||
+              ['queued','processing','uncertain'].includes(prior.transcript_job?.state))return;
           const transcript_job={id:crypto.randomUUID(),language,state:'queued',
             requestedAt:new Date().toISOString(),epoch:prior.transcript_epoch??null};
           await updateEntry(prior,{transcript_job});
@@ -504,6 +513,21 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
       show(status,tr(error?.name==='NotAllowedError'||error?.name==='NotFoundError'?'mic':'unavailable'));
     }finally{requesting=false;renderControls()}
   };
+  async function refreshTranscriptionAccess(){
+    if(!remote.transcriptionAccess||checkingTranscriptionAccess||!live()||!connected()||
+        ![...entries.values()].some(entry=>!entry.deleted&&entry.audio_mime))return;
+    checkingTranscriptionAccess=true;
+    try{
+      const {available}=await remote.transcriptionAccess();
+      if(live()&&typeof available==='boolean'&&transcriptionAvailable!==available){
+        const wasRestricted=transcriptionAvailable===false;
+        transcriptionAvailable=available;
+        if(!available)transcriptChoices.clear();
+        if(wasRestricted||!available||[...entries.values()].some(entry=>entry.transcript_job?.state==='restricted'))renderEntries();
+      }
+    }catch(_){/* The claim still performs the authoritative server check. */}
+    finally{checkingTranscriptionAccess=false}
+  }
   async function processTranscriptions(retryUncertain=false,onlyId=null){
     if(!remote.transcribe||transcriptWorker||!ready||!live()||!connected())return;
     const entry=[...entries.values()].find(item=>(!onlyId||item.id===onlyId)&&item.audio_mime&&!item.pending?.length&&
@@ -536,8 +560,9 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
           const state=status==='running'?'processing':'queued';
           if(job.state!==state)await updateEntry(prior,{transcript_job:{...job,state}},[],expected);
         }else{
-          const state=status==='limit'||status==='unavailable'?status:'failed';
+          const state=['limit','unavailable','restricted'].includes(status)?status:'failed';
           await updateEntry(prior,{transcript_job:status==='gone'||status==='done'?null:{...job,state}},[],expected);
+          if(status==='restricted'){transcriptionAvailable=false;transcriptChoices.clear()}
         }
       });
       if(status==='gone'||status==='done')void synchronize();
@@ -627,7 +652,10 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
         if(!pending&&!syncError&&status.textContent===tr('local'))show(status,tr('synced'));
         renderEntries();
         if(syncAgain){syncAgain=false;void synchronize(retryUncertain)}
-        else if(!syncError)void processTranscriptions(retryUncertain);
+        else if(!syncError){
+          if(retryUncertain||transcriptionAvailable===null)void refreshTranscriptionAccess();
+          void processTranscriptions(retryUncertain);
+        }
       }
     }
   }
@@ -667,6 +695,7 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
       (label.startsWith('draft:')?drafts:entries).set(value.id,value);
     }
     if(!live())return;
+    if([...entries.values()].some(entry=>entry.transcript_job?.state==='restricted'))transcriptionAvailable=false;
     ready=true;
     const recovered=[...drafts.values()].at(-1);
     printDraft(recovered||null);renderEntries();

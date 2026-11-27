@@ -46,15 +46,20 @@ export function createJournalTranscriptionHandler({authorize,rpc,transcribe}){
         if(raw.length>65536)throw Error('invalid');
         input=JSON.parse(raw);
       }catch{return json({error:'invalid'},400)}
+      const providerAvailable=typeof transcribe==='function';
+      if(input?.action==='availability'){
+        const available=providerAvailable&&await rpc('trip_journal_transcription_allowed_v1',{p_actor:actor})===true;
+        return json({available});
+      }
       if(!input||!validId(input.entry)||!validId(input.trip)||!validId(input.id))return json({error:'invalid'},400);
       const scope={p_actor:actor,p_trip:input.trip,p_entry:input.entry};
       if(input.action==='transcribe'){
         if((input.epoch!==null&&!validId(input.epoch))||(input.language!==null&&!languages.has(input.language))||
             typeof input.requestedAt!=='string'||!Number.isFinite(Date.parse(input.requestedAt)))return json({error:'invalid'},400);
-        if(!transcribe)return json({status:'unavailable'});
         const job=await rpc('claim_trip_journal_transcription_v1',{...scope,p_request:input.id,p_epoch:input.epoch,
-          p_requested_at:new Date(input.requestedAt).toISOString()});
+          p_requested_at:new Date(input.requestedAt).toISOString(),p_provider_available:providerAvailable});
         if(job.status!=='claimed')return json({status:job.status});
+        if(!providerAvailable)return json({status:'unavailable'});
         let result;
         try{result=await transcribe(job,input.language)}catch{result=null}
         const status=await rpc('finish_trip_journal_transcription_v1',{...scope,p_request:input.id,

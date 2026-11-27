@@ -218,6 +218,7 @@ try{
     window.journalTranscribeRequests=[];
     window.journalProviderRequests=[];
     window.journalHoldProvider=true;
+    window.journalTranscriptionAllowed=true;
     db.from=()=>({select:fields=>{
       const project=row=>row?Object.fromEntries(fields.split(',').map(field=>[field,row[field]])):null;
       let selected=null;
@@ -238,10 +239,12 @@ try{
       if(!String(url).endsWith('/functions/v1/trip-journal-transcribe'))return realFetch(url,options);
       const request=JSON.parse(options.body),entry=rows.get(request.entry);
       const {id,action,epoch}=request;
+      if(action==='availability')return Response.json({available:window.journalTranscriptionAllowed});
       if(action==='transcribe'){
         window.journalTranscribeRequests.push(id);
         if(!entry||entry.deleted||!entry.audio_base64||(entry.transcript_epoch??null)!==epoch)return Response.json({status:'gone'});
         if(accepted.has(id))return Response.json({status:accepted.get(id)});
+        if(!window.journalTranscriptionAllowed)return Response.json({status:'restricted'});
         window.journalProviderRequests.push(request);
         if(window.journalHoldProvider)await new Promise(resolve=>{window.releaseJournalTranscription=resolve});
         if(window.journalProviderRequests.length===1){accepted.set(id,'failed');return Response.json({status:'failed'})}
@@ -288,7 +291,10 @@ try{
   await transcribeAction.click();
   await consent.getByRole('combobox',{name:'Idioma parlat'}).selectOption('ca');
   await consent.getByRole('button',{name:'Confirma i transcriu'}).click();
-  await voice.getByRole('button',{name:'Comprova la petició'}).click();
+  const checkRequest=voice.getByRole('button',{name:'Comprova la petició'});
+  await checkRequest.waitFor();
+  await page.evaluate(()=>{window.journalTranscriptionAllowed=false});
+  await checkRequest.click();
   const transcriptField=transcript.getByRole('textbox',{name:'Transcripció'});
   await transcriptField.waitFor();
   assert.equal(await transcriptField.inputValue(),'Vam passejar per l’Alguer.');
@@ -296,8 +302,8 @@ try{
   assert.equal(providerStats.provider.length,2);
   assert.equal(providerStats.provider[0].language,null);
   assert.equal(providerStats.provider[1].language,'ca');
-  assert.equal(providerStats.requests[1],providerStats.requests[2],'Ambiguous reply must retry the same provider claim');
-  await page.evaluate(()=>{window.journalOnline=false});
+  assert.equal(providerStats.requests[1],providerStats.requests[2],'The same completed claim remains recoverable after access is revoked');
+  await page.evaluate(()=>{window.journalOnline=false;window.journalTranscriptionAllowed=true});
   await transcriptField.fill('Vam passejar pel centre de l’Alguer.');
   await transcript.getByRole('button',{name:'Desa el text'}).click();
   await transcript.getByText('Vam passejar pel centre de l’Alguer.').waitFor();
@@ -396,7 +402,35 @@ try{
     transcript_original:'Transcripció sintètica que es conserva',transcript_edit:'Record escrit que es conserva',transcript_language:'ca'
   }),{id:selectiveId,audio:silenceMp4});
   await page.evaluate(()=>tripJournalController.reconnect());
-  const selective=records(page).filter({hasText:'Record escrit que es conserva'});
+  const selective=page.locator(`[data-journal-entry="${selectiveId}"]`);
+  const selectedTranscript=selective.locator('[data-journal-transcript]');
+  const retranscribe=selective.getByRole('button',{name:'Torna a transcriure'});
+  await retranscribe.waitFor();
+  await page.evaluate(()=>{window.journalOnline=false});
+  await retranscribe.click();
+  await selective.getByRole('button',{name:'Autoritza i deixa pendent'}).click();
+  await selective.getByText('Transcripció pendent d’enviament.').waitFor();
+  const callsBeforeRevocation=await page.evaluate(()=>({
+    requests:window.journalTranscribeRequests.length,provider:window.journalProviderRequests.length
+  }));
+  await page.evaluate(()=>{
+    window.journalTranscriptionAllowed=false;
+    window.journalOnline=true;
+    void tripJournalController.reconnect();
+  });
+  const restricted='La transcripció nova no està disponible per a aquest compte.';
+  await selective.locator('[data-journal-transcription-status]').getByText(restricted,{exact:true}).waitFor();
+  assert.equal(await retranscribe.count(),0,'Revocation must hide the action for a new transcription');
+  await page.evaluate(async()=>{await tripJournalController.reconnect()});
+  assert.deepEqual(await page.evaluate(()=>({
+    requests:window.journalTranscribeRequests.length,provider:window.journalProviderRequests.length
+  })),{requests:callsBeforeRevocation.requests+1,provider:callsBeforeRevocation.provider},
+    'A restricted queued request must terminate without a provider call or another retry');
+  await selectedTranscript.getByRole('button',{name:'Edita la transcripció'}).click();
+  await selectedTranscript.getByRole('textbox',{name:'Transcripció'}).fill('Record escrit que es conserva després de revocar l’accés');
+  await selectedTranscript.getByRole('button',{name:'Desa el text'}).click();
+  await page.waitForFunction(id=>window.journalFixtureRows.get(id)?.transcript_edit==='Record escrit que es conserva després de revocar l’accés',selectiveId);
+  await selectedTranscript.getByText('Record escrit que es conserva després de revocar l’accés',{exact:true}).waitFor();
   await selective.getByRole('button',{name:'Escolta'}).click();
   const localAudio=page.locator('[data-journal-playback] audio');
   const localAudioUrl=await localAudio.getAttribute('src');
@@ -438,7 +472,8 @@ try{
     if(labels.length)throw Error('Other account read journal records');
     session={user:{id:owner}};
   });
-  console.log('PASS '+engine+': journal entry points, '+(native?'native recording':'recording-event fixture')+', offline recovery, consent, provider replay, edits, selective and complete deletion, and account isolation.');
+  console.log('PASS '+engine+': journal entry points, '+(native?'native recording':'recording-event fixture')+
+    ', offline recovery, consent, provider replay, access revocation, edits, selective and complete deletion, and account isolation.');
 }finally{
   await ctx?.close();
   await new Promise(resolve=>server.close(resolve));

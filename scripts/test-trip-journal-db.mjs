@@ -8,6 +8,10 @@ const author=id(1),participant=id(2),outsider=id(3),trip=id(4);
 try{
   await db.exec(`
     create role anon; create role authenticated; create role service_role bypassrls; create schema auth;
+    create schema vault;
+    create table vault.decrypted_secrets(name text primary key,decrypted_secret text);
+    grant usage on schema vault to service_role;
+    grant select on vault.decrypted_secrets to service_role;
     create table auth.users(id uuid primary key); create table public.trips(id uuid primary key,discarded_at timestamptz);
     create table public.trip_members(trip_id uuid,user_id uuid);
     create function auth.uid() returns uuid language sql stable as $$select current_setting('fixture.user',true)::uuid$$;
@@ -68,25 +72,64 @@ try{
   await assert.rejects(db.query("update trip_journal_entries set transcript_original='fake' where id=$1",[one]),error=>error.code==='42501');
   await assert.rejects(db.query("insert into trip_journal_entries (id,transcript_original) values($1,'fake')",[id(99)]),error=>error.code==='42501');
   await assert.rejects(db.query('select count(*) from trip_journal_transcription_jobs'),error=>error.code==='42501');
-  const claim=async (entry,request,epoch=null,actor=author)=>(await db.query(
-    'select claim_trip_journal_transcription_v1($1,$2,$3,$4,$5,now()) as result',[actor,trip,entry,request,epoch])).rows[0].result;
+  const claim=async (entry,request,epoch=null,actor=author,providerAvailable=true,requestedAt=null)=>(await db.query(
+    'select claim_trip_journal_transcription_v1($1,$2,$3,$4,$5,coalesce($7::timestamptz,now()),$6) as result',
+    [actor,trip,entry,request,epoch,providerAvailable,requestedAt])).rows[0].result;
   const finish=async (entry,request,text,language='ca')=>(await db.query(
     'select finish_trip_journal_transcription_v1($1,$2,$3,$4,$5,$6) as result',[author,trip,entry,request,text,language])).rows[0].result;
   const mutate=async (entry,operation,base,action,text=null,actor=author)=>(await db.query(
     'select mutate_trip_journal_transcript_v1($1,$2,$3,$4,$5,$6,$7) as result',[actor,trip,entry,operation,base,action,text])).rows[0].result;
   const service=()=>db.exec('reset role;set role service_role');
   const state=async entry=>(await db.query('select audio_base64,body,transcript_original,transcript_edit,transcript_language from trip_journal_entries where id=$1',[entry])).rows[0];
+  const allowed=async actor=>(await db.query('select trip_journal_transcription_allowed_v1($1) as allowed',[actor])).rows[0].allowed;
+  const configure=async value=>{
+    await db.exec('reset role');
+    await db.query(`insert into vault.decrypted_secrets values ('JOURNAL_TRANSCRIPTION_ALLOWED_USER_IDS',$1)
+      on conflict (name) do update set decrypted_secret=excluded.decrypted_secret`,[value]);
+    await service();
+  };
+  await assert.rejects(allowed(author),error=>error.code==='42501');
+  await assert.rejects(db.query('select decrypted_secret from vault.decrypted_secrets'),error=>error.code==='42501');
   await assert.rejects(claim(one,id(34)),error=>error.code==='42501');
   await service();
   assert.equal((await claim(one,id(34),null,participant)).status,'gone');
   assert.equal((await claim(one,id(34),null,outsider)).status,'gone');
+  assert.equal(await allowed(author),false);
+  assert.deepEqual(await claim(one,id(34)),{status:'restricted'});
+  for(const invalid of [null,'','  ','*','fixture@example.invalid',`${author},*`,`${author},`]){
+    await configure(invalid);
+    assert.equal(await allowed(author),false,'a malformed configuration must deny the entire list');
+  }
+  const second='abcdefab-1234-4000-8000-1234567890ab';
+  await configure(`  ${author}, \n${second.toUpperCase()}  `);
+  assert.equal(await allowed(author),true);
+  assert.equal(await allowed(second),true);
+  assert.equal(await allowed(participant),false);
+  assert.deepEqual(await claim(one,id(34),null,author,false),{status:'unavailable'});
+  assert.deepEqual(await claim(one,id(34),null,author,null),{status:'unavailable'});
+  assert.deepEqual((await db.query('select id from trip_journal_transcription_jobs')).rows,[],
+    'a restricted account or unavailable provider must not return audio or reserve an attempt');
   assert.deepEqual(await claim(one,id(34)),{status:'claimed',audio:'YXVkaW8=',mime:'audio/mp4',duration:1200});
   assert.deepEqual(await claim(one,id(34)),{status:'running'});
   assert.deepEqual(await claim(two,id(35)),{status:'busy'});
+  const expired=new Date(Date.now()-8*86400000).toISOString();
+  await configure(participant);
+  assert.equal(await allowed(author),false);
+  assert.deepEqual(await claim(one,id(34)),{status:'running'},'already claimed work remains observable after revocation');
   assert.equal(await finish(one,id(34),'Primera transcripció'),'done');
   assert.deepEqual(await claim(one,id(34)),{status:'done'});
+  assert.deepEqual(await claim(one,id(34),null,author,false,expired),{status:'done'},
+    'processed jobs stay recoverable after revocation, consent expiry and provider removal');
+  assert.deepEqual(await claim(one,id(35)),{status:'restricted'},'revocation denies new requests by the same author');
+  assert.deepEqual((await db.query('select id from trip_journal_transcription_jobs')).rows,[{id:id(34)}],
+    'checking a processed request and rejecting a new one do not count as additional attempts');
+  await as(author);
+  assert.equal((await state(one)).transcript_original,'Primera transcripció');
+  await service();
   assert.equal(await mutate(one,id(36),oneOp,'edit','Correcció privada'),id(36));
   assert.equal(await mutate(one,id(36),oneOp,'edit','Correcció privada'),id(36));
+  await configure(author);
+  assert.deepEqual(await claim(one,id(35),null,author,true,expired),{status:'failed'},'a new job requires current consent');
   assert.equal((await claim(one,id(37))).status,'claimed');
   assert.equal(await finish(one,id(37),null),'failed');
   assert.equal((await claim(one,id(37))).status,'failed');
@@ -96,11 +139,13 @@ try{
     transcript_edit:'Correcció privada',transcript_language:'ca'});
   await assert.rejects(mutate(one,id(39),id(36),'remove_audio',null,participant),error=>error.code==='40001');
   assert.equal((await claim(one,id(39))).status,'claimed');
+  await configure('');
   assert.equal(await mutate(one,id(40),id(36),'remove_audio'),id(40));
   assert.equal(await finish(one,id(39),'Resposta tardana'),'gone');
   assert.equal((await state(one)).audio_base64,null);
   assert.equal((await state(one)).transcript_edit,'Correcció privada');
   await assert.rejects(mutate(one,id(41),id(40),'remove_transcript'),error=>error.code==='22023');
+  await configure(author);
   assert.equal((await claim(two,id(42))).status,'claimed');
   assert.equal(await finish(two,id(42),'Transcripció per eliminar'),'done');
   assert.equal((await claim(two,id(43))).status,'claimed');
@@ -123,5 +168,5 @@ try{
   await db.exec(`reset role;delete from public.trip_members where user_id='${author}'`);
   await as(author);
   assert.deepEqual((await db.query('select * from trip_journal_entries')).rows,[]);
-  console.log('PASS C2.1/C2.2 database: author RLS, provider claims and retries, preserved corrections, selective deletion and late responses.');
+  console.log('PASS C2.1/C2.2 database: author RLS, restricted provider claims and replay after revocation, preserved corrections, selective deletion and late responses.');
 }finally{await db.close()}

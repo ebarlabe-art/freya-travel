@@ -386,7 +386,7 @@ A partir de les fotos contextuals existents:
 
 **C2.1 · CLOSED.** Publicada a la PWA v95 (PR #279, `322341f`), migració aplicada i validació física a l’iPhone 9/9. Inclou diari per dia, text manual, enregistrament i reproducció, persistència protegida, sincronització i eliminació confirmada.
 
-**C2.2 · Preparada a la branca v96, pendent de publicació i validació física.** Transcripció editable al mateix record, amb consentiment explícit, detecció de l’idioma o selecció manual, recuperació offline i eliminacions selectives. L’àudio es conserva fins que l’autor confirma que el vol eliminar. Les correccions es conserven separades de la transcripció del proveïdor. Migració incremental i Edge Function pendents d’autorització. La qualitat de la transcripció en català queda pendent de prova amb el proveïdor.
+**C2.2 · Preparada a la branca v96, pendent de publicació i validació física.** Transcripció editable al mateix record, amb consentiment explícit, detecció de l’idioma o selecció manual, recuperació offline i eliminacions selectives. L’àudio es conserva fins que l’autor confirma que el vol eliminar. Les correccions es conserven separades de la transcripció del proveïdor. Publicació autoritzada per a una validació inicial amb el compte verificat de l’Eva com a únic compte habilitat per a noves crides a OpenAI. La proposta comercial Bàsic/Pro queda pendent. La qualitat de la transcripció en català queda pendent de prova amb el proveïdor.
 
 **Següent pas després de validar C2.2.** C2.3 redacció assistida opcional. C2.4 vinculacions amb fotografies, llocs i activitats. C2.5 integració editorial amb Travel Book.
 

@@ -71,8 +71,27 @@ as $$
     where m.trip_id=p_trip and m.user_id=p_actor and t.discarded_at is null);
 $$;
 
+-- This RPC is for the backend only. Return a boolean, never the private list.
+create function public.trip_journal_transcription_allowed_v1(p_actor uuid) returns boolean
+language sql stable security invoker set search_path = ''
+as $$
+  with config as (
+    select min(decrypted_secret) as value
+    from vault.decrypted_secrets
+    where name='JOURNAL_TRANSCRIPTION_ALLOWED_USER_IDS'
+    having count(*)=1
+  ), accounts as (
+    select btrim(lower(account), E' \t\n\r') as id
+    from config cross join lateral regexp_split_to_table(value, ',') as account
+  )
+  select coalesce(
+    bool_and(id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+    and bool_or(id=p_actor::text), false
+  ) from accounts;
+$$;
+
 create function public.claim_trip_journal_transcription_v1(
-  p_actor uuid,p_trip uuid,p_entry uuid,p_request uuid,p_epoch uuid,p_requested_at timestamptz
+  p_actor uuid,p_trip uuid,p_entry uuid,p_request uuid,p_epoch uuid,p_requested_at timestamptz,p_provider_available boolean
 ) returns jsonb
 language plpgsql security invoker set search_path = ''
 as $$
@@ -81,10 +100,6 @@ declare
   job public.trip_journal_transcription_jobs%rowtype;
 begin
   if not public.trip_journal_transcription_access_v1(p_actor,p_trip) then return '{"status":"gone"}'; end if;
-  if p_requested_at is null or p_requested_at < now()-interval '7 days' or p_requested_at > now()+interval '5 minutes' then
-    return '{"status":"failed"}';
-  end if;
-
   -- Short transaction only. Serialize claims across instances for the global
   -- daily cap, and lock the entry while checking its deletion barrier.
   perform pg_catalog.pg_advisory_xact_lock(9159601);
@@ -98,6 +113,13 @@ begin
     if job.entry_id<>p_entry or job.author_id<>p_actor or job.epoch is distinct from p_epoch then return '{"status":"gone"}'; end if;
     if job.status='running' and job.started_at < now()-interval '90 seconds' then return '{"status":"failed"}'; end if;
     return jsonb_build_object('status',job.status);
+  end if;
+  -- Recheck the configuration in the same transaction before claiming work.
+  -- Prior claims stay readable after revocation without returning the audio.
+  if not public.trip_journal_transcription_allowed_v1(p_actor) then return '{"status":"restricted"}'; end if;
+  if p_provider_available is not true then return '{"status":"unavailable"}'; end if;
+  if p_requested_at is null or p_requested_at < now()-interval '7 days' or p_requested_at > now()+interval '5 minutes' then
+    return '{"status":"failed"}';
   end if;
   if exists(select 1 from public.trip_journal_transcription_jobs
     where author_id=p_actor and status='running' and started_at >= now()-interval '90 seconds') then
@@ -177,10 +199,12 @@ end;
 $$;
 
 revoke all on function public.trip_journal_transcription_access_v1(uuid,uuid),
-  public.claim_trip_journal_transcription_v1(uuid,uuid,uuid,uuid,uuid,timestamptz),
+  public.trip_journal_transcription_allowed_v1(uuid),
+  public.claim_trip_journal_transcription_v1(uuid,uuid,uuid,uuid,uuid,timestamptz,boolean),
   public.finish_trip_journal_transcription_v1(uuid,uuid,uuid,uuid,text,text),
   public.mutate_trip_journal_transcript_v1(uuid,uuid,uuid,uuid,uuid,text,text) from public,anon,authenticated;
 grant execute on function public.trip_journal_transcription_access_v1(uuid,uuid),
-  public.claim_trip_journal_transcription_v1(uuid,uuid,uuid,uuid,uuid,timestamptz),
+  public.trip_journal_transcription_allowed_v1(uuid),
+  public.claim_trip_journal_transcription_v1(uuid,uuid,uuid,uuid,uuid,timestamptz,boolean),
   public.finish_trip_journal_transcription_v1(uuid,uuid,uuid,uuid,text,text),
   public.mutate_trip_journal_transcript_v1(uuid,uuid,uuid,uuid,uuid,text,text) to service_role;
