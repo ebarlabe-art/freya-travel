@@ -384,7 +384,11 @@ A partir de les fotos contextuals existents:
 
 **Criteris aprovats per la Product Owner (27/11/2026):** records privats per defecte, compartició explícita amb companys de viatge; captura de veu sense cobertura amb conservació local fins a recuperar connexió; redacció assistida opcional, sense inventar vivències ni substituir el text original sense confirmació.
 
-**Lliurament C2.1:** diari per dia, text manual, enregistrament i reproducció, persistència fiable del record i esborrany local protegit, amb estat honest de desament. Entrada des de viatge/Records i context automàtic del dia. C2.2 transcripció editable; C2.3 redacció assistida; C2.4 vinculacions amb fotografies, llocs i activitats; C2.5 integració editorial amb Travel Book. La política de conservació permanent de l'àudio després de transcriure queda pendent de decisió; C2.1 no l'esborra automàticament. Cap enviament a IA sense acció informada de l'usuari.
+**C2.1 · CLOSED.** Publicada a la PWA v95 (PR #279, `322341f`), migració aplicada i validació física a l’iPhone 9/9. Inclou diari per dia, text manual, enregistrament i reproducció, persistència protegida, sincronització i eliminació confirmada.
+
+**C2.2 · PWA v96 · validació física pendent.** Transcripció editable al mateix record, amb consentiment explícit, detecció de l’idioma o selecció manual, recuperació offline i eliminacions selectives. L’àudio es conserva fins que l’autor confirma que el vol eliminar. Les correccions es conserven separades de la transcripció del proveïdor. Publicació autoritzada per a una validació inicial amb el compte verificat de l’Eva com a únic compte habilitat per a noves crides a OpenAI. La proposta comercial Bàsic/Pro queda pendent. La qualitat de la transcripció en català queda pendent de prova amb el proveïdor.
+
+**Següent pas després de validar C2.2.** C2.3 redacció assistida opcional. C2.4 vinculacions amb fotografies, llocs i activitats. C2.5 integració editorial amb Travel Book.
 
 El diari s'ha de poder alimentar durant el viatge amb el mínim esforç, especialment **amb veu** des del mòbil. L'objectiu no és obligar a escriure mentre es viatja.
 

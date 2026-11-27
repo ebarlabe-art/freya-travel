@@ -31,3 +31,14 @@ test('keeps stable entry identity and ordered revision dependencies across offli
   ]);
   assert.equal(initial.pending.length,1);
 });
+
+test('whole deletion drops local transcript content and preserves pending selective mutations',()=>{
+  const entry={id:'voice',audio_mime:null,body:'',operation_id:'remove-audio',
+    transcript_original:'Original',transcript_edit:'Edited',transcript_epoch:'remove-audio',
+    pending:[{id:'remove-audio',base:'voice-create',action:'remove_audio'}]};
+  const deleted=journalOperation(entry,{body:'',deleted:true},'delete');
+  assert.equal(deleted.transcript_original,null);
+  assert.equal(deleted.transcript_edit,null);
+  assert.equal(deleted.transcript_job,null);
+  assert.deepEqual(deleted.pending,[entry.pending[0],{id:'delete',base:'remove-audio',body:'',deleted:true}]);
+});

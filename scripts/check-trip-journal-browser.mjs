@@ -182,7 +182,11 @@ try{
       if(loseAcknowledgement){loseAcknowledgement=false;return {error:new Error('Lost acknowledgement')}}
       return {data:args.p_operation};
     }});
-    db.from=()=>({select:()=>{const query={eq:()=>query,order:()=>query,range:async()=>({data:[...rows.values()]})};return query}});
+    db.from=()=>({select:fields=>{
+      const project=row=>Object.fromEntries(fields.split(',').map(field=>[field,row[field]]));
+      const query={eq:()=>query,order:()=>query,range:async()=>({data:[...rows.values()].map(project)})};
+      return query;
+    }});
     window.journalOnline=true;offlineReadOnlySession=false;session={...session,access_token:'fixture-token'};
   });
   await page.evaluate(()=>tripJournalController.reconnect());
@@ -205,6 +209,139 @@ try{
   await page.locator('#genericPastRecordsSection [data-open="journalView"]').click();
   await records(page).getByRole('button',{name:'Escolta'}).waitFor();
   const voiceId=await page.evaluate(()=>[...window.journalFixtureRows.values()].find(entry=>entry.audio_base64).id);
+  // Exercise the same PWA controller with a synthetic, gated provider and the
+  // production field names. The server fixture contains no real user audio.
+  await page.evaluate(()=>{
+    const rows=window.journalFixtureRows;
+    const realFetch=window.fetch;
+    const accepted=new Map();
+    window.journalTranscribeRequests=[];
+    window.journalProviderRequests=[];
+    window.journalHoldProvider=true;
+    window.journalTranscriptionAllowed=true;
+    db.from=()=>({select:fields=>{
+      const project=row=>row?Object.fromEntries(fields.split(',').map(field=>[field,row[field]])):null;
+      let selected=null;
+      const query={
+        eq:(field,value)=>{if(field==='id')selected=value;return query},
+        order:()=>query,range:async()=>({data:[...rows.values()].map(project)}),
+        maybeSingle:async()=>{
+          const data=project(rows.get(selected));
+          if(window.journalHoldTranscriptRead&&fields.includes('transcript_original')){
+            await new Promise(resolve=>{window.releaseJournalTranscriptRead=resolve});
+          }
+          return {data};
+        }
+      };
+      return query;
+    }});
+    window.fetch=async (url,options)=>{
+      if(!String(url).endsWith('/functions/v1/trip-journal-transcribe'))return realFetch(url,options);
+      const request=JSON.parse(options.body),entry=rows.get(request.entry);
+      const {id,action,epoch}=request;
+      if(action==='availability')return Response.json({available:window.journalTranscriptionAllowed});
+      if(action==='transcribe'){
+        window.journalTranscribeRequests.push(id);
+        if(!entry||entry.deleted||!entry.audio_base64||(entry.transcript_epoch??null)!==epoch)return Response.json({status:'gone'});
+        if(accepted.has(id))return Response.json({status:accepted.get(id)});
+        if(!window.journalTranscriptionAllowed)return Response.json({status:'restricted'});
+        window.journalProviderRequests.push(request);
+        if(window.journalHoldProvider)await new Promise(resolve=>{window.releaseJournalTranscription=resolve});
+        if(window.journalProviderRequests.length===1){accepted.set(id,'failed');return Response.json({status:'failed'})}
+        const current=rows.get(request.entry);
+        if(current.deleted||!current.audio_base64||(current.transcript_epoch??null)!==epoch)return Response.json({status:'gone'});
+        Object.assign(current,{transcript_request_id:id,transcript_language:request.language||'ca',
+          transcript_original:window.journalProviderRequests.length===2?'Vam passejar per l’Alguer.':'Vam visitar l’Alguer.'});
+        accepted.set(id,'done');
+        if(window.journalProviderRequests.length===2)throw Error('Lost transcription acknowledgement');
+        return Response.json({status:'done'});
+      }
+      if(entry.operation_id===id)return Response.json({id});
+      if(entry.operation_id!==request.base)return Response.json({error:'conflict'},{status:409});
+      if(action==='edit')entry.transcript_edit=request.text;
+      if(action==='remove_audio')Object.assign(entry,{audio_base64:null,audio_mime:null,duration_ms:null,transcript_epoch:id});
+      if(action==='remove_transcript')Object.assign(entry,{transcript_original:null,transcript_edit:null,transcript_language:null,
+        transcript_request_id:null,transcript_epoch:id});
+      entry.operation_id=id;
+      return Response.json({id});
+    };
+    window.journalOnline=false;
+  });
+  const voice=records(page);
+  const transcript=voice.locator('[data-journal-transcript]');
+  const transcribeAction=voice.getByRole('button',{name:'Transcriu',exact:true});
+  await transcribeAction.click();
+  const consent=voice.locator('[data-journal-consent]');
+  await consent.getByText(/L’àudio s’enviarà a OpenAI/).waitFor();
+  await consent.getByRole('button',{name:'Cancel·la'}).click();
+  assert.equal(await page.evaluate(()=>window.journalTranscribeRequests.length),0);
+  await transcribeAction.click();
+  await consent.getByRole('button',{name:'Autoritza i deixa pendent'}).click();
+  await voice.getByText('Transcripció pendent d’enviament.').waitFor();
+  await page.getByRole('button',{name:'Torna al viatge'}).click();
+  await page.locator('#genericPastRecordsSection [data-open="journalView"]').click();
+  await voice.getByText('Transcripció pendent d’enviament.').waitFor();
+  assert.equal(await page.evaluate(()=>window.journalTranscribeRequests.length),0);
+  await page.evaluate(()=>{window.journalOnline=true;void tripJournalController.reconnect()});
+  await voice.getByText('Transcripció en curs…').waitFor();
+  await page.waitForFunction(()=>typeof window.releaseJournalTranscription==='function');
+  await page.evaluate(()=>{window.journalHoldProvider=false;window.releaseJournalTranscription()});
+  await voice.getByText(/No s’ha pogut transcriure/).waitFor();
+  await voice.getByRole('button',{name:'Escolta'}).waitFor();
+  await transcribeAction.click();
+  await consent.getByRole('combobox',{name:'Idioma parlat'}).selectOption('ca');
+  await consent.getByRole('button',{name:'Confirma i transcriu'}).click();
+  const checkRequest=voice.getByRole('button',{name:'Comprova la petició'});
+  await checkRequest.waitFor();
+  await page.evaluate(()=>{window.journalTranscriptionAllowed=false});
+  await checkRequest.click();
+  const transcriptField=transcript.getByRole('textbox',{name:'Transcripció'});
+  await transcriptField.waitFor();
+  assert.equal(await transcriptField.inputValue(),'Vam passejar per l’Alguer.');
+  const providerStats=await page.evaluate(()=>({requests:window.journalTranscribeRequests,provider:window.journalProviderRequests}));
+  assert.equal(providerStats.provider.length,2);
+  assert.equal(providerStats.provider[0].language,null);
+  assert.equal(providerStats.provider[1].language,'ca');
+  assert.equal(providerStats.requests[1],providerStats.requests[2],'The same completed claim remains recoverable after access is revoked');
+  await page.evaluate(()=>{window.journalOnline=false;window.journalTranscriptionAllowed=true});
+  await transcriptField.fill('Vam passejar pel centre de l’Alguer.');
+  await transcript.getByRole('button',{name:'Desa el text'}).click();
+  await transcript.getByText('Vam passejar pel centre de l’Alguer.').waitFor();
+  await voice.getByText(/pendent de sincronitzar/).waitFor();
+  await page.getByRole('button',{name:'Torna al viatge'}).click();
+  await page.locator('#genericPastRecordsSection [data-open="journalView"]').click();
+  await transcript.getByText('Vam passejar pel centre de l’Alguer.').waitFor();
+  await page.evaluate(async()=>{window.journalOnline=true;await tripJournalController.reconnect()});
+  await voice.getByText('Sincronitzat').waitFor();
+  await page.evaluate(()=>{window.journalHoldTranscriptRead=true});
+  await voice.getByRole('button',{name:'Torna a transcriure'}).click();
+  await consent.getByRole('button',{name:'Confirma i transcriu'}).click();
+  await page.waitForFunction(()=>typeof window.releaseJournalTranscriptRead==='function');
+  await transcript.getByRole('button',{name:'Edita la transcripció'}).click();
+  await transcriptField.fill('Vam passejar pel centre històric de l’Alguer.');
+  await transcript.getByRole('button',{name:'Desa el text'}).click();
+  await transcript.getByText('Vam passejar pel centre històric de l’Alguer.',{exact:true}).waitFor();
+  await voice.getByText('Sincronitzat').waitFor();
+  await page.evaluate(()=>{
+    window.journalOnline=false;window.journalHoldTranscriptRead=false;window.releaseJournalTranscriptRead();
+  });
+  await voice.locator('[data-journal-transcription-status]').waitFor({state:'detached'});
+  await transcript.getByText('Vam visitar l’Alguer.',{exact:true}).waitFor({state:'attached'});
+  await transcript.locator('summary').click();
+  await transcript.getByText('Vam visitar l’Alguer.',{exact:true}).waitFor();
+  await transcript.getByText('Vam passejar pel centre històric de l’Alguer.',{exact:true}).waitFor();
+
+  await page.evaluate(()=>{window.journalOnline=true;window.journalHoldProvider=true;window.releaseJournalTranscription=null});
+  await voice.getByRole('button',{name:'Torna a transcriure'}).click();
+  await consent.getByRole('button',{name:'Confirma i transcriu'}).click();
+  await page.waitForFunction(()=>typeof window.releaseJournalTranscription==='function');
+  page.once('dialog',dialog=>dialog.accept());
+  await voice.getByRole('button',{name:'Elimina només la transcripció'}).click();
+  await transcript.waitFor({state:'detached'});
+  await page.waitForFunction(id=>window.journalFixtureRows.get(id).transcript_original===null,voiceId);
+  await page.evaluate(()=>{window.journalHoldProvider=false;window.releaseJournalTranscription()});
+  await voice.getByRole('button',{name:'Escolta'}).waitFor();
+  assert.equal(await transcript.count(),0);
   await records(page).getByRole('button',{name:'Escolta'}).click();
   const playing=page.locator('[data-journal-playback] audio');
   await playing.waitFor();
@@ -258,6 +395,75 @@ try{
       onlyTombstone:writes.length===1&&writes[0].p_deleted&&writes[0].p_audio===null};
   },{voiceId,unsentId});
   assert.deepEqual(deletionState,{removed:true,onlyTombstone:true},'Deletion must scrub synced audio and never upload an unsent original');
+  const selectiveId='30000000-0000-4000-8000-000000000001';
+  await page.evaluate(({id,audio})=>window.journalFixtureRows.set(id,{
+    id,local_day:'2026-11-27',captured_at:'2026-11-27T12:00:00Z',body:'',audio_mime:'audio/mp4',duration_ms:1000,
+    audio_base64:audio,operation_id:'30000000-0000-4000-8000-000000000002',deleted:false,
+    transcript_original:'Transcripció sintètica que es conserva',transcript_edit:'Record escrit que es conserva',transcript_language:'ca'
+  }),{id:selectiveId,audio:silenceMp4});
+  await page.evaluate(()=>tripJournalController.reconnect());
+  const selective=page.locator(`[data-journal-entry="${selectiveId}"]`);
+  const selectedTranscript=selective.locator('[data-journal-transcript]');
+  const retranscribe=selective.getByRole('button',{name:'Torna a transcriure'});
+  await retranscribe.waitFor();
+  await page.evaluate(()=>{window.journalOnline=false});
+  await retranscribe.click();
+  await selective.getByRole('button',{name:'Autoritza i deixa pendent'}).click();
+  await selective.getByText('Transcripció pendent d’enviament.').waitFor();
+  const callsBeforeRevocation=await page.evaluate(()=>({
+    requests:window.journalTranscribeRequests.length,provider:window.journalProviderRequests.length
+  }));
+  await page.evaluate(()=>{
+    window.journalTranscriptionAllowed=false;
+    window.journalOnline=true;
+    void tripJournalController.reconnect();
+  });
+  const restricted='La transcripció nova no està disponible per a aquest compte.';
+  await selective.locator('[data-journal-transcription-status]').getByText(restricted,{exact:true}).waitFor();
+  assert.equal(await retranscribe.count(),0,'Revocation must hide the action for a new transcription');
+  await page.evaluate(async()=>{await tripJournalController.reconnect()});
+  assert.deepEqual(await page.evaluate(()=>({
+    requests:window.journalTranscribeRequests.length,provider:window.journalProviderRequests.length
+  })),{requests:callsBeforeRevocation.requests+1,provider:callsBeforeRevocation.provider},
+    'A restricted queued request must terminate without a provider call or another retry');
+  await selectedTranscript.getByRole('button',{name:'Edita la transcripció'}).click();
+  await selectedTranscript.getByRole('textbox',{name:'Transcripció'}).fill('Record escrit que es conserva després de revocar l’accés');
+  await selectedTranscript.getByRole('button',{name:'Desa el text'}).click();
+  await page.waitForFunction(id=>window.journalFixtureRows.get(id)?.transcript_edit==='Record escrit que es conserva després de revocar l’accés',selectiveId);
+  await selectedTranscript.getByText('Record escrit que es conserva després de revocar l’accés',{exact:true}).waitFor();
+  await selective.getByRole('button',{name:'Escolta'}).click();
+  const localAudio=page.locator('[data-journal-playback] audio');
+  const localAudioUrl=await localAudio.getAttribute('src');
+  await page.evaluate(()=>{window.journalOnline=false});
+  page.once('dialog',dialog=>dialog.accept());
+  await selective.getByRole('button',{name:'Elimina només l’àudio'}).click();
+  await localAudio.waitFor({state:'detached'});
+  await selective.getByText('Record escrit que es conserva').waitFor();
+  assert.equal(await selective.getByRole('button',{name:'Escolta'}).count(),0);
+  assert.ok(await page.evaluate(async({id,url})=>{
+    const vault=tripJournalVault({userId:session.user.id,tripId:trip.id},()=>true);
+    return !await vault.read('audio:'+id)&&
+      !await fetch(url).then(()=>true,()=>false)&&
+      !await vault.write([['audio:'+id,Uint8Array.of(1)]]).then(()=>true,()=>false)&&
+      !!window.journalFixtureRows.get(id).audio_base64;
+  },{id:selectiveId,url:localAudioUrl}));
+  await page.evaluate(async()=>{window.journalOnline=true;await tripJournalController.reconnect()});
+  await page.waitForFunction(id=>window.journalFixtureRows.get(id).audio_base64===null,selectiveId);
+  await selective.getByText('Sincronitzat').waitFor();
+  await ctx.close();
+  page=await launch(false);
+  await page.goto(url);
+  await page.waitForFunction(owner=>offlineReadOnlySession&&!coldStartNavigationPending&&session?.user?.id===owner,user);
+  await page.evaluate(id=>{
+    trip=trips.find(item=>item.id===id);tripLoadGeneration++;updateTripPresentation();setAppView('genericDashboardView');
+  },row.id);
+  await dashboard(page).click();
+  await records(page).getByText('Record escrit que es conserva').waitFor();
+  assert.equal(await records(page).getByRole('button',{name:'Escolta'}).count(),0);
+  assert.equal(await page.evaluate(async()=>{
+    const stored=await offlineDocUserRows(await offlineDocDatabase(),session.user.id,true);
+    return stored.some(entry=>JSON.stringify(entry).includes('Record escrit que es conserva'));
+  }),false);
   await page.evaluate(async()=>{
     const owner=session.user.id,tid=trip.id;
     const scope={userId:'other-fixture',tripId:tid};
@@ -266,7 +472,8 @@ try{
     if(labels.length)throw Error('Other account read journal records');
     session={user:{id:owner}};
   });
-  console.log('PASS '+engine+': journal entry points, '+(native?'native recording':'recording-event fixture')+', offline recovery, replay, confirmed voice deletion and account isolation.');
+  console.log('PASS '+engine+': journal entry points, '+(native?'native recording':'recording-event fixture')+
+    ', offline recovery, consent, provider replay, access revocation, edits, selective and complete deletion, and account isolation.');
 }finally{
   await ctx?.close();
   await new Promise(resolve=>server.close(resolve));
