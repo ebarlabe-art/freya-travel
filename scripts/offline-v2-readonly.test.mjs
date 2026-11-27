@@ -367,7 +367,7 @@ test('Encrypted parking reservation preview opens offline without a second downl
   ctx.clearParkingReservationPreview();
   assert.deepEqual(revoked,['blob:local-private']);
   assert.equal($('parkingReservationImage').src,'');
-  assert.match(html,/if\(nextUserId!==session\?\.user\?\.id\)\{closeOfflineDocManager\(\);resetBuilderUi\(\);clearParkingReservationPreview\(\)\}/);
+  assert.match(html,/if\(nextUserId!==session\?\.user\?\.id\)\{closeTripJournal\(\);closeOfflineDocManager\(\);resetBuilderUi\(\);clearParkingReservationPreview\(\)\}/);
 });
 
 test('Cold offline without a prior valid grant must show login even if Supabase auth never resolves',async()=>{
@@ -408,7 +408,7 @@ test('An SDK/bootstrap failure cannot keep an infinite splash on the iPhone',()=
   assert.ok(fallbackIndex>0&&fallbackIndex<sdkIndex);
   assert.match(html.slice(fallbackIndex,sdkIndex),/setTimeout\(/);
   assert.match(html.slice(fallbackIndex,sdkIndex),/No cal esborrar l’app ni les còpies offline/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v94'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v95'/);
 });
 
 test('Parking offline leaves read-only Veure reserva enabled while disabling edits',()=>{
@@ -431,7 +431,7 @@ test('Parking offline leaves read-only Veure reserva enabled while disabling edi
   assert.ok(edits.every(e=>!e.disabled));
   assert.equal(selectors.length,2);
   assert.match(html,/button\.classList\.remove\('hidden'\);button\.disabled=false;\s*button\.onclick=\(\)=>openDocument\(doc\.id,documentRows,'parkingMsg'\)/);
-  assert.match(worker,/const CACHE='freya-travel-release-6444-v94'/);
+  assert.match(worker,/const CACHE='freya-travel-release-6444-v95'/);
 });
 
 test('Automatic encrypted document rules include useful screenshots and exclude travel photos',()=>{
@@ -534,7 +534,7 @@ test('Reconnection retains read-only mode until getUser confirms the same user',
   const userCheck=new Promise(resolve=>{resolveUser=resolve});
   const events=[];
   const ctx=vmModule.createContext({
-    offlineReadOnlySession:true,offlineSessionRevalidating:false,
+    offlineReadOnlySession:true,offlineSessionRevalidating:false,tripJournalController:null,
     navigator:{onLine:true},session:{user:{id:'local-owner'}},
     restoreOfflineWhenAuthServerUnreachable:async()=>false,
     db:{auth:{
