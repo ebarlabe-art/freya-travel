@@ -30,6 +30,34 @@ const copies={
  playbackFail:['No s’ha pogut obrir l’àudio en aquest dispositiu.','No se ha podido abrir el audio en este dispositivo.','Couldn’t open the audio on this device.','Impossible d’ouvrir l’audio sur cet appareil.','Impossibile aprire l’audio sul dispositivo.'],
  long:['Enregistrament massa gran per sincronitzar. La còpia local es conserva.','Grabación demasiado grande para sincronizar. Se conserva la copia local.','Recording is too large to sync. The local copy is kept.','Enregistrement trop volumineux pour la synchronisation. La copie locale est conservée.','Registrazione troppo grande per la sincronizzazione. La copia locale è conservata.'],
  limit:['Fins a 2 minuts per enregistrament','Hasta 2 minutos por grabación','Up to 2 minutes per recording','Jusqu’à 2 minutes par enregistrement','Fino a 2 minuti per registrazione'],
+ transcribe:['Transcriu','Transcribir','Transcribe','Transcrire','Trascrivi'],
+ transcribeAgain:['Torna a transcriure','Volver a transcribir','Transcribe again','Retranscrire','Trascrivi di nuovo'],
+ transcript:['Transcripció','Transcripción','Transcript','Transcription','Trascrizione'],
+ transcriptOriginal:['Transcripció original','Transcripción original','Original transcript','Transcription originale','Trascrizione originale'],
+ editTranscript:['Edita la transcripció','Editar la transcripción','Edit transcript','Modifier la transcription','Modifica la trascrizione'],
+ consent:['L’àudio s’enviarà a OpenAI per transcriure’l.','El audio se enviará a OpenAI para transcribirlo.','The audio will be sent to OpenAI for transcription.','L’audio sera envoyé à OpenAI pour être transcrit.','L’audio verrà inviato a OpenAI per la trascrizione.'],
+ keepsEdits:['Es conservaran les teves correccions.','Se conservarán tus correcciones.','Your corrections will be kept.','Vos corrections seront conservées.','Le tue correzioni verranno conservate.'],
+ spokenLanguage:['Idioma parlat','Idioma hablado','Spoken language','Langue parlée','Lingua parlata'],
+ automatic:['Detecta automàticament','Detectar automáticamente','Detect automatically','Détecter automatiquement','Rileva automaticamente'],
+ detected:['Idioma detectat','Idioma detectado','Detected language','Langue détectée','Lingua rilevata'],
+ consentOffline:['Cal connexió. Pots autoritzar l’enviament quan es recuperi.','Se necesita conexión. Puedes autorizar el envío al volver a conectarte.','A connection is required. You can authorize sending when you reconnect.','Une connexion est nécessaire. Vous pouvez autoriser l’envoi à la reconnexion.','Serve una connessione. Puoi autorizzare l’invio quando tornerai online.'],
+ authorize:['Confirma i transcriu','Confirmar y transcribir','Confirm and transcribe','Confirmer et transcrire','Conferma e trascrivi'],
+ authorizeOffline:['Autoritza i deixa pendent','Autorizar y dejar en espera','Authorize and queue','Autoriser et mettre en attente','Autorizza e metti in coda'],
+ transcriptQueued:['Transcripció pendent d’enviament.','Transcripción pendiente de envío.','Transcription queued for sending.','Transcription en attente d’envoi.','Trascrizione in attesa di invio.'],
+ transcriptRunning:['Transcripció en curs…','Transcripción en curso…','Transcribing…','Transcription en cours…','Trascrizione in corso…'],
+ transcriptFailed:['No s’ha pogut transcriure. Pots tornar-ho a provar.','No se ha podido transcribir. Puedes volver a intentarlo.','Transcription failed. You can try again.','La transcription a échoué. Vous pouvez réessayer.','Trascrizione non riuscita. Puoi riprovare.'],
+ transcriptLimit:['S’ha arribat al límit de transcripcions. Prova-ho més tard.','Se ha alcanzado el límite de transcripciones. Inténtalo más tarde.','Transcription limit reached. Try again later.','Limite de transcriptions atteinte. Réessayez plus tard.','Limite di trascrizioni raggiunto. Riprova più tardi.'],
+ transcriptUnavailable:['El servei de transcripció no està disponible ara mateix.','El servicio de transcripción no está disponible ahora mismo.','The transcription service is currently unavailable.','Le service de transcription est indisponible pour le moment.','Il servizio di trascrizione al momento non è disponibile.'],
+ transcriptUncertain:['No s’ha pogut comprovar l’estat de la petició.','No se ha podido comprobar el estado de la solicitud.','Couldn’t check the request status.','Impossible de vérifier l’état de la demande.','Impossibile verificare lo stato della richiesta.'],
+ retryStatus:['Comprova la petició','Comprobar la solicitud','Check request','Vérifier la demande','Verifica la richiesta'],
+ cancel:['Cancel·la','Cancelar','Cancel','Annuler','Annulla'],
+ cancelTranscription:['Cancel·la la petició','Cancelar la solicitud','Cancel request','Annuler la demande','Annulla la richiesta'],
+ saveTranscript:['Desa el text','Guardar el texto','Save text','Enregistrer le texte','Salva il testo'],
+ removeAudio:['Elimina només l’àudio','Eliminar solo el audio','Delete audio only','Supprimer uniquement l’audio','Elimina solo l’audio'],
+ confirmAudio:['Vols eliminar l’àudio i conservar el text?','¿Quieres eliminar el audio y conservar el texto?','Delete the audio and keep the text?','Supprimer l’audio et conserver le texte ?','Eliminare l’audio e conservare il testo?'],
+ removeTranscript:['Elimina només la transcripció','Eliminar solo la transcripción','Delete transcript only','Supprimer uniquement la transcription','Elimina solo la trascrizione'],
+ confirmTranscript:['Vols eliminar la transcripció i les correccions? La resta del record es conserva.','¿Quieres eliminar la transcripción y las correcciones? El resto del recuerdo se conserva.','Delete the transcript and corrections? The rest of the memory will be kept.','Supprimer la transcription et les corrections ? Le reste du souvenir sera conservé.','Eliminare la trascrizione e le correzioni? Il resto del ricordo verrà conservato.'],
+ confirmCancelTranscript:['Vols cancel·lar aquesta petició de transcripció?','¿Quieres cancelar esta solicitud de transcripción?','Cancel this transcription request?','Annuler cette demande de transcription ?','Annullare questa richiesta di trascrizione?'],
  saving:['Desant al dispositiu…','Guardando en el dispositivo…','Saving on this device…','Enregistrement sur cet appareil…','Salvataggio sul dispositivo…']
 };
 const languageIndex=['ca','es','en','fr','it'];
@@ -53,8 +81,13 @@ export function journalOperation(entry,patch,id){
   const operation={id,base:entry.operation_id??null,body:patch.body,deleted:!!patch.deleted};
   // Deleting a voice memory must not upload its discarded original. Its
   // creation ID still identifies any creation already accepted by the server.
-  if(operation.deleted&&entry.audio_mime)
-    return {...entry,...patch,audio_mime:null,duration_ms:null,operation_id:id,pending:[operation]};
+  if(operation.deleted&&(entry.audio_mime||entry.transcript_original||entry.transcript_epoch)){
+    const first=entry.pending?.[0];
+    const pending=first?.base?entry.pending:[];
+    if(first&&!first.base)operation.base=first.id;
+    return {...entry,...patch,audio_mime:null,duration_ms:null,transcript_job:null,transcript_original:null,
+      transcript_edit:null,transcript_language:null,transcript_request_id:null,operation_id:id,pending:[...pending,operation]};
+  }
   return {...entry,...patch,operation_id:id,pending:[...(entry.pending||[]),operation]};
 }
 function durationText(milliseconds){
@@ -69,6 +102,9 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
   const tr=key=>copies[key][Math.max(0,languageIndex.indexOf(language))];
   const dayFormat=new Intl.DateTimeFormat(language,{dateStyle:'full',timeZone:'UTC'});
   const entries=new Map(),drafts=new Map();
+  const transcriptChoices=new Map(),transcriptEditors=new Map();
+  const spokenNames=new Intl.DisplayNames([language],{type:'language'});
+  let runningTranscript=null,transcriptWorker=false,transcriptTimer=0,syncAgain=false;
   const abort=new AbortController();
   const channel=deletionChannel&&typeof BroadcastChannel==='function'?new BroadcastChannel(deletionChannel):null;
   let queue=Promise.resolve(),draft=null,capture=null,requesting=false,disposed=false,ready=false,syncing=false;
@@ -167,9 +203,147 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
     }
     if(entryUrl){URL.revokeObjectURL(entryUrl);entryUrl=''}
   }
+  function updateEntry(entry,patch,removals=[],expected=null){
+    const next={...entry,...patch};
+    return store.write([[metadataKey(next.id),encode(next)]],removals,expected).then(()=>{
+      entries.set(next.id,next);
+      return next;
+    });
+  }
+  function changeTranscript(id,action,value){
+    serial(async()=>{
+      const entry=entries.get(id);
+      if(!entry||entry.deleted)return;
+      const operation={id:crypto.randomUUID(),base:entry.operation_id,action,body:value};
+      const patch={operation_id:operation.id,pending:[...(entry.pending||[]),operation]};
+      if(action==='edit'){
+        if(!entry.transcript_original||!value?.trim())return;
+        patch.transcript_edit=value;
+      }else{
+        patch.transcript_job=null;
+        patch.transcript_epoch=operation.id;
+        if(action==='remove_audio'){
+          if(!entry.audio_mime||(!entry.transcript_original&&!entry.body.trim())||entry.pending?.some(item=>!item.base))return;
+          Object.assign(patch,{audio_mime:null,duration_ms:null});
+        }else{
+          Object.assign(patch,{transcript_original:null,transcript_edit:null,transcript_language:null,transcript_request_id:null});
+        }
+      }
+      // A voice that still needs uploading can cancel its as-yet unsent
+      // request locally. All other changes use the same durable mutation queue.
+      if(action==='remove_transcript'&&!entry.transcript_original&&entry.pending?.some(item=>!item.base)){
+        await updateEntry(entry,{transcript_job:null});
+      }else{
+        await updateEntry(entry,patch,action==='remove_audio'?[audioKey(id)]:[]);
+      }
+      transcriptEditors.delete(id);
+      if(action!=='edit')channel?.postMessage(id);
+      renderEntries();
+      show(syncStatus,tr('pending'));void synchronize();
+    }).catch(localFailure);
+  }
+  function renderTranscription(entry,card,actions){
+    if(!remote.transcribe)return;
+    const id=entry.id,job=entry.transcript_job;
+    const busy=job&&['queued','processing','uncertain'].includes(job.state);
+    if(entry.transcript_original){
+      const section=document.createElement('section');
+      section.dataset.journalTranscript='';
+      const heading=document.createElement('h4');heading.textContent=tr('transcript');section.append(heading);
+      if(entry.transcript_language){
+        const detected=document.createElement('small');detected.className='muted';
+        detected.textContent=tr('detected')+' · '+spokenNames.of(entry.transcript_language);section.append(detected);
+      }
+      if(transcriptEditors.has(id)){
+        const editForm=document.createElement('form');
+        const field=document.createElement('textarea');field.rows=5;field.maxLength=12000;field.required=true;
+        field.setAttribute('aria-label',tr('transcript'));field.value=transcriptEditors.get(id);
+        field.oninput=()=>{transcriptEditors.set(id,field.value);save.disabled=!field.value.trim()};
+        const controls=document.createElement('div');controls.className='doc-actions';
+        const save=document.createElement('button');save.textContent=tr('saveTranscript');save.disabled=!field.value.trim();
+        controls.append(save,listButton('cancel',()=>{transcriptEditors.delete(id);renderEntries()}));
+        editForm.append(field,controls);editForm.onsubmit=event=>{event.preventDefault();changeTranscript(id,'edit',field.value)};
+        section.append(editForm);
+      }else{
+        const text=document.createElement('p');text.className='journal-body';text.textContent=entry.transcript_edit??entry.transcript_original;
+        section.append(text,listButton('editTranscript',()=>{
+          transcriptEditors.set(id,text.textContent);renderEntries();
+          host.querySelector(`[data-journal-entry="${id}"] [data-journal-transcript] textarea`)?.focus();
+        }));
+      }
+      if(entry.transcript_edit!==null&&entry.transcript_edit!==undefined){
+        const original=document.createElement('details');
+        const summary=document.createElement('summary');summary.textContent=tr('transcriptOriginal');
+        const text=document.createElement('p');text.className='journal-body';text.textContent=entry.transcript_original;
+        original.append(summary,text);section.append(original);
+      }
+      card.insertBefore(section,actions);
+    }
+    if(entry.audio_mime&&!busy){
+      actions.append(listButton(entry.transcript_original?'transcribeAgain':'transcribe',()=>{
+        transcriptChoices.set(id,job?.language||'');
+        renderEntries();
+        host.querySelector(`[data-journal-entry="${id}"] [data-journal-consent] select`)?.focus();
+      }));
+    }
+    if(entry.audio_mime&&(entry.transcript_original||entry.body.trim())&&!entry.pending?.some(item=>!item.base)){
+      actions.append(listButton('removeAudio',()=>{
+        if(confirm(tr('confirmAudio')))changeTranscript(id,'remove_audio');
+      }));
+    }
+    if(entry.transcript_original&&(entry.audio_mime||entry.body.trim())){
+      actions.append(listButton('removeTranscript',()=>{
+        if(confirm(tr('confirmTranscript')))changeTranscript(id,'remove_transcript');
+      }));
+    }else if(busy){
+      actions.append(listButton('cancelTranscription',()=>{
+        if(confirm(tr('confirmCancelTranscript')))changeTranscript(id,'remove_transcript');
+      }));
+    }
+    if(job){
+      const message=document.createElement('p');message.dataset.journalTranscriptionStatus='';message.setAttribute('role','status');
+      const copy={queued:runningTranscript===job.id?'transcriptRunning':'transcriptQueued',
+        processing:'transcriptRunning',uncertain:runningTranscript===job.id?'transcriptRunning':'transcriptUncertain',failed:'transcriptFailed',limit:'transcriptLimit',unavailable:'transcriptUnavailable'};
+      message.textContent=tr(copy[job.state]);card.append(message);
+      if(job.state==='uncertain'&&runningTranscript!==job.id)card.append(listButton('retryStatus',()=>void processTranscriptions(true,id)));
+    }
+    if(transcriptChoices.has(id)&&entry.audio_mime&&!busy){
+      const consent=document.createElement('form');consent.dataset.journalConsent='';
+      const explanation=document.createElement('p');
+      explanation.textContent=[tr('consent'),...(!connected()?[tr('consentOffline')]:[]),
+        ...(entry.transcript_edit?[tr('keepsEdits')]:[])].join(' ');
+      const label=document.createElement('label');label.textContent=tr('spokenLanguage')+' ';
+      const select=document.createElement('select');
+      select.add(new Option(tr('automatic'),''));
+      for(const code of languageIndex)select.add(new Option(spokenNames.of(code),code));
+      select.value=transcriptChoices.get(id);
+      select.onchange=()=>transcriptChoices.set(id,select.value);
+      label.append(select);
+      const controls=document.createElement('div');controls.className='doc-actions';
+      const accept=document.createElement('button');accept.textContent=tr(connected()?'authorize':'authorizeOffline');
+      controls.append(accept,listButton('cancel',()=>{transcriptChoices.delete(id);renderEntries()}));
+      consent.append(explanation,label,controls);card.append(consent);
+      consent.onsubmit=event=>{
+        event.preventDefault();accept.disabled=true;
+        const language=select.value||null;
+        serial(async()=>{
+          const prior=entries.get(id);
+          if(!prior?.audio_mime||prior.deleted||['queued','processing','uncertain'].includes(prior.transcript_job?.state))return;
+          const transcript_job={id:crypto.randomUUID(),language,state:'queued',
+            requestedAt:new Date().toISOString(),epoch:prior.transcript_epoch??null};
+          await updateEntry(prior,{transcript_job});
+          transcriptChoices.delete(id);renderEntries();
+          void synchronize();
+        }).catch(()=>{accept.disabled=false;localFailure()});
+      };
+    }
+  }
   function renderEntries(){
     if(!live())return;
     const list=find('[data-journal-entries]');
+    const active=document.activeElement;
+    const editingId=active?.matches('[data-journal-transcript] textarea')?active.closest('[data-journal-entry]').dataset.journalEntry:null;
+    const selection=editingId?[active.selectionStart,active.selectionEnd]:null;
     clearEntryPlayback();
     list.replaceChildren();
     const visible=[...entries.values()].filter(entry=>!entry.deleted).sort((one,two)=>
@@ -180,7 +354,7 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
         day=entry.local_day;
         const heading=document.createElement('h3');heading.textContent=dayFormat.format(new Date(day+'T12:00:00Z'));list.append(heading);
       }
-      const card=document.createElement('article');card.className='doc-card';
+      const card=document.createElement('article');card.className='doc-card';card.dataset.journalEntry=entry.id;
       const copy=document.createElement('p');copy.className='journal-body';copy.textContent=entry.body;copy.hidden=!entry.body;card.append(copy);
       const summary=document.createElement('small');summary.className='muted';
       summary.textContent=(entry.audio_mime?'🎙️ '+durationText(entry.duration_ms)+' · ':'')+tr(entry.pending?.length?'local':'synced');card.append(summary);
@@ -191,13 +365,13 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
           if(!bytes&&connected()){
             bytes=await remote.audio(entry.id);
             if(bytes)await serial(()=>{
-              if(!entries.get(entry.id)?.deleted)return store.write([[audioKey(entry.id),bytes]]);
+              if(entries.get(entry.id)?.audio_mime)return store.write([[audioKey(entry.id),bytes]]);
             });
           }
-          if(!live()||!card.isConnected||entries.get(entry.id)?.deleted)return;
+          if(!live()||!card.isConnected||!entries.get(entry.id)?.audio_mime)return;
           if(!bytes)throw Error('audio unavailable');
           const saved=await store.read(metadataKey(entry.id));
-          if(!saved||decode(saved).deleted||!live()||!card.isConnected)return;
+          if(!saved||!decode(saved).audio_mime||!live()||!card.isConnected)return;
           clearEntryPlayback();
           entryUrl=URL.createObjectURL(new Blob([bytes],{type:entry.audio_mime}));
           const player=document.createElement('audio');player.controls=true;player.src=entryUrl;
@@ -207,7 +381,7 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
           const box=document.createElement('div');box.dataset.journalPlayback='';box.append(player,download);card.append(box);
         }catch(_){show(status,tr('playbackFail'))}
       }));
-      else actions.append(listButton('edit',()=>{
+      else if(!entry.transcript_original||entry.body.trim())actions.append(listButton('edit',()=>{
         if(capture||requesting||editingBusy)return;
         printDraft({...newDraft(),target:entry.id,body:entry.body,local_day:entry.local_day,captured_at:entry.captured_at});
       }));
@@ -218,12 +392,18 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
           if(!prior||prior.deleted)return;
           const updated=journalOperation(prior,{body:'',deleted:true},crypto.randomUUID());
           await store.write([[metadataKey(entry.id),encode(updated)]],prior.audio_mime?[audioKey(entry.id)]:[]);
+          transcriptChoices.delete(entry.id);transcriptEditors.delete(entry.id);
           entries.set(entry.id,updated);renderEntries();
           if(!disposed)channel?.postMessage(entry.id);
           show(syncStatus,tr('pending'));void synchronize();
         }).catch(localFailure);
       }));
+      if(!entry.deleted)renderTranscription(entry,card,actions);
       list.append(card);
+    }
+    if(editingId){
+      const field=list.querySelector(`[data-journal-entry="${editingId}"] textarea`);
+      if(field){field.focus({preventScroll:true});field.setSelectionRange(...selection)}
     }
     if(!visible.length){const empty=document.createElement('p');empty.textContent=tr('empty');list.append(empty)}
   }
@@ -324,8 +504,65 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
       show(status,tr(error?.name==='NotAllowedError'||error?.name==='NotFoundError'?'mic':'unavailable'));
     }finally{requesting=false;renderControls()}
   };
-  async function synchronize(){
-    if(syncing||!ready||!live()||!connected())return;
+  async function processTranscriptions(retryUncertain=false,onlyId=null){
+    if(!remote.transcribe||transcriptWorker||!ready||!live()||!connected())return;
+    const entry=[...entries.values()].find(item=>(!onlyId||item.id===onlyId)&&item.audio_mime&&!item.pending?.length&&
+      (['queued','processing'].includes(item.transcript_job?.state)||(retryUncertain&&item.transcript_job?.state==='uncertain')));
+    if(!entry)return;
+    const job=entry.transcript_job;
+    transcriptWorker=true;runningTranscript=job.id;
+    renderEntries();
+    let wait=false;
+    try{
+      const {status}=await remote.transcribe(entry.id,job);
+      if(!live())return;
+      const row=status==='done'?await remote.entry(entry.id):null;
+      await serial(async()=>{
+        const prior=entries.get(entry.id);
+        if(!live()||prior?.transcript_job?.id!==job.id||!prior.audio_mime)return;
+        const expected={jobId:job.id,operationId:prior.operation_id};
+        if(status==='done'&&row?.transcript_request_id===job.id&&
+            (row.transcript_epoch??null)===job.epoch&&row.audio_mime&&!row.deleted){
+          const next=prior.pending?.length?{
+            ...prior,transcript_original:row.transcript_original,transcript_language:row.transcript_language,
+            transcript_request_id:row.transcript_request_id
+          }:row;
+          await updateEntry(next,{transcript_job:null},[],expected);
+          if(!prior.transcript_original)transcriptEditors.set(prior.id,row.transcript_edit??row.transcript_original);
+        }else if(['busy','running'].includes(status)){
+          wait=true;
+          const state=status==='running'?'processing':'queued';
+          if(job.state!==state)await updateEntry(prior,{transcript_job:{...job,state}},[],expected);
+        }else{
+          const state=status==='limit'||status==='unavailable'?status:'failed';
+          await updateEntry(prior,{transcript_job:status==='gone'||status==='done'?null:{...job,state}},[],expected);
+        }
+      });
+      if(status==='gone'||status==='done')void synchronize();
+    }catch(_){
+      try{
+        await serial(async()=>{
+          const prior=entries.get(entry.id);
+          if(live()&&prior?.transcript_job?.id===job.id)await updateEntry(prior,{transcript_job:{...job,state:'uncertain'}},[],
+            {jobId:job.id,operationId:prior.operation_id});
+        });
+      }catch{localFailure()}
+    }finally{
+      transcriptWorker=false;runningTranscript=null;
+      if(live()){
+        renderEntries();
+        clearTimeout(transcriptTimer);
+        // Poll a durable claim after a lost response or contention. The same
+        // request ID can never start a second provider call.
+        if(wait)transcriptTimer=setTimeout(()=>void processTranscriptions(),4000);
+        else if(entries.get(entry.id)?.transcript_job?.id!==job.id||
+            !['queued','processing'].includes(entries.get(entry.id)?.transcript_job?.state))void processTranscriptions();
+      }
+    }
+  }
+  async function synchronize(retryUncertain=false){
+    if(!ready||!live()||!connected())return;
+    if(syncing){syncAgain=true;return}
     syncing=true;retry.hidden=true;
     let syncError='';
     try{
@@ -355,14 +592,27 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
         }
       }
       if(live()&&connected()){
+        const beforeList=new Map(entries);
         const rows=await remote.list();
         await serial(async()=>{
-          const changes=rows.filter(row=>!entries.get(row.id)?.pending?.length&&entries.get(row.id)?.operation_id!==row.operation_id);
+          const changes=rows.flatMap(row=>{
+            const local=entries.get(row.id);
+            if(local!==beforeList.get(row.id)||local?.pending?.length||local?.deleted&&!row.deleted)return [];
+            if(local?.operation_id===row.operation_id&&
+                (local?.transcript_request_id??null)===(row.transcript_request_id??null))return [];
+            const job=local?.transcript_job;
+            const keepJob=row.audio_mime&&!row.deleted&&job?.epoch===(row.transcript_epoch??null);
+            return [{...row,transcript_job:keepJob?job:null}];
+          });
           if(changes.length)await store.write(changes.map(row=>[metadataKey(row.id),encode(row)]),
-            changes.filter(row=>row.deleted).map(row=>audioKey(row.id)));
+            changes.filter(row=>row.deleted||!row.audio_mime).map(row=>audioKey(row.id)));
           for(const row of changes){
+            const prior=entries.get(row.id);
             entries.set(row.id,row);
-            if(row.deleted&&!disposed)channel?.postMessage(row.id);
+            if(row.deleted||row.transcript_epoch!==prior?.transcript_epoch){
+              if(row.deleted||!row.transcript_original)transcriptEditors.delete(row.id);
+              if(!disposed)channel?.postMessage(row.id);
+            }
           }
         });
       }
@@ -374,6 +624,8 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
         show(syncStatus,syncError?tr(syncError):pending?tr('pending'):'');retry.hidden=!syncError&&!localError;
         if(!pending&&!syncError&&status.textContent===tr('local'))show(status,tr('synced'));
         renderEntries();
+        if(syncAgain){syncAgain=false;void synchronize(retryUncertain)}
+        else if(!syncError)void processTranscriptions(retryUncertain);
       }
     }
   }
@@ -383,9 +635,9 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
       const value={...draft},blob=retryAudio?.id===draft.id?retryAudio.blob:null;
       serial(()=>persistDraft(value,blob)).then(renderControls).catch(localFailure);
     }
-    void synchronize();
+    void synchronize(true);
   };
-  window.addEventListener('online',()=>void synchronize(),{signal:abort.signal});
+  window.addEventListener('online',()=>void synchronize(true),{signal:abort.signal});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stop(true)},{signal:abort.signal});
   window.addEventListener('pagehide',()=>stop(true),{signal:abort.signal});
   if(channel)channel.onmessage=event=>{
@@ -396,7 +648,11 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
       const bytes=await store.read(metadataKey(id));
       if(!bytes)return;
       const entry=decode(bytes);
-      if(!entry.deleted)return;
+      const prior=entries.get(id);
+      if(!entry.deleted&&entry.transcript_epoch===prior?.transcript_epoch&&
+          entry.transcript_job?.id===prior?.transcript_job?.id)return;
+      if(entry.deleted||!entry.transcript_original)transcriptEditors.delete(id);
+      if(!entry.audio_mime)transcriptChoices.delete(id);
       entries.set(id,entry);renderEntries();
     }).catch(localFailure);
   };
@@ -414,12 +670,12 @@ export function mountTripJournal(host,{store,remote,current,connected,language,z
     printDraft(recovered||null);renderEntries();
     if(recovered)show(status,tr(recovered.interrupted?'interrupted':'draft'));
     if([...entries.values()].some(entry=>entry.pending?.length))show(syncStatus,tr('pending'));
-    void synchronize();
+    void synchronize(true);
   }).catch(localFailure);
   const initialized=initialize();
-  return {initialized,reconnect:synchronize,dispose(){
+  return {initialized,reconnect:()=>synchronize(true),dispose(){
     stop(true);capture?.stream.getTracks().forEach(track=>track.stop());
-    disposed=true;abort.abort();channel?.close();attachPreview(null);
+    disposed=true;abort.abort();clearTimeout(transcriptTimer);channel?.close();attachPreview(null);
     clearEntryPlayback();
   }};
 }

@@ -290,7 +290,7 @@
     #offlineDocManager{width:min(670px,calc(100% - 24px));max-height:calc(100dvh - 32px);overflow:auto;border:1px solid var(--line);border-radius:20px;padding:16px;color:var(--ink);background:#fff}
     #offlineDocManager::backdrop{background:#18132688}.offline-manager-header{display:flex;gap:12px;align-items:center;justify-content:space-between}.offline-manager-header h2{margin:0}
     #offlineDocManager button{min-height:44px;max-width:100%;white-space:normal;overflow-wrap:anywhere}.offline-manager-group{width:100%;text-align:left;display:flex;flex-wrap:wrap;gap:6px;justify-content:space-between}.offline-manager-list{list-style:none;padding:0;margin:12px 0 0}.offline-manager-list li{border-top:1px solid var(--line);padding:12px 0;overflow-wrap:anywhere}.offline-manager-list p{margin:4px 0}.offline-manager-keep{display:flex;align-items:center;gap:8px;min-height:44px}.offline-manager-keep input{width:20px;height:20px;flex:none}
-    #tripJournalContent{display:grid;gap:12px}#tripJournalContent textarea{width:100%;font:inherit;resize:vertical;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:12px}#tripJournalContent audio{display:block;width:min(100%,370px);margin-top:8px}#tripJournalContent audio[hidden]{display:none}#tripJournalContent .doc-actions button{min-height:44px}#tripJournalContent .journal-body{white-space:pre-wrap;overflow-wrap:anywhere}#tripJournalContent [data-journal-local]:empty,#tripJournalContent [data-journal-sync]:empty{display:none}
+    #tripJournalContent{display:grid;gap:12px}#tripJournalContent textarea{width:100%;font:inherit;resize:vertical;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:12px}#tripJournalContent select{max-width:100%;min-height:44px;font:inherit}#tripJournalContent [data-journal-consent],#tripJournalContent [data-journal-transcript]{margin-top:10px}#tripJournalContent audio{display:block;width:min(100%,370px);margin-top:8px}#tripJournalContent audio[hidden]{display:none}#tripJournalContent .doc-actions button{min-height:44px}#tripJournalContent .journal-body{white-space:pre-wrap;overflow-wrap:anywhere}#tripJournalContent [data-journal-local]:empty,#tripJournalContent [data-journal-sync]:empty{display:none}
     .document-viewer{position:fixed;inset:0;z-index:10000;background:#fff;display:grid;grid-template-rows:auto 1fr;min-height:100dvh}.document-viewer-bar{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;border-bottom:1px solid var(--line);background:#fff}.document-viewer-bar strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.document-viewer-close{padding:10px 14px}.document-viewer-body{min-height:0;display:grid;place-items:stretch;background:#f7f5fb}.document-viewer-body iframe{width:100%;height:100%;border:0;background:#fff}.document-viewer-body img{display:block;max-width:100%;max-height:100%;margin:auto;object-fit:contain}.document-viewer-open{overflow:hidden}.doc-upload{display:grid;gap:12px}.doc-upload select,.doc-upload input[type=file]{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:12px;background:#fff}.doc-progress{font-size:.9rem;color:var(--muted)}.doc-grid{display:grid;gap:14px}.doc-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px;box-shadow:0 8px 24px rgba(49,42,59,.05)}.doc-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.doc-card h3{margin:0 0 4px}.doc-card p{margin:4px 0;color:var(--muted)}.doc-chip{display:inline-block;background:#ede7f6;color:#4f378b;border-radius:999px;padding:5px 9px;font-size:.75rem;font-weight:800}.doc-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.doc-actions button{padding:10px 12px}.doc-card{min-width:0}.doc-card-head>div{min-width:0;overflow-wrap:anywhere}.doc-actions button,#purgeOfflineDocuments{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}@media(max-width:520px){.doc-actions{display:grid;grid-template-columns:minmax(0,1fr)}.doc-actions button,#purgeOfflineDocuments{width:100%;min-height:44px}}.doc-open{background:var(--purple)}.doc-delete{background:#ffdad6;color:#8c1d18}.doc-empty{text-align:center;padding:26px 14px;color:var(--muted)}.privacy-note{background:#e7f5ec;border:1px solid #b9dfc5;color:#245c36;border-radius:16px;padding:14px;margin-top:12px}.upload-status{margin-top:10px}.doc-count{display:inline-block;min-width:24px;text-align:center;background:#ede7f6;color:#4f378b;border-radius:999px;padding:3px 7px;font-size:.78rem;font-weight:800;margin-left:6px}
 
     .expense-count{display:inline-block;min-width:24px;text-align:center;background:#e7f5ec;color:#247642;border-radius:999px;padding:3px 7px;font-size:.78rem;font-weight:800;margin-left:6px}.expense-form{display:grid;gap:12px}.expense-form select,.expense-form input{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:13px;background:#fff}.expense-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.expense-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.expense-stat{background:#faf8fd;border:1px solid var(--line);border-radius:16px;padding:14px}.expense-stat small{display:block;color:var(--muted)}.expense-stat strong{display:block;font-size:1.2rem;margin-top:5px}.expense-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.expense-toolbar button{flex:1;min-width:155px}.expense-filters{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:14px}.expense-filters input,.expense-filters select{width:100%;border:1px solid #cac4d0;border-radius:14px;padding:12px;background:#fff}.expense-list{display:grid;gap:14px}.expense-day{display:grid;gap:10px}.expense-day-title{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#4f378b;padding:4px 2px}.expense-day-title h3{margin:0;font-size:1rem}.expense-day-total{font-size:.86rem;color:var(--muted);font-weight:700}.expense-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px}.expense-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.expense-head h3{margin:0}.expense-amount{font-size:1.2rem;font-weight:800;color:#4f378b;white-space:nowrap}.expense-meta{margin-top:7px;color:var(--muted);font-size:.9rem}.expense-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.expense-actions button{padding:9px 11px}.expense-receipt{background:#e7f5ec;color:#245c36}.expense-delete{background:#ffdad6;color:#8c1d18}.expense-empty{text-align:center;padding:24px;color:var(--muted)}.expense-chart{display:grid;gap:12px}.chart-row{display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:10px}.chart-label{font-size:.9rem;font-weight:700}.chart-track{height:12px;background:#eee8f4;border-radius:999px;overflow:hidden}.chart-bar{height:100%;background:linear-gradient(90deg,#6750a4,#9b72cf);border-radius:999px}.chart-value{font-size:.86rem;color:var(--muted);white-space:nowrap}.receipt-label{display:grid;gap:6px;color:var(--muted);font-size:.9rem}.receipt-label input{padding:10px}.float-add{position:fixed;right:20px;bottom:22px;width:58px;height:58px;border-radius:50%;font-size:28px;padding:0;box-shadow:0 10px 28px rgba(79,55,139,.35);z-index:20}
@@ -2868,7 +2868,7 @@ document.getElementById('tripHome').setAttribute('aria-label',dashboardText('now
 </script>
 <script id="freyaSdk" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.freyaBoot.step('app')" onerror="window.freyaBoot.fail('sdk')"></script>
 <script>
-const FREYA_FRONTEND_RELEASE='pwa-trip-journal-v95';
+const FREYA_FRONTEND_RELEASE='pwa-trip-journal-transcription-v96';
 window.freyaBoot.step(window.supabase?.createClient?'app':'sdk');
 const SUPABASE_URL='https://otueskpksylzvkhldoft.supabase.co';
 const SUPABASE_KEY='sb_publishable_7h0TSVy6-7FizgVZe2iYow_IOl1luOF';
@@ -4719,7 +4719,7 @@ function tripJournalVault(scope,current){
       check();
       return new Uint8Array(bytes);
     },
-    async write(items,removals=[]){
+    async write(items,removals=[],expected=null){
       check();
       const db=await offlineDocDatabase(),key=items.length?await offlineDocKey(db,scope.userId,true):null;
       const rows=[];
@@ -4727,9 +4727,12 @@ function tripJournalVault(scope,current){
         check();
         const id=keyFor(label),iv=crypto.getRandomValues(new Uint8Array(12));
         const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:new TextEncoder().encode(id)},key,bytes);
-        const journalDeleted=label.startsWith('entry:')&&JSON.parse(new TextDecoder().decode(bytes)).deleted===true;
+        const entry=label.startsWith('entry:')?JSON.parse(new TextDecoder().decode(bytes)):null;
+        const journalDeleted=entry?.deleted===true;
+        const journalAudioRemoved=!!entry?.transcript_epoch&&!entry.audio_mime;
         rows.push({key:id,userId:scope.userId,tripId:scope.tripId,documentId:JOURNAL_VAULT_PREFIX+label,
-          size:bytes.byteLength,iv:Array.from(iv),ciphertext,savedAt:Date.now(),journalDeleted});
+          size:bytes.byteLength,iv:Array.from(iv),ciphertext,savedAt:Date.now(),journalDeleted,journalAudioRemoved,
+          journalJobId:entry?.transcript_job?.id,journalOperationId:entry?.operation_id});
       }
       check();
       await offlineDocTx(db,['records'],'readwrite',tx=>{
@@ -4740,7 +4743,11 @@ function tripJournalVault(scope,current){
           if(row.journalDeleted||(!label.startsWith('entry:')&&!label.startsWith('audio:'))){records.put(row);continue}
           const id=label.slice(label.indexOf(':')+1),prior=records.get(keyFor('entry:'+id));
           prior.onsuccess=()=>{
-            if(!current()||prior.result?.journalDeleted){tx.abort();return}
+            if(!current()||prior.result?.journalDeleted||
+                (prior.result?.journalAudioRemoved&&(label.startsWith('audio:')||!row.journalAudioRemoved))||
+                (expected&&(prior.result?.journalJobId!==expected.jobId||prior.result?.journalOperationId!==expected.operationId))){
+              tx.abort();return;
+            }
             records.put(row);
           };
         }
@@ -4753,10 +4760,28 @@ function tripJournalRemote(scope,current,connected){
   const check=()=>{if(!current()||!connected())throw Error('Journal connection unavailable')};
   function query(){
     check();
-    return db.from('trip_journal_entries').select('id,local_day,captured_at,body,audio_mime,duration_ms,operation_id,deleted')
+    return db.from('trip_journal_entries').select('id,local_day,captured_at,body,audio_mime,duration_ms,operation_id,deleted,'+
+      'transcript_original,transcript_edit,transcript_language,transcript_epoch,transcript_request_id')
       .eq('trip_id',scope.tripId).eq('author_id',scope.userId);
   }
+  async function transcriptRequest(entry,payload,timeout){
+    check();
+    const response=await fetch(SUPABASE_URL+'/functions/v1/trip-journal-transcribe',{
+      method:'POST',headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},
+      body:JSON.stringify({entry,trip:scope.tripId,...payload}),signal:AbortSignal.timeout(timeout)
+    });
+    if(!current())throw Error('Journal account or trip changed');
+    if(response.status===409)throw {code:'40001'};
+    if(!response.ok)throw Error('Journal transcription unavailable');
+    return response.json();
+  }
   return {
+    transcribe:(id,job)=>transcriptRequest(id,{action:'transcribe',id:job.id,language:job.language,epoch:job.epoch,requestedAt:job.requestedAt},95000),
+    async entry(id){
+      const {data,error}=await query().eq('id',id).maybeSingle();
+      if(error)throw error;
+      return data;
+    },
     async list(){
       const rows=[];
       for(let offset=0;;offset+=200){
@@ -4775,6 +4800,10 @@ function tripJournalRemote(scope,current,connected){
     },
     async save(entry,operation,bytes){
       check();
+      if(operation.action){
+        const {id}=await transcriptRequest(entry.id,{action:operation.action,id:operation.id,base:operation.base,text:operation.body},20000);
+        return id;
+      }
       let audio=null;
       if(bytes){
         const chunks=[];

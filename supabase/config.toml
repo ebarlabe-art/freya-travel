@@ -20,3 +20,8 @@ verify_jwt = true
 
 [functions.trip-insights]
 verify_jwt = true
+
+# Validate each bearer token against Auth inside the function. Accept both
+# legacy and asymmetric Supabase JWTs.
+[functions.trip-journal-transcribe]
+verify_jwt = false
